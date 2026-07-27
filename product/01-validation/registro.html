@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Nahui — Registro de venta</title>
+<style>
+  body { font-family: sans-serif; background:#fdf6ee; margin:0; padding:20px; }
+  h1 { color:#b5563c; font-size:22px; }
+  .grid { display:grid; grid-template-columns: repeat(2,1fr); gap:12px; margin-top:16px; }
+  button.producto {
+    padding:24px; font-size:18px; border:none; border-radius:14px;
+    background:#e8b08a; color:#3a2418; font-weight:bold; cursor:pointer;
+  }
+  button.producto:active { background:#b5563c; color:white; }
+  #log { margin-top:24px; background:white; border-radius:10px; padding:14px; max-height:300px; overflow-y:auto; }
+  .item { padding:6px 0; border-bottom:1px solid #eee; font-size:14px; }
+  .rapido { color: #2e7d32; font-weight:bold; }
+  .lento { color:#c62828; font-weight:bold; }
+  #resumen { margin-top:14px; font-size:15px; }
+</style>
+</head>
+<body>
+  <h1>Nahui — Registro de venta (prototipo)</h1>
+  <p>Toca el producto que se vendió. Se mide el tiempo desde que aparece la venta hasta que registras.</p>
+  <div class="grid" id="productos"></div>
+  <div id="resumen"></div>
+  <div id="log"></div>
+
+<script>
+const productos = ["Pijama", "Sudadera/Maxy", "Calcetines", "Otro"];
+let inicio = performance.now();
+let registros = [];
+
+const grid = document.getElementById('productos');
+productos.forEach(p => {
+  const b = document.createElement('button');
+  b.className = 'producto';
+  b.textContent = p;
+  b.onclick = () => registrar(p);
+  grid.appendChild(b);
+});
+
+function registrar(producto) {
+  const ahora = performance.now();
+  const segundos = ((ahora - inicio) / 1000).toFixed(2);
+  registros.push({producto, segundos: parseFloat(segundos), hora: new Date().toLocaleTimeString()});
+  render();
+  inicio = performance.now(); // siguiente venta empieza a contar desde aquí
+}
+
+function render() {
+  const log = document.getElementById('log');
+  log.innerHTML = registros.slice().reverse().map(r => {
+    const clase = r.segundos <= 3 ? 'rapido' : 'lento';
+    return `<div class="item">${r.hora} — ${r.producto} — <span class="${clase}">${r.segundos}s</span></div>`;
+  }).join('');
+
+  const total = registros.length;
+  const rapidos = registros.filter(r => r.segundos <= 3).length;
+  const pct = total ? ((rapidos/total)*100).toFixed(0) : 0;
+  const promedio = total ? (registros.reduce((a,r)=>a+r.segundos,0)/total).toFixed(2) : 0;
+  document.getElementById('resumen').innerHTML =
+    `<b>${total}</b> ventas registradas · <b>${pct}%</b> en menos de 3s · promedio <b>${promedio}s</b>`;
+}
+</script>
+</body>
+</html>
