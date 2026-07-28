@@ -4,3 +4,10 @@
 - Decision: simulate NFC tap with large per-product buttons instead of waiting for physical tags, so the core mechanic (registration speed) can be validated without being blocked by hardware.
 - Added automatic per-registration timer (not manual) because eyeballing time isn't reliable for the success metric (<3 seconds).
 - Pending: once physical NFC tags arrive, replace the button with real NFC reading via Web NFC API (Android/Chrome only) or an external reader.
+
+## 2026-07-26 — NFC scan mode, tag assignment, and multi-item sales
+- Added an NFC mode alongside the existing button mode, using the Web NFC (`NDEFReader`) API. It only works on Android Chrome over HTTPS, so desktop/other browsers show an inline "not supported" message instead of failing silently — this is a hardware/browser constraint we can't fix, only work around.
+- Added an "Asignar" sub-mode so a vendor can link many physical tag UIDs to one product (e.g. 5 pajama tags -> "Pijama"). Assignments are stored in `localStorage` as a flat `{uid: producto}` map — good enough for a single-device prototype, not meant to survive a real multi-device rollout.
+- Scanning an unassigned tag during a sale shows an explicit message instead of silently dropping it or adding a phantom item, since a missed sale is the exact failure mode we're trying to avoid.
+- Reworked registration around a "Nueva venta" / "Finalizar venta" session so one transaction can hold multiple items (same product tapped/scanned more than once). This changes the core metric: we now time whole transactions, not individual taps.
+- The old <=3s threshold was per single tap; it doesn't make sense for a multi-item sale. Used a simple placeholder: 3s budget per item in the transaction (first item covers "greeting the customer", extra items are just repeat taps/scans). Not validated with Ana yet — worth revisiting once we have real multi-item sale timings.

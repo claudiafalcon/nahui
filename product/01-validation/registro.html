@@ -6,14 +6,38 @@
 <style>
   body { font-family: sans-serif; background:#fdf6ee; margin:0; padding:20px; }
   h1 { color:#b5563c; font-size:22px; }
+  .tabs { display:flex; gap:8px; margin-top:10px; }
+  .tab {
+    padding:10px 16px; font-size:15px; border:2px solid #b5563c; border-radius:8px;
+    background:white; color:#b5563c; font-weight:bold; cursor:pointer;
+  }
+  .tab.activo { background:#b5563c; color:white; }
+  #nfcSubTabs { margin-top:8px; }
   .grid { display:grid; grid-template-columns: repeat(2,1fr); gap:12px; margin-top:16px; }
   button.producto {
     padding:24px; font-size:18px; border:none; border-radius:14px;
     background:#e8b08a; color:#3a2418; font-weight:bold; cursor:pointer;
   }
   button.producto:active { background:#b5563c; color:white; }
+  button.producto:disabled { background:#ddd; color:#999; cursor:not-allowed; }
+  button.producto.seleccionado { outline:3px solid #b5563c; }
+  .venta-controles { margin-top:16px; }
+  .venta-controles button {
+    padding:12px 18px; font-size:15px; border:none; border-radius:8px;
+    font-weight:bold; cursor:pointer; margin-right:8px;
+  }
+  #btnNuevaVenta { background:#2e7d32; color:white; }
+  #btnFinalizarVenta { background:#b5563c; color:white; }
+  .venta-controles button:disabled { background:#ccc; color:#777; cursor:not-allowed; }
+  .hint { color:#8a5a3a; font-size:14px; margin-top:6px; }
+  #ventaActualBox { margin-top:14px; background:#fff3e6; border-radius:10px; padding:12px; }
+  #listaVentaActual span { display:inline-block; background:white; border-radius:6px; padding:4px 8px; margin:3px; font-size:13px; }
+  #nfcNoSoportado { margin-top:12px; background:#fdecea; color:#c62828; padding:12px; border-radius:8px; font-size:14px; }
+  #nfcEstado { margin-top:12px; background:white; border-radius:8px; padding:12px; font-size:14px; min-height:1em; }
+  #asignarInfo { margin-top:10px; font-size:14px; color:#3a2418; }
   #log { margin-top:24px; background:white; border-radius:10px; padding:14px; max-height:300px; overflow-y:auto; }
   .item { padding:6px 0; border-bottom:1px solid #eee; font-size:14px; }
+  .item small { color:#777; }
   .rapido { color: #2e7d32; font-weight:bold; }
   .lento { color:#c62828; font-weight:bold; }
   #resumen { margin-top:14px; font-size:15px; }
@@ -21,47 +45,284 @@
 </head>
 <body>
   <h1>Nahui — Registro de venta (prototipo)</h1>
-  <p>Toca el producto que se vendió. Se mide el tiempo desde que aparece la venta hasta que registras.</p>
+  <p>Elige cómo vas a registrar: tocando el producto o escaneando un tag NFC. Presiona "Nueva venta" para empezar a agregar artículos.</p>
+
+  <div class="tabs" id="modoTabs">
+    <button class="tab activo" data-modo="boton">Botón</button>
+    <button class="tab" data-modo="nfc">NFC</button>
+  </div>
+
+  <div class="tabs" id="nfcSubTabs" style="display:none">
+    <button class="tab activo" data-sub="venta">Venta</button>
+    <button class="tab" data-sub="asignar">Asignar</button>
+  </div>
+
+  <div id="nfcNoSoportado" style="display:none">
+    NFC no está disponible en este dispositivo/navegador. Web NFC solo funciona en Chrome para Android sobre HTTPS. Usa el modo "Botón" para probar aquí.
+  </div>
+
+  <div id="nfcEstado" style="display:none"></div>
+
+  <div class="venta-controles" id="ventaControles">
+    <button id="btnNuevaVenta">Nueva venta</button>
+    <button id="btnFinalizarVenta" disabled>Finalizar venta</button>
+    <div class="hint" id="hintVenta"></div>
+  </div>
+
+  <div id="ventaActualBox" style="display:none">
+    <b>Venta actual: <span id="contadorItems">0</span> artículos</b>
+    <div id="listaVentaActual"></div>
+  </div>
+
   <div class="grid" id="productos"></div>
+  <div id="asignarInfo" style="display:none"></div>
+
   <div id="resumen"></div>
   <div id="log"></div>
 
 <script>
 const productos = ["Pijama", "Sudadera/Maxy", "Calcetines", "Otro"];
-let inicio = performance.now();
-let registros = [];
 
+// --- estado global ---
+let modo = 'boton';           // 'boton' | 'nfc'
+let nfcSubModo = 'venta';     // 'venta' | 'asignar'
+let asignarProducto = null;   // producto elegido en modo Asignar
+
+let ventaActiva = false;
+let ventaInicio = null;
+let itemsVentaActual = [];
+let transacciones = [];
+
+let tagMap = cargarTagMap();  // { uid: producto }
+let ndefReader = null;
+let nfcIniciado = false;
+
+// --- localStorage: asignaciones de tags ---
+function cargarTagMap() {
+  try { return JSON.parse(localStorage.getItem('nahui_tagMap')) || {}; }
+  catch (e) { return {}; }
+}
+function guardarTagMap() {
+  localStorage.setItem('nahui_tagMap', JSON.stringify(tagMap));
+}
+function contarTagsPara(producto) {
+  return Object.values(tagMap).filter(v => v === producto).length;
+}
+
+// --- grid de productos ---
 const grid = document.getElementById('productos');
 productos.forEach(p => {
   const b = document.createElement('button');
   b.className = 'producto';
   b.textContent = p;
-  b.onclick = () => registrar(p);
+  b.dataset.producto = p;
+  b.onclick = () => onProductoClick(p);
   grid.appendChild(b);
 });
 
-function registrar(producto) {
-  const ahora = performance.now();
-  const segundos = ((ahora - inicio) / 1000).toFixed(2);
-  registros.push({producto, segundos: parseFloat(segundos), hora: new Date().toLocaleTimeString()});
-  render();
-  inicio = performance.now(); // siguiente venta empieza a contar desde aquí
+function onProductoClick(p) {
+  if (modo === 'boton') {
+    agregarItem(p);
+  } else if (modo === 'nfc' && nfcSubModo === 'asignar') {
+    asignarProducto = p;
+    render();
+  }
 }
 
+// --- cambio de modo / submodo ---
+document.querySelectorAll('#modoTabs button').forEach(b => {
+  b.onclick = () => cambiarModo(b.dataset.modo);
+});
+document.querySelectorAll('#nfcSubTabs button').forEach(b => {
+  b.onclick = () => cambiarSubModo(b.dataset.sub);
+});
+
+function cambiarModo(m) {
+  modo = m;
+  if (m === 'nfc') {
+    iniciarNfc(); // llamado directo desde el click para conservar el gesto de usuario
+  }
+  render();
+}
+
+function cambiarSubModo(s) {
+  nfcSubModo = s;
+  asignarProducto = null;
+  render();
+}
+
+// --- Web NFC ---
+function iniciarNfc() {
+  const noSoportado = document.getElementById('nfcNoSoportado');
+  if (!('NDEFReader' in window)) {
+    noSoportado.style.display = 'block';
+    return;
+  }
+  noSoportado.style.display = 'none';
+  if (nfcIniciado) return;
+
+  ndefReader = new NDEFReader();
+  ndefReader.scan().then(() => {
+    nfcIniciado = true;
+    mostrarEstadoNfc('Escaneo NFC activo. Acerca un tag.');
+    ndefReader.onreading = (event) => manejarLecturaNfc(event.serialNumber);
+    ndefReader.onreadingerror = () => mostrarEstadoNfc('Error leyendo el tag. Intenta de nuevo.');
+  }).catch(err => {
+    mostrarEstadoNfc('No se pudo iniciar el escaneo NFC: ' + err.message);
+  });
+}
+
+function mostrarEstadoNfc(msg) {
+  const el = document.getElementById('nfcEstado');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function manejarLecturaNfc(uid) {
+  if (modo !== 'nfc') return;
+
+  if (nfcSubModo === 'asignar') {
+    if (!asignarProducto) {
+      mostrarEstadoNfc('Selecciona un producto antes de escanear para asignarlo.');
+      return;
+    }
+    tagMap[uid] = asignarProducto;
+    guardarTagMap();
+    mostrarEstadoNfc(`Tag asignado a "${asignarProducto}" (${contarTagsPara(asignarProducto)} tags asignados a este producto).`);
+    render();
+    return;
+  }
+
+  // submodo venta
+  if (!ventaActiva) {
+    mostrarEstadoNfc('Presiona "Nueva venta" antes de escanear.');
+    return;
+  }
+  const producto = tagMap[uid];
+  if (!producto) {
+    mostrarEstadoNfc('Este tag no está asignado a ningún producto. Ve a NFC > Asignar para asignarlo primero.');
+    return;
+  }
+  agregarItem(producto);
+  mostrarEstadoNfc(`Agregado: ${producto}`);
+}
+
+// --- venta actual (multi-item) ---
+function agregarItem(producto) {
+  if (!ventaActiva) {
+    document.getElementById('hintVenta').textContent = 'Presiona "Nueva venta" para comenzar a registrar productos.';
+    return;
+  }
+  itemsVentaActual.push(producto);
+  render();
+}
+
+document.getElementById('btnNuevaVenta').onclick = () => {
+  if (ventaActiva) return;
+  ventaActiva = true;
+  ventaInicio = performance.now();
+  itemsVentaActual = [];
+  render();
+};
+
+document.getElementById('btnFinalizarVenta').onclick = () => {
+  if (!ventaActiva) return;
+  if (itemsVentaActual.length === 0) {
+    document.getElementById('hintVenta').textContent = 'Agrega al menos un producto antes de finalizar la venta.';
+    return;
+  }
+  const segundos = parseFloat(((performance.now() - ventaInicio) / 1000).toFixed(2));
+  transacciones.push({
+    items: itemsVentaActual.slice(),
+    cantidad: itemsVentaActual.length,
+    segundos,
+    hora: new Date().toLocaleTimeString()
+  });
+  ventaActiva = false;
+  itemsVentaActual = [];
+  render();
+};
+
+// --- umbral de "rápido" por transacción ---
+// La métrica original era <=3s por registro individual. Con ventas de varios
+// artículos, 3s fijos ya no tiene sentido: el primer artículo tiene el costo
+// de "atender al cliente", los siguientes son solo taps/escaneos rápidos.
+// Se usa un presupuesto de 3s por artículo como aproximación simple.
+function umbralRapido(cantidad) {
+  return 3 * cantidad;
+}
+
+// --- render ---
 function render() {
+  // tabs de modo
+  document.querySelectorAll('#modoTabs button').forEach(b => {
+    b.classList.toggle('activo', b.dataset.modo === modo);
+  });
+  document.getElementById('nfcSubTabs').style.display = modo === 'nfc' ? 'flex' : 'none';
+  document.querySelectorAll('#nfcSubTabs button').forEach(b => {
+    b.classList.toggle('activo', b.dataset.sub === nfcSubModo);
+  });
+
+  const enAsignar = modo === 'nfc' && nfcSubModo === 'asignar';
+  const enNfcVenta = modo === 'nfc' && nfcSubModo === 'venta';
+
+  document.getElementById('nfcEstado').style.display = (modo === 'nfc' && nfcIniciado) ? 'block' : 'none';
+
+  // controles de venta: ocultos en modo Asignar (no aplica sesión de venta ahí)
+  document.getElementById('ventaControles').style.display = enAsignar ? 'none' : 'block';
+  document.getElementById('btnNuevaVenta').disabled = ventaActiva;
+  document.getElementById('btnFinalizarVenta').disabled = !ventaActiva;
+  const hint = document.getElementById('hintVenta');
+  if (!enAsignar) {
+    hint.textContent = ventaActiva ? '' : 'Presiona "Nueva venta" para comenzar a registrar productos.';
+  }
+
+  // venta actual
+  const box = document.getElementById('ventaActualBox');
+  if (ventaActiva && !enAsignar) {
+    box.style.display = 'block';
+    document.getElementById('contadorItems').textContent = itemsVentaActual.length;
+    document.getElementById('listaVentaActual').innerHTML =
+      itemsVentaActual.map(p => `<span>${p}</span>`).join('');
+  } else {
+    box.style.display = 'none';
+  }
+
+  // grid de productos: oculto en NFC modo Venta (ahí solo se escanea)
+  grid.style.display = enNfcVenta ? 'none' : 'grid';
+  document.querySelectorAll('button.producto').forEach(b => {
+    b.classList.toggle('seleccionado', enAsignar && b.dataset.producto === asignarProducto);
+    // en modo Botón, deshabilitar taps hasta que haya una venta activa
+    b.disabled = (modo === 'boton') && !ventaActiva;
+  });
+
+  // info del submodo Asignar
+  const asignarInfo = document.getElementById('asignarInfo');
+  if (enAsignar) {
+    asignarInfo.style.display = 'block';
+    asignarInfo.textContent = asignarProducto
+      ? `Escanea los tags que quieras vincular a "${asignarProducto}" (${contarTagsPara(asignarProducto)} ya asignados).`
+      : 'Selecciona un producto arriba y luego escanea los tags que le pertenecen.';
+  } else {
+    asignarInfo.style.display = 'none';
+  }
+
+  // log + resumen (por transacción)
   const log = document.getElementById('log');
-  log.innerHTML = registros.slice().reverse().map(r => {
-    const clase = r.segundos <= 3 ? 'rapido' : 'lento';
-    return `<div class="item">${r.hora} — ${r.producto} — <span class="${clase}">${r.segundos}s</span></div>`;
+  log.innerHTML = transacciones.slice().reverse().map(t => {
+    const clase = t.segundos <= umbralRapido(t.cantidad) ? 'rapido' : 'lento';
+    return `<div class="item">${t.hora} — ${t.cantidad} artículo(s): ${t.items.join(', ')} — <span class="${clase}">${t.segundos}s</span></div>`;
   }).join('');
 
-  const total = registros.length;
-  const rapidos = registros.filter(r => r.segundos <= 3).length;
-  const pct = total ? ((rapidos/total)*100).toFixed(0) : 0;
-  const promedio = total ? (registros.reduce((a,r)=>a+r.segundos,0)/total).toFixed(2) : 0;
+  const total = transacciones.length;
+  const rapidas = transacciones.filter(t => t.segundos <= umbralRapido(t.cantidad)).length;
+  const pct = total ? ((rapidas / total) * 100).toFixed(0) : 0;
+  const promedio = total ? (transacciones.reduce((a, t) => a + t.segundos, 0) / total).toFixed(2) : 0;
   document.getElementById('resumen').innerHTML =
-    `<b>${total}</b> ventas registradas · <b>${pct}%</b> en menos de 3s · promedio <b>${promedio}s</b>`;
+    `<b>${total}</b> ventas registradas · <b>${pct}%</b> dentro del umbral rápido · promedio <b>${promedio}s</b> por venta`;
 }
+
+render();
 </script>
 </body>
 </html>

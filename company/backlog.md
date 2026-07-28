@@ -12,3 +12,8 @@
 ## 3. Bazaar recommendation — NOT STARTED
 - Blocked by: needs data from multiple vendors, not just Ana
 - Do not attempt to build — no data source exists yet
+
+## Later
+- Apartado/reservation status — not started.
+- Distributor/kg-based purchasing — not started.
+- Frequent-customer pre-orders — not started.
