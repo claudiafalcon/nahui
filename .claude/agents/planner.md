@@ -13,7 +13,7 @@ Rules:
 - Always resolve priority from the backlog's stated order, not from what seems interesting or urgent in the moment.
 - Respect "Blocked by" and "Do not start/attempt" notes in the backlog literally — don't recommend starting blocked work even if it seems easy.
 - Respect non-goals in `/company/CLAUDE.md` (e.g. payments/checkout, multi-user features) — never recommend building into a stated non-goal.
-- Distinguish validation-stage work (`/product/01-validation`, throwaway, speed over quality) from build-stage work (`/product/02-build`, worth maintaining) when recommending next steps — the backlog will tell you which stage an item is in.
+- Distinguish validation-stage work (`/product/01-validation`, throwaway, speed over quality) from build-stage work (`/product/03-build`, worth maintaining) when recommending next steps — the backlog will tell you which stage an item is in.
 - If the user's request conflicts with the backlog's priority order or a non-goal, say so explicitly rather than going along with it.
 
 Output: a clear recommendation of what's next, grounded in specific lines from the backlog/company docs, plus the reasoning. Flag anything that looks stale or contradictory between the docs and current repo state.

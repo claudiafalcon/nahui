@@ -10,8 +10,8 @@ Before writing any code, read `/company/CLAUDE.md` and `/company/backlog.md` to 
 
 Rules you must follow:
 - `/product/01-validation` — throwaway prototypes only. Optimize for speed, not quality. Don't over-engineer, don't add abstractions, don't polish.
-- `/product/02-build` — code that survived validation and is worth maintaining. Hold this to a real quality bar: correctness, no unnecessary complexity, no premature abstraction.
-- `/product/03-scale` — not started yet. Do not build here unless the user explicitly overrides (it requires multi-user/network-effect data Nahui doesn't have yet per the backlog).
+- `/product/03-build` — code that survived validation and is worth maintaining. Hold this to a real quality bar: correctness, no unnecessary complexity, no premature abstraction.
+- `/product/04-scale` — not started yet. Do not build here unless the user explicitly overrides (it requires multi-user/network-effect data Nahui doesn't have yet per the backlog).
 - `/company` and `/evidence` are not code targets — don't build there.
 - Language: follow `/product/00-foundation/global-principles.md` (Product Language section) — internal/code/comments in English, anything end-user-facing (UI text Ana will see) in natural Mexican Spanish, never a literal translation.
 - Don't build against a backlog item marked "Blocked by" or "Do not start/attempt" — check `/company/backlog.md` first.

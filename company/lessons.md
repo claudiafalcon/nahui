@@ -1,5 +1,10 @@
 # Lessons learned
 
+## 2026-07-31 — Removed the "no real data yet" gate on Reports/segmentation
+- `company/backlog.md` #2 originally blocked customer segmentation work until sale registration (#1) had produced real usage data — a reasonable gate at the time, set before the Product Foundation (`product/00-foundation/`) or the `product/02-ux/` UX-documentation process existed.
+- That gate no longer applies: Reports (Resultados) is now part of current MVP UX scope and is being documented alongside Home/Inventario/Eventos, not held back pending real sales data. Removed the "blocked by / do not start" language from backlog.md #2 rather than leaving a stale constraint next to a live decision to proceed.
+- Any future doc that still cites "blocked until real history exists" for Resultados/segmentation is referencing this obsolete assumption and should be corrected.
+
 ## 2026-07-25 — Initial tap-to-register prototype
 - Decision: simulate NFC tap with large per-product buttons instead of waiting for physical tags, so the core mechanic (registration speed) can be validated without being blocked by hardware.
 - Added automatic per-registration timer (not manual) because eyeballing time isn't reliable for the success metric (<3 seconds).
