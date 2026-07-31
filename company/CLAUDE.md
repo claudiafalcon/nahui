@@ -14,7 +14,7 @@ Two other validated frictions, lower priority for now:
 - Free tier: registration only (adoption hook, feeds network effect data later).
 - Paid tier: customer segmentation (available once user has own sales history) + eventually bazaar recommendations (needs multi-user data).
 - No transaction-based commission — Ana explicitly rejects Amazon/Mercado Pago-style fee models. Flat/seasonal pricing instead of monthly if usage isn't monthly-constant.
-- NFC kit (physical tags) likely bundled once, not recurring.
+- NFC kit: a starter set of tags is bundled with onboarding, but tags are consumable — each stays with the customer after their sale (it becomes part of the loyalty journey, see `/product/00-foundation/decision-log.md` D11). Merchants buy additional tag packs as they keep selling. Position this as an investment that unlocks customer relationships/analytics, not as a recurring cost or burden.
 
 ## Non-goals right now
 - Payments/checkout — out of scope, do not build.
