@@ -52,7 +52,7 @@ here without an Architect/RFC decision first (`product/00-foundation/decision-lo
 - `home.md` — done, approved
 - `inventory.md` — done, approved
 - `events.md` — done, approved (one open item, Q6, doesn't block approval)
-- `reports.md` — done, approved (three open items, Q8/Q9/Q10, don't block approval — Q8 is the most consequential: "Tus clientes" is an illustrative placeholder pending a business decision)
+- `reports.md` — done, approved (Q8, Q9 resolved and applied — "Tus clientes" and "Rendimiento por bazar" are both real, reviewed specs; Q10 remains open, non-blocking)
 
 All four primary merchant experiences (Hoy, Inventario, Eventos, Resultados) are done and approved.
 - `settings.md` — not started; not present in the frozen IA nav (only Hoy,

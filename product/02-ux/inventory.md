@@ -533,11 +533,11 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
-- Manual `Reintentar`, same convention as `events.md` §3.17 / `reports.md`
-  §3.13 (not Home's silent auto-retry) — Inventario carries no live-customer
+- Manual `Reintentar`, same convention as `events.md` §3.18 / `reports.md`
+  §3.14 (not Home's silent auto-retry) — Inventario carries no live-customer
   risk that would justify Home's more aggressive, invisible retry behavior.
 - Nav bar stays fully functional here, same as `home.md` §3.14 / `events.md`
-  §3.17 / `reports.md` §3.13: a failure to load the Catalog never cascades
+  §3.18 / `reports.md` §3.14: a failure to load the Catalog never cascades
   into blocking Hoy/Eventos/Resultados, and critically, never blocks selling
   — if Ana's Catalog fails to load mid-bazaar-day, she can still reach Hoy
   and keep selling.

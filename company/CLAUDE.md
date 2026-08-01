@@ -58,6 +58,34 @@ Main always delegates specialized work to the agent whose expertise fits the tas
 
 The workflow should never stop because of an unresolved question — only when continuing would require inventing product behavior that isn't grounded in the Foundation or an explicit decision.
 
+### Autonomous coordination
+
+Main does not wait to be told the next step after a phase or major task finishes. Instead, Main:
+
+1. Assesses the current project state (what's Approved, what's tracked as pending, what changed).
+2. Identifies all remaining work.
+3. Identifies dependencies between that work (what blocks what).
+4. Consults `planner` for a roadmap recommendation when the next step isn't obvious from backlog/decision-log state alone.
+5. Recommends the next action to the Product Owner.
+
+The recommendation is presented as:
+
+- **Current phase**
+- **Completed work**
+- **Open work**
+- **Recommended next step**
+- **Reasoning**
+- **Alternative options** (if meaningful)
+
+Main escalates to the Product Owner, rather than deciding autonomously, only when:
+- a Product Decision is required (`product/02-ux/product-decisions.md`);
+- a Business Decision is required (`company/business-decisions.md`);
+- an RFC needs approval (`product/99-rfc/`);
+- priorities must change;
+- there's a significant trade-off with no clearly-better option.
+
+Otherwise — sequencing already-decided work, running the standard agent pipeline, applying already-resolved decisions to the Foundation, persisting Approved documents — Main continues coordinating without asking permission for each step.
+
 ### UX Remediation
 
 A dedicated cycle for closing UX Critic findings before a deliverable ever reaches Reviewer:

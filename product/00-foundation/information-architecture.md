@@ -43,4 +43,11 @@ What this section does not resolve (open, logged in `company/business-decisions.
 
 ## Explicitly out of scope: loyalty-claim
 
-The customer-side flow (scan a sold tag → identify yourself → claim the purchase) is **not** part of this IA and has **no entry point anywhere in the merchant app**. It's a separate, customer-facing surface (a lightweight web page the tag resolves to, later possibly an app) built on top of the same domain model, in its own future module. See `domain-model.md#bounded-contexts` and `decision-log.md` D10 for the reasoning — the short version is that the person scanning the tag post-sale is the *customer*, on their own phone, not Ana.
+The customer-side flow (identify yourself → claim the purchase) is **not** part of this IA. The precise rule, corrected from an earlier, misleading formulation ("no entry point anywhere in the merchant app" — see `decision-log.md` D21):
+
+- The Merchant Application never participates in customer identification or the Loyalty flow.
+- Customer Identity is owned exclusively by the Loyalty platform.
+- The Merchant Application may display artifacts (such as an NFC tag, QR code, receipt, or future claim mechanism) that allow the customer to start the Loyalty experience on their own device.
+- The Loyalty experience always runs independently from the Merchant Application.
+
+In other words: the merchant app may show something the customer uses to *start* the Loyalty flow (a tag she taps, a QR she scans, a receipt she keeps), but never performs identification itself, never displays Loyalty-claim content, and never runs any part of the Loyalty experience — that experience is a separate, customer-facing surface (initially a lightweight web/app destination the artifact resolves to) built on top of the same domain model, in its own future module. See `domain-model.md#bounded-contexts` and `decision-log.md` D10/D21 for the reasoning — the short version is that identification and claiming are things the *customer* does, on their own device, never Ana or her app.

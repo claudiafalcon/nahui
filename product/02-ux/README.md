@@ -55,24 +55,14 @@ All four primary merchant experiences are now designed, reviewed, and approved �
 Per the Decision Ownership policy in `company/CLAUDE.md`, domain ambiguities surfaced during UX work are no longer kept in one undifferentiated log — they're split by who needs to resolve them:
 
 - **`architect-questions.md`** — Architect Decisions only. Currently 0 open, 1 resolved (Q7: Eventos/Resultados scope boundary).
-- **`product-decisions.md`** — Product Decisions (product behavior/UX/capabilities/feature scope). Currently 6 open: Q1 (Día N counting), Q2 (untagged-unit sellability in `nfc` mode), Q3 (overlapping active Events), Q6 (Event-type enum openness), Q9 (venue identity), Q10 (Session-reviewed setter).
-- **`company/business-decisions.md`** — Business Decisions (pricing/commercialization/legal/compliance/operations). Currently 3 open: Q4 (who sets initial capabilities), Q5 (capability self-service editability), Q8 (customer segmentation vs. Loyalty-claim boundary).
+- **`product-decisions.md`** — Product Decisions (product behavior/UX/capabilities/feature scope). Currently **0 open** — Q1, Q2, Q3, Q6, Q9, Q10 all resolved, and their follow-up UX work is done: Q9 (Venue entity, RFC 0001/D20 — picker designed in `events.md`, grouping updated in `reports.md`) and the Q8-adjacent "Tus clientes" spec (below) have both completed their full design pass.
+- **`company/business-decisions.md`** — Business Decisions (pricing/commercialization/legal/compliance/operations). Currently **1 open**: Q5 (capability self-service editability after onboarding — narrowed by Q4's resolution, still genuinely undecided). Q4 and Q8 resolved.
 
-The single most consequential outstanding item is **Q8** (`company/business-decisions.md`): customer segmentation vs. Loyalty-claim's merchant-invisible design. It needs a Business Decision before "Tus clientes" in Resultados can become more than an illustrative placeholder.
+**Q8 is resolved and applied** (`decision-log.md` D22, `product/99-rfc/0002-loyalty-claim-complete-capability.md`): Customer Segmentation is a core capability, Claim resolves via NFC tag or a Sale-level QR Claim Token, Merchant App consumes only Derived Customer Intelligence. `reports.md`'s "Tus clientes" (§3.6/§3.12/§3.13) is now a real, fully-specified feature — gated by `subscriptionTier=paid` and `loyaltyEnabled=true` together — that went through its own full design pass (`ux-designer` → `ux-critic` → `reviewer`, zero Blockers/unresolved Majors). See `product/02-ux/ux-critic-findings.md`'s "Customer Segmentation (Q8) resolution cycle" entry.
 
-## Open questions surfaced across experiences (not resolved here)
-- **Is there a dedicated "Settings" experience at all?** `information-architecture.md`
-  specifies exactly four top-level nav items (Hoy, Inventario, Eventos,
-  Resultados) and nothing else. Business Capabilities (`registrationMode`,
-  `subscriptionTier`, etc.) are described in `domain-model.md` as resolved once,
-  but the IA doc never specifies where — or whether — the merchant can ever
-  change them after onboarding. Needs Architect/Planner confirmation before
-  `settings.md` is scoped, so as not to design a screen for a capability that's
-  meant to be fixed at signup.
-- **Is there a distinct onboarding experience beyond Home's cold-start state?**
-  Registering a Business and choosing an initial `registrationMode` are implied
-  by `domain-model.md` but no dedicated flow is specified anywhere in the frozen
-  IA. `home.md` state 3 (cold start) currently covers "no Product registered
-  yet," but business creation and initial capability choice likely happen even
-  earlier than that. Recommend confirming scope before creating a standalone
-  `onboarding.md`.
+## Onboarding and Settings — what's still open before design can start
+
+Navigational placement for both is already resolved (`decision-log.md` D13, `information-architecture.md`'s "Onboarding and Settings" section): Onboarding is a first-run flow preceding all four tabs, not a tab itself; Settings hangs off Home's session-controls affordance (`home.md` §3.7's "▾"), not a fifth tab. What's still open:
+
+- **Onboarding**: Q4 is resolved (`decision-log.md` D19) — initial capabilities emerge from an Onboarding path selection (e.g. "Empezar gratis," "Activar kit NFC," a demo profile), never an isolated toggle, and the NFC path must be modeled as confirming possession of an already-obtained kit (zero in-app payment processing, per the payments/checkout non-goal). What D19 explicitly left to Onboarding's own design: the exact paths, their copy, and how many there are. No blocking gap — this is the design task itself, not a prerequisite to it.
+- **Settings**: Q5 is still **open** — whether any Business Capability is ever merchant-self-service-editable after onboarding, or only changed via backend/support, is genuinely undecided (you deferred it last time we discussed it). This is a real blocker: it determines whether `settings.md` needs any merchant-facing UI at all, or should be ruled out of scope entirely.

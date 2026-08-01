@@ -218,7 +218,7 @@ the persistent nav bar on every state, current tab in brackets.
   header. It's removed here rather than left dangling. The ambient header
   line ("Hoy: $850 · 6 ventas") already shows today's running total; anything
   deeper than that belongs to Resultados once the day's Sessions actually
-  close — the same scope boundary `product/02-ux/events.md` §3.15/§10
+  close — the same scope boundary `product/02-ux/events.md` §3.16/§10
   established for Eventos after Q7's resolution (Eventos doesn't duplicate
   Resultados' analytics; it hands off). Inventing a live, mid-day analytics
   screen inside Home would both duplicate that scope and break

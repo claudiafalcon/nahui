@@ -25,15 +25,17 @@ Each term is tagged with the bounded context that owns it (see `domain-model.md`
 
 ## Selling context
 
-- **Event** — a scheduled occasion to sell (Bazaar, Expo, Pop-up, Festival, Market, Office Sale, ...). May span multiple days. Lightweight — Sessions reference it by ID, it does not own them.
+- **Venue** — a place Ana sells (e.g., a specific bazaar location). Independent identity, referenced by ID from Event; multiple Events may share one Venue over time. Carries an `active` status independent of any single Event. Replaces what Event's freeform `Nombre` used to double as for identity/grouping, and carries the durable address/notes that replaces Event's former freeform `Lugar` field. See `decision-log.md` D20.
+- **Event** — a scheduled occasion to sell. May span multiple days. Lightweight — Sessions reference it by ID, it does not own them. Always references exactly one Venue (required, not nullable) — Event no longer carries its own freeform name or location; both are Venue's. Type is one of a **closed** list for the current phase (Bazaar, Expo, Pop-up, Festival, Market, Office Sale — six values, not merchant-extensible) — see `decision-log.md` D16. The list may grow via a future product update, but is not open/self-service the way Product names are.
 - **Session** — one working day of selling. May optionally belong to an Event (`eventId`), or stand alone ("Quick Session"). Opens and closes independently.
-- **Sale** — one transaction within a Session. References `sessionId`.
+- **Sale** — one transaction within a Session. References `sessionId`. Carries an opaque, signed **Claim Token**, generated at finalization whenever `loyaltyEnabled = true` (regardless of `registrationMode`) — the artifact the merchant app displays (e.g. as a QR) so the customer can start the Loyalty-claim flow herself. Never the raw Sale ID — must not be guessable. See `decision-log.md` D22.
 - **SaleItem** — exactly one InventoryUnit sold within a Sale. Not quantity-bearing — selling 2 Hoodies produces 2 SaleItems, because each may trace back to a different Lot.
 
 ## Future: Loyalty-claim context (not built)
 
-- **Customer** — a person identified through a post-sale tag scan. Does not exist as a concept anywhere in the merchant application.
-- **Claim** — the act of linking a Customer to an already-sold SaleItem via its InventoryUnit's tag. Never creates a Sale.
+- **Customer** — a person identified through a post-sale claim mechanism (an NFC tag scan, a Sale-level Claim Token/QR scan, or a future mechanism). Does not exist as a concept anywhere in the merchant application — Customer Identity belongs exclusively to the Loyalty platform.
+- **Claim** — the act of linking a Customer to an already-sold SaleItem. One business capability (`loyaltyEnabled`), resolvable through multiple mechanisms (NFC tag scan — unit-level; Sale-level Claim Token — resolves to one Claim per SaleItem in that Sale; future mechanisms) — all converging on the identical terminal write. Never creates a Sale. See `decision-log.md` D10 (the original NFC mechanism) and D22 (the generalization to multiple mechanisms).
+- **Derived Customer Intelligence** — the only form in which any customer-related information ever reaches the Merchant Application: an anonymized, aggregate signal (e.g., counts of frequent vs. occasional buyers) computed by Loyalty-claim from its Claims and exposed read-only to Intelligence. Contains no name, no contact information, and no per-Claim drill-down — ever. See `decision-log.md` D22.
 
 ## Terms we deliberately do not use
 

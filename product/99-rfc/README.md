@@ -28,4 +28,8 @@ This folder is intentionally separate from `product/00-foundation/`.
 
 Each RFC should state its status near the top: `Proposed`, `Accepted`, `Rejected`, or `Superseded by NNNN`.
 
-No RFCs exist yet — this file just establishes the process.
+## Log
+
+- `0001-venue-entity.md` — Accepted. Introduces Venue as a new aggregate root, owned by Selling, referenced by Event. Promoted to `product/00-foundation/decision-log.md` D20.
+- `0002-loyalty-claim-complete-capability.md` — Accepted. Customer Segmentation as a core capability: Claim generalized to multiple resolution mechanisms (NFC, Sale QR, future), Intelligence consumes only derived/aggregate customer intelligence, never raw Customer/Claim identity. Promoted to `product/00-foundation/decision-log.md` D22.
+- `0003-session-selling-mode.md` — Proposed, awaiting final Product Owner approval. Splits `registrationMode` into Business-level capability (availability set) + Default Selling Mode (stored fallback), and a Session-level operating mode resolved via a three-state NFC-readiness check (Ready/Limited Ready/Not Ready) at Session start. Not yet promoted to `decision-log.md`.

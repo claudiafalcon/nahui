@@ -6,9 +6,42 @@ Blockers/Majors), and passed `reviewer`'s Foundation-consistency check (no
 Blockers; one cross-document Important finding — stale post-renumbering
 section references — corrected by Main). See
 `product/02-ux/ux-critic-findings.md` for the full finding record.
+**Updated to apply the Venue aggregate root** (`product/99-rfc/0001-venue-entity.md`,
+Accepted; `decision-log.md` D20): "Rendimiento por bazar" (§3.9/§3.11) now
+groups by `venueId`, a real independent identity, instead of exact-string
+matching on Event's former freeform `Nombre` — this is the direct, by-construction
+resolution of what was previously logged as Q9. See §10 for the full change
+record. This update also renumbers `events.md`'s own §3.x screen states from
+its old §3.7 onward by one (a new Venue picker was inserted there) — every
+cross-reference to `events.md` in this document has been updated to match.
+**Updated to apply the resolved Customer Segmentation capability**
+(`product/99-rfc/0002-loyalty-claim-complete-capability.md`, Accepted;
+`decision-log.md` D22): "Tus clientes" (§3.6/§3.12/§3.13) is no longer an
+illustrative placeholder — this is the direct resolution of what was
+previously logged as Q8 (`company/business-decisions.md`, Resolved).
+Customer Segmentation is gated by `subscriptionTier=paid` **and**
+`loyaltyEnabled=true` together, never `subscriptionTier` alone;
+`registrationMode` only ever selects *which* Claim mechanism a Sale uses
+(the existing NFC tag scan, or the new Sale-level Claim Token/QR), never
+*whether* segmentation exists. The Merchant Application still never sees
+raw Customer or Claim data — it consumes only **Derived Customer
+Intelligence**, an anonymized, aggregate signal the future Loyalty-claim
+context computes and exposes read-only to Intelligence (`domain-model.md`,
+`ubiquitous-language.md`). This update designs the state this doc never
+needed before — a paid merchant with `loyaltyEnabled=false` (§3.6) — plus
+the empty state for a paid, loyalty-active merchant with zero Claims
+recorded yet (§3.13, new). The documentation-only `*` illustrative marker
+is retired throughout — every row shown in this doc is now a real,
+specified feature, even though Loyalty-claim and Intelligence themselves
+remain future, not-yet-built bounded contexts per `domain-model.md`'s own
+table (this doc specs the target UI ahead of implementation, the same
+posture already established for every other screen here, and for Venue
+before its own aggregate root existed). See §8 item 1 (rewritten) and §10
+for the full change record; §4/§5 updated to add §3.13, one new read-only
+state (renumbering the former §3.13 "Defensive fallback" to §3.14).
 Scope: `Resultados`, the fourth and last of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers Journey 5
-(Review). Picks up exactly what `product/02-ux/events.md` §3.15 deliberately
+(Review). Picks up exactly what `product/02-ux/events.md` §3.16 deliberately
 deferred per Q7's resolution (`architect-questions.md`, Resolved):
 `information-architecture.md`'s nav table assigns "Session/Event summaries"
 to Resultados; Eventos only ever shows a thin ambient indicator and hands off
@@ -19,7 +52,7 @@ Out of scope by explicit instruction:
 - **No bazaar-recommendation logic** (`company/backlog.md` #3, "Blocked by:
   needs data from multiple vendors... Do not attempt to build"). §3.9 below
   ("Rendimiento por bazar") only ever aggregates Ana's *own* historical
-  Sale/Session/Event data — no foot-traffic/weather data, no cross-vendor
+  Sale/Session/Event/Venue data — no foot-traffic/weather data, no cross-vendor
   comparison, no forward-looking suggestion copy of any kind. This is
   retrospective "how did I do at each place I've sold" reporting, not "where
   should I go next." Flagged explicitly in §8 and §10 so this boundary isn't
@@ -29,11 +62,24 @@ Out of scope by explicit instruction:
   "upgrade now" CTA — see §10.
 - **No specific customer-segmentation algorithm.** `company/CLAUDE.md`
   describes the *problem* (can't tell a high-volume-occasional buyer from a
-  small-but-every-bazaar buyer), not a resolved analytics engine. §3.12 shows
-  a plausible, low-fidelity shape for this, explicitly flagged as
-  illustrative — both in prose and with an explicit marker directly in the
-  wireframe/flow themselves (§3.6, §3.12, §4), not prose alone — see §8's
-  primary open question.
+  small-but-every-bazaar buyer) — the underlying capability and data source
+  are now resolved (`product/99-rfc/0002-loyalty-claim-complete-capability.md`,
+  Accepted; `decision-log.md` D22): Customer Segmentation is gated by
+  `subscriptionTier=paid` **and** `loyaltyEnabled=true` together, and
+  consumes only **Derived Customer Intelligence**, an anonymized aggregate
+  signal computed by the future Loyalty-claim context and exposed read-only
+  to Intelligence. What's still genuinely open is narrower than before: the
+  exact thresholds/rule for what counts as "frecuente" vs. "ocasional." §3.12
+  shows a plausible aggregate shape using illustrative example numbers for
+  those thresholds only (e.g., "3 bazares o más," "1 o 2 veces") — not a
+  validated analytics engine. Tracked in §11, not as an open question, since
+  this out-of-scope note already settles that it isn't awaiting a
+  decision-owner's call right now.
+- **No Venue-management surface of any kind.** Per
+  `product/99-rfc/0001-venue-entity.md`'s own scope note, Venue is not a
+  full location-management module — this doc only ever reads `venueId` as a
+  grouping key for reporting; it never lets Ana create, rename, or manage a
+  Venue (that inline picker lives entirely in `events.md` §3.7).
 
 ## 1. Merchant goal
 
@@ -46,16 +92,17 @@ altitudes:
   specific day, a specific bazaar, or her whole history at a glance. This is
   the direct continuation of Home's own close-summary ("Ver detalle,"
   `home.md` §3.12) and Eventos' hand-off ("Ver resumen en Resultados,"
-  `events.md` §3.15) — both of those screens point here because this is
+  `events.md` §3.16) — both of those screens point here because this is
   where the fuller picture actually lives.
-- **"What should I pay attention to, going forward?"** (paid tier only) — not
-  "how did today go" but "based on everything I've sold so far, is there a
-  pattern worth knowing." This is exactly the two lower-priority validated
-  frictions from `company/CLAUDE.md`'s core thesis: which bazares are
-  actually worth her time (using only her own history, never multi-vendor
-  data), and which customers are loyal vs. occasional. `company/backlog.md`
-  #2 confirms this is current MVP UX scope, not deferred — the old
-  "blocked until real sales data exists" gate is obsolete
+- **"What should I pay attention to, going forward?"** (paid tier, and for
+  customer segmentation specifically, `loyaltyEnabled` active too — see §2)
+  — not "how did today go" but "based on everything I've sold so far, is
+  there a pattern worth knowing." This is exactly the two lower-priority
+  validated frictions from `company/CLAUDE.md`'s core thesis: which bazares
+  are actually worth her time (using only her own history, never
+  multi-vendor data), and which customers are loyal vs. occasional.
+  `company/backlog.md` #2 confirms this is current MVP UX scope, not
+  deferred — the old "blocked until real sales data exists" gate is obsolete
   (`company/lessons.md`, 2026-07-31).
 
 Nothing in Resultados is time-critical the way Home's <3s bar is
@@ -97,7 +144,7 @@ rather than building a second selling mechanism inside this tab.
        behind the whole Event finishing — see §10 for why this differs
        from Eventos' own treatment of the same rows.
      - An Event that closed with zero Sessions never reaches this list —
-       Eventos' own zero-Session state (`events.md` §3.16) offers no
+       Eventos' own zero-Session state (`events.md` §3.17) offers no
        hand-off CTA, so Resultados never receives navigation to it and
        has no Event-detail state of its own for that case.
 
@@ -108,23 +155,32 @@ rather than building a second selling mechanism inside this tab.
        detail directly, regardless of Resultados' own tab state (never
        routes through the cold start or the list first — same pattern as
        Home's upcoming-Event card jumping straight into Eventos' detail,
-       `events.md` §3.10 annotation).
-     - Eventos' "Ver resumen en Resultados" (`events.md` §3.15) → Event
+       `events.md` §3.11 annotation).
+     - Eventos' "Ver resumen en Resultados" (`events.md` §3.16) → Event
        detail directly, for that specific Event.
 
 4. subscriptionTier = paid?
      → NO:  main view ends with a passive, non-tappable informational note
        on what paid unlocks (§3.4/§3.5). Nothing beyond counts/totals is
        ever rendered, anywhere in this tab.
-     → YES: two additional entry points appear on the main view —
-       "Rendimiento por bazar" (§3.9/§3.10) and "Tus clientes"* (§3.12) —
-       strictly additive to the free-tier baseline (architecture-principles.md
-       #1: capability resolved once, upstream; gates whole sections, never a
-       per-screen toggle Ana touches). Both sections always render for a
-       paid merchant regardless of data volume — the gate is tier-based, not
-       data-based (see the sub-step below for what "no data yet" looks like
-       within the first one). (* "Tus clientes" is the doc's one
-       illustrative row — see §3.6's annotation and §8 item 1/Q8.)
+     → YES: "Rendimiento por bazar" (§3.9/§3.10) always appears — strictly
+       additive to the free-tier baseline (architecture-principles.md #1:
+       capability resolved once, upstream; gates the whole section, never a
+       per-screen toggle Ana touches). It always renders for a paid
+       merchant regardless of data volume — the gate is tier-based, not
+       data-based (see the sub-step below for what "no data yet" looks
+       like within it).
+
+       A second entry point, "Tus clientes," is gated independently — see
+       the second sub-step below. Customer Segmentation is gated by
+       `subscriptionTier=paid` **and** `loyaltyEnabled=true` together, not
+       `subscriptionTier` alone (`decision-log.md` D22,
+       `product/99-rfc/0002-loyalty-claim-complete-capability.md`).
+       `registrationMode` never enters this gate — it only ever determines
+       *which* Claim mechanism a given Sale uses (NFC tag scan or the new
+       Sale-level Claim Token/QR), never *whether* Customer Segmentation
+       exists for this Business (`domain-model.md`'s "Multi-mechanism Claim
+       resolution").
 
        Within "Rendimiento por bazar" specifically: has this Business ever
        closed a Session with a non-null `eventId` (i.e., has she ever run a
@@ -135,7 +191,28 @@ rather than building a second selling mechanism inside this tab.
            never a lesser path (architecture-principles.md #3). A
            Quick-Session-only paid merchant is a normal outcome, not an edge
            case to leave undefined.
-         → YES: populated view (§3.9).
+         → YES: populated view (§3.9), one row per **Venue** (`venueId`) —
+           see §10 for how this differs from the pre-Venue design.
+
+       Within "Tus clientes" specifically: is `loyaltyEnabled = true` for
+       this Business?
+         → NO: a passive, non-tappable informational note appears in this
+           row's place (§3.6) — a real, reachable state for a paid merchant
+           who never activated loyalty tracking (e.g., a Buttons-mode paid
+           merchant: `registrationMode` and `loyaltyEnabled` are
+           independent Business capabilities, so a paid merchant with
+           loyalty tracking off is a normal outcome, not a lesser or
+           incomplete one). No self-service activation control is designed
+           here — whether/how any capability ever changes after onboarding
+           completes is still an open Business Decision (Q5,
+           `company/business-decisions.md`), so this doc doesn't invent
+           that mechanism.
+         → YES: has Loyalty-claim recorded any Claim yet for this Business?
+           → NO:  empty-state teaser (§3.6) → §3.12's own empty state
+             (§3.13) — a real, reachable transitional state right after
+             activating loyalty tracking, before any Sale has produced a
+             Claim yet.
+           → YES: populated teaser (§3.6) → §3.12's populated view.
 ```
 
 **How the three altitudes relate:** all-time (a single ambient card, sum
@@ -144,14 +221,14 @@ and Session-rows) which sits above Session detail (the leaf — one working
 day, per-Product counts). Event detail is a middle rollup that itself lists
 its own Sessions, each still tappable down to the same leaf. Nothing here is
 independently entered or reconciled — every number at every altitude is a
-read-side computation over the same underlying Sale/SaleItem/Session/Event
-data, per `domain-model.md`. "Rendimiento por bazar" (§3.9) sits at that same
-all-time altitude as the ambient card above it — a sum across everything,
-just grouped by venue instead of collapsed into one number — and now drills
-down the same way the rest of the tab does: tapping a venue row reaches a
-filtered Historial (§3.11) at the middle altitude, which reaches Event detail
-(§3.8), down to the same Session-detail leaf. No altitude in this tab is a
-dead end.
+read-side computation over the same underlying Sale/SaleItem/Session/Event/
+Venue data, per `domain-model.md`. "Rendimiento por bazar" (§3.9) sits at that
+same all-time altitude as the ambient card above it — a sum across
+everything, just grouped by **Venue** instead of collapsed into one number —
+and now drills down the same way the rest of the tab does: tapping a venue
+row reaches a filtered Historial (§3.11) at the middle altitude, which
+reaches Event detail (§3.8), down to the same Session-detail leaf. No
+altitude in this tab is a dead end.
 
 ## 3. Low-fidelity wireframes
 
@@ -159,12 +236,7 @@ Conventions inherited from `home.md`/`inventory.md`/`events.md`: `[ ]` =
 tappable, plain text = passive/informational, bottom row is the persistent
 nav bar on every state, current tab in brackets. Sub-screen navigation
 (list → detail) uses already-fetched data, no dedicated loading skeleton of
-its own — same scoping choice as the other three docs. One doc-specific
-addition: a trailing `*` on a row marks it as **illustrative** (§3.6, §3.12,
-§4) — this is a documentation-only annotation for readers of this spec, not
-on-screen copy Ana would ever see; it exists purely so a reader working
-directly from wireframes/flow (not narrative prose) can tell, at a glance,
-that row apart from every other row in this doc, which is real.
+its own — same scoping choice as the other three docs.
 
 ### 3.1 Resolving (near-instant)
 ```
@@ -217,13 +289,13 @@ that row apart from every other row in this doc, which is real.
 │                                │
 │  En curso                       │
 │  ┌───────────────────────────┐ │
-│  │ Bazar Plaza Norte           │ │
+│  │ Plaza Norte                 │ │
 │  │ Día 1 · 12 jul · 5 ventas · $610│ │
 │  └───────────────────────────┘ │
 │                                │
 │  Historial                      │
 │  ┌───────────────────────────┐ │
-│  │ Bazar Metepec                │ │
+│  │ Plaza Metepec                │ │
 │  │ 3 días · 18 ventas · $2,340   │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
@@ -232,9 +304,11 @@ that row apart from every other row in this doc, which is real.
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
 │  │ Con el plan de pago vas a ver │ │  passive note, not tappable
-│  │ cómo te fue por bazar y        │ │
-│  │ quiénes son tus clientas        │ │
-│  │ frecuentes.                    │ │
+│  │ cómo te fue por bazar. Si       │ │
+│  │ además activas el seguimiento   │ │
+│  │ de clientas, también vas a ver │ │
+│  │ cuántas son frecuentes y         │ │
+│  │ cuántas ocasionales.            │ │
 │  └───────────────────────────┘ │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
@@ -243,10 +317,14 @@ that row apart from every other row in this doc, which is real.
 - "Total histórico" is a pure sum across every Session ever closed —
   free-tier eligible, it's a total, not a segmentation
   (`domain-model.md` capability table).
+- **Every Event-rollup card's headline is `Venue.displayName`** ("Plaza
+  Norte," "Plaza Metepec"), the same slot Event's former freeform `Nombre`
+  occupied — same swap `events.md` §3.4 already applies to its own list
+  (`decision-log.md` D20).
 - "En curso" holds one card per still-active Event, listing every Día
   already closed under it as its own tappable row — a deliberate
   improvement over Eventos' own treatment of the same rows: `events.md`
-  §3.13/§3.14 keeps them passive there ("reviewing a closed day's detail is
+  §3.14/§3.15 keeps them passive there ("reviewing a closed day's detail is
   Resultados' job"). This is where that job actually happens. Note:
   "En curso" tolerates Q3's open gap (two simultaneously active Events, see
   §8 item 6) more gracefully than Home's single "Continuar Día N" CTA does —
@@ -257,8 +335,20 @@ that row apart from every other row in this doc, which is real.
   card — same rule `events.md` §3.4 established for Activo/Próximos/Pasados.
 - Historial mixes Event-rollup cards and standalone Sesión-rápida cards in
   one reverse-chronological list — see §2, §10.
-- The paid-tier note is plain informational text, not a card with a tap
-  target — see §10 for why no upgrade CTA is designed here.
+- **The paid-tier note now names both gates it's promising**, since
+  Customer Segmentation depends on `subscriptionTier=paid` **and**
+  `loyaltyEnabled=true` together, not `subscriptionTier` alone
+  (`decision-log.md` D22) — a free-tier merchant who later goes paid but
+  never activates loyalty tracking would otherwise be told something the
+  paid tier alone doesn't deliver. Still plain informational text, not a
+  card with a tap target — see §10 for why no upgrade CTA is designed here.
+- **Copy states a count/category, never an identity claim.** "Cuántas son
+  frecuentes y cuántas ocasionales" promises exactly what §3.12 delivers —
+  an anonymized aggregate count per category — never "who" a specific
+  customer is. See RPT2-MAJ1 (`ux-critic-findings.md`) for why this wording
+  was corrected from an earlier draft that said "quiénes son," which would
+  have implied identity-level information this architecture deliberately
+  never surfaces to the merchant (`decision-log.md` D22, `product/99-rfc/0002-loyalty-claim-complete-capability.md`).
 
 ### 3.5 Main view — free tier, no active Event (most common day-to-day)
 ```
@@ -269,7 +359,7 @@ that row apart from every other row in this doc, which is real.
 │                                │
 │  Historial                      │
 │  ┌───────────────────────────┐ │
-│  │ Bazar Metepec                │ │
+│  │ Plaza Metepec                │ │
 │  │ 3 días · 18 ventas · $2,340   │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
@@ -278,9 +368,11 @@ that row apart from every other row in this doc, which is real.
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
 │  │ Con el plan de pago vas a ver │ │
-│  │ cómo te fue por bazar y        │ │
-│  │ quiénes son tus clientas        │ │
-│  │ frecuentes.                    │ │
+│  │ cómo te fue por bazar. Si       │ │
+│  │ además activas el seguimiento   │ │
+│  │ de clientas, también vas a ver │ │
+│  │ cuántas son frecuentes y         │ │
+│  │ cuántas ocasionales.            │ │
 │  └───────────────────────────┘ │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
@@ -289,6 +381,8 @@ that row apart from every other row in this doc, which is real.
 - Same layout rule as §3.4, En curso genuinely absent — most días have no
   Event running, same framing `events.md` §3.5 used for its own equivalent
   state.
+- Same corrected count/category wording as §3.4 — see that section's
+  annotation and RPT2-MAJ1.
 
 ### 3.6 Main view — paid tier
 ```
@@ -298,14 +392,14 @@ that row apart from every other row in this doc, which is real.
 │  48 ventas · $14,230               │
 │                                │
 │  Rendimiento por bazar    [Ver más ▸]│
-│  Bazar Plaza Norte · $780/día        │
+│  Plaza Norte · $780/día              │
 │                                │
-│  Tus clientes*            [Ver más ▸]│
+│  Tus clientes             [Ver más ▸]│
 │  6 frecuentes · 14 ocasionales        │
 │                                │
 │  Historial                      │
 │  ┌───────────────────────────┐ │
-│  │ Bazar Metepec                │ │
+│  │ Plaza Metepec                │ │
 │  │ 3 días · 18 ventas · $2,340   │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
@@ -316,29 +410,37 @@ that row apart from every other row in this doc, which is real.
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
 ```
+(Above: `loyaltyEnabled = true`, with at least one Claim already recorded —
+see the two variants below for the other two reachable states.)
 - Same baseline as §3.4/§3.5 (Total histórico, En curso when applicable,
-  Historial), plus exactly two additional entry points — never a
+  Historial), plus up to two additional entry points — never a
   replacement, never a different app. *architecture-principles.md* #1:
-  `subscriptionTier` gates whole sections, resolved once upstream, never a
-  per-screen toggle Ana touches or is asked about.
+  each capability gates a whole section, resolved once upstream, never a
+  per-screen or per-visit question Ana is asked about.
 - The free-tier informational note (§3.4/§3.5) disappears entirely once
-  paid — she already has what it was telling her about.
+  paid — she already has what it was telling her about "Rendimiento por
+  bazar," and "Tus clientes" now has its own independent gating, handled
+  below.
 - Each summary row here is a one-line teaser of its own full view:
   "Rendimiento por bazar" → §3.9 (or §3.10 if she has no Event-grouped
-  Sessions yet); "Tus clientes" → §3.12 — same pattern as Home's own header
-  being a teaser of session-controls (`home.md` §3.7).
-- **`*` marks "Tus clientes" as the illustrative row (§3.12, §8 item 1/Q8) —
-  a documentation-only marker for readers of this spec, not on-screen copy.**
-  Ana would never see a literal asterisk, or a label like "(ilustrativo),"
-  on this screen; if/when Q8 resolves this into a real feature, the row
-  renders identically styled to "Rendimiento por bazar" above it — same
-  typography, same "[Ver más ▸]" affordance, no visual demotion. The marker
-  exists solely so a reader working from this wireframe, rather than the
-  surrounding prose, can tell these two paid-tier rows are fundamentally
-  different in kind: one is real data with an honest approximation (Q9,
-  §8 item 2), the other has no resolved data source at all, pending a
-  Business Decision (Q8, §8 item 1). Same marker reused in §3.12's own
-  header and §4's flow line.
+  Sessions yet); "Tus clientes" → §3.12 (or §3.13 if `loyaltyEnabled=true`
+  but no Claim has been recorded yet) — same pattern as Home's own header
+  being a teaser of session-controls (`home.md` §3.7). The teaser now shows
+  a **Venue name** ("Plaza Norte") rather than Event's former Nombre.
+- **"Rendimiento por bazar" and "Tus clientes" are gated independently, and
+  both are real, fully-specified features — styled identically, same
+  typography, same "[Ver más ▸]" affordance, no visual demotion of either.**
+  "Rendimiento por bazar" is gated by `subscriptionTier=paid` alone.
+  "Tus clientes" is gated by `subscriptionTier=paid` **and**
+  `loyaltyEnabled=true` together (`decision-log.md` D22,
+  `product/99-rfc/0002-loyalty-claim-complete-capability.md`) — this
+  resolves what was previously logged as Q8 (§8 item 1). "Tus clientes"
+  never shows raw Customer or Claim data; it renders only **Derived
+  Customer Intelligence** — an anonymized, aggregate signal (counts of
+  frequent vs. occasional buyers) that the future Loyalty-claim context
+  computes and exposes read-only to Intelligence (`domain-model.md`,
+  `ubiquitous-language.md`). See the two variants below for what she sees
+  when either half of that gate isn't yet satisfied.
 - If this Business has never closed an Event-linked Session
   (Quick-Session-only history — a real, reachable case, see §3.10), the
   "Rendimiento por bazar" teaser shows an honest empty summary instead of
@@ -347,16 +449,51 @@ that row apart from every other row in this doc, which is real.
   Rendimiento por bazar    [Ver más ▸]
   Aún no hay bazares para mostrar
   ```
-  "Tus clientes" is unaffected — its data source is Sales/Sessions
-  generally, not Event-grouped, so it renders normally regardless. Tapping
-  "[Ver más ▸]" on the empty variant still leads somewhere real (§3.10), not
-  a dead end.
+  "Tus clientes" is unaffected by this specific condition — its gating and
+  data source are Sales/Claims generally, not Event/Venue-grouped, so a
+  Quick-Session-only paid merchant still sees whatever "Tus clientes" state
+  actually applies to her (below), independent of whether she's ever used
+  Eventos. Tapping "[Ver más ▸]" on the empty variant still leads somewhere
+  real (§3.10), not a dead end.
+- **If `loyaltyEnabled = false` for this Business** — a real, reachable
+  state this doc never needed before, since `registrationMode` and
+  `loyaltyEnabled` are independent Business capabilities (a Buttons-mode
+  paid merchant who never activated loyalty tracking is a completely normal
+  outcome, not a lesser or incomplete way of using the app,
+  `architecture-principles.md` #1) — "Tus clientes" is replaced by a
+  passive, non-tappable note in the same position, no "[Ver más ▸]"
+  affordance at all:
+  ```
+  Tus clientes
+  Con el seguimiento de clientas activo
+  vas a ver cuántas son tus clientas
+  frecuentes y cuántas ocasionales.
+  ```
+  "Rendimiento por bazar" is entirely unaffected — the two paid-tier rows
+  are gated independently. **No self-service "Activar" control is shown
+  here.** Whether/how any Business capability ever changes after onboarding
+  completes is still an open Business Decision (Q5,
+  `company/business-decisions.md`) — this doc doesn't invent that
+  mechanism just to make this row feel more actionable.
+  **Copy states a count/category, never an identity claim** — see the
+  annotation under §3.4 and RPT2-MAJ1 (`ux-critic-findings.md`) for why
+  this was corrected from an earlier "quiénes son" draft.
+- **If `loyaltyEnabled = true` but no Claim has been recorded yet** for this
+  Business — a normal, transitional state right after activating loyalty
+  tracking, before any Sale has produced a Claim — the row stays tappable
+  but shows an honest empty summary instead of sample counts:
+  ```
+  Tus clientes             [Ver más ▸]
+  Aún no hay datos suficientes
+  ```
+  leading to §3.12's own empty state (§3.13) — same restraint as
+  "Rendimiento por bazar"'s own empty teaser above, never a dead end.
 
 ### 3.7 Session detail
 ```
 ┌───────────────────────────────┐
 │ ← Resultados                     │
-│  Bazar Plaza Norte · Día 2        │
+│  Plaza Norte · Día 2              │
 │  13 de julio                      │
 │                                │
 │  8 ventas · $1,120 en total        │
@@ -369,10 +506,10 @@ that row apart from every other row in this doc, which is real.
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
 ```
-- Header shows "[Nombre del Evento] · Día N" when `eventId` is set, or
-  "Sesión rápida" (reusing Home's own vocabulary for the same concept,
-  `home.md` §3.4) when it isn't — never "Session" anywhere in copy.
-  *architecture-principles.md* #4.
+- Header shows "[Lugar] · Día N" (`Venue.displayName`, `events.md` §3.7/D20)
+  when `eventId` is set, or "Sesión rápida" (reusing Home's own vocabulary
+  for the same concept, `home.md` §3.4) when it isn't — never "Session" or
+  "Venue" anywhere in copy. *architecture-principles.md* #4.
 - "8 ventas" = number of finalized Sale transactions (same meaning as
   Home's header, `home.md` §3.7); "Por producto" counts are a different
   axis — SaleItems per Product, which is why they don't have to sum to 8.
@@ -386,9 +523,8 @@ that row apart from every other row in this doc, which is real.
 ```
 ┌───────────────────────────────┐
 │ ← Resultados                     │
-│  Bazar Plaza Norte                │
-│  Bazar · 12-14 de julio            │
 │  Plaza Norte                      │
+│  Bazar · 12-14 de julio            │
 │                                │
 │  3 días · 18 ventas · $2,340       │
 │                                │
@@ -404,15 +540,21 @@ that row apart from every other row in this doc, which is real.
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
 ```
-- This is the exact content `events.md` §3.15/§10 deliberately removed from
+- This is the exact content `events.md` §3.16/§10 deliberately removed from
   Eventos per Q7's resolution — passive identity there, full breakdown
   here. Reached three ways: directly from Resultados' own Historial
   (§3.4/§3.5), via Eventos' "Ver resumen en Resultados" hand-off, and now
   also via a "Rendimiento por bazar" venue drill-down (§3.11) — same
   destination every time, never a duplicated or divergent detail screen per
   entry point.
+- **Headline is `Venue.displayName` ("Plaza Norte")** — same slot Event's
+  former `Nombre` occupied; the Tipo·dates line ("Bazar · 12-14 de julio")
+  is unaffected by the Venue change, since Type stays its own separate
+  field. No separate address/Lugar line — Venue's own optional address/notes
+  has no data-entry surface designed anywhere in this doc family yet
+  (`events.md` §11).
 - Día rows are tappable → Session detail (§3.7) for that specific day —
-  unlike Eventos' own passive Día rows (`events.md` §3.13/§3.14), which are
+  unlike Eventos' own passive Día rows (`events.md` §3.14/§3.15), which are
   intentionally not tappable there.
 - "Por producto (todo el evento)" sums SaleItems across every Session
   sharing this `eventId` — free-tier eligible, same reasoning as §3.7.
@@ -429,11 +571,11 @@ that row apart from every other row in this doc, which is real.
 │ ← Resultados                     │
 │  Rendimiento por bazar             │
 │                                │
-│  Bazar Plaza Norte                 │
+│  Plaza Norte                       │
 │   3 eventos · $780 promedio/día      │
-│  Bazar Metepec                     │
+│  Plaza Metepec                     │
 │   2 eventos · $520 promedio/día      │
-│  Expo Toluca                       │
+│  Plaza Toluca                       │
 │   1 evento · $310 promedio/día        │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
@@ -446,19 +588,25 @@ that row apart from every other row in this doc, which is real.
   deliberately distinct from `company/backlog.md` #3's blocked bazaar-
   recommendation feature (needs multi-vendor foot-traffic/weather data,
   "do not attempt to build"). See §8 and §10.
-- Grouping key is the Event's own `Nombre` (exact string match) — the
-  domain model has no separate Venue/Location identity; `Lugar`
-  (`events.md` §3.6) is optional freeform text, not an identifier. This is
-  an honest approximation, flagged explicitly in §8, not a resolved
-  architecture.
-- "$ promedio/día" divides an Event's total by its number of closed
-  Sessions — inherits Q1's Día-N-counting ambiguity exactly the same way
-  §3.7/§3.8's "Día N" does (see §8).
+- **Grouping key is `venueId`, not exact string match on a freeform name.**
+  Venue is a real, independent aggregate root (`domain-model.md`,
+  `decision-log.md` D20) — `businessId`-scoped, referenced by ID from Event,
+  resolved via the create-or-select picker at Event-creation time
+  (`events.md` §3.7). Each row here is one Venue, exactly; repeat visits to
+  the same physical place are already distinguished by date range in every
+  card this doc shows (§3.4's Historial cards, §3.11's filtered view), so
+  grouping by identity rather than by string loses nothing and gains
+  precision. This is the direct, by-construction resolution of what was
+  previously logged as Q9 — see §8 item 2 for the full record of what
+  changed and why.
+- "$ promedio/día" divides a Venue's total by its number of closed
+  Sessions across every Event held there — inherits Q1's Día-N-counting
+  ambiguity exactly the same way §3.7/§3.8's "Día N" does (see §8).
 - **Each venue row is tappable** → a filtered Historial view scoped to that
-  venue (§3.11), restoring the three-altitude drill-down (§2) the rest of
+  Venue (§3.11), restoring the three-altitude drill-down (§2) the rest of
   this tab already has: this screen is itself an all-time-altitude view
-  (a sum across everything, grouped by venue); tapping a row descends to the
-  middle altitude (Event-rollups for that venue only), and from there down
+  (a sum across everything, grouped by Venue); tapping a row descends to the
+  middle altitude (Event-rollups for that Venue only), and from there down
   to the same Session-detail leaf. No number here is un-inspectable.
 - If this Business has zero Event-grouped Sessions (Quick-Session-only
   history), this screen instead renders as §3.10's empty state — not a
@@ -471,11 +619,12 @@ that row apart from every other row in this doc, which is real.
 │  Rendimiento por bazar             │
 │                                │
 │  Esto se arma agrupando tus        │
-│  ventas por evento agendado en      │
-│  Eventos. Hasta ahora, todo lo      │
-│  que llevas cerrado son sesiones    │
-│  rápidas — no hay bazares que        │
-│  mostrar todavía.                  │
+│  ventas por lugar, según los        │
+│  eventos que agendas en Eventos.    │
+│  Hasta ahora, todo lo que llevas    │
+│  cerrado son sesiones rápidas —     │
+│  no hay lugares que mostrar          │
+│  todavía.                          │
 │      [ Ver Eventos ]              │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
@@ -485,11 +634,12 @@ that row apart from every other row in this doc, which is real.
   paid-tier eligibility is tied to "own sales history," not Event history,
   and Quick Session is explicitly first-class, never a fallback
   (architecture-principles.md #3, `home.md` §10) — a merchant can pay for
-  the paid tier, sell plenty, and never once use Eventos. Without this
-  state, §3.9 would otherwise render as a silent, broken-looking blank
-  screen the first time a Quick-Session-only paid merchant opened it.
+  the paid tier, sell plenty, and never once use Eventos (and therefore
+  never select or create a Venue). Without this state, §3.9 would otherwise
+  render as a silent, broken-looking blank screen the first time a
+  Quick-Session-only paid merchant opened it.
 - **Plain, factual, no guilt-tripping copy** — same brand posture as
-  `events.md` §3.16's "No registraste ventas en este evento": Quick-Session-
+  `events.md` §3.17's "No registraste ventas en este evento": Quick-Session-
   only selling is a normal, valid way to use the app, not a shortfall to be
   corrected. Nothing here implies she's using Nahui "wrong" or should change
   how she sells to unlock this. Directly upholds the brand guide's rule
@@ -501,30 +651,32 @@ that row apart from every other row in this doc, which is real.
   informational, not a forced funnel: the rest of Resultados (Total
   histórico, Historial, Tus clientes) stays fully visible and useful with or
   without ever tapping it.
-- **"Tus clientes" (§3.12) is unaffected by this same condition** — its
-  grouping doesn't depend on Event `Nombre`, only on Sales generally, so a
-  Quick-Session-only paid merchant still sees real segmentation there even
-  while "Rendimiento por bazar" is empty. The two paid-tier sections can be
-  independently empty or populated; neither one's state depends on the
+- **"Tus clientes" (§3.12/§3.13) is unaffected by this same condition** —
+  its gating (`loyaltyEnabled`) and data source (Sales/Claims generally)
+  don't depend on Event/Venue data at all, so a Quick-Session-only paid
+  merchant still sees whichever "Tus clientes" state actually applies to her
+  (§3.6) even while "Rendimiento por bazar" is empty. The paid-tier sections
+  can be independently empty, populated, or (for "Tus clientes"
+  specifically) not-yet-activated; none of their states depend on each
   other.
 
 ### 3.11 Rendimiento por bazar — detalle de bazar (Historial filtrado)
 ```
 ┌───────────────────────────────┐
 │ ← Rendimiento por bazar           │
-│  Bazar Plaza Norte                │
+│  Plaza Norte                      │
 │  3 eventos · $780 promedio/día      │
 │                                │
 │  ┌───────────────────────────┐ │
-│  │ Bazar Plaza Norte            │ │
+│  │ Plaza Norte                  │ │
 │  │ 3 días · 18 ventas · $2,340   │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
-│  │ Bazar Plaza Norte            │ │
+│  │ Plaza Norte                  │ │
 │  │ 2 días · 9 ventas · $1,050    │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
-│  │ Bazar Plaza Norte            │ │
+│  │ Plaza Norte                  │ │
 │  │ 1 día · 5 ventas · $610       │ │
 │  └───────────────────────────┘ │
 ├───────────────────────────────┤
@@ -533,34 +685,42 @@ that row apart from every other row in this doc, which is real.
 ```
 - Reached by tapping any venue row in §3.9 — **not a new screen type.** Same
   Event-rollup card shape already used in Historial (§3.4/§3.5/§3.6),
-  filtered to only the Events whose `Nombre` exact-matches this row's venue
-  name — the identical grouping key §3.9's own aggregate already uses (§8
-  item 2/Q9), so what she sees filtered here is exactly what was summed
-  there, never a separately-derived list.
+  filtered to only the Events whose `venueId` matches this row's Venue —
+  the identical grouping key §3.9's own aggregate already uses (§8 item
+  2/Q9, resolved), so what she sees filtered here is exactly what was
+  summed there, never a separately-derived list.
 - Each card is tappable → Event detail (§3.8), the same destination and
   mechanism as tapping straight from Historial — no new detail screen
   invented for this entry point. From there, Día rows tap through to
   Session detail (§3.7) exactly as they already do everywhere else in this
   tab.
 - Quick Sessions never appear here, same as they never contribute to §3.9's
-  aggregate — a Quick Session has no venue/Event `Nombre` to group by, so
-  there is nothing inconsistent about their absence.
+  aggregate — a Quick Session has no `eventId`, and therefore no Venue, to
+  group by, so there is nothing inconsistent about their absence.
 - Back arrow reads "← Rendimiento por bazar," not "← Resultados," because
   this screen's immediate parent is §3.9, not the main view — the same
   logic that makes §3.7/§3.8/§3.9's own "← Resultados" correct for *their*
   immediate parent. Standard back-stack behavior, not a new convention.
-- **If Q9's fragmentation risk ever manifests** (a typo splits one real
-  venue into two rows in §3.9), this is where she'd first notice it: two
-  visually distinct venue names in what she knows was one bazaar, each
-  showing a plausible-looking but incomplete Event list. This view doesn't
-  resolve Q9's underlying ambiguity, but it gives her a concrete way to
-  notice a silent split instead of none at all.
+- **What used to be Q9's fragmentation risk is now resolved by construction,
+  not merely made visible.** Previously, a typo or rename across visits
+  could silently split one real venue into two rows in §3.9, and this
+  screen's own job was to at least let her *notice* that split after the
+  fact. Now that grouping is by `venueId` — a real identity she selects from
+  a picker at Event-creation time (`events.md` §3.7), matched
+  case-insensitively/trimmed against her existing Venues — that specific
+  failure mode can no longer happen. The one residual, much narrower risk
+  this screen still helps her catch: if she ever fails to recognize an
+  existing Venue in the picker and creates a near-duplicate one by mistake
+  (e.g., a genuinely different typed name that doesn't match), she'd see two
+  visually similar venue rows in §3.9 instead of one — this view still lets
+  her inspect what fed each row and notice that, even though it's no longer
+  the same silent-fragmentation risk Q9 originally described.
 
-### 3.12 Tus clientes* — segmentación (paid, illustrative)
+### 3.12 Tus clientes — segmentación (paid + seguimiento de clientas activo)
 ```
 ┌───────────────────────────────┐
 │ ← Resultados                     │
-│  Tus clientes*                    │
+│  Tus clientes                     │
 │                                │
 │  Frecuentes                       │
 │   6 clientas · te compraron en     │
@@ -573,24 +733,102 @@ that row apart from every other row in this doc, which is real.
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
 ```
-- `*` — same documentation-only marker introduced in §3.6/§4; see that
-  annotation for what it does (and doesn't) mean for on-screen copy. Ana
-  would see a plain "Tus clientes" header here, with no asterisk.
-- **Explicitly illustrative, not a fully-specified feature** — per the
-  task's own constraint, this shows a plausible shape for the friction
-  `company/CLAUDE.md` describes ("can't tell a high-volume-occasional buyer
-  from a small-but-every-bazaar buyer"), not an invented, resolved
-  segmentation algorithm. The "3 bazares o más" / "1 o 2 veces" thresholds
-  are placeholders for illustration only, not a validated rule.
-- **This screen's real data source is this doc's primary open question**
-  (§8) — the merchant-facing app currently has no way to know two different
-  Sales belong to the same repeat customer. That link only exists via
-  Loyalty-claim (Customer/Claim), which `domain-model.md` and
-  `ubiquitous-language.md` both describe as customer-facing, zero merchant
-  IA presence. Shown here per the explicit instruction to design a
-  plausible low-fidelity view, not to pretend the gap doesn't exist.
+- **This is now a real, fully-specified feature, not an illustrative
+  placeholder** — the direct resolution of what was previously logged as
+  Q8 (`company/business-decisions.md`, Resolved;
+  `product/99-rfc/0002-loyalty-claim-complete-capability.md`, Accepted;
+  `decision-log.md` D22). Ana sees a plain "Tus clientes" header here,
+  rendered identically to "Rendimiento por bazar" — no asterisk, no visual
+  demotion, ever.
+- **Gated by `subscriptionTier=paid` and `loyaltyEnabled=true` together**
+  (§2, §3.6) — not `subscriptionTier` alone. This screen is only ever
+  reached once both are true; the `loyaltyEnabled=false` state is handled
+  entirely at the main-view teaser (§3.6) and never routes here, and the
+  zero-Claims-yet state has its own screen (§3.13), not this one.
+- **The data behind this screen is Derived Customer Intelligence, never raw
+  Customer or Claim data.** The Merchant Application never performs
+  identification and never reads an individual Customer or Claim record
+  (`decision-log.md` D21's corrected wording: the merchant app may *display*
+  a passive claim artifact, like the QR shown to the customer at Sale
+  finalization, but never runs any part of identification or the Loyalty
+  experience itself). What reaches this screen is a single anonymized,
+  aggregate signal — counts of frequent vs. occasional buyers — that the
+  future Loyalty-claim context computes from its own Claims and exposes
+  read-only to Intelligence (`domain-model.md`'s bounded-context table,
+  `ubiquitous-language.md`'s "Derived Customer Intelligence"). No name, no
+  contact info, no per-customer drill-down is ever designed here or
+  reachable from here — that boundary isn't a UX choice this doc is making,
+  it's the Foundation's own resolved architecture. This is also why every
+  piece of copy pointing at this screen (§3.4/§3.5, §3.6, §3.13) is worded
+  as a count/category ("cuántas son frecuentes y cuántas ocasionales"),
+  never as an identity claim ("quiénes son") — see RPT2-MAJ1
+  (`ux-critic-findings.md`).
+- **"Bazares" here means distinct Venues she's sold at, not a count of
+  Sales** — unaffected by this update beyond that clarification, carried
+  over unchanged from the prior illustrative version.
+- **The specific thresholds shown ("3 bazares o más," "1 o 2 veces") are
+  illustrative example numbers only, not a validated segmentation rule.**
+  This is the one part of "Tus clientes" that's still genuinely open —
+  narrower than before, and now a matter of designing the actual
+  segmentation algorithm once real Claim data exists, not a question of
+  whether the feature has a resolved data source at all. Tracked in §11,
+  per `company/CLAUDE.md`'s own "no specific customer-segmentation
+  algorithm" scope note (unchanged by this update).
+- Loyalty-claim and Intelligence are both still future, not-yet-built
+  bounded contexts (`domain-model.md`'s table; `company/backlog.md` #2's
+  staged build order — Stage 1 NFC, Stage 2 Sale-QR, neither started) — this
+  screen specs the target UI ahead of implementation, the same posture
+  every other screen in this doc family already takes, not a claim that this
+  data exists today.
 
-### 3.13 Defensive fallback / load error
+### 3.13 Tus clientes — sin datos aún (empty state)
+```
+┌───────────────────────────────┐
+│ ← Resultados                     │
+│  Tus clientes                     │
+│                                │
+│  Todavía no tienes compras con      │
+│  seguimiento de clientas. En          │
+│  cuanto empieces a acumularlas,      │
+│  vas a ver aquí cuántas son tus       │
+│  clientas frecuentes y cuántas         │
+│  ocasionales.                        │
+├───────────────────────────────┤
+│ Hoy  Inventario Eventos [Resultados] │
+└───────────────────────────────┘
+```
+- **A real, reachable transitional state, not a hypothetical** — the normal
+  gap between activating loyalty tracking (`loyaltyEnabled=true`) and the
+  first Sale that actually produces a Claim. Without this state, §3.12 would
+  otherwise render as a silent, broken-looking blank screen the first time
+  a newly-loyalty-active paid merchant opened it — same reasoning §3.10 (its
+  "Rendimiento por bazar" counterpart) already established for the
+  equivalent gap in that section, and the same gap `ux-critic-findings.md`
+  RPT-MIN1 flagged as worth designing "whenever it becomes real."
+- **Plain, factual, no guilt-tripping copy** — same brand posture as §3.10
+  and `events.md` §3.17: having zero Claims yet is a normal, temporary state
+  of a newly-activated capability, not a shortfall on Ana's part. Nothing
+  here implies she's done something wrong or needs to change how she sells
+  to unlock this.
+- **Copy states a count/category, never an identity claim** — "cuántas son
+  tus clientas frecuentes y cuántas ocasionales" matches exactly what §3.12
+  delivers once data exists (two anonymized aggregate counts), never a
+  promise that she'll learn *who* a specific customer is. See RPT2-MAJ1
+  (`ux-critic-findings.md`) for why this was corrected from an earlier
+  "quiénes son" draft.
+- **No CTA is shown.** Unlike §3.10's "[ Ver Eventos ]" (which routes to an
+  existing tab she can act on directly), there's no equivalent action for
+  Ana to take here — Claims accumulate automatically as her existing sales
+  flow continues, and the actual claiming action happens on the *customer's*
+  device, never Ana's (`decision-log.md` D21). Inventing a tap target here
+  would either be a dead end or would misleadingly suggest Ana has something
+  to do; neither is designed.
+- Reached only when `loyaltyEnabled=true` and zero Claims exist yet (§2,
+  §3.6) — never reached when `loyaltyEnabled=false` (that state is handled
+  entirely at the main-view teaser, §3.6, which never links to this screen
+  at all).
+
+### 3.14 Defensive fallback / load error
 ```
 ┌───────────────────────────────┐
 │  No pudimos cargar tus            │
@@ -600,7 +838,7 @@ that row apart from every other row in this doc, which is real.
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
 ```
-- Manual `Reintentar`, same convention as `events.md` §3.17 (not Home's
+- Manual `Reintentar`, same convention as `events.md` §3.18 (not Home's
   silent auto-retry) — Resultados carries no live-customer risk that would
   justify Home's more aggressive behavior.
 - Nav bar stays fully functional — a Resultados load failure never
@@ -611,7 +849,7 @@ that row apart from every other row in this doc, which is real.
 ```
 Open Resultados tab
   → resolve (§2, automatic)
-      → load fails ─────────────────────→ fallback (3.13), Reintentar
+      → load fails ─────────────────────→ fallback (3.14), Reintentar
       → no Session ever closed ─────────→ cold start (3.3) → Hoy
       → Sessions exist ──────────────────→ main view (3.4/3.5, or 3.6 if paid)
 
@@ -621,12 +859,13 @@ Main view:
   tap a Historial Sesión rápida card → Session detail (3.7)
   [paid only] tap "Rendimiento por bazar" → 3.9 (or 3.10 if this Business has
     no Event-grouped Sessions yet — see §2 step 4)
-  [paid only] tap "Tus clientes"*         → 3.12
-    (* illustrative, no resolved data source — see §3.6's annotation, §8
-    item 1/Q8; same marker shown in §3.6 and §3.12's own header)
+  [paid + loyaltyEnabled=true] tap "Tus clientes" → 3.12 (or 3.13 if no Claim
+    has been recorded yet — see §2 step 4)
+  [paid + loyaltyEnabled=false] "Tus clientes" renders as a passive,
+    non-tappable note (§3.6) — nothing to tap, no destination reached
 
 Rendimiento por bazar (3.9):
-  tap a venue row → filtered Historial for that venue (3.11)
+  tap a venue row → filtered Historial for that Venue (3.11)
     → tap an Event-rollup card → Event detail (3.8)
       → tap a Día row → Session detail (3.7)
   (same three-altitude drill-down §2 already establishes for the rest of
@@ -638,7 +877,7 @@ Event detail (3.8):
 Elsewhere (entry points into this tab's screens, not from the tab itself):
   Home's post-close "Ver detalle" (home.md §3.12)     → Session detail (3.7)
     directly, for the Session that just closed
-  Eventos' "Ver resumen en Resultados" (events.md §3.15) → Event detail (3.8)
+  Eventos' "Ver resumen en Resultados" (events.md §3.16) → Event detail (3.8)
     directly, for that specific closed Event
 ```
 
@@ -649,21 +888,28 @@ Elsewhere (entry points into this tab's screens, not from the tab itself):
 3. Cold start — no Session ever closed
 4. Main view — free tier, with a still-active Event (En curso present)
 5. Main view — free tier, no active Event (most common day-to-day)
-6. Main view — paid tier (adds Rendimiento por bazar / Tus clientes)
+6. Main view — paid tier (adds Rendimiento por bazar always; adds Tus
+   clientes in whichever of its three states applies — populated,
+   zero-Claims-yet, or `loyaltyEnabled=false`)
 7. Session detail
 8. Event detail — closed (day-by-day breakdown + totals)
 9. Rendimiento por bazar (paid) — con datos
 10. Rendimiento por bazar (paid) — sin eventos registrados (empty state)
 11. Rendimiento por bazar — detalle de bazar (Historial filtrado)
-12. Tus clientes — segmentación (paid, illustrative)
-13. Defensive fallback / load error
+12. Tus clientes — segmentación (paid + seguimiento de clientas activo, con
+    datos)
+13. Tus clientes — sin datos aún (empty state)
+14. Defensive fallback / load error
 
 Notably fewer states than `home.md` (22), `inventory.md` (18), or
-`events.md` (17) — Resultados has no forms, no writes, no destructive
+`events.md` (18) — Resultados has no forms, no writes, no destructive
 actions, and therefore no confirmation dialogs, no draft-preservation
 states, and no save/error pairs. It's the only one of the four tabs that is
-purely read-side. The two new states added during this remediation pass
-(§3.10, §3.11) are both still read-only, so this remains true.
+purely read-side. The three states added since the earlier remediation pass
+(§3.10, §3.11, and now §3.13) are all still read-only, so this remains true;
+applying Venue changed what §3.9/§3.11 group by, and resolving Q8 changed
+what §3.6/§3.12 are gated by and added §3.13 — neither changed how many
+*kinds* of interaction this tab supports.
 
 ## 6. Minimum step count
 
@@ -674,8 +920,8 @@ purely read-side. The two new states added during this remediation pass
 | Ver el detalle de un día ya cerrado, desde Resultados | 2 (abrir pestaña → tocar la fila) | Shortest possible once she's browsing rather than being handed off directly. |
 | Ver el resumen completo de un evento ya cerrado, desde Resultados | 2 (abrir pestaña → tocar la tarjeta) | Shortest path when she's already browsing Resultados directly. |
 | Ver el resumen completo de un evento ya cerrado, desde Eventos | 3 (abrir Eventos → tocar tarjeta → Ver resumen en Resultados) | One hop more than arriving directly (`events.md` §6 counts only the 2 taps taken once already inside Eventos, not the initial tab-open — counted on the same basis as this row, the Eventos route costs one more tap than going to Resultados directly. Not a defect: Eventos' hand-off exists for someone who started there for Eventos' own reasons, not to be the fastest route to a report.) |
-| Ver rendimiento por bazar / Ver tus clientes (paid) | 2 (abrir pestaña → Ver más) | Same shape as the row above — a one-line teaser plus one tap into the full view. |
-| Ver qué eventos componen un renglón de "Rendimiento por bazar" | 3 (abrir pestaña → Ver más → tocar el renglón del bazar) | One tap deeper than reaching the summary itself (row above) — the same per-altitude cost §2 already establishes for Historial → Event detail, just entered from a different starting altitude. |
+| Ver rendimiento por bazar / Ver tus clientes (paid) | 2 (abrir pestaña → Ver más) | Same shape as the row above — a one-line teaser plus one tap into the full view. Assumes the row is tappable: "Rendimiento por bazar" always is, for a paid merchant; "Tus clientes" is too, whenever `loyaltyEnabled=true` (populated or its own §3.13 empty state) — when `loyaltyEnabled=false`, "Tus clientes" is a passive note with nothing to tap, so this scenario doesn't apply to it (§3.6, §4). |
+| Ver qué eventos componen un renglón de "Rendimiento por bazar" | 3 (abrir pestaña → Ver más → tocar el renglón del lugar) | One tap deeper than reaching the summary itself (row above) — the same per-altitude cost §2 already establishes for Historial → Event detail, just entered from a different starting altitude. |
 | Ver el evento específico detrás de ese renglón | 4 (abrir pestaña → Ver más → tocar el renglón → tocar la tarjeta del evento) | Same destination and cost as reaching Event detail from Historial directly (two rows above) — the venue filter adds exactly one tap, never more. |
 
 Resultados has no comparable hard speed requirement to Home's <3s bar
@@ -694,54 +940,94 @@ there; no urgency is invented where none exists.
 - "Día N" and per-Event rollups reuse Home's/Eventos' already-computed
   values — never re-derived with separate logic (*global-principles.md*,
   "capture business truth once, reuse it forever").
-- Paid-tier sections (§3.9/§3.10/§3.12) appear or disappear as whole units
-  based on `subscriptionTier`, never a per-screen or per-visit toggle —
-  whether "Rendimiento por bazar" specifically shows data or its empty
-  state (§3.9 vs. §3.10) is a separate, data-based read, never a manual
-  toggle either.
+- **Paid-tier sections (§3.9/§3.10/§3.12/§3.13) appear or disappear as whole
+  units based on Business capabilities — never a per-screen or per-visit
+  toggle Ana touches.** "Rendimiento por bazar" is gated by
+  `subscriptionTier` alone; "Tus clientes" is gated by `subscriptionTier`
+  **and** `loyaltyEnabled` together (`decision-log.md` D22). Whether either
+  section specifically shows data or its own empty state (§3.9 vs. §3.10;
+  §3.12 vs. §3.13) is a separate, data-based read, resolved automatically —
+  never a manual toggle either.
 - Per-Product breakdowns (§3.7/§3.8) are aggregated automatically from
   SaleItems, never typed or summarized by Ana herself.
 - Cold-start vs. main-view resolution reuses the same "has anything closed
   yet" read the rest of the app already understands — not a separately
   tracked flag.
-- The venue drill-down (§3.11) reuses §3.9's own exact-name grouping key
-  and Historial's own card shape — computed once, read twice, never a
+- The venue drill-down (§3.11) reuses §3.9's own `venueId` grouping key and
+  Historial's own card shape — computed once, read twice, never a
   separately maintained list.
+- **Venue identity itself is resolved once, at Event-creation time, by
+  `events.md`'s own Elegir lugar picker** — this doc never re-derives or
+  re-matches venue identity of its own accord; every grouping here simply
+  reads the `venueId` Selling already recorded.
+- **Derived Customer Intelligence is computed once, upstream, by
+  Loyalty-claim** — this doc never re-derives frequency/occasional counts
+  of its own accord; §3.12 simply reads the one aggregate signal Loyalty-
+  claim exposes read-only to Intelligence (`domain-model.md`).
 
 ## 8. Open questions
 
-1. **[Escalated as Q8, primary — logged in `company/business-decisions.md`
-   as a Business Decision] Does the Foundation's customer-segmentation
-   intent (`company/CLAUDE.md`, `company/backlog.md` #2) require
-   merchant-visible customer identity, and if so, how does that reconcile
-   with Loyalty-claim's explicit "customer-facing, zero merchant IA
-   presence" design (`domain-model.md` bounded contexts,
-   `ubiquitous-language.md`)?** Right now, nothing in the Foundation gives
-   the merchant app a way to know that two different Sales came from the
-   same repeat customer — that link only ever forms via a post-sale tag scan
-   on the *customer's* own device (D10), and is deliberately excluded from
-   merchant IA (`information-architecture.md`'s own "Explicitly out of
-   scope: loyalty-claim" section). §3.12 ("Tus clientes") is designed as an
-   explicitly illustrative placeholder — it is not backed by a resolved data
-   source. This distinction is now also visible directly in the
-   wireframes/flow themselves (§3.6, §3.12's own header, §4), not only here
-   in prose. This is a genuine tension between two Foundation documents, not
-   something UX should resolve unilaterally.
+1. **[Q8 — Resolved, via `product/99-rfc/0002-loyalty-claim-complete-capability.md`
+   (Accepted) and `decision-log.md` D22; full record in
+   `company/business-decisions.md`.] Customer Segmentation is a core,
+   resolved capability — gated by `subscriptionTier=paid` and
+   `loyaltyEnabled=true` together, consuming only Derived Customer
+   Intelligence.** Previously, nothing in the Foundation gave the merchant
+   app a way to know that two different Sales came from the same repeat
+   customer, and Loyalty-claim's original "zero merchant IA presence"
+   wording (`decision-log.md` D10) seemed to foreclose the idea entirely —
+   §3.12 ("Tus clientes") was designed as an explicitly illustrative
+   placeholder pending this decision, flagged directly in the wireframes/
+   flow themselves (§3.6, §3.12's own header, §4), not only in prose. **This
+   is now resolved, not merely mitigated:** Claim generalizes to multiple,
+   mode-appropriate mechanisms (the existing NFC tag scan, D4/D10, and a new
+   Sale-level Claim Token/QR, D22) that all converge on the identical
+   terminal write — one or more Customer↔SaleItem links. `registrationMode`
+   determines *which* mechanism a given Sale uses, never *whether* the
+   capability exists (`domain-model.md`'s "Multi-mechanism Claim
+   resolution"). Customer Identity stays exclusively on the Loyalty
+   platform — the Merchant Application never performs identification and
+   never reads a raw Customer or Claim record (`decision-log.md` D21's
+   corrected wording: displaying a passive artifact, like a QR the customer
+   scans, is explicitly permitted; running any part of identification or
+   the Loyalty experience is not). The Merchant Application consumes only
+   **Derived Customer Intelligence** — an anonymized, aggregate signal
+   Loyalty-claim computes from its Claims and exposes read-only to
+   Intelligence (`domain-model.md`'s bounded-context table,
+   `ubiquitous-language.md`). §3.6/§3.12/§3.13 now design directly against
+   this real, resolved architecture: "Tus clientes" is gated by
+   `loyaltyEnabled` independently of `subscriptionTier` (§2 step 4), with
+   its own passive not-yet-activated note (§3.6) and its own
+   zero-Claims-yet empty state (§3.13) — two states this doc never needed
+   while the row was illustrative. What remains genuinely open — narrower
+   than before, and tracked in §11, not here — is only the specific
+   segmentation algorithm/thresholds (what precisely counts as "frecuente"
+   vs. "ocasional"); `company/CLAUDE.md`'s own scope note on this is
+   unchanged by this resolution.
 
-2. **[Escalated as Q9, logged in `product/02-ux/product-decisions.md` as a
-   Product Decision] Is "venue/bazaar" meant to be its own identity,
-   distinct from Event.Nombre?** §3.9's "Rendimiento por bazar" can only
-   group by exact string match on the freeform `Nombre` field
-   (`events.md` §3.6) — there's no Venue/Location entity in
-   `domain-model.md`, and `Lugar` is optional, freeform text, not an
-   identifier. A typo or slight renaming across visits would silently
-   fragment what should be one row. Not resolvable from the Foundation as it
-   stands — this spec proceeds with exact-name-match as a stated, honest
-   approximation, not a precise architecture. A tap-through from each §3.9
-   row into a filtered Historial view (§3.11) now lets her inspect exactly
-   which Events fed a given row — it doesn't resolve this ambiguity, but
-   means a silent fragmentation (a typo'd venue splitting into two rows)
-   is at least visible and noticeable to her, not invisible.
+2. **[Q9 — Resolved, via `product/99-rfc/0001-venue-entity.md`
+   (Accepted) and `decision-log.md` D20; full record in
+   `product/02-ux/product-decisions.md`.] "Venue/bazaar" is now its own
+   identity, distinct from Event.** §3.9's "Rendimiento por bazar" previously
+   could only group by exact string match on the freeform `Nombre` field
+   Event used to carry (`events.md`'s old §3.6) — there was no Venue/Location
+   entity in `domain-model.md`, and `Lugar` was optional, freeform text, not
+   an identifier. A typo or slight renaming across visits could silently
+   fragment what should be one row — this spec previously proceeded with
+   exact-name-match as a stated, honest approximation, not a precise
+   architecture. **This is now resolved, not merely mitigated:** a new
+   Venue aggregate root (`id`, `businessId`, `displayName`, optional
+   address/notes, `active`) is a required reference from Event
+   (`venueId`, not nullable), resolved via a create-or-select picker at
+   Event-creation time (`events.md` §3.7) that mirrors Inventario's own
+   Product picker, including its case-insensitive/trimmed matching rule.
+   §3.9/§3.11 now group by `venueId` — a real identity, never an
+   approximate string match — so the fragmentation risk this item used to
+   flag is resolved by construction. The tap-through from each §3.9 row into
+   a filtered Historial view (§3.11) still exists and is still useful, but
+   for a narrower residual risk now (accidentally creating a near-duplicate
+   Venue instead of recognizing an existing one in the picker), not for the
+   original silent-typo-fragmentation risk, which can no longer occur.
 
 3. **[Escalated as Q10, non-blocking, logged in `product/02-ux/product-decisions.md`
    as a Product Decision] What sets Session.status =
@@ -799,7 +1085,8 @@ there; no urgency is invented where none exists.
   por bazar" empty state (§3.10) shows no fabricated venue data and forces
   no navigation elsewhere — she simply isn't shown something that doesn't
   exist yet, the same restraint as Resultados' own top-level cold start
-  (§3.3).
+  (§3.3). The `loyaltyEnabled=false` note (§3.6) shows no invented
+  "Activar" control either, for the same reason.
 - *"Never ask twice"* — nothing in this tab asks Ana to re-enter or confirm
   a number the system already computed; §7 is the direct enumeration.
 - *"Technology should disappear"* — loading states stay silent unless
@@ -809,8 +1096,9 @@ there; no urgency is invented where none exists.
   to Hoy (§3.3, same exception every other tab's cold start makes),
   expressing this principle mostly by deliberate absence (§1).
 - *"Business language before technical language"* — copy uses "Sesión
-  rápida," "Día N," "Por producto," "clientas frecuentes" — never
-  "Session," "SaleItem," "eventId," or "Customer," anywhere on screen.
+  rápida," "Día N," "Por producto," "clientas frecuentes," "lugar" — never
+  "Session," "SaleItem," "eventId," "Venue," "Customer," "Claim," or
+  "loyaltyEnabled," anywhere on screen.
 - *"The merchant experiences Products, the platform preserves Inventory
   traceability"* — §3.7/§3.8's "Por producto" breakdowns are Product-name +
   count only, never a Lot/InventoryUnit reference.
@@ -819,8 +1107,11 @@ there; no urgency is invented where none exists.
 - *"Capture business truth once, reuse it forever"* — Día N, Event rollups,
   and "which section a row belongs under" are all reused from Home's/
   Eventos' existing computations, never re-derived (§2, §7); the venue
-  drill-down (§3.11) reuses the exact same grouping key and card shape §3.9
-  already computes, rather than deriving a second, parallel list.
+  drill-down (§3.11) reuses the exact same `venueId` grouping key and card
+  shape §3.9 already computes, rather than deriving a second, parallel
+  list; "Tus clientes" (§3.12) reuses the single Derived Customer
+  Intelligence signal Loyalty-claim computes, rather than deriving its own
+  segmentation logic.
 - *"Collect data today. Create intelligence tomorrow."* — directly names
   this tab's whole premise: free tier is the "collect" side (counts/totals
   over data already captured elsewhere), paid tier (§3.9/§3.12) is the
@@ -828,34 +1119,51 @@ there; no urgency is invented where none exists.
   the two lower-priority validated frictions `company/CLAUDE.md` names.
 - *"The best interface stays out of the merchant's way"* — no forms, no
   destructive actions exist in this tab, so there's nothing to protect her
-  from losing; the load-failure fallback (§3.13) never blocks the rest of
+  from losing; the load-failure fallback (§3.14) never blocks the rest of
   the app; a Quick-Session-only paid merchant is shown a plain, factual
-  empty state (§3.10), never treated as a failure or an incomplete way of
-  using the app.
+  empty state (§3.10), and a paid merchant who hasn't activated loyalty
+  tracking, or has but has zero Claims yet, is shown equally plain, factual
+  states (§3.6, §3.13) — none of them ever treated as a failure or an
+  incomplete way of using the app.
 
 **architecture-principles.md:**
-- *#1 (capabilities resolved once, upstream)* — `subscriptionTier` gates two
-  whole sections (§3.9/§3.10/§3.12), decided at the Business level, never a
-  per-screen or per-visit question. Whether "Rendimiento por bazar" shows
-  data or its empty state (§3.9 vs. §3.10) is a separate, data-based axis —
-  it doesn't contradict this principle, since the section itself is still
-  always present for a paid merchant; only its content varies with what
-  actually exists to show.
+- *#1 (capabilities resolved once, upstream)* — `subscriptionTier` gates
+  "Rendimiento por bazar" as a whole section (§3.9/§3.10); `subscriptionTier`
+  **and** `loyaltyEnabled` together gate "Tus clientes" (§3.6/§3.12/§3.13,
+  `decision-log.md` D22) — both decided at the Business level, never a
+  per-screen or per-visit question, and `registrationMode` never enters
+  either gate (it only selects which Claim mechanism a Sale uses,
+  `domain-model.md`'s "Multi-mechanism Claim resolution"). Whether either
+  section shows data or its own empty state is a separate, data-based axis
+  — it doesn't contradict this principle, since each section is still
+  always present (or absent) purely by capability state; only its content
+  varies with what actually exists to show.
 - *#3 (optional relationships stay optional in the data model)* — Historial
   mixing Event-rollups and standalone Sesión-rápida rows (§2, §10) only
   works because `Session.eventId` is genuinely nullable, not a UI
   workaround. The same nullability is exactly why a Quick-Session-only
   paid merchant is a normal, modeled outcome, not an edge case requiring a
-  UI trick — it's the direct reason §3.10 exists.
+  UI trick — it's the direct reason §3.10 exists. `Event.venueId`, by
+  contrast, is deliberately required (D20) — a Quick Session simply has no
+  Event and therefore no Venue at all, which is why it never contributes to
+  §3.9's aggregate.
 - *#4 (internal-only entities never leak into user-facing language)* —
   Session, Sale, SaleItem, and Event are never named as such; "Día N,"
   "ventas," "Por producto" carry the same weight without exposing the
-  model.
+  model. Venue, unlike those internal entities, is named in copy
+  deliberately ("lugar") — it's a real, referenceable identity, not a
+  detail being hidden. Customer and Claim, by contrast, are never named at
+  all anywhere in this doc — "Tus clientes" only ever shows the derived
+  frequent/occasional counts, never the underlying entities.
 - *#6 (one-way dependency direction)* — directly why §8 item 3 exists:
   Resultados/Intelligence only ever reads Selling and Inventory data
-  (`domain-model.md` bounded-context table), and this spec deliberately
-  avoided designing a mechanic that would require writing back into
-  Session.
+  (`domain-model.md` bounded-context table, which now includes Venue under
+  Selling per D20), and this spec deliberately avoided designing a
+  mechanic that would require writing back into Session. Intelligence's
+  table row also now includes a read-only edge to Loyalty-claim, scoped
+  strictly to Derived Customer Intelligence (D22) — §3.12/§3.13 never
+  design anything beyond consuming that one aggregate signal, consistent
+  with the same one-way rule.
 
 ## 10. Decisions made
 
@@ -866,7 +1174,7 @@ there; no urgency is invented where none exists.
   Session's history would otherwise have no home anywhere in the app.
 - **"En curso" makes already-closed Días of a still-active Event
   individually tappable**, deliberately differing from `events.md`
-  §3.13/§3.14's passive treatment of the same rows — Resultados is where
+  §3.14/§3.15's passive treatment of the same rows — Resultados is where
   "reviewing a closed day's detail" was always meant to live per Q7's
   resolution, and she shouldn't have to wait for a multi-day Event to fully
   close before checking Día 1.
@@ -885,31 +1193,61 @@ there; no urgency is invented where none exists.
   feature; flagged prominently in §8/§10 rather than silently included or
   silently omitted, since the task explicitly asked for something grounded
   in that friction.
+- **"Rendimiento por bazar" now groups by `venueId`, not exact-name match on
+  Event's former freeform `Nombre` — applies `product/99-rfc/0001-venue-entity.md`
+  (Accepted) and `decision-log.md` D20.** This is the direct fix for what
+  was previously logged as Q9 (`product/02-ux/product-decisions.md`): each
+  row in §3.9 now represents one real Venue, an independent aggregate root,
+  not one distinct string that happened to match exactly. No structural
+  change to any screen in this doc — same card shapes, same drill-down,
+  same three-altitude model (§2) — only the underlying grouping key and
+  identity source changed, exactly as this doc's own Future Considerations
+  previously anticipated it would if a Venue entity were ever introduced
+  (that anticipatory note is now removed from §11, since it's applied, not
+  future).
 - **"Rendimiento por bazar" rows are tappable, drilling into a filtered
   Historial view (§3.11) and onward into the same Event detail (§3.8)/
   Session detail (§3.7) screens the rest of this tab already uses** —
   restores the three-altitude drill-down model (§2) this section previously
   broke. No new screen type was invented: the filtered view reuses
   Historial's existing Event-rollup card shape and the exact same
-  exact-name grouping key §3.9's own aggregate uses, so what she sees
+  `venueId` grouping key §3.9's own aggregate uses, so what she sees
   filtered is exactly what was summed.
 - **An explicit empty state (§3.10) now covers a paid merchant with closed
   Sessions but zero Event-grouped Sessions (Quick-Session-only history)** —
   a real, reachable case per `company/CLAUDE.md`'s "own sales history" (not
   Event history) eligibility rule. Copy is plain and factual, same brand
-  posture as `events.md` §3.16, and never implies Quick-Session-only
+  posture as `events.md` §3.17, and never implies Quick-Session-only
   selling is a lesser or incomplete way to use the app. "Tus clientes"
-  (§3.12) is unaffected by this same condition, since its grouping doesn't
-  depend on Event data at all.
-- **"Tus clientes" (§3.12) is explicitly illustrative**, not a
-  fully-specified analytics engine, per the task's own constraint — its real
-  data dependency is logged as this doc's primary open question (§8 item
-  1) rather than assumed resolved. It now also carries a documentation-only
-  `*` marker everywhere it appears in a wireframe or the flow diagram
-  (§3.6, §3.12, §4), so a reader working only from those artifacts — not
-  narrative prose — can still tell this row apart from the real
-  "Rendimiento por bazar" row at a glance. The marker is a spec-only
-  annotation, never literal on-screen copy Ana would see.
+  (§3.6/§3.12/§3.13) is unaffected by this same condition, since its gating
+  and data source don't depend on Event/Venue data at all.
+- **"Tus clientes" (§3.6/§3.12) is now a real, resolved spec — applies
+  `product/99-rfc/0002-loyalty-claim-complete-capability.md` (Accepted) and
+  `decision-log.md` D22.** This is the direct resolution of what was
+  previously logged as Q8 (`company/business-decisions.md`): Customer
+  Segmentation is a core capability gated by `subscriptionTier=paid`
+  **and** `loyaltyEnabled=true` — not `subscriptionTier` alone — consuming
+  only Derived Customer Intelligence, never raw Customer/Claim data. The
+  documentation-only `*` illustrative marker previously carried on this row
+  (§3.6/§3.12/§4) is retired throughout the doc; every row shown in this
+  document is now a real, specified feature, styled identically to
+  "Rendimiento por bazar." Two new states were designed to cover the
+  `loyaltyEnabled` dimension this doc never needed before: a passive,
+  non-tappable note for `loyaltyEnabled=false` (§3.6 — a real, reachable
+  state, since `registrationMode` and `loyaltyEnabled` are independent
+  Business capabilities) and an empty state for `loyaltyEnabled=true` with
+  zero Claims recorded yet (§3.13, new screen). What remains genuinely
+  open — narrower than before — is only the specific segmentation
+  algorithm/thresholds; tracked in §11, not as an open question here, since
+  `company/CLAUDE.md` already scopes that out explicitly rather than
+  treating it as awaiting a decision-owner's call.
+- **No self-service loyalty-activation control designed for the
+  `loyaltyEnabled=false` state (§3.6).** Whether/how any Business capability
+  ever changes after onboarding completes is still an open Business
+  Decision (Q5, `company/business-decisions.md`) — this doc shows only a
+  passive, factual note about what activating loyalty tracking would
+  unlock, never a tappable "Activar" affordance, so as not to invent an
+  answer to Q5 implicitly.
 - **No paid-tier upgrade/purchase flow designed anywhere.** The free-tier
   informational note (§3.4/§3.5) is passive text, not a tappable CTA —
   payments/checkout are an explicit `company/CLAUDE.md` non-goal, and
@@ -919,18 +1257,40 @@ there; no urgency is invented where none exists.
 - **Cold start's CTA routes to Hoy**, reusing an existing tab rather than
   inventing a new destination — same pattern the other three docs already
   established for their own cold starts.
+- **This doc designs no Venue-management surface of its own** — Resultados
+  only ever reads `venueId` as a grouping key; creating, selecting, renaming,
+  or deactivating a Venue happens entirely in `events.md` §3.7, per
+  `product/99-rfc/0001-venue-entity.md`'s own scope note that Venue is not a
+  full location-management module.
+- **All merchant-facing copy that points at "Tus clientes" (§3.4/§3.5's
+  free-tier note, §3.6's `loyaltyEnabled=false` note, §3.13's empty state)
+  is worded as a count/category ("cuántas son tus clientas frecuentes y
+  cuántas ocasionales"), never as an identity claim ("quiénes son tus
+  clientas").** Corrected per `ux-critic`'s RPT2-MAJ1 finding
+  (`ux-critic-findings.md`): the architecture (§3.12,
+  `product/99-rfc/0002-loyalty-claim-complete-capability.md`, D22) only ever
+  exposes an anonymized aggregate signal — two counts — never a name or any
+  way to identify which specific customer is which. Copy promising she'll
+  see "who" her frequent/occasional customers are would set up a real,
+  foreseeable expectation break given `company/CLAUDE.md`'s own framing of
+  Ana's validated friction as "I can't tell who my repeat customers are" —
+  the fix keeps every teaser's promise scoped to exactly what §3.12
+  delivers.
 
 ## 11. Future considerations
 
-- A formal Architect/product decision on customer-identity surfacing to the
-  merchant side (§8 item 1) — this doc's single biggest dependency for
-  §3.12 to become a real, buildable feature rather than an illustration.
-- A formal Venue/Location entity, if `company/backlog.md` #2's bazaar-
-  performance angle needs grouping more precise than exact-name matching
-  (§8 item 2). If/when this exists, the filtered drill-down (§3.11) would
-  key off a Venue ID instead of exact-name match, automatically becoming
-  precise rather than approximate — no structural change to the screen
-  itself, just to its underlying query.
+- **The specific customer-segmentation algorithm/thresholds** — what
+  precisely counts as "frecuente" vs. "ocasional" (§3.12's "3 bazares o
+  más" / "1 o 2 veces" are illustrative example numbers only, not a
+  validated rule). `company/CLAUDE.md`'s own scope note keeps this
+  explicitly out of scope for now — this is deliberately placed here rather
+  than in §8, since it isn't an open question awaiting a decision-owner's
+  call the way Q8 was; it's forward-looking design/data-science work that
+  can't meaningfully happen before real Claim data exists. Revisit once
+  Loyalty-claim's Derived Customer Intelligence signal is actually built
+  and there's real data to validate thresholds against
+  (`company/backlog.md` #2's staged build order — Stage 1 NFC, Stage 2
+  Sale-QR, neither started).
 - Once Q1/Q3 are resolved, "Día N" labels (§3.7/§3.8) and "$ promedio/día"
   (§3.9) may need a small additive change to their read-side computation —
   same caveat `home.md` §11 and `events.md` §11 already carry.
@@ -949,3 +1309,14 @@ there; no urgency is invented where none exists.
   tier as a whole (`company/CLAUDE.md`'s Business Model Direction ties paid
   eligibility to sales history generally, not to this one feature working
   for everyone equally).
+- If `events.md` ever designs a Venue-editing/address-capture surface
+  (`events.md` §11), this doc's grouping logic needs no change — it already
+  keys off `venueId`, not any freeform text, so a Venue gaining a
+  displayName correction or an address later has zero structural effect
+  here.
+- Once Q5 (`company/business-decisions.md`) resolves whether/how Business
+  capabilities are ever merchant-self-service-editable, revisit whether the
+  `loyaltyEnabled=false` note (§3.6) should gain a tappable activation
+  affordance — deliberately not designed now, since inventing that
+  mechanism ahead of Q5 would mean answering a Business Decision implicitly
+  from a UX doc.
