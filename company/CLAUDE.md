@@ -39,8 +39,9 @@ Specialized agents generate knowledge within their area of expertise — they do
 
 ### Delegation
 
-- UX work → `ux-designer`
-- UX quality review → `ux-critic`
+- Low-Fidelity UX work (behavior, flows, ASCII wireframes) → `ux-designer`
+- Medium-Fidelity UI work (real layouts, navigation, component hierarchy, in Figma, strictly on top of an Approved Low-Fidelity spec) → `ui-designer`
+- UX/UI quality review, any fidelity → `ux-critic` (fidelity-aware — scales its checks to Low/Medium/High; no separate "UI Critic" agent exists)
 - Domain and product questions → `architect`
 - Reviews → `reviewer`
 - Marketing work → `marketing`

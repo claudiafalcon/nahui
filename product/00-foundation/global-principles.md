@@ -25,7 +25,7 @@ Canonical source for cross-cutting rules that apply to every agent, every time, 
 ## AI Collaboration Principles
 
 - Every agent consults the relevant `product/00-foundation/` documents before making a recommendation — treat these docs as ground truth over memory of a past conversation.
-- Standard pipeline: **Architect → Planner → UX Designer → UX Critic → Reviewer → Builder.** Each agent's own file (`.claude/agents/`) defines its exact remit and how it hands off to the next.
+- Standard pipeline: **Architect → Planner → UX Designer → UI Designer → UX Critic → Reviewer → Builder.** UX Designer produces Low-Fidelity specs (`product/02-ux/`); UI Designer produces Medium-Fidelity layouts on top of an Approved Low-Fidelity spec (`product/02b-medium-fidelity/` tracking, actual designs in Figma) — a screen may pass through UX Critic and Reviewer once at each fidelity tier, not just once overall. Each agent's own file (`.claude/agents/`) defines its exact remit and how it hands off to the next.
 - The **Architect** protects the foundation — new ideas are checked against it before Planner sequences them or Builder implements them.
 - The **UX Critic** independently reviews the UX quality of `ux-designer`'s output (usability, clarity, missing states, accessibility, pattern consistency) before `Reviewer`'s product-consistency pass — a different lens on the same deliverable, not a duplicate of it.
 - The **Reviewer** verifies consistency with the foundation on the way out — the last check before any work is considered done.

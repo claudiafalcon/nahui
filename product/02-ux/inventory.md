@@ -5,6 +5,11 @@ INV-M3 fixed by `ux-designer`, verified clean by `ux-critic` (zero remaining
 Blockers/Majors), and passed `reviewer`'s Foundation-consistency check (no
 Blockers; one cross-document Important finding — stale post-renumbering
 section references — corrected by Main).
+**Amended for `decision-log.md` D23** (Session-scoped selling mode — see
+`product/99-rfc/0003-session-selling-mode.md`): cross-reference and
+terminology only, no redesign. `ux-critic` found zero findings and
+`reviewer`'s Foundation-consistency pass found zero Blockers/Important
+findings — folded back into Approved.
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -34,7 +39,7 @@ real contexts:
   reassuring herself she still has stock of something): a fast, honest glance
   at "what do I have and how much," nothing more.
 
-A distant third, only for `registrationMode = nfc` merchants: physically
+A distant third, only for `nfc ∈ registrationMode` merchants: physically
 walking through a stack of new garments attaching tags — a one-time-per-unit
 task that happens once, at receiving time, never again during selling
 (`vision.md`: "the merchant never switches between them while selling").
@@ -52,8 +57,8 @@ app does.
 ## 2. Resolution / decision logic
 
 Before any of the following resolves, the tab itself must load its own state
-(Catalog membership, `registrationMode`, pending tag counts) — this can fail
-or take longer than expected under real bazaar/car/between-stalls
+(Catalog membership, `nfc ∈ registrationMode`, pending tag counts) — this can
+fail or take longer than expected under real bazaar/car/between-stalls
 connectivity, same as every other tab. See §3.1/§3.2 for the near-instant/slow
 presentation of that load, and §3.18 for the defensive fallback if it doesn't
 resolve at all. The four numbered steps below assume that load has already
@@ -67,14 +72,15 @@ completes:
      → NO:  cold-start empty state (§3.3).
      → YES: Catalog view (§3.4 / §3.5).
 
-2. [Catalog view] Is registrationMode = nfc, AND does at least one
+2. [Catalog view] Is `nfc ∈ registrationMode`, AND does at least one
    InventoryUnit exist with status = available and no NFCTag assigned?
      → YES: show the non-blocking "faltan etiquetas" card (§3.5) — informational
        + tappable, resumes Asignar Tags exactly where she left off.
-     → NO (buttons mode, or nfc with nothing pending): plain Catalog view (§3.4).
+     → NO (buttons-only capability, or nfc-capable with nothing pending): plain
+       Catalog view (§3.4).
 
 3. [Inside Registrar Mercancía, after "Guardar mercancía"] Is
-   registrationMode = nfc?
+   `nfc ∈ registrationMode`?
      → YES: auto-enter Asignar Tags (§3.14) for this Lot's freshly generated
        InventoryUnits — no intermediate question asked.
      → NO: return to Catalog view with an ambient confirmation (§3.12) — done,
@@ -91,12 +97,17 @@ This is the same underlying "does the Catalog have a Product" check Home
 already performs (`home.md` §2, step 3) — not re-derived independently; both
 tabs read the same fact.
 
-`registrationMode` gates whether an "Assign Tags" step exists **at all** in
-Inventario, per `information-architecture.md` ("`registrationMode = buttons` →
-no 'Assign Tags' step anywhere in Inventario") and `domain-model.md`'s
-business-capability table. This is resolved once, upstream, at the Business
-level — never a per-Lot question like "¿quieres usar NFC para este lote?"
-(*architecture-principles.md* #1).
+`nfc ∈ registrationMode` gates whether an "Assign Tags" step exists **at all**
+in Inventario, per `information-architecture.md` ("`nfc ∉ registrationMode`
+(NFC not in the Business's capability set) → no 'Assign Tags' step anywhere
+in Inventario. Gated by capability availability, not by any single Session's
+resolved operating mode.") and `domain-model.md`'s business-capability table.
+This is resolved once, upstream, at the Business level — never a per-Lot
+question like "¿quieres usar NFC para este lote?", and independent of any
+single Session's `Session.operatingMode` (*architecture-principles.md* #1,
+`decision-log.md` D23). Every condition in this section is a Business-level
+capability check, not a Session-level one — Inventario isn't a Selling-context
+screen and never reads or depends on any particular Session's resolved mode.
 
 ## 3. Low-fidelity wireframes
 
@@ -178,7 +189,7 @@ current tab in brackets.
 - Tapping a row is a real shortcut, not decoration — see §3.6 annotation and
   §10.
 
-### 3.5 Catalog view — with pending tag work (nfc mode only)
+### 3.5 Catalog view — with pending tag work (nfc-capable Businesses only)
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
@@ -207,6 +218,17 @@ current tab in brackets.
   status — see §8, item 2 (logged as Q2 in `product/02-ux/product-decisions.md`,
   reclassified from `architect-questions.md` as a Product Decision), for the
   open question this touches.
+- **Cross-reference to NFC Readiness (`decision-log.md` D23, added — no
+  redesign):** this card's own "how many units still need tags" count and
+  Selling's NFC Readiness check — the "how many sellable units already have
+  tags" evaluation run at Session-open time (`home.md` §2/§3.6a) — are two
+  views of the identical underlying tagged/untagged split on `available`
+  `InventoryUnit`s. The two counts should read off the same underlying number
+  rather than drift into two independently-maintained figures. This is a
+  cross-reference note only: they remain two distinct UX moments in two
+  distinct documents — an ambient, mid-workflow Inventario nudge here, versus
+  a Session-start, Selling-context gate there — neither is redesigned by this
+  note.
 
 ### 3.6 Registrar mercancía — entry (first line, or shortcut-prefilled)
 ```
@@ -377,7 +399,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   work she already did. *global-principles.md*, "the best interface stays out
   of the merchant's way."
 
-### 3.12 Post-save confirmation — buttons mode (registrationMode = buttons)
+### 3.12 Post-save confirmation — buttons-only businesses (`nfc ∉ registrationMode`)
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
@@ -397,7 +419,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   transient line. *global-principles.md*, "the fastest interaction is the one
   that never happens." Inventory Ready, per `vision.md`, with no further step.
 
-### 3.13 Post-save confirmation — nfc mode, tagging complete
+### 3.13 Post-save confirmation — nfc-capable Business, tagging complete
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
@@ -412,11 +434,11 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
-- "Lista para vender" (vs. plain "registrada" en §3.12) reflects that in nfc
-  mode, Inventory Ready genuinely means both received *and* tagged — same
-  screen shape, different, honest wording.
+- "Lista para vender" (vs. plain "registrada" in §3.12) reflects that for an
+  nfc-capable Business, Inventory Ready genuinely means both received *and*
+  tagged — same screen shape, different, honest wording.
 
-### 3.14 Asignar tags — active queue (nfc mode, auto-entered after Guardar)
+### 3.14 Asignar tags — active queue (nfc-capable Business, auto-entered after Guardar)
 ```
 ┌───────────────────────────────┐
 │  Asignar tags                   │
@@ -439,7 +461,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   the tag to the next untagged unit and advances the counter automatically.
   Same interaction convention as Home's nfc selling surface (`home.md` §3.10)
   — deliberately reused since it's the same underlying capability
-  (`registrationMode = nfc`), not a new gesture invented for Inventario.
+  (`nfc ∈ registrationMode`), not a new gesture invented for Inventario.
 - Units are queued Product by Product, in the order she entered them — matches
   the physical mental model of working through one stack of garments at a
   time.
@@ -520,7 +542,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
-- Identical to §3.5 — deferring tagging returns her a Catalog view que
+- Identical to §3.5 — deferring tagging returns her to a Catalog view that
   already knows work is pending; no separate "you stopped early" messaging.
 
 ### 3.18 Defensive fallback / load error
@@ -553,8 +575,8 @@ Open Inventario tab
 
 Catalog view:
   tap "Registrar mercancía" → 3.6 (blank)
-  tap a Product row → 3.6 (prefilled con that Product)
-  [nfc mode + pending untagged units] tap card → 3.14 (resume)
+  tap a Product row → 3.6 (prefilled with that Product)
+  [nfc-capable + pending untagged units] tap card → 3.14 (resume)
 
 Registrar mercancía (3.6/3.7):
   fill Producto (→ 3.8 if using the picker; matching is case-insensitive,
@@ -564,12 +586,12 @@ Registrar mercancía (3.6/3.7):
       → saving (3.10)
       → error (3.11) → Reintentar → saving again
       → success:
-          buttons mode → Catalog view + ambient confirmation (3.12) — DONE
-          nfc mode     → Asignar tags (3.14), auto-entered
+          nfc ∉ registrationMode → Catalog view + ambient confirmation (3.12) — DONE
+          nfc ∈ registrationMode → Asignar tags (3.14), auto-entered
   → [any point] leave without saving → draft preserved silently, resumes later
   → [≥1 line committed] tap "Descartar" → confirm (3.9) → Sí → draft cleared
 
-Asignar tags (nfc only, 3.14):
+Asignar tags (nfc-capable Business only, 3.14):
   scan tag → assign to next pending unit → counter decrements → repeat
   → tag already assigned → error (3.15) → scan a different tag
   → scan fails to read (out of range, foil, timeout) → error (3.16) →
@@ -584,15 +606,15 @@ Asignar tags (nfc only, 3.14):
 2. Resolving — slow
 3. Cold start — no Product ever registered
 4. Catalog view — normal
-5. Catalog view — pending tag work (nfc mode)
+5. Catalog view — pending tag work (nfc-capable Businesses only)
 6. Registrar mercancía — entry (blank or shortcut-prefilled)
 7. Registrar mercancía — with committed lines, editing the next
 8. Elegir producto — picker sheet
 9. Descartar confirmation
 10. Guardar mercancía — saving (near-instant / slow)
 11. Guardar mercancía — error
-12. Post-save confirmation — buttons mode
-13. Post-save confirmation — nfc mode, tagging complete
+12. Post-save confirmation — buttons-only businesses
+13. Post-save confirmation — nfc-capable Business, tagging complete
 14. Asignar tags — active queue
 15. Asignar tags — error, tag already assigned
 16. Asignar tags — error, scan failed
@@ -603,10 +625,10 @@ Asignar tags (nfc only, 3.14):
 
 | Scenario | Taps / entries | Why it can't be fewer |
 |---|---|---|
-| Register 1 new Product line (buttons mode) | 1 (Registrar mercancía) + 1 (elegir producto) + 1 typed quantity + 1 (Guardar) | Must specify *what* arrived and *how many* — this is the information itself, not an artificial gate. |
-| Register N Product lines (buttons mode) | 1 (open) + N×(1 elegir producto + 1 typed quantity) + (N−1)×(agregar otro producto) + 1 (Guardar) | Each line is a distinct fact; the (N−1) "agregar otro" taps are the minimum structural cost of an arbitrary-length list, not padding. |
+| Register 1 new Product line (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto) + 1 typed quantity + 1 (Guardar) | Must specify *what* arrived and *how many* — this is the information itself, not an artificial gate. |
+| Register N Product lines (buttons-only) | 1 (open) + N×(1 elegir producto + 1 typed quantity) + (N−1)×(agregar otro producto) + 1 (Guardar) | Each line is a distinct fact; the (N−1) "agregar otro" taps are the minimum structural cost of an arbitrary-length list, not padding. |
 | Restock an already-known, sold-out Product (tap Catalog row) | 1 (row, prefills Producto) + 1 typed quantity + 1 (Guardar) | Shortest possible — Product identity reused instead of re-searched. *global-principles.md*, "capture business truth once, reuse it forever." |
-| Same, nfc mode, U total units in the Lot | + U scans, 1 per physical unit | Per-unit tagging is a domain requirement (`decision-log.md` D4), not a UX choice — one tag, one unit, no shortcut exists that preserves traceability. A failed read (§3.16) costs zero extra taps — she simply re-presents the same tag. |
+| Same, nfc-capable Business, U total units in the Lot | + U scans, 1 per physical unit | Per-unit tagging is a domain requirement (`decision-log.md` D4), not a UX choice — one tag, one unit, no shortcut exists that preserves traceability. A failed read (§3.16) costs zero extra taps — she simply re-presents the same tag. |
 | Browse the Catalog only | 0 taps | Opening the tab is itself the answer; nothing to register. |
 
 Unlike Home's <3s-per-item bar (`company/backlog.md` #1, which is specifically
@@ -623,11 +645,12 @@ comparable hard speed requirement — the floor above is about not adding
   "¿es un producto nuevo?" explicitly.
 - Whether Inventario opens to cold-start or Catalog view — same Catalog-check
   Home already performs (`home.md` §2), not re-derived.
-- `registrationMode` gating whether Asignar Tags exists at all — resolved once
-  upstream (*architecture-principles.md* #1), never a per-Lot toggle.
-- Auto-continuation from Guardar mercancía straight into Asignar Tags in nfc
-  mode — no "¿quieres etiquetar ahora?" question; it's the obvious next
-  physical action given she's holding the merchandise.
+- `nfc ∈ registrationMode` gating whether Asignar Tags exists at all —
+  resolved once upstream (*architecture-principles.md* #1), never a per-Lot
+  toggle.
+- Auto-continuation from Guardar mercancía straight into Asignar Tags for
+  nfc-capable Businesses — no "¿quieres etiquetar ahora?" question; it's the
+  obvious next physical action given she's holding the merchandise.
 - Resuming an interrupted tagging queue (§3.5/§3.17) — automatic, discoverable
   card, no re-prompt.
 - Draft preservation of an in-progress Registrar Mercancía form across any
@@ -664,7 +687,15 @@ comparable hard speed requirement — the floor above is about not adding
    it stands. Logged as Q2 in `product/02-ux/product-decisions.md`** (reclassified
    from `architect-questions.md` as a Product Decision), since
    it spans both the Inventory and Selling bounded contexts and needs a
-   product decision, not a unilateral UX or Architect call.
+   product decision, not a unilateral UX or Architect call. **Narrowing note
+   (D23, cross-reference only):** `decision-log.md` D23 resolves a related but
+   distinct, one-level-up question — whether `nfc` is even offered as a
+   Session's operating mode at all, based on aggregate tagged-inventory
+   coverage at Session-open time. A Not Ready Session never offers `nfc` in
+   the first place, which reduces how often this Q2 scenario is reached, but
+   doesn't replace Q2's own resolution for the residual case where overall
+   coverage is fine yet one particular Product's units happen to lack tags —
+   see `decision-log.md` D23's "Relationship to other open items" note.
 
 3. **Is "Lot" ever meant to be individually browsable to Ana** (a "lo que
    llegó el 14 de julio" history view), or purely an internal write-time
@@ -717,9 +748,11 @@ comparable hard speed requirement — the floor above is about not adding
   and only on her explicit request.
 
 **architecture-principles.md:**
-- *#1 (capabilities resolved once, upstream)* — `registrationMode` gates
+- *#1 (capabilities resolved once, upstream)* — `nfc ∈ registrationMode` gates
   whether Asignar Tags exists at all in Inventario, decided at the Business
-  level, never a per-Lot question.
+  level (Selling Mode Capability, `decision-log.md` D23), never a per-Lot
+  question, and independent of any single Session's resolved
+  `Session.operatingMode`.
 - *#2 (aggregate boundaries follow write-throughput)* — unlike Sale (its own
   root specifically for cheap, independent per-item writes), a Lot legitimately
   batches multiple InventoryEntries into a single "Guardar mercancía" commit,
@@ -769,14 +802,17 @@ comparable hard speed requirement — the floor above is about not adding
   discard-vs-keep prompt on back/navigate-away; "Descartar" (§3.9) is the one
   deliberate, explicit way to lose it, and the sole confirmation dialog in this
   flow besides none other.
-- **After Guardar mercancía, nfc-mode merchants are taken directly into
+- **After Guardar mercancía, nfc-capable Businesses are taken directly into
   Asignar Tags** for the just-created units, no intermediate choice screen;
-  buttons-mode merchants see an ambient confirmation and stay on Catalog view.
+  buttons-only businesses see an ambient confirmation and stay on Catalog view.
   Concrete implementation of `vision.md`'s "(Optional) Assign NFC Tags" —
   optional at the capability level only, not a per-Lot choice.
 - **A persistent, informational "faltan etiquetas" card** on Catalog view
-  (nfc mode only) makes an interrupted tagging queue discoverable and
-  resumable — same pattern as `home.md` §3.13's silent Session resume.
+  (nfc-capable Businesses only) makes an interrupted tagging queue discoverable
+  and resumable — same pattern as `home.md` §3.13's silent Session resume.
+  Cross-references Selling's NFC Readiness check as reading off the same
+  underlying tagged/untagged count (§3.5, D23) — a note only, not a shared
+  screen.
 - **Catalog rows are tappable**, prefilling Registrar Mercancía with that
   Product — gives a concrete purpose to the list beyond display, and shortens
   the single most common repeat action (restocking something she already
@@ -798,6 +834,15 @@ comparable hard speed requirement — the floor above is about not adding
 - **No Lot-history/browsable-receiving-events screen designed.** Catalog view
   shows only current Product-level aggregate counts (*architecture-principles.md*
   #4); see §8, item 3, and §11.
+- **Terminology updated for `decision-log.md` D23 (cross-reference only, no
+  redesign).** Every condition in this document that gates on whether the
+  Assign-Tags workflow exists at all is a Business-level capability check —
+  now written `nfc ∈ registrationMode` (Selling Mode Capability) rather than
+  the old single-scalar `registrationMode = nfc` — since Inventario is not a
+  Selling-context screen and none of its own conditions ever depend on which
+  operating mode any particular Session resolved to. `Session.operatingMode`
+  (the Session-level, Selling-context concept) does not appear anywhere in
+  this document, because nothing here is actually about a specific Session.
 
 ## 11. Future considerations
 

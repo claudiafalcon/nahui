@@ -37,6 +37,9 @@ Business
                                  │ (referenced by ID, required — not nullable)
 Event ───────────────────────────┘
   └─ Session (one working day; eventId nullable)
+       │    operatingMode: buttons | nfc — resolved once at open time
+       │    from defaultSellingMode + NFC Readiness, immutable while
+       │    active (decision-log.md D23)
        └─ Sale (a transaction)
             └─ SaleItem (exactly one InventoryUnit consumed)
 ```
@@ -65,16 +68,21 @@ Attributes on the Business aggregate. Read once, resolved at the point where the
 
 | Capability | Values | Gates |
 |---|---|---|
-| `registrationMode` | `buttons` \| `nfc` | Resolved once at Session start. How a Sale identifies which InventoryUnit sold, and whether Inventory prep includes a tag-assignment step at all. |
+| `registrationMode` | subset of `{buttons, nfc}` — `buttons` always included; `nfc` a self-service add-on entitlement, both directions (D25) | Which selling modes are *available* to the Business. Whether Inventory prep includes a tag-assignment step at all is gated by `nfc ∈ registrationMode`, not by any single Session's resolved operating mode. See `defaultSellingMode` below and "NFC Readiness" under Key Mechanisms for how a Session actually resolves *which* available mode it runs in. `decision-log.md` D23. |
+| `defaultSellingMode` | `buttons` \| `nfc` | The Business's stored fallback selling mode — read at Session start alongside NFC Readiness to resolve `Session.operatingMode`. Not itself the operative value for any given Session. `decision-log.md` D23. |
 | `eventScheduling` | always on | Whether Eventos has content. Quick Session works regardless. |
-| `subscriptionTier` | `free` \| `paid` | Whether Resultados shows raw counts only, or segmentation (`company/backlog.md` #2). |
-| `loyaltyEnabled` | off until built | Whether a sold InventoryUnit's tag is claimable. |
+| `subscriptionTier` | `free` \| `paid`, self-service, both directions (D25) | Whether Resultados shows raw counts only, or segmentation (`company/backlog.md` #2). |
+| `loyaltyEnabled` | boolean, self-service, both directions (D25) | Whether a sold InventoryUnit's tag is claimable. |
+
+**Self-service mutability (`decision-log.md` D25).** `registrationMode`'s `nfc` entitlement, `subscriptionTier`, and `loyaltyEnabled` are all merchant-self-service-editable, in both directions, at any time — not fixed once set at Onboarding. Two invariants govern every such change: it never deletes historical data (each capability is a read-time gate only, never a condition on a write path — disabling `loyaltyEnabled` or removing `nfc` never touches an existing Claim, NFCTag, or unit/Lot traceability record), and it may take effect immediately or on a delay, per business rules not yet specified (tracked in `company/business-decisions.md`, pending a pricing/billing-cycle model that doesn't exist yet). To make a deferred change honestly displayable, each of these three capabilities carries an optional pending-value + effective-date pair alongside its current value — the fact that a change was requested and when it lands is domain data; the mechanism that actually applies it at the right time (a scheduled job, a billing-webhook handler) stays external to this model.
 
 ## Key mechanisms
 
-**FIFO allocation (Buttons mode).** In `nfc` mode, the scanned tag identifies the exact InventoryUnit sold — no ambiguity. In `buttons` mode, the merchant just taps a Product name; nothing indicates which physical unit that maps to. Default: consume the oldest available InventoryUnit for that Product (FIFO by Lot receipt date), automatically, with no merchant decision. See `decision-log.md` D5.
+**FIFO allocation (Buttons mode).** In `nfc` operating mode, the scanned tag identifies the exact InventoryUnit sold — no ambiguity. In `buttons` operating mode, the merchant just taps a Product name; nothing indicates which physical unit that maps to. Default: consume the oldest available InventoryUnit for that Product (FIFO by Lot receipt date), automatically, with no merchant decision. See `decision-log.md` D5. (Re-anchored from `Business.registrationMode` to `Session.operatingMode` per D23 — the same allocation rule, now keyed to whichever mode the Session actually resolved to, not a single Business-wide value.)
 
 **Dual-purpose tag resolution.** The same physical tag is scanned twice in its life: once during a sale (Selling context, adds to Sale) and potentially once after, by the customer (future loyalty-claim context, links a Customer). The system disambiguates purely from `InventoryUnit.status` — `available`/`reserved` means "this is a sale-time scan," `sold` means "this is a claim." No explicit mode or intent has to be asked of anyone. See `decision-log.md` D10.
+
+**NFC Readiness (Session-start resolution).** Before a Session opens, the system evaluates sellable tagged inventory — `available` `InventoryUnit`s with an assigned `NFCTag` — against a configurable readiness threshold, producing one of three states: **Ready** (coverage above threshold — if `nfc ∈ registrationMode` and matches `defaultSellingMode`, the Session opens silently in `nfc`, no UI moment), **Limited Ready** (some tagged inventory exists but below threshold — `buttons` is recommended via a single lightweight inline nudge at Session start; the merchant may override toward `nfc` if her capability set allows it), or **Not Ready** (precisely zero sellable tagged inventory units exist — `nfc` cannot be selected for that Session at all, an operational impossibility rather than a restriction, since there is nothing to scan; `buttons` remains available regardless, so selling itself is never blocked). The resolved value is stored on `Session.operatingMode`, immutable while `active`. The recommendation itself is computed fresh at every Session start and never persisted — it is surfaced to the merchant only when it disagrees with `defaultSellingMode`; a Ready Session that already matches the default opens with no UI moment at all. See `decision-log.md` D23.
 
 **Multi-mechanism Claim resolution.** Claim is one business capability (`loyaltyEnabled`), resolvable through multiple, mode-appropriate mechanisms, all converging on the same terminal write (one or more Customer↔SaleItem links): an **NFC tag scan** (unit-level — the mechanism above, D4/D10, one physical tag per InventoryUnit), a **Sale-level Claim Token** (Selling-owned, generated at Sale finalization whenever `loyaltyEnabled = true`, regardless of `registrationMode` — displayed to the customer, e.g. as a QR, so she can start the Loyalty-claim flow on her own device), and future mechanisms following the same pattern. A single Sale-level Claim Token scan resolves into N independent Customer↔SaleItem links — one per SaleItem in that Sale — in one customer action, the same shape a multi-item NFC Sale already produces via N separate tag scans. `registrationMode` determines *which* mechanism a given Sale uses, never *whether* Customer Segmentation is available to that Business — the feature is gated only by `subscriptionTier=paid` and `loyaltyEnabled=true`. The Merchant Application never sees raw Customer or Claim data; it consumes only **Derived Customer Intelligence** — an anonymized, aggregate signal Loyalty-claim computes and exposes read-only to Intelligence. See `decision-log.md` D22.
 
@@ -86,7 +94,7 @@ Attributes on the Business aggregate. Read once, resolved at the point where the
 |---|---|---|---|
 | **Identity** | Business, Capabilities | *configure* | — |
 | **Inventory** | Catalog, Product, Supplier, Lot, InventoryEntry, InventoryUnit, NFCTag assignment | *receive, register, prepare, assign, replenish* | Identity (read-only) |
-| **Selling** | Event, Session, Sale, SaleItem, Venue | *start, continue, sell, close* | Inventory (read-only — sellable Products, tag→unit resolution), Identity (read-only) |
+| **Selling** | Event, Session, Sale, SaleItem, Venue | *start, continue, sell, close* | Inventory (read-only — sellable Products, tag→unit resolution, NFC Readiness's tagged-unit count), Identity (read-only) |
 | **Intelligence** *(future, not built)* | Review/reporting over Sale + Session + Lot history | *analyze, segment, recommend* | Inventory, Selling (read-only), Loyalty-claim (read-only — Derived Customer Intelligence only, never raw Customer/Claim identity; see D22) |
 | **Loyalty-claim** *(future, not built; runs independently of the Merchant Application — see `information-architecture.md`)* | Customer, Claim | *identify, claim* | Inventory (reads `InventoryUnit.status` only; writes Customer↔SaleItem link), Selling (read-only — resolves Sale → SaleItem set for the Sale-QR mechanism; writes Customer↔SaleItem link there too; see D22) |
 

@@ -49,18 +49,15 @@ here without an Architect/RFC decision first (`product/00-foundation/decision-lo
 - One experience is designed, reviewed, and approved before the next one starts.
 
 ## Status
-- `home.md` — done, approved
-- `inventory.md` — done, approved
+- `home.md` — approved; amended for `decision-log.md` D23 (Session-scoped selling mode) — full remediation cycle complete (four Major findings across three rounds, see `ux-critic-findings.md`), `reviewer` clean, folded back into Approved
+- `inventory.md` — approved; amended for D23 (cross-reference/terminology only) — zero findings, `reviewer` clean, folded back into Approved
 - `events.md` — done, approved (one open item, Q6, doesn't block approval)
-- `reports.md` — done, approved (Q8, Q9 resolved and applied — "Tus clientes" and "Rendimiento por bazar" are both real, reviewed specs; Q10 remains open, non-blocking)
+- `reports.md` — done, approved (Q8, Q9 resolved and applied — "Tus clientes" and "Rendimiento por bazar" are both real, reviewed specs; Q10 resolved — `reviewed` stays dormant, no UX design needed, `decision-log.md` D18)
 
-All four primary merchant experiences (Hoy, Inventario, Eventos, Resultados) are done and approved.
-- `settings.md` — not started; not present in the frozen IA nav (only Hoy,
-  Inventario, Eventos, Resultados exist) — needs Architect input on whether/how
-  Business Capabilities are ever merchant-editable before this is scoped
-- `onboarding.md` — not started; the cold-start entry point is currently covered
-  inside `home.md` (state 3) — needs a scoping decision on whether first-run
-  (business registration, initial capability choice) warrants its own document
+- `onboarding.md` — approved; first document written and reviewed from a blank slate (one Blocker, one Major, four Minors — all fixed and verified, see `ux-critic-findings.md`)
+
+All five designed experiences (Hoy, Inventario, Eventos, Resultados, Onboarding) are done and approved.
+- `settings.md` — not started; **unblocked** — Q5 resolved (`decision-log.md` D25, `company/business-decisions.md`): Business Capabilities (`subscriptionTier`, `loyaltyEnabled`, `registrationMode`'s `nfc` entitlement) are fully self-service, bidirectional, at any time, never deleting historical data. Ready to design as the last Low-Fidelity deliverable: six actions (three capabilities × two directions), a reusable "pending change, takes effect on [date]" indicator, a way to cancel a pending change. One narrower open item (Q11 — the specific per-transition immediate/deferred timing rule, blocked on a not-yet-designed pricing/billing-cycle model) doesn't block starting the design — the UI can support either immediate-with-confirmation or deferred-with-indicator per capability.
 
 ## UX Critic Findings
 

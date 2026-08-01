@@ -8,7 +8,7 @@ Structured around the merchant's workflow language (`vision.md`), not around ent
 
 ```
 Hoy (Home)     — contextual, no fixed content: "Continuar Día 2" or "Iniciar Sesión Rápida"
-Inventario     — Catalog, Register Lot, Assign Tags (only if registrationMode = nfc)
+Inventario     — Catalog, Register Lot, Assign Tags (only if nfc ∈ registrationMode)
 Eventos        — scheduled/active/past Events, drills into their Sessions
 Resultados     — Session/Event summaries; deeper analytics only if subscriptionTier = paid
 ```
@@ -17,7 +17,7 @@ Deliberately **no persistent "Ventas" tab.** Selling is not a place you navigate
 
 Capability gating (see `domain-model.md#business-capabilities` for the source of truth on these):
 
-- `registrationMode = buttons` → no "Assign Tags" step anywhere in Inventario.
+- `nfc ∉ registrationMode` (NFC not in the Business's capability set) → no "Assign Tags" step anywhere in Inventario. Gated by capability availability, not by any single Session's resolved operating mode (`decision-log.md` D23).
 - `subscriptionTier = free` → Resultados shows counts/totals only, no segmentation.
 
 ## Onboarding and Settings
@@ -27,7 +27,7 @@ Onboarding and Settings are not absent from Nahui — they're absent from this s
 - **Onboarding**: a first-run flow precedes all four tabs. A Business and its initial capabilities (`registrationMode`, at minimum) must exist before Home's resolution logic (`home.md` §2) has anything to resolve. This is a sequencing fact, not a navigation destination — it is never reachable again once complete, and is not a place the merchant "goes."
 - **Settings**: reachable from the existing session-controls affordance already specified in `home.md` §3.7 (the header's "▾"), not a dedicated tab. This keeps capability management consistent with "selling is a state, not a navigation destination" — settings hang off an existing surface rather than adding a fifth persistent destination.
 
-What this section does not resolve (open, logged in `company/business-decisions.md` as Q4 and Q5): who/what sets `registrationMode` on first run, and whether any Business Capability is ever merchant-self-service-editable after onboarding versus fixed by a backend/support process. Both are Business Decisions per the Decision Ownership policy in `company/CLAUDE.md`, not navigational ones.
+Q4 (who/what sets `registrationMode` on first run) and Q5 (whether any Business Capability is ever merchant-self-service-editable after onboarding) — both Business Decisions per the Decision Ownership policy in `company/CLAUDE.md`, not navigational ones — are now both Resolved (`decision-log.md` D19, D25; `company/business-decisions.md`). Settings' merchant-facing scope is unblocked; the one remaining open item (Q11, the specific per-transition timing rule for deferred capability changes) is narrower and doesn't block `settings.md`'s design.
 
 ## User journeys
 

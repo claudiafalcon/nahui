@@ -901,7 +901,7 @@ Elsewhere (entry points into this tab's screens, not from the tab itself):
 13. Tus clientes — sin datos aún (empty state)
 14. Defensive fallback / load error
 
-Notably fewer states than `home.md` (22), `inventory.md` (18), or
+Notably fewer states than `home.md` (23), `inventory.md` (18), or
 `events.md` (18) — Resultados has no forms, no writes, no destructive
 actions, and therefore no confirmation dialogs, no draft-preservation
 states, and no save/error pairs. It's the only one of the four tabs that is

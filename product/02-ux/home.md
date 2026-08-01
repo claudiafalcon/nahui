@@ -5,6 +5,14 @@ HOME-M1, HOME-M2, HOME-M3, HOME-M4 fixed by `ux-designer`, verified clean by
 `ux-critic` (zero remaining Blockers/Majors), and passed `reviewer`'s
 Foundation-consistency check (no Blockers; one cross-document Important
 finding — stale post-renumbering section references — corrected by Main).
+**Amended for `decision-log.md` D23** (Session-scoped selling mode: Selling
+Mode Capability / Default Selling Mode / Session Operating Mode / NFC
+Readiness — see `product/99-rfc/0003-session-selling-mode.md`). Amendment
+went through its own full cycle — `ux-critic` found four Major findings
+across three remediation rounds (HOME2-MAJ1 through HOME2-MAJ4, see
+`product/02-ux/ux-critic-findings.md`), all fixed and verified clean, and
+`reviewer`'s Foundation-consistency pass found zero Blockers/Important
+findings. Folded back into Approved.
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -34,12 +42,17 @@ Evaluated in this order, automatically, on every Home open:
 ```
 1. Is there a Session with status = active (any eventId, including null)?
      → YES: selling becomes Home's default entry point. Stop here — highest
-       priority, nothing else matters if she's mid-selling.
+       priority, nothing else matters if she's mid-selling. Its
+       `Session.operatingMode` was already resolved the moment this Session
+       opened, and stays immutable while `active` (decision-log.md D23) — this
+       step never re-runs NFC Readiness or re-resolves the mode; see the
+       folded-in sub-step below for where that resolution actually happens.
 
 2. Is there an Event with status = active, with no Session opened yet under
    it today?
      → YES: show "Continuar Día N" (N = existing Sessions under this eventId
-       + 1, computed, never asked).
+       + 1, computed, never asked). Tapping it is the moment a new Session
+       actually opens — see the folded-in sub-step below.
 
 3. Does the Catalog have at least one Product ever registered (has she ever
    registered a Lot)?
@@ -48,11 +61,80 @@ Evaluated in this order, automatically, on every Home open:
        action. If an Event is scheduled but not yet active, show it as a
        small, non-blocking informational card — it never gates or adds a
        step to Quick Session (domain-model.md: "Quick Session works
-       regardless" of eventScheduling).
+       regardless" of eventScheduling). Tapping "Iniciar Sesión Rápida" is
+       likewise the moment a new (Quick) Session opens — see the folded-in
+       sub-step below.
 
 4. Resolution itself fails or times out?
      → fallback safe state — never a dead end (see §5).
 ```
+
+**NFC Readiness sub-step, folded into Session-start (`decision-log.md` D23):**
+Steps 2 and 3 above are the only two points in this resolution logic where a
+Session doesn't yet exist and one is about to open — this is **not** a new
+top-level branch of its own. Two distinct moments are involved here, and
+they're not the same moment:
+
+- **Evaluated ambiently, on every Home open.** NFC Readiness — computed
+  against sellable tagged inventory (`available` `InventoryUnit`s with an
+  assigned `NFCTag`) — is part of the same resolution query Home already runs
+  on every open (the numbered steps above), reusing it rather than adding a
+  new dependency edge or a new perceptible delay. This is exactly why the
+  recommendation/override line already renders on the resting, pre-tap idle
+  screen in §3.4/§3.5/§3.6, and why it's tappable before "Continuar Día N" or
+  "Iniciar Sesión Rápida" is ever touched — §6's footnote states this
+  directly: the override tap happens "before the existing Session-start tap."
+- **Committed only at the Session-start tap.** At the exact moment "Continuar
+  Día N" (step 2) or "Iniciar Sesión Rápida" (step 3) is tapped, the
+  already-evaluated result — the recommendation, or the override if she
+  tapped it — is written onto `Session.operatingMode`. It can't happen any
+  earlier than this tap, simply because the `Session` record doesn't exist
+  until then; there's nothing yet to commit the value onto. Nothing about the
+  wireframes changes because of this distinction — it's a wording fix so this
+  prose matches what §3.6a and §6 already depict, not a behavior change.
+
+`Session.operatingMode` resolves from the ambiently-computed NFC Readiness
+plus the Business's stored `defaultSellingMode` and Selling Mode Capability
+(`registrationMode`):
+
+- **Ready, `nfc ∈ registrationMode`, and matching `defaultSellingMode`** →
+  resolves silently; no UI moment at all, identical to today's behavior. The
+  common case. This capability check mirrors the hedge Limited Ready's
+  override already states explicitly below ("if her capability set allows
+  it") — Ready was the one branch that had dropped it. If coverage is above
+  threshold and `defaultSellingMode` still reads `nfc`, but `nfc ∉
+  registrationMode` (the Selling Mode Capability has since been revoked — a
+  lapsed subscription, say — with nothing resetting `defaultSellingMode`
+  itself on revocation; still-open territory, per Q5 in
+  `company/business-decisions.md`), this no longer counts as a match: `nfc` is
+  treated as unavailable exactly as Not Ready treats zero sellable tagged
+  inventory below, and the Session opens in `buttons` automatically — **but
+  never silently.** Unlike Not Ready, this divergence isn't something Ana can
+  see for herself (there's no tagged-stock count to check) — a revoked
+  capability is completely invisible to her, so the one-time, non-blocking
+  mention this case gets is if anything more load-bearing than Not Ready's,
+  not less (§3.6a; resolves HOME2-MAJ3). Unlike Not Ready's mention, it
+  carries no next-step link: Settings/subscription management
+  (`settings.md`) doesn't exist yet, blocked on Q5, so the line states the
+  fact plainly and stops there rather than promising a self-service fix that
+  isn't designed. If `defaultSellingMode` is already `buttons`, this case
+  can't arise — there's nothing for a revoked `nfc` capability to disagree
+  with — and resolution stays silent, same as the common case.
+- **Limited Ready** (some tagged inventory exists, below the readiness
+  threshold, disagreeing with `defaultSellingMode`) → a single, lightweight
+  inline recommendation appears at the same Session-start action, with one
+  tap to override toward `nfc` if her capability set allows it — see §3.6a.
+- **Not Ready** (zero sellable tagged inventory units) → `nfc` isn't offered
+  as a choice at all; the Session opens in `buttons` automatically — an
+  operational impossibility, not a restriction (nothing exists to scan). If
+  this disagrees with a `defaultSellingMode` of `nfc`, a brief, one-time,
+  non-blocking mention appears alongside the same action, with a path to
+  Asignar Tags; if `defaultSellingMode` is already `buttons`, this is
+  silent — see §3.6a.
+
+Step 1 (an already-open Session) never re-runs any of this — the resolved
+`Session.operatingMode` is immutable for the remainder of that Session's
+`active` lifecycle.
 
 **Framing note (approved refinement):** during an active session, selling
 becomes the *default entry point* of the application — not a locked screen. The
@@ -144,6 +226,10 @@ the persistent nav bar on every state, current tab in brackets.
   *architecture-principles.md* #3 — Quick Session is first-class, not a
   fallback, because `eventId` is genuinely optional in the model, not a UI
   afterthought.
+- In the rare case NFC Readiness disagrees with the stored `defaultSellingMode`
+  at the moment this button is tapped, this screen gains exactly one
+  additional inline line beneath the button — see §3.6a. The screen shown
+  above is the common case and is otherwise pixel-identical.
 
 ### 3.5 Idle — ready, with an upcoming (not-yet-active) Event
 ```
@@ -162,6 +248,8 @@ the persistent nav bar on every state, current tab in brackets.
   starting a session: keeps scheduling awareness read-only so it can never add
   a step to Quick Session. *domain-model.md*, "Quick Session works regardless."
 - "Iniciar Sesión Rápida" keeps full prominence even with the card present.
+- Same NFC Readiness disagreement note as §3.4: the event card is unaffected
+  either way — see §3.6a for the rare additional line beneath the button.
 
 ### 3.6 Event active, no Session opened today
 ```
@@ -177,6 +265,167 @@ the persistent nav bar on every state, current tab in brackets.
 - "Día 2" stated as fact, not asked: computed automatically from existing
   Sessions under the `eventId` (*domain-model.md*, read-side query across
   Sessions sharing that ID). *global-principles.md*, "never ask twice."
+- Same NFC Readiness disagreement note as §3.4/§3.5 — see §3.6a.
+
+### 3.6a Session-start moment — NFC Readiness disagreement (new — folds in `decision-log.md` D23)
+
+Applies identically wherever a new Session is about to open — §3.4 (Iniciar
+Sesión Rápida, no Event), §3.5 (same, with an upcoming-Event card present), and
+§3.6 (Continuar Día N). Shown **only** in the three cases where the
+Session-start resolution disagrees with a stored `defaultSellingMode` of
+`nfc`: two are NFC Readiness disagreements (Limited Ready, Not Ready); the
+third is the Business's Selling Mode Capability no longer including `nfc` at
+all (capability revoked — e.g. a lapsed subscription; §2) — a distinct check
+from NFC Readiness, grouped here because it produces the same Session-start UI
+moment. The common case (Ready, capability intact, matching default) shows
+none of this — pixel-identical to §3.4/§3.5/§3.6 as already specified, exactly
+as fast as today.
+
+**Limited Ready, `defaultSellingMode = nfc` (recommends `buttons`, overridable):**
+```
+┌───────────────────────────────┐
+│  Nahui                         │
+│        ¿Vas a vender hoy?       │
+│   [   Iniciar Sesión Rápida  ]  │
+│   Pocas prendas tienen tag       │
+│   todavía — vas a vender con     │
+│   botones.                       │
+│   [ Usar tags de todos modos ]   │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+(the same line attaches beneath "Continuar Día 2" when reached via §3.6, and
+beneath "Iniciar Sesión Rápida" with the Event card still shown when reached
+via §3.5)
+
+- One line, plain business language, no percentage/threshold/count ever
+  shown — the readiness threshold itself stays invisible to Ana as a number
+  (`product/99-rfc/0003-session-selling-mode.md`, "Why"). It never says
+  "NFC," "readiness," or any technical term — "tienen tag" is her own
+  vocabulary for the physical tag, "botones" the tap-grid she already knows.
+- "Usar tags de todos modos" is a single tap, not a second screen or a
+  blocking modal: tapping it flips the mode locally (before the Session
+  itself opens) and the line updates to confirm the override — "Vas a usar
+  tags esta sesión · [ Cambiar ]" — with the same tap available to flip back.
+  Nothing about this delays or gates the primary CTA underneath it.
+- Tapping the primary CTA ("Iniciar Sesión Rápida" / "Continuar Día N")
+  commits whichever mode the line currently shows (the recommendation, or the
+  override if she tapped it) as `Session.operatingMode` — resolved once, at
+  that tap, immutable for the rest of the Session (`decision-log.md` D23).
+- This is the one place in the whole document where a selling mode becomes a
+  visible, named choice — deliberately: `ubiquitous-language.md` explicitly
+  carves out this exact moment ("only rarely becomes an explicit per-Session
+  choice — a Limited Ready override — never a raw screen-level toggle"). It
+  does not reopen `architecture-principles.md` #1: the decision is still made
+  once, upstream of selling, never mid-Sale, never per-Sale.
+- If `defaultSellingMode` is already `buttons`, none of this appears — Limited
+  Ready then has no `nfc` default to disagree with, and the Session opens
+  exactly as silently as the Ready case (the same explicit symmetry stated
+  below for Not Ready).
+
+**Not Ready, `defaultSellingMode = nfc` (`nfc` withdrawn, one-time mention):**
+```
+┌───────────────────────────────┐
+│  Nahui                         │
+│        ¿Vas a vender hoy?       │
+│   [   Iniciar Sesión Rápida  ]  │
+│   Todavía no tienes prendas      │
+│   con tag para hoy — vas a       │
+│   vender con botones.             │
+│   [ Asignar tags ]                │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+- No override offered here (contrast with Limited Ready above) — there is
+  nothing to override toward: zero sellable tagged units means `nfc` has no
+  physical tag to scan, an operational impossibility, not a restriction
+  (`decision-log.md` D23). The primary CTA is unaffected either way — selling
+  itself is never blocked.
+- "Asignar tags" is a secondary, optional link into Inventario's existing
+  tag-assignment flow (`inventory.md` §3.14) — never required before selling.
+  Tapping it leaves this screen without starting a Session at all — a
+  deliberate escape hatch, not a forced detour.
+- Shown once per occurrence of this Session-start moment, never repeated
+  mid-Session, consistent with "never ask twice" (`global-principles.md`):
+  it never re-surfaces once the Session is open.
+- If `defaultSellingMode` is already `buttons`, none of this appears — Not
+  Ready then matches her existing default with nothing to disagree with, and
+  the Session opens exactly as silently as the Ready case.
+
+**Design note — why Not Ready gets a mention here at all, rather than staying
+completely silent (`global-principles.md`):** "The fastest interaction is the
+one that never happens" argues for silence by default; but Not Ready
+specifically means her *normal* selling mode (`defaultSellingMode = nfc`) has
+become unavailable, for a reason entirely within her control (no tagged stock
+ready) — silently substituting botones would read as an unexplained
+inconsistency the moment she notices her usual scan prompt isn't there, which
+is a worse violation of "technology should disappear" than one calm, actionable
+line. This is a materially bigger divergence from her expectation than Limited
+Ready's "same mode still available, just recommended against" — it's the one
+mode she's used to not existing at all for this Session. A single line with a
+real next step (Asignar tags) resolves that without adding a tap to the happy
+path and without ever blocking her from selling, right now, in `buttons`.
+
+**Capability revoked, `defaultSellingMode = nfc` (Selling Mode Capability no
+longer includes `nfc`, one-time mention, no next step — new, resolves
+HOME2-MAJ3):**
+```
+┌───────────────────────────────┐
+│  Nahui                         │
+│        ¿Vas a vender hoy?       │
+│   [   Iniciar Sesión Rápida  ]  │
+│   Por ahora no puedes vender     │
+│   con tags — vas a vender con    │
+│   botones.                       │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+(the same line attaches beneath "Continuar Día 2" when reached via §3.6, and
+beneath "Iniciar Sesión Rápida" with the Event card still shown when reached
+via §3.5)
+
+- Distinct trigger from both cases above: this isn't about tagged inventory at
+  all (she may have plenty of tagged stock ready to go) — it's that her
+  Business's Selling Mode Capability (`registrationMode`) no longer includes
+  `nfc` as an option, full stop (§2). No amount of tagging fixes it, which is
+  exactly why this gets no "Asignar tags"-style link.
+- No override offered (contrast with Limited Ready), and no next-step link
+  either (contrast with Not Ready): there genuinely isn't one to offer yet.
+  Settings/subscription management (`settings.md`) — where a capability like
+  this would presumably be reviewed or restored — isn't designed, blocked on
+  Q5 (`company/business-decisions.md`). Inventing a self-service
+  capability-restoration flow here to fill that gap would be designing ahead
+  of a decision that isn't this document's to make.
+- Copy stays deliberately plain and non-diagnostic — "Por ahora no puedes
+  vender con tags," never "tu capacidad fue revocada" or "tu suscripción
+  venció." This document has no way to know, and shouldn't guess at, the
+  specific business reason (Q5 again governs what she's ever told and how);
+  it states only what's true and immediately useful: the mode she's used to
+  isn't available right now, and what she's selling with instead.
+- Shown once per occurrence of this Session-start moment, same discipline as
+  Not Ready above — never repeated mid-Session, consistent with "never ask
+  twice" (`global-principles.md`).
+- If `defaultSellingMode` is already `buttons`, this case can't arise at
+  all — see §2.
+
+**Design note — why capability-revoked (above) gets a mention too, even with
+no next step to offer:** the reasoning above for Not Ready — that silently
+substituting `botones` "would read as an unexplained inconsistency the moment
+she notices her usual scan prompt isn't there" — applies at least as strongly
+here, arguably more so: with Not Ready, Ana can at least see for herself that
+she hasn't tagged inventory yet, so a silent switch would merely be
+unexplained. A revoked capability is invisible to her by construction — there's
+no stock count, no setting, nothing on any screen today that would tell her
+why her usual `nfc` prompt vanished. Silently opening `buttons` in this case
+(this document's behavior before this fix) wasn't just less informative than
+Not Ready's mention — it was actively worse, since it gave her no way to even
+suspect why. The lack of a designed next step doesn't change that calculus; it
+only changes what the mention can promise. A calm, honest line that stops
+short of a fix she can't yet act on is still strictly better than silence, and
+doesn't require inventing behavior ahead of Q5's resolution.
 
 ### 3.7 Session active — ready, no Sale open (mode-agnostic shell)
 ```
@@ -186,7 +435,7 @@ the persistent nav bar on every state, current tab in brackets.
 ├───────────────────────────────┤
 │ Venta actual: (vacía)            │
 │   [   zona de registro,          │  mode-appropriate content fills here
-│       según registrationMode  ]  │  (see 3.9 / 3.10)
+│       según Session.operatingMode ]│  (see 3.9 / 3.10)
 ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
@@ -199,7 +448,8 @@ the persistent nav bar on every state, current tab in brackets.
 - "Venta actual: (vacía)" shown even with nothing pending: ambient visibility
   so a stale/leftover sale is never invisible.
 - Registration surface is the single biggest area on screen, always exactly
-  one mode. *architecture-principles.md* #1.
+  one mode, resolved once at Session-start (§2/§3.6a) and never re-evaluated
+  mid-Session. *architecture-principles.md* #1.
 
 ### 3.7a Session controls (▾) — sheet (new — resolves HOME-M4)
 ```
@@ -249,7 +499,7 @@ the persistent nav bar on every state, current tab in brackets.
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
 ```
-- "Finalizar Venta" is el largest tappable element on the screen: the one
+- "Finalizar Venta" is the largest tappable element on the screen: the one
   deliberate boundary marker in the loop — a Sale's start is implicit, its end
   is the only thing worth ceremony (see §10, Decisions made).
 - "Cancelar venta actual" now sits inline with the "Venta actual" line itself
@@ -362,7 +612,7 @@ shown inline, never a full-screen interruption
 └───────────────────────────────┘        └───────────────────────────────┘
    near-instant: silent, brief dim              slow (>~1.5s): one plain line
 ```
-- Identical convention to `inventory.md` §3.10 / `events.md` §3.8 — silent
+- Identical convention to `inventory.md` §3.10 / `events.md` §3.9 — silent
   unless genuinely slow, one calm plain-language line, never a technical
   status string. Nav bar and header stay live throughout: this never blocks
   navigating away or the running totals from being visible.
@@ -384,7 +634,7 @@ shown inline, never a full-screen interruption
 └───────────────────────────────┘
 ```
 - Same failure guarantee as every other write action in the document family
-  (`inventory.md` §3.11, `events.md` §3.8): a failed Finalizar Venta never
+  (`inventory.md` §3.11, `events.md` §3.9): a failed Finalizar Venta never
   drops or half-commits the Sale — the tray survives exactly as it was, with
   both recovery paths (Reintentar, o Cancelar venta actual via §3.8b's
   confirm) still available. Closes the Finalizar-Venta half of HOME-B1.
@@ -397,7 +647,7 @@ shown inline, never a full-screen interruption
   everywhere else uses — she's never stuck staring at a broken screen
   mid-transaction.
 
-### 3.9 Session active — `buttons` mode surface
+### 3.9 Session active — `Session.operatingMode = buttons` surface
 ```
 ┌───────────────────────────────┐
 │ Bazar Plaza Norte · Día 2   ▾   │
@@ -419,6 +669,10 @@ shown inline, never a full-screen interruption
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
 ```
+- This surface renders whenever `Session.operatingMode = buttons` —
+  resolved once, silently in the common case, at the Session-start action
+  that opened this Session (§2, §3.6a for the rare visible exception); never
+  re-evaluated mid-Session.
 - Large, equally-weighted 2-column grid, scrollable — reuses the layout
   already validated with Ana in `product/01-validation/registro.html`, in
   service of the <3s bar (`company/backlog.md` #1). The grid scales to
@@ -453,7 +707,7 @@ shown inline, never a full-screen interruption
   happens" — no tile without a real, defined action behind it.
 - No mode indicator or toggle drawn anywhere. *architecture-principles.md* #1.
 
-### 3.10 Session active — `nfc` mode surface
+### 3.10 Session active — `Session.operatingMode = nfc` surface
 ```
 ┌───────────────────────────────┐
 │ Bazar Plaza Norte · Día 2   ▾   │
@@ -467,6 +721,10 @@ shown inline, never a full-screen interruption
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
 ```
+- This surface renders whenever `Session.operatingMode = nfc` — resolved
+  once, silently in the common case, at the Session-start action that opened
+  this Session (§2, §3.6a for the rare visible exception); never re-evaluated
+  mid-Session.
 - No product grid rendered at all — not grayed out, not present: confirms
   *architecture-principles.md* #1 at the layout level; this is a wholly
   different, exclusive surface, matching `vision.md`: "the merchant never
@@ -514,7 +772,7 @@ shown inline, never a full-screen interruption
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
 ```
-- Closing is the one deliberadamente irreversible action in the whole flow
+- Closing is the one deliberately irreversible action in the whole flow
   (§10) — an open, unfinished Sale is exactly the kind of real,
   registered-but-not-yet-committed work that must never be silently
   discarded by it. Resolves HOME-M2.
@@ -606,6 +864,9 @@ items, same count, nothing silently dropped.
   phone lock/backgrounding. §2's framing note ("the application always
   resumes where selling happens") already implied this; this section makes
   it an explicit, testable guarantee instead of an implication.
+- `Session.operatingMode` itself was already resolved at the moment this
+  Session first opened (§2/§3.6a) and never changes across an interruption —
+  resuming never re-runs NFC Readiness or re-asks anything about mode.
 
 ### 3.14 Resolution error / defensive fallback
 ```
@@ -630,8 +891,11 @@ items, same count, nothing silently dropped.
 Open app
   → resolve (§2, automatic)
       → active Session exists ─────────────→ selling default (3.7-3.10)
-      → Event active, no Session today ────→ "Continuar Día N" (3.6) → tap → selling
-      → nothing active, Catalog has Products → "Iniciar Sesión Rápida" (3.4/3.5) → tap → selling
+      → Event active, no Session today ────→ "Continuar Día N" (3.6) → tap
+          (NFC Readiness resolves Session.operatingMode — silent, or §3.6a
+          if it disagrees with defaultSellingMode) → selling
+      → nothing active, Catalog has Products → "Iniciar Sesión Rápida"
+          (3.4/3.5) → tap (same NFC Readiness resolution as above) → selling
       → Catalog empty ─────────────────────→ cold start (3.3) → Inventario
       → resolution fails ──────────────────→ fallback (3.14), Quick Session always reachable
 
@@ -659,7 +923,9 @@ Interruption at any point (phone lock, backgrounding, switching nav tabs away
 and back to Hoy):
   → resuming (3.13) reflects the Sale's true state exactly as it was — empty
     (Variant A) or with whatever items were already durably added (Variant B)
-    — never silently reset, never invented
+    — never silently reset, never invented. Session.operatingMode never
+    re-resolves across an interruption — it was fixed the moment this Session
+    first opened.
 ```
 
 ## 5. Screen states (enumeration)
@@ -670,32 +936,42 @@ and back to Hoy):
 4. Idle — no Event today, ready, no upcoming Event
 5. Idle — ready, with an upcoming (not-yet-active) Event card
 6. Event active, no Session opened today — "Continuar Día N"
-7. Session active, no Sale currently open — ready for next customer
-8. Session controls sheet (▾) — "Cerrar sesión"
-9. Session active, Sale in progress (1+ items in "Venta actual")
-10. Session active, Sale in progress — item sync retrying (silent, background)
-11. Session active, Sale in progress — item sync failed, non-blocking marker + inline Reintentar
-12. Cancelar venta actual — inline confirm step
-13. Finalizar Venta — saving (near-instant / slow)
-14. Finalizar Venta — error
-15. Session active, `buttons` mode surface (scrollable, frequency-ordered, sold-out tiles dimmed)
-16. Session active, `nfc` mode surface
-17. Close-session confirmation (reached only with an empty Sale)
-18. Cerrar sesión blocked — Venta en curso (non-empty-Sale interlock)
-19. Immediate post-close session summary
-20. Resuming a Session left open from an interruption/crash — empty-tray variant
-21. Resuming a Session left open from an interruption/crash — non-empty-tray variant
-22. Resolution error / defensive fallback
+7. Session-start moment — Session-start mode disagreement: Limited Ready recommendation, Not Ready mention, or Selling Mode Capability revoked mention (§3.6a)
+8. Session active, no Sale currently open — ready for next customer
+9. Session controls sheet (▾) — "Cerrar sesión"
+10. Session active, Sale in progress (1+ items in "Venta actual")
+11. Session active, Sale in progress — item sync retrying (silent, background)
+12. Session active, Sale in progress — item sync failed, non-blocking marker + inline Reintentar
+13. Cancelar venta actual — inline confirm step
+14. Finalizar Venta — saving (near-instant / slow)
+15. Finalizar Venta — error
+16. Session active, `Session.operatingMode = buttons` surface (scrollable, frequency-ordered, sold-out tiles dimmed)
+17. Session active, `Session.operatingMode = nfc` surface
+18. Close-session confirmation (reached only with an empty Sale)
+19. Cerrar sesión blocked — Venta en curso (non-empty-Sale interlock)
+20. Immediate post-close session summary
+21. Resuming a Session left open from an interruption/crash — empty-tray variant
+22. Resuming a Session left open from an interruption/crash — non-empty-tray variant
+23. Resolution error / defensive fallback
 
 ## 6. Minimum step count
 
 | Scenario | Taps to first registered item | Why it can't be fewer |
 |---|---|---|
-| Nothing scheduled, ready (3.4) | 2 | 1 deliberate "start selling" commitment (protects Session-history integrity, prevents accidental first sale from a stray tap) + 1 to register the item. |
-| Event active, no session today (3.6) | 2 | Same reasoning — an existing Event doesn't remove the need for a deliberate day-start moment. |
+| Nothing scheduled, ready (3.4) | 2* | 1 deliberate "start selling" commitment (protects Session-history integrity, prevents accidental first sale from a stray tap) + 1 to register the item. |
+| Event active, no session today (3.6) | 2* | Same reasoning — an existing Event doesn't remove the need for a deliberate day-start moment. |
 | Session already open, mid-selling (3.7-3.10) | **1** | The "start" decision was already made earlier; this is the target state for most of the selling day. |
 | Cold start, no products (3.3) | n/a — routes to Inventario | Cannot register a sale of nothing; a genuine prerequisite, not a repeated friction. |
 | Resuming an unclosed session, either variant (3.13) | **1** | Treated identically to the normal ready/in-progress state — no extra step for having been interrupted, regardless of whether items survived. |
+
+*Floor stays 2 in the common case (Ready-matching-default, or
+Not-Ready-matching-a-`buttons`-default, or capability-revoked-matching-a-
+`buttons`-default). The one rare exception is a Limited Ready override
+(§3.6a): tapping "Usar tags de todos modos" before the existing Session-start
+tap adds exactly 1 tap, making that one path 3 taps to first registered item.
+Not Ready never adds a tap — there's no override to offer, only a mention.
+Capability-revoked (§2/§3.6a) likewise never adds a tap, for the same
+reason — mention only, no override to offer.
 
 | Recovery scenario | Taps | Why it can't be fewer |
 |---|---|---|
@@ -704,17 +980,27 @@ and back to Hoy):
 
 Overall floor: **1 tap once selling has begun, 2 taps to begin selling** — the
 2-tap floor is a deliberate data-integrity choice (protecting Session-history
-accuracy), not an unresolved inefficiency. Error/retry paths (§3.8a/§3.8d,
-§3.14) are recovery paths for a failure, not part of this minimum-happy-path
-floor, and aren't counted above. Locating a rarely-sold Product in a large
+accuracy), not an unresolved inefficiency. The sole exception is a Limited
+Ready override (§3.6a): overriding the recommended mode is exactly 1
+additional tap before the existing Session-start tap, making that one rare
+path 3 taps to begin selling — Not Ready never adds a tap, since it offers no
+choice to override, and neither does a revoked Selling Mode Capability
+(§2/§3.6a) — both are mentions only. Error/retry paths (§3.8a/§3.8d, §3.14)
+are recovery paths for a failure, not part of this minimum-happy-path floor,
+and aren't counted above. Locating a rarely-sold Product in a large
 buttons-mode grid (§3.9) may require scrolling in addition to the 1 tap;
-scrolling isn't counted as a "tap," and frequency-based tile ordering keeps her
-actual top sellers within the first screenful regardless of Catalog size.
+scrolling isn't counted as a "tap," and frequency-based tile ordering keeps
+her actual top sellers within the first screenful regardless of Catalog size.
 
 ## 7. Automation opportunities
 
-- `registrationMode` — read once at Session open, never surfaced or re-asked.
-  *architecture-principles.md* #1.
+- `Session.operatingMode` — resolved once at Session open from the
+  Business's stored `defaultSellingMode` and a computed NFC Readiness check
+  (`decision-log.md` D23); never re-asked mid-Session. It can rarely surface
+  *at* Session start itself — only the Limited Ready case shows a one-tap
+  override (§3.6a); Not Ready and a revoked Selling Mode Capability show a
+  mention only, never an override — but once resolved, it's exactly as
+  invisible and final as before. *architecture-principles.md* #1.
 - Which Session to open (Event-linked vs. Quick) — computed from Event status +
   today's date, never a picker.
 - "Día N" — computed from existing Sessions under the `eventId`, never typed or
@@ -767,12 +1053,18 @@ actual top sellers within the first screenful regardless of Catalog size.
   upcoming-event card adds zero steps to Quick Session; the "Otro" tile is
   removed from the buttons-mode grid once every Product already has its own
   tile (3.9, resolving HOME-M3); the session-controls sheet (3.7a) no longer
-  references an undesigned "ver detalle de hoy" screen (resolving HOME-M4).
+  references an undesigned "ver detalle de hoy" screen (resolving HOME-M4);
+  the Ready-matching-default case (the common one) gains zero new screens or
+  taps under D23 (§3.6a).
 - *"Never ask twice"* — resuming an interrupted Session (3.13) never
   re-confirms what the system already knows, and now explicitly never
   reinvents the tray's contents either, empty or not (resolving HOME-B2);
-  `registrationMode`, Día N, and which Session to open are all computed,
-  never asked.
+  `Session.operatingMode` (silently resolved in the common case; §3.6a is the
+  rare, single, Session-start exception — never a recurring or mid-Session
+  question), Día N, and which Session to open are all computed, never asked.
+  The capability-revoked mention (§3.6a) follows the same discipline as Not
+  Ready's — shown once per Session-start occurrence, never repeated
+  mid-Session.
 - *"Technology should disappear"* — loading states stay silent unless
   genuinely slow; the selling surface shows only the one mode-appropriate
   input, never a technical toggle; tapping a product adds it to the tray
@@ -783,7 +1075,11 @@ actual top sellers within the first screenful regardless of Catalog size.
   selling.
 - *"Business language before technical language"* — every screen uses "Día 2,"
   "Venta actual," "Cerrar sesión," never "Session," "Sale," or
-  "InventoryUnit."
+  "InventoryUnit"; §3.6a's recommendation/mention lines use "tienen tag" and
+  "botones," never "NFC Readiness," "threshold," or a raw count/percentage;
+  the capability-revoked mention (§3.6a) stays equally plain — "no puedes
+  vender con tags" — never naming "capability," "subscription," or
+  "registrationMode."
 - *"Every repeated decision should become automation"* — §7 is the direct
   enumeration of this applied to Home.
 - *"The best interface stays out of the merchant's way"* — the
@@ -791,12 +1087,20 @@ actual top sellers within the first screenful regardless of Catalog size.
   failed tap-to-add or Finalizar Venta never drops her registered items
   (3.8a/3.8d, resolving HOME-B1); an interrupted Sale resumes exactly as it
   was, never silently emptied (3.13, resolving HOME-B2); Cerrar sesión can
-  never silently discard an open Sale (3.11a, resolving HOME-M2).
+  never silently discard an open Sale (3.11a, resolving HOME-M2); Not Ready
+  never blocks selling itself, only withholds the one operationally
+  impossible mode (§3.6a); a revoked Selling Mode Capability likewise never
+  blocks selling — it states the fact plainly rather than silently
+  reassigning her mode without any explanation (§2/§3.6a, resolving
+  HOME2-MAJ3).
 
 **architecture-principles.md:**
-- *#1 (capabilities resolved once, upstream)* — `registrationMode` read at
-  Session open, never re-asked per Sale; selling surface (3.9/3.10) is
-  single-mode, no toggle.
+- *#1 (capabilities resolved once, upstream)* — `Session.operatingMode` is
+  resolved once, at Session start, from the Business's stored
+  `defaultSellingMode` and a computed NFC Readiness check (`decision-log.md`
+  D23), never re-asked per Sale; the rare Limited Ready override (§3.6a) is
+  still a single, Session-start decision, not a recurring one; selling
+  surface (3.9/3.10) is single-mode, no toggle.
 - *#2 (aggregate boundaries follow write-throughput needs)* — the 1-tap-per-item
   core loop, the optimistic instant add + silent background retry (3.8a), and
   the removal of "Nueva Venta" are only safe because Sale is its own
@@ -811,7 +1115,9 @@ actual top sellers within the first screenful regardless of Catalog size.
   Loyalty-claim surface. Directly why the "Otro" tile was removed (3.9) rather
   than reinterpreted as a way to sell something outside the Catalog, and why
   "ver detalle de hoy" was removed (3.7a) rather than redesigned as a
-  mid-session analytics screen.
+  mid-session analytics screen. Also why NFC Readiness (§3.6a) needed no new
+  bounded-context dependency edge — it reads only Inventory data Selling
+  already reads (`decision-log.md` D23).
 
 ## 10. Decisions made
 
@@ -882,6 +1188,29 @@ actual top sellers within the first screenful regardless of Catalog size.
   a distinct fact from whether she can leave.
 - **Ambient header (Día N / running total) included as optional, testable** —
   passive display only, not an interaction, doesn't compete with speed.
+- **NFC Readiness folded into Session-start, per `decision-log.md` D23.** The
+  Ready-matching-default case (the common one) stays exactly as fast and
+  silent as before — zero wireframe changes, zero new taps. Limited Ready,
+  Not Ready, and a revoked Selling Mode Capability are the only three cases
+  that ever become visible, all scoped to
+  the existing Session-start action (§3.6a) rather than a new screen: Limited
+  Ready is a one-tap-to-override inline recommendation; Not Ready is a
+  one-time, non-blocking mention (only when it disagrees with a
+  `defaultSellingMode` of `nfc`) with a path to Asignar Tags, never a block on
+  selling itself. `Session.operatingMode` replaces the old Business-wide
+  `registrationMode` wherever this document meant "which mode this specific
+  Session runs in" — the Business-level Selling Mode Capability (whether
+  `nfc` is available at all) is a distinct concept from `Session.operatingMode`,
+  but no longer one this document leaves ungated: §2's Ready branch now
+  explicitly checks `nfc ∈ registrationMode` before ever resolving a Session
+  silently into `nfc`, so a capability revoked after the fact (e.g. a lapsed
+  subscription) can never be silently bypassed just because a stale
+  `defaultSellingMode` field still reads `nfc`. The Session still opens in
+  `buttons` automatically in this case — but, as of this fix, never
+  silently: it now gets the same kind of one-time, non-blocking mention Not
+  Ready gets, without a next-step link (there isn't one to offer yet —
+  Settings/subscription management is blocked on Q5,
+  `company/business-decisions.md`) — see §3.6a. Resolves HOME2-MAJ3.
 
 ## 11. Future considerations
 
@@ -906,3 +1235,8 @@ actual top sellers within the first screenful regardless of Catalog size.
   genuinely out of scope for this document; the sheet is designed to be
   extensible for exactly this reason, but Settings' own content isn't
   specified here.
+- Whether the readiness threshold itself should ever be merchant-configurable
+  (vs. a fixed product/business rule) — `product/99-rfc/0003-session-selling-mode.md`
+  explicitly leaves the threshold's exact value as a business rule, not a
+  Foundation constant; not designed here, and Ana never sees the number
+  either way (§3.6a).

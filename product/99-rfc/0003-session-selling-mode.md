@@ -1,6 +1,6 @@
 # 0003 — Session-scoped selling mode: capability as availability, business default, and inventory-readiness recommendation
 
-Status: Proposed
+Status: Accepted
 
 ## The idea
 
@@ -69,4 +69,4 @@ The Product Owner then refined the model directly with the three explicit readin
 
 ## Status and next step
 
-This RFC is **Proposed**, not yet Accepted. No Foundation document has been edited to reflect it. Per this folder's own workflow (`product/99-rfc/README.md`): once the Product Owner approves it, Main will update `domain-model.md`, `architecture-principles.md`, `ubiquitous-language.md`, and `information-architecture.md` as scoped above, add the `decision-log.md` entry, and mark this RFC `Accepted` — only then does it become real. Until then, nothing here is binding, and no UX document should be redesigned against it.
+**Accepted.** Promoted to `product/00-foundation/decision-log.md` D23. Applied to `domain-model.md` (Business Capabilities table, entity-relationships diagram, Key Mechanisms, bounded-context table), `architecture-principles.md` #1 (wording refresh), `ubiquitous-language.md` (new terms), and `information-architecture.md` (Assign-Tags gate condition, nav-table capability note) — all as scoped above. `product/02-ux/home.md` and `product/02-ux/inventory.md` are being updated to match, through the standard `ux-designer` → `ux-critic` → `reviewer` cycle; see `product/02-ux/ux-critic-findings.md` for that record once complete.

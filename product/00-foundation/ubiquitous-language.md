@@ -8,10 +8,13 @@ Each term is tagged with the bounded context that owns it (see `domain-model.md`
 
 - **Business** — the merchant tenant (e.g., Ana). Root of all other data. Holds Business Capabilities.
 - **Capability** — a Business-level setting that gates behavior elsewhere in the app. Never asked at Session/Sale time. See `domain-model.md#business-capabilities`.
-  - `registrationMode`: `buttons` | `nfc`
+  - **Selling Mode Capability** (`registrationMode`): the *set* of selling modes available to the Business — `buttons` always included; `nfc` an add-on entitlement. Governs availability only, never which mode a given Session actually runs in (see Session Operating Mode, below). `decision-log.md` D23.
   - `eventScheduling`: always available
   - `subscriptionTier`: `free` | `paid`
   - `loyaltyEnabled`: off until the loyalty-claim module exists
+- **Default Selling Mode** (`defaultSellingMode`) — Business-level, `buttons` | `nfc`. The Business's stored fallback selling mode, read at Session start alongside NFC Readiness to resolve Session Operating Mode. Not itself the operative value for any given Session. `decision-log.md` D23.
+- **Session Operating Mode** (`Session.operatingMode`) — Session-level, `buttons` | `nfc`. Resolved once at Session-open time from Default Selling Mode and NFC Readiness; immutable for the remainder of that Session's `active` lifecycle. This is the value that actually governs how a Sale identifies which InventoryUnit sold. `decision-log.md` D23.
+- **NFC Readiness** — the computed, never-persisted three-state evaluation (Ready / Limited Ready / Not Ready) run at Session-open time against sellable tagged inventory, determining whether `nfc` is used silently, recommended-against-but-overridable, or operationally unavailable (zero sellable tagged units) for that Session. `decision-log.md` D23.
 
 ## Inventory context
 
@@ -21,7 +24,7 @@ Each term is tagged with the bounded context that owns it (see `domain-model.md`
 - **Lot** — a merchandise receiving event (date, Supplier, the line items received that day). Owns its InventoryEntries and InventoryUnits.
 - **InventoryEntry** — what the merchant actually types when registering a Lot: a Product + quantity + cost. Internal to Lot; never shown to the merchant as its own concept.
 - **InventoryUnit** — one physical item, generated automatically from an InventoryEntry (typing "3 Hoodies" generates 3 InventoryUnit records). Carries a status: `available` → `reserved` → `sold`. This is what actually gets sold and what preserves Lot traceability — the merchant never sees or thinks about it directly.
-- **NFCTag** — a physical tag's UID, attached 1:1 to an InventoryUnit (only when `registrationMode = nfc`). Consumable — it leaves with the customer after the sale.
+- **NFCTag** — a physical tag's UID, attached 1:1 to an InventoryUnit (only when `nfc ∈ registrationMode`, i.e., NFC is available to the Business — independent of any single Session's resolved operating mode). Consumable — it leaves with the customer after the sale.
 
 ## Selling context
 
@@ -39,5 +42,5 @@ Each term is tagged with the bounded context that owns it (see `domain-model.md`
 
 ## Terms we deliberately do not use
 
-- "Selling mode" — Buttons/NFC are never described as a mode the merchant picks per sale. It's `registrationMode`, a Capability, chosen once.
+- "Selling mode" as a per-Sale choice — Buttons/NFC is never asked per Sale, and only rarely becomes an explicit per-Session choice (a Limited Ready override, `decision-log.md` D23) — never a raw screen-level toggle. See Session Operating Mode / NFC Readiness for the actual resolution mechanism.
 - "Bazaar" as the entity name — renamed to **Event** in the domain model (Bazaar is one Event type) even though it will likely stay "Bazaar" in Spanish UI copy for Ana specifically.
