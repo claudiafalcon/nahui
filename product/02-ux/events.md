@@ -316,6 +316,80 @@ tab-level resolution and an explicit save action get a loading state.
   (auto). No Supplier/cost-style hidden fields apply here — Eventos has
   nothing analogous to Inventario's deliberate-exception fields.
 
+**Overlap-validation variant (D17) — inline, client-side, no separate screen**
+
+The instant Empieza (and its auto-filled Termina) resolve to a real date
+range, an automatic check runs against her own already-loaded Events for
+this Business (the same list this tab already fetched to render §3.4/§3.5 —
+no new network call). If the range overlaps an already-scheduled-or-active
+Event (`decision-log.md` D17), the form shows this instead of a silently
+re-enabled Guardar:
+
+```
+┌───────────────────────────────┐
+│ ← Eventos                        │
+│  Agendar evento                   │
+│                                │
+│ Lugar                           │
+│  [ Plaza Metepec ▾ ]              │
+│ Tipo                            │
+│  [ Bazar ▾ ]                     │
+│ Empieza                         │
+│  [ 13 / 07 / 2026 ]               │
+│ Termina                         │
+│  [ 15 / 07 / 2026 ]               │
+│                                │
+│  Esas fechas se cruzan con        │  plain text, not Error-styled — a
+│  Plaza Norte (12-14 jul).          │  normal scheduling catch, not a
+│  Ajusta las fechas para           │  system failure
+│  continuar.                      │
+│                                │
+│  [      Guardar evento       ]   │  disabled — same gate as the base state,
+├───────────────────────────────┤   overlap is a fourth silent condition
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+- **Runs before she ever taps Guardar, not after.** Checked the moment
+  Empieza (and Termina, auto-filled to match) are known, and re-checked on
+  every subsequent date edit — never waits for a save round-trip to tell her
+  something already computable from data already in memory.
+  *global-principles.md*, "the fastest interaction is the one that never
+  happens": a doomed save is never attempted, so there's nothing to wait on
+  and nothing to retry.
+- **Reuses already-loaded data, not a new fetch.** The Events list this
+  check compares against is the same one Eventos already resolved to render
+  §3.4/§3.5 — the identical "sub-screen navigation assumed to use
+  already-fetched data" scoping this doc's §3 intro already establishes for
+  Elegir lugar/Elegir tipo. *global-principles.md*, "capture business truth
+  once, reuse it forever."
+- **Names the conflicting Event, not a bare "fechas inválidas."** Shows the
+  conflicting Event's `Venue.displayName` + date range (the same identity
+  fact used everywhere else in this doc, D20) so she can recognize which
+  commitment conflicts and, if needed, check her own calendar — without
+  leaving the form. A generic error would leave her guessing.
+- **Tone is plain and informational, not alarming.** A merchant scheduling
+  two overlapping bazares is a routine data-entry catch, not a destructive
+  action or a system failure — nothing she typed is lost or at risk, so this
+  doesn't warrant the Error-red treatment brand-guide.md reserves for
+  "failures with real merchant-facing consequence — a write/save that failed,
+  or entered data at risk" (e.g. this doc's own §3.9 "No se pudo guardar").
+- **No §3.9 near-instant/slow/error treatment.** That three-state pattern
+  exists specifically to cover write-time latency and failure. This is a
+  pure client-side comparison of two already-known date ranges against
+  already-loaded data — there is no network round-trip for a state to be
+  slow or fail on.
+- **Clears itself reactively, no dismiss tap.** The instant she edits
+  Empieza/Termina into a non-overlapping range, the message disappears and
+  Guardar evento re-enables (once Lugar/Tipo are also filled) — same
+  no-extra-tap posture as this doc's ambient post-save/post-cancel
+  confirmations (§3.10/§3.13).
+- **Guardar evento's disabled condition is extended, not replaced.** The
+  base state already disables Guardar until Lugar + Tipo + Empieza are
+  filled; overlap detection is a fourth, equally silent gate — in the
+  normal (non-overlapping) flow, nothing changes and she never sees this
+  variant at all.
+
 ### 3.7 Elegir lugar — picker sheet
 ```
 ┌───────────────────────────────┐
@@ -714,7 +788,17 @@ Events list:
 Nuevo Evento (3.6):
   fill Lugar (→ picker 3.7, create-or-select a Venue) + Tipo (→ picker 3.8) +
     Empieza (Termina auto-fills)
-  → tap "Guardar evento"
+      → the instant Empieza (and its auto-filled Termina) resolve, an
+        automatic client-side overlap check runs against her own
+        already-loaded Events (no network round-trip, D17) — see §3.6's
+        overlap-validation variant
+      → overlap detected → inline message names the conflicting Event,
+        Guardar evento stays disabled → she edits Empieza/Termina → message
+        clears the instant the range no longer overlaps, re-checked on
+        every edit
+      → no overlap → nothing shown, form behaves exactly as before
+  → tap "Guardar evento" (only reachable once Lugar + Tipo + Empieza are
+    filled and no overlap is detected)
       → saving (3.9) → error → Reintentar → saving again
       → success → Events list, ambient "Evento agendado ✓" (3.10), card
         placed in Activo o Próximos purely by date — never a manual choice
@@ -735,7 +819,8 @@ Elsewhere:
 4. Events list — normal (Activo + Próximos + Pasados all present, Pasados
    includes both the normal summary card and the zero-Session card shape)
 5. Events list — no Activo Event (Próximos + Pasados only)
-6. Nuevo Evento — entry form
+6. Nuevo Evento — entry form, including its inline overlap-validation
+   variant (D17; client-side, no separate screen or navigation — §3.6)
 7. Elegir lugar — picker sheet (create-or-select a Venue)
 8. Elegir tipo — picker sheet
 9. Guardar evento — saving (near-instant/slow) and error
@@ -793,6 +878,10 @@ floor above is about not adding unnecessary steps, the same posture
   time-driven (§2).
 - Cancelled Events disappearing from the list entirely, with no separate
   "archive" step required to hide them (§3.13).
+- **Overlap validation against her own already-scheduled-or-active Events**
+  (`decision-log.md` D17) — checked automatically, client-side, the instant
+  both dates are known; never something she has to cross-reference against
+  her own memory or a separate calendar (§3.6).
 
 ## 8. Open questions
 
@@ -822,20 +911,24 @@ floor above is about not adding unnecessary steps, the same posture
   adding a new Venue, since that question is already settled for Venue by
   D20.
 
-- **Q3 — Tie-break rule for two simultaneously active Events.** Home's
-  resolution logic (`home.md` §2, step 2) reads "an Event with status =
-  active" as if at most one ever qualifies at a time. Nothing in
-  `domain-model.md` or `decision-log.md` prevents Ana from scheduling two
-  Events with overlapping date ranges (e.g., a data-entry mistake, or
-  mis-remembered dates for two different bazares). This is a genuinely new
-  gap, not a restatement of Q1/Q2: if it happens, Eventos' list (§3.4) can
-  display both under "Activo" without breaking (each card is independent),
-  but Home's single "Continuar Día N" CTA has no documented tie-break rule
-  for which Event it means. This spec does not invent one (e.g., "earliest
-  start date wins," "most recently created wins") — escalated to Architect
-  and logged as Q3 in `product/02-ux/product-decisions.md` (reclassified from
-  `architect-questions.md` as a Product Decision), cross-referenced
-  from both this doc and `home.md`.
+- **Q3 — Resolved via `decision-log.md` D17, not reopened here.** The
+  original question (a tie-break rule for two simultaneously active Events)
+  no longer applies: D17 resolved it by removing the ambiguous state
+  entirely rather than adding tie-break logic — a Business may not create
+  or activate an Event whose date range overlaps an already-scheduled-or-
+  active Event. This makes `home.md` §2's single-active-Event assumption
+  correct by construction; no change to `home.md` was needed.
+  **What D17 left genuinely undesigned is now designed.** "Nuevo Evento"
+  (§3.6) now has an inline, client-side overlap-validation state: the
+  instant both dates are known, an automatic check against her own
+  already-loaded Events blocks Guardar evento and names the conflicting
+  Event, before any save is ever attempted. This was named explicitly in
+  D17's own text as "a UX design task, not designed as part of this
+  decision," and surfaced again, still undesigned, during an Architect
+  build-readiness review ahead of `product/03-build` — that gap is now
+  closed; D17's rule and its enforcing screen are both fully specified.
+  Nothing here reopens D17 itself or Q3's original tie-break question, both
+  settled. No open item remains for this gap.
 
 No other new domain ambiguities surfaced during this design — the
 `scheduled`/`active`/`closed`/`cancelled` transitions, cancellation being
@@ -855,7 +948,10 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   auto-fills from Empieza (§3.6); post-save/post-cancel confirmations are
   ambient, not screens requiring a dismiss tap (§3.10/§3.13); empty list
   sections simply don't render (§3.4); an Event's status/section placement is
-  never a step she performs.
+  never a step she performs; the overlap-validation check itself (§3.6,
+  D17) runs instantly against already-loaded data the moment both dates are
+  known, so a doomed save is never attempted and never costs her a
+  round-trip to discover it.
 - *"Never ask twice"* — closing/activating an Event is never confirmed or
   re-asked, it's computed (§2); "Continuar Día N"/"Vendiendo ahora" reuse
   Home's already-computed state rather than re-deriving or re-confirming it
@@ -878,11 +974,16 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   picker (§3.7) means Ana names a place exactly once, ever, then simply
   selects it on every return visit — the identical Venue-identity pattern
   Inventario already established for Product (`inventory.md` §9), applied
-  here to where she sells instead of what she sells.
+  here to where she sells instead of what she sells; the overlap check
+  (§3.6) reuses the same already-loaded Events list this tab resolves with
+  (§2), never a second fetch just to validate dates.
 - *"The best interface stays out of the merchant's way"* — a failed
   Guardar evento never drops her typed data (§3.9); a closed Event with zero
   Sessions is shown factually, not as a failure state, both in its detail
-  screen (§3.17) and in its list card (§3.4/§3.5, EVT-M2 remediation).
+  screen (§3.17) and in its list card (§3.4/§3.5, EVT-M2 remediation); the
+  overlap message (§3.6) names the specific conflicting Event rather than a
+  bare "fechas inválidas," so she never has to guess which commitment it's
+  warning her about.
 
 **architecture-principles.md:**
 - *#1 (capabilities resolved once, upstream)* — Event status is resolved
@@ -911,6 +1012,27 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 
 ## 10. Decisions made
 
+- **Nuevo Evento's overlap check (D17) is enforced inline, client-side, the
+  moment both dates are known — never a save-time rejection.** The check
+  needs only two facts already in memory the instant Empieza is picked: her
+  date range, and the Events list this tab already loaded to resolve
+  §3.4/§3.5 — the same already-fetched-data scoping §3's own intro
+  establishes for every sub-screen, and the same timing pattern Elegir
+  lugar/Elegir tipo (§3.7/§3.8) already use. This is a pure client-side
+  comparison with no server round-trip, so it deliberately does not reuse
+  §3.9's near-instant/slow/error three-state pattern — that pattern exists
+  to cover write-time latency and failure, neither of which applies here.
+  Message tone is plain and informational, not alarming or Error-styled: a
+  merchant double-booking two bazares is a normal scheduling mistake, not a
+  system failure, consistent with brand-guide.md's reservation of Error
+  treatment for failures with real merchant-facing consequence (a write/save
+  that failed or data at risk) — nothing is lost or at risk here. The
+  message names the specific conflicting Event (its `Venue.displayName` +
+  date range, e.g. "Plaza Norte (12-14 jul)") rather than a generic "fechas
+  inválidas," since she needs enough information to actually resolve it.
+  Guardar evento's existing disabled-until-filled condition (§3.6) is
+  extended with a fourth, equally silent gate — no overlap detected —
+  rather than ever letting a doomed save reach §3.9.
 - **Event status transitions are automatic/date-driven except cancellation**,
   which is the sole manual transition and reachable only from `scheduled`
   (§2, §3.12). Chosen because it needs no merchant upkeep ("never ask
@@ -1021,6 +1143,13 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 
 ## 11. Future considerations
 
+- Defense-in-depth server-side re-validation of the D17 overlap rule at
+  actual save time, for the rare case where her locally-loaded Events list
+  goes stale between opening Nuevo Evento and tapping Guardar. Not designed
+  here — genuinely rare for a single-operator business today; if it ever
+  surfaces, the natural home for that rejection is the same inline overlap
+  message (§3.6), re-shown, not a new §3.9-style error state — the rule is
+  identical either way, only the trigger differs.
 - Editing an already-scheduled Event (fixing which Venue is selected, its
   Tipo, or its dates before it goes active) — not designed; today's flow
   only lets her view or cancel (§3.11). A real gap if real usage shows
@@ -1053,8 +1182,9 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 - A reminder/notification ahead of an upcoming Event ("mañana empieza en
   Plaza Norte") — a reasonable idea, but a notifications-infrastructure
   question outside this doc's scope.
-- Once Q1 and Q3 are resolved, the "Día N de M" row (§3.4) may need a small
-  additive change to its shared read-side computation — same caveat
-  `home.md` §11 already carries for Q1. Resultados' own full day-by-day
-  breakdown will carry this same caveat once that doc is designed — this
-  doc only ever reuses the fact, never recomputes it independently.
+- Q1 (D15) and Q3 (D17) are both now Resolved. Whether the "Día N de M" row
+  (§3.4) needs the small additive change this bullet originally anticipated
+  is worth a final confirmation at build time rather than assumed either
+  way — this doc only ever reuses the shared read-side computation, never
+  recomputes it independently, so if a change is needed it happens once,
+  upstream, not here.

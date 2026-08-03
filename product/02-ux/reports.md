@@ -203,10 +203,12 @@ rather than building a second selling mechanism inside this tab.
            independent Business capabilities, so a paid merchant with
            loyalty tracking off is a normal outcome, not a lesser or
            incomplete one). No self-service activation control is designed
-           here — whether/how any capability ever changes after onboarding
-           completes is still an open Business Decision (Q5,
-           `company/business-decisions.md`), so this doc doesn't invent
-           that mechanism.
+           in this tab — Business Capabilities, including `loyaltyEnabled`,
+           are now fully self-service and bidirectional at any time (Q5,
+           Resolved, `company/business-decisions.md`; `decision-log.md`
+           D25), but the actual toggle lives in
+           `product/02-ux/settings.md` ("Activar clientes frecuentes"),
+           never duplicated here; §3.6 points to it in plain text.
          → YES: has Loyalty-claim recorded any Claim yet for this Business?
            → NO:  empty-state teaser (§3.6) → §3.12's own empty state
              (§3.13) — a real, reachable transitional state right after
@@ -468,13 +470,25 @@ see the two variants below for the other two reachable states.)
   Con el seguimiento de clientas activo
   vas a ver cuántas son tus clientas
   frecuentes y cuántas ocasionales.
+  Lo puedes activar cuando quieras
+  desde Configuración, en el menú
+  de Hoy.
   ```
   "Rendimiento por bazar" is entirely unaffected — the two paid-tier rows
-  are gated independently. **No self-service "Activar" control is shown
-  here.** Whether/how any Business capability ever changes after onboarding
-  completes is still an open Business Decision (Q5,
-  `company/business-decisions.md`) — this doc doesn't invent that
-  mechanism just to make this row feel more actionable.
+  are gated independently. **No self-service "Activar" control is designed
+  in this tab.** Business Capabilities, including `loyaltyEnabled`, are
+  fully self-service and bidirectional at any time — Q5 is Resolved
+  (`company/business-decisions.md`; `decision-log.md` D25) — but the actual
+  toggle is designed once, in `product/02-ux/settings.md`
+  ("Activar clientes frecuentes," §3.3a/§3.4), reached from Home's header
+  "▾" (`settings.md` §2.1), not duplicated here
+  (`architecture-principles.md` #1). This note now names that destination
+  in plain text, since Q5's resolution makes Configuración a real place to
+  point her to, but stays non-tappable: Configuración isn't a nav-bar tab
+  the way Eventos is (§3.10's "[ Ver Eventos ]" precedent), so making this
+  row itself jump there would mean inventing a new cross-tab navigation
+  hand-off this doc was never scoped to design — a plain-text pointer gets
+  her there just as well without it.
   **Copy states a count/category, never an identity claim** — see the
   annotation under §3.4 and RPT2-MAJ1 (`ux-critic-findings.md`) for why
   this was corrected from an earlier "quiénes son" draft.
@@ -1241,19 +1255,29 @@ there; no urgency is invented where none exists.
   algorithm/thresholds; tracked in §11, not as an open question here, since
   `company/CLAUDE.md` already scopes that out explicitly rather than
   treating it as awaiting a decision-owner's call.
-- **No self-service loyalty-activation control designed for the
-  `loyaltyEnabled=false` state (§3.6).** Whether/how any Business capability
-  ever changes after onboarding completes is still an open Business
-  Decision (Q5, `company/business-decisions.md`) — this doc shows only a
-  passive, factual note about what activating loyalty tracking would
-  unlock, never a tappable "Activar" affordance, so as not to invent an
-  answer to Q5 implicitly.
-- **No paid-tier upgrade/purchase flow designed anywhere.** The free-tier
-  informational note (§3.4/§3.5) is passive text, not a tappable CTA —
-  payments/checkout are an explicit `company/CLAUDE.md` non-goal, and
-  whether/how `subscriptionTier` is ever merchant-self-service-editable is
-  itself unresolved (Q5, `company/business-decisions.md`, Open — reclassified
-  from `architect-questions.md` as a Business Decision).
+- **No self-service loyalty-activation control designed within this tab
+  for the `loyaltyEnabled=false` state (§3.6).** Q5
+  (`company/business-decisions.md`, Resolved) and `decision-log.md` D25
+  establish that Business Capabilities, including `loyaltyEnabled`, are
+  fully self-service and bidirectional at any time — but the actual toggle
+  ("Activar clientes frecuentes") is designed once, in
+  `product/02-ux/settings.md` (§3.3a/§3.4), reached from Home's header "▾,"
+  never duplicated here. §3.6's note now names Configuración as the real
+  place to go — a plain-text pointer, added now that Settings exists as an
+  Approved destination to point to — but stays non-tappable in this doc:
+  inventing a second, parallel "Activar" control inside Resultados would
+  duplicate a capability change this doc doesn't own, contradicting
+  `architecture-principles.md` #1 (each capability resolved once, upstream,
+  never a per-screen toggle).
+- **No paid-tier upgrade/purchase flow designed anywhere in this tab.** The
+  free-tier informational note (§3.4/§3.5) stays passive text, not a
+  tappable CTA — payments/checkout are an explicit `company/CLAUDE.md`
+  non-goal. `subscriptionTier` is now confirmed self-service-editable in
+  both directions (Q5, `company/business-decisions.md`, Resolved;
+  `decision-log.md` D25), but the actual "Activar plan de pago"/"Volver al
+  plan gratis" actions are designed once, in `product/02-ux/settings.md`
+  (§3.4/§3.5), never duplicated here — this doc's free-tier note tells her
+  what paid unlocks, not how to get it.
 - **Cold start's CTA routes to Hoy**, reusing an existing tab rather than
   inventing a new destination — same pattern the other three docs already
   established for their own cold starts.
@@ -1314,9 +1338,3 @@ there; no urgency is invented where none exists.
   keys off `venueId`, not any freeform text, so a Venue gaining a
   displayName correction or an address later has zero structural effect
   here.
-- Once Q5 (`company/business-decisions.md`) resolves whether/how Business
-  capabilities are ever merchant-self-service-editable, revisit whether the
-  `loyaltyEnabled=false` note (§3.6) should gain a tappable activation
-  affordance — deliberately not designed now, since inventing that
-  mechanism ahead of Q5 would mean answering a Business Decision implicitly
-  from a UX doc.

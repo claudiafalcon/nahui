@@ -1,0 +1,782 @@
+<title>Low-Fidelity UX — Findings Record</title>
+<style>
+  :root {
+    --bg: #faf8f6;
+    --surface: #ffffff;
+    --surface-2: #f3efec;
+    --text: #2d2d2d;
+    --text-muted: #8a8683;
+    --border: #e4e1de;
+    --accent: #e86248;
+    --accent-soft: #fbeae6;
+
+    --sev-blocker: #a72c2c;
+    --sev-blocker-soft: #fbe9e7;
+    --sev-major: #a5691f;
+    --sev-major-soft: #f8ecd9;
+    --sev-minor: #3f5f7a;
+    --sev-minor-soft: #e9eff4;
+    --sev-suggestion: #3f7a56;
+    --sev-suggestion-soft: #e8f2ec;
+    --status-approved: #2f7a4b;
+    --status-approved-soft: #e6f2ea;
+
+    --shadow: 0 1px 2px rgba(45, 45, 45, 0.04), 0 4px 16px rgba(45, 45, 45, 0.04);
+    --radius: 10px;
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #1c1a19;
+    --surface: #242220;
+    --surface-2: #2b2826;
+    --text: #f1ede9;
+    --text-muted: #a89f98;
+    --border: #3a3634;
+    --accent: #f0795f;
+    --accent-soft: #3a2622;
+
+    --sev-blocker: #e07a72;
+    --sev-blocker-soft: #3a2422;
+    --sev-major: #dba658;
+    --sev-major-soft: #3a2f1c;
+    --sev-minor: #8fb3d1;
+    --sev-minor-soft: #202a33;
+    --sev-suggestion: #8ecba8;
+    --sev-suggestion-soft: #1c2c23;
+    --status-approved: #7fcb9b;
+    --status-approved-soft: #1c2c23;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1c1a19;
+      --surface: #242220;
+      --surface-2: #2b2826;
+      --text: #f1ede9;
+      --text-muted: #a89f98;
+      --border: #3a3634;
+      --accent: #f0795f;
+      --accent-soft: #3a2622;
+
+      --sev-blocker: #e07a72;
+      --sev-blocker-soft: #3a2422;
+      --sev-major: #dba658;
+      --sev-major-soft: #3a2f1c;
+      --sev-minor: #8fb3d1;
+      --sev-minor-soft: #202a33;
+      --sev-suggestion: #8ecba8;
+      --sev-suggestion-soft: #1c2c23;
+      --status-approved: #7fcb9b;
+      --status-approved-soft: #1c2c23;
+
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wrap {
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  header.page {
+    margin-bottom: 32px;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0 0 10px;
+  }
+
+  .page-sub {
+    color: var(--text-muted);
+    font-size: 15px;
+    max-width: 60ch;
+    margin: 0;
+  }
+
+  /* --- Scoreboard --- */
+
+  .scoreboard {
+    margin-top: 32px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .scoreboard-row {
+    display: grid;
+    grid-template-columns: 1.3fr repeat(4, 0.62fr) 0.9fr;
+    align-items: center;
+    padding: 12px 18px;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .scoreboard-row:last-child { border-bottom: none; }
+  .scoreboard-row.head {
+    background: var(--surface-2);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 10px 18px;
+  }
+  .scoreboard-row.head span:not(:first-child) { text-align: center; }
+
+  .doc-name {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, monospace;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  .count {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+  .count.nonzero.blocker { color: var(--sev-blocker); }
+  .count.nonzero.major { color: var(--sev-major); }
+  .count.nonzero.minor { color: var(--sev-minor); }
+  .count.nonzero.suggestion { color: var(--sev-suggestion); }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    justify-self: end;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--status-approved-soft);
+    color: var(--status-approved);
+    white-space: nowrap;
+  }
+  .status-pill::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .scoreboard-note {
+    padding: 12px 18px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+  }
+
+  /* --- Doc sections --- */
+
+  .docs { margin-top: 40px; }
+
+  details.doc {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+
+  summary.doc-summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    user-select: none;
+  }
+  summary.doc-summary::-webkit-details-marker { display: none; }
+
+  summary.doc-summary .chevron {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform 0.15s ease;
+  }
+  details[open] summary.doc-summary .chevron { transform: rotate(90deg); }
+
+  summary.doc-summary .doc-title {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, monospace;
+    font-weight: 700;
+    font-size: 15px;
+    flex: 1;
+  }
+
+  summary.doc-summary .doc-desc {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    flex-basis: 100%;
+    margin-top: 2px;
+    font-family: Inter, -apple-system, sans-serif;
+  }
+
+  summary.doc-summary .chips {
+    display: flex;
+    gap: 6px;
+  }
+
+  .chip {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+  }
+  .chip.blocker { background: var(--sev-blocker-soft); color: var(--sev-blocker); }
+  .chip.major { background: var(--sev-major-soft); color: var(--sev-major); }
+  .chip.minor { background: var(--sev-minor-soft); color: var(--sev-minor); }
+  .chip.suggestion { background: var(--sev-suggestion-soft); color: var(--sev-suggestion); }
+  .chip.zero { background: transparent; color: var(--text-muted); opacity: 0.5; }
+
+  .doc-body {
+    padding: 4px 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .sev-group { margin-top: 20px; }
+  .sev-group:first-child { margin-top: 18px; }
+
+  .sev-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .sev-heading.blocker { color: var(--sev-blocker); }
+  .sev-heading.major { color: var(--sev-major); }
+  .sev-heading.minor { color: var(--sev-minor); }
+  .sev-heading.suggestion { color: var(--sev-suggestion); }
+
+  .finding {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+  }
+  .sev-group .finding:first-of-type { border-top: none; padding-top: 0; }
+
+  .finding .stripe {
+    width: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    align-self: stretch;
+  }
+  .finding.blocker .stripe { background: var(--sev-blocker); }
+  .finding.major .stripe { background: var(--sev-major); }
+  .finding.minor .stripe { background: var(--sev-minor); }
+  .finding.suggestion .stripe { background: var(--sev-suggestion); }
+
+  .finding-body { flex: 1; min-width: 0; }
+
+  .finding-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+
+  .finding-id {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, monospace;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  .finding-title {
+    font-size: 14.5px;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  .finding-desc {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    max-width: 68ch;
+  }
+
+  .finding-status {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .finding-status.fixed { background: var(--status-approved-soft); color: var(--status-approved); }
+  .finding-status.open { background: var(--surface-2); color: var(--text-muted); }
+  .finding-status.moot { background: var(--surface-2); color: var(--text-muted); text-decoration: line-through; }
+
+  .doc-footnote {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+
+  .callout {
+    margin-top: 40px;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: 13.5px;
+    color: var(--text-muted);
+  }
+  .callout strong { color: var(--text); }
+
+  footer.page {
+    margin-top: 40px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 640px) {
+    .scoreboard-row { grid-template-columns: 1fr repeat(4, 1fr); }
+    .scoreboard-row .status-pill { display: none; }
+    .scoreboard-row.head span:nth-child(6) { display: none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="page">
+    <p class="eyebrow">Nahui · product/02-ux</p>
+    <h1>Low-Fidelity UX — Findings Record</h1>
+    <p class="page-sub">Every Blocker and Major finding below was caught during that document's own remediation cycle, fixed by <span class="mono">ux-designer</span>, and re-verified clean by <span class="mono">ux-critic</span> before <span class="mono">reviewer</span> signed off. Nothing here is currently open and unresolved — the counts are a historical record, not a punch list.</p>
+  </header>
+
+  <section class="scoreboard">
+    <div class="scoreboard-row head">
+      <span>Document</span>
+      <span>Blocker</span>
+      <span>Major</span>
+      <span>Minor</span>
+      <span>Suggestion</span>
+      <span>Status</span>
+    </div>
+    <div class="scoreboard-row">
+      <span class="doc-name">home.md</span>
+      <span class="count nonzero blocker">2</span>
+      <span class="count nonzero major">8*</span>
+      <span class="count nonzero minor">4</span>
+      <span class="count nonzero suggestion">3</span>
+      <span class="status-pill">Approved</span>
+    </div>
+    <div class="scoreboard-row">
+      <span class="doc-name">inventory.md</span>
+      <span class="count">0</span>
+      <span class="count nonzero major">3</span>
+      <span class="count nonzero minor">4</span>
+      <span class="count nonzero suggestion">2</span>
+      <span class="status-pill">Approved</span>
+    </div>
+    <div class="scoreboard-row">
+      <span class="doc-name">events.md</span>
+      <span class="count">0</span>
+      <span class="count nonzero major">3</span>
+      <span class="count nonzero minor">6</span>
+      <span class="count nonzero suggestion">3</span>
+      <span class="status-pill">Approved</span>
+    </div>
+    <div class="scoreboard-row">
+      <span class="doc-name">reports.md</span>
+      <span class="count">0</span>
+      <span class="count nonzero major">4</span>
+      <span class="count nonzero minor">4</span>
+      <span class="count nonzero suggestion">2</span>
+      <span class="status-pill">Approved</span>
+    </div>
+    <div class="scoreboard-row">
+      <span class="doc-name">onboarding.md</span>
+      <span class="count nonzero blocker">1</span>
+      <span class="count nonzero major">1</span>
+      <span class="count nonzero minor">4</span>
+      <span class="count nonzero suggestion">1</span>
+      <span class="status-pill">Approved</span>
+    </div>
+    <div class="scoreboard-row">
+      <span class="doc-name">settings.md</span>
+      <span class="count nonzero blocker">2</span>
+      <span class="count nonzero major">5</span>
+      <span class="count nonzero minor">6</span>
+      <span class="count nonzero suggestion">4</span>
+      <span class="status-pill">Approved</span>
+    </div>
+    <div class="scoreboard-note">
+      * <code class="mono">home.md</code>'s Major total is shown itemized (8) — 4 from the original review plus 4 more (<code class="mono">HOME2-MAJ1–4</code>) surfaced during its later D23/RFC 0003 amendment. The standing log's own summary table currently shows "4," which undercounts against its own itemized entries — a pre-existing discrepancy in the record, not something restated here as fact. All 8 are fixed and verified regardless of which total is used.
+    </div>
+  </section>
+
+  <div class="docs">
+
+    <details class="doc" open>
+      <summary class="doc-summary">
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        <span class="doc-title">home.md</span>
+        <span class="chips">
+          <span class="chip blocker">2 B</span>
+          <span class="chip major">8 M</span>
+          <span class="chip minor">4 mi</span>
+        </span>
+        <span class="doc-desc">Hoy (Home) — first document reviewed; amended once for the D23/RFC 0003 selling-mode model, four remediation rounds on that amendment alone.</span>
+      </summary>
+      <div class="doc-body">
+
+        <div class="sev-group">
+          <div class="sev-heading blocker">Blockers</div>
+          <div class="finding blocker">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME-B1</span><span class="finding-title">No error/retry state for the two Sale-mutating actions</span></div>
+              <div class="finding-desc">Tap-to-add-item and Finalizar Venta — the app's core validated friction — had no save/error wireframe, unlike every other write action in the document family. A failure here had no defined recovery, for exactly the failure mode the product exists to eliminate.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+          <div class="finding blocker">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME-B2</span><span class="finding-title">Undefined behavior on interruption mid-Sale</span></div>
+              <div class="finding-desc">Phone lock / backgrounding mid-sale is named as a core scenario, but the resume wireframe never confirmed whether already-tapped items survive the interruption or silently reset.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sev-group">
+          <div class="sev-heading major">Major — original review</div>
+          <div class="finding major">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME-M1</span><span class="finding-title">"Cancelar venta actual" — destructive, unconfirmed, no undo</span></div>
+              <div class="finding-desc">Sits directly stacked above the most-tapped button in the app, with zero confirmation and zero undo — a mis-tap under customer pressure wipes correctly-registered items.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+          <div class="finding major">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME-M2</span><span class="finding-title">No interlock between "Cerrar sesión" and an in-progress Sale</span></div>
+              <div class="finding-desc">Closing the session while items sit unfinished in the tray had no specified block, warning, or discard behavior.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+          <div class="finding major">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME-M3</span><span class="finding-title">Buttons-mode grid scaling and "Otro" tile undefined</span></div>
+              <div class="finding-desc">Fixed 2×2 grid with no rule for catalogs beyond 3–4 products — risked reinforcing the exact catalog-size cap the product is meant to help Ana outgrow.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+          <div class="finding major">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME-M4</span><span class="finding-title">"▾" references an unspecified "ver detalle de hoy" feature</span></div>
+              <div class="finding-desc">The header menu's second item had no wireframe and wasn't in the screen-state enumeration, despite being the sole entry point into ending the business day.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sev-group">
+          <div class="sev-heading major">Major — D23/RFC 0003 selling-mode amendment (4 remediation rounds)</div>
+          <div class="finding major">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME2-MAJ1</span><span class="finding-title">"Ready" branch dropped the NFC capability-gate check</span></div>
+              <div class="finding-desc">Could have silently opened a Session in an unavailable mode for a Business with revoked NFC capability but stale defaults.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+          <div class="finding major">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME2-MAJ2</span><span class="finding-title">"Evaluated" conflated with "committed" for Session operating mode</span></div>
+              <div class="finding-desc">Contradicted the doc's own wireframes and footnote on when the override actually happens.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+          <div class="finding major">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME2-MAJ3</span><span class="finding-title">MAJ1's own fix introduced a silent capability-revoked fallthrough</span></div>
+              <div class="finding-desc">Contradicted the doc's own reasoning for why the near-identical Not Ready case needs a one-time mention.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+          <div class="finding major">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME2-MAJ4</span><span class="finding-title">Stale "only two cases" sentence left by the MAJ3 fix</span></div>
+              <div class="finding-desc">One-clause leftover contradicting the new third case the same bullet went on to describe.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sev-group">
+          <div class="sev-heading minor">Minor — open, non-blocking</div>
+          <div class="finding minor">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME-MIN1</span><span class="finding-title">Upcoming-Event card cardinality rule lives in events.md, not here</span></div>
+              <span class="finding-status open">Open — non-blocking</span>
+            </div>
+          </div>
+          <div class="finding minor">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME-MIN2</span><span class="finding-title">Skeleton loading state may briefly read as "frozen"</span></div>
+              <span class="finding-status open">Open — non-blocking</span>
+            </div>
+          </div>
+          <div class="finding minor">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME2-MIN2</span><span class="finding-title">Limited Ready lacked a symmetry statement Not Ready had</span></div>
+              <span class="finding-status fixed">Fixed</span>
+            </div>
+          </div>
+          <div class="finding minor">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">HOME2-MIN4</span><span class="finding-title">New tappable lines missing the doc's own [ ] bracket convention</span></div>
+              <span class="finding-status fixed">Fixed</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="doc-footnote">Also flagged, not a UX finding: a literal-reading contradiction between <span class="mono">information-architecture.md</span>'s "one tap into selling" and <span class="mono">home.md</span>'s own documented 2-tap floor — routed to <span class="mono">reviewer</span>/<span class="mono">architect</span> as Foundation-consistency territory, not re-litigated here.</div>
+      </div>
+    </details>
+
+    <details class="doc">
+      <summary class="doc-summary">
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        <span class="doc-title">inventory.md</span>
+        <span class="chips">
+          <span class="chip zero">0 B</span>
+          <span class="chip major">3 M</span>
+          <span class="chip minor">4 mi</span>
+        </span>
+        <span class="doc-desc">Inventario — Catalog, Registrar Lote, Asignar Tags.</span>
+      </summary>
+      <div class="doc-body">
+        <div class="sev-group">
+          <div class="sev-heading major">Major</div>
+          <div class="finding major">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">INV-M1</span><span class="finding-title">Missing tab-level resolving / defensive-fallback states</span></div>
+              <div class="finding-desc">Every sibling tab defines a near-instant skeleton, a slow-load state, and a load-failure fallback. events.md explicitly claimed to reuse a convention from here that was never actually defined.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+          <div class="finding major">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">INV-M2</span><span class="finding-title">No error state for a genuine NFC scan failure</span></div>
+              <div class="finding-desc">Only the "already assigned" business-logic conflict was covered — a distinct, likely more common failure (out of range, foil interference, timeout) had no state.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+          <div class="finding major">
+            <div class="stripe"></div>
+            <div class="finding-body">
+              <div class="finding-head"><span class="finding-id">INV-M3</span><span class="finding-title">Elegir producto matching logic unspecified</span></div>
+              <div class="finding-desc">Real risk of "Pijama" and "pijama" silently becoming two separate Products, fragmenting one item's stock across two Catalog rows.</div>
+              <span class="finding-status fixed">Fixed — verified</span>
+            </div>
+          </div>
+        </div>
+        <div class="sev-group">
+          <div class="sev-heading minor">Minor — open, non-blocking</div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">INV-MIN1</span><span class="finding-title">"Descartar" missing the [ ] tappable bracket</span></div><span class="finding-status open">Open</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">INV-MIN2</span><span class="finding-title">No inline quantity correction — delete-and-re-enter only</span></div><span class="finding-status open">Open</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">INV-MIN3</span><span class="finding-title">No guardrail on Cantidad = 0</span></div><span class="finding-status open">Open</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">INV-MIN4</span><span class="finding-title">Asignar Tags mid-queue navigation-away not spelled out explicitly</span></div><span class="finding-status open">Open</span></div></div>
+        </div>
+        <div class="doc-footnote">Zero findings on the later D23 cross-reference/terminology amendment — folded straight back to Approved.</div>
+      </div>
+    </details>
+
+    <details class="doc">
+      <summary class="doc-summary">
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        <span class="doc-title">events.md</span>
+        <span class="chips">
+          <span class="chip zero">0 B</span>
+          <span class="chip major">3 M</span>
+          <span class="chip minor">6 mi</span>
+        </span>
+        <span class="doc-desc">Eventos — scheduled/active/past Events and their Sessions; also carries the Venue-picker amendment.</span>
+      </summary>
+      <div class="doc-body">
+        <div class="sev-group">
+          <div class="sev-heading major">Major</div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">EVT-M1</span><span class="finding-title">Untranslated "Market" in the Tipo picker</span></div><div class="finding-desc">The only item breaking an otherwise all-Spanish list — an internal-enum leftover, not deliberate localization.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">EVT-M2</span><span class="finding-title">No list-card wireframe for a zero-Session Pasado Event</span></div><div class="finding-desc">The detail screen handled this gracefully; the list card, applied mechanically, produced the exact broken "0 días · 0 ventas · $0" look the detail screen was designed to avoid.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">EVT-M3</span><span class="finding-title">Eventos→Resultados hand-off strips information Ana just saw</span></div><div class="finding-desc">Tapping a card showing "$2,340" landed on a detail screen with no number at all.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+        </div>
+        <div class="sev-group">
+          <div class="sev-heading minor">Minor — open, non-blocking</div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">EVT-MIN1</span><span class="finding-title">Cancelar evento's write has no loading/error state</span></div><span class="finding-status open">Open</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">EVT-MIN2</span><span class="finding-title">No ordering rule stated for "Próximos"</span></div><span class="finding-status open">Open</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">EVT-MIN3</span><span class="finding-title">Blank-Lugar wireframe scenario</span></div><span class="finding-status moot">Superseded — moot (Lugar is now a required Venue reference)</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">EVT-MIN4</span><span class="finding-title">Same row shape is tappable in Resultados, passive in Eventos</span></div><span class="finding-status open">Open — documented, deliberate</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">EVT-MIN5</span><span class="finding-title">No validation state for invalid date entry in Nuevo Evento</span></div><span class="finding-status open">Open</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">VEN-MIN1</span><span class="finding-title">Venue-displayName screen enumeration omitted §3.17</span></div><span class="finding-status fixed">Fixed</span></div></div>
+        </div>
+        <div class="doc-footnote">Venue aggregate-root amendment (picker + reports.md regrouping): zero Blockers, zero Major — proceeded straight to reviewer.</div>
+      </div>
+    </details>
+
+    <details class="doc">
+      <summary class="doc-summary">
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        <span class="doc-title">reports.md</span>
+        <span class="chips">
+          <span class="chip zero">0 B</span>
+          <span class="chip major">4 M</span>
+          <span class="chip minor">4 mi</span>
+        </span>
+        <span class="doc-desc">Resultados — Session/Event summaries, deeper analytics; also carries the "Tus clientes" (Q8) rebuild.</span>
+      </summary>
+      <div class="doc-body">
+        <div class="sev-group">
+          <div class="sev-heading major">Major</div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">RPT-M1</span><span class="finding-title">"Illustrative, not real" caveat invisible at the wireframe itself</span></div><div class="finding-desc">Stated in prose four times but not signaled anywhere a reader working from wireframes would actually see it.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">RPT-M2</span><span class="finding-title">"Rendimiento por bazar" rows have no drill-down</span></div><div class="finding-desc">A number Ana can't inspect back to its source Events is one she can't fully trust — breaks the doc's own three-altitude model.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">RPT-M3</span><span class="finding-title">No empty state for a Quick-Session-only paid merchant</span></div><div class="finding-desc">A real, reachable scenario would render the flagship "which bazares are worth it" feature as silently blank.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">RPT2-MAJ1</span><span class="finding-title">"Quiénes son tus clientas frecuentes" over-promised identity-level data</span></div><div class="finding-desc">The architecture only ever exposes anonymized aggregate counts — a real, foreseeable expectation-break given Ana's own validated friction. Reworded to a count/category framing; this fix was later reused verbatim in settings.md.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+        </div>
+        <div class="sev-group">
+          <div class="sev-heading minor">Minor — open, non-blocking</div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">RPT-MIN1</span><span class="finding-title">No empty state for §3.10 (0 frecuentes / 0 ocasionales)</span></div><span class="finding-status open">Open</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">RPT-MIN2</span><span class="finding-title">Quick-Session exclusion from bazar grouping never stated explicitly</span></div><span class="finding-status open">Open</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">RPT-MIN3</span><span class="finding-title">"Por bazar" vocabulary undefended against non-bazaar sample data</span></div><span class="finding-status open">Open</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">RPT-MIN4</span><span class="finding-title">Gender-form inconsistency: "clientes" vs. "clientas"</span></div><span class="finding-status open">Open</span></div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="doc">
+      <summary class="doc-summary">
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        <span class="doc-title">onboarding.md</span>
+        <span class="chips">
+          <span class="chip blocker">1 B</span>
+          <span class="chip major">1 M</span>
+          <span class="chip minor">4 mi</span>
+        </span>
+        <span class="doc-desc">First document written and reviewed from a completely blank slate.</span>
+      </summary>
+      <div class="doc-body">
+        <div class="sev-group">
+          <div class="sev-heading blocker">Blocker</div>
+          <div class="finding blocker"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">ONB-B1</span><span class="finding-title">"Ver un ejemplo primero" disclosed permanence only after an irreversible write</span></div><div class="finding-desc">Styled as the lightest, least-committal path, but tapping it wrote a permanent, non-convertible Business — disclosed only after the fact. Renamed and given a real pre-write confirmation screen.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+        </div>
+        <div class="sev-group">
+          <div class="sev-heading major">Major</div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">ONB-M1</span><span class="finding-title">"Todo listo" milestone silently excluded from the resume contract</span></div><div class="finding-desc">An interruption at exactly that screen could skip the milestone forever with no acknowledgment this was possible.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+        </div>
+        <div class="sev-group">
+          <div class="sev-heading minor">Minor — fixed (not blocking, but closed anyway)</div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">ONB-MIN1</span><span class="finding-title">No kit-prerequisite cue before "Activar kit NFC"</span></div><span class="finding-status fixed">Fixed</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">ONB-MIN2</span><span class="finding-title">Unbracketed tappable text links</span></div><span class="finding-status fixed">Fixed</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">ONB-MIN3</span><span class="finding-title">No atomicity guarantee stated for the shared Business-creation write</span></div><span class="finding-status fixed">Fixed</span></div></div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">ONB-MIN4</span><span class="finding-title">ONB-B1's own remediation overclaimed a reassurance it didn't carry</span></div><span class="finding-status fixed">Fixed</span></div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="doc">
+      <summary class="doc-summary">
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        <span class="doc-title">settings.md</span>
+        <span class="chips">
+          <span class="chip blocker">2 B</span>
+          <span class="chip major">5 M</span>
+          <span class="chip minor">6 mi</span>
+        </span>
+        <span class="doc-desc">Configuración — sixth and final document; three remediation rounds, including two self-inflicted regressions from a restructuring pass.</span>
+      </summary>
+      <div class="doc-body">
+        <div class="sev-group">
+          <div class="sev-heading blocker">Blockers</div>
+          <div class="finding blocker"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">SET-B1</span><span class="finding-title">NFC activation lost its required kit-confirmation step</span></div><div class="finding-desc">A restructuring pass folded "Activar venta con tags" into the generic template, silently dropping the Foundation-mandated activation-code confirmation (D19). Restored as a dedicated path reusing onboarding.md's code-entry screens verbatim.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+          <div class="finding blocker"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">SET-D22</span><span class="finding-title">Segmentation copy not jointly gated on both capabilities</span></div><div class="finding-desc">Caught by reviewer: two copy blocks promised Customer Segmentation from activating only one of subscriptionTier=paid / loyaltyEnabled=true, contradicting D22's joint-gating rule that reports.md itself already stated correctly. Fixed by reusing reports.md's own conditional phrasing verbatim.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+        </div>
+        <div class="sev-group">
+          <div class="sev-heading major">Major</div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">SET-M1</span><span class="finding-title">Identity-implying client-tracking copy ("cuáles")</span></div><div class="finding-desc">Same over-promise reports.md already corrected once. Recurred once more in a later round in a new spot, caught and fixed again.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">SET-M2</span><span class="finding-title">Entry-point reachability claim silently incomplete</span></div><div class="finding-desc">Named four real home.md states as excluded without saying so. A later round's rewrite briefly reverted this fix to a worse claim (reachable only during active Sessions) — caught and restored.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">SET-M3</span><span class="finding-title">No acknowledgment when a pending change actually lands</span></div><div class="finding-desc">Only a pull-based banner surfaced a pending change; nothing signaled the moment it took effect. Given a concrete one-time in-surface acknowledgment.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+          <div class="finding major"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">SET-M4</span><span class="finding-title">Plan upgrade lost its external-payment reference</span></div><div class="finding-desc">"Activar plan de pago" gave no signal the transition involved money at all. Restored an explicit, channel-unnamed payment-confirmation statement.</div><span class="finding-status fixed">Fixed — verified</span></div></div>
+        </div>
+        <div class="sev-group">
+          <div class="sev-heading minor">Minor — open, non-blocking</div>
+          <div class="finding minor"><div class="stripe"></div><div class="finding-body"><div class="finding-head"><span class="finding-id">SET-MIN1–6</span><span class="finding-title">Cross-reference precision and internal-consistency nits</span></div><div class="finding-desc">Including one stale §3.3→§3.3a reference left by a remediation round's own renumbering — fixed directly; the rest are lower-consequence documentation-polish items.</div><span class="finding-status open">Mostly open — one fixed directly</span></div></div>
+        </div>
+        <div class="doc-footnote">This document is the subject of a separate governance lesson (<span class="mono">company/lessons.md</span>, 2026-08-02) about how some of its final fixes were made — the content itself is unaffected and remains Approved.</div>
+      </div>
+    </details>
+
+  </div>
+
+  <div class="callout">
+    <strong>Reading this table:</strong> "Major" and "Blocker" counts are the total number of real issues caught across each document's full remediation history — including issues introduced by an earlier fix and caught by the next verification pass. A higher count is not a worse document; it's often a document that went through more rounds of genuine scrutiny (<span class="mono">settings.md</span>, three rounds, is the clearest example). Nothing Blocker- or Major-level is currently open on any of the six documents.
+  </div>
+
+  <footer class="page">
+    Source of record: <span class="mono">product/02-ux/ux-critic-findings.md</span>. Generated for a status check — not itself a governance artifact.
+  </footer>
+
+</div>

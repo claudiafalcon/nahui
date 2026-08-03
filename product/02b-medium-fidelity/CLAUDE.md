@@ -56,13 +56,35 @@ precedence over anything visual in raw-assets. See `ui-designer`'s own agent
 definition (`.claude/agents/ui-designer.md`) for the full rule.
 
 ## Status
-- `home.md` — not started; waiting on the `decision-log.md` D23 amendment to
-  fold back into `product/02-ux/home.md`'s plain Approved status.
-- `inventory.md` — not started; same D23 dependency as above.
-- `events.md` — not started; unblocked, no dependency.
-- `reports.md` — not started; unblocked, no dependency.
-- `onboarding.md` — not started; blocked on `product/02-ux/onboarding.md` not
-  existing yet.
-- `settings.md` — not started; excluded from this phase's completion bar
-  entirely (not "incomplete" — genuinely N/A) pending Q5
-  (`company/business-decisions.md`).
+- `home.md` — **done**. Full cycle complete (including one Important
+  finding — SessionHeader compound string vs. `decision-log.md` D20 —
+  found, fixed at both the Low-Fidelity and Figma layers, and
+  re-verified clean). Second document to complete the Medium-Fidelity tier.
+- `inventory.md` — **done**. Full cycle complete (one Major — undersized
+  delete tap target — and one Minor — self-contradicting picker-sheet
+  state — found, fixed, and re-verified clean). Third document to
+  complete the Medium-Fidelity tier.
+- `events.md` — **done**. Full cycle complete, zero Blockers, zero
+  unresolved Important findings. First document to complete the
+  Medium-Fidelity tier.
+- `reports.md` — **done**. Full cycle complete (2 Major — undersized Día-row
+  tap targets, weak tappability signal — and 1 Minor found, fixed, and
+  re-verified clean; 2 Important doc-drift findings from `reviewer`, both
+  non-blocking, one resolved via a `brand-guide.md` addition, one routed to
+  `ux-designer`). Fourth document to complete the Medium-Fidelity tier.
+- `onboarding.md` — **done**. Full cycle complete (0 Blockers, 0 Major/
+  Important findings; 2 Minor found, tracked non-blocking). Fifth document
+  to complete the Medium-Fidelity tier. **Rebuilt for `decision-log.md` D27**
+  (retired activation-code path removed, new "Activar plan de pago"
+  confirmation screen added) — `ux-critic` clean (1 tracking-file-only
+  Minor, corrected), `reviewer` clean (1 non-blocking wording suggestion,
+  applied to the low-fi spec). Folded back into done.
+- `settings.md` — **done**. Built directly against the D27-corrected spec
+  (retired "Activar venta con tags" activation-code path never existed in
+  this build; new `defaultSellingMode` control added across 3 new frames).
+  Sixth and final document to complete the Medium-Fidelity tier. `ux-critic`
+  clean (1 non-blocking UX gap — SET-D27-MIN1, tracked in this document's
+  own Known gaps), `reviewer` clean.
+
+**All six documents (Hoy, Inventario, Eventos, Resultados, Onboarding,
+Configuración) have now completed the Medium-Fidelity tier.**

@@ -34,10 +34,10 @@ design and engineering both happen downstream of an approved doc here.
 | Inventario | `inventory.md` | Approved |
 | Eventos | `events.md` | Approved |
 | Resultados | `reports.md` | Approved |
-| Settings | `settings.md` | Not started — unblocked, Q5 resolved, ready to design |
+| Settings | `settings.md` | Approved |
 | Onboarding | `onboarding.md` | Approved |
 
-All five designed experiences (Hoy, Inventario, Eventos, Resultados, Onboarding) are now designed, reviewed, and approved — including a full UX Remediation cycle (Main → UX Designer → UX Critic → UX Designer (remediation) → UX Critic (verification) → Reviewer → Main persists) that closed every Blocker and Major UX-quality finding. See "UX Critic Findings" below for the record.
+All six designed experiences (Hoy, Inventario, Eventos, Resultados, Onboarding, Settings) are now designed, reviewed, and approved — the Low-Fidelity UX phase is complete — including a full UX Remediation cycle (Main → UX Designer → UX Critic → UX Designer (remediation) → UX Critic (verification) → Reviewer → Main persists) that closed every Blocker and Major UX-quality finding. See "UX Critic Findings" below for the record.
 
 ## UX Critic Findings
 
@@ -50,8 +50,9 @@ All five designed experiences (Hoy, Inventario, Eventos, Resultados, Onboarding)
 | `events.md` | 0 | 3 (fixed) | 5 | 2 (1 fixed as part of a broader cross-reference sweep) |
 | `reports.md` | 0 | 3 (fixed) | 4 | 3 |
 | `onboarding.md` | 1 (fixed) | 1 (fixed) | 4 (fixed) | 1 |
+| `settings.md` | 1 (fixed) | 5 (fixed) | 5 | 4 |
 
-`home.md`'s Major count includes the four HOME2- findings from its D23/RFC 0003 amendment cycle, on top of the original four HOME-M1–M4. See `ux-critic-findings.md` for the full per-finding record, including the D23 amendment cycle and `onboarding.md`'s first-ever ground-up review.
+`settings.md`'s Blocker (SET-B1, NFC activation losing its required kit-confirmation step) and its five Major findings (SET-M1/M2/M3/M4 plus a recurrence of M2) surfaced across three remediation rounds, including two self-inflicted regressions from a `ux-designer` restructuring pass — see `ux-critic-findings.md` for the full round-by-round record. `home.md`'s Major count includes the four HOME2- findings from its D23/RFC 0003 amendment cycle, on top of the original four HOME-M1–M4. See `ux-critic-findings.md` for the full per-finding record, including the D23 amendment cycle and `onboarding.md`'s first-ever ground-up review.
 
 ## Open Questions — now classified by Decision Ownership
 
@@ -65,9 +66,9 @@ Per the Decision Ownership policy in `company/CLAUDE.md`, domain ambiguities sur
 
 **Q8 is resolved and applied** (`decision-log.md` D22, `product/99-rfc/0002-loyalty-claim-complete-capability.md`): Customer Segmentation is a core capability, Claim resolves via NFC tag or a Sale-level QR Claim Token, Merchant App consumes only Derived Customer Intelligence. `reports.md`'s "Tus clientes" (§3.6/§3.12/§3.13) is now a real, fully-specified feature — gated by `subscriptionTier=paid` and `loyaltyEnabled=true` together — that went through its own full design pass (`ux-designer` → `ux-critic` → `reviewer`, zero Blockers/unresolved Majors). See `product/02-ux/ux-critic-findings.md`'s "Customer Segmentation (Q8) resolution cycle" entry.
 
-## Onboarding and Settings — what's still open before design can start
+## Onboarding and Settings — both done
 
-Navigational placement for both is already resolved (`decision-log.md` D13, `information-architecture.md`'s "Onboarding and Settings" section): Onboarding is a first-run flow preceding all four tabs, not a tab itself; Settings hangs off Home's session-controls affordance (`home.md` §3.7's "▾"), not a fifth tab. What's still open:
+Navigational placement for both is resolved (`decision-log.md` D13, `information-architecture.md`'s "Onboarding and Settings" section): Onboarding is a first-run flow preceding all four tabs, not a tab itself; Settings hangs off Home's session-controls affordance (`home.md` §3.7a's "▾"), not a fifth tab.
 
 - **Onboarding**: Done. `onboarding.md` resolves what D19 left to this document's own design — three paths ("Empezar gratis," "Activar kit NFC," "Ver un ejemplo"), their exact copy, and the full screen sequence — Approved, full remediation cycle complete.
-- **Settings**: Unblocked. Q5 resolved (`decision-log.md` D25) — six merchant-facing actions to design (three self-service capabilities × two directions each), a reusable "pending change, takes effect on [date]" indicator, and a way to cancel a pending change before it lands. Ready for `ux-designer` as the final Low-Fidelity deliverable.
+- **Settings**: Done. `settings.md` resolves what Q5/D25 unblocked — six merchant-facing actions (three self-service capabilities × two directions each), a reusable pending-change indicator, and a way to cancel a pending change before it lands — Approved, full remediation cycle complete (three rounds; see `ux-critic-findings.md`).

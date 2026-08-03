@@ -4,8 +4,9 @@
 https://claude.ai/code/artifact/810dba2f-7931-49e7-8de1-5f2722a920cc — interactive version with full rationale (color usage, typography choices, component specs). Use this link for presentations/pitch; this file is the plain-text reference for agents.
 
 ## Colors (final, per Claude Design brand guide)
-- Coral (Primary): #E86248 — CTAs, active states, key brand moments
-- Tezontle: #D94C3A — hover/pressed state for Coral elements
+- Coral (Primary): #E86248 — reference brand hue; non-text-critical uses only (illustration, decorative accents, brand marks). **Does not meet WCAG AA text contrast (3.35:1 vs. white) — never use for Primary-button fill or Tertiary/link text; use Coral AA+ instead (`company/business-decisions.md` Q12, Resolved).**
+- **Coral AA+: #C13F26 — 5.24:1 contrast vs. white, passes WCAG AA with real margin.** The button/link-safe variant of Coral: use for Primary-button fill (white text on top) and Tertiary/link text on white/light backgrounds — anywhere Coral would otherwise be load-bearing for text/icon contrast. Resolves `company/business-decisions.md` Q12. Chosen over reusing `color/tezontle-dark` (accessible but reads as maroon, collides with Destructive/Error semantics) and over a tighter minimal-shift alternative (`#CE4935`, 4.54:1 — too little margin above the AA line for safe real-device rendering).
+- Tezontle: #D94C3A — hover/pressed state for Coral AA+ elements
 - Tezontle Dark: #A72C2C — high-contrast accent, dark-mode primary
 - Blush (Secondary): #F2887C — tints, badge fills. Never for body text
 - Obsidian: #2D2D2D — all body text and icons on light backgrounds
@@ -24,6 +25,8 @@ Reserved for system feedback, kept muted so they don't compete with Coral:
 - Warning: #C8811A
 - Error: #A72C2C (shared with Tezontle Dark)
 
+Error color usage: reserve Error red for failures with real merchant-facing consequence — a write/save that failed, or entered data at risk (e.g. `home.md`'s Finalizar Venta error, `events.md`'s "No se pudo guardar..."). A passive, retry-only tab-load failure — nothing entered, nothing at risk, just "Reintentar" — uses plain body text instead; the tone should stay calm and routine, not alarming, since nothing was lost. First clarified during `reports.md`'s Medium-Fidelity pass (`product/02b-medium-fidelity/reports.md`) after its own defensive-fallback frame (§3.14) was found using Error red inconsistently with `home.md`/`events.md`/`inventory.md`/`onboarding.md`'s equivalent fallback states, which correctly used plain text. Reuse this distinction rather than defaulting every error-adjacent screen to Error red.
+
 ## Type scale
 - 40/48, weight 600 — largest display
 - 32/40, weight 600
@@ -41,13 +44,17 @@ Reserved for system feedback, kept muted so they don't compete with Coral:
 - Rounded geometry applied consistently — soft curves everywhere, no sharp corners.
 
 ## Buttons
-- Primary action — solid Coral fill, white text
+- Primary action — solid Coral AA+ fill, white text (`company/business-decisions.md` Q12)
 - Secondary action — outlined/light fill
-- Tertiary/link — text-only, Coral
+- Tertiary/link — text-only, Coral AA+ (`company/business-decisions.md` Q12)
 - Disabled — muted gray, no interaction
+- Destructive action — solid Tezontle Dark fill, white text. For rare, effectively irreversible actions only (e.g. cancelling an Event, discarding a Sale) — never for a routine negative action like a simple "no"/dismiss. First built during `events.md`'s Medium-Fidelity pass (`product/02b-medium-fidelity/events.md`) to give a destructive confirm visual weight distinct from Primary's "expected next step" treatment; reuse this variant rather than inventing a new one for the same pattern elsewhere (e.g. Home's "Cancelar venta actual," Inventario's "Descartar").
+
+## List rows — tappability signal
+For a plain list row that drills into more detail (not a bordered card, not a button) — e.g. a day/session row, a venue row — signal tappability with a small filled triangle (`▸`) in Coral at the row's trailing edge, the same token and glyph already used for "Ver más ▸" teaser links. **Flagged, not yet resolved:** this is a small glyph on a light background, the same underlying contrast math as Q12 (Coral computes ~3.35:1) — outside Q12's approved scope (Primary-button fill, Tertiary/link text only), but worth a quick follow-up decision on whether to widen to Coral AA+ too. Give the row a real minimum tap-target height (~46-48px), not just the glyph. First established during `reports.md`'s Medium-Fidelity pass (`product/02b-medium-fidelity/reports.md`) to replace a weaker gray-chevron pattern; reuse this rather than inventing a third tappability signal elsewhere (e.g. `onboarding.md`/`settings.md`'s upcoming Medium-Fidelity work). A row using this pattern is tappable; a row without it (plain text, no chevron) is deliberately passive — the same row *shape* can be either depending on the tab (see `events.md`/`reports.md`'s own documented Día-row tappability distinction, EVT-MIN4/RPT-S3).
 
 ## Cards
-- Stat/highlight card (e.g. "Ventas del día $4,850.00") — solid Coral background, white text, large number emphasis
+- Stat/highlight card (e.g. "Ventas del día $4,850.00") — solid Coral background, white text, large number emphasis. **Flagged, not yet resolved:** white text on this fill has the identical Q12 contrast problem as the Primary button (same underlying color, same ~3.35:1), but wasn't part of Q12's approved scope — worth a quick follow-up decision.
 - List card (e.g. customer/transaction rows) — white background, avatar circle + name + amount, light dividers
 - Media card (e.g. bazaar photo) — image top, content below, rounded corners per radius scale
 
@@ -62,7 +69,7 @@ Reserved for system feedback, kept muted so they don't compete with Coral:
 - Dot indicators used for loyalty/progress (e.g. filled vs. outline circles for a punch-card style tracker)
 
 ## Bottom navigation
-- Fixed bottom bar, icon + label per item, active item highlighted in Coral, rest in Obsidian/gray
+- Fixed bottom bar, icon + label per item, active item highlighted in Tezontle Dark (rebound from Coral for WCAG AA contrast during Medium-Fidelity work — Coral's ~3.35:1 fails the same way it did for Primary buttons, see Q12), rest in Obsidian/gray
 
 ## Tagline
 "The path to what's next"
