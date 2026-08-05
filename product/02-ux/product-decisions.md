@@ -8,7 +8,12 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
-_(none currently — every Product Decision raised so far has been resolved; see below)_
+### Q13 — Should "NFC adoption rate" (% of Sales sold via `nfc` vs. `buttons`) be free-tier or paid-tier?
+
+- **Question:** The Product Owner's 2026-08-04 Medium-Fidelity comprehension pass asked whether Resultados gives merchants enough insight, naming NFC adoption rate as one candidate metric. Unlike the other four metrics raised in the same request (sales trends, top products, ticket average, event performance — all either already Approved in `reports.md` or a direct variant of an already-Approved section), NFC adoption rate has zero precedent anywhere in the current `reports.md` — it isn't mentioned in any of its 14 screen states, so there's no existing tier placement to inherit.
+- **Architect finding:** Fully computable now from data that already exists — `Session.operatingMode` (`buttons | nfc`) is a real, stored, per-Session field, resolved once at Session-open (D23) and immutable while `active`. Sale references `sessionId`, so "% of Sales via NFC" = `count(Sales where session.operatingMode = nfc) / count(all Sales)`, a plain join over two already-stored fields — no new field, no new tracking mechanism, no RFC. D25's "never delete historical data" invariant means the metric stays meaningful even after a `subscriptionTier` downgrade (historical `operatingMode` values are untouched; only future Sessions lose `nfc` eligibility). This is purely a **tier-placement** question, the same shape `reports.md` §8 item 7 already flagged and left as "this doc's inference, not an explicit instruction" for "Rendimiento por bazar." Applying `reports.md` §10's own established test (per-Product/aggregate "counts" = free-tier eligible, per the current Approved precedent; venue/customer "segmentation" = paid-tier): NFC adoption rate is arithmetic over Sale counts, the same shape as the free-tier-eligible metrics, but it's also arguably a signal about a *paid capability's* usage (NFC selling itself requires `subscriptionTier=paid`, D27) — a plausible argument either way, not resolved by the existing precedent alone.
+- **Not yet resolved:** whether this belongs in the free "counts" tier (consistent with sales trends/top products/ticket average) or the paid tier (since it measures usage of a paid-only capability). Needs a Product Owner call before `ux-designer` commits it to a specific section/gate in `reports.md`.
+- **Status:** Open.
 
 ## Resolved
 

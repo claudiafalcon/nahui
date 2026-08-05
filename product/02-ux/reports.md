@@ -39,6 +39,29 @@ posture already established for every other screen here, and for Venue
 before its own aggregate root existed). See §8 item 1 (rewritten) and §10
 for the full change record; §4/§5 updated to add §3.13, one new read-only
 state (renumbering the former §3.13 "Defensive fallback" to §3.14).
+**Amended 2026-08-04 (consolidated pass — Event type legibility, three new
+free-tier insight elements, and a headline synthesis fix).** Three prior
+analyses applied together for coherence: (1) Historial's Event-rollup cards
+and §3.11's filtered venue-detail cards now carry Event type alongside
+`Venue.displayName` — the same closed, frozen 6-item enum already shown in
+`events.md`'s Event detail (`decision-log.md` D16), no new data. (2) Three
+new free-tier insight elements — ticket promedio, sales trend, and top
+products all-time — all confirmed computable now with no new fields
+(`product/02-ux/product-decisions.md` Q13's own architect finding already
+treats these three as "a direct variant of an already-Approved section,"
+distinct from NFC adoption rate, which stays open). (3) `ux-critic`'s
+synthesis-gap finding: items (1)-(2) combined were still separate facts Ana
+had to connect herself, not insight — this pass adds one or two
+headline-level "paired fact" statements at the same visual priority as
+"Total histórico," each pairing two values this doc already computes
+independently into one retrospective, descriptive sentence about her own
+history. (4) "Rendimiento por bazar" (§3.9) rows now carry a plain rank
+number (1., 2., 3.) instead of a magnitude bar — Product Owner call, the bar
+was judged too close to implying a recommendation. Every addition below
+stays inside `company/backlog.md` #3's guardrail (plain magnitude/own-data
+only, never recommendation-flavored copy) — no "deberías" language, no
+cross-vendor data, no forward-looking suggestion of any kind, same posture
+§3.9 already established. See §10 for the full decision record.
 Scope: `Resultados`, the fourth and last of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers Journey 5
 (Review). Picks up exactly what `product/02-ux/events.md` §3.16 deliberately
@@ -287,7 +310,17 @@ its own — same scoping choice as the other three docs.
 ┌───────────────────────────────┐
 │  Resultados                    │
 │  Total histórico                  │
-│  48 ventas · $14,230               │
+│  48 ventas · $14,230 · $296 ticket promedio │
+│                                │
+│  Tu producto estrella: Pijama, con   │
+│  42 piezas vendidas en total.          │  ← same visual priority as
+│  Esta semana vendiste 4 ventas menos  │     "Total histórico"
+│  que la semana pasada.                 │
+│                                │
+│  Top productos · todo tu historial  │
+│   1. Pijama              42        │
+│   2. Sudadera/Maxy        25        │
+│   3. Calcetines           18        │
 │                                │
 │  En curso                       │
 │  ┌───────────────────────────┐ │
@@ -297,7 +330,7 @@ its own — same scoping choice as the other three docs.
 │                                │
 │  Historial                      │
 │  ┌───────────────────────────┐ │
-│  │ Plaza Metepec                │ │
+│  │ Plaza Metepec · Bazar        │ │
 │  │ 3 días · 18 ventas · $2,340   │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
@@ -319,10 +352,105 @@ its own — same scoping choice as the other three docs.
 - "Total histórico" is a pure sum across every Session ever closed —
   free-tier eligible, it's a total, not a segmentation
   (`domain-model.md` capability table).
+- **Ticket promedio** (total ÷ número de ventas) is added inline on the same
+  "Total histórico" line, following the same " · " separator convention
+  every card in this doc already uses for related stats (e.g. "3 días · 18
+  ventas · $2,340"). Free-tier eligible — arithmetic over a total and a
+  count this doc already computes, the same "counts" classification this
+  doc's own §10 precedent already applies to per-Product breakdowns, and the
+  same classification `product-decisions.md` Q13 already gives this exact
+  metric ("a direct variant of an already-Approved section"). Rounded to the
+  nearest peso, same rounding convention §3.9's "$ promedio/día" already
+  establishes. **Scope note:** this amendment adds ticket promedio only to
+  the all-time hero line, not to Session detail (§3.7) or Event detail
+  (§3.8) — extending it to those altitudes is a separate, not-yet-designed
+  idea.
+- **"Top productos · todo tu historial"** reuses the exact per-Product/
+  SaleItem aggregation §3.7's "Por producto" and §3.8's "Por producto (todo
+  el evento)" already perform — same read-side computation, re-scoped from
+  one Session/Event to every Session ever closed (the same all-time scope
+  "Total histórico" already uses, §2). Ordered by total pieces sold,
+  descending, with a plain rank-number prefix (1., 2., 3.) — the same
+  numbering convention §3.9 uses, reused here rather than inventing a second
+  ranking style in the same document. **Plain sort by magnitude, not a
+  recommendation** — same guardrail and same restraint §3.9's own bullet
+  already states: no "deberías vender más..." copy, no forward-looking
+  suggestion, retrospective own-data only (`company/backlog.md` #3). List
+  length is a Medium-Fidelity/visual-density decision, not fixed here — same
+  restraint this doc already takes toward Historial's own unbounded list
+  length.
+- **Graceful degradation at zero sales.** The cold-start gate (§2) only
+  checks "has any Session ever closed," not "has any Sale ever been
+  recorded" — so a Business can have closed Sessions with zero actual Sales
+  (a slow day, closed with nothing sold), the same way `events.md` §3.17
+  already designs for a zero-Sale Event. In that case: ticket promedio is
+  omitted from the "Total histórico" line entirely (never shown as "$0
+  ticket promedio," which would misrepresent an undefined division), no
+  headline paired-fact statements render (see the bullet below — there is no
+  product or trend to state), and "Top productos" shows "Sin ventas
+  registradas," reusing `events.md` §3.17's exact precedent phrase. Plain,
+  factual, no guilt-tripping copy — same brand posture as every other empty
+  state in this doc (§3.10, §3.13).
+- **Two headline-level statements, rendered with the same visual priority as
+  "Total histórico," directly above "Top productos."** These are not new
+  data. Only the sales-trend statement closes a genuine synthesis gap
+  `ux-critic` found — it pairs two values ("esta semana," "semana pasada")
+  that weren't otherwise shown together anywhere in this view. "Producto
+  estrella" is a different kind of device and is described honestly as one
+  below: it doesn't combine anything new — see its own bullet.
+  - **"Producto estrella"** pairs Top productos' own #1 entry (a product's
+    identity) with its own count into one sentence — the same computation
+    "Top productos" already does, just stated as prose for its leading item
+    instead of left as a list row to interpret. This is a spotlight/emphasis
+    device, not synthesis: unlike the trend statement below, both values it
+    states are already independently visible three lines away in "Top
+    productos," at the same visual priority — it restates rather than
+    combines. Kept at headline prominence anyway, on the same logic "Total
+    histórico" already uses: her single best-selling product is worth
+    naming plainly up front rather than making her scan a list to find it.
+  - **Sales trend** pairs "esta semana" and "semana pasada" into one
+    direction-and-magnitude sentence — "vendiste N ventas menos/más," never
+    shown as two side-by-side numbers for her to subtract herself. This is
+    the statement that actually closes the synthesis gap `ux-critic` found —
+    neither value appears anywhere else in this view on its own. Week
+    boundary (Monday-first vs. a rolling 7-day window) is a read-side
+    computation detail, not specified at this fidelity — same posture this
+    doc already takes toward Q1's "Día N" ambiguity (§8 item 4).
+  - Copy above is illustrative, not final — same convention §3.12's
+    thresholds already use. Both statements are strictly retrospective and
+    descriptive: no "deberías" language, no evaluative framing of "menos" as
+    bad or "más" as good, no suggested action — same guardrail §3.9's
+    existing "plain sort by magnitude, not a recommendation ranking" bullet
+    already establishes, extended here to prose (`company/backlog.md` #3).
+  - **Graceful omission, not a fabricated comparison.** If "semana pasada"
+    predates Ana's very first closed Session, the sales-trend statement is
+    omitted rather than stating a comparison against a week before she ever
+    used the app — same restraint as the zero-sales bullet above, and the
+    same principle §3.10's empty state already applies ("no fabricated
+    venue data," §9). If only one of the two statements has data to state,
+    the other renders alone — never a blank placeholder for the missing
+    one. Never more than two statements — a third would start competing
+    with "Total histórico" for attention rather than supporting it.
+  - A fuller time-series view (a proper trend chart, a longer trailing
+    window) is out of scope for this amendment — see §11.
 - **Every Event-rollup card's headline is `Venue.displayName`** ("Plaza
   Norte," "Plaza Metepec"), the same slot Event's former freeform `Nombre`
   occupied — same swap `events.md` §3.4 already applies to its own list
   (`decision-log.md` D20).
+- **Every Historial Event-rollup card now also carries Event type, in the
+  same subordinate role Type already plays in `events.md`'s Event detail**
+  (`Bazar · 12-14 de julio` — Type leads that line, secondary to the
+  headline Venue name shown above it, `events.md` §3.11/§3.16). Adapted here
+  for a compact card: Type sits inline after Venue.displayName on the
+  card's headline line ("Plaza Metepec · Bazar"), rather than its own line,
+  since the card has no separate headline row the way full Detail screens
+  do — still visually and informationally subordinate to the Venue identity,
+  never competing with it. Safe with no new ambiguity: `Event.type` is a
+  closed, frozen 6-item enum (`decision-log.md` D16, `product-decisions.md`
+  Q6, Resolved), the identical vocabulary already shown in `events.md`'s own
+  Event detail. **Quick Session cards are unaffected** — a Quick Session has
+  no `eventId` and therefore no Type; "Sesión rápida · 20 jul" stays exactly
+  as it is.
 - "En curso" holds one card per still-active Event, listing every Día
   already closed under it as its own tappable row — a deliberate
   improvement over Eventos' own treatment of the same rows: `events.md`
@@ -357,11 +485,21 @@ its own — same scoping choice as the other three docs.
 ┌───────────────────────────────┐
 │  Resultados                    │
 │  Total histórico                  │
-│  48 ventas · $14,230               │
+│  48 ventas · $14,230 · $296 ticket promedio │
+│                                │
+│  Tu producto estrella: Pijama, con   │
+│  42 piezas vendidas en total.          │  ← same visual priority as
+│  Esta semana vendiste 4 ventas menos  │     "Total histórico"
+│  que la semana pasada.                 │
+│                                │
+│  Top productos · todo tu historial  │
+│   1. Pijama              42        │
+│   2. Sudadera/Maxy        25        │
+│   3. Calcetines           18        │
 │                                │
 │  Historial                      │
 │  ┌───────────────────────────┐ │
-│  │ Plaza Metepec                │ │
+│  │ Plaza Metepec · Bazar        │ │
 │  │ 3 días · 18 ventas · $2,340   │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
@@ -385,13 +523,28 @@ its own — same scoping choice as the other three docs.
   state.
 - Same corrected count/category wording as §3.4 — see that section's
   annotation and RPT2-MAJ1.
+- **Ticket promedio, "Top productos," the two headline paired-fact
+  statements, and Event type on Historial cards are all identical to §3.4**
+  — same computation, same guardrails, same graceful-degradation and
+  graceful-omission rules. Not restated here; see §3.4's own bullets for
+  the full reasoning.
 
 ### 3.6 Main view — paid tier
 ```
 ┌───────────────────────────────┐
 │  Resultados                    │
 │  Total histórico                  │
-│  48 ventas · $14,230               │
+│  48 ventas · $14,230 · $296 ticket promedio │
+│                                │
+│  Tu producto estrella: Pijama, con   │
+│  42 piezas vendidas en total.          │  ← same visual priority as
+│  Esta semana vendiste 4 ventas menos  │     "Total histórico"
+│  que la semana pasada.                 │
+│                                │
+│  Top productos · todo tu historial  │
+│   1. Pijama              42        │
+│   2. Sudadera/Maxy        25        │
+│   3. Calcetines           18        │
 │                                │
 │  Rendimiento por bazar    [Ver más ▸]│
 │  Plaza Norte · $780/día              │
@@ -401,7 +554,7 @@ its own — same scoping choice as the other three docs.
 │                                │
 │  Historial                      │
 │  ┌───────────────────────────┐ │
-│  │ Plaza Metepec                │ │
+│  │ Plaza Metepec · Bazar        │ │
 │  │ 3 días · 18 ventas · $2,340   │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
@@ -419,6 +572,12 @@ see the two variants below for the other two reachable states.)
   replacement, never a different app. *architecture-principles.md* #1:
   each capability gates a whole section, resolved once upstream, never a
   per-screen or per-visit question Ana is asked about.
+- **Ticket promedio, "Top productos," the two headline paired-fact
+  statements, and Event type on Historial cards are identical to §3.4** —
+  same computation, same guardrails, same graceful-degradation and
+  graceful-omission rules, placed above any paid-tier content since none of
+  the four depend on `subscriptionTier`. Not restated here; see §3.4's own
+  bullets.
 - The free-tier informational note (§3.4/§3.5) disappears entirely once
   paid — she already has what it was telling her about "Rendimiento por
   bazar," and "Tus clientes" now has its own independent gating, handled
@@ -585,12 +744,12 @@ see the two variants below for the other two reachable states.)
 │ ← Resultados                     │
 │  Rendimiento por bazar             │
 │                                │
-│  Plaza Norte                       │
-│   3 eventos · $780 promedio/día      │
-│  Plaza Metepec                     │
-│   2 eventos · $520 promedio/día      │
-│  Plaza Toluca                       │
-│   1 evento · $310 promedio/día        │
+│  1. Plaza Norte                    │
+│      3 eventos · $780 promedio/día  │
+│  2. Plaza Metepec                  │
+│      2 eventos · $520 promedio/día  │
+│  3. Plaza Toluca                    │
+│      1 evento · $310 promedio/día    │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
@@ -602,6 +761,15 @@ see the two variants below for the other two reachable states.)
   deliberately distinct from `company/backlog.md` #3's blocked bazaar-
   recommendation feature (needs multi-vendor foot-traffic/weather data,
   "do not attempt to build"). See §8 and §10.
+- **Each row is now prefixed with a plain rank number (1., 2., 3., ...)
+  matching its sort position** — Product Owner decision: a bare numeral,
+  not a magnitude-proportional bar, since a bar was judged too close to
+  implying a recommendation, the exact risk the bullet above already exists
+  to avoid. Primarily a Medium-Fidelity/visual-treatment decision, noted
+  here at Low-Fidelity because it changes what data the row displays — the
+  rank number itself, not merely the list order already implied by
+  position. No change to the underlying sort, grouping key, or drill-down
+  behavior below.
 - **Grouping key is `venueId`, not exact string match on a freeform name.**
   Venue is a real, independent aggregate root (`domain-model.md`,
   `decision-log.md` D20) — `businessId`-scoped, referenced by ID from Event,
@@ -682,15 +850,15 @@ see the two variants below for the other two reachable states.)
 │  3 eventos · $780 promedio/día      │
 │                                │
 │  ┌───────────────────────────┐ │
-│  │ Plaza Norte                  │ │
+│  │ Plaza Norte · Bazar           │ │
 │  │ 3 días · 18 ventas · $2,340   │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
-│  │ Plaza Norte                  │ │
+│  │ Plaza Norte · Bazar           │ │
 │  │ 2 días · 9 ventas · $1,050    │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
-│  │ Plaza Norte                  │ │
+│  │ Plaza Norte · Expo            │ │
 │  │ 1 día · 5 ventas · $610       │ │
 │  └───────────────────────────┘ │
 ├───────────────────────────────┤
@@ -708,6 +876,16 @@ see the two variants below for the other two reachable states.)
   invented for this entry point. From there, Día rows tap through to
   Session detail (§3.7) exactly as they already do everywhere else in this
   tab.
+- **Event type now shown on every card here too, same subordinate role as
+  §3.4/§3.5/§3.6.** Distinct value from that reuse: since every card in
+  this filtered view repeats the same `Venue.displayName` ("Plaza Norte"
+  three times), Type is the one piece of new information a card here can
+  add — a real, useful case, since `events.md`'s own Q9 record notes "a
+  Business can host different Event types over time (a Bazar this visit,
+  an Expo next)" at the same Venue. The third card above illustrates
+  exactly that (Bazar, Bazar, then Expo at the same Plaza Norte) —
+  illustrative numbers, not a claim about this particular Venue's real
+  history.
 - Quick Sessions never appear here, same as they never contribute to §3.9's
   aggregate — a Quick Session has no `eventId`, and therefore no Venue, to
   group by, so there is nothing inconsistent about their absence.
@@ -1088,6 +1266,24 @@ there; no urgency is invented where none exists.
    friction list, not an explicit instruction. Flagging for Architect/Planner
    visibility rather than treating it as settled.
 
+8. **[Escalated as Q13, open, logged in `product/02-ux/product-decisions.md`
+   as a Product Decision] Should "NFC adoption rate" (% of Sales sold via
+   `nfc` vs. `buttons`) be free-tier or paid-tier?** Raised during the
+   Product Owner's 2026-08-04 Medium-Fidelity comprehension pass asking
+   whether Resultados surfaces enough insight. Confirmed computable now,
+   no new field — `Session.operatingMode`, resolved once at Session-open
+   (D23) and immutable while `active`, already gives a plain join over
+   existing data. Unlike the other insight types raised in the same pass
+   (sales trends, top products, ticket average — all "counts" arithmetic
+   over existing totals; event performance — already Approved as
+   "Rendimiento por bazar," §3.9), this metric has zero precedent anywhere
+   in this document — no existing section/tier placement to inherit, and a
+   plausible argument either way (arithmetic-over-counts suggests free
+   tier, consistent with the rest; measuring usage of a paid-only capability
+   suggests paid tier). Same shape as item 7 above — a placement question,
+   not an architecture gap — but genuinely undecided rather than an
+   inference to flag. Not designed anywhere in this document until resolved.
+
 ## 9. Principle justification
 
 **global-principles.md:**
@@ -1181,6 +1377,44 @@ there; no urgency is invented where none exists.
 
 ## 10. Decisions made
 
+- **Historial's Event-rollup cards and §3.11's filtered venue-detail cards
+  now show Event type alongside `Venue.displayName`**, the same subordinate
+  role Type already plays in `events.md`'s Event detail. Safe to add with
+  zero ambiguity — `Event.type` is a closed, frozen 6-item enum
+  (`decision-log.md` D16), the same vocabulary already shown elsewhere in
+  the app, no new copy decision. Most useful in §3.11, where every card
+  already repeats the same Venue name and Type is the one differentiator a
+  card there can add.
+- **Three new free-tier insight elements added to the main view
+  (§3.4/§3.5/§3.6): ticket promedio (inline on the "Total histórico" line),
+  sales trend (folded into a headline statement, never shown as raw
+  side-by-side numbers), and "Top productos · todo tu historial" (a new
+  section, reusing §3.7/§3.8's existing per-Product aggregation, re-scoped
+  to all-time).** All three confirmed computable now with no new fields
+  (`architect` finding, `product/02-ux/product-decisions.md` Q13) and
+  classified free-tier — the same "counts" classification this doc's own
+  established precedent already gives per-Product breakdowns. Placed above
+  any paid-tier content in §3.6, since none of the three depend on
+  `subscriptionTier`. NFC adoption rate (Q13) is unaffected and stays open
+  — it has no precedent in this doc and a genuine tier-placement ambiguity
+  the other three don't share.
+- **Two headline-level "paired fact" statements added, rendered at the same
+  visual priority as "Total histórico," directly resolving `ux-critic`'s
+  synthesis-gap finding** that the improvements above, even combined, were
+  still separate facts Ana had to connect herself. Each statement pairs two
+  values this doc already computes independently (a product's identity +
+  its own count; this week vs. last week, stated as direction/magnitude)
+  into one retrospective, descriptive sentence — never evaluative, never a
+  suggestion of what to do next, same guardrail as §3.9's existing
+  plain-sort precedent (`company/backlog.md` #3). Gracefully omitted, never
+  fabricated, when the underlying comparison has no real data yet (§9's "no
+  fabricated venue data" principle, extended here to prose).
+- **"Rendimiento por bazar" (§3.9) rows now carry a plain rank number (1.,
+  2., 3.) instead of a magnitude-proportional bar.** Product Owner decision
+  — a bar was judged too close to implying a recommendation, the exact risk
+  this section already exists to avoid. Primarily a visual-treatment call,
+  but changes what the row displays, so it's recorded here even though its
+  full resolution belongs to Medium-Fidelity.
 - **Historial merges closed Event-rollups and standalone closed Quick
   Sessions into one reverse-chronological list.** A genuinely new pattern
   relative to Eventos (which only ever lists Events) — necessary because
@@ -1303,6 +1537,12 @@ there; no urgency is invented where none exists.
 
 ## 11. Future considerations
 
+- **A fuller time-series view of sales over time** (e.g. a longer trailing
+  window than "this week vs. last week," a proper trend chart) — explicitly
+  out of scope for the 2026-08-04 amendment. This week/last week stays a
+  plain two-value comparison (folded into one headline statement, §3.4)
+  precisely because a real time-series view deserves its own dedicated
+  design pass, not a rushed extension of this one.
 - **The specific customer-segmentation algorithm/thresholds** — what
   precisely counts as "frecuente" vs. "ocasional" (§3.12's "3 bazares o
   más" / "1 o 2 veces" are illustrative example numbers only, not a

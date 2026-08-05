@@ -37,7 +37,11 @@ Q4 (who/what sets `registrationMode` on first run) and Q5 (whether any Business 
    - open Session exists → continue it
    - Event active, no Session opened today → "Continuar Día N"
    - nothing scheduled → "Iniciar Sesión Rápida"
-   One tap into selling in every case. Add items (mode-appropriate, mode never shown or asked) → Finalizar Venta → loop → Cerrar Sesión → immediate session summary.
+   One tap to reach the selling screen in every case (`decision-log.md` D28 —
+   a navigation fact, not `home.md` §6's separate 2-tap floor to register a
+   first item once there). Add items (mode-appropriate, mode never shown or
+   asked) → Finalizar Venta → loop → Cerrar Sesión → immediate session
+   summary.
 4. **Event close** — last Session of an Event closes → Event-level rollup, aggregated across its Sessions.
 5. **Review** — Home/Resultados → past Sessions/Events → free tier: counts and totals; paid tier: segmentation (`company/backlog.md` #2 — part of current MVP UX scope; the earlier "blocked until real history exists" gate predates the Product Foundation and no longer applies, see `company/lessons.md` 2026-07-31).
 

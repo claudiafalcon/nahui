@@ -12,6 +12,21 @@ every screen that used to show `Event.Nombre` now shows `Venue.displayName`
 in the same slot. This also renumbers every screen state from the old §3.7
 onward by one — see §10 for the full change record and the copy decision
 ("Lugar" as the merchant-facing rendering of Venue).
+**Amended (UX fix, no Foundation change):** §3.6's Empieza field now defaults
+to hoy (today's date) instead of opening blank, closing the same "unclear
+what to enter" gap flagged on `inventory.md`'s Cantidad field. Termina's
+existing auto-fill-from-Empieza behavior is unchanged and simply inherits the
+new default. Guardar evento's required-field gate narrows to Lugar + Tipo.
+The D17 overlap check (§3.6) is now computed at form-open time, since
+Empieza is pre-resolved from the start — but the warning itself only becomes
+visible once she engages with the form for the first time, not on raw open,
+closing a follow-up comprehension gap (EVT-Q1) found during amendment
+verification. See §10 for the full change record.
+**Amended 2026-08-04 (icon/comprehension audit):** §3.4/§3.5's Events list
+cards now show Event type alongside `Venue.displayName` ("Plaza Norte ·
+Bazar"), matching the subordinate role Type already has on Detail screens.
+Full cycle complete, `ux-critic`/`reviewer` clean, folded back into
+Approved.
 Scope: `Eventos`, the third of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers Journey 2 (Event
 scheduling) and Journey 4 (Event close) from `information-architecture.md`.
@@ -179,21 +194,21 @@ tab-level resolution and an explicit save action get a loading state.
 │  Eventos                       │
 │  Activo                         │
 │  ┌───────────────────────────┐ │
-│  │ Plaza Norte                 │ │
+│  │ Plaza Norte · Bazar          │ │
 │  │ Día 2 de 3 · 12-14 jul       │ │
 │  └───────────────────────────┘ │
 │  Próximos                       │
 │  ┌───────────────────────────┐ │
-│  │ Plaza Toluca                │ │
+│  │ Plaza Toluca · Expo          │ │
 │  │ empieza en 5 días            │ │
 │  └───────────────────────────┘ │
 │  Pasados                        │
 │  ┌───────────────────────────┐ │
-│  │ Plaza Metepec                │ │
+│  │ Plaza Metepec · Bazar        │ │
 │  │ 3 días · 18 ventas · $2,340   │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
-│  │ Ixtapan                     │ │
+│  │ Ixtapan · Bazar              │ │
 │  │ Sin ventas registradas        │ │
 │  └───────────────────────────┘ │
 │      [ Agendar evento ]         │
@@ -237,6 +252,19 @@ tab-level resolution and an explicit save action get a loading state.
 - Home's own upcoming-Event card (`home.md` §3.5) shows only the single
   soonest Próximo — Eventos' Próximos section is the fuller list behind it,
   not a duplicate mechanism.
+- **Card headline now also carries Event type, joined to `Venue.displayName`
+  by " · " — "Plaza Norte · Bazar"** — the same subordinate relationship
+  Type already has on Detail screens (§3.11/§3.14/§3.16: `Venue.displayName`
+  leads, Tipo follows, joined the same way), condensed onto the one headline
+  line a compact list card has room for rather than Detail's separate second
+  line. The existing summary line (día count, countdown, or ventas total) is
+  unchanged — card height and every other fact on the card stay exactly as
+  before. Safe as a pure copy/label addition: `Event.type` is a closed,
+  frozen 6-item enum (`decision-log.md` D16) — no new data, no schema
+  change, nothing left for Ana to type or configure. Applies identically to
+  every card shape in this section, including the zero-Session "Sin ventas
+  registradas" card (EVT-M2), and to §3.5's identical Próximos/Pasados
+  cards.
 
 ### 3.5 Events list — no Activo Event (most common day-to-day state)
 ```
@@ -244,16 +272,16 @@ tab-level resolution and an explicit save action get a loading state.
 │  Eventos                       │
 │  Próximos                       │
 │  ┌───────────────────────────┐ │
-│  │ Plaza Toluca                │ │
+│  │ Plaza Toluca · Expo          │ │
 │  │ empieza en 5 días            │ │
 │  └───────────────────────────┘ │
 │  Pasados                        │
 │  ┌───────────────────────────┐ │
-│  │ Plaza Metepec                │ │
+│  │ Plaza Metepec · Bazar        │ │
 │  │ 3 días · 18 ventas · $2,340   │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
-│  │ Ixtapan                     │ │
+│  │ Ixtapan · Bazar              │ │
 │  │ Sin ventas registradas        │ │
 │  └───────────────────────────┘ │
 │      [ Agendar evento ]         │
@@ -278,20 +306,34 @@ tab-level resolution and an explicit save action get a loading state.
 │ Tipo                            │
 │  [ Elegir tipo ▾ ]                │
 │ Empieza                         │
-│  [ __ / __ / ____ ]               │
+│  [ 04 / 08 / 2026 ]               │  prefilled = hoy, editable
 │ Termina                         │
-│  [ __ / __ / ____ ]               │  prefilled = Empieza, editable
+│  [ 04 / 08 / 2026 ]               │  prefilled = Empieza, editable
 │                                │
-│  [      Guardar evento       ]   │  disabled until Lugar + Tipo + Empieza
+│  [      Guardar evento       ]   │  disabled until Lugar + Tipo
+│                                │   (Empieza/Termina already valid by default)
 ├───────────────────────────────┤
 │ Hoy  Inventario [Eventos] Resultados │
 └───────────────────────────────┘
 ```
-- "Termina" auto-fills to whatever she picks for "Empieza" the instant she
-  picks it — most of Ana's events are single-day (bazares), so this removes a
-  "¿va a durar varios días?" question entirely; she only touches Termina for
-  the minority multi-day case. *global-principles.md*, "never ask twice";
-  matches the spirit of `inventory.md` §3.6's own "only ask what's needed."
+(The "04 / 08 / 2026" is illustrative "hoy" — the field always renders the
+real current date, same as any other date field in this doc.)
+- **Empieza defaults to hoy (today's date) instead of opening blank.** Ana is
+  almost always scheduling for an imminent bazar, not months out, so hoy is
+  right for the common case and stays a single edit away for the real
+  multi-day-ahead case. *global-principles.md*, "never ask twice": since the
+  system can already supply a sensible answer, the field shouldn't sit empty
+  waiting for her to notice and fill it. Empieza is unchanged as a required
+  domain field — this only changes what the UI shows before she's touched it.
+  Because Empieza is now always a real, valid date from the moment the form
+  opens, **Guardar evento's gate narrows to Lugar + Tipo alone** — she never
+  has to touch Empieza to reach a saveable state in the common same-day case.
+- "Termina" auto-fills to match whatever Empieza currently holds — her manual
+  pick, or its new hoy default — the instant Empieza resolves to a real date;
+  most of Ana's events are single-day (bazares), so this removes a "¿va a
+  durar varios días?" question entirely; she only touches Termina for the
+  minority multi-day case. *global-principles.md*, "never ask twice"; matches
+  the spirit of `inventory.md` §3.6's own "only ask what's needed."
 - **Lugar replaces Event's former freeform `Nombre` field entirely**
   (`decision-log.md` D20, `product/99-rfc/0001-venue-entity.md`). It's a
   required create-or-select picker (§3.7) referencing a Venue — the exact
@@ -312,18 +354,62 @@ tab-level resolution and an explicit save action get a loading state.
   drift from the Venue it describes. This spec does not design a UI surface
   for capturing that optional address at Venue-creation time — see §3.7's
   annotation and §11.
-- Only Lugar, Tipo, Empieza are required; Termina is always populated
-  (auto). No Supplier/cost-style hidden fields apply here — Eventos has
-  nothing analogous to Inventario's deliberate-exception fields.
+- Lugar, Tipo, Empieza remain the three required domain fields; Empieza and
+  Termina are now both always populated by default (Empieza = hoy, editable;
+  Termina = Empieza, auto, editable) — Lugar and Tipo are the only fields she
+  must actively choose. No Supplier/cost-style hidden fields apply here —
+  Eventos has nothing analogous to Inventario's deliberate-exception fields.
 
 **Overlap-validation variant (D17) — inline, client-side, no separate screen**
 
-The instant Empieza (and its auto-filled Termina) resolve to a real date
-range, an automatic check runs against her own already-loaded Events for
-this Business (the same list this tab already fetched to render §3.4/§3.5 —
-no new network call). If the range overlaps an already-scheduled-or-active
-Event (`decision-log.md` D17), the form shows this instead of a silently
-re-enabled Guardar:
+Empieza (and its auto-filled Termina) now resolve to a real date range from
+the moment Agendar evento opens — Empieza defaults to hoy — rather than only
+once she taps in and picks a date. An automatic check runs immediately
+against her own already-loaded Events for this Business (the same list this
+tab already fetched to render §3.4/§3.5 — no new network call), and re-runs
+on every subsequent date edit. **The check itself is computed the instant
+the form opens, but the warning only becomes visible once she's actually
+engaged with the form for the first time** — returned from Elegir lugar or
+Elegir tipo having made a selection, or edited a date field, whichever
+happens first (EVT-Q1). A raw, untouched Agendar evento screen never shows
+it, even though hoy's default already technically conflicts — surfacing a
+warning about a date she hasn't looked at yet, the instant the screen
+renders, read as an unprompted error rather than validation feedback. If the
+range overlaps an already-scheduled-or-active Event (`decision-log.md` D17),
+the form shows this — instead of a silently re-enabled Guardar — the moment
+that first engagement completes, most commonly right after she picks Lugar,
+since it's the form's first field:
+
+```
+┌───────────────────────────────┐
+│ ← Eventos                        │
+│  Agendar evento                   │
+│                                │
+│ Lugar                           │
+│  [ Plaza Toluca ▾ ]               │  she just picked this — first
+│                                │  engagement with the form
+│ Tipo                            │
+│  [ Elegir tipo ▾ ]                │
+│ Empieza                         │
+│  [ 04 / 08 / 2026 ]               │  still hoy — she hasn't touched it
+│ Termina                         │
+│  [ 04 / 08 / 2026 ]               │  prefilled = Empieza
+│                                │
+│  Si agendas para hoy, esas        │  becomes visible now that she's
+│  fechas se cruzan con Plaza       │  engaged with the form — not
+│  Norte (04-06 ago). Ajusta las    │  shown before any interaction
+│  fechas para continuar.           │  at all
+│                                │
+│  [      Guardar evento       ]   │  disabled — Tipo still unset,
+├───────────────────────────────┤   plus overlap unresolved
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+The example below (Plaza Metepec / Bazar / 13–15 jul) stays valid for the
+case where she picks Lugar/Tipo first, then edits dates into a conflict —
+this scenario was already action-triggered before EVT-Q1 and needs no
+change:
 
 ```
 ┌───────────────────────────────┐
@@ -345,18 +431,36 @@ re-enabled Guardar:
 │  continuar.                      │
 │                                │
 │  [      Guardar evento       ]   │  disabled — same gate as the base state,
-├───────────────────────────────┤   overlap is a fourth silent condition
+├───────────────────────────────┤   overlap is a third silent condition
 │ Hoy  Inventario [Eventos] Resultados │
 └───────────────────────────────┘
 ```
 
-- **Runs before she ever taps Guardar, not after.** Checked the moment
-  Empieza (and Termina, auto-filled to match) are known, and re-checked on
-  every subsequent date edit — never waits for a save round-trip to tell her
-  something already computable from data already in memory.
+- **Computed the instant the form opens; shown the instant she first
+  engages with it — closes EVT-Q1.** Empieza's hoy default (and Termina,
+  auto-filled to match) means a real date range is known immediately when
+  Agendar evento renders, so the check itself runs with no manual date pick
+  required — but the *warning* waits for her first real interaction with the
+  form (picking Lugar or Tipo, or editing a date), so it never appears as an
+  unprompted error about a date she hasn't looked at or touched. In the
+  common case (Lugar is the form's first field), she still finds out right
+  after picking Lugar — before spending a tap on Tipo — preserving nearly
+  all of the original tap-efficiency benefit while making the warning read
+  as validation following something she just did, the same pattern
+  established everywhere else in this doc, rather than a surprise on open.
   *global-principles.md*, "the fastest interaction is the one that never
-  happens": a doomed save is never attempted, so there's nothing to wait on
-  and nothing to retry.
+  happens": a doomed save is still never attempted.
+- **When the conflicting date is still the untouched hoy default (as in the
+  Lugar-first example above), the message says so explicitly — "Si agendas
+  para hoy, esas fechas se cruzan con..." — rather than asserting a flat
+  conflict as if she'd deliberately chosen that date.** This is the copy
+  half of the EVT-Q1 fix: even shown after an engagement (Lugar picked), the
+  date itself may still be one she hasn't actively set, so the copy names
+  that condition instead of reading as a claim about a decision she made.
+  Once she actually edits Empieza/Termina herself (the Plaza Metepec example
+  below), the message drops the "si agendas para hoy" framing — that
+  phrasing is used only while Empieza still holds its unedited default
+  value.
 - **Reuses already-loaded data, not a new fetch.** The Events list this
   check compares against is the same one Eventos already resolved to render
   §3.4/§3.5 — the identical "sub-screen navigation assumed to use
@@ -385,10 +489,13 @@ re-enabled Guardar:
   no-extra-tap posture as this doc's ambient post-save/post-cancel
   confirmations (§3.10/§3.13).
 - **Guardar evento's disabled condition is extended, not replaced.** The
-  base state already disables Guardar until Lugar + Tipo + Empieza are
-  filled; overlap detection is a fourth, equally silent gate — in the
-  normal (non-overlapping) flow, nothing changes and she never sees this
-  variant at all.
+  base state already disables Guardar until Lugar + Tipo are filled
+  (Empieza/Termina are always valid by default from the moment the form
+  opens, per §3.6's Empieza-default amendment above) — overlap detection is
+  a third, equally silent gate alongside them, not a fourth; in the normal
+  (non-overlapping) flow, nothing changes and she never sees this variant at
+  all. (EVT-Q2 correction — this bullet previously described the
+  pre-amendment four-gate behavior.)
 
 ### 3.7 Elegir lugar — picker sheet
 ```
@@ -789,16 +896,20 @@ Nuevo Evento (3.6):
   fill Lugar (→ picker 3.7, create-or-select a Venue) + Tipo (→ picker 3.8) +
     Empieza (Termina auto-fills)
       → the instant Empieza (and its auto-filled Termina) resolve, an
-        automatic client-side overlap check runs against her own
-        already-loaded Events (no network round-trip, D17) — see §3.6's
-        overlap-validation variant
-      → overlap detected → inline message names the conflicting Event,
-        Guardar evento stays disabled → she edits Empieza/Termina → message
-        clears the instant the range no longer overlaps, re-checked on
-        every edit
+        automatic client-side overlap check computes against her own
+        already-loaded Events (no network round-trip, D17) — but the
+        warning itself only becomes visible once she's first engaged with
+        the form (picked Lugar or Tipo, or edited a date), not on raw open
+        (EVT-Q1) — see §3.6's overlap-validation variant
+      → overlap detected (and visible) → inline message names the
+        conflicting Event, and if Empieza still holds its untouched hoy
+        default, says so explicitly ("si agendas para hoy…") → Guardar
+        evento stays disabled → she edits Empieza/Termina → message clears
+        the instant the range no longer overlaps, re-checked on every edit
       → no overlap → nothing shown, form behaves exactly as before
-  → tap "Guardar evento" (only reachable once Lugar + Tipo + Empieza are
-    filled and no overlap is detected)
+  → tap "Guardar evento" (only reachable once Lugar + Tipo are filled and no
+    overlap is detected — Empieza/Termina are already valid by default from
+    the moment the form opens, EVT-Q2)
       → saving (3.9) → error → Reintentar → saving again
       → success → Events list, ambient "Evento agendado ✓" (3.10), card
         placed in Activo o Próximos purely by date — never a manual choice
@@ -839,8 +950,8 @@ Elsewhere:
 
 | Scenario | Taps / entries | Why it can't be fewer |
 |---|---|---|
-| Agendar un evento en un lugar que ya usó antes (el caso más común: bazares recurrentes) | 1 (Agendar evento) + 2 (Elegir lugar, seleccionar de la lista) + 2 (Elegir tipo, seleccionar) + 1 (Empieza) + 1 (Guardar) = 7 acciones | Lugar, Tipo, and a start date are the minimum facts needed to make Home's future resolution (`home.md` §2) work at all — not padding. Reusing an existing Venue costs one tap more than the old freeform Nombre field did on its own, but removes any re-typing — or fragmentation risk — on every visit after the first (see §10). |
-| Agendar un evento en un lugar nuevo (primera vez ahí) | 1 (Agendar evento) + 1 (abrir Elegir lugar) + 1 typed venue name + 1 ("Agregar... como lugar nuevo") + 2 (Elegir tipo, seleccionar) + 1 (Empieza) + 1 (Guardar) = 8 acciones | The exact same one-time cost Inventario's own Product picker already imposes for a brand-new Product (`inventory.md` §6) — not a new pattern invented for Eventos, and paid only once per physical place, never again on a return visit. |
+| Agendar un evento en un lugar que ya usó antes (el caso más común: bazares recurrentes) | 1 (Agendar evento) + 2 (Elegir lugar, seleccionar de la lista) + 2 (Elegir tipo, seleccionar) + 1 (Guardar) = 6 acciones | Lugar and Tipo are the minimum facts she must actively supply for Home's future resolution (`home.md` §2) to work — not padding. Empieza defaults to hoy and never needs a tap for this common same-day case (§3.6, §10). Reusing an existing Venue costs one tap more than the old freeform Nombre field did on its own, but removes any re-typing — or fragmentation risk — on every visit after the first (see §10). |
+| Agendar un evento en un lugar nuevo (primera vez ahí) | 1 (Agendar evento) + 1 (abrir Elegir lugar) + 1 typed venue name + 1 ("Agregar... como lugar nuevo") + 2 (Elegir tipo, seleccionar) + 1 (Guardar) = 7 acciones | The exact same one-time cost Inventario's own Product picker already imposes for a brand-new Product (`inventory.md` §6) — not a new pattern invented for Eventos, and paid only once per physical place, never again on a return visit. Empieza defaults to hoy and never needs a tap for this common same-day case (§3.6, §10). |
 | Agendar un evento de varios días | Same as either row above + 1 (editar Termina) | The one unavoidable extra step for the minority multi-day case; still cheaper than asking "¿cuántos días?" up front for every Event. |
 | Ver los Días de un Evento activo | 1 (tap card from list) | Shortest possible — list card is already the shortcut. |
 | Retomar la venta desde Eventos | 2 (tap card → tap Continuar/Vendiendo ahora) | One more tap than doing it from Home directly (`home.md` §6: 1 tap when a Session is open, or the 2-tap floor to start one) — a deliberate, acceptable cost of Eventos not being a selling destination; Home remains the fastest path to sell, always. |
@@ -1012,27 +1123,68 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 
 ## 10. Decisions made
 
-- **Nuevo Evento's overlap check (D17) is enforced inline, client-side, the
-  moment both dates are known — never a save-time rejection.** The check
-  needs only two facts already in memory the instant Empieza is picked: her
-  date range, and the Events list this tab already loaded to resolve
-  §3.4/§3.5 — the same already-fetched-data scoping §3's own intro
-  establishes for every sub-screen, and the same timing pattern Elegir
-  lugar/Elegir tipo (§3.7/§3.8) already use. This is a pure client-side
-  comparison with no server round-trip, so it deliberately does not reuse
-  §3.9's near-instant/slow/error three-state pattern — that pattern exists
-  to cover write-time latency and failure, neither of which applies here.
-  Message tone is plain and informational, not alarming or Error-styled: a
-  merchant double-booking two bazares is a normal scheduling mistake, not a
-  system failure, consistent with brand-guide.md's reservation of Error
-  treatment for failures with real merchant-facing consequence (a write/save
-  that failed or data at risk) — nothing is lost or at risk here. The
-  message names the specific conflicting Event (its `Venue.displayName` +
-  date range, e.g. "Plaza Norte (12-14 jul)") rather than a generic "fechas
-  inválidas," since she needs enough information to actually resolve it.
-  Guardar evento's existing disabled-until-filled condition (§3.6) is
-  extended with a fourth, equally silent gate — no overlap detected —
-  rather than ever letting a doomed save reach §3.9.
+- **Events list cards (§3.4/§3.5) now show Event type alongside
+  `Venue.displayName` in the headline, joined by " · " —
+  "Plaza Norte · Bazar."** Previously the list showed only the Venue's
+  identity, while every Detail screen (§3.11/§3.14/§3.16) already paired
+  `Venue.displayName` with its Tipo, one line down. This closes that
+  inconsistency: the list now carries the same fact, in the same
+  subordinate visual order (place leads, type follows), just condensed
+  onto the headline rather than a separate line, since a list card is more
+  compact than a Detail screen. Safe purely as a copy change —
+  `Event.type` is a closed, frozen 6-item enum (`decision-log.md` D16); no
+  schema change, no new merchant input, no interaction change. Applies to
+  every card shape in §3.4 (Activo, Próximos, Pasados, and the zero-Session
+  "Sin ventas registradas" variant) and to §3.5's identical Próximos/Pasados
+  cards. Not RFC-worthy — no aggregate boundary, domain term, or IA change;
+  a UX comprehension fix to an already-Approved spec, same category as this
+  document's other post-Approval amendments.
+- **Empieza now defaults to hoy (today's date) instead of opening blank, and
+  Guardar evento's required-field gate narrows to Lugar + Tipo accordingly.**
+  Closes the same "unclear what to enter without tapping in and picking" gap
+  identified on `inventory.md`'s Cantidad field: Ana is almost always
+  scheduling for an imminent bazar, not months out, so hoy is the correct
+  default for the common case and remains a single edit away for the real
+  multi-day-ahead case. *global-principles.md*, "never ask twice" — the same
+  justification already cited for Termina's auto-fill from Empieza (§3.6) now
+  applies to Empieza itself, one level up. Empieza is unchanged as a required
+  domain field; only the UI's pre-fill behavior changes, so Guardar evento
+  becomes reachable with Lugar + Tipo alone, without her ever touching
+  Empieza, for the common same-day case. Termina needed no separate change —
+  it already inherited whatever value Empieza holds, so it now inherits hoy
+  through that same existing mechanism.
+- **Consequently, the overlap check (D17) now runs the instant Agendar evento
+  opens, not only after she picks a date.** The prior wording assumed Empieza
+  only ever "resolved to a real date" after a manual pick; with hoy as the
+  default, that's already true at open. The check is enforced inline,
+  client-side, the moment both dates are known: a pure comparison against
+  her already-loaded Events list (no new fetch, no server round-trip) — the
+  same already-fetched-data scoping §3's own intro establishes for every
+  sub-screen, and the same timing pattern Elegir lugar/Elegir tipo
+  (§3.7/§3.8) already use — running before Lugar/Tipo are even set, and
+  continuing to re-check on every subsequent date edit. This directly helps
+  the one case where it matters: if she already has an active/scheduled
+  Event covering today (e.g. she's mid-bazar and pre-scheduling the next
+  one), she now finds out before spending taps on Lugar/Tipo —
+  *global-principles.md*, "the fastest interaction is the one that never
+  happens." Because there's no write-time latency or failure mode here, it
+  deliberately does not reuse §3.9's near-instant/slow/error three-state
+  pattern — that pattern exists to cover save-time risk, which doesn't
+  apply to a client-side comparison. Message tone is plain and
+  informational, not alarming or Error-styled: a merchant double-booking
+  two bazares is a normal scheduling mistake, not a system failure,
+  consistent with brand-guide.md's reservation of Error treatment for
+  failures with real merchant-facing consequence (a write/save that failed
+  or data at risk) — nothing is lost or at risk here. The message names the
+  specific conflicting Event (its `Venue.displayName` + date range, e.g.
+  "Plaza Norte (12-14 jul)") rather than a generic "fechas inválidas,"
+  since she needs enough information to actually resolve it. Guardar
+  evento's disabled condition is still Lugar + Tipo + no-overlap; overlap
+  is now the third silent gate, not the fourth, since Empieza no longer
+  independently counts. Not RFC-worthy — no aggregate boundary, domain
+  term, or IA change; a UX interaction-behavior fix to an already-Approved
+  spec, same category as `inventory.md`'s Cantidad-default amendment
+  above.
 - **Event status transitions are automatic/date-driven except cancellation**,
   which is the sole manual transition and reachable only from `scheduled`
   (§2, §3.12). Chosen because it needs no merchant upkeep ("never ask
@@ -1140,6 +1292,33 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   siempre," "un lugar nuevo"), and doesn't collide with any other term
   already in use in this doc now that the old freeform "Lugar (opcional)"
   address field is retired.
+- **Overlap-warning timing and copy corrected (EVT-Q1), and three stale
+  pre-amendment passages fixed for internal consistency (EVT-Q2).** The
+  Empieza-default amendment above made the D17 overlap check computable the
+  instant Agendar evento opens, but the original wording also made the
+  *warning* visible at that same instant — before Ana had touched anything,
+  including in the named scenario where she's mid-Session at a Venue today
+  and opens the form to pre-schedule a different, future bazaar, and
+  immediately sees a conflict warning naming the Venue she's currently
+  selling at. Fixed by decoupling computation from visibility: the check
+  still runs the instant the form opens (no lost tap-efficiency — a doomed
+  save is never attempted), but the warning itself only renders once she's
+  had her first real engagement with the form (picks Lugar or Tipo, or
+  edits a date) — reading as validation following an action, the same
+  pattern every other validation state in this doc already uses, rather
+  than an unprompted error about "today." When the conflicting date is
+  still her untouched hoy default, the message now says so explicitly
+  ("si agendas para hoy…") instead of asserting a flat conflict. See §3.6's
+  overlap-validation variant and its wireframes. Separately, three passages
+  left over from before the Empieza-default amendment still described the
+  old four-gate/Empieza-required behavior — the §3.6 overlap-variant bullet
+  ("fourth gate"), §4's interaction-flow summary, and §6's minimum-step-count
+  table (both common-case rows) — all corrected to agree with the rest of
+  the document: Guardar evento's gate is Lugar + Tipo (+ no-overlap), and
+  the common same-day case never requires touching Empieza. Neither fix
+  reopens D17 or changes any domain field — both are UX-level corrections
+  to an already-Approved spec, same category as the Empieza-default
+  amendment itself.
 
 ## 11. Future considerations
 

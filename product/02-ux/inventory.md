@@ -10,6 +10,17 @@ section references — corrected by Main).
 terminology only, no redesign. `ux-critic` found zero findings and
 `reviewer`'s Foundation-consistency pass found zero Blockers/Important
 findings — folded back into Approved.
+**Amended 2026-08-04 (INV-Q1, Product Owner-raised):** Cantidad now
+defaults to 1 (was blank) with an explicit tap-affordance requirement
+(bracketed per this doc's own `[ ]` = tappable convention) and a "revisa
+antes de guardar" marker on the unreviewed default, carrying into the
+§3.7 committed-lines list. Full cycle complete, `ux-critic`/`reviewer`
+clean, folded back into Approved.
+**Amended 2026-08-04 (icon/comprehension audit):** §3.4's Catalog rows now
+carry the same per-Product marker `home.md` §3.9 introduces, and a
+zero-`disponibles` row now renders dimmed while staying fully tappable —
+applied identically to §3.5/§3.12/§3.13/§3.17. Full cycle complete,
+`ux-critic`/`reviewer` clean, folded back into Approved.
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -172,10 +183,10 @@ current tab in brackets.
 ┌───────────────────────────────┐
 │  Inventario                    │
 │  ┌───────────────────────────┐ │
-│  │ Pijama            12 disponibles│ │  tappable → §3.6, prefilled
-│  │ Sudadera/Maxy       3 disponibles│ │
-│  │ Calcetines          0 disponibles│ │  sold out, stays in the list
-│  └───────────────────────────┘ │
+│  │(P) Pijama          12 disponibles│ │  tappable → §3.6, prefilled
+│  │(S) Sudadera/Maxy     3 disponibles│ │
+│  │(C) Calcetines        0 disponibles│ │  needs restocking — dimmed, still
+│  └───────────────────────────┘ │  fully tappable → §3.6, prefilled
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
@@ -188,6 +199,31 @@ current tab in brackets.
   disappearing: Product persists independent of stock (`domain-model.md` D2).
 - Tapping a row is a real shortcut, not decoration — see §3.6 annotation and
   §10.
+- **Each row now carries the same per-Product marker `home.md` §3.9
+  introduces on the selling grid — the first letter of `Product.name`,
+  uppercased and trimmed — reused verbatim, not re-derived.** Same
+  derivation, same source fact (`Product.name`), same rule; Inventario
+  doesn't invent its own logic for this. Gives the Catalog list the same
+  at-a-glance differentiation the selling grid now has, on the two screens
+  where Ana actually scans a list of what she sells.
+- **A zero-`disponibles` row (Calcetines, 0 disponibles) now renders
+  dimmed** — the same visual dimming signal `home.md` §3.9 already applies
+  to a sold-out ProductTile, reused here rather than inventing a second
+  dimming rule. **Unlike the ProductTile case, this row stays fully
+  tappable**: tapping it still routes to §3.6, prefilled with that Product,
+  exactly like every other Catalog row (§3.6's shortcut annotation, §10).
+  Dimming here is a "needs restocking" signal, not a disabled state — this
+  is precisely the row Ana is most likely to want to tap, since it's where
+  she decides what to bring or replenish next. Contrast explicitly with
+  `home.md` §3.9, where dimming *does* pair with non-tappability (there's
+  genuinely nothing to do with zero sellable units); Inventario's zero-stock
+  row has the opposite relationship to tappability, because restocking is
+  exactly Inventario's job.
+- **Both the marker and the zero-stock dimming rule apply identically
+  wherever this same row shape reappears** — §3.5 (pending-tag-work
+  variant), §3.12/§3.13 (post-save confirmation views), and §3.17
+  (deferred-tagging view, = §3.5) — no separate specification needed for
+  each; they all render the identical Catalog row.
 
 ### 3.5 Catalog view — with pending tag work (nfc-capable Businesses only)
 ```
@@ -199,9 +235,9 @@ current tab in brackets.
 │  │ [ Terminar de etiquetar ]     │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
-│  │ Pijama            10 disponibles│ │
-│  │ Sudadera/Maxy       5 disponibles│ │
-│  │ Calcetines         20 disponibles│ │
+│  │(P) Pijama          10 disponibles│ │
+│  │(S) Sudadera/Maxy     5 disponibles│ │
+│  │(C) Calcetines       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
@@ -239,23 +275,92 @@ current tab in brackets.
 │ Producto                        │
 │  [ Elegir producto ▾ ]           │
 │ Cantidad                        │
-│  [ ______ ]  (teclado numérico)  │
+│  [ − ]  [ 1 · revisa antes de guardar ]  [ + ]│
+│  (o escribe la cantidad)         │
 │                                │
 │  [ + Agregar otro producto ]     │
 │                                │
-│  [      Guardar mercancía    ]   │  disabled until Producto + Cantidad set
+│  [      Guardar mercancía    ]   │  enabled once Producto is chosen —
+│                                │  Cantidad defaults to 1, never blank
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
+(The instant she interacts with Cantidad at all — `[−]`, `[+]`, typed entry, or
+tapping the number to open `teclado numérico` — the "· revisa antes de
+guardar" suffix disappears and the field renders as "1" (or whatever value
+she set) — still within the same tappable/editable treatment, just without
+the suffix. Only the untouched, still-default state carries the suffix.)
 - Only Producto + Cantidad are asked — no Supplier, no cost field, per
   `architecture-principles.md` #5 and `decision-log.md` D9 (see §8, item 1).
 - If reached by tapping a Catalog row (§3.4), Producto arrives already filled
-  with that row's Product; only Cantidad is left to type. *global-principles.md*,
-  "capture business truth once, reuse it forever" — she never re-searches for
-  a Product she's already looking at.
+  with that row's Product, and Cantidad defaults to 1 immediately — the row is
+  already complete and Guardar mercancía is enabled with zero further taps,
+  though she's free to adjust the count before saving. *global-principles.md*,
+  "capture business truth once, reuse it forever" and "the fastest interaction
+  is the one that never happens."
+- **The default quantity now renders as textually distinct from a
+  deliberately set one — closes INV-Q1.** Until she interacts with Cantidad
+  in any way, the field reads "1 · revisa antes de guardar" instead of a bare
+  "1" — a low-cost, always-visible signal that this number is the app's
+  placeholder, not something she's actually looked at, addressing the
+  specific risk that a pre-filled default is easy to tap past without ever
+  registering it as a real decision. This costs zero additional taps in the
+  common, correctly-defaulted case — she can still glance and tap Guardar
+  directly — since the fix targets *silence*, not speed: an unreviewed
+  default can no longer look pixel-identical to a reviewed one. Deliberately
+  not a blocking confirmation step, per the same reasoning the original
+  Cantidad-default amendment already established (§10) — this doesn't
+  reintroduce the friction that amendment removed.
+- **The same marker carries into the "Ya agregaste" committed-lines list
+  (§3.7) for any line whose Cantidad was never touched before "+ Agregar
+  otro producto" committed it.** This is what closes the multi-unit/batch
+  half of INV-Q1: if she moves quickly through several Products without ever
+  engaging Cantidad on any of them (e.g., a fast pass through a large
+  receiving batch), every one of those lines stays visibly flagged in the
+  list she reviews right before Guardar mercancía — not just whichever row
+  currently has focus — so a run of unreviewed defaults reads as a
+  conspicuous pattern rather than looking identical to a batch of genuinely
+  single-unit lines. See §3.7.
+- Cantidad's default (1) and floor (never below 1) apply identically whether
+  Producto came from the existing-Product list or was created inline as new
+  (§3.8) — the rule is about the field, not about how Producto was resolved.
+- The `[−]`/`[+]` stepper is additive, not a replacement for typing: tapping
+  the numeric value still opens `teclado numérico` for jumping straight to a
+  larger count without repeated taps. `[−]` goes inert once Cantidad = 1 — it
+  never wraps to 0 or negative; typing `0` or clearing the field reverts to 1
+  rather than being accepted, since "0 units received" isn't a real receiving
+  event.
+- **The numeric value itself must render with a clear tappable/editable
+  visual affordance — never as plain, static-looking display text.** The
+  wireframe above now brackets it (`[ 1 · revisa antes de guardar ]`)
+  alongside `[−]`/`[+]`, consistent with this document's own stated
+  convention (§3 intro: "`[ ]` = tappable, plain text = passive/
+  informational") — previously the value sat unbracketed between the two
+  stepper buttons, silently contradicting that convention. This is a
+  low-fidelity notation only; the actual visual treatment (border,
+  underline, fill, etc.) is a Medium-Fidelity/`ui-designer` decision. But
+  *some* real, visible affordance is a hard requirement here, not optional
+  polish: without it, tapping the number to open `teclado numérico` isn't
+  discoverable as an available action — she'd have to already know it's
+  possible rather than see it. This is what actually makes §6's "typed
+  entry stays the faster path for large counts" true in practice, not just
+  true on paper — a quantity of 20 shouldn't cost nineteen taps on `[+]`,
+  because the faster path is visibly there to take. Applies identically
+  wherever a live Cantidad field appears in this document, including
+  §3.7's entry row.
+- **Tapping the Cantidad value to open `teclado numérico` is a hard
+  requirement of this field, not an incidental side effect of the stepper
+  existing.** The `[−]`/`[+]` stepper is a convenience for small
+  adjustments only and must never be the sole way to change Cantidad —
+  direct typed entry must always be available and must always be the
+  visible, obvious option for reaching a large count quickly.
+- **Cantidad's default value (1) remains fully editable at all times before
+  Guardar mercancía, by either input method** — the default is a starting
+  value only, never a locked or suggested-only one, whether or not the
+  "· revisa antes de guardar" marker is still showing.
 - Form is a multi-line receiving event, not the Home selling grid
-  (`home.md` §3.9): receiving requires a typed quantity per Product, a
+  (`home.md` §3.9): receiving requires a quantity per Product, a
   fundamentally different shape from a single tap = one unit sold. Reusing the
   selling grid here would conflate two different actions in one visual
   language.
@@ -269,11 +374,13 @@ current tab in brackets.
 │ Ya agregaste:                    │
 │  Pijama — 10                [✕] │
 │  Sudadera/Maxy — 5            [✕] │
-│                                │
+│  Calcetines — 1 · revisa       [✕] │  committed without ever touching
+│                                │  Cantidad — marker carries through
 │ Producto                        │
 │  [ Elegir producto ▾ ]           │
 │ Cantidad                        │
-│  [ ______ ]  (teclado numérico)  │
+│  [ − ]  [ 1 · revisa antes de guardar ]  [ + ]│
+│  (o escribe la cantidad)         │
 │                                │
 │  [ + Agregar otro producto ]     │
 │                                │
@@ -283,9 +390,23 @@ current tab in brackets.
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
-- "+ Agregar otro producto" commits the current row (validates it's complete)
-  and opens a fresh blank one — exactly one tap per additional Product line,
-  no more.
+*(The "Calcetines" line illustrates the "revisa antes de guardar" marker
+carrying through into the committed list per INV-Q1 above — "Pijama" and
+"Sudadera/Maxy" render plain because their quantities were deliberately
+typed/adjusted.)*
+- "+ Agregar otro producto" commits the current row (now complete the moment
+  Producto is chosen, since Cantidad defaults to 1) and opens a fresh blank
+  one — exactly one tap per additional Product line, no more. Adjusting a
+  line's quantity beyond the default is an additional, optional tap on `[+]`
+  (or typed entry), only when the count genuinely differs from 1.
+- **The active row's Cantidad field carries the same tappable/editable
+  affordance requirement as §3.6** — bracketed in the wireframe above
+  (`[ 1 · revisa antes de guardar ]`) for the same reason: the numeric
+  value must never read as plain, static display text. Committed-line
+  quantities in the "Ya agregaste" list (e.g., "Pijama — 10") are
+  already-saved values in this draft, not live editable fields — only
+  `[✕]` is tappable on those rows. The affordance requirement applies to
+  the one active, still-being-typed-into row, exactly as in §3.6.
 - `[✕]` on a committed row lets her fix a miscount before saving — respects her
   intelligence rather than punishing a typo. *Brand tone*, warm/direct, never
   condescending.
@@ -405,9 +526,9 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  Inventario                    │
 │  Mercancía registrada ✓          │  ambient, fades — not a separate screen
 │  ┌───────────────────────────┐ │  requiring a tap to dismiss
-│  │ Pijama            10 disponibles│ │
-│  │ Sudadera/Maxy       5 disponibles│ │
-│  │ Calcetines         20 disponibles│ │
+│  │(P) Pijama          10 disponibles│ │
+│  │(S) Sudadera/Maxy     5 disponibles│ │
+│  │(C) Calcetines       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
@@ -425,9 +546,9 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  Inventario                    │
 │  Mercancía lista para vender ✓   │
 │  ┌───────────────────────────┐ │
-│  │ Pijama            10 disponibles│ │
-│  │ Sudadera/Maxy       5 disponibles│ │
-│  │ Calcetines         20 disponibles│ │
+│  │(P) Pijama          10 disponibles│ │
+│  │(S) Sudadera/Maxy     5 disponibles│ │
+│  │(C) Calcetines       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
@@ -533,9 +654,9 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  │ [ Terminar de etiquetar ]     │ │
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
-│  │ Pijama            10 disponibles│ │
-│  │ Sudadera/Maxy       5 disponibles│ │
-│  │ Calcetines         20 disponibles│ │
+│  │(P) Pijama          10 disponibles│ │
+│  │(S) Sudadera/Maxy     5 disponibles│ │
+│  │(C) Calcetines       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
@@ -580,7 +701,9 @@ Catalog view:
 
 Registrar mercancía (3.6/3.7):
   fill Producto (→ 3.8 if using the picker; matching is case-insensitive,
-    trimmed — see §3.8) + Cantidad
+    trimmed — see §3.8) — Cantidad defaults to 1 the instant Producto
+    resolves, marked "revisa antes de guardar" until touched (INV-Q1, §3.6),
+    adjustable via [−]/[+] or typed entry (floor: 1)
   → tap "+ Agregar otro producto" → commits row, opens next blank row → repeat
   → tap "Guardar mercancía"
       → saving (3.10)
@@ -625,9 +748,10 @@ Asignar tags (nfc-capable Business only, 3.14):
 
 | Scenario | Taps / entries | Why it can't be fewer |
 |---|---|---|
-| Register 1 new Product line (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto) + 1 typed quantity + 1 (Guardar) | Must specify *what* arrived and *how many* — this is the information itself, not an artificial gate. |
-| Register N Product lines (buttons-only) | 1 (open) + N×(1 elegir producto + 1 typed quantity) + (N−1)×(agregar otro producto) + 1 (Guardar) | Each line is a distinct fact; the (N−1) "agregar otro" taps are the minimum structural cost of an arbitrary-length list, not padding. |
-| Restock an already-known, sold-out Product (tap Catalog row) | 1 (row, prefills Producto) + 1 typed quantity + 1 (Guardar) | Shortest possible — Product identity reused instead of re-searched. *global-principles.md*, "capture business truth once, reuse it forever." |
+| Register 1 new Product line, quantity 1 (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto) + 1 (Guardar) | Cantidad defaults to 1 on Producto selection — no separate quantity step for the single-unit case, the most common one. |
+| Register 1 new Product line, quantity >1 (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto) + N−1 taps on `[+]` (or 1 typed entry) + 1 (Guardar) | Must still specify *how many* when it's not 1 — this is the information itself, not an artificial gate; typed entry stays the faster path for large counts. |
+| Register N Product lines (buttons-only) | 1 (open) + N×(1 elegir producto [+ adjustment taps if quantity ≠1]) + (N−1)×(agregar otro producto) + 1 (Guardar) | Each line is a distinct fact; the (N−1) "agregar otro" taps are the minimum structural cost of an arbitrary-length list, not padding. |
+| Restock an already-known, sold-out Product at quantity 1 (tap Catalog row) | 1 (row, prefills Producto + Cantidad defaults to 1) + 1 (Guardar) | Shortest possible — Product identity reused instead of re-searched, and the default removes the previously-required typed quantity for the common 1-unit-restock case. *global-principles.md*, "capture business truth once, reuse it forever." |
 | Same, nfc-capable Business, U total units in the Lot | + U scans, 1 per physical unit | Per-unit tagging is a domain requirement (`decision-log.md` D4), not a UX choice — one tag, one unit, no shortcut exists that preserves traceability. A failed read (§3.16) costs zero extra taps — she simply re-presents the same tag. |
 | Browse the Catalog only | 0 taps | Opening the tab is itself the answer; nothing to register. |
 
@@ -770,6 +894,64 @@ comparable hard speed requirement — the floor above is about not adding
 
 ## 10. Decisions made
 
+- **Cantidad now defaults to 1 the instant Producto is chosen, with an added
+  `[−]`/`[+]` stepper alongside the existing typed/`teclado numérico` entry
+  (§3.6, §3.7).** Amends the original spec, which specified Cantidad as an
+  empty, typed-only field with only an en-dash placeholder — found unclear in
+  Product Owner testing (no default shown, no non-keyboard way to reach 2, 3,
+  etc.). Default value of 1 matches the most common receiving case ("just
+  arrived, one piece") and removes an artificial blank-field gate for that
+  case — *global-principles.md*'s "the fastest interaction is the one that
+  never happens" and "every repeated decision should become automation"
+  apply directly. The stepper is additive, not a replacement: typing (and the
+  numeric keyboard) remains fully available for jumping straight to a larger
+  count. Floor: Cantidad can never go below 1 by either input method — `[−]`
+  is inert at 1, and a typed `0`/blank reverts to 1 rather than being
+  accepted, since "0 units received" isn't a real receiving event.
+  **Consequently, "Guardar mercancía disabled until Producto + Cantidad set"
+  (§3.6) now resolves to "enabled once Producto is chosen"** — Cantidad is
+  never in an unset state once a Producto exists, so the original gate's
+  substance (both fields must hold a value) is unchanged; only the mechanics
+  of reaching a valid Cantidad changed. Deliberately not offset with an extra
+  confirmation step before Guardar — the quantity is always visible in the
+  row before saving, same as the "Ya agregaste" list already gives her in
+  §3.7. Does not touch `decision-log.md` D3 ("the merchant still just types a
+  quantity, the platform expands it") — the stepper is one more way to arrive
+  at the same typed value, not a different data path; InventoryUnit expansion
+  is unaffected. Not RFC-worthy — no aggregate boundary, domain term, or IA
+  change; a UX interaction-behavior fix to an already-Approved spec, same
+  category as the D23 amendment above.
+- **The default Cantidad value now carries a "revisa antes de guardar"
+  marker until she interacts with the field, and the same marker carries
+  into the "Ya agregaste" committed-lines list for any line saved without
+  ever touching its quantity (§3.6, §3.7) — resolves INV-Q1.** The prior
+  amendment above (default-to-1 + immediately-reachable Guardar) closed one
+  friction problem but opened a silent-under-registration risk: a pre-filled
+  "1" was visually identical whether she'd genuinely reviewed it or simply
+  tapped through. This fix doesn't revert the default or add a confirmation
+  step — it makes the unreviewed state impossible to mistake for a
+  deliberate one, at zero added taps for the common, correctly-defaulted
+  case. The marker disappears the instant she engages Cantidad in any way,
+  even if the value stays 1. Does not touch `decision-log.md` D3 or the
+  stepper/typed-entry mechanics — copy/state-signal only.
+- **The Cantidad numeric value must render with a visible tappable/editable
+  affordance, and typed entry via `teclado numérico` is now stated as a
+  hard requirement rather than an incidental capability of the stepper
+  (§3.6, §3.7).** Product Owner follow-up to the two amendments above:
+  confirmed both are real, permanent product decisions, and specifically
+  confirmed neither closes the "quantity of 20" concern (whether tapping
+  `[+]` nineteen times would be frustrating) on its own — the mechanic
+  (typed entry as the faster path for large counts, §6) already existed,
+  but nothing previously mandated that it be *visually discoverable*
+  rather than something she'd have to already know was possible. Closed by
+  bracketing the numeric value in the wireframe, consistent with this
+  document's own `[ ]` = tappable convention (§3 intro), and by explicit
+  bullets in §3.6/§3.7 stating the affordance requirement, the
+  hard-requirement status of typed entry, and Cantidad's continued full
+  editability at its default value. Not a redesign: the stepper, the
+  default-to-1 behavior, the floor at 1, and the INV-Q1 marker are all
+  unchanged — this only makes an already-intended affordance and an
+  already-true mechanic explicit design mandates instead of implied ones.
 - **Home's cold-start CTA routes directly into Registrar Mercancía (§3.6),
   not into Inventario's own cold-start screen (§3.3).** Home's cold-start
   annotation says the CTA "routes into Inventario, an existing nav tab" —
@@ -843,6 +1025,18 @@ comparable hard speed requirement — the floor above is about not adding
   operating mode any particular Session resolved to. `Session.operatingMode`
   (the Session-level, Selling-context concept) does not appear anywhere in
   this document, because nothing here is actually about a specific Session.
+- **Catalog rows now carry the same per-Product marker `home.md` §3.9
+  introduces on the selling grid, and a zero-`disponibles` row now renders
+  dimmed while staying fully tappable (§3.4, applying identically to §3.5,
+  §3.12, §3.13, and §3.17 wherever the same Catalog row shape reappears).**
+  Reuses `home.md`'s existing marker derivation (first letter of
+  `Product.name`, uppercased and trimmed) and its existing sold-out dimming
+  treatment verbatim — no new logic invented for Inventario. Unlike the
+  ProductTile case, a dimmed Catalog row stays fully tappable: dimming here
+  signals "needs restocking," not "nothing to do," since restocking is
+  exactly Inventario's job. Same letter-collision caveat as `home.md` §3.9
+  applies here too — the marker is a fast-scan aid, not a guarantee of
+  uniqueness; the full Product label remains the primary identifier.
 
 ## 11. Future considerations
 
@@ -857,7 +1051,11 @@ comparable hard speed requirement — the floor above is about not adding
   inline `[✕]` on a committed row.
 - A lightweight low-stock indicator or restock nudge on Catalog view — a
   natural fit once the Intelligence context (`domain-model.md`) exists; out of
-  scope for Inventario v1.
+  scope for Inventario v1. **Distinct from the zero-stock dimming shipped in
+  §3.4/§10** — that signal fires only at exactly 0 disponibles, using data
+  already on hand; this future item is about a non-zero low-stock threshold
+  (e.g., "solo te quedan 2"), which would need a configurable or
+  Intelligence-derived threshold this doc doesn't define today.
 - Supplier and cost fields need their own design pass once backlog explicitly
   calls for margin/Open Finance features (D9) — not before.
 - Bulk/batch tag-assignment shortcuts (e.g., recognizing a rapid sequence of

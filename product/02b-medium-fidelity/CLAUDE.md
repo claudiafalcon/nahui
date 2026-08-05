@@ -88,3 +88,78 @@ definition (`.claude/agents/ui-designer.md`) for the full rule.
 
 **All six documents (Hoy, Inventario, Eventos, Resultados, Onboarding,
 Configuración) have now completed the Medium-Fidelity tier.**
+
+## Clickable prototype (final Medium-Fidelity deliverable)
+
+Built 2026-08-03, first as one compressed happy-path chain, then **reorganized the same day** into three distinct, realistic business-scenario journeys per Product Owner request — showcasing how Nahui is actually used in different situations rather than compressing every feature into one continuous path:
+
+1. **First-time merchant, empty inventory**: Onboarding ("Empezar gratis") → Home literal Cold start → Register Merchandise (Inventario) → Create Event (Eventos) → Sell with Buttons (Home) → Results.
+2. **Existing merchant using NFC**: Home (pre-populated, tagged inventory, `defaultSellingMode=nfc`, entry at Idle) → Create Event (Eventos) → Sell with NFC (Home) → Results.
+3. **Inventory management**: Home → Inventory → Add Product → Assign Tags → Ready to sell.
+
+Every intra-document transition is fully live and Present-mode-smooth. Cross-document hops use a URL-link fallback (opens the destination in a new tab rather than transitioning in place) — a real Figma platform limitation (reactions can't NAVIGATE/OVERLAY across pages), not a build shortcut; see `company/infrastructure-decisions.md` ID003. Product Owner accepted this as-is; not revisited unless a specific future use case requires seamless cross-document transitions.
+
+**Structural technique worth knowing about:** several screens are shared building blocks across journeys (Eventos' Nuevo-evento form/save, Inventario's Registrar-mercancía flow, Home's Continuar-Día-N/Venta-en-curso/Finalizar-Venta) — but Figma reactions are one-destination-per-node, so a shared node can't branch to two different endings (buttons vs. NFC selling mode, or feed into Journey 2 vs. Journey 1's differently-scoped continuation). Rather than let one journey silently overwrite another's reaction on a shared node, `ui-designer` cloned the minimum set of downstream frames needed for each journey to diverge correctly — 10 new clone frames total (1 in Onboarding, 3 each in Inventario/Eventos/Home), zero original frames modified. Every clone exists solely to break a shared-node conflict, not to introduce new content — see each document's frame table below for the specific IDs.
+
+**Journey 1's Onboarding→Home handoff now correctly lands on literal Cold start** (`35:261`), matching `onboarding.md` §2.4 exactly — the earlier version's Idle-state shortcut (and the decision point it raised) is resolved by the reorganization itself: Journey 1 now continues forward through Inventario rather than needing to skip it.
+
+The pre-existing "Activar plan de pago" Onboarding path, and the Settings/Reports secondary journeys from the first build pass, remain fully intact and untouched by this reorganization — not part of the three primary showcased journeys, but still wired and demo-able.
+
+Deliberately not wired (per "primary journeys, not exhaustive" scope): Onboarding's "Ver un ejemplo" path, every error/slow/fallback state, and several destructive/cancel branches (Cancelar evento, Descartar, Cerrar-sesión-bloqueado, etc.) — all remain intact as static frames, just off the wired click paths.
+
+One real Medium-Fidelity coverage gap surfaced (not fixed, per no-redesign scope), inherited identically by the new clone frames: no frame exists showing a form field populated *after* a picker selection (Lugar/Tipo/Producto) — picker rows currently close back to the same static, still-empty form frame. Worth a small frame addition in a future pass if this matters for demo fidelity.
+
+`ux-critic` verified the reorganized 3-journey structure clean across two follow-up passes: all 10 new clone frames confirmed faithful/unedited, Journey 1's Cold-start correction confirmed, buttons-vs-NFC surfaces confirmed genuinely distinct, Journey 3 confirmed untouched, Settings/Reports secondary paths confirmed intact — but one real content gap was found (JOURNEY2-MAJ1, below), fixed, and independently re-verified clean.
+
+**JOURNEY2-MAJ1 (found and fixed same day):** Journey 2's NFC selling flow, once the first item was added, was routing to a frame still showing the buttons-mode product grid — directly contradicting `home.md` §3.7/§3.10's "no product grid in nfc mode, ever" rule. Root cause: no Medium-Fidelity frame had ever been built for "nfc mode, 1+ items in Venta actual" — a real, previously-latent coverage gap this reorg's new wiring made reachable for the first time. Fixed by composing the already-approved §3.8 (with-items shell) and §3.10 (grid-free nfc registration zone) into a new frame (`114:377`) — no new design decision, a direct composition of already-specified content. Independently re-verified clean. See `product/02b-medium-fidelity/home.md` for full detail.
+
+**All new frames from the reorganization have been added to `product/02b-medium-fidelity/{onboarding,inventory,events,home}.md`'s tracking notes.**
+
+**Product Validation Sprint — usability audit and fix cycle (2026-08-03).** `ux-critic` ran a genuine first-time-user usability audit (distinct from every prior Foundation-consistency/build-fidelity pass) and found two priority issues plus three smaller ones, all since fixed and independently re-verified clean: the active-selling session-controls arrow (was ~1/4 the size of its pre-session sibling — real risk of never being found), the NFC scan prompt's missing icon (flagship registration surface), the picker-selected-value gap in Eventos/Inventario, a wordmark alignment outlier, and an ambiguous "0" placeholder on the quantity field. See each affected document's own tracking file for detail. One standing, disclosed caveat carried forward from before this cycle: the picker fixes' reaction *wiring* is outside `ux-critic`'s tool scope to verify directly (ID004) — recommend one manual Present-mode click-through before a live demo.
+
+**The reorganized 3-journey clickable prototype is now considered demo-ready.**
+
+**One open, deliberately-not-resolved item:** neither buttons-mode nor nfc-mode's "with items" screen has a wired "add another item" loop-back reaction in the prototype (buttons mode never had one; nfc mode's literal equivalent is rejected by Figma's Plugin API and wasn't worked around unilaterally). If a live "scan/tap to add a second item" click-through matters for a specific demo, that's a design call to make explicitly, not something to default into.
+
+## Demo — Journey 1 Seamless (2026-08-04)
+
+After personally testing the 3-journey prototype ahead of this week's usability sessions, the Product Owner found the cross-document URL/new-tab hops (ID003) broke the experience into what felt like disconnected prototypes rather than one application — the exact trigger ID003's original decision named for revisiting it. See `company/infrastructure-decisions.md` ID003's 2026-08-04 revisit entry and new ID006 (two real Plugin API gotchas hit during this build: cloning from a non-current page silently drops nested instance reactions, and `.clone()` doesn't preserve a node's own top-level reactions — both worked around).
+
+**New page, additive only:** `Demo — Journey 1 Seamless (First-time merchant)`, page `160:2`, same file (`DPRnGD5JWjfoNBSlAFoVG4`). All six production pages and the existing three-journey URL-fallback wiring are untouched — this page exists alongside them, not instead of them.
+
+26 frame clones, zero new content — every clone reuses an already-approved state (favoring the existing Journey-1 clones and the picker-populated clones — Producto="Pijama", Lugar="Plaza Norte", Tipo="Bazar" — documented in `onboarding.md`/`inventory.md`/`events.md`/`home.md` — over recloning from raw originals wherever a Journey-1 clone already covered the same state). Full sequence: Onboarding (Bienvenida → Creando tu negocio → Todo listo) → Home cold start → Inventario (Registrar mercancía → Elegir producto → Producto=Pijama → committed lines → saving → post-save confirmation) → Eventos (cold start → Nuevo evento → Elegir lugar → Lugar=Plaza Norte → Elegir tipo → Tipo=Bazar → saving → post-save confirmation) → Home (evento activo → hub → Venta en curso → Finalizar Venta → session controls → Cerrar sesión confirmación → Día cerrado) → Resultados (session detail, final destination `162:2019`).
+
+Every hop is a same-page `NODE`/`NAVIGATE` reaction — no URL fallback anywhere in the primary chain. Verified via a fresh, node-by-node `.reactions` readback (not cached from the build, not visual-only, per ID004's structural gap): 26/26 hops pass, correct destination + trigger type, terminates cleanly at Resultados.
+
+One real composition choice, not invented content: no pre-existing wired hop ran directly from "sale complete" to Resultados, so the demo reuses the real, already-approved bridge that does exist (Cerrar sesión → Día cerrado → Ver detalle → Resultados) rather than inventing a shortcut.
+
+**This page is a frozen snapshot, not a living source.** If the underlying Low/Medium-Fidelity specs change later, these clones need manual re-sync — same disclosed tradeoff as ID003's original "duplicate anchor frames" option, just scoped to one dedicated page.
+
+### Full-coverage wiring pass (2026-08-04, same day)
+
+Live-testing the 26-frame primary chain surfaced several off-path taps still opening via URL/new-tab — Resultados' back-arrow, Onboarding's "Activar plan de pago," among others. The Product Owner raised the bar past "primary chain + flag exceptions": every tappable element on the page should lead somewhere real, since a live merchant will click unpredictably and a dead tap reads as broken, not as "out of scope."
+
+`ui-designer` completed a full sweep: **34 new clone frames, ~155 reactions wired, 0 `URL`-type reactions remaining anywhere on the page, 0 dangling/stale destinations** — verified via fresh `node.reactions` readback per hop (not cached from build steps, per ID004/ID006), with `setCurrentPageAsync` + manual reaction re-set applied to every new cross-page clone (ID006 parts 1 & 2). New subtrees, all on page `160:2`:
+
+- **Onboarding "Activar plan de pago"** — full 6-hop path to a new Home Idle clone.
+- **Onboarding "Ver un ejemplo"** — wired for the first time ever (was unwired even in production).
+- **Configuración** — a full 16-clone, cross-linked graph (activate payment ↔ toggle selling mode ↔ downgrade/cancel-downgrade), reachable from both the in-session sheet and a new pre-session Configuración-only sheet, itself opened by two previously-dead header "▾" arrows.
+- **Resultados → Event detail**, and **Eventos' own Event detail** (reached from the post-save confirmation's EventCard).
+- **Descartar confirmation** and **Cancelar venta actual confirmation** — two more previously-dead in-session links.
+- "Guardar mercancía" now enabled on the Producto-seleccionado state (was disabled despite the spec saying it should be enabled once Producto is chosen); 3 more `SessionHeader` "▾" arrows wired; `Empieza`/`Termina`/`Cantidad` fields now show real values per the same-day `inventory.md`/`events.md` default-value amendments.
+
+**Six named, deliberate exceptions** (not silently skipped):
+1. Todo listo Variant C's "Empezar" button — no "example business" Home state exists in any approved spec; reusing a real Home frame would misrepresent the fake demo as a real business.
+2. ProductTile "add another item" loop — the pre-existing, already-documented gap above (NFC's literal equivalent rejected by Figma's Plugin API; buttons-mode never had one).
+3. Committed-line "Eliminar línea (✕)" delete targets — deprioritized, not impossible; would need per-line-removed clone frames, a proportionality call.
+4. Event detail's Día 1/Día 3 rows — day-level totals exist, but no approved spec gives a per-product breakdown for those specific days (only the whole-event aggregate and Día 2's own numbers do); placeholder clones were built then deleted rather than populated with fabricated numbers.
+5. "Iniciar Sesión Rápida" reuses the event-labeled session screen despite Quick Session having no venue per `home.md` §3.4 — disclosed content-accuracy simplification, not a dead link.
+6. Several Configuración loyalty-toggle/cancel returns converge on a shared landing frame rather than a distinct clone per tier×state combination — disclosed simplification to avoid an unbounded combinatorial frame matrix; functionally live, just not state-accurate in every branch.
+
+**The seamless demo page is now considered fully click-through-ready** — every button leads somewhere real except the six named exceptions above, each irreducible without inventing content, duplicating a pre-existing unresolved product gap, or an explicit, disclosed simplification.
+
+### 2026-08-04, same day — three-spec amendment sync
+
+Same day as the two passes above, the Product Owner raised three more usability concerns while testing (Cantidad's default clarity, Empieza's default clarity, and Finalizar Venta's missing success confirmation), each routed through the full Low-Fidelity amendment cycle (`ux-designer` → `ux-critic` → `reviewer`, all clean — see `product/02-ux/CLAUDE.md`'s Status section) before landing here. All three applied across both the six production pages and this demo page: `inventory.md` Cantidad default+tap-affordance (7 text updates), `events.md` Empieza/Termina default+gate (14 text updates), and `home.md`'s genuinely new §3.8e "Venta finalizada ✓" confirmation state (one new frame per surface — `192:382` production, `198:823` demo — plus one reaction hop rewired on each, all verified via fresh `node.reactions` readback per ID004/ID006). Full detail in each document's own Medium-Fidelity tracking file.
+
+**One real gap surfaced, not yet closed:** the low-fi `inventory.md` spec's `[−]`/`[+]` Cantidad stepper has never actually been built in this Medium-Fidelity file — only the bordered value box exists, no increment/decrement tap targets. Typed entry (the spec's hard requirement for reaching a large quantity) works and is visibly affordant; the stepper itself is still text-only in the spec, not real UI. Tracked in `inventory.md`'s own Known gaps.

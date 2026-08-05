@@ -10,6 +10,8 @@ Context anchor: we already have one validated merchant, Ana (itinerant clothing 
 
 **Update, 2026-08-02 (later same day):** Product Owner reviewed Section 7's threshold accounting and gave a directional correction: don't over-engineer validation at this stage — treat thresholds as directional hypotheses, not decision gates, since the objective right now is learning, not statistical proof. Section 6 is revised below to replace the "Validated if X% / Invalidated if Y%" framing with a learning objective and the evidence expected for each hypothesis, for each of H1-H5. Quantitative acceptance criteria return before the pilot phase, once there's a broader market understanding and a real acquisition channel. This is purely a reframing of what "success" means and how evidence gets read — Section 3's channel/activity recommendations are unchanged, and Section 5's approval gate is unchanged: nothing about what's authorized to run is affected by this update.
 
+**Update, 2026-08-04:** Section 2.1's verification pass was run for the first time this session (live `WebSearch`/`WebFetch` access was available). It found real, URL-verified Facebook Groups/Pages and Instagram accounts — organizer/community channels, not individual merchant names. Full findings, the verification table applied per-channel, and an honest account of what's still unresolved live in `company/usability-testing-plan.md` §7.3 (written there because that document's Section 8 checklist was the concrete blocker this pass exists to unblock) — Section 2.1 below is left as the original verification-criteria table (still the right rubric to apply) with a short status pointer added rather than duplicating the results in two places.
+
 ---
 
 ## 1. ICP hypotheses
@@ -23,7 +25,7 @@ Itinerant apparel/accessories vendors who sell at *private* bazares (bazares pri
 Vendors in this segment cap their own catalog size specifically to keep mental control over inventory/sales tracking — not primarily because of capital, storage, or transport limits. If true, a low-friction registration tool removes a real growth ceiling, not just a convenience.
 
 **H3 — Segmentation readiness follows registration, doesn't precede it**
-Vendors already informally track repeat customers via Instagram/WhatsApp follows, and want to tell a high-volume-occasional buyer apart from a small-but-always-there regular, but have no way to do it today. This makes paid customer segmentation a wanted *upgrade* once registration is solved — not a standalone feature people would adopt on its own.
+Vendors already informally track repeat customers via Instagram/WhatsApp follows, and want to tell a high-volume-occasional buyer apart from a small-but-every-bazaar buyer, but have no way to do it today. This makes paid customer segmentation a wanted *upgrade* once registration is solved — not a standalone feature people would adopt on its own.
 
 **H4 — Bazaar-selection friction is real but out of scope right now (parking lot)**
 Vendors who rotate across 3+ different bazares/tianguis a month feel real cost from picking a low-traffic or bad-weather date and would value informed guidance. `company/backlog.md` #3 is explicit: not started, no multi-vendor data exists, do not build. This hypothesis stays a listening-only item — we log signal, we don't design or pitch anything against it yet.
@@ -57,9 +59,9 @@ Honesty check first: I do not have live web/social access in this pass, so I'm n
 | WhatsApp | Not directly observable (private), but worth noting as the *actual* customer-relationship channel Ana and likely peers use — "community observation" here means noting what vendors say *about* WhatsApp groups/broadcast lists in public posts, not joining private lists. | H3 |
 | Organizer pages/marketplaces | Bazaar-organizer Facebook Pages / Instagram accounts (the businesses that run recurring bazares) — they often list participating vendors or accept vendor applications publicly, which is a legitimate way to find real pilot candidates without contacting them yet. | H1, H4 (identifying pilot candidates) |
 
-### 2.1 Verification pass — status (2026-08-02)
+### 2.1 Verification pass — status (2026-08-02, updated 2026-08-04)
 
-**Not run. Same limitation as the first pass, stated again explicitly rather than silently repeating placeholder names as if they'd been checked:** this session's tool access is Read/Write/Glob/Grep against the local repository only — no web browsing, no social-platform API, no search tool. I cannot confirm a single real Facebook Group name, Page, hashtag-activity count, or organizer account from here. Nothing in the table above should be treated as verified, and I have not added any new "specific-sounding" names since the first pass — doing so without a way to check them would be exactly the fabrication risk Product Truth exists to prevent.
+**2026-08-02 status (kept as written, for the record):** Not run. Same limitation as the first pass, stated again explicitly rather than silently repeating placeholder names as if they'd been checked: this session's tool access is Read/Write/Glob/Grep against the local repository only — no web browsing, no social-platform API, no search tool. I cannot confirm a single real Facebook Group name, Page, hashtag-activity count, or organizer account from here. Nothing in the table above should be treated as verified, and I have not added any new "specific-sounding" names since the first pass — doing so without a way to check them would be exactly the fabrication risk Product Truth exists to prevent.
 
 What I *can* do without live access, and did in this pass: sharpen what "verified" should mean once access exists, so the eventual check is fast and unambiguous rather than open-ended:
 
@@ -71,9 +73,11 @@ What I *can* do without live access, and did in this pass: sharpen what "verifie
 | Organizer identifiable | A named Page or admin account distinct from the group itself (relevant for Section 2b's pilot-candidate criteria) |
 | Public enough to observe passively | Group/Page content visible without joining, or joinable without a prior relationship — flag anything requiring approval/vetting as "requires Product Owner approval before joining," per Section 5 |
 
-### 2a. Passive observation — status (2026-08-02)
+**2026-08-04 update — pass actually run:** a later session had live `WebSearch`/`WebFetch` access and applied this exact table against real search results. Result: 8 real, URL-verified channels found (5 Edomex bazaar-organizer Facebook Pages/Groups, 3 CDMX-adjacent Instagram/directory accounts), plus an honest account of what couldn't be verified (Facebook blocks unauthenticated `WebFetch` beyond a page's title/name — so "exists, named, located as described" is confirmed for each, but deep activity/privacy details mostly aren't) and what came up empty (a directly-browsable `#bazaredomex` hashtag page, TikTok-specific Edomex vendor activity). None of the 8 is an individual merchant — per this pass's own scope, individual vendors aren't discoverable this way, only the channels through which they might be reached. **Full table, per-channel scoring, and the ICP-fit caveats (these organizer channels host mixed "emprendedores" — not exclusively the private household-bazaar apparel niche H1 targets) live in `company/usability-testing-plan.md` §7.3.2-7.3.4** — not duplicated here to avoid the two documents drifting out of sync. This does not change H1-H5 in any way; it's a channel-discovery result, not new evidence about the hypotheses themselves (Section 2a below, the actual *content*-observation task, is still separately not run).
 
-**Not run, same access limitation.** Once live access exists, this activity would produce a running observation log with, at minimum: date observed, channel/source, a verbatim quote from a public post (not paraphrased, so signal isn't accidentally strengthened or softened), which hypothesis it bears on (H1-H5), and a link/reference for traceability. It would feed directly into Section 6's evidence-expected notes for H1 and H3, which currently have nothing to check against. Until then, this stays an open task, not a completed one — I'm not producing a synthetic version of this log, since anything in it would need to be either verified real quotes or clearly labeled as illustrative, and I have no real quotes to offer.
+### 2a. Passive observation — status (2026-08-02, still not run as of 2026-08-04)
+
+**Not run, same access limitation, still true after the 2026-08-04 channel-verification pass.** That pass (Section 2.1 above) confirmed *that channels exist* — it did not read or log unprompted content from within them (most are Facebook Pages/Groups whose post content `WebFetch` couldn't retrieve; the two Instagram accounts that *were* readable, `@sobreruedas.bazar` and `@bazares_mexico`, were checked only for whether the account itself was real/active/on-topic, not mined for quotable, hypothesis-bearing content). Once a deeper pass is done, this activity would produce a running observation log with, at minimum: date observed, channel/source, a verbatim quote from a public post (not paraphrased, so signal isn't accidentally strengthened or softened), which hypothesis it bears on (H1-H5), and a link/reference for traceability. It would feed directly into Section 6's evidence-expected notes for H1 and H3, which currently have nothing to check against. Until then, this stays an open task, not a completed one — I'm not producing a synthetic version of this log, since anything in it would need to be either verified real quotes or clearly labeled as illustrative, and I have no real quotes to offer.
 
 ---
 
@@ -98,12 +102,12 @@ Per the Product Owner's approval, this builds identification *criteria*, not a c
 - Fixed physical storefront only, no itinerant/bazaar component.
 - Outside Edomex/CDMX metro (adds pilot logistics risk without adding validation value at this stage).
 
-**Where to look (source types — unverified until Section 2.1's pass is actually run):**
+**Where to look (source types — partially verified as of 2026-08-04, see Section 2.1's update and `company/usability-testing-plan.md` §7.3.2 for the real channels found):**
 - Public bazaar-organizer Facebook Pages/Instagram accounts, which often tag or list participating vendors.
 - Vendor accounts that geo-tag or hashtag private-bazaar events in Edomex/CDMX municipios.
 - Public comment threads under organizer posts, where vendors coordinate and sometimes surface pain points organically.
 
-This is a scoring rubric to apply once real accounts are found, not a target list. Zero specific merchants or organizers are named in this document.
+This is a scoring rubric to apply once real accounts are found, not a target list. Zero specific *individual merchants* are named in this document (real organizer/community *channels* now are, as of 2026-08-04 — see Section 2.1's update).
 
 ---
 
@@ -220,11 +224,11 @@ Revisions from v1: added a screening block up front (per H1's refined scope boun
 ## 5. What requires Product Owner approval
 
 **Can start now, no approval needed** (research/preparation, no external-facing action):
-- Verifying real Facebook Group/Page names, hashtag activity, and organizer accounts (Section 2's "immediate next step") — still blocked by lack of live access this pass, see Section 2.1.
-- Reading public posts/content in already-public groups or hashtags (passive observation, no joining required) — still blocked by lack of live access this pass, see Section 2a.
+- Verifying real Facebook Group/Page names, hashtag activity, and organizer accounts (Section 2's "immediate next step") — partially done 2026-08-04, see Section 2.1's update and `company/usability-testing-plan.md` §7.3.2.
+- Reading public posts/content in already-public groups or hashtags (passive observation, no joining required) — still not run, see Section 2a.
 - Refining ICP hypotheses and pilot-merchant criteria based on what that observation surfaces — done this pass, see Section 1's Refinements and Section 2b.
 - Drafting/iterating survey instruments, interview guides, and landing page copy — done this pass, see Section 4.2 (revised) and 4.6 (new).
-- Identifying candidate bazaar organizers or merchants from public information (building a list), without contacting anyone — criteria framework built this pass (Section 2b); no candidates named, since none have been verified.
+- Identifying candidate bazaar organizers or merchants from public information (building a list), without contacting anyone — criteria framework built this pass (Section 2b); real organizer/community channels found 2026-08-04 (Section 2.1's update), no individual merchants named, since none have been identified through verified research (and, per that pass's own scope, individual vendors aren't discoverable this way to begin with).
 
 **Requires explicit Product Owner approval before it happens:**
 - Joining any private/closed Facebook Group or WhatsApp community as an observer
@@ -234,6 +238,7 @@ Revisions from v1: added a screening block up front (per H1's refined scope boun
 - Running the survey (4.2) live on any real channel
 - Any paid-ad experiment (H5's deferred pricing test)
 - Contacting any specific pilot-merchant candidate once identified
+- Posting into, joining, or messaging any of the specific channels found 2026-08-04 (`company/usability-testing-plan.md` §7.3.2) — finding the channel is research; using it is outreach
 
 Nothing in Section 4 goes out without a green light. This pass stayed strictly within the approved list above — no posting, no outreach, no live survey/landing page. This approval gate is unaffected by the Section 6 revision below — that revision changes how evidence gets read once collected, not what's authorized to run.
 
@@ -326,8 +331,8 @@ All four of the survey-based thresholds (H1, H2's survey pre-filter, H5) share t
 
 ## Open dependencies to flag
 
-- Section 2's community verification pass still hasn't been run — no live web/social access in this session either. Confirmed, not newly discovered; first concrete task remains open pending tool/access availability.
-- Section 2a's passive observation is correspondingly still not run, for the same reason.
+- Section 2's community verification pass was run for the first time 2026-08-04 (live access available that session) — see Section 2.1's update and `company/usability-testing-plan.md` §7.3 for the real channels found. It found organizer/community *channels*, not individual merchants (not the pass's goal — see that section). Section 2's earlier "no live access" note is kept above as the honest record of the two sessions where that was true.
+- Section 2a's passive observation (reading and logging actual unprompted post *content*, not just confirming a channel exists) is still not run — see Section 2a's updated note.
 - H5's directional read still depends on `business-decisions.md` Q11 (billing-cycle model) being resolved before a specific price point can ever be tested, not just a shape (recurring vs. commission) — and also depends on how "depende del precio" survey responses get counted, which should be resolved alongside Q11 before the survey ever runs live.
-- No real pilot-merchant candidates are named yet anywhere in this package — deliberately, since none have been identified through verified research. Section 2b's criteria framework and Section 4.5's script are ready to apply the moment verified candidates exist; neither has a real target yet.
+- No real *individual* pilot-merchant candidates are named yet anywhere in this package — deliberately, since none have been identified through verified research, and individual vendors aren't discoverable through public search/social browsing without outreach to begin with. Section 2b's criteria framework and Section 4.5's script are ready to apply the moment a verified candidate exists (via the Product Owner's network, an approved post into one of the 2026-08-04 channels, or a future opt-in survey/interview respondent); none has a real target yet.
 - Section 6 now defines success as learning objectives and evidence-to-collect, not numeric go/no-go thresholds, per the Product Owner's 2026-08-02 correction. Section 7's original threshold reasoning is retained as a dated historical record (not operative) and as input for a future pre-pilot pass where quantitative acceptance criteria will be (re)defined, once there's a broader market understanding and a real acquisition channel.

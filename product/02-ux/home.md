@@ -53,7 +53,20 @@ told her that capability had become usable). Went through its own cycle —
 `ux-critic` found one Blocker (in `onboarding.md`'s sibling milestone copy,
 not here) plus two Major and three Minor findings across the coordinated
 three-document amendment, all fixed and verified. `reviewer`'s
-Foundation-consistency pass pending.
+Foundation-consistency pass found zero Blockers, one Important finding
+(stale "two real paths" language in `onboarding.md` contradicting its own
+§2.2 — fixed directly by Main) — clean on re-check. Folded back into
+Approved.
+**Amended 2026-08-04 (HOME-Q1, Product Owner-raised):** new §3.8e ambient
+"Venta finalizada ✓" confirmation after a successful Finalizar Venta,
+previously indistinguishable from a fresh Session start or a cancelled
+sale. Full cycle complete, `ux-critic`/`reviewer` clean, folded back into
+Approved.
+**Amended 2026-08-04 (icon/comprehension audit):** §3.9's ProductTile now
+carries a per-Product marker (first letter of `Product.name`), with an
+explicit non-scope note that true custom iconography needs a Product
+Decision/RFC. Full cycle complete, `ux-critic`/`reviewer` clean, folded
+back into Approved.
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -896,6 +909,53 @@ shown inline, never a full-screen interruption
   everywhere else uses — she's never stuck staring at a broken screen
   mid-transaction.
 
+### 3.8e Finalizar Venta — success, ambient confirmation (new — resolves HOME-Q1)
+```
+┌───────────────────────────────┐
+│ Plaza Norte · Día 2         ▾   │
+│ Hoy: $861 · 7 ventas             │  header total already reflects the
+├───────────────────────────────┤   sale that just closed
+│ Venta finalizada ✓                │  ambient, fades — not a separate
+│ Venta actual: (vacía)            │  screen, no tap to dismiss
+│   [   zona de registro       ]   │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+- Same ambient-confirmation pattern already established by every other
+  successful write action in this document family — `inventory.md` §3.12's
+  "Mercancía registrada ✓," §3.13's "Mercancía lista para vender ✓," and
+  `events.md` §3.10's "Evento agendado ✓" — none of which required a
+  dismiss tap or a separate screen. Finalizar Venta was the one write action
+  in the whole product without any positive acknowledgment of success;
+  this closes that gap. Resolves HOME-Q1.
+- This **is** §3.7's resting state (same header, same "Venta actual:
+  (vacía)," same registration surface below it) with one transient line
+  added — not a new destination, not a screen she has to leave. It fades on
+  its own, the same no-tap-cost posture as the sibling confirmations above.
+  *global-principles.md*, "the fastest interaction is the one that never
+  happens": zero taps added to the loop, and she's free to tap the next
+  product tile the instant it appears — the confirmation never blocks the
+  next sale.
+- **The header's running total is already updated** ("Hoy: $850 · 6 ventas"
+  → "Hoy: $861 · 7 ventas" in this example) at the same moment — not a
+  separate refresh she has to wait for. Combined with the ambient line, this
+  gives her two independent, zero-cost signals that the sale actually
+  closed, not one.
+- **This is what makes a successful Finalizar Venta visually distinct from
+  both of the other two states that otherwise render identically** — a
+  fresh Session start (§3.7, no prior context) and a cancelled sale (§3.8b
+  "Sí, cancelar" → §3.7, tray cleared but nothing to confirm). Neither of
+  those two paths gains anything new here — they deliberately stay the
+  plain, unmarked §3.7 shown elsewhere in this doc; only a genuine
+  Finalizar Venta success reaches this state. This is not the deferred
+  "deshacer" (undo) toast scoped out in §11 — that's a distinct,
+  reversal-oriented mechanism; this is a one-way, positive acknowledgment
+  only.
+- Reached only from §3.8c's success path, immediately after the tray clears.
+  A slow save (§3.8c, >~1.5s) or an error (§3.8d) never reaches this state
+  until a retry actually succeeds.
+
 ### 3.9 Session active — `Session.operatingMode = buttons` surface
 ```
 ┌───────────────────────────────┐
@@ -904,13 +964,15 @@ shown inline, never a full-screen interruption
 ├───────────────────────────────┤
 │ Venta actual: (vacía)            │
 │  ┌─────────┐  ┌─────────┐       │
-│  │ Pijama  │  │Sudadera │       │  ordered most-frequently-sold first
-│  │         │  │ / Maxy  │       │
+│  │(P)      │  │(S)      │       │  per-Product marker — first letter of
+│  │ Pijama  │  │Sudadera │       │  Product.name, uppercased
+│  │         │  │ / Maxy  │       │  ordered most-frequently-sold first
 │  └─────────┘  └─────────┘       │
 │  ┌─────────┐  ┌─────────┐       │
-│  │Bufandas │  │Calcetines│      │
-│  │         │  │0 disponibles│    │  sold out — dimmed, not tappable
-│  └─────────┘  └─────────┘       │
+│  │(B)      │  │(C)      │       │  marker renders muted here too — same
+│  │Bufandas │  │Calcetines│      │  dimming as the rest of the tile, not
+│  │         │  │0 disponibles│    │  a separate visual case
+│  └─────────┘  └─────────┘       │  sold out — dimmed, not tappable
 │  ┌─────────┐  ┌─────────┐       │
 │  │   …     │  │   …     │       │  grid scrolls for the rest of the Catalog
 │  └─────────┘  └─────────┘       │
@@ -942,6 +1004,32 @@ shown inline, never a full-screen interruption
   only difference from a normal tile, and is the only signal needed — no
   separate error message on tap, because there's no tap to respond to.
   Resolves the sold-out half of HOME-M3.
+- **Each tile now carries a small, automatically-generated marker — the
+  first letter of `Product.name`, uppercased and whitespace-trimmed** (e.g.
+  "Pijama" → "P," "Sudadera/Maxy" → "S"). Closes a real gap on the
+  highest-frequency screen in the app: before this, ProductTile had zero
+  per-Product visual differentiator beyond its label text. Derived purely
+  from `Product.name` — a fact already typed once, at Registrar Mercancía
+  (`inventory.md` §3.8), and already read elsewhere in this doc — no new
+  Product attribute, no schema change, nothing extra for Ana to enter.
+  *global-principles.md*, "capture business truth once, reuse it forever."
+  Letter collisions between two Products sharing an initial (e.g.
+  "Blusa"/"Bolsa") are acceptable — the full label stays the primary
+  identifier; this marker is a fast-scan aid, not a guarantee of uniqueness.
+- **This is not custom per-product iconography, and isn't meant to be
+  mistaken for it.** A merchant-chosen or uploaded icon per Product (a
+  clothing-type glyph, a photo swatch, etc.) would require a genuinely new
+  attribute on the Product aggregate — a change to the frozen
+  `domain-model.md`, a Product Decision, and likely an RFC
+  (`product/99-rfc/README.md`). Not designed here; flagged only as a deeper
+  option worth revisiting if a bare initial letter proves insufficient at
+  real catalog scale (see §11).
+- **The marker renders on a sold-out tile too, muted along with the rest of
+  the tile — never a separate case.** It reuses this section's own existing
+  sold-out dimming rule (the bullet above) rather than adding new visual
+  logic: the same dim that already covers the label and the "0 disponibles"
+  caption also covers the marker, so a sold-out tile's marker never reads as
+  more current or prominent than a sellable one's.
 - **"Otro" tile removed.** The earlier draft's fixed 2×2 mockup included a
   generic "Otro" tile with undefined behavior (HOME-M3). Now that the grid
   shows the full Catalog and scrolls rather than capping at 3–4 tiles, every
@@ -1171,7 +1259,9 @@ Inside selling (3.7-3.10):
   → Finalizar Venta
       → saving (3.8c)
       → error (3.8d) → Reintentar, o resolve via Cancelar venta actual (3.8b)
-      → success → tray clears → back to 3.7 (ready for next customer)
+      → success → tray clears → ambient "Venta finalizada ✓" confirmation
+          (3.8e, resolves HOME-Q1) → 3.7 (ready for next customer, header
+          total already updated)
   → [any point, 1+ items pending] Cancelar venta actual → inline confirm (3.8b)
       → No → back to 3.8, items untouched
       → Sí, cancelar → tray clears → back to 3.7
@@ -1221,14 +1311,15 @@ and back to Hoy):
 14. Cancelar venta actual — inline confirm step
 15. Finalizar Venta — saving (near-instant / slow)
 16. Finalizar Venta — error
-17. Session active, `Session.operatingMode = buttons` surface (scrollable, frequency-ordered, sold-out tiles dimmed)
-18. Session active, `Session.operatingMode = nfc` surface
-19. Close-session confirmation (reached only with an empty Sale)
-20. Cerrar sesión blocked — Venta en curso (non-empty-Sale interlock)
-21. Immediate post-close session summary
-22. Resuming a Session left open from an interruption/crash — empty-tray variant
-23. Resuming a Session left open from an interruption/crash — non-empty-tray variant
-24. Resolution error / defensive fallback
+17. Finalizar Venta — success, ambient confirmation (new — resolves HOME-Q1)
+18. Session active, `Session.operatingMode = buttons` surface (scrollable, frequency-ordered, sold-out tiles dimmed)
+19. Session active, `Session.operatingMode = nfc` surface
+20. Close-session confirmation (reached only with an empty Sale)
+21. Cerrar sesión blocked — Venta en curso (non-empty-Sale interlock)
+22. Immediate post-close session summary
+23. Resuming a Session left open from an interruption/crash — empty-tray variant
+24. Resuming a Session left open from an interruption/crash — non-empty-tray variant
+25. Resolution error / defensive fallback
 
 ## 6. Minimum step count
 
@@ -1405,6 +1496,21 @@ her actual top sellers within the first screenful regardless of Catalog size.
 
 ## 10. Decisions made
 
+- **A compact, automatically-generated per-Product marker (first letter of
+  `Product.name`, uppercased) is added to every tile in the buttons-mode
+  selling grid (§3.9).** Closes a real gap on the highest-frequency screen
+  in the app — ProductTile previously had no visual differentiator beyond
+  its label. Derived purely from already-stored `Product.name`; no new
+  Product attribute, no schema change, no RFC needed for this change
+  itself. True custom per-product iconography (a merchant-chosen/uploaded
+  icon) is explicitly out of scope here — it would require a new Product
+  attribute, a Product Decision, and likely an RFC; flagged as a future,
+  deeper option only (§11), not designed in this pass. The marker renders
+  muted on a sold-out tile by reusing this section's existing sold-out
+  dimming rule, never as an independent visual treatment. Not RFC-worthy
+  itself — no aggregate boundary, domain term, or IA change; a UX
+  visual-differentiation fix to an already-Approved spec, same category as
+  this document's other post-Approval amendments.
 - **Removed the "Nueva Venta" gesture** present in the original validation
   prototype. A Sale's start is now inferred from the first product tap when no
   Sale is open; only "Finalizar Venta" is an explicit boundary. Mitigated the
@@ -1534,9 +1640,34 @@ her actual top sellers within the first screenful regardless of Catalog size.
   the other three §3.6a mentions, chosen because this one nudges toward a
   discretionary choice she's entitled to decline, not an operational fact
   that changes what's happening right now.
+- **A successful Finalizar Venta now gets an explicit, ambient confirmation
+  ("Venta finalizada ✓," §3.8e) — resolves HOME-Q1.** Every other successful
+  write action in the document family (`inventory.md`'s "Mercancía
+  registrada ✓," "Mercancía lista para vender ✓"; `events.md`'s "Evento
+  agendado ✓") already got this treatment; Finalizar Venta — the highest-
+  frequency, most consequential write action in the product, directly tied
+  to `company/CLAUDE.md`'s core registration-speed thesis — had none. Before
+  this fix, the post-success resting state ("Venta actual: (vacía)," §3.7)
+  was pixel-identical to both a fresh Session start and a post-cancellation
+  state (§3.8b), giving Ana no way to tell "it saved" from "nothing
+  happened" or "I cancelled it" without mentally tracking the header total
+  herself. Fixed by reusing the exact same ambient, zero-tap pattern already
+  established by the sibling docs — ambient, fades on its own, no dismiss
+  tap, adds no step to the next sale — rather than inventing a new
+  mechanism. Distinct from, and does not reopen, §11's already-deferred
+  "deshacer" (undo) toast: that's a separate, reversal-oriented affordance;
+  this is a one-way positive acknowledgment only. Not RFC-worthy — no
+  aggregate boundary, domain term, or IA change; a UX state-design fix to an
+  already-Approved spec, same category as the other amendments recorded
+  above.
 
 ## 11. Future considerations
 
+- A true, custom per-Product icon (merchant-chosen or uploaded, beyond the
+  automatic first-letter marker in §3.9) — would require a new Product
+  attribute, a schema change to the frozen Domain Model, and a Product
+  Decision (likely an RFC). Not designed now; the automatic marker is the
+  deliberately low-cost interim signal.
 - An "deshacer" (undo) toast for a few seconds after Finalizar Venta — a
   reasonable safety net, complementary to (not a replacement for) the new
   Finalizar Venta error state (§3.8d) — a Selling-flow detail, not core to

@@ -28,6 +28,8 @@ This section is about coordination — who does what and in what order. It doesn
 
 Also check `company/infrastructure-decisions.md` before investigating anything that looks like a tooling/platform bug (a subagent missing a tool it's correctly declared, MCP access gaps, etc.) — it may already be a documented Claude Code platform limitation with an accepted workaround, not a new issue to re-diagnose.
 
+Before Marketing's work touches any real external account (posting, sending, creating a login), check `company/marketing-operating-environment.md` — the proposed account/access/approval model for Marketing's operating environment. Nothing in it is provisioned yet; it's the design to follow once the Product Owner starts creating real accounts.
+
 ### Main's role
 
 Main is the project coordinator and repository owner. Main is responsible for:
