@@ -1,0 +1,79 @@
+- generic:
+  - generic [ref=f12e26]:
+    - region [ref=f12e153]:
+      - generic [ref=f12e28]:
+        - button [ref=f12e154]: Skip to content
+        - link [ref=f12e155] [cursor=pointer]:
+          - /url: /
+        - button [ref=f12e156]
+        - button [ref=f12e157]
+      - heading [level=1] [ref=f12e158]: Nahui — Medium-Fidelity UI
+      - generic [ref=f12e45]:
+        - button [ref=f12e159]
+        - generic [ref=f12e69]:
+          - button [ref=f12e160]:
+            - generic: Log in or create account
+          - button [ref=f12e161]:
+            - generic: Continue with Google
+        - button [expanded] [ref=f12e162]
+        - button [ref=f12e164]
+    - generic [ref=f12e77]:
+      - navigation [ref=f12e165]:
+        - generic [ref=f12e80]:
+          - generic [ref=f12e81]:
+            - generic [ref=f12e82]:
+              - generic [ref=f12e83]: Flows
+              - button [ref=f12e166]
+            - generic [ref=f12e92]:
+              - link [ref=f12e167]:
+                - generic [ref=f12e98]: "Journey 1: Onboarding entry"
+              - link [ref=f12e168]:
+                - generic [ref=f12e101]: "Journey 1 leg: Crear evento"
+              - link [ref=f12e169]:
+                - generic [ref=f12e104]: Home entry (Journeys 1/2/3/4 continue here)
+              - link [ref=f12e170]:
+                - generic [ref=f12e107]: "Journey 3: Configuracion entry"
+              - link [ref=f12e171]:
+                - generic [ref=f12e110]: Flow 1
+              - link [ref=f12e172]:
+                - generic [ref=f12e113]: Flow 2
+              - link [ref=f12e173]:
+                - generic [ref=f12e116]: Flow 3
+              - link [ref=f12e174]:
+                - generic [ref=f12e119]: Flow 4
+              - link [ref=f12e175]:
+                - generic [ref=f12e122]: Flow 5
+          - region [ref=f12e176]:
+            - paragraph [ref=f12e134]: No description
+      - generic [ref=f12e136]:
+        - paragraph [ref=f12e138]: Screenreader support is currently disabled. To enable it, use the Accessibility settings from the Options menu.
+        - navigation [ref=f12e177]:
+          - toolbar [ref=f12e178]:
+            - generic [ref=f12e147]:
+              - button [disabled] [ref=f12e179]
+              - button [ref=f12e180]
+          - button [ref=f12e181]:
+            - text: Restart
+            - generic: R
+      - text: Give feedback, ask a question, or just leave a note of appreciation. Click anywhere in the file to leave a comment.
+  - group [ref=f12e20]:
+    - alert [ref=f12e22]
+    - alert [ref=f12e24]
+  - menu "Options" [ref=f12e187]:
+    - group "Recommended" [ref=f12e188]:
+      - text: Recommended
+      - menuitemcheckbox "Actual size (100%)" [checked] [active] [ref=f12e189]
+      - menuitemcheckbox "Fit width and height Z" [ref=f12e196]:
+        - generic [ref=f12e197]:
+          - text: Fit width and height
+          - generic [ref=f12e203]: Z
+    - group "Other scaling options" [ref=f12e204]:
+      - text: Other scaling options
+      - menuitemcheckbox "Fit width" [ref=f12e205]
+      - menuitemcheckbox "Responsive" [ref=f12e212]
+      - menuitemcheckbox "Fill screen" [ref=f12e219]
+    - menuitem "Advanced settings" [ref=f12e226]
+    - menuitemcheckbox "Hide UI ⌘\\" [ref=f12e232]:
+      - generic [ref=f12e233]:
+        - text: Hide UI
+        - generic [ref=f12e236]: ⌘\

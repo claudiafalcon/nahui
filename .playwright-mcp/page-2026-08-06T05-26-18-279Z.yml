@@ -1,0 +1,71 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic [ref=f6e2]:
+            - region "Prototype controls" [ref=f6e3]:
+              - generic [ref=f6e4]:
+                - button "Skip to content" [ref=f6e6]
+                - link "File browser" [ref=f6e8] [cursor=pointer]:
+                  - /url: /
+                - button "Close flows list" [ref=f6e102]
+                - button "Comment" [ref=f6e16]
+              - heading "Nahui — Medium-Fidelity UI" [level=1] [ref=f6e18]
+              - generic [ref=f6e19]:
+                - button "Follow" [ref=f6e24]
+                - generic [ref=f6e33]:
+                  - button "Log in or create account" [ref=f6e34]
+                  - button "Continue with Google" [ref=f6e37]
+                - button "Options" [ref=f6e39]
+                - button "Enter full screen (F)" [ref=f6e40]
+            - generic [ref=f6e41]:
+              - navigation "Flows" [ref=f6e43]:
+                - generic [ref=f6e44]:
+                  - generic [ref=f6e45]:
+                    - generic [ref=f6e46]:
+                      - generic [ref=f6e47]: Flows
+                      - button "Close" [ref=f6e48]
+                    - generic [ref=f6e103]:
+                      - 'link "Journey 1: Onboarding entry" [ref=f6e105]'
+                      - 'link "Journey 1 leg: Crear evento" [ref=f6e111]'
+                      - link "Home entry (Journeys 1/2/3/4 continue here)" [ref=f6e114]
+                      - 'link "Journey 3: Configuracion entry" [ref=f6e117]'
+                      - link "Flow 1" [ref=f6e120]
+                      - link "Flow 2" [ref=f6e123]
+                      - link "Flow 3" [ref=f6e126]
+                      - link "Flow 4" [ref=f6e129]
+                      - link "Flow 5" [ref=f6e132]
+                  - region "Flow description" [ref=f6e58]:
+                    - paragraph [ref=f6e67]: No description
+              - generic [ref=f6e69]:
+                - generic [ref=f6e70]:
+                  - main:
+                    - generic:
+                      - article "J1 · 3. Cold start — sin productos (§3.3)" [active]:
+                        - article "NavBar":
+                          - paragraph: Hoy
+                          - paragraph: Inventario
+                          - paragraph: Eventos
+                          - paragraph: Resultados
+                        - button "▾"
+                        - link "Registrar mercancía":
+                          - paragraph: Registrar mercancía
+                        - paragraph: Aquí vas a ver tu día de venta en cuanto registres lo que traes.
+                        - paragraph: Nahui
+                - generic:
+                  - navigation "Pages":
+                    - generic:
+                      - toolbar "Stepper":
+                        - generic:
+                          - generic:
+                            - button "Previous frame"
+                            - button "Next frame"
+                    - generic:
+                      - button "Restart":
+                        - text: Restart
+                        - generic: R
+              - text: Give feedback, ask a question, or just leave a note of appreciation. Click anywhere in the file to leave a comment.
+          - group [ref=f6e96]:
+            - alert [ref=f6e98]
+            - alert [ref=f6e100]

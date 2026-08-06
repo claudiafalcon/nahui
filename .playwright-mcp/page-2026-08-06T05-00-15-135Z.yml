@@ -1,0 +1,47 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic [ref=e2]:
+            - region "Prototype controls" [ref=e3]:
+              - generic [ref=e4]:
+                - button "Skip to content" [ref=e6]
+                - link "File browser" [ref=e8] [cursor=pointer]:
+                  - /url: /
+                - button "Open flows list" [ref=e146]
+                - button "Comment" [ref=e16]
+              - heading "Nahui — Medium-Fidelity UI" [level=1] [ref=e18]
+              - generic [ref=e19]:
+                - button "Follow" [ref=e24]
+                - generic [ref=e34]:
+                  - button "Log in or create account" [ref=e35]
+                  - button "Continue with Google" [ref=e38]
+                - button "Options" [ref=e40]
+                - button "Exit full screen (F)" [ref=e135]
+            - generic [ref=e42]:
+              - generic [ref=e70]:
+                - generic [ref=e71]:
+                  - main:
+                    - 'article "J1 · 10. Todo listo — Variant A: Empezar gratis (§3.6)" [active]':
+                      - link "Empezar":
+                        - paragraph: Empezar
+                      - paragraph: Ya puedes registrar lo que traes y empezar a vender.
+                      - paragraph: Todo listo
+                - navigation "Pages" [ref=e136]:
+                  - toolbar "Stepper" [ref=e138]:
+                    - generic [ref=e140]:
+                      - button "Previous frame" [ref=e141]
+                      - button "Next frame" [ref=e143]
+                  - button "Restart" [ref=e145]:
+                    - text: Restart
+                    - generic: R
+              - text: Give feedback, ask a question, or just leave a note of appreciation. Click anywhere in the file to leave a comment.
+          - group [ref=e97]:
+            - alert [ref=e99]
+            - alert [ref=e101]
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - paragraph: Next frame

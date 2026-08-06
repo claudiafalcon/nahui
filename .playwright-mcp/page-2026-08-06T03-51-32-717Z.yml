@@ -1,0 +1,42 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic [ref=e2]:
+            - region "Prototype controls" [ref=e3]:
+              - generic [ref=e4]:
+                - button "Skip to content" [ref=e6]
+                - link "File browser" [ref=e8] [cursor=pointer]:
+                  - /url: /
+                - button "Open flows list" [active] [ref=e137]
+                - button "Comment" [ref=e18]
+              - heading "Nahui — Medium-Fidelity UI" [level=1] [ref=e20]
+              - generic [ref=e21]:
+                - generic [ref=e23]:
+                  - button "Follow" [ref=e26]
+                  - generic [ref=e36]:
+                    - button "Follow Claudia Ivette Falcón Mata" [ref=e37]
+                    - generic [ref=e38]: C
+                - generic [ref=e45]:
+                  - button "Log in or create account" [ref=e46]
+                  - button "Continue with Google" [ref=e49]
+                - button "Options" [ref=e51]
+                - button "Enter full screen (F)" [ref=e52]
+            - generic [ref=e53]:
+              - generic [ref=e112]:
+                - generic [ref=e113]:
+                  - main:
+                    - paragraph [ref=e114]: Screenreader support is currently disabled. To enable it, use the Accessibility settings from the Options menu.
+                - navigation "Pages" [ref=e138]:
+                  - toolbar "Stepper" [ref=e140]:
+                    - generic [ref=e142]:
+                      - button "Previous frame" [disabled] [ref=e143]
+                      - button "Next frame" [ref=e145]
+                  - button "Restart" [ref=e147]:
+                    - text: Restart
+                    - generic: R
+              - text: Give feedback, ask a question, or just leave a note of appreciation. Click anywhere in the file to leave a comment.
+          - group [ref=e132]:
+            - alert [ref=e134]
+            - alert [ref=e136]

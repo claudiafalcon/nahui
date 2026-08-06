@@ -1,0 +1,37 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic [ref=f18e26]:
+            - region "Prototype controls": Skip to content Continue with Google
+            - generic [ref=f18e67]:
+              - generic [ref=f18e68]:
+                - generic [ref=f18e69]:
+                  - main:
+                    - article "J1 · [Sub] O4 clone of 70:954 — 07. Ver un ejemplo — confirmar antes de continuar (§3.4c)" [active]:
+                      - link "Mejor quiero registrar mi negocio real":
+                        - paragraph: Mejor quiero registrar mi negocio real
+                      - link "Ver el ejemplo":
+                        - paragraph: Ver el ejemplo
+                      - paragraph: No es tu negocio real, y no vas a poder convertirlo en tu negocio real después. Para tu negocio real, usa "Empezar gratis" o "Activar plan de pago."
+                      - paragraph: Esto crea un negocio de ejemplo con ventas y clientes inventados, para que veas cómo se usa Nahui.
+                      - paragraph: Ver un ejemplo
+                      - link "← Elegir cómo empezar":
+                        - paragraph: ← Elegir cómo empezar
+                - generic:
+                  - navigation "Pages":
+                    - generic:
+                      - toolbar "Stepper":
+                        - generic:
+                          - generic:
+                            - button "Previous frame"
+                            - button "Next frame"
+                    - generic:
+                      - button "Restart":
+                        - text: Restart
+                        - generic: R
+              - text: Give feedback, ask a question, or just leave a note of appreciation. Click anywhere in the file to leave a comment.
+          - group [ref=f18e20]:
+            - alert [ref=f18e22]
+            - alert [ref=f18e24]

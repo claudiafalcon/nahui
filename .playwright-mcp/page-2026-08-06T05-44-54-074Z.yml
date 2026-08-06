@@ -1,0 +1,37 @@
+- generic [active]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic [ref=f24e26]:
+            - region "Prototype controls": Skip to content Continue with Google
+            - generic [ref=f24e27]:
+              - generic [ref=f24e28]:
+                - generic [ref=f24e29]:
+                  - main:
+                    - article "3.3 Cold start — sin eventos":
+                      - paragraph: Eventos
+                      - paragraph: Aquí vas a ver tus bazares, expos y demás eventos en cuanto agendes uno.
+                      - link "Agendar evento":
+                        - paragraph: Agendar evento
+                      - article "NavBar":
+                        - paragraph: Hoy
+                        - paragraph: Inventario
+                        - paragraph: Eventos
+                        - paragraph: Resultados
+                - generic:
+                  - navigation "Pages":
+                    - generic:
+                      - toolbar "Stepper":
+                        - generic:
+                          - generic:
+                            - button "Previous frame" [disabled]
+                            - button "Next frame"
+                    - generic:
+                      - button "Restart":
+                        - text: Restart
+                        - generic: R
+              - text: Give feedback, ask a question, or just leave a note of appreciation. Click anywhere in the file to leave a comment.
+          - group [ref=f24e20]:
+            - alert [ref=f24e22]
+            - alert [ref=f24e24]

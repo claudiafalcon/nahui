@@ -1,0 +1,75 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic [ref=f33e2]:
+            - region "Prototype controls" [ref=f33e3]:
+              - generic [ref=f33e4]:
+                - button "Skip to content" [ref=f33e6]
+                - link "File browser" [ref=f33e8] [cursor=pointer]:
+                  - /url: /
+                - button "Close flows list" [ref=f33e17]
+                - button "Comment" [ref=f33e18]
+              - heading "Nahui — Medium-Fidelity UI" [level=1] [ref=f33e20]
+              - generic [ref=f33e21]:
+                - generic [ref=f33e23]:
+                  - button "Follow" [ref=f33e26]
+                  - generic [ref=f33e36]:
+                    - button "Follow Claudia Ivette Falcón Mata" [ref=f33e37]
+                    - generic [ref=f33e38]: C
+                - generic [ref=f33e45]:
+                  - button "Log in or create account" [ref=f33e46]
+                  - button "Continue with Google" [ref=f33e49]
+                - button "Options" [ref=f33e51]
+                - button "Enter full screen (F)" [ref=f33e52]
+            - generic [ref=f33e53]:
+              - navigation "Flows" [ref=f33e55]:
+                - generic [ref=f33e56]:
+                  - generic [ref=f33e57]:
+                    - generic [ref=f33e58]:
+                      - generic [ref=f33e59]: Flows
+                      - button "Close" [ref=f33e60]
+                    - generic [ref=f33e68]:
+                      - 'link "Journey 1: Onboarding entry" [ref=f33e70]'
+                      - 'link "Journey 1 leg: Crear evento" [ref=f33e76]'
+                      - link "Home entry (Journeys 1/2/3/4 continue here)" [ref=f33e79]
+                      - 'link "Journey 3: Configuracion entry" [ref=f33e82]'
+                      - link "Flow 1" [ref=f33e85]
+                      - link "Flow 2" [ref=f33e88]
+                      - link "Flow 3" [ref=f33e91]
+                      - link "Flow 4" [ref=f33e94]
+                      - link "Flow 5" [ref=f33e97]
+                  - region "Flow description" [ref=f33e101]:
+                    - paragraph [ref=f33e110]: No description
+              - generic [ref=f33e112]:
+                - generic [ref=f33e113]:
+                  - main:
+                    - article "J1 · 03. Bienvenida + Elegir cómo empezar (§3.3)" [active]:
+                      - link "Ver un ejemplo":
+                        - paragraph: Ver un ejemplo
+                      - paragraph: (si ya arreglaste tu pago)
+                      - link "Activar plan de pago":
+                        - paragraph: Activar plan de pago
+                      - link "Empezar gratis":
+                        - paragraph: Empezar gratis
+                      - paragraph: ¿Cómo quieres empezar?
+                      - paragraph: Aquí vas a registrar tus ventas al momento y ver cómo va tu negocio, sin perder tiempo con la app.
+                      - paragraph: Nahui
+                  - generic [ref=f33e116] [cursor=pointer]
+                - generic:
+                  - navigation "Pages":
+                    - generic:
+                      - toolbar "Stepper":
+                        - generic:
+                          - generic:
+                            - button "Previous frame" [disabled]
+                            - button "Next frame"
+                    - generic:
+                      - button "Restart":
+                        - text: Restart
+                        - generic: R
+              - text: Give feedback, ask a question, or just leave a note of appreciation. Click anywhere in the file to leave a comment.
+          - group [ref=f33e120]:
+            - alert [ref=f33e122]
+            - alert [ref=f33e124]

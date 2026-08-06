@@ -8,6 +8,13 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
+### Q14 — Should the future Customer Segmentation registration (Stage 2, `company/backlog.md` #2) ever be framed to Ana/the customer as a reward or gift ("regalo")?
+
+- **Question:** `home.md` §3.8f's digital receipt carries a `FutureRegistrationPlaceholder` with deliberately generic, mechanism-committing-to-nothing copy ("algún día vas a poder registrar aquí tu compra"). Whether the eventual Stage 2 mechanism (Sale-level Claim Token, `decision-log.md` D22) should be framed with reward/incentive language ("regalo" or similar) once it's actually designed isn't resolved anywhere in the Foundation.
+- **Architect finding:** Not resolvable from what's already written — D22 scopes the Claim Token to Customer Segmentation/intelligence purposes only, with no confirmed reward/incentive mechanic attached. A gift framing would be a real product-behavior commitment (implies some kind of benefit accruing to the customer, not just data capture), not something Architect can infer from the current domain model.
+- **Not yet resolved:** whether Stage 2's customer-facing framing should be neutral/informational or reward/gift-based. Doesn't block anything today — the current placeholder copy commits to nothing that would need to be walked back either way.
+- **Status:** Open. Only relevant once backlog #2 Stage 2 is actually scheduled for design.
+
 ### Q13 — Should "NFC adoption rate" (% of Sales sold via `nfc` vs. `buttons`) be free-tier or paid-tier?
 
 - **Question:** The Product Owner's 2026-08-04 Medium-Fidelity comprehension pass asked whether Resultados gives merchants enough insight, naming NFC adoption rate as one candidate metric. Unlike the other four metrics raised in the same request (sales trends, top products, ticket average, event performance — all either already Approved in `reports.md` or a direct variant of an already-Approved section), NFC adoption rate has zero precedent anywhere in the current `reports.md` — it isn't mentioned in any of its 14 screen states, so there's no existing tier placement to inherit.

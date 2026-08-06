@@ -1,49 +1,40 @@
-# Experience Review — 2026-08-04
+# Experience Review — 2026-08-04/05
 
-One-time emotional/experiential walkthrough of the Medium-Fidelity prototype, run at the Product Owner's request, separate from the standing spec-compliance findings in `ux-critic-findings.md`. Question asked: not "is this correct," but "would Ana leave this session excited to adopt Nahui."
+One-time emotional/experiential walkthrough of the Medium-Fidelity prototype, run at the Product Owner's request. Expanded same day into a broader Medium-Fidelity comprehension pass (icons, hierarchy, Resultados value), a deep redesign of the post-sale moment, and a new connected NFC demo chain. This file is the running status tracker across all of it.
 
-Governance: `ux-critic` identified/prioritized only. `ux-designer` proposed UX improvements. `ui-designer` implemented visuals. `reviewer` verifies no regressions. Main coordinated, did not design or fix anything directly.
+Governance held throughout: `ux-critic` identifies/prioritizes and evaluates judgment calls. `ux-designer` proposes UX/spec changes. `ui-designer` implements in Figma. `reviewer` verifies Foundation-consistency. Main coordinates, persists, never designs or decides unilaterally.
 
-## Final verdict (from `ux-critic`'s walkthrough)
+## Original verdict (starting point, now resolved by the work below)
 
-Not yet an unambiguous "yes." The core registration loop (the thing the product is actually staked on) works and builds real trust. The two moments meant to create genuine excitement — finishing setup, seeing the payoff after a full day of selling — landed flat, and the demo's emotional climax (Resultados) showed data from a story Ana never lived. None of this reflected a flawed design — it was a mix of missing visual delight at high-stakes moments and demo-content bugs.
+Not yet an unambiguous "yes" — the core registration loop worked and built trust; the payoff moments (finishing setup, seeing the day's results) landed flat; the demo's climax (Resultados) showed data from a story Ana never lived. Original findings preserved in `ux-critic-findings.md` (HOME-Q1, INV-Q1, EVT-Q1/Q2, RPT-Q1/Q2, F1–F11, HOME-B3, HOME-MIN3).
 
-## Findings
+## ALL THREE WORKSTREAMS — DONE
 
-**Real usability issues (ranked by cost to the emotional arc):**
-1. Resultados' session-detail screen (the payoff of the whole demo) had no celebration or hierarchy — plain list.
-2. "Venta finalizada ✓" worked correctly but read as ordinary text, not a moment worth noticing.
-3. "Todo listo" (finishing onboarding) had zero celebration for the first real commitment to the product.
-4. No brand mark anywhere in 27 screens; the brand guide's own Coral "Stat/highlight card" was never used for running totals.
+### 1. Resultados icon/comprehension audit (F1–F11) — DONE
+All 11 findings resolved. Spec amendments landed in `home.md`, `inventory.md`, `events.md`, `reports.md` — full `ux-critic` → `reviewer` cycle clean, folded back into Approved. Figma built and verified: NavBar icons, Settings `CapabilityCard` consolidated into one component with status badges, SearchField icon, "Todo listo" ceremony + brand mark, Home's running-total header as a Stat/highlight card, Resultados hero cards + headline statements + Top productos + rank numbers + Event type. One regression found and fixed mid-stream (a confirmation bubble drifted off its shared component). Two follow-on layout bugs found during close-out (an unauthorized `ProportionBar` on "Tus clientes," and the orphaned spacing gap removing it left on 4 frames) — both fixed, `ux-critic`/`reviewer` clean.
 
-**Prototype limitations (demo-content bugs, not design flaws — specs were already correct):**
-- Sale totals reverted to stale numbers after a successful sale.
-- A just-scheduled event contradicted itself ("starts in 3 days" then "Day 2" one screen later).
-- Resultados' final screen showed an unrelated date/total/product.
-- "Guardar mercancía" rendered visually disabled after a valid selection.
-- No NFC-appropriate success screen existed (showed the buttons-mode product grid, violating the "no grid in nfc mode" rule).
-- The NFC journey never received the seamless same-page navigation fix the buttons journey got.
-- Leftover placeholder text in a search field.
+### 2. The post-sale moment — DONE, ended up as a full redesign
+Evolved through several rounds, each driven by real Product Owner scrutiny: HOME-Q1 (ambient confirmation) → extended with a per-sale total + placeholder (built, then found to leak Ana's daily revenue + the live selling grid to any customer being shown the phone — a real Major privacy finding) → fully reframed as a **digital receipt**: a full-viewport state that temporarily *replaces* the selling screen (not overlays it) during the payment moment, so the private content simply isn't rendered. Persisted as `home.md` §3.8f (§3.8e kept as a superseded pointer, per this doc's own amendment-history convention).
 
-**Future enhancement (not built, correctly deferred at the time):** a customer-facing continuation after the sale. Evaluated further below — since resolved into an actual design direction.
+**One real Blocker found and fixed at the spec level:** the first exit mechanism (auto-return timer + tap-anywhere) didn't reliably solve the privacy problem — a slow customer could outlast the timer, and a full-surface tap was exactly as reachable by the customer as by Ana. Fixed: exit is now a margin-zone tap scoped to where Ana's hand grips the phone, with the timer demoted to a long-dwell backstop for the abandoned-phone case only. Full `ux-critic`/`reviewer` cycle clean.
 
-## Remediation status
+**A second real Blocker found and fixed at the Figma level:** the rebuilt frames' exit destinations (mistakenly preserved from old demo wiring) showed a non-empty, in-progress sale instead of the required empty tray — real risk of a duplicate Sale or corrupted inventory count. Fixed by rewiring to the genuine empty-tray canonical frames. Two `ux-critic` passes plus `reviewer`, all clean.
 
-| Item | Status |
-|---|---|
-| Reverting totals, contradictory dates, mismatched Resultados finale, disabled Guardar button, search-field placeholder | **Fixed & verified** (`ui-designer`, 2026-08-04) |
-| NFC success screen | **Fixed & verified** — nfc-mode equivalent of "Venta finalizada ✓" built |
-| NFC journey seamless-navigation parity | **Scoped, not built** — estimated 15–40 new frames, tracked as its own follow-up, timing is the Product Owner's call |
-| Resultados hero-tier hierarchy, "Venta finalizada" felt-not-read treatment, "Todo listo" ceremony, brand mark/Stat-card usage | `ux-designer` briefs complete, **`ui-designer` implementation not yet dispatched** — queued to avoid colliding with the bug-fix pass on the same frames, now clear to proceed |
-| Resultados venue ranking: plain numbers vs. magnitude bar | **Decided** — plain numbers, per Product Owner (avoids implying a recommendation engine) |
-| Sale QR after "Venta finalizada" | **Reframed by Product Owner** (not a customer QR — a Sale QR representing the completed transaction, zero merchant action required) — `architect` confirming Foundation fit now |
-| "Does Resultados communicate real learning, not just data" | `ux-critic` re-evaluating now, informed by the Product Owner's sharper framing |
+Built and verified on all four surfaces: production buttons (`192:382`), production nfc (`231:1920`), demo buttons (`198:823`), demo nfc (`284:3552`) — including a new `BrandMark` component (confirmed non-QR-shaped, resolving a concern raised and rejected twice during design). One non-gating Minor remains open (HOME-MIN3 — an already-true "safe miss" property never stated explicitly in the spec text; cosmetic documentation completeness, not a behavior gap).
 
-## Related, broader Medium-Fidelity workstream (separate request, same day)
+### 3. Connected NFC activation-to-sale chain — DONE
+Real gap: no demo path showed "activate paid plan → activate NFC → tag a product via NFC → sell via NFC → see results" as one story. Scoped first (chose the narrow connected chain over a full 3-journey restructure, which would have been 4-6× the cost with real risk this close to the deadline) — built for less than estimated (8 new frames, ~19 reaction writes vs. ~12-18/25-40 estimated), because Settings activation, Eventos, and Resultados were already largely built. Found and fixed a real pre-existing bug along the way (a shared bridge frame was routing into Eventos instead of Resultados). Full `ux-critic` → `reviewer` cycle clean. The nfc success frame's content-parity gap (flagged when this chain was built) closed automatically once the receipt redesign (workstream 2) landed on that same frame.
 
-A second, independent request — icon system, Resultados value, visual hierarchy app-wide — produced its own findings (F1–F11) and proposals, tracked separately once persisted. Referenced here only because both workstreams converge on the same Resultados screens; implementation is being consolidated rather than dispatched piecemeal to avoid rework.
+One non-gating Minor remains: the shared Resultados destination frame's static content (date/totals) doesn't numerically match this specific chain's own story — a pre-existing placeholder, not something this build introduced, worth a content touch-up before a live demo of this exact chain but not blocking.
 
-## Open, pending Product Owner input or in-flight evaluation
-- Sale QR: `architect` confirming scope against D21/D22/RFC-0002/D26 staging.
-- Resultados "communicates learning": `ux-critic` re-evaluating.
-- NFC journey seamless-navigation build: timing decision, not yet requested.
+## Everything from the original review — closed, stable
+- Reverting totals, contradictory event dates, mismatched Resultados finale numbers, disabled-looking Guardar button, stale search-field placeholder — fixed and verified.
+- Resultados venue ranking: plain numbers, not a magnitude bar — Product Owner decision, applied consistently everywhere it recurred (Top productos, Tus clientes).
+- "Does Resultados communicate real learning, not just data" — resolved via the two headline synthesis statements.
+
+## Still open (not blocking, real items for when the Product Owner is back)
+1. **Q13** (`product/02-ux/product-decisions.md`) — NFC adoption rate metric: free-tier or paid-tier? Still genuinely undecided, doesn't block anything else.
+2. **The "regalo"/gift-framing question** for the future-registration placeholder — logged as **Q14** in `product-decisions.md` (see below), only relevant once backlog #2 Stage 2 is actually scheduled.
+3. **HOME-MIN3** — a one-line "safe miss" clarification in `home.md` §3.8f, cosmetic, no rush.
+4. **Resultados destination content touch-up** for the NFC chain's specific numbers, if that exact chain gets used in a live demo.
+5. **Journey 2's original click-through instructions** (production pages, 3-page path, named URL-fallback hops) — now persisted, see `product/02b-medium-fidelity/CLAUDE.md`.

@@ -1,0 +1,29 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic [ref=f18e26]:
+            - region "Prototype controls": Skip to content Continue with Google
+            - generic [ref=f18e67]:
+              - generic [ref=f18e68]:
+                - generic [ref=f18e69]:
+                  - main:
+                    - article "J1 · [Sub] O5 clone of 71:34 — 08a. Creando tu negocio — near-instant (§3.5)" [active]:
+                      - article "Skeleton"
+                - generic:
+                  - navigation "Pages":
+                    - generic:
+                      - toolbar "Stepper":
+                        - generic:
+                          - generic:
+                            - button "Previous frame"
+                            - button "Next frame"
+                    - generic:
+                      - button "Restart":
+                        - text: Restart
+                        - generic: R
+              - text: Give feedback, ask a question, or just leave a note of appreciation. Click anywhere in the file to leave a comment.
+          - group [ref=f18e20]:
+            - alert [ref=f18e22]
+            - alert [ref=f18e24]

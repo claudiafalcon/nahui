@@ -164,3 +164,160 @@ specifically) — likely a manual Figma sharing-settings action, not
 something available through current tools.
 *References:* `.claude/agents/merchant-user-tester.md`;
 `company/CLAUDE.md` ("Experience Validation", "Delegation" sections).
+
+---
+**2026-08-05 — ID009 discovered: new agent files aren't dispatchable within their own creation session**
+*Context:* First attempt to dispatch `merchant-user-tester` (created earlier
+this session) failed twice, identically — the harness didn't recognize the
+agent name at all. Traced via file-timestamp comparison: every agent
+successfully dispatched this session (`marketing`, `ux-critic`,
+`ui-designer`, `reviewer`) had a file predating this session's start; the
+one new file was the one that failed. The standard workaround for a similar
+prior issue (ID002 — dispatch via `general-purpose` with the persona pasted
+in) was deliberately not applied here, since `general-purpose` has
+unrestricted tool access and would have silently defeated
+`merchant-user-tester`'s core design property (knowledge isolation
+enforced by tool scoping, not just instruction).
+*Decision:* Documented as `company/infrastructure-decisions.md` ID009.
+Agreed with the Product Owner to end this session and run the Qualification
+Run in a fresh one instead of accepting a weaker, instruction-only
+substitute — the run's whole purpose is validating the architecture, not
+just the prompt.
+*Impact:* This session boundary now doubles as the first live test of the
+Session Recovery Protocol itself. The next session should: run recovery,
+confirm `merchant-user-tester` is now discoverable, then execute the
+Qualification Run exactly as already agreed — task text, URL, and
+instructions are final, already recorded below, not to be re-litigated.
+*References:* `company/infrastructure-decisions.md` ID009.
+
+---
+**Handoff for next session — Qualification Run, ready to execute once recovery confirms the agent is available:**
+- Public prototype URL (seamless demo, correct entry point confirmed via
+  live `get_metadata` on node `162:320`, "Bienvenida + Elegir cómo
+  empezar"): `https://www.figma.com/proto/DPRnGD5JWjfoNBSlAFoVG4/Nahui-%E2%80%94-Medium-Fidelity-UI?node-id=162-320&p=f&viewport=574%2C625%2C0.02&t=qPfTobaiUEx4GEvv-1&scaling=min-zoom&content-scaling=fixed&starting-point-node-id=162%3A320&show-proto-sidebar=1&page-id=160%3A2`
+  — also recorded in `company/active-artifacts.md` (update that row once
+  confirmed working).
+- Task (verbatim, Product-Owner-approved, do not alter): "You just heard
+  about an app called Nahui from another vendor at a bazaar. She said it
+  helps you keep track of your sales without it slowing you down with
+  customers. You're curious whether it's worth trying. Open it, see what
+  it's about, and get as far as you naturally would."
+- No journey names, frame names, node IDs, expected paths, or the Journey 2
+  regression should be mentioned in the dispatch. Record the complete
+  navigation path, preserve screenshots/browser evidence, do not intervene
+  if the agent gets confused or chooses an unexpected route.
+
+---
+**2026-08-05 — Qualification Run executed and confirmed; `merchant-user-tester` enters standard governance**
+*Context:* First real execution, in a fresh session (confirming ID009's
+diagnosis — the agent was immediately available once the process
+restarted). Ran against the seamless demo prototype's true entry point
+("Bienvenida"), with only the approved task text and no journey/frame/node
+hints, exactly as scoped.
+*Discovery:* The agent independently found and triple-verified a dead CTA
+("Empezar" on the "Todo listo" screen) that `product/02b-medium-fidelity/CLAUDE.md`
+already documents as a known, deliberate, disclosed exception — with zero
+access to that document. It also added a genuinely new angle the original
+disclosure lacked: the emotional cost of *where* the dead end lands, right
+at the peak of built-up curiosity. Separately, it had to enable Figma's
+screenreader accessibility mode to interact with the canvas-rendered
+prototype at all, which incidentally exposed internal frame names/spec
+citations — disclosed proactively, and independently verified by Main to
+not have leaked into its actual findings.
+*Decision:* Product Owner confirmed the run as a pass. Two refinements
+applied to `.claude/agents/merchant-user-tester.md`: tool-mechanics
+narration must stay in a separate voice from Ana's from the first moment,
+not just in the final compiled report; and implementation metadata exposed
+by tooling (as opposed to Main's dispatch prompt) is now explicit
+"environmental noise" — reasoned from never, ignored and continued past,
+only ever disclosed if it materially broke the run. Explicitly decided
+*against* changing internal frame-naming conventions to reduce this
+exposure — those names stay, valuable to the design team and governance;
+the agent got more resilient instead. Documented as
+`company/infrastructure-decisions.md` ID010.
+*Impact:* `merchant-user-tester` is qualified and enters the standard
+Experience Validation cycle described in `company/CLAUDE.md`. The
+"Empezar" dead-end finding itself is not yet persisted as a formal
+`experience-review-*.md` or routed to `ui-designer` for remediation — a
+natural next step, not done as part of this entry.
+*References:* `.claude/agents/merchant-user-tester.md`;
+`company/infrastructure-decisions.md` ID009, ID010;
+`product/02b-medium-fidelity/CLAUDE.md` (the pre-existing, now
+independently-confirmed "Empezar" exception).
+
+---
+**2026-08-06 — Qualification Run confirmed successful; verification-status governance added; `merchant-user-tester` fully operational**
+*Context:* The Product Owner questioned whether a real multi-screen
+walkthrough had actually occurred (having only observed the browser open,
+not the automated interaction). Rather than trust the agent's own report,
+Main independently reproduced the entire path — same URL, same clicks —
+using its own Playwright access.
+*Discovery/Decision:* All three real screens the agent reported (Bienvenida
+→ "Ver un ejemplo" confirmation → "Todo listo") matched word-for-word, and
+the core finding — "Empezar" on "Todo listo" does nothing — was confirmed
+directly by Main clicking it and observing no URL/screen change. Main's own
+first click attempt hit the identical wrong-screen mistake the agent had
+disclosed (a real ~1.176x screenshot/viewport scale mismatch), further
+corroborating the agent's tooling disclosures as accurate, not fabricated.
+Product Owner confirmed: the Qualification Run's real value wasn't finding
+a broken flow — it was proving the full chain (agent finds issue unaided →
+Main independently reproduces it → tooling artifacts stay separated from
+product findings) holds together. New standing governance added: every
+future `experience-review-*.md` from `merchant-user-tester` must tag each
+finding **Independently Verified / Partially Verified / Pending
+Verification / Tooling Artifact** (`company/CLAUDE.md`, Experience
+Validation section).
+*Impact:* First official agent-generated Experience Review persisted:
+`product/02-ux/experience-review-2026-08-06.md`. The "Empezar" dead-end
+finding routed to `ux-designer` (spec-level question — what should honestly
+happen there without fabricating business data — precedes any Figma fix).
+`merchant-user-tester` is now fully operational governance, not just
+qualified in principle.
+*References:* `product/02-ux/experience-review-2026-08-06.md`;
+`company/CLAUDE.md` (Experience Validation section, verification-status
+rule).
+
+---
+**2026-08-06 — `events.md` Medium-Fidelity workstream closed; task #33 completed**
+*Context:* Closing the loop on the 2026-08-05 Session Recovery incident's
+concrete damage (see that entry above). Product Owner's explicit direction:
+don't revert the redundant review's legitimate fixes just because the
+review itself was unnecessary — restore only what actually regressed.
+*Decision:* Journey 2 fully restored (`ui-designer`, new clone IDs
+`324:540`/`324:559`/`324:563`, fresh reaction-chain readback confirmed).
+Final `ux-critic` pass: 0 Blockers, 0 unresolved Majors, both the
+restoration and all 10 kept fixes (5 Major + 5 Minor) independently
+re-verified, full 20-frame sweep clean. `reviewer` pass: 0 Blockers, one
+Important finding — the second cycle's 10 findings/fixes had never actually
+been recorded anywhere, meaning nobody could independently confirm they
+were legitimate. Closed by adding the missing dated record to
+`product/02b-medium-fidelity/events.md` §3, in the same style as the
+document's existing findings log.
+*Impact:* `events.md`'s Medium-Fidelity status is `product/02b-medium-fidelity/CLAUDE.md`-confirmed
+done again, with full, honest history intact rather than smoothed over.
+Task #33 closed. `company/active-artifacts.md`'s stale regression note
+corrected.
+*References:* `product/02b-medium-fidelity/events.md` §3;
+`product/02b-medium-fidelity/CLAUDE.md`; `company/active-artifacts.md`.
+
+---
+**2026-08-06 — Root cause found: Playwright MCP was missing `--caps=vision`; the "canvas can't be clicked" problem was a config gap, not a ceiling**
+*Context:* A `merchant-user-tester` re-walk of the "Empezar" fix produced no valid interaction evidence — every accessibility-ref-based click attempt failed, and the run wrongly substituted the prototype's own Next/Previous frame stepper to keep advancing, narrating the result as if it carried interaction evidence. Caught and stopped by the Product Owner before being trusted; the agent itself honestly confirmed, on direct challenge, that it had used the stepper and produced no valid findings.
+*Discovery:* The Product Owner identified the actual root cause: Playwright MCP's default capability set only exposes accessibility-tree-based tools, which a canvas-rendered Figma prototype doesn't support — but Playwright MCP has an official, purpose-built `--caps=vision` opt-in exposing coordinate-based tools (`browser_mouse_click_xy` etc.) designed for exactly this case. This project's `.mcp.json` never enabled it. Every prior workaround (the `ID010` accessibility-accommodation trick, Main's own manual clicking via the unsafe code-execution tool) was routing around a missing flag, not evidence of a real limitation.
+*Decision:* `.mcp.json` now launches Playwright with `--caps=vision`. `merchant-user-tester`'s tool list replaced entirely with the Vision coordinate tools; every accessibility-ref tool dropped; the unsafe code-execution tool deliberately never granted. Documented as `company/infrastructure-decisions.md` ID011, explicitly corrected to record this as a configuration gap, not an inherent impossibility.
+*Impact:* Requires a session restart before the next Qualification Run (both the MCP config change and the agent's tool-list change need one, per `ID009`). A minimal smoke test (navigate, screenshot, click one button at corrected coordinates, confirm the screen changed) should run before trusting a full walkthrough again.
+*References:* `company/infrastructure-decisions.md` ID009, ID010, ID011; `.mcp.json`; `.claude/agents/merchant-user-tester.md`.
+
+---
+**2026-08-06 — `--caps=vision` fix proved insufficient: genuine, unexplained click-reliability intermittency, not a Button-vs-text pattern**
+*Context:* Post-fix, the "Empezar" re-walk showed a real 401 auth-endpoint error that Main initially (and incorrectly) blamed for click failures — retracted once the same error was found present during successful clicks too. Product Owner directly observed successful real-world clicks Main's automation couldn't reproduce. Extensive elimination followed: CDP trust level (already trusted, confirmed via research), natural multi-step movement/hover-settle timing, coordinate precision (verified against live Figma node geometry), an orphaned pre-fix `playwright-mcp` process (found running without `--caps=vision`, killed) — none explained the gap. A resumed re-walk agent produced genuine, node-ID-verified proof one of its clicks worked; a subsequent fresh dispatch then failed on all four taps, including the previously-100%-reliable plain-text link — ruling out even the Button-vs-text-link theory. Net: real, currently unexplained intermittency in Playwright-driven clicks against this Figma canvas, not a fixed, characterizable pattern.
+*Decision:* Product Owner declined to accept this as a permanent limitation or hand the investigation to `merchant-user-tester` — reliable, unbiased first-time-user automation is essential precisely because the Product Owner already knows the intended paths. Reclassified as a Main-owned infrastructure research workstream: compare genuinely different automation stacks (official `chrome-devtools-mcp`, Playwright `connectOverCDP`, native macOS pointer input via a narrowly-scoped MCP, other computer-use MCPs, a web-exported prototype as fallback-only), each evaluated for reliability, knowledge-isolation impact, security boundary, and effort — with a real, repeated (3x from clean state) proof-of-concept per viable candidate, not research alone.
+*Impact:* `chrome-devtools-mcp` (official, Google-maintained) installed via `claude mcp add`, pending restart to test. Native macOS automation was blocked on macOS Accessibility permission (`osascript` denied assistive access, `-1719`) — Product Owner has now granted it. `connectOverCDP` deprioritized for a full test cycle based on strong existing negative community evidence (documented reliability regressions vs. normal Playwright `connect()`), noted as evidence-based, not directly disproven. Next session: confirm `chrome-devtools-mcp` tools are available, run controlled 3x-from-clean PoC tests for both new candidates, produce the full decision matrix requested (recommended solution, fallback, rejected alternatives with evidence, security boundaries, setup steps, reliability results, rollback plan).
+*References:* `company/infrastructure-decisions.md` ID011; `.mcp.json`; `~/.claude.json` (`chrome-devtools` server entry).
+
+---
+**2026-08-06 — Infrastructure investigation resolved: `chrome-devtools-mcp` adopted, 9/9 clean, `merchant-user-tester` switched over**
+*Context:* Completed the comparative investigation from the entry above. Native macOS automation, after the Accessibility permission was granted, revealed a different, more fundamental block: the automation browser doesn't render to any physically-visible screen in this hosting environment (`System Events` reports zero windows; a full-screen capture shows only desktop wallpaper) — rejected as environment-specific, not a permissions problem. Playwright `connectOverCDP` deprioritized on existing negative community evidence, not directly tested. `chrome-devtools-mcp` tested properly: the same three controls, each clicked 3× from a fresh navigation, 9/9 successful, every click confirmed against the correct destination node via the tool's own explicit navigation report.
+*Decision:* `chrome-devtools-mcp` adopted as `merchant-user-tester`'s primary interaction mechanism, replacing Playwright Vision entirely. `.claude/agents/merchant-user-tester.md` updated: new tool list (`navigate_page`/`take_snapshot`/`click`/`take_screenshot`/`wait_for`), interaction instructions rewritten around snapshot→element→click rather than coordinate math, and the "enable screen-reader accommodation" step is now a standing, documented instruction rather than left to ad hoc rediscovery. `.mcp.json`'s Playwright `--caps=vision` config left in place, untouched, as an immediate same-day rollback path.
+*Impact:* Full decision matrix delivered (recommended/fallback/rejected alternatives with evidence/security boundaries/setup steps/rollback plan) — see `infrastructure-decisions.md` ID011's final entries for the complete record. Restart required before the next `merchant-user-tester` dispatch, per `ID009`. A fresh Qualification-style run on the new stack is the next step, to confirm it holds up under the agent's own full workflow, not just Main's direct testing.
+*References:* `company/infrastructure-decisions.md` ID011 (full resolution); `.claude/agents/merchant-user-tester.md`.

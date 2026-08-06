@@ -1,0 +1,66 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic [ref=f12e26]:
+            - region "Prototype controls" [ref=f12e305]:
+              - generic [ref=f12e28]:
+                - button "Skip to content" [ref=f12e306]
+                - link "File browser" [ref=f12e307] [cursor=pointer]:
+                  - /url: /
+                - button "Close flows list" [ref=f12e308]
+                - button "Comment" [ref=f12e309]
+              - heading "Nahui — Medium-Fidelity UI" [level=1] [ref=f12e310]
+              - generic [ref=f12e45]:
+                - button "Follow" [ref=f12e311]
+                - generic [ref=f12e69]:
+                  - button "Log in or create account" [ref=f12e312]
+                  - button "Continue with Google" [ref=f12e313]
+                - button "Options" [active] [ref=f12e314]
+                - button "Enter full screen (F)" [ref=f12e315]
+            - generic [ref=f12e77]:
+              - navigation "Flows" [ref=f12e316]:
+                - generic [ref=f12e80]:
+                  - generic [ref=f12e81]:
+                    - generic [ref=f12e82]:
+                      - generic [ref=f12e83]: Flows
+                      - button "Close" [ref=f12e317]
+                    - generic [ref=f12e92]:
+                      - 'link "Journey 1: Onboarding entry" [ref=f12e318]'
+                      - 'link "Journey 1 leg: Crear evento" [ref=f12e319]'
+                      - link "Home entry (Journeys 1/2/3/4 continue here)" [ref=f12e320]
+                      - 'link "Journey 3: Configuracion entry" [ref=f12e321]'
+                      - link "Flow 1" [ref=f12e322]
+                      - link "Flow 2" [ref=f12e323]
+                      - link "Flow 3" [ref=f12e324]
+                      - link "Flow 4" [ref=f12e325]
+                      - link "Flow 5" [ref=f12e326]
+                  - region "Flow description" [ref=f12e327]:
+                    - paragraph [ref=f12e134]: No description
+              - generic [ref=f12e136]:
+                - generic [ref=f12e137]:
+                  - main:
+                    - article "J1 · 03. Bienvenida + Elegir cómo empezar (§3.3)":
+                      - link "Ver un ejemplo":
+                        - paragraph: Ver un ejemplo
+                      - paragraph: (si ya arreglaste tu pago)
+                      - link "Activar plan de pago":
+                        - paragraph: Activar plan de pago
+                      - link "Empezar gratis":
+                        - paragraph: Empezar gratis
+                      - paragraph: ¿Cómo quieres empezar?
+                      - paragraph: Aquí vas a registrar tus ventas al momento y ver cómo va tu negocio, sin perder tiempo con la app.
+                      - paragraph: Nahui
+                - navigation "Pages" [ref=f12e328]:
+                  - toolbar "Stepper" [ref=f12e329]:
+                    - generic [ref=f12e147]:
+                      - button "Previous frame" [disabled] [ref=f12e330]
+                      - button "Next frame" [ref=f12e331]
+                  - button "Restart" [ref=f12e332]:
+                    - text: Restart
+                    - generic: R
+              - text: Give feedback, ask a question, or just leave a note of appreciation. Click anywhere in the file to leave a comment.
+          - group [ref=f12e20]:
+            - alert [ref=f12e22]
+            - alert [ref=f12e24]

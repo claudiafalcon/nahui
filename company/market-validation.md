@@ -12,6 +12,40 @@ Context anchor: we already have one validated merchant, Ana (itinerant clothing 
 
 **Update, 2026-08-04:** Section 2.1's verification pass was run for the first time this session (live `WebSearch`/`WebFetch` access was available). It found real, URL-verified Facebook Groups/Pages and Instagram accounts — organizer/community channels, not individual merchant names. Full findings, the verification table applied per-channel, and an honest account of what's still unresolved live in `company/usability-testing-plan.md` §7.3 (written there because that document's Section 8 checklist was the concrete blocker this pass exists to unblock) — Section 2.1 below is left as the original verification-criteria table (still the right rubric to apply) with a short status pointer added rather than duplicating the results in two places.
 
+**Update, 2026-08-05:** Product Owner provided direct field-observation data — Ana's age and a full bazaar-day workflow, from personally accompanying her at multiple bazares — for the Merchant Experience Kit (the new persona/empathy-map/journey FigJam artifact, see `product/02-ux/` era work). Recorded in new Section 1a below, sourced and dated, per this document's own citation discipline. This is genuinely new confirmed data, not a re-derivation from anything already written here — it upgrades two items that were previously open gaps (no age, no day-in-the-life timeline existed anywhere in the project) to Observed status. Per the Product Owner's explicit framing: this data describes *observed patterns*, contributing to a synthesized Primary Merchant Persona archetype, not biographical facts unique to one identifiable individual — the Merchant Experience Kit should present it accordingly (representative age range, not an exact figure, unless a design decision genuinely needs precision; workflow phases as patterns, not a diary entry).
+
+---
+
+## 1a. Field observations — Primary Merchant Persona (2026-08-05)
+
+Source: Product Owner, direct field observation, accompanying Ana at multiple bazares (in-person, not a document/survey/interview transcript). Distinct sourcing category from the "confirmed via interview with Ana" facts already in `company/CLAUDE.md` and above — those are Ana's own stated words; this is what was directly observed of her working pattern. Both are first-party, high-confidence sources; neither is a market-wide hypothesis (H1-H5 above) until tested against other vendors.
+
+**Age:** 44. Recorded here as the precise data point for traceability, but the Product Owner has explicitly directed that the Merchant Experience Kit present this as a representative range ("early-to-mid 40s" / "40-45"), not the exact figure, unless a specific design decision requires precision — consistent with treating the Kit as a synthesized archetype rather than one individual's biography.
+
+**Typical bazaar workflow (observed pattern, not unique to one bazaar):**
+
+*Pre-bazaar:*
+- Merchandise purchased from suppliers before each bazaar.
+- Large shipments often arrive in oversized packages (~2m long × 50cm wide).
+- Merchandise collected personally.
+- Purchasing cycle may repeat multiple times before an upcoming bazaar, depending on how sales are going.
+
+*Bazaar setup:*
+- Arrives very early on the day of the bazaar, sometimes the afternoon before.
+- Confirms assigned table/booth with organizers.
+- Organizes and prepares the stand before customers arrive.
+
+*During the bazaar:*
+- Primary activity is serving customers and making sales.
+- During quiet periods, often reads or walks around to visit other vendors.
+- Attention returns to customers immediately whenever someone approaches — this observed behavior directly corroborates the already-validated top friction (sale registration competing with attending the next customer, `company/CLAUDE.md`'s core thesis) with an independent observational source, not just Ana's own self-report.
+
+*Multi-day bazaars:*
+- If the bazaar spans multiple days, merchandise and the stand stay at the venue overnight; organizers are responsible for venue security.
+- She returns directly the next morning to continue selling.
+
+**Framing note for whoever builds from this:** these are observed patterns intended to describe the Primary Merchant Persona archetype (synthesized from merchant interviews, field observations, Product Owner observations, marketing research, and ongoing product discovery — Ana being the strongest single contributor, not the sole subject). Present as "observed patterns" / "typically," not as a unique, unrepeatable event specific to one calendar day.
+
 ---
 
 ## 1. ICP hypotheses

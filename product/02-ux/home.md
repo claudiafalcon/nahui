@@ -62,6 +62,32 @@ Approved.
 previously indistinguishable from a fresh Session start or a cancelled
 sale. Full cycle complete, `ux-critic`/`reviewer` clean, folded back into
 Approved.
+**Amended 2026-08-04 (payment-moment extension of HOME-Q1's §3.8e):** the
+ambient "Venta finalizada ✓" confirmation now also carries the sale's own
+total and a literal, future-tense placeholder line for a not-yet-built
+registration mechanism, with its dwell model changed from a fixed fade to
+persisting until Ana's next action. **Superseded, see the entry below.**
+**Superseded 2026-08-05 (receipt-moment redesign, supersedes the
+payment-moment extension above):** the ambient-overlay model above —
+total and placeholder layered on top of §3.7's resting screen — is
+retired, not extended further. During the payment moment the device is
+held out to the customer, so Ana's revenue total and the live product
+grid can't legitimately render at all, not just be de-emphasized — an
+overlay can only ever dim that content, never actually remove it from
+the render. Finalizar Venta success now routes to a new full-viewport
+receipt (§3.8f) that temporarily replaces §3.7 rather than overlaying
+it, carrying forward the per-sale total and the (still non-QR-shaped)
+future-registration placeholder, with a new exit model (a margin-zone
+tap scoped to where Ana's hand grips the phone, backed by a long-dwell
+auto-return reserved for the abandoned-phone case — revised once
+already after a `ux-critic` Blocker found the first version reachable
+by the customer too) replacing "tap a product tile," since the tile
+grid is no longer on screen to tap. §3.8e is kept as a superseded pointer entry rather than
+deleted, per this document's own amendment-history convention (see
+§3.7a's precedent). Full cycle complete (one Blocker on the original
+exit mechanism, found and fixed — see `ux-critic-findings.md` HOME-B3
+— one non-gating Minor tracked as HOME-MIN3), `ux-critic`/`reviewer`
+clean, folded back into Approved.
 **Amended 2026-08-04 (icon/comprehension audit):** §3.9's ProductTile now
 carries a per-Product marker (first letter of `Product.name`), with an
 explicit non-scope note that true custom iconography needs a Product
@@ -909,52 +935,128 @@ shown inline, never a full-screen interruption
   everywhere else uses — she's never stuck staring at a broken screen
   mid-transaction.
 
-### 3.8e Finalizar Venta — success, ambient confirmation (new — resolves HOME-Q1)
+### 3.8e Finalizar Venta — success (superseded — folded into §3.8f)
+
+**Superseded 2026-08-05.** This section previously specified an ambient
+confirmation ("Venta finalizada ✓") layered on top of §3.7's resting
+selling screen — first as a bare confirmation line (HOME-Q1), then,
+later the same day, extended with the sale's own total and a
+future-registration placeholder while keeping that same overlay shape
+(the "payment-moment extension"). That overlay model is retired, not
+extended further: during the payment moment the device is held out to
+the customer, and Ana's daily revenue total plus the live, tappable
+product grid have no legitimate reason to be visible to someone
+standing across the counter. The fix isn't hiding one line of the
+existing screen — it's that a successful Finalizar Venta now routes to
+a genuinely different state, §3.8f, a full-viewport receipt that
+temporarily replaces §3.7 rather than layering on top of it. See §3.8f
+for the current, correct behavior. This entry is kept, rather than
+deleted outright, so the document's own amendment history stays
+legible — the same convention this document already uses elsewhere
+(e.g. §3.7a's removal of "ver detalle de hoy").
+
+### 3.8f Finalizar Venta — success, receipt moment (full-viewport — new, replaces §3.8e's ambient/payment-moment model)
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │
-│ Hoy: $861 · 7 ventas             │  header total already reflects the
-├───────────────────────────────┤   sale that just closed
-│ Venta finalizada ✓                │  ambient, fades — not a separate
-│ Venta actual: (vacía)            │  screen, no tap to dismiss
-│   [   zona de registro       ]   │
+│                                │
+│                                │
+│                                │
+│       Venta finalizada ✓        │  small, quiet — Ana's own read
+│                                │  that the write succeeded; not
+│                                │  sized to compete with what follows
+│                                │
+│                                │
+│                                │
+│             $580                │  this sale's own total — the
+│                                  │  largest text anywhere in the
+│                                  │  product, centered, alone: the
+│                                  │  number that has to land the
+│                                  │  instant she turns the phone
+│                                  │  around toward the customer
+│                                │
+│                                │
+│                                │
+│          (marca Nahui)          │  the brand mark alone, centered —
+│                                │  not a QR / scan-pattern render
+│  (algún día vas a poder          │
+│   registrar aquí tu compra)      │  literal, future-tense, plain
+│                                │  text — not tappable, names no
+│                                │  mechanism
 ├───────────────────────────────┤
-│ [Hoy]  Inventario Eventos Resultados │
-└───────────────────────────────┘
+│ [Hoy]  Inventario Eventos Resultados │  nav bar unchanged — reachable
+└───────────────────────────────┘   exactly as everywhere else;
+                                      leaving Hoy ends the receipt early
 ```
-- Same ambient-confirmation pattern already established by every other
-  successful write action in this document family — `inventory.md` §3.12's
-  "Mercancía registrada ✓," §3.13's "Mercancía lista para vender ✓," and
-  `events.md` §3.10's "Evento agendado ✓" — none of which required a
-  dismiss tap or a separate screen. Finalizar Venta was the one write action
-  in the whole product without any positive acknowledgment of success;
-  this closes that gap. Resolves HOME-Q1.
-- This **is** §3.7's resting state (same header, same "Venta actual:
-  (vacía)," same registration surface below it) with one transient line
-  added — not a new destination, not a screen she has to leave. It fades on
-  its own, the same no-tap-cost posture as the sibling confirmations above.
-  *global-principles.md*, "the fastest interaction is the one that never
-  happens": zero taps added to the loop, and she's free to tap the next
-  product tile the instant it appears — the confirmation never blocks the
-  next sale.
-- **The header's running total is already updated** ("Hoy: $850 · 6 ventas"
-  → "Hoy: $861 · 7 ventas" in this example) at the same moment — not a
-  separate refresh she has to wait for. Combined with the ambient line, this
-  gives her two independent, zero-cost signals that the sale actually
-  closed, not one.
-- **This is what makes a successful Finalizar Venta visually distinct from
-  both of the other two states that otherwise render identically** — a
-  fresh Session start (§3.7, no prior context) and a cancelled sale (§3.8b
-  "Sí, cancelar" → §3.7, tray cleared but nothing to confirm). Neither of
-  those two paths gains anything new here — they deliberately stay the
-  plain, unmarked §3.7 shown elsewhere in this doc; only a genuine
-  Finalizar Venta success reaches this state. This is not the deferred
-  "deshacer" (undo) toast scoped out in §11 — that's a distinct,
-  reversal-oriented mechanism; this is a one-way, positive acknowledgment
-  only.
-- Reached only from §3.8c's success path, immediately after the tray clears.
-  A slow save (§3.8c, >~1.5s) or an error (§3.8d) never reaches this state
-  until a retry actually succeeds.
+- Reached only from §3.8c's success path, the instant the tray clears —
+  never from a slow save (§3.8c, >~1.5s, until it actually resolves) or
+  an error (§3.8d) until a retry succeeds. Same trigger condition the
+  superseded §3.8e used.
+- **Full-viewport replacement of §3.7, not an overlay on top of it.** No
+  header (no running total, no Día N, no session-controls "▾"), no
+  "Venta actual" tray, no product grid — all deliberately absent, not
+  merely dimmed, because during this moment the device is held toward
+  the customer and none of that content has a legitimate reason to be
+  customer-visible. Still a *state* of Hoy, not a new destination — no
+  back arrow, nothing added to the nav graph, same category as §3.1's
+  resolving skeleton or §3.14's fallback screen.
+- Three elements only: the existing "Venta finalizada ✓" line (carried
+  over from HOME-Q1, now de-emphasized rather than dominant), the
+  per-sale total (unchanged in role/prominence from the superseded
+  draft — still the largest, most legible element on screen), and the
+  future-registration placeholder (unchanged copy, new visual device).
+- **Visual device: the Nahui mark alone, not a QR/scan-pattern render.**
+  Confirmed rejected twice now — a rendered scan-pattern grid carries an
+  unhedgeable "this is live and scannable" claim no matter how it's
+  styled, and this document is a permanent spec describing every sale
+  forever, not a limited-run artifact. The Product Owner's branded
+  reference (a centered QR with the Nahui logo overlaid) is read here as
+  a composition cue only — centered, clean, brand-forward — carried over
+  to the brand mark alone, with the scan-pattern grid dropped entirely
+  rather than restyled.
+- Copy is unchanged from the superseded draft: "(algún día vas a poder
+  registrar aquí tu compra)" — names no specific mechanism, doesn't
+  commit to a reward/gift framing (§8).
+- **Ends primarily via a deliberate tap in a margin zone along the
+  screen's outer edges — bottom edge foremost, not the centered column
+  carrying the total/mark/placeholder, and not a tap anywhere on the
+  receipt — with a generous, fixed auto-return held in reserve as a
+  backstop, not the common-case exit.** Both return to the same place —
+  plain §3.7, tray already empty (§3.13 Variant A) — the tap simply gets
+  her there sooner, same as before. The bottom portion of that margin is
+  the part of the device nearest Ana's own supporting hand: showing the
+  total means tilting the phone's far edge toward the customer while its
+  near edge stays against her palm, so reaching that zone means reaching
+  past the visible total and into Ana's own grip — not the customer's
+  natural motion when looking at or pointing toward what's already held
+  out in front of them. Ending the receipt is a small, deliberate tap
+  made there as she starts pulling the phone back toward herself — one
+  motion, not two — but a real tap, not assumed from grip contact alone
+  (the same limitation already raised about relying on regrip). No
+  rendered marker, no label, no visible boundary for the zone itself:
+  same "no new control" reading as before, just a smaller and positioned
+  target rather than the full surface. The auto-return no longer aims at
+  the length of an average sale — its only remaining job is recovering a
+  phone set down and forgotten with the receipt still showing (§3.13's
+  own scenario) — so its default is set generously long, illustratively
+  tens of seconds rather than several, specifically so it isn't expected
+  to fire while a customer is still genuinely present, even a slow one.
+  Neither the zone's exact bounds nor the backstop's exact duration is
+  pinned as hard spec here; see §11. Full reasoning for this mechanism,
+  including the tradeoff it accepts, is in §10.
+- **Navigating away (nav bar) or an interruption (phone lock,
+  backgrounding) end the receipt immediately**, same as any other Home
+  state — on return to Hoy she resolves fresh per §2/§3.13, landing on
+  plain §3.7, never a lingering receipt from a now-past customer.
+- Session-controls ("▾") is not reachable from this screen — there's no
+  header to host it. A deliberate, temporary omission specific to this
+  moment, not a removal: it's back, unchanged, the instant §3.7 returns.
+- Not the deferred "deshacer" (undo) toast scoped out in §11 — that
+  remains a distinct, reversal-oriented mechanism; this stays a
+  one-way, positive acknowledgment only.
+- Does not design, build, or commit to the Sale-level QR/Claim-Token
+  mechanism (`product/99-rfc/0002-loyalty-claim-complete-capability.md`,
+  `decision-log.md` D22) — that remains `company/backlog.md` #2's Stage
+  2, gated behind backlog #1's own success bar, not started.
 
 ### 3.9 Session active — `Session.operatingMode = buttons` surface
 ```
@@ -1160,7 +1262,12 @@ and left Variant B undefined.)
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
 ```
-Pixel-for-pixel identical to the normal ready state (§3.7/§3.9/§3.10).
+Pixel-for-pixel identical to the normal ready state (§3.7/§3.9/§3.10). This
+is also the condition §3.8f's full-viewport receipt relies on to clear
+itself on interruption/nav-away — since the tray is already empty by the
+time the receipt is showing, Variant A's resolution here is what makes "the
+receipt never lingers across an interruption" true, not a separate
+mechanism.
 
 **Variant B — Venta actual had 1+ items at the moment of interruption:**
 ```
@@ -1259,9 +1366,22 @@ Inside selling (3.7-3.10):
   → Finalizar Venta
       → saving (3.8c)
       → error (3.8d) → Reintentar, o resolve via Cancelar venta actual (3.8b)
-      → success → tray clears → ambient "Venta finalizada ✓" confirmation
-          (3.8e, resolves HOME-Q1) → 3.7 (ready for next customer, header
-          total already updated)
+      → success → tray clears → full-viewport receipt (3.8f: "Venta
+          finalizada ✓" + this sale's total + future-registration
+          placeholder) — replaces §3.7 entirely for the payment moment;
+          no header, no grid, no Venta actual tray rendered
+          → auto-returns to plain §3.7 after a generous, fixed dwell —
+            no tap required, nothing gated on the customer
+          → [any tap on the receipt] → returns to §3.7 immediately,
+            same destination as the auto-return, just sooner — the
+            real-world equivalent of physically taking the phone back
+          → [nav away / interruption] → same as any other Home
+            interruption: returns to plain §3.7 on resume (§3.13),
+            receipt never lingers across it
+          → in every case, the header's running total and the product
+            grid are exactly where she left them the instant §3.7
+            reappears — nothing about reaching them is gated on
+            anything the customer does
   → [any point, 1+ items pending] Cancelar venta actual → inline confirm (3.8b)
       → No → back to 3.8, items untouched
       → Sí, cancelar → tray clears → back to 3.7
@@ -1311,7 +1431,12 @@ and back to Hoy):
 14. Cancelar venta actual — inline confirm step
 15. Finalizar Venta — saving (near-instant / slow)
 16. Finalizar Venta — error
-17. Finalizar Venta — success, ambient confirmation (new — resolves HOME-Q1)
+17. Finalizar Venta — success, full-viewport receipt: "Venta finalizada ✓"
+    + per-sale total + future-registration placeholder, temporarily
+    replacing §3.7 entirely (no header, no grid) — auto-returns to §3.7
+    after a generous dwell, or immediately on any tap (resolves HOME-Q1;
+    superseded the same-day ambient-overlay extension on 2026-08-05, see
+    §3.8f)
 18. Session active, `Session.operatingMode = buttons` surface (scrollable, frequency-ordered, sold-out tiles dimmed)
 19. Session active, `Session.operatingMode = nfc` surface
 20. Close-session confirmation (reached only with an empty Sale)
@@ -1415,6 +1540,19 @@ her actual top sellers within the first screenful regardless of Catalog size.
   with Ana, or simulating a larger catalog, before Builder locks in the exact
   scroll and ordering behavior. Not escalated to Architect — this is a
   validation recommendation, not a Foundation ambiguity.
+- **Future-registration placeholder's eventual "what it does" framing** —
+  today's copy ("algún día vas a poder registrar aquí tu compra") is
+  deliberately generic and commits to no specific mechanism. Whether the
+  eventual Stage 2 mechanism (`company/backlog.md` #2, Sale-level Claim
+  Token per `decision-log.md` D22) should ever be framed to Ana/the
+  customer as a reward or incentive ("regalo," or similar) isn't
+  resolved anywhere in the Foundation — D22's Claim Token is scoped to
+  Customer Segmentation/intelligence, not confirmed to carry a
+  reward/incentive mechanic. Not something `architect` can resolve from
+  what's already written; flagged as a genuine Product Decision to take
+  up if/when Stage 2 is actually designed — not blocking this amendment,
+  since this amendment's copy commits to nothing that would need to be
+  walked back.
 
 ## 9. Principle justification
 
@@ -1651,18 +1789,204 @@ her actual top sellers within the first screenful regardless of Catalog size.
   was pixel-identical to both a fresh Session start and a post-cancellation
   state (§3.8b), giving Ana no way to tell "it saved" from "nothing
   happened" or "I cancelled it" without mentally tracking the header total
-  herself. Fixed by reusing the exact same ambient, zero-tap pattern already
-  established by the sibling docs — ambient, fades on its own, no dismiss
-  tap, adds no step to the next sale — rather than inventing a new
+  herself. Fixed by reusing the same ambient, zero-tap posture already
+  established by the sibling docs — no dismiss tap, adds no step to the next
+  sale (note: the fixed-fade timing was later changed by the 2026-08-04
+  payment-moment extension below — this bullet describes the original
+  zero-tap mechanism, not the current dwell model) — rather than inventing a new
   mechanism. Distinct from, and does not reopen, §11's already-deferred
   "deshacer" (undo) toast: that's a separate, reversal-oriented affordance;
   this is a one-way positive acknowledgment only. Not RFC-worthy — no
   aggregate boundary, domain term, or IA change; a UX state-design fix to an
   already-Approved spec, same category as the other amendments recorded
   above.
+- **[Superseded 2026-08-05 by the bullet immediately below — kept for
+  history, per this document's amendment-log convention.] §3.8e's ambient
+  confirmation now carries the sale's own total and a
+  literal, future-tense placeholder for a not-yet-built registration
+  mechanism, and its dwell model changed from a fixed fade to
+  persist-until-her-next-action.** Extends, not replaces, HOME-Q1's original
+  fix. Two things drove this: (1) the total makes a genuine Finalizar Venta
+  success even more clearly distinct from a fresh Session start or a
+  cancelled sale — a stronger version of the same signal HOME-Q1 already
+  established, since neither of those paths ever produces a per-sale total;
+  (2) this screen is designed to be turned toward the customer during
+  payment, so its content now has a real external reader and a real,
+  variable-length moment to survive, which the original half-second-glance
+  fade was never tuned for. The dwell model was changed accordingly: the
+  block persists until she taps forward (any product tile, which starts the
+  next sale and clears it as a side effect — no dedicated dismiss action)
+  or until she leaves Hoy or the app is interrupted, at which point §3.13's
+  existing "resolve fresh, no stale state" guarantee already applies. An
+  explicit "Continuar vendiendo" control was considered and dropped — since
+  the registration grid is never blocked or covered by this content, there
+  is no real state for such a control to resolve, and it would only add
+  chrome competing with the total for attention on a screen that may be
+  facing a customer. The placeholder line is deliberately literal
+  ("algún día vas a poder registrar aquí tu compra") rather than any
+  QR-shaped graphic — a QR render would carry an unhedgeable "this is live"
+  claim regardless of who's reading it or in what context, and this
+  document is a permanent spec, not a one-week moderated-test artifact where
+  that risk is temporarily lower. Its copy uses Ana's own vocabulary, never
+  the internal "Claim"/"Claim Token" terms from `decision-log.md`
+  D22/`ubiquitous-language.md` (`global-principles.md`, Product Language).
+  This does not design, build, or commit to the Sale-level QR/Claim-Token
+  mechanism itself (`product/99-rfc/0002-loyalty-claim-complete-capability.md`)
+  — that remains `company/backlog.md` #2's Stage 2, gated behind backlog
+  #1's own success bar, not started. Not RFC-worthy — no aggregate boundary,
+  domain term, or IA change; a UX state-design amendment to an
+  already-Approved spec, same category as this document's other
+  post-Approval amendments.
+- **2026-08-05: the payment-moment extension above is superseded by a
+  full-viewport receipt (§3.8f), replacing the ambient-overlay model
+  entirely rather than extending it again.** Two things forced this: (1)
+  a confirmed privacy problem — during the payment moment the device is
+  held out to the customer, and Ana's cumulative daily revenue (the
+  header's running total) plus the live, tappable product grid have no
+  legitimate reason to be visible to that customer; an overlay can only
+  ever de-emphasize that content, never actually remove it from the
+  render, so the fix has to be structural, not cosmetic; (2) once the
+  grid genuinely isn't on screen, "tap a product tile" — the mechanism
+  the overlay model used to clear itself and return to selling — no
+  longer exists to tap. Resolved as follows:
+  - **Full-viewport replacement, not overlay.** A successful Finalizar
+    Venta now routes to a dedicated state (§3.8f) that temporarily
+    replaces §3.7 — no header, no Venta actual tray, no product grid —
+    built from exactly three elements: the existing "Venta finalizada
+    ✓" line (now de-emphasized, no longer dominant), the per-sale total
+    (still the single largest, most legible element on screen), and the
+    future-registration placeholder. Still not a navigation destination
+    in the IA sense — no back arrow, nothing added to the nav graph —
+    it's a temporary full-screen state of Hoy, the same way §3.1's
+    resolving skeleton or §3.14's fallback are states of Hoy without
+    being destinations of their own.
+  - **Exit mechanism, revised after a `ux-critic` Blocker: a tap zone
+    scoped to the screen's outer margin — bottom edge foremost, matching
+    where Ana's hand already grips the phone to present it — replaces
+    the full-surface tap, with the fixed auto-return demoted to a
+    backstop rather than shared common-case duty.** The original hybrid
+    (full-surface tap-anywhere, plus a short — illustratively 4–6s —
+    auto-return) failed on both halves against the exact exposure this
+    redesign exists to prevent, for the same underlying reason: neither
+    half was tied to an event under Ana's exclusive control. A fixed
+    timer fires on a clock, blind to whether the customer is still
+    looking — one who takes longer than the illustrative window
+    (counting change, negotiating, ordinary bazaar behavior) is still
+    looking straight at the phone when it auto-flips to the private §3.7
+    grid. A full-surface tap is exactly as reachable by the customer's
+    hand as by Ana's — the phone is, by this screen's own premise, held
+    out and often within the customer's reach, so a customer pointing at
+    the total or touching the brand mark triggers the identical
+    dismissal, sooner than the timer would have, and by exactly the
+    person the mechanism exists to shield the content from.
+  - The fix ties dismissal to where Ana's hand already is, not to
+    "anywhere." Presenting the total means tilting the phone so its far
+    edge points toward the customer while its near edge stays against
+    her own palm — the geometry of the gesture itself, not a new one to
+    learn. The live zone is the screen's outer margin, bottom edge
+    foremost: reaching it means reaching past the visible total and into
+    Ana's own grip, a conspicuous motion for the person the total is
+    being shown to, unlike reaching for what's already directly in front
+    of them. This doesn't claim the zone is unreachable by a customer —
+    nothing on a phone held out and visible to them can be made
+    unreachable without abandoning the premise that it's shown to them
+    at all, which this screen doesn't get to escape — only that the
+    ordinary physics of the gesture make it the one part of the screen a
+    customer has no natural reason to touch, sharply reducing an
+    accidental trigger rather than eliminating it. That's the tradeoff
+    being accepted here, stated plainly rather than assumed away.
+  - This costs Ana real precision, weighed honestly rather than glossed
+    over: a passive regrip alone was already shown not to reliably
+    register as a tap, and narrowing the target from the full surface to
+    a margin makes landing a deliberate tap there less forgiving, not
+    more. It's still one motion, not two — the tap lands as she starts
+    pulling the phone back, not as a separate step — but it's a smaller
+    target than "anywhere," and that cost is accepted because leaving
+    the full surface live is the exact defect being fixed.
+  - The auto-return's role changes with it. With a reliably Ana-scoped
+    tap as the everyday exit, the timer no longer needs to double as the
+    common-case mechanism or stay short — its only remaining job is
+    recovering a phone set down and forgotten with the receipt still
+    showing, no tap, no nav, no lock (§3.13's own scenario). Decoupled
+    from the common case, its default can run generously long —
+    illustratively tens of seconds rather than several — specifically so
+    it isn't expected to fire while a customer is still genuinely
+    present, including a slow one. The cost is narrow and bounded: only
+    if Ana genuinely sets the phone down and later picks it up without
+    tapping does she wait longer for the receipt to clear on its own,
+    and even then the same near-zero-friction margin tap she'd have made
+    anyway clears it the moment she actually means to sell again — a
+    bounded convenience cost, not the live privacy failure the timer
+    firing early used to be.
+  - Duration-only was reconsidered and rejected again, more sharply than
+    the first time: a duration short enough to avoid a real per-sale
+    wait cost is exactly the duration a slow customer can still be
+    looking at the phone through, and a duration long enough to make
+    that reliably unlikely reintroduces a wait cost on every sale, in
+    direct conflict with `company/backlog.md` #1's <3s bar — the exact
+    cost the hybrid model exists to avoid. With the tap's own
+    reachability problem solved, there's no remaining reason to give it
+    up.
+  - This is still a judgment call about how Ana physically holds and
+    presents the phone during payment, not something validated with her
+    directly — flagged the same way the original mechanism was, for the
+    Product Owner to confirm or override once real usage, or a moderated
+    session, can check whether the margin zone matches how she actually
+    grips the phone in practice.
+  - **Visual device for the placeholder: the Nahui mark alone, not a
+    QR/scan-pattern render.** Confirmed rejected twice now — a rendered
+    scan-pattern grid carries an unhedgeable "this is live and
+    scannable" claim regardless of styling or context, and this is a
+    permanent spec describing every sale, not a one-week artifact. The
+    composition/polish cue from the Product Owner's branded reference (a
+    centered QR with the Nahui logo overlaid) is taken as exactly that —
+    composition only: centered, clean, brand-forward — applied to the
+    brand mark alone, with the scan-pattern grid dropped entirely rather
+    than stylized. This also gives the placeholder a legitimate,
+    undesigned tie to `brand-guide.md`'s "the center" narrative (where a
+    sale becomes data, a customer becomes a relationship) without
+    forcing the four-pillar story onto a screen that doesn't need it to
+    function.
+  - **Copy stays exactly as before** ("algún día vas a poder registrar
+    aquí tu compra") — still names no mechanism, still doesn't commit to
+    a reward/gift framing (`decision-log.md` D22's Claim Token is a
+    Customer Segmentation/intelligence mechanism, not confirmed
+    gift-based) — see §8 for an explicit flag on whether that framing
+    question needs its own Product Decision once backlog #2 Stage 2 is
+    actually designed.
+  - **Ceremony stays restrained, not decorated, despite this being the
+    one customer-facing screen in the product.** Weighed explicitly:
+    this is both the highest-frequency screen in the app (every sale)
+    and the only one a customer ever sees, two facts pulling in opposite
+    directions on how much ceremony is appropriate. Resolved toward
+    `brand-guide.md`'s existing restraint — no decorative elements
+    specified — with the "celebratory conclusion" feeling the Product
+    Owner asked for expressed through composition instead of ornament:
+    full-viewport space, one dominant number, nothing else competing for
+    attention is already a meaningfully bigger gesture than the cramped
+    overlay version, without adding literal decoration that would read
+    as gimmicky in front of a real customer at a real bazaar — a look
+    this document's whole tone (`brand-guide.md`, never framing informal
+    commerce as needing to be "modernized" with novelty chrome) exists
+    to avoid.
+  Not RFC-worthy — no aggregate boundary, domain term, or IA change; a
+  UX state-design amendment to an already-Approved spec, same category
+  as this document's other post-Approval amendments. Ready for the
+  standard `ux-critic`/`reviewer` cycle before folding back into
+  Approved.
 
 ## 11. Future considerations
 
+- **Resolved, no longer open** (was: "a generous backstop fade for
+  §3.8e's ambient confirmation block"): §3.8f's receipt now specifies
+  exactly this — a generous, fixed auto-return — as part of the state
+  itself, not a future add-on, precisely because the phone-set-down-
+  without-any-signal scenario this bullet worried about is no longer a
+  possible stuck state once the receipt clears on its own. The one thing
+  still open is the *exact* duration value (a few seconds vs. a specific
+  number) — left as a UI-polish/tunable decision for Medium-Fidelity or
+  Build, consistent with how this document already treats other timing
+  thresholds (e.g. §3.2's "&gt;~1.5s").
 - A true, custom per-Product icon (merchant-chosen or uploaded, beyond the
   automatic first-letter marker in §3.9) — would require a new Product
   attribute, a schema change to the frozen Domain Model, and a Product

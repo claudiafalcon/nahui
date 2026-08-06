@@ -1,0 +1,19 @@
+[    1130ms] [LOG] Running frontend commit e32e9b2d6a3af5b04641246531157768998f8d45 @ https://www.figma.com/proto/DPRnGD5JWjfoNBSlAFoVG4/Nahui-%E2%80%94-Medium-Fidelity-UI?node-id=10-4&p=f&viewport=331%2C410%2C0.24&t=ANeojGwt4PT2JYjf-1&scaling=min-zoom&content-scaling=fixed&starting-point-node-id=10%3A4&page-id=1%3A33:552
+[    2039ms] [WARNING] Statsig is not ready to log exposures, will retry in 1 seconds @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    2095ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ https://browser-intake-datadoghq.com/api/v2/rum:0
+[    2312ms] [LOG] [import] git: 128f278183b379b4f4f1574fb622ec9163c67013, stamp: 49471F8B4CE35D97 @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    2972ms] [INFO] [PrototypeLib] Booting... (emscripten version 4.0.21) @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    3022ms] [INFO] [GPU] graphicsAPI:"WebGL 2", vendor:"Google Inc. (AMD)", renderer:"ANGLE (AMD, ANGLE Metal Renderer: AMD Radeon Pro 560X, Unspecified Version)" version:"OpenGL ES 2.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))" @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    3415ms] [WARNING] pixel already configured. @ https://pixel.byspotify.com/ping.min.js:0
+[    4026ms] [WARNING] [GSI_LOGGER]: Your client application uses one of the Google One Tap prompt UI status methods that may stop functioning when FedCM becomes mandatory. Refer to the migration guide to update your code accordingly and opt-in to FedCM to test your changes. Learn more: https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#display_moment and https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#skipped_moment @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    4031ms] [ERROR] Not signed in with the identity provider. @ https://www.figma.com/proto/DPRnGD5JWjfoNBSlAFoVG4/Nahui-%E2%80%94-Medium-Fidelity-UI?node-id=10-4&p=f&viewport=331%2C410%2C0.24&t=ANeojGwt4PT2JYjf-1&scaling=min-zoom&content-scaling=fixed&starting-point-node-id=10%3A4&page-id=1%3A33:0
+[    4357ms] [INFO] [Sprigma] Sprig SDK is ready @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    7930ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://www.figma.com/api/files/DPRnGD5JWjfoNBSlAFoVG4/prototype/view:0
+[   10470ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3393
+[   10473ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   10475ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   10476ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   10477ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   10477ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   10477ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   61237ms] [ERROR] [GSI_LOGGER]: FedCM get() rejects with NetworkError: Error retrieving a token. @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53

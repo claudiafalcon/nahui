@@ -1,0 +1,26 @@
+- generic [ref=f24e1]:
+  - link "Figma logo that can be used to navigate to homepage" [ref=f24e2] [cursor=pointer]:
+    - /url: /
+  - generic [ref=f24e12]:
+    - heading "Sign in to Figma" [active] [level=1] [ref=f24e14]
+    - button "Continue with Google" [ref=f24e15] [cursor=pointer]
+    - paragraph [ref=f24e25]: or
+    - generic [ref=f24e26]:
+      - generic [ref=f24e27]: Email
+      - textbox "Email" [ref=f24e28]
+    - generic [ref=f24e29]:
+      - generic [ref=f24e30]: Password
+      - textbox "Password" [ref=f24e31]
+    - button "Log in" [ref=f24e32] [cursor=pointer]
+    - generic [ref=f24e34]:
+      - link "Use single sign-on" [ref=f24e36] [cursor=pointer]:
+        - /url: "#"
+      - link "Reset password" [ref=f24e39] [cursor=pointer]:
+        - /url: "#"
+      - paragraph [ref=f24e43]:
+        - text: No account?
+        - link "Create one" [ref=f24e44] [cursor=pointer]:
+          - /url: "#"
+  - region "Manage cookies or opt out" [ref=f24e45]:
+    - link "Manage cookies or opt out" [ref=f24e46]:
+      - /url: /consent-preferences/

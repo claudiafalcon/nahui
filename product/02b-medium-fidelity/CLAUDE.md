@@ -66,7 +66,16 @@ definition (`.claude/agents/ui-designer.md`) for the full rule.
   complete the Medium-Fidelity tier.
 - `events.md` — **done**. Full cycle complete, zero Blockers, zero
   unresolved Important findings. First document to complete the
-  Medium-Fidelity tier.
+  Medium-Fidelity tier. **Amended 2026-08-05/06**: a redundant review
+  (triggered by a since-fixed Session Recovery failure) found and fixed 5
+  real Majors + 5 Minors, but also caused a regression — 3 legitimate
+  Journey 2 clone frames deleted. Per Product Owner direction, the
+  legitimate fixes were kept and the regression fully restored (new IDs
+  `324:540`/`324:559`/`324:563`). Final `ux-critic` pass clean (restoration
+  + all 10 items + full 20-frame sweep); `reviewer` pass clean (one
+  Important finding — the second cycle's changes were undocumented — closed
+  by adding the missing record). See `product/02b-medium-fidelity/events.md`
+  §3 for the full account and `company/bitacora.md` for the incident.
 - `reports.md` — **done**. Full cycle complete (2 Major — undersized Día-row
   tap targets, weak tappability signal — and 1 Minor found, fixed, and
   re-verified clean; 2 Important doc-drift findings from `reviewer`, both
@@ -149,7 +158,7 @@ Live-testing the 26-frame primary chain surfaced several off-path taps still ope
 - "Guardar mercancía" now enabled on the Producto-seleccionado state (was disabled despite the spec saying it should be enabled once Producto is chosen); 3 more `SessionHeader` "▾" arrows wired; `Empieza`/`Termina`/`Cantidad` fields now show real values per the same-day `inventory.md`/`events.md` default-value amendments.
 
 **Six named, deliberate exceptions** (not silently skipped):
-1. Todo listo Variant C's "Empezar" button — no "example business" Home state exists in any approved spec; reusing a real Home frame would misrepresent the fake demo as a real business.
+1. ~~Todo listo Variant C's "Empezar" button — no "example business" Home state exists in any approved spec; reusing a real Home frame would misrepresent the fake demo as a real business.~~ **Corrected 2026-08-06 — this characterization was factually wrong, not a real exception.** `onboarding.md` §2.4/§4 already specify exactly this handoff: "Ver un ejemplo" → Home's own Idle state (`home.md` §3.4) or Event-active state (`home.md` §3.6), populated with the seeded demo data, same as any ordinary Business. Reusing Home's real states for the demo *is* the design (`decision-log.md` D19), not a shortcut around one. Independently confirmed unwired via `merchant-user-tester`'s Qualification Run and Main's own reproduction (`product/02-ux/experience-review-2026-08-06.md`) — genuinely a build gap, just never actually an unresolvable one. **Fixed 2026-08-06** — wired to the already-existing `284:3698` (Home §3.6, Event-active nfc-twin, populated with real seeded data), reusing the exact pattern sibling Variant B already used. `ux-critic` verified the fix correct against spec (see `company/infrastructure-decisions.md` for its full pass). A `merchant-user-tester` re-walk was attempted but is **Inconclusive** — the run couldn't achieve genuine click interaction this session (see `company/infrastructure-decisions.md` ID011) and correctly refused to report click-dependent findings as validated. A follow-up re-walk with reliable interaction is still needed before this fix is considered fully confirmed from a real-tap perspective.
 2. ProductTile "add another item" loop — the pre-existing, already-documented gap above (NFC's literal equivalent rejected by Figma's Plugin API; buttons-mode never had one).
 3. Committed-line "Eliminar línea (✕)" delete targets — deprioritized, not impossible; would need per-line-removed clone frames, a proportionality call.
 4. Event detail's Día 1/Día 3 rows — day-level totals exist, but no approved spec gives a per-product breakdown for those specific days (only the whole-event aggregate and Día 2's own numbers do); placeholder clones were built then deleted rather than populated with fabricated numbers.
@@ -163,3 +172,23 @@ Live-testing the 26-frame primary chain surfaced several off-path taps still ope
 Same day as the two passes above, the Product Owner raised three more usability concerns while testing (Cantidad's default clarity, Empieza's default clarity, and Finalizar Venta's missing success confirmation), each routed through the full Low-Fidelity amendment cycle (`ux-designer` → `ux-critic` → `reviewer`, all clean — see `product/02-ux/CLAUDE.md`'s Status section) before landing here. All three applied across both the six production pages and this demo page: `inventory.md` Cantidad default+tap-affordance (7 text updates), `events.md` Empieza/Termina default+gate (14 text updates), and `home.md`'s genuinely new §3.8e "Venta finalizada ✓" confirmation state (one new frame per surface — `192:382` production, `198:823` demo — plus one reaction hop rewired on each, all verified via fresh `node.reactions` readback per ID004/ID006). Full detail in each document's own Medium-Fidelity tracking file.
 
 **One real gap surfaced, not yet closed:** the low-fi `inventory.md` spec's `[−]`/`[+]` Cantidad stepper has never actually been built in this Medium-Fidelity file — only the bordered value box exists, no increment/decrement tap targets. Typed entry (the spec's hard requirement for reaching a large quantity) works and is visibly affordant; the stepper itself is still text-only in the spec, not real UI. Tracked in `inventory.md`'s own Known gaps.
+
+### 2026-08-05 — Connected NFC activation-to-sale chain (demo page)
+
+The Product Owner identified a real gap: no path in the demo let you see "activate paid plan → activate NFC selling mode → register + tag a product via NFC → create an event → sell via NFC → see the result" as one continuous story — Journey 2 (production pages) started pre-configured, skipping activation entirely, and Journey 3's tagging flow never connected into an actual NFC sale. Considered and rejected a full demo restructure (~60-120+ frames, 4-6× the cost, real risk this close to the usability-testing deadline) in favor of one connected chain, scoped first (~12-18 frames estimated) then built.
+
+**Built for less than estimated: 8 new clone frames, ~19 reaction writes**, spanning Settings → Inventario (NFC tagging) → Eventos → Home (NFC selling) → Resultados, all on demo page `160:2`. Lower counts than scoped because Leg 1 (Settings activation) was already fully built and wired from earlier work, and the session-controls sheet / post-venta-finalizada bridge turned out to be genuinely mode-agnostic and reusable rather than needing NFC-specific clones.
+
+**New frames:** `284:526`/`284:535` (Inventario — Asignar tags queue + nfc-capable post-save confirmation), `284:3690` (Eventos — post-save confirmation routing to nfc-mode Home), `284:3698`/`284:3534`/`284:3540`/`284:3547`/`284:3552` (Home — evento activo entry through nfc selling through Finalizar Venta through success confirmation, mirroring the existing buttons-mode chain). Full 26/26-hop chain verified via fresh `node.reactions` readback, terminating cleanly at Resultados.
+
+**Two disclosed deviations from the literal build brief, both improvements:**
+1. Inventario's post-save routing was built spec-accurate (save → Asignar Tags queue directly → completion) rather than inventing an "Asignar tags →" CTA on `52:162`-equivalent that the approved spec doesn't actually put there (`inventory.md` §2 explicitly says saving auto-enters tagging, "no intermediate question asked").
+2. **A real pre-existing bug was found and fixed as a byproduct:** the "post-venta-finalizada" bridge's "Ver detalle" button was routing into Eventos' event detail, not Resultados — introduced silently when the earlier §3.8e amendment inserted this bridge without reconnecting it. Fixed for both the nfc ending (this build) and, retroactively, the pre-existing buttons-mode ending — both now correctly converge on `162:2019` (Resultados' real session detail).
+
+**Follow-up closed:** `284:3552` (and its production source `231:1920`) now both carry the full §3.8f "digital receipt" content (`SaleTotal`, `BrandMark`, `FutureRegistrationPlaceholder`, `MarginTapZone`) — built, and their exit destinations corrected to genuinely-empty-tray frames after a real Blocker was found and fixed (see `home.md` §3.8f's own status; `ux-critic`/`reviewer` cycle for the receipt rebuild tracked there, not duplicated here).
+
+**One named, deliberate exception:** `284:526`'s "Terminar después" button still points to a production-only node (`47:65`) that doesn't exist on the demo page — a dead tap in Present mode, left unwired per this build's scoped-to-5-legs discipline rather than a full-coverage sweep. Not silently skipped — flagged for a future pass if it matters.
+
+**`ux-critic` verified clean** — zero Blockers/Majors, both disclosed deviations confirmed correct, no wrong-mode content leaking anywhere (including the specifically-flagged `284:3540` "with items" nfc surface). One non-gating Minor: `162:2019`'s static content (date/ventas/total, inherited from the original Journey-1-Seamless build) doesn't numerically match this specific chain's own preceding "Día cerrado" numbers or Eventos' date range — the routing fix is structurally correct, the destination's content is just a pre-existing placeholder now reachable through a new path. Worth a content touch-up before a live demo of this exact chain, not blocking.
+
+**`reviewer` clean** — no Blockers, both disclosed deviations confirmed correct against the approved specs, no side effects on the shared buttons-mode ending, no Foundation/ubiquitous-language drift. One Important finding raised and resolved as a false alarm: `284:3552` was being actively rebuilt by the concurrent §3.8f receipt-redesign work at the exact moment of review (caught mid-edit, two different structural reads seconds apart) — **this is why the line below was stale; see the corrected version**, confirmed once that separate build completed and was independently verified.

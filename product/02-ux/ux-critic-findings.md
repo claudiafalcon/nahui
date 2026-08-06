@@ -84,6 +84,10 @@ Every other write action in the document family gets an explicit save/error wire
 Status: Fixed — verified. `home.md` §3.13 now explicitly specifies both the empty-tray and non-empty-tray interruption/resume cases — Venta actual is always a read of the Sale's true server-confirmed state — see `home.md`'s inline "resolves HOME-B2" annotations.
 §1 names "already selling, glancing back (phone locked, backgrounded, put down between customers)" as one of only two core contexts the whole document exists to serve. §3.13 ("Resuming a Session left open after an interruption/crash") is the document's answer — but its wireframe shows "Venta actual: (vacía)," and the annotation asserts it's "pixel-for-pixel identical to the normal ready state." Nothing says what happens if 1–2 items were already tapped into the current Sale at the moment of interruption: does she return to find those items still there, or does the tray silently reset to empty? Given phone-locking mid-sale is described as routine, not rare, this is the doc's own stated primary scenario, and the answer determines whether the design protects against losing a sale record or quietly reproduces that exact loss. The same question applies to switching nav tabs mid-sale and returning to Hoy — §2's framing note implies this is always safe but never explicitly confirms it for a non-empty tray.
 
+**HOME-B3 — §3.8f's original exit mechanism (full-surface tap + short fixed timer) didn't reliably prevent the exact customer-visible privacy exposure the receipt redesign exists to solve.** (Receipt-moment redesign finding, 2026-08-05)
+Status: Fixed — verified. Exit mechanism revised to a margin-zone tap (bottom edge, scoped to where Ana's hand grips the phone) as the common-case exit, with the timer demoted to a long-dwell backstop reserved for the abandoned-phone case only — see `home.md` §3.8f/§10.
+Two failure modes, same root cause: neither half of the original hybrid mechanism was tied to an event under Ana's exclusive control. A blind fixed timer (4-6s) could fire while a customer was still reading the total mid-negotiation, revealing the private daily-revenue/grid view to exactly the person the redesign was built to shield it from. A full-surface tap was equally reachable by the customer's hand as Ana's — worse, the brand mark sat where a QR would, inviting exactly that touch. Fix ties dismissal to physical grip position instead of a generic surface or a blind clock — re-verified as a materially different mechanism, not a relabeled version of the same defect.
+
 ### Major Findings
 
 **HOME-M1 — "Cancelar venta actual" is destructive, unconfirmed, and has no undo, breaking the doc's own established pattern.**
@@ -113,6 +117,9 @@ Status: Open. §3.5 shows one upcoming-Event card; the "shows only the single so
 
 **HOME-MIN2 — Skeleton loading state (§3.1) may read as "frozen" rather than "loading" for a first-time, non-technical user.**
 Status: Open. In the 1.0–1.4s zone just under the 1.5s "Un momento…" threshold, a first-time user unfamiliar with skeleton-loading conventions could interpret it as a crash. Low severity — this state should rarely be seen at all.
+
+**HOME-MIN3 — §3.8f's "safe miss" property (a tap outside the margin zone has no effect) is true but never stated explicitly.** (Receipt-moment redesign finding, 2026-08-05)
+Status: Open, non-gating. Derivable from the doc's own `[ ]` = tappable / plain text = passive convention (none of the receipt's content — total, checkmark line, brand mark, placeholder — is bracketed), but not stated as an explicit guarantee the way §3.8d states "never a dead end" or §3.8a states "never silently dropped." A one-line addition ("a tap that misses the margin has no effect — the receipt simply stays up") would remove the ambiguity for whoever builds this next. Low cost, not blocking.
 
 ### Suggestions
 

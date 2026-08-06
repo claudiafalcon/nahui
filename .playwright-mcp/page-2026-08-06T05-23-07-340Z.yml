@@ -1,0 +1,42 @@
+- generic [active]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic [ref=f6e2]:
+            - region "Prototype controls" [ref=f6e3]:
+              - generic [ref=f6e4]:
+                - button "Skip to content" [ref=f6e6]
+                - link "File browser" [ref=f6e8] [cursor=pointer]:
+                  - /url: /
+                - button "Comment" [ref=f6e16]
+              - heading "Nahui — Medium-Fidelity UI" [level=1] [ref=f6e18]
+              - generic [ref=f6e19]:
+                - button "Follow" [ref=f6e24]
+                - generic [ref=f6e33]:
+                  - button "Log in or create account" [ref=f6e34]
+                  - button "Continue with Google" [ref=f6e37]
+                - button "Options" [ref=f6e39]
+                - button "Enter full screen (F)" [ref=f6e40]
+            - generic [ref=f6e41]:
+              - navigation "Flows" [ref=f6e43]:
+                - generic [ref=f6e44]:
+                  - generic [ref=f6e46]:
+                    - generic [ref=f6e47]: Flows
+                    - button "Close" [ref=f6e48]
+                  - region "Flow description" [ref=f6e58]:
+                    - paragraph [ref=f6e67]: No description
+              - generic [ref=f6e69]:
+                - generic [ref=f6e70]:
+                  - main:
+                    - paragraph [ref=f6e71]: Screenreader support is currently disabled. To enable it, use the Accessibility settings from the Options menu.
+                - generic:
+                  - navigation "Pages":
+                    - generic:
+                      - button "Restart":
+                        - text: Restart
+                        - generic: R
+              - text: Give feedback, ask a question, or just leave a note of appreciation. Click anywhere in the file to leave a comment.
+          - group [ref=f6e96]:
+            - alert [ref=f6e98]
+            - alert [ref=f6e100]

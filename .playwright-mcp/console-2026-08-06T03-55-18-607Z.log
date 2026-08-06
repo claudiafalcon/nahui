@@ -1,0 +1,79 @@
+[    1079ms] [LOG] Running frontend commit e32e9b2d6a3af5b04641246531157768998f8d45 @ https://www.figma.com/proto/DPRnGD5JWjfoNBSlAFoVG4/Nahui-%E2%80%94-Medium-Fidelity-UI?node-id=162-320&p=f&viewport=574%2C625%2C0.02&t=qPfTobaiUEx4GEvv-1&scaling=min-zoom&content-scaling=fixed&starting-point-node-id=162%3A320&page-id=160%3A2:552
+[    1806ms] [WARNING] Statsig is not ready to log exposures, will retry in 1 seconds @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    1807ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ https://browser-intake-datadoghq.com/api/v2/rum:0
+[    1950ms] [LOG] [import] git: 128f278183b379b4f4f1574fb622ec9163c67013, stamp: 49471F8B4CE35D97 @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    2775ms] [WARNING] pixel already configured. @ https://pixel.byspotify.com/ping.min.js:0
+[    2911ms] [INFO] [PrototypeLib] Booting... (emscripten version 4.0.21) @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    2957ms] [INFO] [GPU] graphicsAPI:"WebGL 2", vendor:"Google Inc. (AMD)", renderer:"ANGLE (AMD, ANGLE Metal Renderer: AMD Radeon Pro 560X, Unspecified Version)" version:"OpenGL ES 2.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))" @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    3024ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_CLOSED @ https://www.facebook.com/tr/?id=871885529854177&ev=PageView&dl=https%3A%2F%2Fmarketing.figma.com%2F%3Freferrer%3D%26temp-cache-bust%3D1%26gpc_code%3Dmx_mex&rl=&if=true&ts=1785988521613&iw=false&sw=1920&sh=1200&v=2.9.370&r=stable&ec=0&o=4126&aems=0%3B0&fbp=fb.1.1785988292617.215302742217142040&cs_est=true&ler=empty&cdl=API_unavailable&pmd[title]=Figma&plt=411.10000002384186&iss=1&imft=1&tz=-360&it=1785988521375&coo=false&dpo=LDU&dpoco=0&dpost=0&expv2[0]=pl1&expv2[1]=el2&expv2[2]=bc1&expv2[3]=ra2&expv2[4]=rp2&expv2[5]=ct2&expv2[6]=hf0&expv2[7]=sd1&expv2[8]=sp1&expv2[9]=ek1&expv2[10]=pc1&expv2[11]=gs1&expv2[12]=zs1&expv2[13]=cp1&expv2[14]=es1&expv2[15]=ac1&expv2[16]=so1&expv2[17]=wc3&expv2[18]=la1&expv2[19]=sf1&expv2[20]=da1&expv2[21]=io1&expv2[22]=ae1&expv2[23]=sx1&expv2[24]=if1&expv2[25]=fd1&expv2[26]=bg3&expv2[27]=mg3&expv2[28]=kl3&expv2[29]=sg3&expv2[30]=mk3&expv2[31]=sn3&expv2[32]=ec3&expv2[33]=mp3&expv2[34]=ps3&expv2[35]=fx3&expv2[36]=vt3&rqm=GET:0
+[    3327ms] [WARNING] [GSI_LOGGER]: Your client application uses one of the Google One Tap prompt UI status methods that may stop functioning when FedCM becomes mandatory. Refer to the migration guide to update your code accordingly and opt-in to FedCM to test your changes. Learn more: https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#display_moment and https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#skipped_moment @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    3330ms] [ERROR] Not signed in with the identity provider. @ https://www.figma.com/proto/DPRnGD5JWjfoNBSlAFoVG4/Nahui-%E2%80%94-Medium-Fidelity-UI?node-id=162-320&p=f&viewport=574%2C625%2C0.02&t=qPfTobaiUEx4GEvv-1&scaling=min-zoom&content-scaling=fixed&starting-point-node-id=162%3A320&page-id=160%3A2:0
+[    3632ms] [INFO] [Sprigma] Sprig SDK is ready @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    5705ms] [ERROR] [GSI_LOGGER]: FedCM get() rejects with NetworkError: Error retrieving a token. @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[    7546ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://www.figma.com/api/files/DPRnGD5JWjfoNBSlAFoVG4/prototype/view:0
+[   25400ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3393
+[   25403ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   25405ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   25405ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   25407ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   25407ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   25407ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   62737ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   62737ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   62737ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   62738ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   62738ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   62738ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   69115ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   69115ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   69115ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   69116ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   69116ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[   69116ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  106069ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3393
+[  106072ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  106074ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  106074ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  106075ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  106075ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  106075ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  108586ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  108587ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  108587ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  108588ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  108588ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  108588ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  119750ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  119750ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  119750ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  119751ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  119751ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  119751ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  127855ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  127855ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  127856ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  127856ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  127856ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  127857ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  130832ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  130832ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  130833ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  130833ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  130834ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  130834ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  139059ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  139059ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  139059ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  139060ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  139060ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  139060ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ :3032
+[  293574ms] [LOG] Reloading due to missing view: recentsAndSharing @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[  293689ms] [WARNING] ignoring 'close' event on old socket @ https://www.figma.com/webpack-artifacts/assets/vendor-core-8ea0a2f14f18cecd.min.js.br:53
+[  294462ms] [LOG] Running frontend commit e32e9b2d6a3af5b04641246531157768998f8d45 @ https://www.figma.com/login?is_not_gen_0=true:496
+[  294689ms] [WARNING] Statsig is not ready to log exposures, will retry in 1 seconds @ https://www.figma.com/webpack-artifacts/assets/vendor-core-98a104ae16f90e74.min.js.br:53
+[  294807ms] [WARNING] Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('https://marketing.figma.com') does not match the recipient window's origin ('https://www.figma.com'). @ https://www.figma.com/webpack-artifacts/assets/381-bbc12b6d8017d63e.min.js.br:2
+[  294807ms] [WARNING] Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('https://marketing.figma.com') does not match the recipient window's origin ('https://www.figma.com'). @ https://www.figma.com/webpack-artifacts/assets/381-bbc12b6d8017d63e.min.js.br:2
+[  294807ms] [WARNING] Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('https://marketing.figma.com') does not match the recipient window's origin ('https://www.figma.com'). @ https://www.figma.com/webpack-artifacts/assets/381-bbc12b6d8017d63e.min.js.br:2
+[  294807ms] [WARNING] Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('https://marketing.figma.com') does not match the recipient window's origin ('https://www.figma.com'). @ https://www.figma.com/webpack-artifacts/assets/381-bbc12b6d8017d63e.min.js.br:2
+[  294807ms] [WARNING] Failed to execute 'postMessage' on 'DOMWindow': The target origin provided ('https://marketing.figma.com') does not match the recipient window's origin ('https://www.figma.com'). @ https://www.figma.com/webpack-artifacts/assets/381-bbc12b6d8017d63e.min.js.br:2
+[  295436ms] [WARNING] pixel already configured. @ https://pixel.byspotify.com/ping.min.js:0
