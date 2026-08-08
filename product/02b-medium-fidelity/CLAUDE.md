@@ -110,6 +110,8 @@ Every intra-document transition is fully live and Present-mode-smooth. Cross-doc
 
 **Structural technique worth knowing about:** several screens are shared building blocks across journeys (Eventos' Nuevo-evento form/save, Inventario's Registrar-mercancía flow, Home's Continuar-Día-N/Venta-en-curso/Finalizar-Venta) — but Figma reactions are one-destination-per-node, so a shared node can't branch to two different endings (buttons vs. NFC selling mode, or feed into Journey 2 vs. Journey 1's differently-scoped continuation). Rather than let one journey silently overwrite another's reaction on a shared node, `ui-designer` cloned the minimum set of downstream frames needed for each journey to diverge correctly — 10 new clone frames total (1 in Onboarding, 3 each in Inventario/Eventos/Home), zero original frames modified. Every clone exists solely to break a shared-node conflict, not to introduce new content — see each document's frame table below for the specific IDs.
 
+**2026-08-07 (`decision-log.md` D32) — this technique is now a proactive, mandatory classification, not an ad hoc judgment call.** After this exact pattern recurred repeatedly (Findings 8/9/10, the Guardar-mercancía hijack, a fresh post-remediation leak the Product Owner found by hand), an architectural investigation (`architect` → `ux-designer`/`ui-designer`, each independently verified against real incident evidence, `knowledge-mentor`-grounded) confirmed cloning as the correct mechanism — not the elegant one, the reliable one, since Figma's more "caller-owned" alternatives (instance overrides, Variables-based routing) both have documented silent-failure modes reproducing this exact bug. `.claude/agents/ui-designer.md`'s caller-audit rule now requires a two-axis classification (content-identical? navigation-identical?) the moment a node is first identified as needing a second journey/caller — not only reactively, before a rewrite. No canonical-journey artifact was introduced; `product/02-ux/`'s experience-based organization was confirmed sufficient, the gap was here, in when this classification triggers, not in how journeys are documented upstream.
+
 **Journey 1's Onboarding→Home handoff now correctly lands on literal Cold start** (`35:261`), matching `onboarding.md` §2.4 exactly — the earlier version's Idle-state shortcut (and the decision point it raised) is resolved by the reorganization itself: Journey 1 now continues forward through Inventario rather than needing to skip it.
 
 The pre-existing "Activar plan de pago" Onboarding path, and the Settings/Reports secondary journeys from the first build pass, remain fully intact and untouched by this reorganization — not part of the three primary showcased journeys, but still wired and demo-able.
@@ -173,6 +175,209 @@ Same day as the two passes above, the Product Owner raised three more usability 
 
 **One real gap surfaced, not yet closed:** the low-fi `inventory.md` spec's `[−]`/`[+]` Cantidad stepper has never actually been built in this Medium-Fidelity file — only the bordered value box exists, no increment/decrement tap targets. Typed entry (the spec's hard requirement for reaching a large quantity) works and is visibly affordant; the stepper itself is still text-only in the spec, not real UI. Tracked in `inventory.md`'s own Known gaps.
 
+### 2026-08-06 — NFC-mode Settings routing + tab-bar wiring fix (demo page)
+
+Remediation for two `merchant-user-tester` findings from
+`product/02-ux/experience-review-2026-08-06-b.md` (Findings 1 and 2): the
+NFC-seeded demo Home (`284:3698`) routed Settings to the wrong plan-tier
+frame, and its Inventario/Eventos/Resultados tabs were completely unwired
+(confirmed via `take_snapshot`: `StaticText`, not `link`).
+
+**Fix 1 — Settings routing.** The shared session-controls sheet (`184:1510`)
+is opened by 4 different `▾` triggers across Home variants; rewiring it
+directly would have broken 3 legitimate paths. Cloned it (`360:1117`),
+rewired the nfc-twin's own trigger (`284:3704`) to open the clone, and
+pointed the clone's Configuración button to an already-existing paid/nfc-
+consistent frame (`184:1713`, not invented). Follow-up: `184:1713`'s own
+back-link (`184:1714`) was pointing to a buttons-mode cold-start (`162:1485`)
+— rewired to `284:3698`.
+
+**Fix 2 — Tab bar, expanded scope.** The same unwired-tab-bar gap was
+confirmed on all 5 nfc-mode frames (`284:3698`, `284:3534`, `284:3540`,
+`284:3547`, `284:3552`), not just the one originally reported. All 15 tab
+reactions wired to the same canonical destinations already used by every
+other wired NavBar on the page (`162:1661`/`162:1804`/`184:1536`), `Hoy`
+left unreacted per the established convention.
+
+**Verification, two layers.** `ux-critic` reviewed structurally: clean, 0
+Blockers/Majors; both the clone's fidelity and the target frame's paid/nfc-
+consistent content confirmed via screenshot; also caught and corrected a
+build-report error — `184:1714`'s internal layer name reads "← Eventos" but
+its *rendered* text is "← Hoy," already correct, not a stale-label gap as
+first disclosed. `ux-critic` flagged that reaction-level click correctness
+is outside what Figma-inspection tools can see (`infrastructure-decisions.md`
+ID004) — Main closed that exact gap with a live `chrome-devtools-mcp`
+click-through: ▾ → `360:1117` → Configuración → `184:1713` (confirmed "Tu
+plan: Pago" / "Con tags"), back-link → `284:3698` (confirmed), and all three
+tabs on the origin frame → their reported destinations. **Both fixes
+Independently Verified end-to-end by live click, not just structural
+review.**
+
+**New issue surfaced by Fix 2, not a regression.** Clicking through the now-
+wired tabs found all three destinations are generic canonical frames that
+don't match the nfc-twin's mid-Día-2, active-event narrative: Inventario →
+a blank first-time registration form, Eventos → literal "cold start, no
+events" (despite this same Home showing an active event), Resultados → an
+unrelated already-closed event. Same root-cause pattern as exception #6
+below — reusing the only existing canonical destinations rather than
+building context-accurate clones. A genuine improvement over "nothing
+happens," not fully state-accurate. Logged as Finding 7 in
+`experience-review-2026-08-06-b.md`, a Product Owner proportionality
+question (same class as exception #6), not resolved unilaterally.
+
+### 2026-08-06 (later same night) — Finding 8: genuine dead-end trap found and fixed (demo page)
+
+A `merchant-user-tester` re-walk dispatched to confirm the fix above found
+something more serious than expected: from any of the 5 nfc-mode session
+frames, tapping "Inventario" led into `162:1661` ("Registrar mercancía"
+form) whose own "← Inventario" back-link dead-ended at `162:1485` (Home's
+unrelated Journey-1 Cold-start frame — correct for Journey 1, its original
+and only caller, but never reachable from the NFC-mode family until this
+same night's tab-bar fix made it reachable for the first time). Once there:
+tab bar entirely unwired (a pre-existing, untouched limitation of that
+specific frame), only working control (header "▾") loops right back into
+the same trap. No path back to the live session existed. Ana correctly
+stopped and reported the wall factually rather than diagnosing it, per her
+design; Main reproduced every step via `chrome-devtools-mcp` and traced the
+root cause.
+
+**Fix.** `ui-designer` built 5 self-referencing clones of `162:1661`
+(`371:1138`/`371:1175`/`371:1212`/`371:1249`/`371:1286`, one per nfc-mode
+origin frame), each origin's Inventario tab repointed to its own clone —
+deliberately self-referencing rather than one shared destination, to avoid
+misrepresenting an in-progress sale's items as gone. A 6th leak was found
+and fixed proactively: `360:1117` (this same night's Configuración-sheet
+clone) had its own Inventario tab still pointing at the original trap —
+repointed to `371:1138`. `162:1661`/`162:1485` themselves left untouched;
+Journey 1's own use of them is undisturbed.
+
+**Verification.** `ux-critic` reviewed with elevated scrutiny (built without
+the mandatory `figma-use` skill loaded) — clean structurally, one Minor
+(the "← Inventario" label no longer matches its destination, a disclosed,
+acceptable tradeoff, not a trap) — and correctly named that reaction-level
+destinations are outside what its tools can see, recommending a live
+click-through as the real closing test. Main performed that click-through:
+two full round trips confirmed by direct click (`284:3534`→clone→back to
+`284:3534`; `360:1117`→clone→back to `284:3698`), both landing exactly on
+the correct live session frame. The remaining 3 clones weren't individually
+live-tested but are structurally identical in build pattern and correctly
+named, per `ux-critic`'s independent check.
+
+**This is the clearest demonstration yet of why Experience Validation
+exists as its own gate:** a re-walk dispatched to confirm one fix instead
+found a worse problem that fix had newly exposed, one hop further in.
+
+**Finding 10 (same night, found by the re-walk closing out Finding 9): a
+fifth instance of the identical pattern, one layer deeper.** From inside
+one of Finding 8's own correctly-fixed registration-form clones, tapping
+"Elegir producto" opens a separate, shared, un-cloned picker-sheet node
+(`162:1674`) whose own "← Inventario" back-link still targeted `162:1485` —
+the identical original trap, reached through a path Finding 8 never
+touched. Given this was the fifth distinct discovery of the same
+shared-node/wrong-back-link pattern in one night, Main requested a
+comprehensive sweep rather than another one-off patch.
+
+**Sweep result: 6 real leak instances found, all the same causal family.**
+Beyond the picker sheet itself: `162:1687` ("Producto seleccionado" state),
+`162:1700` ("Registrar mercancía — committed lines"), `188:1007` (Descartar
+confirmation's own completion — worse than a back-link, a destructive
+action landing in the trap), `184:1678` (Activar-clientes-frecuentes
+confirmation — Finding 1's exact bug reappearing via a fourth side door),
+`184:1684` (that action's own completion, landing a real state change in
+the wrong-tier trap). Fixed with 28 new clones (one per instance per
+applicable nfc origin), each rewired one hop back to its own live nfc
+session frame, mirroring Finding 8's established pattern exactly. Two
+deeper legacy nodes (`184:1665`/`184:1742`) found but deliberately left
+unfixed — a disclosed proportionality question, same class as the
+already-accepted exception #6 below, not silently absorbed.
+
+**Verification.** Two dispatches were genuinely blocked by a disclosed
+tool-access gap (`ReadMcpResourceTool` unavailable — `infrastructure-
+decisions.md` ID001) and correctly refused to proceed rather than guess; a
+third succeeded via the known local-plugin-cache-file fallback for loading
+`figma-use`. `ux-critic` reviewed with elevated scrutiny: independently
+derived and spot-checked 5 of the 28 clones (content-faithful, correctly
+state-specific), confirmed the 6 original source nodes structurally
+undisturbed, found the proportionality call on the two deferred nodes
+credible, and — correctly — flagged that reaction-level wiring is outside
+what its tools can see (the same standing ID004 limit hit at every round
+tonight), recommending Main's live click-through as the actual closing
+test. Main performed that click-through on the confirmed original
+instance: `284:3540` → Inventario → its own registration-form clone →
+"Elegir producto" → its own nfc-mode picker-sheet clone (correctly labeled,
+correct product list) → "← Inventario" → back to `284:3540` — confirmed.
+The other 27 clones weren't individually live-tested but follow the
+identical, `ux-critic`-reviewed pattern.
+
+**Six rounds, six genuine Blockers, one night** — dead-end trap, four
+unfixed Settings triggers, a wrong sheet template silently dropping "Cerrar
+sesión," a Session-controls-interlock bypass risking silent data loss, a
+picker-sheet leak, and a six-instance comprehensive sweep. Every round was
+surfaced by verifying the previous one rather than trusting it — the exact
+chain of independent checks (`merchant-user-tester` experiences, `ux-critic`
+reviews structure, Main click-verifies behavior, `reviewer` checks
+Foundation consistency) this project's governance exists to run.
+
+**Finding 9 (same night, immediate follow-up): the "▾" trigger on the other
+nfc-mode frames still opened the old, unfixed sheet.** A second
+`merchant-user-tester` re-walk confirmed the Inventario fix above worked
+perfectly, then hit a sibling dead-end one hop later: 3 of the remaining 4
+nfc-mode frames' own "▾" trigger (`284:3552` has none — deliberately, its
+header was removed per §3.8f) still opened the *original* sheet chain
+(`162:1526`→`184:1645`), reproducing Finding 1's exact original bug (wrong
+plan-tier Settings) plus a fresh dead-end (that sheet's tab bar is inert,
+only "Configuración"/"Cerrar sesión" work). Root cause: the original Fix 1
+only ever rewired `284:3698`'s own trigger, never the other 4 — invisible
+until Finding 2's tab-bar fix made all 5 frames mutually reachable.
+
+**Fix, round 1:** `ui-designer` built 6 new clones (a sheet + a Settings-
+content clone per origin, `284:3534`/`284:3540`/`284:3547`) rather than
+sharing one — cloning the content frame too, not just the sheet, since
+`284:3540` (with items in progress) sharing a back-link with any other
+origin risked showing an empty tray on return, the same risk Finding 8
+exists to prevent.
+
+**Regression caught before reaching `reviewer`:** `ux-critic` found the 3
+new sheet clones used the wrong template — `home.md` §3.6c's no-Session
+shape (single "Configuración" button) instead of §3.7a's active-Session
+shape (real session header + **both** "Cerrar sesión" and "Configuración,"
+always reachable per §2's interlock). The old buggy sheet had actually
+gotten this part right; fixing the Settings-tier bug silently dropped
+"Cerrar sesión" from three mid-selling screens — confirmed against Main's
+own click-through transcript, not just `ux-critic`'s structural read.
+
+**Fix, round 2:** `ui-designer` rebuilt all 3 sheet clones from `162:1526`'s
+own correct active-Session template, wired "Cerrar sesión" to the same
+working destination (`162:1534`) `162:1526` already used, kept the 3
+already-correct content clones untouched, deleted the 3 wrong clones after
+confirming nothing else referenced them.
+
+**Verification, final.** `ux-critic` re-reviewed: clean, 0 Blockers/Majors —
+real session header + both rows confirmed present on all 3 by screenshot,
+correct template lineage confirmed, wrong clones confirmed deleted, all
+"must stay untouched" nodes confirmed unchanged. Main live-click-verified
+the full chain on `284:3534`: ▾ → new sheet (both rows, real header) →
+"Cerrar sesión" → `162:1534` (a real, working confirmation screen, not a
+dead end) — confirmed; separately, "Configuración" → the already-correct
+content clone — confirmed. Three rounds, three genuine Blockers, each
+surfaced by verifying the previous round rather than trusting it — the
+Experience Validation loop and the ux-critic/Main verification split both
+did exactly what they exist to do here.
+
+### 2026-08-06 (later) — Finding: buttons-only "Guardar mercancía" was silently hijacked by the NFC-chain build
+
+A `merchant-user-tester` walk of "Empezar gratis," dispatched to independently verify a Product-Owner-reported discrepancy that a static wiring trace hadn't reproduced, found the real bug one hop past what that trace covered: on the buttons-only path, "Guardar mercancía" routed into the NFC tag-assignment queue (`284:526`) showing hardcoded "Pijama (10) · Sudadera (5) · Calcetines (20)" — none of it entered by Ana.
+
+**Root cause, the same "shared node reused across the wrong context" pattern already documented repeatedly above.** `162:1723` ("Guardar — saving," explicitly named "*Journey 1: buttons-only*" in its own layer name) was the sole node the 2026-08-05 Connected NFC activation-to-sale chain build (below) reused for the NFC-tagging leg's own save step, silently overwriting its original destination (§3.12's confirmation, `162:1726`) with `284:526`. A full-page sweep found this wasn't an isolated instance: 9 more NFC-mode "Guardar mercancía" buttons across all 5 NFC-mode Home-origin clones funneled through the same hijacked node.
+
+**Fix.** `ui-designer` cloned `162:1723` → `475:1925` for the NFC-tagging leg's own use (re-set its own `AFTER_TIMEOUT` to `284:526`, ID006 workaround applied), restored `162:1723`'s original reaction to `162:1726`, and rewired all 10 NFC-mode buttons (1 reported + 9 found in the sweep) to the new clone. Verified via independent fresh `node.reactions` readback: correct destinations on both sides, both legitimate buttons-only callers untouched, zero stray pointers either direction.
+
+**Independently confirmed by Main via live click-through**, the full buttons-only path start to finish: Bienvenida → "Empezar gratis" → Todo listo → Home cold start → "Registrar mercancía" → picker → Pijama → "Guardar mercancía" → lands on `162:1726`, "J1 · 3.12 Post-save confirmation — buttons-only." No NFC step anywhere in this path — confirmed, not inferred.
+
+**Two content-fidelity observations from that same live verification, both explicitly resolved as non-defects by the Product Owner, not fixed:** (1) `162:1726`'s content ("Pijama — 10 disponibles," "Sudadera/Maxy — 5 disponibles," "Calcetines — 20 disponibles") is static and doesn't reflect what was actually registered in this specific walkthrough (one Pijama). (2) The product picker (`162:1674`)'s three rows all `NAVIGATE` to the identical single destination (`162:1687`), whose Producto field is hardcoded "Pijama" regardless of which row is tapped — the same already-disclosed "one populated frame, not a full combinatorial matrix" limitation `inventory.md`'s own tracking file already records for the production page. **Product Owner ruling (2026-08-06), stated as a general standard for this fidelity tier, not just these two instances:** a Medium-Fidelity prototype exists to validate interaction flow, navigation, information architecture, and UX decisions — not dynamic application state. Static content is acceptable *as long as it doesn't contradict the selected journey or create confusion about business rules* (the NFC-routing defect fixed above was worth fixing precisely because it violated that bar — free tier reaching NFC content is a business-rule contradiction, not a static-content question). Neither of these two observations crosses that line, so neither is a defect; effort belongs in flow definition and prototype behavior, not building dynamic-looking variants that get thrown away once the real application exists. Closed, not deferred.
+
+**One disclosed, unverified boundary, not chased further per the same proportionality standard above.** `ux-critic`'s structural review confirmed clone fidelity (`475:1925`) and content fidelity of all 10 rewired NFC-mode "Guardar mercancía" buttons, but reaction-level correctness — whether those 10 buttons' taps actually reach `475:1925`/`284:526` as intended — is outside what design-inspection tools can see (ID004); only 1 of the 10 chains (the buttons-only path) has been live-click-verified by Main. A follow-up attempt to verify one NFC-mode instance directly hit a separate, genuine tooling nuance: the "Adapt content for screen readers" accessibility setting does not persist across a direct node-id URL navigation the way it does across in-app clicks, producing an ambiguous, unreliable click result — not trusted as a finding either way. Not pursued further given the buttons-only path (the actual reported defect) is already confirmed fixed.
+
 ### 2026-08-05 — Connected NFC activation-to-sale chain (demo page)
 
 The Product Owner identified a real gap: no path in the demo let you see "activate paid plan → activate NFC selling mode → register + tag a product via NFC → create an event → sell via NFC → see the result" as one continuous story — Journey 2 (production pages) started pre-configured, skipping activation entirely, and Journey 3's tagging flow never connected into an actual NFC sale. Considered and rejected a full demo restructure (~60-120+ frames, 4-6× the cost, real risk this close to the usability-testing deadline) in favor of one connected chain, scoped first (~12-18 frames estimated) then built.
@@ -189,6 +394,49 @@ The Product Owner identified a real gap: no path in the demo let you see "activa
 
 **One named, deliberate exception:** `284:526`'s "Terminar después" button still points to a production-only node (`47:65`) that doesn't exist on the demo page — a dead tap in Present mode, left unwired per this build's scoped-to-5-legs discipline rather than a full-coverage sweep. Not silently skipped — flagged for a future pass if it matters.
 
+**Closed 2026-08-07**, as part of building the pending-tags task-priority refinement (`product/02-ux/inventory.md` §3.5/§3.17/§10). `ui-designer` cloned the rebuilt production pair (`47:38`/`47:65`) onto this demo page → `593:526`/`593:542`, and a navigation-axis clone of the existing nfc Registrar-Mercancía entry (`371:1138`) → `594:2659` for the "Registrar mercancía" leg. Wired: `284:534` ("Terminar después") → `593:542`; `593:542`'s "Continuar etiquetando" → `284:526` (resume); `593:542`'s "Registrar mercancía" → `594:2659`. Main live-verified the full chain end-to-end on a fresh browser page (see `company/infrastructure-decisions.md` ID013 — the first verification attempt produced a false negative from a stale, long-lived page, not a real defect): `284:526` → "Terminar después" → `593:542` (screenshot-confirmed correct hierarchy) → both "Continuar etiquetando" (→ `284:526`) and "Registrar mercancía" (→ `594:2659`) work. **Residual, disclosed and not chased (proportionality, same class as Finding 10):** `594:2659`'s own picker still carries an inherited back-link scoped to a different origin (`284:3698`), two levels deeper than this task's scope.
+
+**Second gap found and closed same day, via `merchant-user-tester`'s validation run.** The bottom nav bar on `593:526`/`593:542` was completely unwired (all 4 items genuinely empty `reactions` — these two clones postdate the earlier 2026-08-07 tab-bar restoration sweep, so they never inherited it). `merchant-user-tester` hit this directly (three dead taps trying to "look around" mid-task); Main independently confirmed structurally (`take_snapshot` showed plain `StaticText`, not `link`). `ui-designer` wired both frames identically, sourcing destinations from the nearest already-correct sibling in the same NFC chain (`284:535`) rather than guessing: Hoy → `284:3698`, Inventario → `371:1249` (shared landing node, matching `284:535`'s own established convention — not a new self-reference), Eventos → `410:1879`, Resultados → `184:1536`. Fresh reactions readback confirmed all 8 correct and the two pre-existing buttons undisturbed. Main live-click-verified the Inventario leg on a fresh page: lands exactly on `371:1249` as reported. **One disclosed, non-blocking residual, inherited not introduced:** `371:1249`'s own back-link points to `284:3547` (its original NFC-Home origin), not back to the tag-queue screens that now also route through it — a merchant tapping Inventario then "back" lands in an unrelated Home session state. Pre-existing property of the shared node (already true for `284:535`'s prior use of it), same disclosed-simplification class as `594:2659`'s picker residual above — not chased further.
+
 **`ux-critic` verified clean** — zero Blockers/Majors, both disclosed deviations confirmed correct, no wrong-mode content leaking anywhere (including the specifically-flagged `284:3540` "with items" nfc surface). One non-gating Minor: `162:2019`'s static content (date/ventas/total, inherited from the original Journey-1-Seamless build) doesn't numerically match this specific chain's own preceding "Día cerrado" numbers or Eventos' date range — the routing fix is structurally correct, the destination's content is just a pre-existing placeholder now reachable through a new path. Worth a content touch-up before a live demo of this exact chain, not blocking.
 
 **`reviewer` clean** — no Blockers, both disclosed deviations confirmed correct against the approved specs, no side effects on the shared buttons-mode ending, no Foundation/ubiquitous-language drift. One Important finding raised and resolved as a false alarm: `284:3552` was being actively rebuilt by the concurrent §3.8f receipt-redesign work at the exact moment of review (caught mid-edit, two different structural reads seconds apart) — **this is why the line below was stale; see the corrected version**, confirmed once that separate build completed and was independently verified.
+
+### 2026-08-07 — Full "Empezar gratis" demo-safety audit and repair (post-D31/D32)
+
+Following D32's architectural conclusion (no canonical-journey artifact needed; the recurring leak pattern is a Medium-Fidelity node-classification gap, correctly closed by sharpening `ui-designer`'s caller-audit rule), the Product Owner asked for a separate, concrete pass: trace every reachable path from "Empezar gratis" to the end of that journey on the demo page and eliminate every unintended transition into NFC or another journey — explicitly a demo-quality request, not another architecture question, and explicitly scoped to *repair already-defined navigation only*, no redesign, no new destinations invented.
+
+**Trace phase — four parallel, read-only passes, one per surface (Home, Inventario, Eventos, Selling+Resultados):**
+- **Inventario** — fully clean. Also resolved a false lead from the initial (blocked) pass: the "missing cold-start frame" concern was wrong — the frame exists at `162:1485`, just wasn't discoverable by a name search.
+- **Selling + Resultados** — no cross-journey leak. One real spec-conformance gap found and left unresolved (correctly, per scope): buttons mode has no session-close block state analogous to NFC's `21c` frames — closing mid-venta is silently allowed rather than blocked. Flagged for `ux-designer`, not fixed.
+- **Eventos — one confirmed, real, multi-hop leak.** `162:1896` ("3.9a Guardar evento — silencioso")'s `AFTER_TIMEOUT` pointed to the NFC-twin `284:3690` instead of the buttons-only twin `162:1900`. A buttons-only merchant saving her first event could chain through `284:3690` → an NFC-mode Home (`284:3698`) → an NFC session (`284:3534`) → an NFC settings sheet (`360:1117`) → NFC inventory entry (`371:1138`), all via that screen's own tab bar. This is almost certainly the exact bug the Product Owner personally hit. Two smaller, confirmed-real spec gaps also found: "Cancelar evento" has no reachable entry point in this journey at all (no "Detalle — próximo" state exists to trigger it — the masters `10:15`/`10:16` are correctly unreachable, not leaking), and the persistent tab bar is dead on nearly every frame across all three of Home/Eventos/Selling-Resultados (not itself a leak, but a real "safe to hand to a user" gap the Product Owner explicitly asked to include).
+- **Home** — no cross-journey leak, but two same-journey defects: the Configuración screen's back-link unconditionally returned to Cold Start regardless of which of (eventually confirmed) 9 distinct contexts opened it; and the same pervasive dead-tab-bar pattern.
+
+**Two tooling notes from this phase, both resolved:** three of the four trace dispatches initially hit the same known `figma-use` skill-load gap (missing `ReadMcpResourceTool`/`ListMcpResourcesTool`) and correctly refused to fabricate a reaction map rather than guess — redispatched each with the already-documented local-plugin-cache fallback (`infrastructure-decisions.md` ID001), which resolved it every time. Separately, a request framed as "finalize your own last dispatch's recommendation" was correctly refused by a fresh `ui-designer` instance, which had no actual memory of proposing anything — a genuine, healthy catch of a false-continuity framing on Main's part, not a flaw in the agent; redispatched with honest framing ("Main relaying an earlier dispatch's finding") and it proceeded correctly.
+
+**Fix phase:**
+1. `162:1896`'s `AFTER_TIMEOUT` repointed `284:3690` → `162:1900` — the confirmed leak, closed. Live-click-verified by Main.
+2. Configuración's back-link trap: `184:1645` cloned 9× (one per actual origin, not the 3 originally assumed), plus its two shared entry sheets (`184:1510` ×3, `162:1526` ×5) cloned on the navigation axis so each origin's Configuración now returns to its own correct source screen. A residual, deeper instance of the same trap (S3/S8/S19 sub-confirmations two levels in, ~20+ more nodes to fully close) was found and explicitly left unfixed as out of the named scope, not silently expanded into.
+3. Tab bar restoration, all four surfaces: ~90 previously-dead Hoy/Inventario/Eventos/Resultados reactions wired to already-established canonical destinations (`162:1492`/`162:1661`/`162:1804`/`184:1536`), following the file's own pre-existing "omit the current section's own tab" convention (confirmed against `home.md`/`reports.md`'s `[Tab]` bracket notation, not invented). One frame (`198:823`, the digital receipt) correctly deviates per its own spec text (`home.md` §3.8f) — Hoy routes to `162:1500`, the spec's literal "plain §3.7, tray already empty," not the generic canonical.
+4. **A real regression, caught before close-out, not after.** `ux-critic`'s structural review of the batch flagged that `162:1896` was the *sole* Eventos-save node on the page — meaning fixing the buttons-only leak by simple repoint, rather than cloning, plausibly orphaned the 2026-08-05 Connected NFC activation-to-sale chain's own path to `284:3690`. Verified true: `284:3690` had zero live callers after the fix. Investigation found the assumed "distinct NFC trigger" didn't exist (unlike the `162:1723`/mercancía precedent, where 10 already-distinct NFC buttons just needed rewiring) — the NFC cold-start's own "+ Nuevo evento" shared the *entire* form chain with buttons-only, not just the save step. Fixed correctly by cloning two nodes, not one: `162:1877` → `534:2220` (form) and `162:1896` → `534:2239` (saving state, → `284:3690`), with the NFC cold-start's trigger (`410:1883`) repointed to the new chain. `162:1810`/`1843`/`1877`/`1894`/`1896` (buttons-only) left completely untouched. Live-click-verified end to end by Main: NFC cold-start → new form clone → new saving clone → `284:3690`, exactly its original destination.
+5. A second regression risk `ux-critic` flagged (whether the blanket tab-bar sweep touched the 5 NFC-mode Inventario self-clones Finding 8 built) was checked and confirmed a **false alarm** — all 5 still correctly point to their own `371:*` clones.
+
+**Net result:** the one real cross-journey leak is closed and verified live twice (the fix itself, and that fixing it didn't break the other journey it was adjacent to). Two same-journey navigation defects (Configuración trap, dead tab bar) are repaired using only already-established destinations, no new design. Three genuine gaps were found and deliberately left open rather than fixed unilaterally: buttons-mode's missing session-close block state, "Cancelar evento"'s missing entry point, and Configuración's residual two-levels-deep trap — all named for `ux-designer`/Main, none silently absorbed into this pass.
+
+### 2026-08-07 (continued) — Full demo-quality remediation: three deferred gaps closed, Premium/NFC journey revalidated
+
+Direct follow-up to the entry above, at the Product Owner's request: resolve the three deferred gaps, revalidate the complete Premium/NFC journey without breaking the now-correct Free/buttons journey, and investigate four manually-observed inconsistencies without guessing at business intent.
+
+**Grounding pass (`architect`), before any Figma work:** all seven items checked against `decision-log.md`/`domain-model.md`/the approved `02-ux` specs — every one resolved to either **Already Decided** (with exact citation) or **Build Defect** (spec already defines the correct behavior, something's just built wrong). No new Product/Business/Architecture Decision was required. Key findings: the "paid but no NFC kit yet" experience the Product Owner described is *already the designed behavior* (D27, `home.md` §3.6a's fourth variant, `settings.md`'s self-service `defaultSellingMode` control) — any demo path implying immediate NFC activation on payment is a build defect, not a missing decision. "Clientes frecuentes" being independently activatable regardless of plan tier is *correct* per D22/D25 (`loyaltyEnabled` is tier-independent; only the Resultados *display* requires paid tier) — not a business-rule inconsistency to fix. Mid-Session selling-mode reversion is never spec-sanctioned (`Session.operatingMode` is frozen for the Session's active lifecycle, D23); cross-Session reversion via NFC Readiness dropping is legitimate and designed. The buttons-mode session-close block state was never actually missing from the spec — `home.md` §3.11a is written mode-agnostically from the start; it just wasn't wired/reachable in buttons mode. Same for "Cancelar evento" — `events.md` §3.11 is fully defined, just unbuilt in this journey.
+
+**Configuración residual trap (deferred gap #3), closed:** traced the actual scope first rather than assuming — all 9 origins reach all three flagged sub-screens (S3/S8/S19) identically, so the full 27-node ceiling (9 origins × 3 sub-screens) was genuinely needed, not the smaller scope initially guessed. All navigation-axis-cloned, each returning to its own correct origin.
+
+**Premium/NFC journey trace (read-only, mirroring the buttons-only audit):** found the mechanism directly behind the Product Owner's "NFC falls back to buttons" observation — `188:1574` ("Cancelar venta actual" confirm), reached from the NFC selling screen's own Cancelar link, had never been cloned for its nfc caller and leaked every one of its own outgoing reactions (including declining the cancel) into buttons-only content. Five more leaks found in the same pass, including one inside *today's own new NFC-chain fix* (its Lugar/Tipo pickers routed into the buttons-only "seleccionado" frames instead of back to themselves) — confirming the same class of defect can reappear even in code written the same day if the two-axis classification isn't applied to every touched node, not just the one node a fix is nominally about. Two further state-inconsistencies found (a dead Hoy tab on the NFC receipt screen, asymmetric with its buttons-only twin; four shared plan-change confirmation screens hardcoding a single return destination regardless of which of 4 real origins reached them).
+
+**All 8 NFC-surface defects + both remaining buttons-only gaps fixed**, same discipline throughout (caller-audit before every write, independent fresh readback after, reuse existing approved content, trace actual scope rather than assume it): the "Cancelar evento" fix reused the exact approved production content verbatim (including its "Plaza Toluca" example naming, a disclosed, deliberate decision not to content-diverge since it crosses no business-rule boundary — this project's own established bar per the 2026-08-06 static-content ruling); the session-close block state reused the already-approved production §3.11a frame directly, plus proactively wired a previously-dead "Entendido" button per the spec's own text rather than leaving a new dead end. One tooling mistake (three clones landing on the wrong page) was self-caught and corrected mid-fix, before it became a hidden problem.
+
+**Closing verification, completed:** `ux-critic` structural pass and `reviewer` Foundation-consistency pass both clean (no Blockers, no Important findings) — every claim checked against actual spec text and actual Figma content, not just trusted reports. Main live-click-verified the highest-risk fix end to end (B1's "Cancelar venta actual" — the exact reproducible mechanism behind the Product Owner's own "NFC falls back to buttons" report — confirmed on the live prototype: the decline path now correctly returns to the NFC selling screen, not buttons-only).
+
+**One Major finding from `ux-critic`'s pass, investigated and resolved as not-a-defect:** connecting the new "Cancelar evento" chain (EV1→EV4) for the first time exposed that EV4 (`554:4934`, §3.13's post-cancel ambient confirmation) shows only "Pasados: Plaza Metepec," with the journey's actual Activo "Plaza Norte" and Pasado "Ixtapan" both missing — read naively, this looks like cancelling one event silently removed two unrelated ones. Live-confirmed by Main via click-through. Routed to `ux-designer` for a formal spec-intent determination before treating it as a defect, per the Product Owner's own instruction not to guess. **Determination: not a defect.** `events.md` §3.13 has a direct structural sibling, §3.10 ("Post-save confirmation," same "ambient, returns to Events list" header pattern) — §3.10's own wireframe *also* shows only a minimal, self-contained example with no Activo/Pasados sections, despite saving a new Event obviously not erasing the rest of the list. This establishes the document's own established convention for this screen category: "ambient, returns to X list" screens are illustrated with a minimal example, not an exhaustive accumulated-state snapshot. §3.13 (and EV4) follows that same convention — it isn't a one-off gap, it's consistent with how this doc already treats every screen in this family. No fix needed; logged as the same accepted static-content category as this project's other disclosed limitations, not a state-continuity defect.
+
+**Round fully closed.** Every confirmed defect from this pass (the original NFC leak and its regression, the Configuración trap at full depth, the dead tab bar, the session-close block state, "Cancelar evento" reachability, and all 8 NFC-surface leaks/inconsistencies) is fixed, independently verified via Figma readback, structurally reviewed, Foundation-consistency reviewed, and spot-checked live on the actual prototype. The one open narrative question was investigated on the evidence, not guessed at, and resolved without needing a fix. Both journeys — Free/Buttons ("Empezar gratis") and Premium/NFC — are clean.

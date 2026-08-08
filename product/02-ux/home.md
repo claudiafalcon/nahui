@@ -316,7 +316,8 @@ the persistent nav bar on every state, current tab in brackets.
   happens."
 - Routes into Inventario, an existing nav tab — no new destination invented for
   this one case. (Exactly where within Inventario is resolved in
-  `product/02-ux/inventory.md` §10: directly into Registrar Mercancía, not
+  `product/02-ux/inventory.md` §3.6: directly into Registrar Mercancía
+  (on-screen heading "Registro de mercancía," per HJR-INV-M1), not
   Inventario's own cold-start screen.)
 - **Header's "▾" opens the session-controls sheet (§3.6c) — "Configuración"
   only, no "Cerrar sesión," since no Session is open yet (new — applies
@@ -1338,9 +1339,24 @@ Open app
       → Event active, no Session today ────→ "Continuar Día N" (3.6) → tap
           (NFC Readiness resolves Session.operatingMode — silent, or §3.6a
           if it disagrees with defaultSellingMode) → selling
+          [§3.6a, when it disagrees, also offers up to one inline secondary
+          action beneath the Session-start CTA, before it's tapped — none of
+          which open a Session on their own:]
+            → Limited Ready: [ Usar tags de todos modos ] → local override
+              only, no navigation — flips the recommendation line in place
+              (§3.6a); the Session-start CTA underneath stays tappable
+            → Not Ready: [ Asignar tags ] → inventory.md §3.14, leaving this
+              screen without starting a Session
+            → Capability revoked / Ready-but-buttons-default: [ Ir a
+              Configuración ] → resolve (settings.md §3.1/§3.2) → vista
+              principal (settings.md §3.3a, or §3.6 if a pending change
+              already exists) → "← Hoy" → back to whichever of 3.4/3.5/3.6
+              (and its 3.6a variant, unchanged) was current
       → nothing active, Catalog has Products → "Iniciar Sesión Rápida"
           (3.4/3.5) → tap (same NFC Readiness resolution as above) → selling
+          (same §3.6a inline secondary actions as above, when shown)
       → Catalog empty ─────────────────────→ cold start (3.3) → Inventario
+          (inventory.md §3.6)
       → resolution fails ──────────────────→ fallback (3.14), Quick Session always reachable
 
 From any of Home's four non-Session header states (3.3 cold start; 3.4/3.5
@@ -1387,8 +1403,9 @@ Inside selling (3.7-3.10):
       → Sí, cancelar → tray clears → back to 3.7
   → [rare] ▾ → session-controls sheet (3.7a) → two independent entries:
       → Cerrar sesión
-          → Venta actual empty     → confirm (3.11) → Sí, cerrar → summary (3.12)
-            → next Hoy open re-resolves per §2
+          → Venta actual empty     → confirm (3.11)
+              → Cancelar → back to §3.7, unchanged
+              → Sí, cerrar → summary (3.12) → next Hoy open re-resolves per §2
           → Venta actual has 1+ items → blocked (3.11a) → Entendido → back to
             3.8, untouched — must finalize or cancel the open Sale before
             Cerrar sesión is reachable again

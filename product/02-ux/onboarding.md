@@ -254,7 +254,7 @@ The demo path's one deliberate pause point, mirroring the pause the NFC path alr
 │  Ya puedes registrar lo que      │
 │  traes y empezar a vender.        │
 │                                │
-│      [     Empezar      ]       │
+│      [      Entrar      ]       │
 │                                │
 └───────────────────────────────┘
 ```
@@ -270,7 +270,7 @@ The demo path's one deliberate pause point, mirroring the pause the NFC path alr
 │  etiquetada, cambia a vender       │
 │  con tags en Configuración.        │
 │                                │
-│      [     Empezar      ]       │
+│      [      Entrar      ]       │
 │                                │
 └───────────────────────────────┘
 ```
@@ -286,12 +286,12 @@ The demo path's one deliberate pause point, mirroring the pause the NFC path alr
 │  Explora lo que quieras — no      │
 │  es información real.             │
 │                                │
-│      [     Empezar      ]       │
+│      [      Entrar      ]       │
 │                                │
 └───────────────────────────────┘
 ```
 - One genuinely warranted deliberate moment in an otherwise frictionless flow: this is the single first-ever milestone in Ana's whole relationship with the app, and *brand-guide.md*'s tone ("warm, direct... a tool that feels welcoming, not intimidating") justifies exactly one beat of ceremony here, the same way `home.md` §3.12's close-summary earns its own distinct screen for a real, meaningful, once-per-day event. This is a once-*ever* event, an even more conservative bar to clear.
-- "Empezar" auto-continues into Home after a couple of seconds if left untouched, but is tappable immediately — she is never made to wait through her own milestone screen against her will. Same reasoning as the ambient, self-dismissing confirmations in `inventory.md` §3.12/§3.13, scaled to a full screen because this moment, unlike a routine Lot save, is unique.
+- "Entrar" auto-continues into Home after a couple of seconds if left untouched, but is tappable immediately — she is never made to wait through her own milestone screen against her will. Same reasoning as the ambient, self-dismissing confirmations in `inventory.md` §3.12/§3.13, scaled to a full screen because this moment, unlike a routine Lot save, is unique.
 - Variant C's honesty ("no es información real") is deliberate and load-bearing, but by the time she reaches this screen it's a *reinforcement* of a fact she already read and confirmed at §3.4c, before the write — not the first or only place she learns it. See §8's open validation question and §11 for why this line still matters for trust, without inventing any persistent in-app indicator beyond this screen.
 - No back arrow on any variant — by this point a Business and its capabilities already exist (§2.2); there's nothing to undo by going back, the same way none of `inventory.md`'s post-save confirmations offer a way back into the form that produced them.
 - If she's interrupted while this screen is showing (phone call, backgrounding, OS kill), the next app open resumes at this exact same variant rather than silently skipping to Home — see §2.1 case 2 and §3.7 for the full guarantee.
@@ -332,20 +332,20 @@ From §3.3, tap a path:
 
   Empezar gratis
     → creando tu negocio (3.5) → error (3.5a) → Reintentar
-    → success → Todo listo, Variant A (3.6) → Empezar → Home cold start (home.md §3.3)
+    → success → Todo listo, Variant A (3.6) → Entrar → Home cold start (home.md §3.3)
 
   Activar plan de pago
     → confirmar antes de continuar (3.4)
         → "Mejor quiero empezar gratis" → back to 3.3, nothing written
         → tap "Confirmar y activar" → creando tu negocio (3.5) → error (3.5a) → Reintentar
-    → success → Todo listo, Variant B (3.6) → Empezar → Home cold start (home.md §3.3)
+    → success → Todo listo, Variant B (3.6) → Entrar → Home cold start (home.md §3.3)
 
   Ver un ejemplo
     → confirmar antes de continuar (3.4c)
         → "Mejor quiero registrar mi negocio real" → back to 3.3, nothing written
         → tap "Ver el ejemplo" → creando tu negocio (3.5, generating seeded data)
           → error (3.5a) → Reintentar
-    → success → Todo listo, Variant C (3.6) → Empezar → Home idle state, populated
+    → success → Todo listo, Variant C (3.6) → Entrar → Home idle state, populated
       (home.md §3.4)
 
 Any interruption up to and including §3.6 still being on screen (phone lock,
@@ -441,6 +441,7 @@ None of the items below block this document's completion or require inventing a 
 - **The "Todo listo" milestone screen (§3.6) is the one deliberate moment of ceremony in an otherwise frictionless flow** — justified specifically because it happens exactly once, ever, in Ana's whole relationship with the app; auto-continuing (rather than requiring a tap) keeps it from becoming genuine friction for a merchant who just wants to get moving.
 - **A shared "Creando tu negocio" write state (§3.5) covers all three paths**, including the demo's data-seeding — deliberately not given its own more elaborate "building your example" sequence, since a longer wait than necessary would be padding, not honesty.
 - **No demo-to-real conversion mechanic is designed** — a direct, explicit application of `decision-log.md` D19's own stated contingency, not a gap this document overlooked (§11).
+- **Todo listo's CTA renamed from "Empezar" to "Entrar," uniformly across all three variants (§3.6) — Horizontal Journey Review remediation.** "Empezar gratis" (§3.3) and the milestone's own CTA shared the same verb two screens apart, reading as "start... start" rather than two distinct actions — caught by the Product Owner's own walkthrough of the free-tier path. §3.3's three path CTAs are unchanged: they're genuinely about *choosing* which path to begin. The milestone CTA is a different moment — her Business and capabilities already exist (§3.5's write already succeeded) by the time she reaches Todo listo; what's left is entering the app, not starting anything a second time. Checked against all three variants for collision; none found.
 
 ## 11. Future considerations
 

@@ -882,15 +882,18 @@ Open Eventos tab
 Events list:
   tap "Agendar evento" → Nuevo Evento (3.6)
   tap a Próximo card  → scheduled detail (3.11)
-      → [Cancelar evento] → confirm (3.12) → Sí, cancelarlo →
-        ambient "Evento cancelado" (3.13) → list, card removed entirely
+      → [Cancelar evento] → confirm (3.12)
+          → No, mantenerlo → back to §3.11, unchanged
+          → Sí, cancelarlo → ambient "Evento cancelado" (3.13) → list, card
+            removed entirely
   tap an Activo card  → active detail (3.14 or 3.15, depending on whether a
         Session is already open today) → [Continuar Día N / Vendiendo ahora]
         → Hoy, resumes/starts selling (identical mechanism to home.md §2/§3.6)
   tap a Pasado card   → closed detail (3.16, or 3.17 if zero Sessions) —
         3.16 shows the same one-line ambient summary already seen on the
         list before handing off
-        → [Ver resumen en Resultados] → leaves Eventos for Resultados
+        → [Ver resumen en Resultados] → Event detail (reports.md §3.8)
+          directly, for that specific closed Event
 
 Nuevo Evento (3.6):
   fill Lugar (→ picker 3.7, create-or-select a Venue) + Tipo (→ picker 3.8) +

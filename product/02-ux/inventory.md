@@ -21,6 +21,23 @@ carry the same per-Product marker `home.md` §3.9 introduces, and a
 zero-`disponibles` row now renders dimmed while staying fully tappable —
 applied identically to §3.5/§3.12/§3.13/§3.17. Full cycle complete,
 `ux-critic`/`reviewer` clean, folded back into Approved.
+**Amended 2026-08-06 (Horizontal Journey Review, HJR-INV-M1):** the on-screen
+heading at §3.6/§3.7 (and §3.8's dimmed backdrop) changed from the imperative
+"Registrar mercancía" to the noun-form "Registro de mercancía,"
+differentiating it from the identically-worded CTA that leads to it — both
+`home.md` §3.3's and this doc's own §3.3's cold-start CTAs route to this same
+destination, so one heading fix closes both. No flow, state, or behavior
+changed — copy-only.
+**Amended 2026-08-07 (Product Owner-directed refinement to §3.5/§3.17,
+grounded in the `architect`/`ux-designer` investigation into task-priority
+drift):** in the pending-tags Catalog-view state, "Continuar etiquetando" is
+now the primary action (positioned directly under the header, mirroring
+`home.md` §3.6's primary-CTA shape) and "Registrar mercancía" is now
+explicit, in prose, as secondary in that one state only — same position,
+same behavior, never gated. Full UX Remediation cycle complete — `ux-critic`
+clean pass (zero Blockers/Majors/Minors, two Suggestions logged), `reviewer`
+clean pass (one Important documentation-hygiene finding, a stale cross-
+reference in §10's older bullet, fixed by Main) — folded back into Approved.
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -85,8 +102,10 @@ completes:
 
 2. [Catalog view] Is `nfc ∈ registrationMode`, AND does at least one
    InventoryUnit exist with status = available and no NFCTag assigned?
-     → YES: show the non-blocking "faltan etiquetas" card (§3.5) — informational
-       + tappable, resumes Asignar Tags exactly where she left off.
+     → YES: pending-tag-work Catalog view (§3.5) — "Continuar etiquetando" is
+       the primary action in this state (non-blocking, resumes Asignar Tags
+       exactly where she left off); Registrar mercancía remains fully
+       available as a secondary action, never gated.
      → NO (buttons-only capability, or nfc-capable with nothing pending): plain
        Catalog view (§3.4).
 
@@ -229,33 +248,88 @@ current tab in brackets.
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
-│  ┌───────────────────────────┐ │
-│  │ Te faltan 7 artículos por    │ │  informational + tappable card
-│  │ etiquetar                    │ │
-│  │ [ Terminar de etiquetar ]     │ │
-│  └───────────────────────────┘ │
+│  Te faltan 7 artículos por       │
+│  etiquetar                       │
+│   [  Continuar etiquetando  ]   │  primary action in this state
 │  ┌───────────────────────────┐ │
 │  │(P) Pijama          10 disponibles│ │
 │  │(S) Sudadera/Maxy     5 disponibles│ │
 │  │(C) Calcetines       20 disponibles│ │
 │  └───────────────────────────┘ │
-│      [ Registrar mercancía ]    │
+│      [ Registrar mercancía ]     │  secondary — always available, not
+│                                │  the current task here
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
-- Same visual pattern as Home's upcoming-Event card (`home.md` §3.5):
-  secondary, informational, tappable only into the relevant place — never
-  gates or adds a step to Registrar Mercancía.
-- Makes an interrupted tagging queue discoverable without ever asking "were
-  you still tagging?" — same pattern as `home.md` §3.13. *global-principles.md*,
-  "never ask twice."
+- **Amended 2026-08-07 (Product-Owner-directed refinement — see §10):**
+  "Continuar etiquetando" is now the primary action in this state — a plain
+  status line ("Te faltan 7 artículos por etiquetar") directly under the
+  header, with its CTA immediately beneath it, unboxed — the identical shape
+  `home.md` §3.6 uses for "Hoy es tu Día 2" + "[ Continuar Día 2 ]", not the
+  boxed, visually-secondary informational-card shape this state used to
+  borrow from `home.md` §3.5's upcoming-Event card. "Registrar mercancía"
+  keeps the exact position it holds in every other Catalog view
+  (§3.4/§3.12/§3.13) — bottom, above the nav bar — but is now explicit, in
+  prose, as secondary in this one state: same tap, same destination (§3.6,
+  blank), same zero gating, just no longer reading as her current task while
+  tagging is genuinely mid-process. Mirrors the primary/secondary pattern
+  `home.md` §3.6a already establishes between "Iniciar Sesión Rápida"
+  (primary) and "Asignar tags" (its own secondary, optional link) — reused,
+  not invented fresh.
+- **Why this state specifically, and not §3.4's plain Catalog view:**
+  reception and tagging are one Inventory-context process, not two
+  (`architect`-confirmed) — §3.5 exists only while she's genuinely mid-task
+  on that process. §1's "distant third" ranking of tagging against
+  Inventario's two primary contexts is an aggregate description of how often
+  tagging happens across a whole session in Inventario, not a claim about
+  what she should see the one time she's already holding a stack of newly
+  received, partially tagged garments — the two aren't in tension, but the
+  aggregate stat was previously read too literally into this specific,
+  already-mid-task moment. §7's "no '¿quieres etiquetar ahora?' question;
+  it's the obvious next physical action given she's holding the merchandise"
+  reasoning, written for entering tagging the first time, extends the same
+  way to resuming it — the merchandise in her hand doesn't know whether this
+  is her first or second approach to the stack. §2 step 3 already confirms a
+  second, later tap on "Registrar mercancía" doesn't route around or skip
+  pending tagging — the process picks back up exactly where step 4 leaves
+  off — so treating Registrar mercancía as her obvious next move in this
+  state was never fully accurate to begin with. And §3.13's "lista para
+  vender" wording (vs. §3.12's plain "registrada") already establishes, in
+  the spec's own voice, that for an nfc-capable Business "done" specifically
+  means received *and* tagged — this refinement just makes the mid-process
+  screen agree with what the finished-process screen already says.
+- Tapping "Continuar etiquetando" resumes Asignar Tags (§3.14) exactly where
+  she left off — same destination, same non-blocking resume behavior as
+  before; only the framing and screen position of the action changed, not
+  what it does.
+- **Registrar mercancía is never gated, blocked, or hidden by this change —
+  the always-reachable invariant (`inventory.md` §3.5/§10, confirmed by
+  `architect`) is unmodified.** It remains a single tap away, in the same
+  place she already knows from every other Catalog view, with identical
+  behavior: no new confirmation, no interstitial, no "¿estás segura?" before
+  it opens. What changed is purely which action reads as the obvious next
+  one in this specific state — not what's possible, not what's reachable,
+  and not the number of taps to reach either action.
+- No new process, screen, or domain concept introduced: this remains the
+  same single reception-and-tagging process described in §1/§2 — the
+  refinement only changes which of its two already-existing actions is
+  positioned and framed as primary while a tagging queue is genuinely open.
+- **Only the bracketed "[ Continuar etiquetando ]" button is a defined tap
+  target here, per this doc's own `[ ] = tappable, plain text = passive`
+  convention** — the status line above it is informational only, exactly
+  matching `home.md` §3.6's identical shape ("Hoy es tu Día 2" plain,
+  "[ Continuar Día 2 ]" tappable). This is a narrower tap surface than the
+  prior whole-card-tappable treatment; Medium-Fidelity should still give
+  this primary CTA generous touch-target sizing per general mobile-usability
+  practice, but sizing itself is `ui-designer`'s concern, not something this
+  Low-Fidelity doc defines.
 - "Disponibles" counts reflect `InventoryUnit.status` only, independent of tag
   status — see §8, item 2 (logged as Q2 in `product/02-ux/product-decisions.md`,
   reclassified from `architect-questions.md` as a Product Decision), for the
   open question this touches.
 - **Cross-reference to NFC Readiness (`decision-log.md` D23, added — no
-  redesign):** this card's own "how many units still need tags" count and
+  redesign):** this state's own "how many units still need tags" count and
   Selling's NFC Readiness check — the "how many sellable units already have
   tags" evaluation run at Session-open time (`home.md` §2/§3.6a) — are two
   views of the identical underlying tagged/untagged split on `available`
@@ -270,7 +344,7 @@ current tab in brackets.
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │
-│  Registrar mercancía              │
+│  Registro de mercancía            │
 │                                │
 │ Producto                        │
 │  [ Elegir producto ▾ ]           │
@@ -291,6 +365,7 @@ tapping the number to open `teclado numérico` — the "· revisa antes de
 guardar" suffix disappears and the field renders as "1" (or whatever value
 she set) — still within the same tappable/editable treatment, just without
 the suffix. Only the untouched, still-default state carries the suffix.)
+- **On-screen heading now reads "Registro de mercancía" rather than repeating the CTA's imperative "Registrar mercancía" verbatim (§3.7 and §3.8's dimmed backdrop carry the identical fix) — resolves HJR-INV-M1.** The CTA that leads here (`home.md` §3.3; this doc's own §3.3/§3.4/§3.5/§3.12/§3.13/§3.17) is unchanged — "Registrar mercancía" is still the right action-verb for a button she's about to tap. What was broken is that the screen she lands on used the identical string as a passive title, so "go do this" and "you're now doing this" had no visible difference at the very first productive moment in the product. A noun-form heading in the same vocabulary family ("registro," not "registrar") reads naturally in Mexican Spanish as a form/screen label, grammatically distinguishes it from the button she just tapped, and invents no new vocabulary. Both entry points that reach this screen — `home.md` §3.3's cold-start CTA and this doc's own §3.3 cold-start CTA — route to this identical destination (§10's routing decision), so this single heading correction closes the repeat for both at once, not just one of them. Section titles below (§3.6, §3.7) and every "Registrar Mercancía" reference in §4/§5/§6/§7/§9/§10 keep naming this as the *Registrar Mercancía flow* — that's the flow's editorial name, distinct from the literal on-screen heading text now shown; no renumbering or cross-reference changes are needed.
 - Only Producto + Cantidad are asked — no Supplier, no cost field, per
   `architecture-principles.md` #5 and `decision-log.md` D9 (see §8, item 1).
 - If reached by tapping a Catalog row (§3.4), Producto arrives already filled
@@ -369,7 +444,7 @@ the suffix. Only the untouched, still-default state carries the suffix.)
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │
-│  Registrar mercancía              │
+│  Registro de mercancía            │
 │                                │
 │ Ya agregaste:                    │
 │  Pijama — 10                [✕] │
@@ -427,7 +502,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │  dimmed, visible underneath
-│  Registrar mercancía              │
+│  Registro de mercancía            │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  ¿Qué llegó?                    │
 │  [ Buscar o escribir… ]          │
@@ -486,6 +561,13 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   §3.12). Justified the same way Home justifies its single confirmation
   (`home.md` §3.11, §10): rare, and genuinely destructive of real counted
   work — an intentional exception to "never ask twice," not a violation of it.
+- **"Cancelar" returns instantly to the form (§3.6/§3.7, whichever was
+  current) exactly as it was** — every committed line and the in-progress row
+  untouched — the same decline treatment `home.md` §3.11 gives its own
+  close-session confirmation.
+- **"Sí, descartar" clears the draft entirely and returns to a blank
+  Registrar Mercancía (§3.6)** — the only way this in-progress form is ever
+  lost outside a successful Guardar mercancía.
 
 ### 3.10 Guardar mercancía — saving (near-instant / slow)
 ```
@@ -648,23 +730,24 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
-│  ┌───────────────────────────┐ │
-│  │ Te faltan 7 artículos por    │ │
-│  │ etiquetar                    │ │
-│  │ [ Terminar de etiquetar ]     │ │
-│  └───────────────────────────┘ │
+│  Te faltan 7 artículos por       │
+│  etiquetar                       │
+│   [  Continuar etiquetando  ]   │  primary action in this state
 │  ┌───────────────────────────┐ │
 │  │(P) Pijama          10 disponibles│ │
 │  │(S) Sudadera/Maxy     5 disponibles│ │
 │  │(C) Calcetines       20 disponibles│ │
 │  └───────────────────────────┘ │
-│      [ Registrar mercancía ]    │
+│      [ Registrar mercancía ]     │  secondary — always available, not
+│                                │  the current task here
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
-- Identical to §3.5 — deferring tagging returns her to a Catalog view that
-  already knows work is pending; no separate "you stopped early" messaging.
+- Identical to §3.5 as amended 2026-08-07 (primary "Continuar etiquetando,"
+  secondary "Registrar mercancía") — deferring tagging returns her to a
+  Catalog view that already knows work is pending and already reads as such;
+  no separate "you stopped early" messaging.
 
 ### 3.18 Defensive fallback / load error
 ```
@@ -697,7 +780,8 @@ Open Inventario tab
 Catalog view:
   tap "Registrar mercancía" → 3.6 (blank)
   tap a Product row → 3.6 (prefilled with that Product)
-  [nfc-capable + pending untagged units] tap card → 3.14 (resume)
+  [nfc-capable + pending untagged units] tap "Continuar etiquetando"
+    (primary action in this state, §3.5) → 3.14 (resume)
 
 Registrar mercancía (3.6/3.7):
   fill Producto (→ 3.8 if using the picker; matching is case-insensitive,
@@ -711,15 +795,19 @@ Registrar mercancía (3.6/3.7):
       → success:
           nfc ∉ registrationMode → Catalog view + ambient confirmation (3.12) — DONE
           nfc ∈ registrationMode → Asignar tags (3.14), auto-entered
-  → [any point] leave without saving → draft preserved silently, resumes later
-  → [≥1 line committed] tap "Descartar" → confirm (3.9) → Sí → draft cleared
+  → [any point] leave without saving → draft preserved silently, resumes
+    later at §3.6/§3.7, whichever step was in progress
+  → [≥1 line committed] tap "Descartar" → confirm (3.9)
+      → Cancelar → back to the form (3.6/3.7, whichever was current), unchanged
+      → Sí, descartar → draft cleared → blank Registrar Mercancía (3.6)
 
 Asignar tags (nfc-capable Business only, 3.14):
   scan tag → assign to next pending unit → counter decrements → repeat
   → tag already assigned → error (3.15) → scan a different tag
   → scan fails to read (out of range, foil, timeout) → error (3.16) →
     reposition and try again — queue state unchanged
-  → tap "Terminar después" → Catalog view + pending card (3.17, = 3.5)
+  → tap "Terminar después" → Catalog view, "Continuar etiquetando" primary
+    (3.17, = 3.5)
   → 0 pending → Catalog view + "lista para vender" confirmation (3.13) — DONE
 ```
 
@@ -776,7 +864,7 @@ comparable hard speed requirement — the floor above is about not adding
   nfc-capable Businesses — no "¿quieres etiquetar ahora?" question; it's the
   obvious next physical action given she's holding the merchandise.
 - Resuming an interrupted tagging queue (§3.5/§3.17) — automatic, discoverable
-  card, no re-prompt.
+  as the primary action in that state, no re-prompt.
 - Draft preservation of an in-progress Registrar Mercancía form across any
   accidental interruption — automatic, no discard-vs-keep prompt unless she
   explicitly asks via "Descartar."
@@ -843,8 +931,9 @@ comparable hard speed requirement — the floor above is about not adding
   intermediate question (§3.14); the Catalog-row shortcut removes a redundant
   Product search (§3.4, §6).
 - *"Never ask twice"* — an in-progress Registrar Mercancía draft survives any
-  interruption without a discard-vs-keep prompt (§3.7); the pending-tags card
-  resumes automatically, never asking "were you still tagging?" (§3.5/§3.17);
+  interruption without a discard-vs-keep prompt (§3.7); the pending-tags state
+  resumes automatically via its primary "Continuar etiquetando" action, never
+  asking "were you still tagging?" (§3.5/§3.17);
   the picker never asks "is this new?" — inferred via the case-insensitive,
   trimmed matching rule (§3.8).
 - *"Technology should disappear"* — InventoryUnit generation is fully
@@ -989,7 +1078,8 @@ comparable hard speed requirement — the floor above is about not adding
   buttons-only businesses see an ambient confirmation and stay on Catalog view.
   Concrete implementation of `vision.md`'s "(Optional) Assign NFC Tags" —
   optional at the capability level only, not a per-Lot choice.
-- **A persistent, informational "faltan etiquetas" card** on Catalog view
+- **A persistent, informational "faltan etiquetas" status + resume action**
+  (shape/framing superseded — see the 2026-08-07 entry below) on Catalog view
   (nfc-capable Businesses only) makes an interrupted tagging queue discoverable
   and resumable — same pattern as `home.md` §3.13's silent Session resume.
   Cross-references Selling's NFC Readiness check as reading off the same
@@ -1013,6 +1103,7 @@ comparable hard speed requirement — the floor above is about not adding
   failed read. Note: `home.md`'s nfc selling surface (§3.10) has the identical
   gap for the selling context — out of this doc's scope to fix, flagged for
   awareness only, per the finding.
+- **The Registrar Mercancía screen's on-screen heading was changed from "Registrar mercancía" to "Registro de mercancía"** (§3.6, §3.7, §3.8's dimmed backdrop) — resolving HJR-INV-M1 (Horizontal Journey Review, `ux-critic-findings.md`): the identical imperative phrase was appearing as both the CTA she taps and the passive title of the screen she lands on. The CTA itself is unchanged everywhere it appears; only the destination's title moved from a repeated verb to a noun-form label, closing the repeat for both entry points that reach this screen (`home.md` §3.3's cold-start CTA and this doc's own §3.3 cold-start CTA — both route to the same §3.6/§3.7 destination per the routing decision above).
 - **No Lot-history/browsable-receiving-events screen designed.** Catalog view
   shows only current Product-level aggregate counts (*architecture-principles.md*
   #4); see §8, item 3, and §11.
@@ -1037,6 +1128,46 @@ comparable hard speed requirement — the floor above is about not adding
   exactly Inventario's job. Same letter-collision caveat as `home.md` §3.9
   applies here too — the marker is a fast-scan aid, not a guarantee of
   uniqueness; the full Product label remains the primary identifier.
+- **"Continuar etiquetando" is now the primary action in the pending-tags
+  Catalog-view state (§3.5, and §3.17 which mirrors it), with "Registrar
+  mercancía" repositioned to explicitly secondary in that one state only —
+  Product-Owner-directed refinement, 2026-08-07.** Follows a joint
+  `architect`/`ux-designer` investigation (see `company/bitacora.md`) into
+  whether the prior framing — Registrar mercancía as the persistent,
+  default-emphasis bottom CTA, the pending-tags card as a secondary
+  informational card above it — was still faithful to this doc's own
+  reasoning once a merchant is genuinely mid-process on reception-and-tagging.
+  `architect` confirmed no business-rule conflict: reception and tagging
+  remain one Inventory-context process, not two, and Registrar mercancía
+  must stay always reachable, never gated (unmodified `inventory.md`
+  §3.5/§10 invariant) — the Foundation is silent on which action should read
+  as primary in this specific state, leaving that call to UX. The
+  investigation found the prior framing had drifted from the spec's own
+  task-priority reasoning: §1's "distant third" ranking is an aggregate stat
+  about how often tagging happens at all, over-extended to this one
+  already-mid-task moment; §7's "obvious next physical action" reasoning for
+  entering tagging the first time logically extends to resuming it; §2 step
+  3 already means a second Registrar mercancía tap doesn't skip pending
+  tagging, so treating it as the obvious next move here was never fully
+  accurate; and §3.13 vs. §3.12's own wording ("lista para vender" vs. plain
+  "registrada") already establishes that for an nfc-capable Business, done
+  means received *and* tagged. This refinement makes the mid-process screen
+  agree with what the spec's own finished-process screen already says.
+  Implemented as a layout/positioning and behavioral-language change only,
+  per this doc's `[ ]` = tappable convention and its existing
+  primary/secondary vocabulary (mirroring `home.md` §3.6/§3.6a's "Iniciar
+  Sesión Rápida" primary vs. "Asignar tags" secondary pattern) — no color,
+  typography, or component decision, which stays Medium-Fidelity's job. No
+  new confirmation step, no change to the always-reachable Registrar
+  Mercancía invariant, no split into a separate tagging flow, no new domain
+  concept or aggregate. Does not touch §3.4 (plain Catalog view, no pending
+  tags) or §2's resolution logic beyond restating the same YES/NO branch in
+  the new vocabulary — the branch itself, and every other state in this doc,
+  is unchanged. Scoped explicitly by the Product Owner as a UX refinement to
+  an already-Approved spec, not a new Product Decision — goes through the
+  standard UX Remediation cycle (`ux-critic`, then `reviewer`'s
+  Foundation-consistency pass) before folding back into Approved status,
+  same as HJR-INV-M1 above.
 
 ## 11. Future considerations
 

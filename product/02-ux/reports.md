@@ -1042,7 +1042,7 @@ see the two variants below for the other two reachable states.)
 Open Resultados tab
   → resolve (§2, automatic)
       → load fails ─────────────────────→ fallback (3.14), Reintentar
-      → no Session ever closed ─────────→ cold start (3.3) → Hoy
+      → no Session ever closed ─────────→ cold start (3.3) → Hoy (home.md §2)
       → Sessions exist ──────────────────→ main view (3.4/3.5, or 3.6 if paid)
 
 Main view:
