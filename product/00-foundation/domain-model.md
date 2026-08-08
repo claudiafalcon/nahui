@@ -1,6 +1,6 @@
-# Domain Model v1 — FROZEN
+# Domain Model v1
 
-Status: frozen after multi-round product-architecture review. Changing an aggregate boundary or a bounded context here is an architectural decision — log it in `decision-log.md`, don't just edit code around it.
+Status: baseline established after multi-round product-architecture review; represents the product's **current** operating model, not a permanently static one — it evolves through disciplined `decision-log.md` entries (plain entries for additive change, RFC for anything crossing an aggregate-boundary/bounded-context-edge/ubiquitous-language trigger), never by editing code around it or drifting silently. Changing an aggregate boundary or a bounded context is still an architectural decision requiring that same log discipline — "not frozen" means governed evolution, not unconstrained change.
 
 Term definitions live in `ubiquitous-language.md`, not here — this file is about structure and rules, not vocabulary.
 
@@ -10,20 +10,20 @@ An aggregate root owns consistency for a cluster of data; everything inside it i
 
 - **Business** — tenant/config anchor. Not a transactional aggregate so much as the root everything else hangs `businessId` off of. Holds Business Capabilities (below).
 - **Venue** — independent identity, referenced by ID from Event. Never embedded in Event. Multiple Events may share one Venue (Ana returning to the same bazaar location repeatedly); Venue's `active` status is independent of any single Event's own lifecycle — deactivating a Venue doesn't retroactively affect Events that already reference it. Owned by the Selling context (its only consumer is Event). See `decision-log.md` D20.
-- **Product** — independent identity, referenced by ID from InventoryUnit, NFCTag, SaleItem. Never embedded in a Lot. This is why a sold-out Product stays in the Catalog.
+- **Product** — independent identity, referenced by ID from InventoryUnit, NFCTag, SaleItem. Never embedded in a Lot. This is why a sold-out Product stays in the Catalog. Carries `defaultPrice` — the normal price Ana charges for this selling-group, set once at Product creation, a plain mutable current scalar (no version history). See `decision-log.md` D33.
 - **Lot** — owns InventoryEntry and InventoryUnit as internal-only entities (no identity or lookup outside their parent Lot).
-- **Event** — light root. Does NOT own Session as a strict aggregate (a Session must be able to exist with zero Event, for Quick Session). Sessions reference `eventId` optionally; "Event as a whole" summaries are read-side queries across Sessions sharing that ID, not a write-consistency boundary. **At most one Event per Business may be `scheduled` or `active` with an overlapping date range at a time** — a Business cannot have two Events in flight simultaneously (`decision-log.md` D17). This is a business-rule invariant validated at Event creation/scheduling time, not a change to Event's own lifecycle or its relationship to Session.
+- **Event** — light root. Does NOT own Session as a strict aggregate (a Session must be able to exist with zero Event, for Quick Session). Sessions reference `eventId` optionally; "Event as a whole" summaries are read-side queries across Sessions sharing that ID, not a write-consistency boundary. **At most one Event per Business may be `scheduled` or `active` with an overlapping date range at a time** — a Business cannot have two Events in flight simultaneously (`decision-log.md` D17). This is a business-rule invariant validated at Event creation/scheduling time, not a change to Event's own lifecycle or its relationship to Session. Carries `bazaarCost` (optional, default `0` — captured contextual data, not yet a computed input to anything) and owns **Price Override** as an internal-only entity (no identity or lookup outside its parent Event, same class as InventoryEntry/InventoryUnit under Lot): one `(productId, overridePrice)` pair per Product whose price Ana has adjusted specifically for this Event. See `decision-log.md` D33.
 - **Session** — root. Opens/closes independently of any Event.
-- **Sale** — root, not nested inside Session. Owns SaleItem (internal-only, no existence outside its Sale). Kept as its own root specifically so Sale writes don't contend on a shared Session lock — the <3 second registration speed requirement (`company/backlog.md` #1) needs Sales to be cheap and independent to append.
+- **Sale** — root, not nested inside Session. Owns SaleItem (internal-only, no existence outside its Sale). Kept as its own root specifically so Sale writes don't contend on a shared Session lock — the <3 second registration speed requirement (`company/backlog.md` #1) needs Sales to be cheap and independent to append. SaleItem carries `pricePaid`, resolved automatically at write time (see Key Mechanisms, "Price resolution") — never a merchant decision. See `decision-log.md` D33.
 
-**Not aggregate roots:** InventoryEntry, SaleItem, NFCTag. NFCTag is a 1:1 attribute of InventoryUnit — it has no lifecycle worth protecting on its own.
+**Not aggregate roots:** InventoryEntry, SaleItem, NFCTag, Price Override. NFCTag is a 1:1 attribute of InventoryUnit — it has no lifecycle worth protecting on its own. Price Override is internal to Event, the same shape as InventoryEntry is internal to Lot.
 
 ## Entity relationships
 
 ```
 Business
   └─ Catalog
-       └─ Product ──────────────┐
+       └─ Product (defaultPrice) ┐
                                  │ (referenced by ID)
 Lot (a receiving event)         │
   └─ InventoryEntry             │   what the merchant types: Product + qty + cost
@@ -35,13 +35,17 @@ Lot (a receiving event)         │
 Business
   └─ Venue (independent identity, businessId-scoped)
                                  │ (referenced by ID, required — not nullable)
-Event ───────────────────────────┘
+Event (bazaarCost, optional) ────┘
+  ├─ Price Override (internal-only; productId + overridePrice, 0..N per Event)
   └─ Session (one working day; eventId nullable)
        │    operatingMode: buttons | nfc — resolved once at open time
        │    from defaultSellingMode + NFC Readiness, immutable while
        │    active (decision-log.md D23)
        └─ Sale (a transaction)
-            └─ SaleItem (exactly one InventoryUnit consumed)
+            └─ SaleItem (pricePaid — resolved at write time: this Event's
+                          Price Override for the sold Product if one
+                          exists, else Product.defaultPrice. Never asked;
+                          exactly one InventoryUnit consumed.)
 ```
 
 Key point: `Product → InventoryUnit → Lot` is the traceability chain. The merchant only ever sees Product-level aggregates ("Hoodie (4 available)" = count of InventoryUnits with status `available` for that Product, across all Lots). The platform always knows which specific Lot a sold unit came from.
@@ -87,6 +91,8 @@ Attributes on the Business aggregate. Read once, resolved at the point where the
 **NFC Readiness (Session-start resolution).** Before a Session opens, the system evaluates sellable tagged inventory — `available` `InventoryUnit`s with an assigned `NFCTag` — against a configurable readiness threshold, producing one of three states: **Ready** (coverage above threshold — if `nfc ∈ registrationMode` and matches `defaultSellingMode`, the Session opens silently in `nfc`, no UI moment), **Limited Ready** (some tagged inventory exists but below threshold — `buttons` is recommended via a single lightweight inline nudge at Session start; the merchant may override toward `nfc` if her capability set allows it), or **Not Ready** (precisely zero sellable tagged inventory units exist — `nfc` cannot be selected for that Session at all, an operational impossibility rather than a restriction, since there is nothing to scan; `buttons` remains available regardless, so selling itself is never blocked). The resolved value is stored on `Session.operatingMode`, immutable while `active`. The recommendation itself is computed fresh at every Session start and never persisted — it is surfaced to the merchant only when it disagrees with `defaultSellingMode`; a Ready Session that already matches the default opens with no UI moment at all. See `decision-log.md` D23.
 
 **Multi-mechanism Claim resolution.** Claim is one business capability (`loyaltyEnabled`), resolvable through multiple, mode-appropriate mechanisms, all converging on the same terminal write (one or more Customer↔SaleItem links): an **NFC tag scan** (unit-level — the mechanism above, D4/D10, one physical tag per InventoryUnit), a **Sale-level Claim Token** (Selling-owned, generated at Sale finalization whenever `loyaltyEnabled = true`, regardless of `registrationMode` — displayed to the customer, e.g. as a QR, so she can start the Loyalty-claim flow on her own device), and future mechanisms following the same pattern. A single Sale-level Claim Token scan resolves into N independent Customer↔SaleItem links — one per SaleItem in that Sale — in one customer action, the same shape a multi-item NFC Sale already produces via N separate tag scans. `registrationMode` determines *which* mechanism a given Sale uses, never *whether* Customer Segmentation is available to that Business — the feature is gated only by `subscriptionTier=paid` and `loyaltyEnabled=true`. The Merchant Application never sees raw Customer or Claim data; it consumes only **Derived Customer Intelligence** — an anonymized, aggregate signal Loyalty-claim computes and exposes read-only to Intelligence. See `decision-log.md` D22.
+
+**Price resolution (Sale-write time).** `SaleItem.pricePaid` is resolved automatically, at the moment a Sale/SaleItem is written: the sold Product's Event-scoped Price Override if one exists for that Event, else the Product's `defaultPrice`. Never a merchant decision, never asked mid-flow — the same automation pattern already established for FIFO allocation (D5). Capturing this at write time (rather than only reading `Product.defaultPrice`/Price Override live at display time) is what keeps already-closed Sales/Events from silently changing their computed totals whenever a price is edited later — the same "never silently alter historical data" invariant D25 already established for capability changes. See `decision-log.md` D33.
 
 **"Día N" computation.** A working day under an Event is counted by distinct calendar date, not by raw Session count — closing a Session and reopening a new one later the *same* calendar date (e.g., a lunch-break resume) does not increment the day number; it's still the same "Día N." This matches Session's own naming intent ("one working day of selling," `ubiquitous-language.md`) and is computed automatically from the distinct calendar dates of Sessions sharing an `eventId` — never a raw count of Session rows. Wherever "Día N" is shown (`product/02-ux/home.md`, `events.md`, `reports.md`), it reuses this one computation. See `decision-log.md` D15.
 
