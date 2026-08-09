@@ -8,6 +8,13 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
+### Q15 — Should any trace of a merchant declining to offer the Claim-Token QR on a given Paid-tier Sale be persisted, or does it stay purely ephemeral UI state?
+
+- **Raised by:** `architect`, during the `loyaltyEnabled` retirement (`decision-log.md` D40). D40 establishes that whether Ana offers/shows the QR at a given Sale is a per-interaction UI choice at the Digital Receipt moment (`home.md` §3.8f), not a `Business`-level field — but takes no position on whether that specific choice, once made, is worth remembering anywhere.
+- **Scoped explicitly to Paid-tier Sales.** A Free-tier Sale generates no Claim Token at all (D40) — there is nothing to offer, so this question doesn't arise for Free-tier Sales and shouldn't be designed as if it might.
+- **Not yet a real design gap** — `home.md` §3.8f currently renders only a placeholder, not a live QR; this becomes concrete once `ux-designer` designs the Digital Receipt's QR-offering interaction as part of cascading D40's downstream UX changes.
+- **Status:** Open. Not blocking — `ux-designer` should pick this up as part of (not before) the Digital Receipt redesign, and is free to default to "purely ephemeral, nothing persisted" unless a concrete reason to store it surfaces during that design pass.
+
 ### Q14 — Should the future Customer Segmentation registration (Stage 2, `company/backlog.md` #2) ever be framed to Ana/the customer as a reward or gift ("regalo")?
 
 - **Question:** `home.md` §3.8f's digital receipt carries a `FutureRegistrationPlaceholder` with deliberately generic, mechanism-committing-to-nothing copy ("algún día vas a poder registrar aquí tu compra"). Whether the eventual Stage 2 mechanism (Sale-level Claim Token, `decision-log.md` D22) should be framed with reward/incentive language ("regalo" or similar) once it's actually designed isn't resolved anywhere in the Foundation.

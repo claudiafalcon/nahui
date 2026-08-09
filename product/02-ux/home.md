@@ -103,6 +103,7 @@ clean in round 1, with no findings against it in either round. `reviewer`
 clean (no Blockers, no Important findings) — folded back into Approved.
 **Amended 2026-08-08 (`decision-log.md` D33, "Define lo que vendes" moved into Onboarding):** §2 step 3's cold-start test corrected from "Product ever registered" to "`available` InventoryUnit exists" — required once Onboarding could create Products with zero stock (`onboarding.md` §2.2a). Two remediation rounds — round 1's fix missed a stale copy of the old test in §4's own wiring section; round 2 corrected it. `ux-critic` verified clean (zero Blockers, zero unresolved Majors). `reviewer` clean (no Blockers, no findings against this document specifically) — folded back into Approved.
 **Amended 2026-08-08 (Product Owner decision, Business Identity captured at Onboarding):** §3.8f's receipt moment now shows the merchant's own captured identity (`Business.name`, and her own logo if she set one, per `onboarding.md` §2.2b) in place of "(marca Nahui)" — Nahui's own mark stepping back in favor of the merchant's, a deliberate brand-facing product decision, not an incidental side effect. Honest fallback: `Business.name` as plain text whenever no logo is set (the common case, treated as fully first-class, not a lesser rendering). No new screen, state, or tap — a content/asset-source change to an already-Approved state. Pending `ux-critic`/`reviewer` review before folding back into Approved.
+**Amended 2026-08-09 (`decision-log.md` D40 — `loyaltyEnabled` retired, Frequent Customers unified as a Paid-tier-only capability):** §3.8f's future-registration placeholder is now gated on `subscriptionTier=paid` — a Free-tier receipt no longer shows it at all, three elements only (confirmation, total, business identity). A Paid-tier receipt keeps the placeholder, copy unchanged — the capability already exists automatically the instant `subscriptionTier=paid` (D40); only this specific receipt-moment interaction (what exactly renders here, whether a live QR eventually replaces the placeholder) remains undesigned, tracked as `product/02-ux/product-decisions.md` Q15, not resolved by this amendment. §3.8f, §4, §5, §8, §10, §11 updated.
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -714,7 +715,7 @@ via §3.5)
   happens to be showing at the time, since those are the identical screens
   with one extra line, not separate states requiring their own entry point.
   Per `settings.md` §2.1, this is deliberate, not an oversight: the
-  things Configuración manages — her plan, clientes frecuentes, and now
+  things Configuración manages — her plan and now
   (per `decision-log.md` D27) her `defaultSellingMode` (Botones ↔ Etiquetas
   NFC) directly — are meaningful to check or change whether or not Ana
   happens to be selling that particular day. Gating them behind an open
@@ -1037,8 +1038,8 @@ legible — the same convention this document already uses elsewhere
 │                                │  previously held; her own logo
 │                                │  renders here instead if she set one
 │                                │  (see variant below) — never both
-│  (algún día vas a poder          │
-│   registrar aquí tu compra)      │  literal, future-tense, plain
+│  (algún día vas a poder          │  Paid tier only — decision-log.md
+│   registrar aquí tu compra)      │  D40; see the Free-tier variant below
 │                                │  text — not tappable, names no
 │                                │  mechanism
 ├───────────────────────────────┤
@@ -1055,6 +1056,20 @@ legible — the same convention this document already uses elsewhere
 │                                │  holds — the two never render together
 │                                │
 ```
+
+**Variant — Free tier (`subscriptionTier=free`):**
+```
+┌───────────────────────────────┐
+│                                │
+│       Venta finalizada ✓        │
+│             $580                │
+│         Ropa Ana                │
+│                                │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+Three elements only — confirmation, total, business identity. No future-registration line of any kind, not even a de-emphasized one: Frequent Customers isn't part of a Free-tier merchant's plan, and a placeholder hinting she'll "someday" get it would be false under `decision-log.md` D40 — she only will if she upgrades (`settings.md`'s "Activar plan de pago"), not something this receipt should imply is already coming.
 - Reached only from §3.8c's success path, the instant the tray clears —
   never from a slow save (§3.8c, >~1.5s, until it actually resolves) or
   an error (§3.8d) until a retry succeeds. Same trigger condition the
@@ -1067,11 +1082,14 @@ legible — the same convention this document already uses elsewhere
   customer-visible. Still a *state* of Hoy, not a new destination — no
   back arrow, nothing added to the nav graph, same category as §3.1's
   resolving skeleton or §3.14's fallback screen.
-- Three elements only: the existing "Venta finalizada ✓" line (carried
+- **Three elements on a Free-tier receipt, four on a Paid-tier one**
+  (`decision-log.md` D40): the existing "Venta finalizada ✓" line (carried
   over from HOME-Q1, now de-emphasized rather than dominant), the
   per-sale total (unchanged in role/prominence from the superseded
-  draft — still the largest, most legible element on screen), and the
-  future-registration placeholder (unchanged copy, new visual device).
+  draft — still the largest, most legible element on screen), the
+  business identity (`Business.name`/`Business.logo`), and — Paid tier
+  only — the future-registration placeholder (unchanged copy, new visual
+  device). A Free-tier receipt ends at business identity.
 - **"$580" is the sum of `SaleItem.pricePaid` across every item in this
   one Sale** (`decision-log.md` D33's Price resolution) — each item's
   price was already resolved automatically, at the instant it was added
@@ -1451,7 +1469,8 @@ Inside selling (3.7-3.10):
       → saving (3.8c)
       → error (3.8d) → Reintentar, o resolve via Cancelar venta actual (3.8b)
       → success → tray clears → full-viewport receipt (3.8f: "Venta
-          finalizada ✓" + this sale's total + future-registration
+          finalizada ✓" + this sale's total + business identity, plus —
+          Paid tier only, `decision-log.md` D40 — a future-registration
           placeholder) — replaces §3.7 entirely for the payment moment;
           no header, no grid, no Venta actual tray rendered
           → auto-returns to plain §3.7 after a generous, fixed dwell —
@@ -1517,8 +1536,10 @@ and back to Hoy):
 15. Finalizar Venta — saving (near-instant / slow)
 16. Finalizar Venta — error
 17. Finalizar Venta — success, full-viewport receipt: "Venta finalizada ✓"
-    + per-sale total + future-registration placeholder, temporarily
-    replacing §3.7 entirely (no header, no grid) — auto-returns to §3.7
+    + per-sale total + business identity, plus — Paid tier only,
+    `decision-log.md` D40 — a future-registration placeholder;
+    temporarily replacing §3.7 entirely (no header, no grid) —
+    auto-returns to §3.7
     after a generous dwell, or immediately on any tap (resolves HOME-Q1;
     superseded the same-day ambient-overlay extension on 2026-08-05, see
     §3.8f)
@@ -1641,7 +1662,10 @@ her actual top sellers within the first screenful regardless of Catalog size.
   what's already written; flagged as a genuine Product Decision to take
   up if/when Stage 2 is actually designed — not blocking this amendment,
   since this amendment's copy commits to nothing that would need to be
-  walked back.
+  walked back. **Now explicitly scoped to Paid-tier receipts only**
+  (`decision-log.md` D40) — a Free-tier receipt no longer shows this
+  placeholder at all (§3.8f, §10). See also `product/02-ux/product-decisions.md`
+  Q15 — a related but distinct open item, not resolved by this note either.
 
 ## 9. Principle justification
 
@@ -2080,6 +2104,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **§2 step 3's cold-start resolution test corrected from "at least one Product ever registered" to "at least one `available` InventoryUnit exists"** (2026-08-08, alongside `onboarding.md`'s new "Define lo que vendes" step, `decision-log.md` D33) — the original test's parenthetical ("has she ever registered a Lot") was an accurate proxy for "has anything to sell" only as long as a Product could never exist without an accompanying Lot; `onboarding.md`'s new step breaks that equivalence by design. Left uncorrected, a merchant fresh from that step would have been offered "Iniciar Sesión Rápida" (§3.4) — a promise something is sellable — and land on an entirely dimmed, non-tappable selling grid (§3.9) the instant she tapped it: precisely the "disguised dead end" §3.3's own design note already warns against, reached from the opposite direction. The corrected test also closes a second, previously latent instance of the identical gap: a merchant fully sold out mid-run (every unit sold, nothing new received) was also, under the old test, routed to the dead-end grid — now correctly routed to cold start instead.
 - **§4's own interaction-flow summary was still citing the pre-correction test after §2 step 3 was corrected above — fixed to match (2026-08-08, caught during `ux-critic`'s D33 remediation re-check, missed by the original correction).** §4's branch labels read "nothing active, Catalog has Products" / "Catalog empty" — the retired "Product ever registered" proxy §2 step 3 was already corrected to replace, above. Corrected to "at least one `available` InventoryUnit exists" / "zero `available` InventoryUnits," matching §2 exactly, since §4 is this document family's own designated canonical wiring section (`product/02-ux/CLAUDE.md`) and a stale copy there is exactly the kind of section-drift this project's own incident history (`decision-log.md` D31/D32) already treats as a real Medium-Fidelity build-defect risk when a doc's own §2 and §4 disagree about the same branch. No wireframe, state, or routing decision changes — §4 always described the identical branch §2 step 3 defines; only its own wording had fallen out of sync with a fix already applied one section away.
 - **2026-08-08: §3.8f's receipt now shows the merchant's own captured identity instead of Nahui's own mark — a deliberate brand-facing product decision, named explicitly per this document's own review discipline, not an incidental side effect of `onboarding.md`'s new identity-capture step.** Until this amendment, every receipt Ana ever showed a customer carried Nahui's own mark — reasonable when nothing else was available to show, but never actually a brand statement anyone chose on purpose; it was the honest fallback for an empty field, not a considered choice. Once `onboarding.md` §2.2b makes `Business.name` a required, always-populated field (and `Business.logo` an optional one), the honest fallback for an *absent logo* is her own business name as text, not Nahui's mark — Nahui's mark was never the right fallback for a missing merchant logo, it was only ever standing in for a data field this product hadn't captured yet. This is the correct, considered choice, not merely a technical consequence of a new field existing: the receipt moment (§3.8f) is Ana's own customer-facing surface, at the single instant in the whole product a real customer ever sees anything — reinforcing her own identity there, not Nahui's, is the more honest and more merchant-respecting choice, consistent with `brand-guide.md`'s tone (never positioning Nahui's own presence ahead of the merchant she serves) and with the general shift this identity-capture amendment represents across the product. **Fallback is `Business.name` as plain text, not Nahui's mark, and not a generic placeholder** — reasoned explicitly: `Business.name` is required (never blank, `onboarding.md` §2.2b), so there is always a genuine, honest thing to show; falling back to Nahui's own mark when only the logo (not the name) is missing would mean the *common* case — most merchants likely won't have a digital logo ready, per this amendment's own design note — shows Nahui's brand more often than the merchant's, exactly backwards from the stated intent. Not RFC-worthy — no aggregate boundary, domain term, or IA change (`Business.name`/`Business.logo` are additive fields `architect` already cleared as sitting inside Selling's existing read-only dependency on Identity); a content-source and asset-source change to an already-Approved state's third element, same category as this document's other post-Approval amendments.
+- **2026-08-09: §3.8f's future-registration placeholder is now gated on `subscriptionTier=paid`, absent entirely on a Free-tier receipt (`decision-log.md` D40).** The original copy was written mechanism-noncommittal but tier-noncommittal too, before D40 existed — promising every merchant she'll "someday" get this is false for Free tier; only upgrading gets her there. Fix: a Free-tier receipt renders exactly three elements; a Paid-tier receipt is unaffected. **Not a design of the live QR interaction itself** — tracked as `product/02-ux/product-decisions.md` Q15, scoped explicitly to Paid-tier Sales.
 
 ## 11. Future considerations
 
@@ -2106,6 +2131,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
   untouched for several minutes) — deferred; the always-visible tray plus
   manual cancel may be sufficient, worth observing in real usage before adding
   a timer-based mechanism.
+- **The actual live QR/Claim-Token-offering interaction on a Paid-tier receipt** — the 2026-08-09 amendment only corrects which tier sees the placeholder at all. Tracked as `product/02-ux/product-decisions.md` Q15.
 - Día N / calendar-day reconciliation (see §8) may require a small addition to
   the Event/Session read-side query, pending Architect input.
 - A lightweight search/filter on the buttons-mode grid (§3.9), if a real

@@ -60,6 +60,14 @@ definition (`.claude/agents/ui-designer.md`) for the full rule.
   finding — SessionHeader compound string vs. `decision-log.md` D20 —
   found, fixed at both the Low-Fidelity and Figma layers, and
   re-verified clean). Second document to complete the Medium-Fidelity tier.
+  **Further amended 2026-08-09 (`decision-log.md` D40 — `loyaltyEnabled`
+  retired):** new Free-tier Digital Receipt variant (`788:882`, content-
+  diverge clone of `192:382` with the future-registration placeholder
+  removed — three elements, not four). `ux-critic`/`reviewer` both clean.
+  Folded back into done. See `product/02b-medium-fidelity/home.md` §3 for
+  the full record, including a newly-tracked, unrelated D36 gap (the
+  receipt's `BrandMark` vs. `Business.name`) found while touching this
+  state.
 - `inventory.md` — **done**. Full cycle complete (one Major — undersized
   delete tap target — and one Minor — self-contradicting picker-sheet
   state — found, fixed, and re-verified clean). Third document to
@@ -108,6 +116,11 @@ definition (`.claude/agents/ui-designer.md`) for the full rule.
   Also folded in two incidentally-discovered D34 Governance Rollout Cascade
   gaps on this same page (a stale retired-state frame, stale conditional
   copy on 3 frames), both found and fixed unprompted. Folded back into done.
+  **Further amended 2026-08-09 (`decision-log.md` D40 — `loyaltyEnabled`
+  retired):** a stale built text node on §3.13's zero-Claims state
+  (`758:5737`, "Puedes revisar esto en Configuración...") removed —
+  confirmed no reactions before deletion. `ux-critic`/`reviewer` both
+  clean. Folded back into done.
 - `onboarding.md` — **done**. Full cycle complete (0 Blockers, 0 Major/
   Important findings; 2 Minor found, tracked non-blocking). Fifth document
   to complete the Medium-Fidelity tier. **Rebuilt for `decision-log.md` D27**
@@ -126,13 +139,25 @@ definition (`.claude/agents/ui-designer.md`) for the full rule.
   Major: error heading used plain color instead of Error red; 1 Minor: a
   tight tap-target gap) both fixed, verification clean, `reviewer`
   Foundation-consistency pass: **0 Blockers, 0 Important findings — clean**.
-  Folded back into done.
+  Folded back into done. **Checked 2026-08-09 for `decision-log.md` D40
+  (`loyaltyEnabled` retired) — confirmed clean, no Figma changes needed.**
+  Full-page text search across all 141 text nodes found zero
+  `loyaltyEnabled`/"clientes frecuentes"/"seguimiento de clientas"
+  references.
 - `settings.md` — **done**. Built directly against the D27-corrected spec
   (retired "Activar venta con tags" activation-code path never existed in
   this build; new `defaultSellingMode` control added across 3 new frames).
   Sixth and final document to complete the Medium-Fidelity tier. `ux-critic`
   clean (1 non-blocking UX gap — SET-D27-MIN1, tracked in this document's
-  own Known gaps), `reviewer` clean.
+  own Known gaps), `reviewer` clean. **Further amended 2026-08-09
+  (`decision-log.md` D40 — `loyaltyEnabled` retired):** "Activar/Desactivar
+  clientes frecuentes" frames deleted (zero-caller audit confirmed first),
+  the "Clientes frecuentes" row removed from all 4 main-view states,
+  "Activar plan de pago"/"Volver al plan gratis" copy corrected. `ux-critic`
+  clean. `reviewer` found 1 Important (two dead `CapabilityCard` component
+  variants reproducing the retired toggle, still present in the Design
+  System page though unreachable from any live screen) — fixed, deleted
+  outright. Folded back into done.
 
 **All six documents (Hoy, Inventario, Eventos, Resultados, Onboarding,
 Configuración) have now completed the Medium-Fidelity tier.**
@@ -157,7 +182,12 @@ Configuración) have now completed the Medium-Fidelity tier.**
   `product/02-ux/` (D38's own folder-placement ruling) but its
   Medium-Fidelity tracking file stays in this shared folder, since
   Medium-Fidelity tracking was never scoped to `product/02-ux/`'s own
-  merchant-only charter.
+  merchant-only charter. **Checked 2026-08-09 for `decision-log.md` D40
+  (`loyaltyEnabled` retired) — confirmed clean, no Figma changes needed.**
+  A full-page text search found zero `loyaltyEnabled`/"clientes
+  frecuentes" references; the flow was already correctly framed as
+  reachable only via a Claim Token, which per D40 now only ever exists for
+  a Paid-tier Business.
 
 ## Clickable prototype (final Medium-Fidelity deliverable)
 
@@ -547,3 +577,17 @@ Re-review (`ux-critic`/`reviewer` on the corrected `651:5396`) and a `merchant-u
 **`ux-critic` caught a real Major finding in round 1:** `651:2718` ("Sí, descartar") had been swept into the same retarget as the three genuine "← Inventario" links, but per `inventory.md` §3.9, discarding a draft should return to a **blank Registrar Mercancía form** (§3.6), not the Inventario Catalog tab — a different destination class, already correctly implemented elsewhere in this same file for the identical button type (production `50:648`→`48:58`). **Fix, round 2:** `651:2718` retargeted `668:526` → `651:2646` (this chain's own blank entry, already existed, no new clone needed). Main live-verified: "Sí, descartar" now lands exactly on `651:2646`.
 
 Content fidelity, scope discipline, and two-axis conformance on round 1 were all otherwise confirmed clean by `ux-critic`. Round-2 re-verified clean by `ux-critic`; Main independently live-verified both hops on fresh pages (`651:2695`→"← Inventario"→`668:526`, `651:2708`→"Sí, descartar"→`651:2646`). **`reviewer`'s final sign-off: clean, no Blockers, no Important findings** — independently re-checked `668:526` against `inventory.md` §3.3, `651:2718`'s corrected destination against §3.9's literal text, cross-document consistency with the established `50:648`→`48:58` precedent, and this tracking entry's own accuracy against live node content. **The "Onboarding-native 'Activar plan de pago' reconvergence" workstream is fully closed** — built, reviewed, Foundation-checked, and behaviorally validated by `merchant-user-tester` on the actual paid journey.
+
+### 2026-08-09 — `decision-log.md` D40 cascade into the demo page: sync gap closed, retired toggle sub-flow removed
+
+Two separate, unrelated gaps closed in one pass over page `160:2`, since both required touching this page.
+
+**Gap 1 — never synced to the 2026-08-09 overnight Medium-Fidelity builds.** This page had been a frozen snapshot since 2026-08-04 (see its own "frozen snapshot, not a living source" caveat earlier in this file) — it predated both the Loyalty Participation view (`reports.md` §3.15–§3.18) and the "Tu negocio" business-identity step (`onboarding.md` §2.2b/§3.9–§3.10a), so `merchant-user-tester` could not have reached either through this page even before D40. Closed: `ui-designer` built and wired the "Tu negocio" step (clones `793:59`/`793:72` of production `763:48`/`763:53`, populated with "Ropa Ana," Continuar enabled) into Journey 1's primary chain, and an 8-clone Loyalty Participation/Recompensas sub-chain (`798:488`–`798:589`), attached via `184:1536`'s back-arrow — redirected from a stale shortcut (`162:2019`, confirmed to still have 3 other legitimate callers, not stranded).
+
+**Named, disclosed, not fixed in this pass:** "Define lo que vendes" (`decision-log.md` D33) was *also* never synced to this page — a separate, pre-existing gap, unrelated to D40. Journey 1 still skips straight past it. Flagged here so it isn't lost; a future pass should close it alongside any other remaining sync gaps found.
+
+**Gap 2 — this page's own built "Activar/Desactivar clientes frecuentes" sub-flow, retired by D40.** The page carried its own independent 16-clone Configuración-sheet toggle graph (built 2026-08-04, "Full-coverage wiring pass," above) — a full duplicate of the mechanism just retired on the production `settings.md` page. Full caller-audit found 14 confirm frames + 14 downstream "Guardando" frames (28 total) forming a closed self-loop with 18 callers; all deleted. The "Clientes frecuentes" row removed from all 18 Configuración clones on this page; 8 FIXED-height CardStacks fixed to AUTO (matching the production-page fix). Incidentally found and fixed in the same pass, not separately dispatched: 10 stale "Activar plan de pago"/5 stale "Volver al plan gratis" clones still carrying pre-D40 copy (plus matching FIXED-height overflow bugs) — consistent with this project's own precedent of fixing incidental gaps discovered mid-audit rather than leaving them for a second pass.
+
+**Verification.** `ux-critic`: independently re-verified via `get_metadata`/screenshot (not the build report) — all 18 Configuración clones confirmed to show exactly 2 `CapabilityCard`s; a full-page text grep confirmed zero "Activar/Desactivar clientes frecuentes" occurrences anywhere on the page; exactly 5 "Guardando" frames remain (matching 4 real actions + cancel-pending, zero stale toggle-loop remnants); the new sync content confirmed built from real, reused Design System components, not ad hoc frames. Wiring/reachability claims (whether the new sync content is actually tap-reachable, whether `184:1536`'s redirect and `162:2019`'s remaining-3-callers claim hold) were explicitly named as outside `ux-critic`'s toolset (`infrastructure-decisions.md` ID004) and rest on `ui-designer`'s own fresh `node.reactions` readback instead — not independently re-verified by Main via live click-through this pass (no `chrome-devtools-mcp` access in this session); a future `merchant-user-tester` walk of the synced content is the natural closing step, not yet dispatched. `reviewer`'s Foundation-consistency pass (scoped to the production pages, not this demo page specifically) found the retired-toggle correction complete and correct wherever checked; the one Important finding it raised (dead `CapabilityCard` component variants in the shared Design System) was fixed the same day — see `settings.md`'s own tracking entry above.
+
+**Status:** both gaps closed as far as content/structure inspection can confirm; reachability of the newly-synced content is the one remaining unverified claim, named explicitly rather than silently passed.

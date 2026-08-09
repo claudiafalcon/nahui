@@ -52,7 +52,7 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 - **Applied:** `decision-log.md` D25 (plain entry, not RFC — same category as D19). `domain-model.md`'s Business Capabilities table gains the pending-value/effective-date structural note for all three capabilities and states the never-delete invariant explicitly.
 - **Explicitly not resolved here, tracked separately:** the *specific* per-transition timing rule (which of the six directions is immediate vs. deferred, and the exact deferred rule) depends on a pricing/billing-cycle model that doesn't exist in the Foundation yet — tracked as Q11, above, not silently assumed from the Product Owner's own illustrative example.
 - **Unblocks:** `product/02-ux/settings.md` — six merchant-facing actions (three capabilities × two directions), a reusable "pending change, takes effect on [date]" indicator, and a way to cancel a pending change before it lands.
-- **Status:** Resolved.
+- **Status:** Superseded by `decision-log.md` D40 (2026-08-09) — `loyaltyEnabled` is retired outright; this resolution's inclusion of `loyaltyEnabled` among the self-service-toggleable capabilities no longer applies, and `settings.md`'s action count narrows from six to four. `subscriptionTier`'s self-service treatment, described above, is unaffected and remains Resolved in substance.
 
 ### Q8 — Does paid-tier customer segmentation require merchant-visible customer identity, and how does that reconcile with Loyalty-claim's merchant-app boundary?
 
