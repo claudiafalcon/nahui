@@ -1,6 +1,6 @@
 # 0005 — Merchant-initiated reward-cycle confirmation: a new narrow write edge, Intelligence → Loyalty-claim
 
-Status: Proposed — pending Product Owner review and approval before promotion to `decision-log.md`.
+Status: **Accepted — promoted to `decision-log.md` D39, as drafted, no amendments.** The Product Owner explicitly accepted the residual risk this RFC's own "Named Business Decision" section named: no undo, editable reward history, reversal workflow, or support-mediated correction process is designed or built for the MVP. The existing safeguards (customer-detail-only placement, explicit two-tap confirm, `lastRewardConfirmedAt`'s trace) are judged sufficient at this stage; a correction mechanism may be introduced later if real merchant usage shows mistaken confirmations are materially frequent or costly — gated on evidence, not designed preemptively. See D39 for the full text.
 
 ## The idea
 

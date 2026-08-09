@@ -87,7 +87,7 @@ into one: any paid merchant with zero Claims recorded yet — whether because
 nothing collected yet — sees the same naturally-empty, tappable state
 (§3.13), with no special-casing by reason. §1, §2, §3.4/§3.5/§3.6/§3.12/
 §3.13, §4, §5, §6, §7, §8 item 1, §9, and §10 updated accordingly.
-**Amended 2026-08-08 (`decision-log.md` D34/D35/D37; `product/99-rfc/0004-customer-loyalty-participation-record.md`, Accepted) — Loyalty Participation view added.** New §3.15–§3.18, plus additive appends to §3.12/§3.13 (their existing content unchanged), give Ana a per-customer view of loyalty progress — email, age range, gender, purchase count, lifetime spend, reward-cycle progress, completed-cycles count — reading D35's Loyalty Participation Record allowlist exactly, structurally never anything beyond it. Gated identically to "Tus clientes" itself: `subscriptionTier=paid` alone (D34), independent of `loyaltyEnabled`. **The "Confirmar recompensa entregada" write action (§3.17/§3.18) is speculative, designed fully against `product/99-rfc/0005-reward-cycle-confirmation-write-edge.md`'s complete write contract, but that RFC is Status: Proposed, not yet Accepted** — same "target UI ahead of implementation" posture this doc already used for Venue before its own aggregate root existed, and for the whole Loyalty-claim/Intelligence capability before D22. Every other part of this amendment (the populated list, per-customer detail, empty state) depends only on the already-Accepted D35/D37, not on RFC 0005. **`ux-critic` round 1: 1 Major (the confirm-screen reused a reversible-action template without disclosing this action's irreversibility) found alongside the sibling `customer-loyalty-registration.md` review — fixed (§3.17's copy now discloses plainly, RFC 0005 amended with a `lastRewardConfirmedAt` trace field, no reversal mechanism added by design).** Pending `reviewer`'s Foundation-consistency pass. See §10 for the full decision record.
+**Amended 2026-08-08 (`decision-log.md` D34/D35/D37; `product/99-rfc/0004-customer-loyalty-participation-record.md`, Accepted) — Loyalty Participation view added.** New §3.15–§3.18, plus additive appends to §3.12/§3.13 (their existing content unchanged), give Ana a per-customer view of loyalty progress — email, age range, gender, purchase count, lifetime spend, reward-cycle progress, completed-cycles count — reading D35's Loyalty Participation Record allowlist exactly, structurally never anything beyond it. Gated identically to "Tus clientes" itself: `subscriptionTier=paid` alone (D34), independent of `loyaltyEnabled`. **The "Confirmar recompensa entregada" write action (§3.17/§3.18) was designed fully against `product/99-rfc/0005-reward-cycle-confirmation-write-edge.md`'s complete write contract while that RFC was still Proposed — now Accepted and promoted to `decision-log.md` D39.** `ux-critic` round 1: 1 Major (the confirm-screen reused a reversible-action template without disclosing this action's irreversibility) found alongside the sibling `customer-loyalty-registration.md` review — fixed (§3.17's copy discloses plainly, RFC 0005 amended with a `lastRewardConfirmedAt` trace field, no reversal mechanism added by design — the Product Owner's own D39 decision explicitly accepts the residual risk and defers any correction mechanism until real evidence warrants one). `reviewer`'s Foundation-consistency pass clean. Folded back into Approved — no longer speculative. See §10 for the full decision record.
 
 Scope: `Resultados`, the fourth and last of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers Journey 5
@@ -115,7 +115,7 @@ Out of scope by explicit instruction:
   separate, not-yet-designed pieces of the Frequent Customers capability
   (`company/backlog.md` #2 Stage 2; `decision-log.md` D37's
   `Business.loyaltyRewardThreshold`). This document specs only the
-  merchant-facing read (and one narrow, speculative write) once that data
+  merchant-facing read (and one narrow write, D39) once that data
   already exists — never how a customer claims a purchase, and never how
   Ana sets or changes her own reward threshold in Configuración. See §11.
 - **No specific customer-segmentation algorithm.** `company/CLAUDE.md`
@@ -294,9 +294,9 @@ rather than building a second selling mechanism inside this tab.
            teaser row, "Recompensas" → §3.15 (populated list, grouped
            by readiness) → §3.16 (per-customer detail — exactly D35's
            seven-field allowlist, never more) → optionally, §3.17/§3.18
-           ("Confirmar recompensa entregada" — **speculative, pending
+           ("Confirmar recompensa entregada" —
            `product/99-rfc/0005-reward-cycle-confirmation-write-edge.md`,
-           Proposed, not yet Accepted**).
+           Accepted, `decision-log.md` D39).
 ```
 
 **How the three altitudes relate:** all-time (a single ambient card, sum
@@ -1298,7 +1298,7 @@ variant below for the other reachable state, zero Claims recorded yet,
   Accepted. The read-only content above the button (everything else on
   this screen) depends only on the already-Accepted D35/D37.
 
-### 3.17 Confirmar recompensa entregada — confirmación de efecto inmediato (**speculative — pending RFC 0005**)
+### 3.17 Confirmar recompensa entregada — confirmación de efecto inmediato
 ```
 ┌───────────────────────────────┐
 │ ← ana.compradora@gmail.com        │
@@ -1334,11 +1334,11 @@ variant below for the other reachable state, zero Claims recorded yet,
   tonal pattern for this document family — rather than borrowing
   `settings.md`'s reassurance language, which would misrepresent this
   specific action. **This correction is scoped to copy only.** It changes
-  nothing about the shared visual/interaction shape, and the section
-  stays exactly as speculative as before: everything here is still
-  designed fully against RFC 0005's complete contract, pending that RFC's
-  approval — this fix makes the copy complete against that contract, not
-  more settled than the RFC's own Proposed status allows.
+  nothing about the shared visual/interaction shape. RFC 0005 has since
+  been Accepted (`decision-log.md` D39) exactly as drafted — the Product
+  Owner explicitly accepted the residual risk this fix's own disclosure
+  line names, and no correction mechanism was added — so this section is
+  now fully Approved, not speculative.
 - Back arrow ("← [email]") or any implicit "no" → returns to §3.16
   unchanged, no write attempted — same restraint as every cancel path in
   this app family. **This is the one and only correction path this action
@@ -1357,7 +1357,7 @@ variant below for the other reachable state, zero Claims recorded yet,
   consequential atomic write, which likewise ships with no confirm-time
   undo mechanism.
 
-### 3.18 Confirmar recompensa entregada — guardando / error (**speculative — pending RFC 0005**)
+### 3.18 Confirmar recompensa entregada — guardando / error
 ```
 ┌───────────────────────────────┐        ┌───────────────────────────────┐
 │  (pantalla anterior atenuada)      │        │      Guardando…                │
@@ -1420,7 +1420,7 @@ Recompensas (3.15):
 
 Detalle de clienta (3.16):
   [reward ready only] tap "Confirmar recompensa entregada"
-    → Confirmación de efecto inmediato (3.17) [speculative, RFC 0005]
+    → Confirmación de efecto inmediato (3.17)
       → back / no → Detalle de clienta (3.16), unchanged
       → Confirmar ahora → Guardando (3.18)
         → error → Reintentar (3.18), idempotent retry
@@ -1477,13 +1477,11 @@ Elsewhere (entry points into this tab's screens, not from the tab itself):
 16. Detalle de clienta (los siete campos exactos del allowlist de
     Loyalty Participation Record, `decision-log.md` D35)
 17. Confirmar recompensa entregada — confirmación de efecto inmediato
-    (speculative — pending `product/99-rfc/0005-...`, Proposed)
-18. Confirmar recompensa entregada — guardando / error (speculative —
-    pending `product/99-rfc/0005-...`, Proposed)
+    (`product/99-rfc/0005-...`, Accepted, `decision-log.md` D39)
+18. Confirmar recompensa entregada — guardando / error
 
 **This document is no longer purely read-side** — §3.17/§3.18 introduce
-Resultados' first-ever write, speculative and gated behind RFC 0005's own
-approval. Every other state in this document, including every other
+Resultados' first-ever write. Every other state in this document, including every other
 state in this amendment (§3.15, §3.16's read-only content, both
 §3.12/§3.13 appends), remains read-only, unchanged from the posture the
 paragraph below originally described.
@@ -1511,7 +1509,7 @@ what §3.6/§3.12 are gated by and added §3.13 — neither changed how many
 | Ver qué eventos componen un renglón de "Rendimiento por bazar" | 3 (abrir pestaña → Ver más → tocar el renglón del lugar) | One tap deeper than reaching the summary itself (row above) — the same per-altitude cost §2 already establishes for Historial → Event detail, just entered from a different starting altitude. |
 | Ver el evento específico detrás de ese renglón | 4 (abrir pestaña → Ver más → tocar el renglón → tocar la tarjeta del evento) | Same destination and cost as reaching Event detail from Historial directly (two rows above) — the venue filter adds exactly one tap, never more. |
 | Ver el detalle de una clienta con seguimiento | 4 (abrir pestaña → Ver más [Tus clientes] → Ver más [Recompensas] → tocar la fila de la clienta) | One altitude deeper than "Tus clientes" itself, matching the same per-altitude cost §2/§6 already charge for "Rendimiento por bazar"'s own venue drill-down. |
-| Confirmar que ya le diste su recompensa a una clienta (speculative, RFC 0005) | 6 (los 4 anteriores + tocar "Confirmar recompensa entregada" + tocar "Confirmar ahora") | A consequential write deliberately requires an explicit confirm step, reusing `settings.md`'s own two-tap commit shape for every comparable Business/Customer-state change — never a bare single tap for an action with a real, atomic, hard-to-undo effect. |
+| Confirmar que ya le diste su recompensa a una clienta | 6 (los 4 anteriores + tocar "Confirmar recompensa entregada" + tocar "Confirmar ahora") | A consequential write deliberately requires an explicit confirm step, reusing `settings.md`'s own two-tap commit shape for every comparable Business/Customer-state change — never a bare single tap for an action with a real, atomic, hard-to-undo effect. |
 
 Resultados has no comparable hard speed requirement to Home's <3s bar
 (`company/backlog.md` #1) — same posture `inventory.md` §6 and `events.md`
@@ -2067,11 +2065,13 @@ there; no urgency is invented where none exists.
   Resultados resolve as everything else, so the existing whole-tab
   fallback (§3.14) already covers it. `ux-critic-findings.md` RPT-S2
   stays open for a future, more granular pass; not resolved here.
-- **The "Confirmar recompensa entregada" action, and only that action
-  (§3.16's button, §3.17, §3.18), is speculative — designed fully
-  against RFC 0005's complete contract, but flagged everywhere it
-  appears as pending that RFC's approval.** Everything else in this
-  amendment depends only on the already-Accepted D35/D37.
+- **The "Confirmar recompensa entregada" action (§3.16's button, §3.17,
+  §3.18) was designed against RFC 0005's complete write contract while
+  that RFC was Proposed — now Accepted, `decision-log.md` D39, no
+  amendments.** The Product Owner's own D39 decision explicitly accepts
+  the residual risk of an MVP-stage merchant mis-tap and defers any
+  correction mechanism until real evidence warrants one. This entire
+  amendment, including this action, is now fully Approved.
 - **§3.17's copy corrected to honestly disclose that "Confirmar recompensa
   entregada" is not reversible, closing a gap `ux-critic` found in this
   screen's reuse of `settings.md` §3.4's confirm-screen template.** Every
@@ -2085,9 +2085,7 @@ there; no urgency is invented where none exists.
   §3.4c already established ("no vas a poder convertirlo en tu negocio
   real después") — not a new tonal pattern for this document family, and
   not a reason to invent a correction mechanism RFC 0005 deliberately
-  doesn't have. The section's "speculative — pending RFC 0005" framing is
-  unchanged by this fix; the copy is now complete against RFC 0005's
-  contract, not more settled than the RFC's own Proposed status allows.
+  doesn't have.
 
 ## 11. Future considerations
 
