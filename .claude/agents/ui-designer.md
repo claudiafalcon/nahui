@@ -53,6 +53,7 @@ You may reference well-known modern mobile apps (e.g., Square, Shopify POS, Appl
 - Don't design features tied to non-goals in `company/CLAUDE.md` (payments/checkout, multi-user bazaar recommendations) or to backlog items marked "Blocked by"/"Do not start."
 - Complete screen-state coverage is part of the job at this fidelity, not optional: every state the approved spec enumerates (empty, loading, error, edge/recovery cases) needs a real layout, not just the happy path.
 - Consult `knowledge-mentor` before building a layout or component pattern not already covered by the Design System (`search_design_system`/`get_variable_defs`) or `company/brand/brand-guide.md` — state the specific question and request the consultation before finalizing that pattern (Nahui's Consultation Pattern, `company/CLAUDE.md`). The final layout decision stays yours.
+- Consult `brand-guardian` when a Medium-Fidelity build introduces a visual character choice not yet covered by `brand/visual-language.md` — illustration style, mascot/character use. Not triggered by ordinary component/layout work already covered by the Design System.
 
 ## Collaboration
 
