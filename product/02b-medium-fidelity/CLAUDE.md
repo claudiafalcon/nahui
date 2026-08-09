@@ -94,6 +94,20 @@ definition (`.claude/agents/ui-designer.md`) for the full rule.
   re-verified clean; 2 Important doc-drift findings from `reviewer`, both
   non-blocking, one resolved via a `brand-guide.md` addition, one routed to
   `ux-designer`). Fourth document to complete the Medium-Fidelity tier.
+  **Amended 2026-08-09 (overnight autonomous session) for the Loyalty
+  Participation view** (`decision-log.md` D35/D37/D39, `product/99-rfc/0004`/
+  `0005` both Accepted — §3.15-§3.18, "Recompensas" tab plus a
+  "Confirmar recompensa entregada" write action) — `ui-designer` build (8
+  new nodes, above), `ux-critic` round 1 (1 Major: §3.15 Header clipped its
+  own subtitle) fixed, verification clean (elevated scrutiny per
+  `infrastructure-decisions.md` ID001, fix built without the mandatory
+  `figma-use` skill loaded), `reviewer` Foundation-consistency pass: **0
+  Blockers, 0 Important findings — clean**, including independent
+  concurrence that the confirm action's Primary (not Destructive) styling
+  is correct per `decision-log.md` D39's own Finalizar-Venta precedent.
+  Also folded in two incidentally-discovered D34 Governance Rollout Cascade
+  gaps on this same page (a stale retired-state frame, stale conditional
+  copy on 3 frames), both found and fixed unprompted. Folded back into done.
 - `onboarding.md` — **done**. Full cycle complete (0 Blockers, 0 Major/
   Important findings; 2 Minor found, tracked non-blocking). Fifth document
   to complete the Medium-Fidelity tier. **Rebuilt for `decision-log.md` D27**
@@ -105,13 +119,14 @@ definition (`.claude/agents/ui-designer.md`) for the full rule.
   Group name/price capture moved from `inventory.md`'s inline flow into
   Onboarding, on both real paths) — `ux-critic` clean (findings from that
   round scoped to `inventory.md`/`events.md`, not this page), `reviewer`
-  clean. Folded back into done. **Not yet built in Medium-Fidelity: the
-  separate business-identity capture step (§2.2b/§3.9-§3.10a, "Tu negocio"
-  — Business.name/logo/description)**, still Low-Fidelity only — `ux-critic`
-  clean as of 2026-08-08, `reviewer`'s Foundation-consistency pass on that
-  section in progress. This page's own tracking file will need a second
-  amendment once that step is actually built in Figma; see
-  `product/02b-medium-fidelity/onboarding.md` §1's own flag.
+  clean. Folded back into done. **Amended 2026-08-09 (overnight autonomous
+  session) for the business-identity capture step** (§2.2b/§3.9-§3.10a,
+  "Tu negocio" — Business.name/logo/description, `decision-log.md` D36),
+  now fully built and wired (9 frames, above) — `ux-critic` round 1 (1
+  Major: error heading used plain color instead of Error red; 1 Minor: a
+  tight tap-target gap) both fixed, verification clean, `reviewer`
+  Foundation-consistency pass: **0 Blockers, 0 Important findings — clean**.
+  Folded back into done.
 - `settings.md` — **done**. Built directly against the D27-corrected spec
   (retired "Activar venta con tags" activation-code path never existed in
   this build; new `defaultSellingMode` control added across 3 new frames).
