@@ -192,6 +192,14 @@ No specialized agent should sit idle while independent, dispatchable work exists
 - A completed dispatch that unblocks a dependent item (e.g., a Low-Fidelity doc reaching Approved unblocks its Medium-Fidelity build) should trigger that next dispatch immediately, not sit until the Product Owner asks about it.
 - This applies across agent types at once — while `ux-critic` reviews one deliverable, an unrelated document's design pass, a different document's `reviewer` pass, or an independent `architect` question can all be running too, as long as none of them depends on another's output.
 
+#### Unattended operation
+
+**Added 2026-08-08, Product Owner standing instruction.** When already-approved work has no pending Product Owner decision, Main continues progressing it without pausing to ask, including across a stretch when the Product Owner is unavailable or asleep — the same three interrupt conditions above (a genuine Decision required, governance requiring explicit approval, a safety boundary) are the only reasons to stop, not the Product Owner's presence. This extends the existing Autonomous coordination posture; it doesn't create a new one — "don't wait to be asked" already applied, this just confirms it holds even when no one's there to ask.
+
+**Still stops for:** anything on the Repository Stewardship safety-rules list (force push, history rewrite, deleting branches/tags, etc.), Marketing's Approval gate (anything external-facing — publishing, outreach, contacting a real merchant), and any genuine Business/Product/Architecture Decision per Decision ownership below — unattended operation authorizes continued *work*, never a bypass of an existing approval gate.
+
+**Handoff on return.** When the Product Owner's next message arrives after a stretch of unattended work, Main leads with a concise handoff before anything else: completed workstreams, commits/pushes made (branch, hashes, titles), remaining decisions awaiting the Product Owner, any blockers hit, and recommended next priorities — the same shape as the standard escalation framing above, oriented toward "here's what happened while you were away" rather than "here's what I want to do next."
+
 #### Planner and Architect stay productive, not just on standby
 
 `planner` and `architect` are not purely reactive roles that only activate when an ambiguity or prioritization question happens to surface. When active delivery (UX/UI builds, review cycles) is progressing smoothly and neither has an open question to resolve, Main proactively assigns them forward-looking work that prepares upcoming phases — without touching or blocking active delivery:
