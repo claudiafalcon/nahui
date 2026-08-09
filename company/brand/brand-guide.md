@@ -63,6 +63,9 @@ For a plain list row that drills into more detail (not a bordered card, not a bu
 - Error state shown inline below field in Error red
 - Standard fields observed: email, password, monto (amount), concepto (optional text)
 
+## OptionChip — single-select choice chip
+For short categorical choices (e.g. age range, gender) presented as a tap-once, single-select chip group. Two states: Unselected — white fill, plain text; Selected — Coral AA+ fill, bold text. Selection is signaled by two independent cues (fill AND font-weight), never color alone, per WCAG 1.4.1. ~47px tap target, matching this guide's List-rows tappability precedent (`▸` row height above). First built during the Loyalty registration Medium-Fidelity pass (`product/02-ux-loyalty/customer-loyalty-registration.md` §3.6; Figma file `DPRnGD5JWjfoNBSlAFoVG4`, Design System page `0:1`, node `763:14`); reuse this component rather than inventing a new one wherever a similar short single-select choice is needed.
+
 ## Badges & status tags
 - Pill-shaped (radius: pill), used for status words (e.g. "Pagado", "Confirmado", "Pendiente")
 - Color-coded by status (success/warning/error/neutral)

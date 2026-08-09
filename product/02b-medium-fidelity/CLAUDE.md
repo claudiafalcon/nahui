@@ -122,6 +122,28 @@ definition (`.claude/agents/ui-designer.md`) for the full rule.
 **All six documents (Hoy, Inventario, Eventos, Resultados, Onboarding,
 Configuración) have now completed the Medium-Fidelity tier.**
 
+- `customer-loyalty-registration.md` — **done**. Built 2026-08-09 (overnight
+  autonomous session), against `product/02-ux-loyalty/`'s Approved spec
+  (`decision-log.md` D34/D35/D37/D38/D39). New Figma page, "Loyalty —
+  Customer-Facing" (`753:918`), additive and structurally isolated from the
+  six merchant-app pages — no `NavBar`, no `BrandMark`, independently
+  confirmed twice (`ux-critic`, then `reviewer`). All 14 spec states built,
+  zero deviations. `knowledge-mentor` consultation grounded a new
+  interaction pattern (`OptionChip`, age/gender single-select chips) in
+  WCAG/Material Design precedent, catching two real gaps (undersized tap
+  target, no selected-state signal), both closed — now a canonical Design
+  System component, documented in `company/brand/brand-guide.md`.
+  `ux-critic`: 2 Major found and fixed (missing `OptionChip` selected
+  state; missing disabled "Continuar" state contradicting the spec's own
+  gating rule) — verification clean. `reviewer`: 1 Important finding
+  (`OptionChip` undocumented in `brand-guide.md`) — fixed. **0 Blockers, 0
+  remaining findings.** See `product/02b-medium-fidelity/customer-loyalty-registration.md`
+  for the full node/review record. This document lives outside
+  `product/02-ux/` (D38's own folder-placement ruling) but its
+  Medium-Fidelity tracking file stays in this shared folder, since
+  Medium-Fidelity tracking was never scoped to `product/02-ux/`'s own
+  merchant-only charter.
+
 ## Clickable prototype (final Medium-Fidelity deliverable)
 
 Built 2026-08-03, first as one compressed happy-path chain, then **reorganized the same day** into three distinct, realistic business-scenario journeys per Product Owner request — showcasing how Nahui is actually used in different situations rather than compressing every feature into one continuous path:
