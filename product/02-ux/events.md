@@ -27,6 +27,20 @@ cards now show Event type alongside `Venue.displayName` ("Plaza Norte ·
 Bazar"), matching the subordinate role Type already has on Detail screens.
 Full cycle complete, `ux-critic`/`reviewer` clean, folded back into
 Approved.
+**Amended 2026-08-08 (`decision-log.md` D33, MVP pricing operating model):**
+`Event.bazaarCost` (optional) added to Nuevo Evento (§3.6), and a new
+per-Product Price Override mechanism ("Ajustar precios," new §3.19/§3.20)
+added to Event detail. Two remediation rounds — round 1 found 2 Major
+(a wiring-completeness gap in `inventory.md`'s §4/§5/§6, and "Ajustar
+precios" being reachable during active selling, undercutting D33's own
+offline-planning premise) + 2 Minor + 1 Suggestion. Round 2 applied the
+Product Owner's direct ruling: "Ajustar precios" is now strictly an
+Event-*planning* capability, reachable only while an Event is
+`scheduled` — removed entirely from active-state screens (§3.14/§3.15).
+`ux-critic` verified clean (zero Blockers/unresolved Majors). One Minor
+finding remains open, non-blocking (`ux-critic-findings.md`'s D33 entry:
+`EVT-D33-MIN-A`, a duplicate-bullet cleanup in §3.11). `reviewer` clean
+(no Blockers, no Important findings) — folded back into Approved.
 Scope: `Eventos`, the third of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers Journey 2 (Event
 scheduling) and Journey 4 (Event close) from `information-architecture.md`.
@@ -309,6 +323,8 @@ tab-level resolution and an explicit save action get a loading state.
 │  [ 04 / 08 / 2026 ]               │  prefilled = hoy, editable
 │ Termina                         │
 │  [ 04 / 08 / 2026 ]               │  prefilled = Empieza, editable
+│ Costo del evento (opcional)        │
+│  [ $ ___ ]                       │
 │                                │
 │  [      Guardar evento       ]   │  disabled until Lugar + Tipo
 │                                │   (Empieza/Termina already valid by default)
@@ -318,6 +334,19 @@ tab-level resolution and an explicit save action get a loading state.
 ```
 (The "04 / 08 / 2026" is illustrative "hoy" — the field always renders the
 real current date, same as any other date field in this doc.)
+- **"Costo del evento (opcional)" — new field, captures `Event.bazaarCost`
+  (`decision-log.md` D33).** Optional, defaults to blank (stored as 0 if
+  left untouched, per D33), and never joins Guardar evento's required-field
+  gate — excluded exactly the way Empieza/Termina's own defaults already
+  keep them from ever blocking a save. Plain peso entry, no currency
+  picker, same numeric-entry posture as `inventory.md`'s new Precio field
+  (§3.8a). Captures what attending this Event costs Ana — venue fee,
+  optionally plus staffing — sourced to her own volunteered figures (D33's
+  evidentiary basis, `company/market-validation.md` §1c/§1d) — displayed
+  back to her verbatim on Event detail screens (§3.11/§3.14/§3.15/§3.16/
+  §3.17), but **explicitly not computed against anything**: D33 is
+  captured-but-not-computed in this MVP — no profitability/margin figure
+  netting cost against revenue exists anywhere in this document.
 - **Empieza defaults to hoy (today's date) instead of opening blank.** Ana is
   almost always scheduling for an imminent bazar, not months out, so hoy is
   right for the common case and stays a single edit away for the real
@@ -653,7 +682,9 @@ change:
 │  Plaza Toluca                     │
 │  Expo · empieza en 5 días         │
 │  19-21 de agosto                  │
+│  Costo: $3,500                     │  passive info, only shown if set
 │                                │
+│      [ Ajustar precios ]         │  secondary, optional
 │      [ Cancelar evento ]         │
 ├───────────────────────────────┤
 │ Hoy  Inventario [Eventos] Resultados │
@@ -662,6 +693,35 @@ change:
 - Passive info (Venue name, type, dates) + exactly one action. No edit
   affordance designed — see §11. No Sessions exist yet (the Event hasn't
   started), so there's nothing else to show.
+- **"Ajustar precios" — new secondary action, applies `decision-log.md`
+  D33.** Opens §3.19's per-Product Price Override list for this Event.
+  Optional and non-gating: an Event with zero overrides is exactly as
+  valid, complete, and sellable as one with several — every Sale simply
+  resolves each Product's price from its own `defaultPrice` when no
+  override exists (`domain-model.md`'s Price resolution Key Mechanism).
+- **"Costo" shown as passive info beneath the dates line, only when a
+  value was entered at Nuevo Evento** — omitted entirely when left blank,
+  never shown as "$0." Same identity/status role as Lugar/Tipo/dates on
+  this screen — a fact about the Event, not a computed figure — so this
+  stays within Eventos' own §1 role, not Resultados'. Applies identically
+  to §3.14/§3.15/§3.16/§3.17.
+- **"Ajustar precios" is strictly an Event-*planning* capability, reachable
+  only while the Event is still `scheduled` — this is the only Event
+  detail state in this document that offers it** (Product Owner decision,
+  correcting round 1's draft, which had made the action reachable
+  throughout the Event's entire open lifecycle, including while active —
+  see §10 for the full correction record). Opens §3.19's per-Product
+  Price Override list for this Event. Optional and non-gating: an Event
+  with zero overrides is exactly as valid, complete, and sellable as one
+  with several — every Sale simply resolves each Product's price from its
+  own `defaultPrice` when no override exists (`domain-model.md`'s Price
+  resolution Key Mechanism). **Once this Event transitions from
+  `scheduled` to `active`, its Price Overrides are finalized and
+  immutable for the rest of that Event's duration** — this isn't a UI
+  restriction layered on top of an editable value, it's that editing
+  simply stops being offered the moment planning ends. See §3.14/§3.15's
+  own annotation for the active-state consequence of this rule, and §10
+  for the full decision record.
 - **Headline is `Venue.displayName` ("Plaza Toluca"), same slot the former
   Nombre occupied.** The former separate "Lugar" address line (previously
   "Plaza Toluca" shown *underneath* a differently-worded Nombre like "Expo
@@ -737,6 +797,7 @@ change:
 │ ← Eventos                        │
 │  Plaza Norte                      │
 │  Bazar · 12-14 de julio            │
+│  Costo: $2,800                     │  passive info, only shown if set
 │                                │
 │  Día 1 · 12 jul · 5 ventas · $610  │
 │                                │
@@ -749,6 +810,18 @@ change:
   Nombre ("Bazar Plaza Norte") occupied; Tipo stays its own separate line
   ("Bazar · 12-14 de julio"), unaffected by the Venue change. No separate
   Lugar/address line — see §3.11's annotation for why.
+- **"Costo" is shown per §3.11's rule (passive info, beneath the dates
+  line, only when a value was entered — never "$0"). "Ajustar precios" is
+  deliberately absent from this screen** — same reasoning class as why
+  it's already absent from §3.16/§3.17's closed states, extended one
+  stage earlier: once an Event transitions from `scheduled` to `active`,
+  its Price Overrides are finalized and immutable for the rest of that
+  Event's duration (`decision-log.md` D33, Product Owner decision — see
+  §10). This is not a UI restriction layered on top of an otherwise-
+  editable value — editing simply stops being offered the moment
+  planning ends, matching the "finalized before activation, fixed for
+  the duration" framing exactly. §3.11 is the only Event detail state
+  that offers "Ajustar precios."
 - "Continuar Día 2" is la *identical* CTA and underlying computed logic as
   `home.md` §3.6 — surfaced here as a second, equally valid entry point into
   the same single global selling state, not a separate implementation. Tapping
@@ -766,6 +839,7 @@ change:
 │ ← Eventos                        │
 │  Plaza Norte                      │
 │  Bazar · 12-14 de julio            │
+│  Costo: $2,800                     │  passive info, only shown if set
 │                                │
 │  Día 1 · 12 jul · 5 ventas · $610  │
 │                                │
@@ -779,6 +853,13 @@ change:
   `eventId` — Home's own check doesn't need that filter since it just needs
   *any* active Session, but the computation is not re-derived with separate
   logic, just filtered to one Event's Sessions.
+- **"Costo" is shown per §3.11's rule; "Ajustar precios" is deliberately
+  absent from this screen too, for the identical reason given in §3.14's
+  own annotation** — once an Event is `active`, its Price Overrides are
+  already finalized and immutable for the rest of its duration
+  (`decision-log.md` D33, Product Owner decision — see §10). §3.11 is the
+  only Event detail state that offers "Ajustar precios"; not restated a
+  third time here.
 
 ### 3.16 Event detail — closed/past
 ```
@@ -786,6 +867,7 @@ change:
 │ ← Eventos                        │
 │  Plaza Metepec                    │
 │  Bazar · 5-7 de julio               │
+│  Costo: $2,500                     │  passive info, only shown if set
 │                                │
 │  3 días · 18 ventas · $2,340      │
 │                                │
@@ -829,6 +911,15 @@ change:
   resolution.
 - **Headline is `Venue.displayName` ("Plaza Metepec")** — same slot the
   former Nombre ("Bazar Metepec") occupied.
+- **"Costo" shown per §3.11's rule; "Ajustar precios" is deliberately not
+  offered here.** Once an Event has closed, every Sale that will ever
+  belong to it has already resolved and stored its own `pricePaid`
+  (`decision-log.md` D33); an override edited after the fact would change
+  nothing about history already written and could only mislead her.
+  Contrast with §3.11, the only Event detail state where prices are still
+  open to adjustment — by the time an Event is `active` (§3.14/§3.15) its
+  Price Overrides are already finalized, well before it ever reaches this
+  closed state.
 
 ### 3.17 Event detail — closed/past, zero Sessions (never attended)
 ```
@@ -836,6 +927,7 @@ change:
 │ ← Eventos                        │
 │  Plaza Metepec                    │
 │  Bazar · 5-7 de julio               │
+│  Costo: $2,500                     │  passive info, only shown if set
 │                                │
 │  No registraste ventas en         │
 │  este evento.                    │
@@ -851,6 +943,7 @@ change:
 - Its list-level counterpart (§3.4/§3.5's "Sin ventas registradas" card,
   EVT-M2) uses the same non-judgmental register, so Ana never encounters a
   broken-looking count on the way to this already-graceful screen.
+- **"Ajustar precios" absent here, same reasoning as §3.16.**
 
 ### 3.18 Defensive fallback / load error
 ```
@@ -869,6 +962,121 @@ change:
   (matching Inventario's own error convention, `inventory.md` §3.18), not
   Home's silent automatic retry — Eventos carries no live-customer risk that
   would justify Home's more aggressive, invisible retry behavior.
+
+### 3.19 Ajustar precios — lista por producto (`decision-log.md` D33)
+```
+┌───────────────────────────────┐
+│ ← Plaza Norte                    │
+│  Precios para este evento          │
+│  Cada producto usa su precio        │
+│  normal salvo que lo ajustes        │
+│  aquí.                            │
+│  ┌───────────────────────────┐ │
+│  │ Pijama                $150   │ │  tappable → 3.20
+│  │ Sudadera/Maxy           $220   │ │
+│  │ Calcetines              $60    │ │
+│  └───────────────────────────┘ │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+- Reached by tapping "Ajustar precios" on Event detail — reachable only
+  while the Event is still `scheduled` (§3.11); the action doesn't exist
+  on any other Event detail state (§3.14/§3.15/§3.16/§3.17). Directly
+  applies D33's explicit UX note: she "only edits the groups she
+  actually wants to adjust for that event, never a forced review of all
+  of them."
+- **One row per Catalog Product she's ever registered** (`inventory.md`'s
+  Catalog, same source, reused not re-derived) — not only Products
+  currently in stock, since a Price Override is about what she'd charge
+  if she sells this Product at this Event, independent of that day's
+  stock.
+- **Every row is pre-filled from that Product's `Product.defaultPrice`**
+  — this list is never blank, and no row is required to be touched:
+  leaving every row untouched is a fully valid, complete visit, since
+  Price Override is optional, per-Product, 0..N per Event
+  (`decision-log.md` D33).
+- Row shape reuses `inventory.md`'s own Catalog-row list (§3.4) — the
+  closest existing precedent for "a list of every Product with one fact
+  each" — rather than inventing a new list treatment.
+- Tapping a row opens the price-edit sheet (§3.20), reusing the same
+  shape `inventory.md` §3.4a already established.
+- **Flagged as the one piece of this remediation with no close existing
+  precedent.** No prior screen in this document family lists *every*
+  Catalog Product pre-populated from a value owned by a different
+  aggregate. The design composes two already-established patterns (the
+  Catalog-row list, the price-edit sheet) rather than inventing a new
+  interaction primitive.
+
+**Zero-Catalog-Product variant** — if she taps "Ajustar precios" having
+registered no Products at all yet in Inventario:
+```
+┌───────────────────────────────┐
+│ ← Plaza Norte                    │
+│  Precios para este evento          │
+│  Todavía no registraste ningún      │
+│  producto. Registra mercancía en    │
+│  Inventario para poder ajustar      │
+│  precios aquí.                    │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+- Plain, factual, same non-judgmental register this document already
+  established for its other zero-data states (§3.17's "No registraste
+  ventas en este evento," §3.4/§3.5's "Sin ventas registradas" card,
+  EVT-M2 remediation) — not a broken or empty-looking list, simply the
+  honest state of a Business that hasn't registered any merchandise yet.
+- No direct link into Inventario designed here — a plain factual message
+  is sufficient at this fidelity. Ajustar precios stays reachable
+  regardless (she's still one nav-bar tap from Inventario herself); this
+  document doesn't invent a cross-tab deep-link affordance it hasn't
+  designed anywhere else.
+
+### 3.20 Editar precio para este evento — sheet (`decision-log.md` D33)
+```
+┌───────────────────────────────┐
+│ ← Plaza Norte                    │  dimmed, visible underneath
+│  Pijama                          │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Precio normal: $150               │
+│  Precio para este evento           │
+│   [ $150 ]                       │
+│  [ Cancelar ]  [ Guardar precio ]  │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+- Identical shape to `inventory.md` §3.4a's Catalog-row price-edit sheet,
+  with one deliberate difference in what it writes: this sheet writes an
+  Event-scoped **Price Override** (`decision-log.md` D33 — "an
+  internal-only entity owned by Event... a `(productId, overridePrice)`
+  pair"), never `Product.defaultPrice` itself. "Precio normal: $150" is
+  read-only context — the Product's own `defaultPrice`, unaffected by
+  anything typed here — shown directly above the editable field so she
+  always knows what she's adjusting away from.
+- **"Guardar precio" writes only this one Product's Price Override for
+  this one Event** — every other row on §3.19's list stays exactly as it
+  was. This is the concrete mechanism behind D33's "she only edits the
+  groups she wants to adjust" — nothing here asks her to confirm or
+  dismiss the rows she skipped.
+- Returning to §3.19, the edited row shows the override value in place of
+  the default.
+- "Cancelar" discards the edit, returns to §3.19 unchanged.
+- **A cleared/emptied field is not a valid save** — "Guardar precio"
+  stays disabled, matching Cantidad's own floor logic (`inventory.md`
+  §3.6). No affordance here to explicitly revert a row back to the
+  default by blanking it — see §11.
+- Same near-instant/slow/error save convention as every other write in
+  this document (§3.9) — not restated here.
+- **Not a discount, haggling, or point-of-sale mechanism.** Set once,
+  only during Event-planning time — while the Event is still `scheduled`
+  (§3.11) — never live during a Sale, and no longer reachable at all
+  once the Event is `active` (§3.14/§3.15's own annotation, §10). Ana
+  never sees a price field anywhere inside the selling flow itself
+  (`home.md` §3.9/§3.10). `decision-log.md` D33 explicitly rules out
+  point-of-sale override/haggling and promotions/discount pricing — this
+  screen is not, and must never become, that mechanism.
 
 ## 4. Interaction flow (summary)
 
@@ -920,6 +1128,16 @@ Nuevo Evento (3.6):
     confirmation, no auto-preserved draft (see §10 for why this differs from
     Inventario's heavier treatment)
 
+Event detail — scheduled only (3.11):
+  tap "Ajustar precios" → 3.19 (per-Product list, D33)
+    zero Catalog Products registered → empty-state variant (3.19,
+      zero-Catalog-Product) — plain message, no further branch
+    ≥1 Catalog Product → tap a row → 3.20 (editar)
+      → Cancelar → back to 3.19, unchanged
+      → Guardar precio → back to 3.19, that row updated
+  (Not offered on 3.14/3.15/3.16/3.17 — see those sections' own
+  annotations and §10.)
+
 Elsewhere:
   Home's upcoming-Event card (home.md §3.5) → tap → scheduled detail (3.11)
     for that specific Event — not a new destination invented for this entry.
@@ -948,6 +1166,9 @@ Elsewhere:
     hand-off to Resultados)
 17. Event detail — closed/past, zero Sessions (never attended)
 18. Defensive fallback / load error
+19. Ajustar precios — lista por producto, per-Event Price Override (D33),
+    including its zero-Catalog-Product empty-state variant
+20. Editar precio para este evento — sheet (D33)
 
 ## 6. Minimum step count
 
@@ -960,6 +1181,11 @@ Elsewhere:
 | Retomar la venta desde Eventos | 2 (tap card → tap Continuar/Vendiendo ahora) | One more tap than doing it from Home directly (`home.md` §6: 1 tap when a Session is open, or the 2-tap floor to start one) — a deliberate, acceptable cost of Eventos not being a selling destination; Home remains the fastest path to sell, always. |
 | Cancelar un Evento programado | 3 (tap card → Cancelar evento → Sí, cancelarlo) | Matches the deliberate-confirmation cost pattern used everywhere else for rare, irreversible actions (`home.md` §3.11, `inventory.md` §3.9). |
 | Ver el resumen completo de un Evento pasado | 2 (tap card → Ver resumen en Resultados) | Eventos identifies the Event and shows its one-line ambient summary in 1 tap (§3.16); the full day-by-day breakdown lives in Resultados per Q7's resolution, one hop further. |
+| Ajustar el precio de un producto para este evento | 1 (Detalle → Ajustar precios) + 1 (tocar el producto) + 1 (Guardar precio) = 3 | She only pays this cost for the groups she actually wants to change (`decision-log.md` D33) — every other row costs zero taps. |
+
+Entering an optional Costo del evento costs exactly one typed value beyond
+whichever baseline applies in the table above — never gates Guardar evento,
+never required.
 
 Unlike Home's <3s bar, Eventos has no comparable hard speed requirement — the
 floor above is about not adding unnecessary steps, the same posture
@@ -990,6 +1216,14 @@ floor above is about not adding unnecessary steps, the same posture
   `startDate − today`, never typed.
 - No "¿ya terminó este evento?" prompt ever asked — closing is fully
   time-driven (§2).
+- `Product.defaultPrice` pre-fills every row of "Ajustar precios" (§3.19)
+  automatically — she only types where she wants to differ, never
+  re-enters a price already correct (`decision-log.md` D33).
+- `SaleItem.pricePaid` resolution at Sale time — fully automatic (Event
+  override, else Product default), never a merchant decision at the
+  point of sale; Eventos' only role is capturing the override, never
+  computing or displaying the resolved price (`domain-model.md`'s Price
+  resolution).
 - Cancelled Events disappearing from the list entirely, with no separate
   "archive" step required to hide them (§3.13).
 - **Overlap validation against her own already-scheduled-or-active Events**
@@ -1098,6 +1332,14 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   overlap message (§3.6) names the specific conflicting Event rather than a
   bare "fechas inválidas," so she never has to guess which commitment it's
   warning her about.
+- *"The fastest interaction is the one that never happens"* — Price
+  Override rows pre-fill from `defaultPrice`; she only touches what she
+  wants to change (§3.19, `decision-log.md` D33).
+- *"Never ask twice"* — an existing override, once set, shows pre-filled
+  on return; never re-asked (§3.20).
+- *"Business language before technical language"* — copy uses "Precio,"
+  "Precio normal," "Costo del evento," never "bazaarCost," "Price
+  Override," "defaultPrice."
 
 **architecture-principles.md:**
 - *#1 (capabilities resolved once, upstream)* — Event status is resolved
@@ -1123,6 +1365,13 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   EVT-M3 is the same reused fact already computed for the list card
   (§3.4) — still a hand-off, not a second analytics surface; Resultados
   alone still owns the full day-by-day breakdown.
+- *#1* — `SaleItem.pricePaid` resolves automatically, once, at Sale-write
+  time; Eventos never re-litigates it.
+- *#4* — Price Override, an internal-only entity, is never named in copy
+  ("ajustar precios," not "Price Override").
+- *#6* — Eventos only ever writes into its own Event-owned Price Override
+  entity; no new bounded-context dependency edge (`decision-log.md` D33's
+  own RFC-trigger analysis already confirms this).
 
 ## 10. Decisions made
 
@@ -1322,6 +1571,47 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   reopens D17 or changes any domain field — both are UX-level corrections
   to an already-Approved spec, same category as the Empieza-default
   amendment itself.
+- **`Event.bazaarCost` and Event-owned Price Override added — applies
+  `decision-log.md` D33.** Costo del evento is optional, non-gating,
+  displayed back verbatim on Event detail while the Event hasn't closed,
+  never computed against Sale revenue. The Price Override entry point
+  ("Ajustar precios," §3.19/§3.20) composes two already-established
+  patterns — `inventory.md`'s Catalog-row list shape and its new
+  price-edit sheet (§3.4a) — rather than inventing a new interaction
+  primitive.
+- **Correction (remediation round 2, Product Owner decision):** round 1
+  of this amendment made "Ajustar precios" reachable throughout an
+  Event's entire open lifecycle — scheduled *and* active — which
+  `ux-critic` flagged as undercutting D33's own "deliberate, offline
+  planning moment" premise: it left the action reachable while Ana was
+  actively selling at that Event. The Product Owner resolved this
+  directly: "Ajustar precios" is strictly an Event-*planning* capability.
+  While the Event is `scheduled`, she reviews default prices, changes
+  only the ones she wants, and saves them as that Event's prices. **Once
+  the Event becomes `active`, the capability disappears from the Event
+  UI entirely** — no live repricing, no delayed-effective pricing, no
+  session-level price freezing, no point-of-sale override. The Event's
+  prices are finalized before activation and stay fixed for the
+  duration of that Event. Applied precisely: §3.11 (`scheduled`) is now
+  the *only* Event detail state offering "Ajustar precios" — removed
+  from §3.14/§3.15 (`active`) entirely, both the action itself and every
+  cross-reference that previously described it as available there. It
+  remains absent from §3.16/§3.17 (`closed`), for the pre-existing reason
+  below, now understood as one stage further along the same rule: once
+  planning ends — first at activation, later at closure — editing stops
+  being offered, full stop. Deliberately absent from closed Events
+  (§3.16/§3.17), since a Price Override edited after closure could
+  affect no Sale that will ever exist. Neither addition introduces a
+  discount, haggling, or point-of-sale mechanism — explicitly out of
+  scope by D33 itself.
+- **§3.19 gains a zero-Catalog-Product empty-state variant (MIN2,
+  `ux-critic`-caught, round 2).** If Ana taps "Ajustar precios" having
+  registered no Products yet in Inventario, she sees a plain, factual
+  message ("Todavía no registraste ningún producto...") in the same
+  non-judgmental register this document already uses for its other
+  zero-data states (§3.17, EVT-M2) — not a broken or empty-looking list.
+  No direct link into Inventario designed; she's still one nav-bar tap
+  away herself.
 
 ## 11. Future considerations
 
@@ -1370,3 +1660,13 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   way — this doc only ever reuses the shared read-side computation, never
   recomputes it independently, so if a change is needed it happens once,
   upstream, not here.
+- An explicit "revert to default" affordance for a Price Override, if real
+  usage shows she wants to undo an adjustment without retyping the
+  original `defaultPrice` from memory — not designed now.
+- A visual indicator distinguishing an overridden row from a default one
+  on §3.19's list — deferred to Medium-Fidelity visual treatment, same
+  posture as §3.9's rank-number-vs-bar precedent.
+- A profitability/margin view combining `Event.bazaarCost` with this
+  Event's own Sale revenue — **named here explicitly as a future idea,
+  not designed now** — out of scope per `decision-log.md` D33's
+  "captured-but-not-computed" boundary.

@@ -3,6 +3,19 @@
 Status: Approved. Full UX Remediation cycle complete across three rounds — SET-M1, SET-M2, SET-M3 (round 1), SET-B1/SET-M4 (round 2), and their round-3 regression fixes — all fixed by `ux-designer` and verified clean by `ux-critic`. `reviewer`'s Foundation-consistency pass caught one further Blocker (Customer Segmentation copy not jointly gated on `subscriptionTier=paid` and `loyaltyEnabled=true`, per `decision-log.md` D22) — fixed, re-verified clean. See `product/02-ux/ux-critic-findings.md` for the full record.
 **Amended for `decision-log.md` D27** (NFC capability corrected to derive from `subscriptionTier`, not an independent entitlement): the dedicated "Activar venta con tags" activation-code path (former §2.3/§3.8/§3.8a/§3.8b, SET-B1) is retired entirely — `nfc` is no longer independently self-service-toggleable; it changes only as an automatic consequence of the `subscriptionTier` actions. A new `defaultSellingMode` control ("Cambiar a vender con tags" / "Cambiar a vender con botones") is added, previously out of scope (§8 item 5). Went through a coordinated three-document cycle (with `home.md`/`onboarding.md`) — `ux-critic` found one Blocker (in `onboarding.md`'s sibling milestone copy, not here) plus two Major and three Minor findings across the three documents, all fixed and verified. `reviewer`'s Foundation-consistency pass found zero Blockers, one Important finding (stale "two real paths" language in `onboarding.md`, not here) — fixed directly by Main. Folded back into Approved.
 
+**Further amended 2026-08-08 (`decision-log.md` D34 — Customer Segmentation
+visibility gate corrected):** D22's joint-gate clause (`subscriptionTier=
+paid` **and** `loyaltyEnabled=true` together, required for Resultados to
+show Frequent Customers data) is corrected — Resultados' "Tus clientes"
+section now gates on `subscriptionTier=paid` alone (`reports.md`, amended
+in the same pass). "Activar clientes frecuentes" (§3.4) stays a real,
+meaningful action — it still governs whether Loyalty-claim actually
+collects Claims at all — but its copy, and "Activar plan de pago"'s and
+"Desactivar clientes frecuentes"'s, no longer frame `loyaltyEnabled` as a
+joint precondition, alongside `subscriptionTier`, for the Resultados
+section to show anything at all. §2.2's capability table, §3.4's three
+affected copy variants corrected; §10 updated.
+
 Scope: `Configuración`, the merchant-facing surface for the Business Capabilities and settings `decision-log.md` D25 and D27 make merchant-self-service (`company/business-decisions.md` Q5, Resolved): `subscriptionTier` (Free ↔ Paid) and `loyaltyEnabled` (Enabled ↔ Disabled) — four actions total (two capabilities × two directions each), a reusable "pending change" indicator, and a way to cancel a pending change before it lands — plus two more actions, `decision-log.md` D27's `defaultSellingMode` control (Botones ↔ Etiquetas NFC), constrained to whichever modes `subscriptionTier` currently makes available: six actions total, not a fifth. Both `defaultSellingMode` directions use the same immediate-effect template three of the other four actions already use (§2.3, §3.4) — the only real difference is that neither carries a pending-value/effective-date pair, since the field has no billing-cycle implication for D25's deferred-timing rationale to apply to, not a differently-shaped UI. `registrationMode`'s `nfc` entitlement is no longer an independently self-service-toggleable capability of its own (D27 superseded that part of D25) — it is a pure read-time derivation from `subscriptionTier = paid`, so it has no dedicated action or row here; it changes only as an automatic consequence of the `subscriptionTier` actions below. **Not a fifth nav tab** — per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, Configuración hangs off the existing session-controls affordance already specified in `home.md` (the header's "▾"). This is the last of the five merchant-facing experiences to be designed (`product/02-ux/CLAUDE.md`). Implementation-independent — low-fidelity only, no visual design.
 
 Out of scope by explicit instruction:
@@ -171,32 +184,81 @@ Once `subscriptionTier=paid`, the mode row becomes a real, tappable control — 
 ```
 Activar plan de pago
 Vas a poder vender con tags, además de botones. También vas
-a poder ver cómo te va por cada bazar. Si además tienes
-activo el seguimiento de clientas, también vas a ver cuántas
-son frecuentes y cuántas ocasionales.
+a poder ver cómo te va por cada bazar, y la sección de tus
+clientas frecuentes y ocasionales en Resultados — esta
+última te va a mostrar datos reales en cuanto tengas compras
+registradas con el seguimiento de clientas activo.
 Esto se activa confirmando tu pago fuera de la app — no se
 te cobra nada aquí. Si ya lo arreglaste, confirma abajo.
 [ Confirmar y activar ]
 ```
-States plainly that this activates by confirming a payment already arranged outside the app — channel unnamed (correctly out of scope, §8 item 2), existence stated plainly. Uses "cuántas... y cuántas" — the same count/category framing matching `reports.md`'s RPT2-MAJ1-corrected phrasing — not "quiénes" (identity-implying). **Reviewer finding, fixed:** the earlier version promised segmentation as an unconditional consequence of activating the paid plan alone, contradicting `decision-log.md` D22's rule that Customer Segmentation requires `subscriptionTier=paid` **and** `loyaltyEnabled=true` together — a merchant who activates only the paid plan would not see segmentation. Copy now conditions it explicitly ("si además tienes activo..."), reusing `reports.md` §3.4/§3.5's own already-correct conditional phrasing verbatim rather than inventing new wording for the same rule. **`nfc` benefit disclosure added, required, not optional** (`decision-log.md` D27): this is now the single action that grants `nfc` capability, a real new consequence of this tap that the pre-D27 copy never mentioned — left implicit would mean the biggest thing this action now does goes unstated.
+States plainly that this activates by confirming a payment already
+arranged outside the app — channel unnamed (correctly out of scope, §8
+item 2), existence stated plainly. Uses "cuántas... y cuántas" — the same
+count/category framing matching `reports.md`'s RPT2-MAJ1-corrected
+phrasing — not "quiénes" (identity-implying). **Reviewer finding, fixed
+(original, `decision-log.md` D22):** the earlier version promised
+segmentation as an unconditional consequence of activating the paid plan
+alone, contradicting D22's original rule that Customer Segmentation
+required `subscriptionTier=paid` **and** `loyaltyEnabled=true` together.
+Copy conditioned it explicitly ("si además tienes activo..."). **Further
+corrected (`decision-log.md` D34, 2026-08-08):** D22's joint-gate rule is
+itself now corrected — the "Tus clientes" section in Resultados is visible
+to any paid merchant regardless of `loyaltyEnabled`, the same gate
+"Rendimiento por bazar" already uses. Copy no longer frames the section
+itself as conditional on `loyaltyEnabled`; only the real counts inside it
+are ("te va a mostrar datos reales en cuanto tengas compras registradas
+con el seguimiento de clientas activo") — matching `reports.md` §3.13's
+naturally-empty-state treatment for a paid merchant with zero Claims.
+**`nfc` benefit disclosure** (`decision-log.md` D27) is unaffected by this
+correction and stays as-is: this is still the single action that grants
+`nfc` capability, a real consequence of this tap the pre-D27 copy never
+mentioned.
 
 **Copy variant — Activar clientes frecuentes (joint-gating fix):**
 ```
 Activar clientes frecuentes
-Vas a empezar a juntar esta información desde ahora. Si además
-tienes el plan de pago, también vas a ver en Resultados cuántas
-son frecuentes y cuántas ocasionales.
+Vas a empezar a juntar esta información desde ahora. Si tienes
+el plan de pago, en cuanto acumules compras con este
+seguimiento activo vas a ver en Resultados cuántas son
+frecuentes y cuántas ocasionales.
 [ Activar ahora ]
 ```
-**Reviewer finding, fixed:** the earlier version promised the Resultados display unconditionally on activating loyalty tracking alone — the same D22 joint-gating rule, mirrored the other direction. A free-tier merchant activating this still starts real data collection immediately (`domain-model.md`'s Claim Token generation depends only on `loyaltyEnabled`, independent of `subscriptionTier`) — stated here — but seeing it in Resultados also needs the paid plan, now conditioned explicitly rather than implied.
+**Reviewer finding, fixed (original, `decision-log.md` D22):** the earlier
+version promised the Resultados display unconditionally on activating
+loyalty tracking alone — the same D22 joint-gating rule, mirrored the
+other direction. A free-tier merchant activating this still starts real
+data collection immediately (`domain-model.md`'s Claim Token generation
+depends only on `loyaltyEnabled`, independent of `subscriptionTier`) —
+stated here. **Further corrected (`decision-log.md` D34, 2026-08-08):** the
+copy no longer frames this action as a joint precondition, alongside
+`subscriptionTier=paid`, for Resultados to show anything at all —
+Resultados' "Tus clientes" section is already visible to any paid merchant
+regardless of this toggle (`reports.md` §3.13's naturally-empty state is
+what she'd see there either way). What this action actually gates is
+narrower and still real: whether Claims accumulate at all, so that once
+she has both a paid plan and some Claims recorded, real counts appear
+where the empty state used to be. The mention of the paid plan stays,
+because seeing the section's counts genuinely does still require it — it's
+no longer phrased as "además" (an additional condition alongside this
+toggle), since that framing was the part D34 corrects.
 
 **Copy variant — Desactivar clientes frecuentes:**
 ```
 Desactivar clientes frecuentes
-Vas a dejar de ver esa información en Resultados. Lo que ya está
-guardado no se borra.
+Vas a dejar de juntar información nueva de tus clientas. Si ya
+tienes compras registradas con este seguimiento, lo que ya se
+juntó sigue disponible en Resultados — no se borra.
 [ Desactivar ahora ]
 ```
+**Corrected (`decision-log.md` D34, 2026-08-08):** the earlier copy said
+plainly "vas a dejar de ver esa información en Resultados," which is no
+longer accurate — turning this off stops new Claims from being collected,
+but it doesn't hide or erase whatever segmentation data already exists
+(D25's never-delete-historical-data invariant, unaffected by D34). A paid
+merchant who deactivates still sees her already-accumulated counts in
+"Tus clientes" — she just stops adding to them. Copy corrected to describe
+what actually changes.
 
 **Copy variant — Cambiar a vender con tags (new — `decision-log.md` D27):**
 ```
@@ -394,6 +456,20 @@ None of the items below block this document's completion.
 - Cancelling a pending change gets a lightweight, single-step confirm.
 - No payment/checkout flow and no bazaar-recommendation logic designed anywhere in this document. **`defaultSellingMode` is no longer excluded** — `decision-log.md` D27 brought it into scope; see the `defaultSellingMode`-control bullet above.
 - The gap between "a pending change lands" and "Ana is told" is closed with a concrete, one-time, in-surface acknowledgment (§2.4) — whether this also needs to surface outside Configuración stays open (§8, item 4).
+- **`decision-log.md` D34 corrects the framing of "Activar clientes
+  frecuentes" (§3.4), "Desactivar clientes frecuentes" (§3.4), and
+  "Activar plan de pago" (§3.4).** None of these actions changed — same
+  six actions, same templates, same tap counts — only their copy is
+  corrected to stop presenting `loyaltyEnabled` as a joint precondition,
+  alongside `subscriptionTier=paid`, for Resultados' "Tus clientes"
+  section to show anything at all. That section is now visible to any
+  paid merchant regardless of `loyaltyEnabled` (`reports.md`, amended in
+  the same pass) — `loyaltyEnabled` only ever gated real Claim collection,
+  and its copy now says so plainly instead of implying it gates
+  visibility. "Desactivar clientes frecuentes" is also corrected to state
+  accurately that already-accumulated segmentation data isn't hidden or
+  erased when she turns collection off, consistent with D25's
+  never-delete-historical-data invariant.
 
 ## 11. Future considerations
 

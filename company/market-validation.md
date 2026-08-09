@@ -18,6 +18,8 @@ Context anchor: we already have one validated merchant, Ana (itinerant clothing 
 
 **Update, 2026-08-08 (later same day):** A new field observation came in directly from Ana — informal (a natural conversation between friends, not a structured interview), but first-hand and unprompted-in-content: the Product Owner asked an open question (is pricing a pain point for her, or does she keep a small set of fixed prices) and Ana's answer went beyond what was asked. She described varying her prices by bazaar/event — not only by selling group — naming specific venues (El Libanés, Parques Polanco, Centro Cívico) where she charges differently, with event cost (roughly $7,000 for some events, $2,500 for others, plus sometimes paying someone else to operate her stand on weekdays) as a real input to that decision — while still keeping a simple mental model: a small set of selling groups at normal/default prices, occasionally adjusted per bazaar, not a per-customer or per-unit negotiation model. This **refines, rather than confirms or refutes,** Section 1c's H6: the "default price per selling group" half of that hypothesis moves from Product hypothesis to Supported Evidence, but the override *mechanism* turns out to include a second, event-driven axis the original framing didn't have. Recorded below as new subsection **H6a**, inside Section 1c — the original H6 text is preserved verbatim and marked refined/superseded-in-part, per this document's non-deletion convention, not deleted or silently overwritten. The bazaar-event-cost fact is also logged independently in new **Section 1d**, since it's evidence in its own right (event cost as a real input to Ana's business decisions) — related to, but separable from, the pricing-structure question, and cross-referenced from `company/jobs-to-be-done.md`'s existing bazaar-selection friction (tier 2). Both new items are tagged explicitly as **Supported Evidence with informal sourcing** — real, first-hand, unprompted content, but a single informal conversation, not the planned structured H6 interview (Section 4.6, C2), which still has not been conducted.
 
+**Update, 2026-08-08 (Knowledge-Mentor-reconciled Continuous Validation pass):** Following D33's adoption, this agent proposed a "Post-D33 Continuous Validation Package" (pipeline design, risk-ranked backlog, and execution assets) directly to Main, without first persisting it as a repository artifact. Main dispatched `knowledge-mentor` against three named questions from that proposal (cadence methodology; risk-ranking methodology and its "already built into the product" weighting; leading-question risk in the proposed new H6 interview probe) before anything was persisted. All three are now closed and reconciled: **the cadence design is persisted at `company/merchant-validation-pipeline.md`** (trigger-driven, not calendar-driven — Nahui's current stage lacks the renewable user base Torres' weekly cadence presupposes); **the risk-ranked backlog is persisted at `company/merchant-validation-backlog.md`** (H1 remains the highest-*importance* hypothesis; H6/H6a's structured interview runs first in the near-term *execution queue* for a narrower, Bland-sequencing reason — cheap, fast, already-available channel — not because it outranks H1 in importance; the "already built into the product" framing is corrected to a minor, legitimate Importance-axis input, not the load-bearing justification it was previously given credit for); and **the corrected interview probe, survey addition, usability script, recruitment draft, and channel recommendations are folded into new Section 8 below**, plus a direct correction applied to Section 4.6's live interview guide (the new C2 item, corrected for leading-question risk before being added, not after). Every claim in the new material is tagged by tier (Project Foundation / Learning Resources / General Knowledge / Inference-Recommendation), per the now-standard Knowledge Mentor convention.
+
 ---
 
 ## 1a. Field observations — Primary Merchant Persona (2026-08-05)
@@ -239,6 +241,7 @@ For each hypothesis: channels considered, channel(s) recommended, and why.
 - *Considered:* interviews, survey, community observation, direct outreach/fake-door.
 - *Recommended: interview (primary), community observation (cheap secondary check) — no survey, no landing page.* This is a nuanced "how do you actually think about it" mechanism question, not a breadth/prevalence or demand question — the same shape as H2's own reasoning above ("a checkbox survey answers shallowly at best"), and arguably more so here: a forced-choice question about pricing structure risks *suggesting* the very mechanic being tested (asking "do you set a default price per group and override it?" primes the answer it's trying to discover). A real conversation, walking through her actual product list with concrete examples, is the only way to surface her actual mental model without leading her to it. Community observation is worth a low-cost pass alongside it — if a vendor's public post or Story ever shows a visible price list with named variants at different prices (e.g., "Pijamas $400 / Pijamas Disney $600"), that's a real, unprompted data point costing nothing to log — but it folds into the already-standing Section 2a observation effort rather than justifying a new dedicated pass, and Section 2a's own 2026-08-07 finding (structurally blocked, zero verifiable quotes so far) means it shouldn't be counted on as the primary channel. No landing page or fake-door: this isn't a demand-interest question. No pricing-experiment/paid-ad test: this isn't a willingness-to-pay question — it's about how she structures her own product/price list today, unrelated to what Nahui would eventually charge her (H5's territory, kept fully separate).
 - **Update, 2026-08-08 (later same day):** an informal, unprompted field observation (Section 1c's new H6a) has already surfaced real signal on this question — Supported Evidence, not a substitute for the structured interview recommended above. The eventual interview (Section 4.6, C2) should now specifically probe the event-driven override axis H6a surfaced (deliberate cost-recovery calculation vs. instinct; whether it applies to every bazaar or only specific ones) rather than starting from a blank slate. This doesn't change the channel recommendation itself — interview stays primary, community observation stays the cheap secondary check.
+- **Update, 2026-08-08 (Knowledge-Mentor-reconciled pass — gated survey extension, and a new behavioral-observation channel):** two additions, both explicitly *sequenced after* the structured interview above, not replacing it. **(1)** Once the structured interview establishes a named pattern in Ana's own words (not suggested to her), a downstream *prevalence*-testing survey question becomes legitimate research design — the leading-question risk this entry describes is specific to the *discovery* stage; testing whether an already-discovered-elsewhere pattern generalizes is the same kind of question H1/H2/H5's existing survey items already ask. See Section 8.2 for the specific, gated survey item (drafted now, **not to be activated before the structured interview completes** — running it earlier would reintroduce the same leading-question risk at market-wide scale, worse than doing it to one person). **(2)** A **usability/behavioral-observation channel** is added, unavailable when this entry was first written because no testable build of the relevant screen (`events.md` §3.19-3.20, `decision-log.md` D33) existed yet — it does now (folded into Approved). Revealed behavior on a real prototype is a stronger evidentiary channel than self-report, the same logic already applied to H3's landing-page-over-stated-preference reasoning above. See Section 8.3 for the script. Both additions are Inference-Recommendation, reasoned from this project's own established channel-selection logic — reasoning detailed in Section 8.
 
 ---
 
@@ -251,7 +254,7 @@ All copy below is a working draft for the activities recommended in Section 3. W
 > ¡Hola! Somos Nahui, estamos platicando con vendedoras y vendedores de bazar para entender mejor cómo llevan el control de sus ventas y sus clientes. Si vendes en bazares (ropa, accesorios, lo que sea) nos ayudarías muchísimo respondiendo unas preguntas rápidas — no toma más de 3 minutos y no vendemos nada, solo estamos investigando. [liga a la encuesta]
 > ¡Gracias! 💛
 
-### 4.2 Short survey (H1/H2/H5 combined — revised 2026-08-02)
+### 4.2 Short survey (H1/H2/H5 combined — revised 2026-08-02; extended 2026-08-08, see Section 8.2)
 
 Revisions from v1: added a screening block up front (per H1's refined scope boundary, Section 1) so responses can be read against the actual ICP, and a one-line consent/data-use note consistent with brand tone (honest, respectful, no fine-print surprise).
 
@@ -273,6 +276,8 @@ Revisions from v1: added a screening block up front (per H1's refined scope boun
 
 *Note on Q7: a "depende del precio" option is included because a bare fixed/percentage/neither forced choice hides a real, likely-common answer ("depends how much") that a strict three-option version would force into "ninguna de las dos" or a guess. Section 6 reads this as its own signal, not as noise to be reclassified into one of the other three.*
 
+8. *(added 2026-08-08, see Section 8.2 for full tiering/gating — GATED, do not activate before the H6 structured interview, Section 4.6 C2, has run)* Cuando te estás preparando para un bazar y decides si vas a cambiar algún precio para ese evento en especial, ¿qué haces? (repaso todos mis productos uno por uno / ya sé de memoria cuáles voy a cambiar, sin repasar todo / depende del bazar / otro — especifica)
+
 ### 4.3 Interview invitation DM (for H1/H2 follow-up, sent only to survey respondents who opted in)
 
 > Hola [nombre], vimos que respondiste nuestra encuesta sobre bazares — ¡gracias! Nos encantaría platicar contigo unos 15-20 minutos para entender mejor tu experiencia vendiendo. No es una venta, es puro aprender de ti. ¿Tendrías chance esta semana? Te regalamos [incentivo por definir] por tu tiempo.
@@ -290,9 +295,9 @@ Revisions from v1: added a screening block up front (per H1's refined scope boun
 
 > Hola [nombre], soy [nombre] de Nahui. Vimos que vendes en [bazar/zona] y nos encantaría platicar contigo — estamos construyendo una herramienta para ayudar a vendedoras de bazar a llevar el control de sus ventas sin que les quite tiempo con el cliente. Nos interesa mucho tu experiencia. ¿Te late que platiquemos unos minutos?
 
-### 4.6 Interview guide (H1/H2, and H3 follow-up when a segmentation signup opts in) — new, 2026-08-02; extended 2026-08-08 with H6's pricing-structure probe (C2)
+### 4.6 Interview guide (H1/H2, and H3 follow-up when a segmentation signup opts in) — new, 2026-08-02; extended 2026-08-08 with H6's pricing-structure probe (C2); extended again 2026-08-08 with a corrected continuous-validation probe (C2, item 11 — see Section 8.1 for the correction record)
 
-*Internal use only — not merchant-facing copy, but written so the actual spoken language stays natural Mexican Spanish, not a translated script. 15-20 minutes (now ~18-23 minutes with C2 added). Same warm/direct/respectful tone as the rest of the brand — this is a conversation between equals, not an audit of how she runs her business.*
+*Internal use only — not merchant-facing copy, but written so the actual spoken language stays natural Mexican Spanish, not a translated script. 15-20 minutes (now ~20-25 minutes with C2 and the continuous-validation probe added). Same warm/direct/respectful tone as the rest of the brand — this is a conversation between equals, not an audit of how she runs her business.*
 
 **Antes de empezar (internal checklist for whoever conducts it):**
 - Confirm she matches H1's screening criteria (private bazares, multi-SKU, Edomex/CDMX) from her survey answers before scheduling.
@@ -315,7 +320,7 @@ Revisions from v1: added a screening block up front (per H1's refined scope boun
 6. ¿Cómo decides cuántos productos distintos manejar? ¿Alguna vez has pensado en meter más variedad y no lo has hecho — qué te detiene?
 7. *(only if not already answered)* Si pudieras llevar el control perfecto de tu inventario sin esfuerzo extra, ¿meterías más productos?
 
-**C2 — Cómo decides los precios (2-3 min, core of H6 — new, 2026-08-08)**
+**C2 — Cómo decides los precios (3-4 min, core of H6 — new, 2026-08-08; extended 2026-08-08 with item 11, see Section 8.1)**
 
 *Internal note: ask in this order, open-ended, without ever describing the "default price per group, override on divergence" pattern first — the goal is to hear whether it emerges in her own words, not to confirm it once suggested to her.*
 
@@ -324,15 +329,16 @@ Revisions from v1: added a screening block up front (per H1's refined scope boun
 8. Cuéntame cómo decides cuánto cobrar por cada producto. Por ejemplo, si tienes varias pijamas distintas, ¿todas cuestan lo mismo o cambia según cuál sea?
 9. ¿Alguna vez has tenido un producto muy parecido a otro que ya vendes, pero le pusiste un precio diferente? Cuéntame de esa vez — ¿qué fue lo que hizo que le cambiaras el precio? *(probe: a licensed character, a different supplier, better fabric — and whether it became, in her own mental model, a different product/category, or "lo mismo pero más caro")*
 10. *(only if not already answered)* Cuando metes algo nuevo, ¿normalmente ya sabes cuánto le vas a poner porque es parecido a algo que ya tienes, o cada cosa nueva la piensas desde cero?
+11. *(added 2026-08-08, corrected for leading-question risk before being added — see Section 8.1 for the full record)* Cuéntame qué haces cuando te estás preparando para un evento nuevo y decides si vas a ajustar algún precio para ese bazar en especial — camina conmigo por eso, como si me estuvieras enseñando, paso a paso. *(fully open — no options offered; let her own pattern emerge in her own words, same critical-incident/laddering shape as B.4 and C.9 above)* *(only if she doesn't naturally address it, follow-up:)* ¿Te pasa igual cada vez que ajustas precios para un evento, o cambia según cuál sea? *(open follow-up, not a binary — accepts "reviso todo," "voy directo a lo que ya sé," "depende del evento," or any other shape she describes, without naming any of them to her first)*
 
 **D — Clientes y relación (3-4 min, H3 signal — ask everyone, not only landing-page signups)**
-11. ¿Reconoces a tus clientas/clientes que te compran seguido? ¿Cómo — te acuerdas, los sigues en redes, tienes un grupo de WhatsApp?
-12. ¿Alguna vez has querido saber quién te compra mucho aunque sea de vez en cuando, contra quién te compra poquito pero siempre? ¿Para qué te serviría saberlo?
+12. ¿Reconoces a tus clientas/clientes que te compran seguido? ¿Cómo — te acuerdas, los sigues en redes, tienes un grupo de WhatsApp?
+13. ¿Alguna vez has querido saber quién te compra mucho aunque sea de vez en cuando, contra quién te compra poquito pero siempre? ¿Para qué te serviría saberlo?
 
 **Cierre (2 min):**
 > Esto nos ayuda muchísimo, de verdad. [incentivo por definir, si aplica]. Si en algún momento tenemos algo que probar, ¿te gustaría ser de las primeras en verlo? *(this is the H3 opt-in bridge — captures interest without promising a launch date)*
 
-**Post-interview (internal, not spoken):** log verbatim quotes for Q4 (lost-sale incident), Q6 (catalog-size reasoning), and Q9 (price-divergence example) specifically — these are the answers Section 6's H1/H2/H6 evidence-expected notes key off of.
+**Post-interview (internal, not spoken):** log verbatim quotes for Q4 (lost-sale incident), Q6 (catalog-size reasoning), Q9 (price-divergence example), and Q11 (price-list review pattern, added 2026-08-08) specifically — these are the answers Section 6's H1/H2/H6 evidence-expected notes key off of.
 
 ---
 
@@ -342,21 +348,22 @@ Revisions from v1: added a screening block up front (per H1's refined scope boun
 - Verifying real Facebook Group/Page names, hashtag activity, and organizer accounts (Section 2's "immediate next step") — partially done 2026-08-04, see Section 2.1's update and `company/usability-testing-plan.md` §7.3.2.
 - Reading public posts/content in already-public groups or hashtags (passive observation, no joining required) — still not run, see Section 2a.
 - Refining ICP hypotheses and pilot-merchant criteria based on what that observation surfaces — done this pass, see Section 1's Refinements and Section 2b.
-- Drafting/iterating survey instruments, interview guides, and landing page copy — done 2026-08-02, see Section 4.2 (revised) and 4.6 (new); extended 2026-08-08 to add H6's pricing-structure probe (Section 4.6, C2) and Section 1c's hypothesis record.
+- Drafting/iterating survey instruments, interview guides, and landing page copy — done 2026-08-02, see Section 4.2 (revised) and 4.6 (new); extended 2026-08-08 to add H6's pricing-structure probe (Section 4.6, C2) and Section 1c's hypothesis record; extended again 2026-08-08 to add the corrected continuous-validation probe (C2 item 11), the gated survey item (4.2 Q8), the usability script, and the recruitment draft (Section 8) — all preparation, none run.
 - Identifying candidate bazaar organizers or merchants from public information (building a list), without contacting anyone — criteria framework built this pass (Section 2b); real organizer/community channels found 2026-08-04 (Section 2.1's update), no individual merchants named, since none have been identified through verified research (and, per that pass's own scope, individual vendors aren't discoverable this way to begin with).
 
 **Requires explicit Product Owner approval before it happens:**
 - Joining any private/closed Facebook Group or WhatsApp community as an observer
 - Posting the recruitment post (4.1) anywhere
 - Publishing the fake-door landing page (4.4) live, or driving any traffic to it
-- Sending the interview invitation DM (4.3) or the pilot-merchant outreach script (4.5) to any real person
-- Running the survey (4.2) live on any real channel
+- Sending the interview invitation DM (4.3), the pilot-merchant outreach script (4.5), or the H6 interview scheduling message (Section 8.4) to any real person
+- Running the survey (4.2) live on any real channel, including the gated Q8 addition
 - Any paid-ad experiment (H5's deferred pricing test)
 - Contacting any specific pilot-merchant candidate once identified
 - Posting into, joining, or messaging any of the specific channels found 2026-08-04 (`company/usability-testing-plan.md` §7.3.2) — finding the channel is research; using it is outreach
-- Actually conducting the interview guide (4.6, including new C2) with Ana or any other merchant — the guide is prepared, not scheduled or run
+- Actually conducting the interview guide (4.6, including new C2/item 11) with Ana or any other merchant — the guide is prepared, not scheduled or run
+- Running the usability script (Section 8.3) with Ana or any other merchant
 
-Nothing in Section 4 goes out without a green light. This pass stayed strictly within the approved list above — no posting, no outreach, no live survey/landing page. This approval gate is unaffected by the Section 6 revision below — that revision changes how evidence gets read once collected, not what's authorized to run.
+Nothing in Section 4 or Section 8 goes out without a green light. This pass stayed strictly within the approved list above — no posting, no outreach, no live survey/landing page. This approval gate is unaffected by the Section 6 revision below — that revision changes how evidence gets read once collected, not what's authorized to run.
 
 ---
 
@@ -381,7 +388,7 @@ Nothing in Section 4 goes out without a green light. This pass stayed strictly w
 **H3 — Segmentation readiness follows registration**
 - *Learning objective:* Is there real, unprompted demand for customer segmentation among vendors already dealing with registration — or does it only sound appealing when asked about directly, without anyone likely to act on it?
 - *Evidence expected:*
-  - Qualitative: organic posts or comments where vendors describe wanting to tell apart a loyal-but-small buyer from an occasional-but-big one, unprompted; whether interview respondents raise this spontaneously in the "clientes y relación" section (Q11) before being prompted, versus only endorsing it once suggested (Q12); the specific use a vendor imagines for the information (e.g., rewarding a regular) versus general curiosity with no follow-through intent.
+  - Qualitative: organic posts or comments where vendors describe wanting to tell apart a loyal-but-small buyer from an occasional-but-big one, unprompted; whether interview respondents raise this spontaneously in the "clientes y relación" section (Q12) before being prompted, versus only endorsing it once suggested (Q13); the specific use a vendor imagines for the information (e.g., rewarding a regular) versus general curiosity with no follow-through intent.
   - Quantitative, read relative to expectations rather than against a numeric target: landing-page signup rate given real, warm traffic, read as "stronger/weaker interest than we'd guess," not compared to a fixed conversion percentage; how many interview respondents opt in to "ser de las primeras en probarlo."
   - What would weaken the hypothesis: landing-page visits with negligible signups, no organic mentions turned up by observation, and interview respondents needing heavy prompting before expressing any interest.
 
@@ -404,6 +411,7 @@ Nothing in Section 4 goes out without a green light. This pass stayed strictly w
   - What would strengthen it: an unprompted, concrete example matching the pattern, given before she's shown anything resembling the "Pijamas / Pijamas Disney" framing — the closer her own example arrives unprompted, the stronger the signal.
   - *Explicitly out of scope for this evidence-gathering pass:* any recommendation about where a price field or grouping concept should live in the domain model. That is a downstream architecture/product question, to be taken up by `architect`/Product Owner only once this hypothesis has real evidence behind it — not decided or implied here.
   - **Update, 2026-08-08 (later same day):** an informal field observation (Section 1c's H6a) has already delivered exactly the kind of "unprompted, concrete example" this entry describes as the strongest possible signal — with the important caveat that it came from an informal conversation, not the structured interview this evidence-gathering plan describes. It's real Supported Evidence, tiered and cited precisely in Section 1c; it should inform, not replace, the structured interview run.
+  - **Update, 2026-08-08 (Knowledge-Mentor-reconciled pass):** the event-driven override axis (whether it's a deliberate cost-recovery calculation or a looser instinct, and whether she reviews her full price list or goes straight to known changes) now has a dedicated, non-leading interview probe (Section 4.6 C2, item 11) and a behavioral corroboration channel once a testable build exists (Section 8.3's usability script). See `company/merchant-validation-backlog.md` for how this hypothesis is now risk-ranked against H1-H5.
 
 ---
 
@@ -454,11 +462,73 @@ All four of the survey-based thresholds (H1, H2's survey pre-filter, H5) share t
 
 ---
 
+## 8. Continuous Validation Package — post-D33, Knowledge-Mentor-reconciled (2026-08-08)
+
+**Context.** After `decision-log.md` D33 (the MVP pricing/event-cost operating model) shipped into the domain model and four Low-Fidelity documents, this agent proposed a "Post-D33 Continuous Validation Package" directly to Main — a cadence design, a risk-ranked backlog, and a set of execution assets — without first persisting it. Main dispatched `knowledge-mentor` against three named questions from that proposal before anything was persisted (cadence methodology; risk-ranking methodology; leading-question risk in a newly-proposed interview probe). This section folds the resulting, reconciled execution assets into this document's own standing structure, per this document's non-duplication discipline — the cadence design and risk-ranking themselves live in the two sibling documents below, not here.
+
+**Tiering.** Same four-tier convention as `company/merchant-validation-pipeline.md`/`company/merchant-validation-backlog.md` §1 (Project Foundation / Learning Resources / General Knowledge — Model Knowledge or External Sources — / Inference-Recommendation).
+
+**Sibling documents (not duplicated here):**
+- `company/merchant-validation-pipeline.md` — the reconciled cadence design (trigger-driven, not calendar-driven).
+- `company/merchant-validation-backlog.md` — the reconciled, risk-ranked hypothesis backlog (Bland's Assumptions Mapping), including the full H6-vs-H1 reconciliation.
+
+### 8.1 Interview guide addendum — corrected C2 probe (leading-question correction record)
+
+**What Knowledge Mentor found (Question C, General Knowledge — Model Knowledge, corroborated by Learning Resources).** `Knowledge/UX-UI/`'s curated interview-technique material supports this document's *existing* H6 design (never naming the mechanism first, Section 4.6 C2's own internal note) as consistent with established non-leading practice, and confirms laddering/critical-incident technique are already present in this guide's substance (e.g., B.4's "cuéntame de la última vez que pasó," C.9's "cuéntame de esa vez"), not missing. **But** the *new* follow-up probe this agent had proposed to add — asking, in substance, whether Ana reviews every item in the "Precios para este evento" list (`events.md` §3.19, testing `decision-log.md` D33's own UX assumption that she "only edits the groups she actually wants to adjust... never a forced review of all of them") or only some of them — was independently flagged as carrying real leading-question risk: a binary/forced-choice framing presupposing only two possible answer shapes (all vs. some), when the real pattern might be partial, venue-dependent, or inconsistent. Corroborated by this project's own precedent: Section 4.2's Q7 already needed a "depende del precio" option added for exactly the same reason — a bare forced choice hides a real, likely-common answer.
+
+**Original framing, as proposed (never itself persisted as a file — reconstructed here from the substance Knowledge Mentor was given to evaluate, for traceability), representative of the shape being corrected:** *"Cuando abres la lista de precios para un evento, ¿revisas todos los productos, o nomás los que ya sabes que vas a cambiar?"* — a binary forced choice, and specific to Nahui's own UI ("la lista"), which additionally presupposes she's already using the product rather than describing her real-world behavior.
+
+**Corrected wording, applied directly to Section 4.6 C2 as the new item 11 (see above):** fully open-ended primary question ("camina conmigo por eso, paso a paso"), with a non-presupposing open follow-up used only if the pattern doesn't emerge unprompted — no options offered, no "all vs. some" framing, and phrased around her real bazaar-prep behavior rather than a specific screen, so it's answerable and non-leading whether or not she's ever used the product.
+
+**Why "fully open" rather than a three-way forced-choice-plus-specify (the literal Q7 fix pattern), stated explicitly since the channels differ:** Q7's fix works because a *survey* inherently needs some structure to be analyzable at scale, and a "depende del precio, especifica" option is the right way to avoid a false binary in that format. An *interview* doesn't have that constraint — Section 3's own reasoning for H6 as a whole ("a checkbox survey answers shallowly at best... arguably more so here") applies with equal force to a single follow-up probe within the interview, not just to the channel-selection decision. The more rigorous fix, available specifically because this is a spoken conversation, is to not force any shape at all and let her own words establish the pattern — consistent with the guide's own explicit C2 instruction to never suggest the mechanism first.
+
+### 8.2 Survey addition — price-list review habit (H6 generalization layer, GATED)
+
+New item, appended to Section 4.2 as **Q8** (full text there, not duplicated here): a forced-choice-plus-open question, following the Q7 fix pattern exactly (three named options plus an open "otro — especifica"), asking how a vendor decides whether to adjust prices for a specific bazaar — phrased in real-world merchant vocabulary, not Nahui UI-specific, so it's answerable by any vendor regardless of whether they use the product.
+
+**Explicit gate, stated plainly:** this item is **not to be activated until the structured H6 interview (Section 4.6 C2, item 9-11) has actually run with Ana and produced a named pattern in her own, unprompted words.** Running a forced-choice version of this question at market-wide scale *before* the single-subject discovery question has been answered would reintroduce the same leading-question risk Section 8.1 just corrected, at a larger scale and with less ability to probe follow-up — worse, not better. Once the interview establishes what the real pattern actually is (not what we hypothesized it might be), testing whether that *named* pattern generalizes becomes an ordinary prevalence question, the same kind H1/H2/H5's existing survey items already ask — this is the sequencing logic recorded in Section 3's H6 entry, cross-referenced there.
+
+### 8.3 Usability script — D33's "she only edits the groups she wants to change" assumption (new channel, behavioral observation)
+
+**Why this channel, and why now.** Section 3's original H6 channel comparison (interviews, survey, community observation, direct outreach/fake-door) didn't include behavioral/usability observation because no testable build of the relevant screen existed when it was written. `events.md` §3.19-3.20 (the "Ajustar precios" per-Product Price Override list, `decision-log.md` D33) has since been folded back into Approved. Revealed behavior on a real, walkable screen is a stronger evidentiary channel than self-report for exactly this question — the same "stated preference vs. revealed interest" logic Section 3 already applies to H3's landing page — so it's added here as a corroborating channel, not a replacement for the interview.
+
+**Script (internal use; human-moderated, ideally with Ana, per `company/CLAUDE.md`'s own boundary that `merchant-user-tester`'s findings are felt/interaction reactions, not a substitute for real business-assumption validation):**
+
+*Setup, spoken to her:*
+> Vamos a hacer como que estás armando un evento nuevo. Imagina que el sábado tienes un bazar en [nombre de bazar real o inventado, según convenga]. Antes de que empiece, revisa y ajusta lo que necesites sobre los precios para ese evento — como normalmente lo harías.
+
+*Observer notes (internal, not spoken):* does she open the "Precios para este evento" list and visibly scan every row before acting, or tap directly into specific rows without visiting the others; how long she spends per row; whether she narrates her own reasoning unprompted (think-aloud, don't prompt for it if it isn't happening naturally); whether her behavior here matches or diverges from whatever pattern the structured interview (Section 4.6 C2, item 11) already surfaced in her own words.
+
+*Post-task question, non-leading, same shape as the corrected interview probe:*
+> Cuéntame cómo decidiste cuáles ibas a tocar y cuáles no.
+
+**Explicit boundary.** This is a behavioral corroboration channel for H6/H6a's mechanism question, not a redesign of Experience Validation governance — if `merchant-user-tester` is dispatched for this instead of a human-moderated session, its findings stay scoped to Ana's felt/interaction reactions per `company/CLAUDE.md`'s existing Experience Validation boundary, and don't substitute for the market-validation-grade evidence a human-moderated session with Ana produces.
+
+### 8.4 Recruitment/scheduling message — DRAFT ONLY, NOT SENT (H6 structured interview)
+
+> Hola Ana, ¿cómo estás? Oye, la plática que tuvimos el otro día sobre cómo decides tus precios me dejó con ganas de platicar más a fondo — ¿tendrías chance de que nos sentemos con calma unos 20-25 minutos, nomás para entender mejor cómo lo haces? No es nada formal, es seguir platicando de eso. ¿Cuándo te queda bien?
+
+Distinct from the informal conversation already had (Section 1c's H6a) — this schedules the actual structured interview (Section 4.6, including the corrected C2 item 11), which still has not been conducted. Subject to the same approval gate as every other message in Section 4/5 — not sent until the Product Owner approves it.
+
+### 8.5 Channel recommendations for continuous cadence
+
+Per `company/merchant-validation-backlog.md` §5's priority-ordered next actions, in brief (full reasoning lives there, not duplicated here):
+1. H6/H6a structured interview with Ana (Section 4.6 + 8.4) — ready now, pending approval to contact her for a dedicated session.
+2. H1 community observation, re-attempted once its 2026-08-07 blocker (Section 2a) clears.
+3. H1/H2/H5 survey, live (Section 4.2, now including gated Q8) — pending Product Owner approval and a channel.
+4. H3 fake-door landing page — pending infrastructure provisioning and approval to publish.
+5. H6's usability script (Section 8.3) — run once a human-moderated session or `merchant-user-tester` dispatch is scheduled against the now-Approved `events.md` §3.19-3.20 build.
+
+`company/merchant-validation-pipeline.md` §4 governs when each of these gets re-attempted going forward (trigger-driven, not calendar-driven) — this list is a snapshot, not a schedule.
+
+---
+
 ## Open dependencies to flag
 
 - **2026-08-07:** a companion analytical artifact, `company/jobs-to-be-done.md`, was persisted — a Jobs To Be Done synthesis grounded in the same interview/field evidence as this document, plus the 2026-08-07 competitive/behavioral landscape research. It names a related-but-distinct open hypothesis (the "Unserved-Job Hypothesis" — whether the registration job is currently unserved by any real alternative, not just underserved) and cross-references H1 explicitly to avoid label collision. That document doesn't change H1-H5 or Section 6's evidence-to-collect plan; it explains the underlying job those hypotheses are testing against. Check it before starting future positioning/messaging work.
 - **2026-08-08:** a new Section 1c records H6 — the price-grouping/divergence operating-model hypothesis raised in a Product Discovery thread investigating the domain model's confirmed price-field gap on Product/SaleItem. Deliberately recorded here (market-validation territory: a merchant-behavior claim needing real validation), not in `company/jobs-to-be-done.md` (a JTBD/positioning-analysis document, not a merchant-operating-mechanism one) — keeping each artifact to its own job, per this document's own `company/CLAUDE.md`-derived discipline. H6 differs in kind from H1-H5: it has no validated starting point even for Ana, so it's a single-subject discovery question first, a generalization question only after. Section 4.6's interview guide now includes a dedicated C2 probe for it. This document makes no recommendation about where price should live in the domain model — that stays a downstream question for `architect`/Product Owner once real evidence exists, unaffected by anything recorded here.
 - **2026-08-08 (later same day):** an informal, unprompted-in-content field observation from Ana (a Product Owner conversation, not a structured interview) refined H6 with real Supported Evidence — see new **Section 1c's H6a** for the pricing-structure refinement (default price per group, plus a second, event-driven override axis) and new **Section 1d** for the independently-logged bazaar-event-cost fact (cross-referenced in `company/jobs-to-be-done.md`'s Friction tier 2 section). Both are tagged Supported Evidence with informal sourcing, explicitly distinct from the still-not-run structured H6 interview (Section 4.6, C2, which now carries a short addendum pointing at what to probe once it does run). Neither changes H1-H5, Section 6's framing, or makes any recommendation about the domain model.
+- **2026-08-08 (Knowledge-Mentor-reconciled Continuous Validation pass):** three new artifacts close the loop on this agent's "Post-D33 Continuous Validation Package" proposal, per a completed Knowledge Mentor consultation on cadence, risk-ranking, and leading-question risk — `company/merchant-validation-pipeline.md` (cadence), `company/merchant-validation-backlog.md` (risk-ranked backlog, including the full H6-vs-H1 reconciliation), and this document's new Section 8 (execution assets: corrected interview probe folded into Section 4.6 as item 11, a gated survey item at Section 4.2 Q8, a new usability-script channel for H6 at Section 8.3, a draft scheduling message at Section 8.4). H1-H5's own hypothesis text, Section 6's learning-objectives framing, and Section 7's retired threshold record are all unaffected.
 - Section 2's community verification pass was run for the first time 2026-08-04 (live access available that session) — see Section 2.1's update and `company/usability-testing-plan.md` §7.3 for the real channels found. It found organizer/community *channels*, not individual merchants (not the pass's goal — see that section). Section 2's earlier "no live access" note is kept above as the honest record of the two sessions where that was true.
 - Section 2a's passive observation (reading and logging actual unprompted post *content*, not just confirming a channel exists) is still not run — see Section 2a's updated note.
 - H5's directional read still depends on `business-decisions.md` Q11 (billing-cycle model) being resolved before a specific price point can ever be tested, not just a shape (recurring vs. commission) — and also depends on how "depende del precio" survey responses get counted, which should be resolved alongside Q11 before the survey ever runs live.

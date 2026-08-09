@@ -20,7 +20,8 @@ cross-reference to `events.md` in this document has been updated to match.
 illustrative placeholder — this is the direct resolution of what was
 previously logged as Q8 (`company/business-decisions.md`, Resolved).
 Customer Segmentation is gated by `subscriptionTier=paid` **and**
-`loyaltyEnabled=true` together, never `subscriptionTier` alone;
+`loyaltyEnabled=true` together, never `subscriptionTier` alone — corrected
+by D34 below;
 `registrationMode` only ever selects *which* Claim mechanism a Sale uses
 (the existing NFC tag scan, or the new Sale-level Claim Token/QR), never
 *whether* segmentation exists. The Merchant Application still never sees
@@ -62,6 +63,32 @@ stays inside `company/backlog.md` #3's guardrail (plain magnitude/own-data
 only, never recommendation-flavored copy) — no "deberías" language, no
 cross-vendor data, no forward-looking suggestion of any kind, same posture
 §3.9 already established. See §10 for the full decision record.
+**Amended 2026-08-08 (`decision-log.md` D33, MVP pricing operating model):**
+every dollar figure in this tab is now explicitly grounded as a sum of
+`SaleItem.pricePaid`, resolved once at Sale-write time by Selling —
+resolves the exact ambient-assumption gap D33's Context names. `bazaarCost`
+explicitly never read or netted against any figure here — captured
+elsewhere, deliberately unused in this MVP. Part of the same four-document
+D33 remediation as `inventory.md`/`events.md`/`home.md`; `ux-critic`
+verified this document's portion clean in round 1, with no findings
+against it in either round. `reviewer` clean (no Blockers, no Important
+findings) — folded back into Approved.
+**Further amended 2026-08-08 (`decision-log.md` D34 — Customer Segmentation
+visibility gate corrected):** D22's joint gate — `subscriptionTier=paid`
+**and** `loyaltyEnabled=true` together — is corrected. "Tus clientes" now
+gates on `subscriptionTier=paid` alone, the same pattern already used for
+"Rendimiento por bazar." `loyaltyEnabled` is kept, narrowed back to its
+original scope — whether Loyalty-claim actively collects Claims at all —
+never a precondition for seeing this section. The two previously-separate
+`loyaltyEnabled`-dependent states this doc designed (§3.6's non-tappable
+"not yet activated" note, and §3.13's zero-Claims empty state) collapse
+into one: any paid merchant with zero Claims recorded yet — whether because
+`loyaltyEnabled` was never turned on, is currently off, or is on with
+nothing collected yet — sees the same naturally-empty, tappable state
+(§3.13), with no special-casing by reason. §1, §2, §3.4/§3.5/§3.6/§3.12/
+§3.13, §4, §5, §6, §7, §8 item 1, §9, and §10 updated accordingly.
+**Amended 2026-08-08 (`decision-log.md` D34/D35/D37; `product/99-rfc/0004-customer-loyalty-participation-record.md`, Accepted) — Loyalty Participation view added.** New §3.15–§3.18, plus additive appends to §3.12/§3.13 (their existing content unchanged), give Ana a per-customer view of loyalty progress — email, age range, gender, purchase count, lifetime spend, reward-cycle progress, completed-cycles count — reading D35's Loyalty Participation Record allowlist exactly, structurally never anything beyond it. Gated identically to "Tus clientes" itself: `subscriptionTier=paid` alone (D34), independent of `loyaltyEnabled`. **The "Confirmar recompensa entregada" write action (§3.17/§3.18) is speculative, designed fully against `product/99-rfc/0005-reward-cycle-confirmation-write-edge.md`'s complete write contract, but that RFC is Status: Proposed, not yet Accepted** — same "target UI ahead of implementation" posture this doc already used for Venue before its own aggregate root existed, and for the whole Loyalty-claim/Intelligence capability before D22. Every other part of this amendment (the populated list, per-customer detail, empty state) depends only on the already-Accepted D35/D37, not on RFC 0005. **`ux-critic` round 1: 1 Major (the confirm-screen reused a reversible-action template without disclosing this action's irreversibility) found alongside the sibling `customer-loyalty-registration.md` review — fixed (§3.17's copy now discloses plainly, RFC 0005 amended with a `lastRewardConfirmedAt` trace field, no reversal mechanism added by design).** Pending `reviewer`'s Foundation-consistency pass. See §10 for the full decision record.
+
 Scope: `Resultados`, the fourth and last of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers Journey 5
 (Review). Picks up exactly what `product/02-ux/events.md` §3.16 deliberately
@@ -83,15 +110,27 @@ Out of scope by explicit instruction:
 - **No payments/checkout flow** (`company/CLAUDE.md` non-goals). §3.5's
   paid-tier informational note is passive text only, never a tappable
   "upgrade now" CTA — see §10.
+- **No customer-facing registration/QR-claim flow, and no Loyalty
+  reward-threshold self-service configuration surface.** Both are
+  separate, not-yet-designed pieces of the Frequent Customers capability
+  (`company/backlog.md` #2 Stage 2; `decision-log.md` D37's
+  `Business.loyaltyRewardThreshold`). This document specs only the
+  merchant-facing read (and one narrow, speculative write) once that data
+  already exists — never how a customer claims a purchase, and never how
+  Ana sets or changes her own reward threshold in Configuración. See §11.
 - **No specific customer-segmentation algorithm.** `company/CLAUDE.md`
   describes the *problem* (can't tell a high-volume-occasional buyer from a
   small-but-every-bazaar buyer) — the underlying capability and data source
   are now resolved (`product/99-rfc/0002-loyalty-claim-complete-capability.md`,
-  Accepted; `decision-log.md` D22): Customer Segmentation is gated by
-  `subscriptionTier=paid` **and** `loyaltyEnabled=true` together, and
-  consumes only **Derived Customer Intelligence**, an anonymized aggregate
-  signal computed by the future Loyalty-claim context and exposed read-only
-  to Intelligence. What's still genuinely open is narrower than before: the
+  Accepted; `decision-log.md` D22, corrected by D34): Customer Segmentation
+  is gated by `subscriptionTier=paid` alone — the same tier-based gate as
+  "Rendimiento por bazar," not a joint gate — and consumes only **Derived
+  Customer Intelligence**, an anonymized aggregate signal computed by the
+  future Loyalty-claim context and exposed read-only to Intelligence.
+  `loyaltyEnabled` is narrowed to a separate question — whether Loyalty-claim
+  is actively collecting Claims at all — never a precondition for seeing
+  this section (`decision-log.md` D34). What's still genuinely open is
+  narrower than before: the
   exact thresholds/rule for what counts as "frecuente" vs. "ocasional." §3.12
   shows a plausible aggregate shape using illustrative example numbers for
   those thresholds only (e.g., "3 bazares o más," "1 o 2 veces") — not a
@@ -117,16 +156,26 @@ altitudes:
   `home.md` §3.12) and Eventos' hand-off ("Ver resumen en Resultados,"
   `events.md` §3.16) — both of those screens point here because this is
   where the fuller picture actually lives.
-- **"What should I pay attention to, going forward?"** (paid tier, and for
-  customer segmentation specifically, `loyaltyEnabled` active too — see §2)
+- **"What should I pay attention to, going forward?"** (paid tier — see §2)
   — not "how did today go" but "based on everything I've sold so far, is
   there a pattern worth knowing." This is exactly the two lower-priority
   validated frictions from `company/CLAUDE.md`'s core thesis: which bazares
   are actually worth her time (using only her own history, never
-  multi-vendor data), and which customers are loyal vs. occasional.
+  multi-vendor data), and which customers are loyal vs. occasional. Both
+  gate on `subscriptionTier=paid` alone (`decision-log.md` D34) — customer
+  segmentation carries no second, independent activation requirement.
   `company/backlog.md` #2 confirms this is current MVP UX scope, not
   deferred — the old "blocked until real sales data exists" gate is obsolete
   (`company/lessons.md`, 2026-07-31).
+
+  **A third element within "what should I pay attention to, going
+  forward?"** — alongside "which bazares are worth her time" and
+  "frequent vs. occasional customer counts," Ana can now see, per
+  identified customer, exactly how close each one is to her next reward
+  and confirm when she's physically handed it over. This is the
+  identified counterpart to "Tus clientes"'s anonymized counts — same
+  underlying Claims, a second, additive, narrower-but-identified view of
+  them (`decision-log.md` D35), never a replacement.
 
 Nothing in Resultados is time-critical the way Home's <3s bar is
 (`company/backlog.md` #1) — there's no customer waiting while she looks at a
@@ -194,14 +243,17 @@ rather than building a second selling mechanism inside this tab.
        data-based (see the sub-step below for what "no data yet" looks
        like within it).
 
-       A second entry point, "Tus clientes," is gated independently — see
-       the second sub-step below. Customer Segmentation is gated by
-       `subscriptionTier=paid` **and** `loyaltyEnabled=true` together, not
-       `subscriptionTier` alone (`decision-log.md` D22,
-       `product/99-rfc/0002-loyalty-claim-complete-capability.md`).
-       `registrationMode` never enters this gate — it only ever determines
-       *which* Claim mechanism a given Sale uses (NFC tag scan or the new
-       Sale-level Claim Token/QR), never *whether* Customer Segmentation
+       A second entry point, "Tus clientes," is also gated by
+       `subscriptionTier=paid` alone — the identical tier-based gate as
+       "Rendimiento por bazar," not a second, joint gate
+       (`decision-log.md` D34, correcting the joint-gate clause D22 had
+       introduced). `loyaltyEnabled` governs a separate question — whether
+       Loyalty-claim is actively collecting Claims at all (the NFC tag
+       scan, and the future Sale-level Claim Token/QR) — a real,
+       independent merchant decision, but not a precondition for seeing
+       whatever segmentation data already exists. `registrationMode` never
+       enters this gate either — it only ever determines *which* Claim
+       mechanism a given Sale uses, never *whether* Customer Segmentation
        exists for this Business (`domain-model.md`'s "Multi-mechanism Claim
        resolution").
 
@@ -217,27 +269,34 @@ rather than building a second selling mechanism inside this tab.
          → YES: populated view (§3.9), one row per **Venue** (`venueId`) —
            see §10 for how this differs from the pre-Venue design.
 
-       Within "Tus clientes" specifically: is `loyaltyEnabled = true` for
-       this Business?
-         → NO: a passive, non-tappable informational note appears in this
-           row's place (§3.6) — a real, reachable state for a paid merchant
-           who never activated loyalty tracking (e.g., a Buttons-mode paid
-           merchant: `registrationMode` and `loyaltyEnabled` are
-           independent Business capabilities, so a paid merchant with
-           loyalty tracking off is a normal outcome, not a lesser or
-           incomplete one). No self-service activation control is designed
-           in this tab — Business Capabilities, including `loyaltyEnabled`,
-           are now fully self-service and bidirectional at any time (Q5,
-           Resolved, `company/business-decisions.md`; `decision-log.md`
-           D25), but the actual toggle lives in
-           `product/02-ux/settings.md` ("Activar clientes frecuentes"),
-           never duplicated here; §3.6 points to it in plain text.
-         → YES: has Loyalty-claim recorded any Claim yet for this Business?
-           → NO:  empty-state teaser (§3.6) → §3.12's own empty state
-             (§3.13) — a real, reachable transitional state right after
-             activating loyalty tracking, before any Sale has produced a
-             Claim yet.
-           → YES: populated teaser (§3.6) → §3.12's populated view.
+       Within "Tus clientes" specifically: has Loyalty-claim recorded any
+       Claim yet for this Business?
+         → NO:  empty-state teaser (§3.6) → §3.12's own empty state
+           (§3.13) — reached whether `loyaltyEnabled` has never been
+           activated, is currently off, or is on with zero Claims recorded
+           yet. One naturally-empty state, no special-casing by which of
+           those three is true (`decision-log.md` D34) — same restraint
+           "Rendimiento por bazar"'s own empty teaser above already takes
+           toward a Quick-Session-only paid merchant.
+         → YES: populated teaser (§3.6) → §3.12's populated view.
+
+       Within "Tus clientes," a second, additive signal — "Recompensas"
+       (Loyalty Participation Record, `decision-log.md` D35/D37) — tracks
+       the identical YES/NO branch immediately above, never independently
+       gated: a Customer record is created only at the moment a Claim
+       first resolves for a given email (D35: "email... captured at first
+       Claim"), so "zero Claims" and "zero Customer records" are the same
+       condition for this Business, by construction.
+         → NO (zero Claims): §3.13 carries one additional passive line
+           for Recompensas — no separate screen, no tap target, same
+           restraint §3.13 already applies to itself.
+         → YES: §3.12 gains one additional, independently tappable
+           teaser row, "Recompensas" → §3.15 (populated list, grouped
+           by readiness) → §3.16 (per-customer detail — exactly D35's
+           seven-field allowlist, never more) → optionally, §3.17/§3.18
+           ("Confirmar recompensa entregada" — **speculative, pending
+           `product/99-rfc/0005-reward-cycle-confirmation-write-edge.md`,
+           Proposed, not yet Accepted**).
 ```
 
 **How the three altitudes relate:** all-time (a single ambient card, sum
@@ -254,6 +313,41 @@ and now drills down the same way the rest of the tab does: tapping a venue
 row reaches a filtered Historial (§3.11) at the middle altitude, which
 reaches Event detail (§3.8), down to the same Session-detail leaf. No
 altitude in this tab is a dead end.
+
+**Grounding every dollar figure in this document (`decision-log.md`
+D33):** every $ figure anywhere in this tab — "Total histórico," ticket
+promedio, every Historial/En curso card's $ total, Session detail's
+"$1,120 en total," Event detail's "$2,340," and "Rendimiento por bazar"'s
+"$780 promedio/día" — is a sum (or a sum divided by a count) of
+`SaleItem.pricePaid` values, each already resolved automatically at the
+moment its Sale was written (that Event's Price Override for the sold
+Product if one exists, else the Product's `defaultPrice`;
+`domain-model.md`'s "Price resolution" Key Mechanism). Nothing in this
+document re-derives, re-prices, or recomputes any of these figures
+independently — read-side sums over data other contexts already wrote,
+the same "capture business truth once, reuse it forever" discipline §7/
+§9 already state for every other computed value here.
+
+**One documented exception: `lifetimeSpend` on §3.16's customer detail is
+not computed here.** Unlike every other $ figure in this document (a sum
+of `SaleItem.pricePaid`, resolved by Selling/Intelligence, D33),
+`lifetimeSpend` is a Customer-owned field, stored and incrementally
+updated by Loyalty-claim itself at the moment each Claim resolves
+(`decision-log.md` D35 — "the same D33 storage pattern... Loyalty-claim
+mutating its own owned aggregate"). Resultados only ever displays this
+value via the Loyalty Participation Record read edge; it never computes,
+re-derives, or re-sums it — a different context owns and writes this
+number, unlike every other dollar figure this doc renders.
+
+**`Event.bazaarCost`, though captured and displayed elsewhere
+(`events.md`'s Event detail), is never read, displayed, or netted against
+any figure in this document.** D33 is explicit that `bazaarCost` is
+captured-but-not-computed in this MVP — no profitability/margin figure
+subtracting cost from revenue exists anywhere in Nahui today, and this
+document does not introduce one. Stated here explicitly, not only in
+`events.md`, because Resultados is the one tab where a merchant might
+otherwise expect exactly that kind of figure — see §10/§11 for this named
+as a deliberate boundary, not a gap.
 
 ## 3. Low-fidelity wireframes
 
@@ -339,11 +433,10 @@ its own — same scoping choice as the other three docs.
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
 │  │ Con el plan de pago vas a ver │ │  passive note, not tappable
-│  │ cómo te fue por bazar. Si       │ │
-│  │ además activas el seguimiento   │ │
-│  │ de clientas, también vas a ver │ │
-│  │ cuántas son frecuentes y         │ │
-│  │ cuántas ocasionales.            │ │
+│  │ cómo te fue por bazar y         │ │
+│  │ cuántas de tus clientas son      │ │
+│  │ frecuentes y cuántas             │ │
+│  │ ocasionales.                     │ │
 │  └───────────────────────────┘ │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
@@ -465,13 +558,17 @@ its own — same scoping choice as the other three docs.
   card — same rule `events.md` §3.4 established for Activo/Próximos/Pasados.
 - Historial mixes Event-rollup cards and standalone Sesión-rápida cards in
   one reverse-chronological list — see §2, §10.
-- **The paid-tier note now names both gates it's promising**, since
-  Customer Segmentation depends on `subscriptionTier=paid` **and**
-  `loyaltyEnabled=true` together, not `subscriptionTier` alone
-  (`decision-log.md` D22) — a free-tier merchant who later goes paid but
-  never activates loyalty tracking would otherwise be told something the
-  paid tier alone doesn't deliver. Still plain informational text, not a
-  card with a tap target — see §10 for why no upgrade CTA is designed here.
+- **The paid-tier note now promises both benefits unconditionally on
+  `subscriptionTier=paid` alone** — Customer Segmentation carries no
+  second, independent activation requirement (`decision-log.md` D34,
+  correcting the joint-gate clause D22 had introduced). A free-tier
+  merchant who goes paid sees both benefits described here become real,
+  whatever `loyaltyEnabled`'s own state happens to be — a paid merchant
+  who's never turned on Claim collection simply sees "Tus clientes"'s own
+  naturally-empty state (§3.13), the same way she'd see "Rendimiento por
+  bazar"'s own empty state if she'd never used Eventos. Still plain
+  informational text, not a card with a tap target — see §10 for why no
+  upgrade CTA is designed here.
 - **Copy states a count/category, never an identity claim.** "Cuántas son
   frecuentes y cuántas ocasionales" promises exactly what §3.12 delivers —
   an anonymized aggregate count per category — never "who" a specific
@@ -508,11 +605,10 @@ its own — same scoping choice as the other three docs.
 │  └───────────────────────────┘ │
 │  ┌───────────────────────────┐ │
 │  │ Con el plan de pago vas a ver │ │
-│  │ cómo te fue por bazar. Si       │ │
-│  │ además activas el seguimiento   │ │
-│  │ de clientas, también vas a ver │ │
-│  │ cuántas son frecuentes y         │ │
-│  │ cuántas ocasionales.            │ │
+│  │ cómo te fue por bazar y         │ │
+│  │ cuántas de tus clientas son      │ │
+│  │ frecuentes y cuántas             │ │
+│  │ ocasionales.                     │ │
 │  └───────────────────────────┘ │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
@@ -565,8 +661,9 @@ its own — same scoping choice as the other three docs.
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
 ```
-(Above: `loyaltyEnabled = true`, with at least one Claim already recorded —
-see the two variants below for the other two reachable states.)
+(Above: at least one Claim already recorded for this Business — see the
+variant below for the other reachable state, zero Claims recorded yet,
+`decision-log.md` D34.)
 - Same baseline as §3.4/§3.5 (Total histórico, En curso when applicable,
   Historial), plus up to two additional entry points — never a
   replacement, never a different app. *architecture-principles.md* #1:
@@ -579,29 +676,31 @@ see the two variants below for the other two reachable states.)
   the four depend on `subscriptionTier`. Not restated here; see §3.4's own
   bullets.
 - The free-tier informational note (§3.4/§3.5) disappears entirely once
-  paid — she already has what it was telling her about "Rendimiento por
-  bazar," and "Tus clientes" now has its own independent gating, handled
-  below.
+  paid — she already has what it was telling her about, for both
+  "Rendimiento por bazar" and "Tus clientes" alike, since both gate on
+  `subscriptionTier=paid` alone (`decision-log.md` D34); whether "Tus
+  clientes" specifically shows data yet is a separate, data-based
+  question, handled below.
 - Each summary row here is a one-line teaser of its own full view:
   "Rendimiento por bazar" → §3.9 (or §3.10 if she has no Event-grouped
-  Sessions yet); "Tus clientes" → §3.12 (or §3.13 if `loyaltyEnabled=true`
-  but no Claim has been recorded yet) — same pattern as Home's own header
-  being a teaser of session-controls (`home.md` §3.7). The teaser now shows
-  a **Venue name** ("Plaza Norte") rather than Event's former Nombre.
-- **"Rendimiento por bazar" and "Tus clientes" are gated independently, and
-  both are real, fully-specified features — styled identically, same
-  typography, same "[Ver más ▸]" affordance, no visual demotion of either.**
-  "Rendimiento por bazar" is gated by `subscriptionTier=paid` alone.
-  "Tus clientes" is gated by `subscriptionTier=paid` **and**
-  `loyaltyEnabled=true` together (`decision-log.md` D22,
-  `product/99-rfc/0002-loyalty-claim-complete-capability.md`) — this
-  resolves what was previously logged as Q8 (§8 item 1). "Tus clientes"
-  never shows raw Customer or Claim data; it renders only **Derived
-  Customer Intelligence** — an anonymized, aggregate signal (counts of
-  frequent vs. occasional buyers) that the future Loyalty-claim context
-  computes and exposes read-only to Intelligence (`domain-model.md`,
-  `ubiquitous-language.md`). See the two variants below for what she sees
-  when either half of that gate isn't yet satisfied.
+  Sessions yet); "Tus clientes" → §3.12 (or §3.13 if no Claim has been
+  recorded yet, regardless of `loyaltyEnabled`'s current value,
+  `decision-log.md` D34) — same pattern as Home's own header being a teaser
+  of session-controls (`home.md` §3.7). The teaser now shows a **Venue
+  name** ("Plaza Norte") rather than Event's former Nombre.
+- **"Rendimiento por bazar" and "Tus clientes" are gated identically, on
+  `subscriptionTier=paid` alone, and both are real, fully-specified
+  features — styled identically, same typography, same "[Ver más ▸]"
+  affordance, no visual demotion of either.** This resolves what was
+  previously logged as Q8 (§8 item 1), and is the corrected version of
+  D22's original joint-gate wording, per `decision-log.md` D34 —
+  `loyaltyEnabled` is no longer a second, independent visibility
+  requirement for "Tus clientes." "Tus clientes" never shows raw Customer
+  or Claim data; it renders only **Derived Customer Intelligence** — an
+  anonymized, aggregate signal (counts of frequent vs. occasional buyers)
+  that the future Loyalty-claim context computes and exposes read-only to
+  Intelligence (`domain-model.md`, `ubiquitous-language.md`). See the
+  variant below for what she sees before any Claim has been recorded yet.
 - If this Business has never closed an Event-linked Session
   (Quick-Session-only history — a real, reachable case, see §3.10), the
   "Rendimiento por bazar" teaser shows an honest empty summary instead of
@@ -616,51 +715,28 @@ see the two variants below for the other two reachable states.)
   actually applies to her (below), independent of whether she's ever used
   Eventos. Tapping "[Ver más ▸]" on the empty variant still leads somewhere
   real (§3.10), not a dead end.
-- **If `loyaltyEnabled = false` for this Business** — a real, reachable
-  state this doc never needed before, since `registrationMode` and
-  `loyaltyEnabled` are independent Business capabilities (a Buttons-mode
-  paid merchant who never activated loyalty tracking is a completely normal
-  outcome, not a lesser or incomplete way of using the app,
-  `architecture-principles.md` #1) — "Tus clientes" is replaced by a
-  passive, non-tappable note in the same position, no "[Ver más ▸]"
-  affordance at all:
-  ```
-  Tus clientes
-  Con el seguimiento de clientas activo
-  vas a ver cuántas son tus clientas
-  frecuentes y cuántas ocasionales.
-  Lo puedes activar cuando quieras
-  desde Configuración, en el menú
-  de Hoy.
-  ```
-  "Rendimiento por bazar" is entirely unaffected — the two paid-tier rows
-  are gated independently. **No self-service "Activar" control is designed
-  in this tab.** Business Capabilities, including `loyaltyEnabled`, are
-  fully self-service and bidirectional at any time — Q5 is Resolved
-  (`company/business-decisions.md`; `decision-log.md` D25) — but the actual
-  toggle is designed once, in `product/02-ux/settings.md`
-  ("Activar clientes frecuentes," §3.3a/§3.4), reached from Home's header
-  "▾" (`settings.md` §2.1), not duplicated here
-  (`architecture-principles.md` #1). This note now names that destination
-  in plain text, since Q5's resolution makes Configuración a real place to
-  point her to, but stays non-tappable: Configuración isn't a nav-bar tab
-  the way Eventos is (§3.10's "[ Ver Eventos ]" precedent), so making this
-  row itself jump there would mean inventing a new cross-tab navigation
-  hand-off this doc was never scoped to design — a plain-text pointer gets
-  her there just as well without it.
-  **Copy states a count/category, never an identity claim** — see the
-  annotation under §3.4 and RPT2-MAJ1 (`ux-critic-findings.md`) for why
-  this was corrected from an earlier "quiénes son" draft.
-- **If `loyaltyEnabled = true` but no Claim has been recorded yet** for this
-  Business — a normal, transitional state right after activating loyalty
-  tracking, before any Sale has produced a Claim — the row stays tappable
-  but shows an honest empty summary instead of sample counts:
+- **If this Business has zero Claims recorded yet, for any reason —
+  `loyaltyEnabled` never turned on, currently off, or on with nothing
+  collected yet — the row stays tappable but shows an honest empty summary
+  instead of sample counts:**
   ```
   Tus clientes             [Ver más ▸]
   Aún no hay datos suficientes
   ```
   leading to §3.12's own empty state (§3.13) — same restraint as
   "Rendimiento por bazar"'s own empty teaser above, never a dead end.
+  **This one state now covers what were previously two separate states**
+  (a non-tappable `loyaltyEnabled=false` note, and a tappable zero-Claims
+  state) — `decision-log.md` D34 corrects the earlier joint-gate model:
+  `loyaltyEnabled` governs whether Loyalty-claim collects Claims at all, a
+  real merchant decision that lives in `product/02-ux/settings.md`
+  ("Activar clientes frecuentes"), but it is no longer a precondition for
+  *seeing* this section — a paid merchant sees exactly this same
+  naturally-empty state whether or not she's ever touched that toggle,
+  with no special-casing of which reason applies.
+  **Copy states a count/category, never an identity claim** — see the
+  annotation under §3.4 and RPT2-MAJ1 (`ux-critic-findings.md`) for why
+  this was corrected from an earlier "quiénes son" draft.
 
 ### 3.7 Session detail
 ```
@@ -761,6 +837,17 @@ see the two variants below for the other two reachable states.)
   deliberately distinct from `company/backlog.md` #3's blocked bazaar-
   recommendation feature (needs multi-vendor foot-traffic/weather data,
   "do not attempt to build"). See §8 and §10.
+- **This figure is revenue only — "$ promedio/día" is a pure sum of
+  `SaleItem.pricePaid` divided by closed-Session count, never netted
+  against `Event.bazaarCost`.** `bazaarCost` is Eventos' own
+  captured-but-not-computed field (`decision-log.md` D33) and is
+  deliberately absent from this screen, this document, and every other
+  Resultados figure — a cost-adjusted/profitability view here would be
+  exactly the margin computation D33 rules out of this MVP. Flagged here
+  specifically because "which bazares are worth her time" (§1) is the one
+  question in this document where a merchant might naturally expect cost
+  to already be part of the answer — it isn't, by deliberate design, not
+  by omission.
 - **Each row is now prefixed with a plain rank number (1., 2., 3., ...)
   matching its sort position** — Product Owner decision: a bare numeral,
   not a magnitude-proportional bar, since a bar was judged too close to
@@ -834,12 +921,12 @@ see the two variants below for the other two reachable states.)
   histórico, Historial, Tus clientes) stays fully visible and useful with or
   without ever tapping it.
 - **"Tus clientes" (§3.12/§3.13) is unaffected by this same condition** —
-  its gating (`loyaltyEnabled`) and data source (Sales/Claims generally)
-  don't depend on Event/Venue data at all, so a Quick-Session-only paid
-  merchant still sees whichever "Tus clientes" state actually applies to her
-  (§3.6) even while "Rendimiento por bazar" is empty. The paid-tier sections
-  can be independently empty, populated, or (for "Tus clientes"
-  specifically) not-yet-activated; none of their states depend on each
+  its gating (`subscriptionTier=paid`, same as "Rendimiento por bazar"
+  itself, `decision-log.md` D34) and data source (Claims generally) don't
+  depend on Event/Venue data at all, so a Quick-Session-only paid merchant
+  still sees whichever "Tus clientes" state actually applies to her (§3.6)
+  even while "Rendimiento por bazar" is empty. The two paid-tier sections
+  can be independently empty or populated; neither's state depends on the
   other.
 
 ### 3.11 Rendimiento por bazar — detalle de bazar (Historial filtrado)
@@ -908,7 +995,7 @@ see the two variants below for the other two reachable states.)
   her inspect what fed each row and notice that, even though it's no longer
   the same silent-fragmentation risk Q9 originally described.
 
-### 3.12 Tus clientes — segmentación (paid + seguimiento de clientas activo)
+### 3.12 Tus clientes — segmentación (paid, con Claims registrados)
 ```
 ┌───────────────────────────────┐
 │ ← Resultados                     │
@@ -921,10 +1008,27 @@ see the two variants below for the other two reachable states.)
 │  Ocasionales                       │
 │   14 clientas · te compraron        │
 │   1 o 2 veces                       │
+│                                │
+│  Recompensas              [Ver más ▸]│
+│  1 clienta con recompensa lista      │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
 ```
+- **"Recompensas" is additive content, appended below the unchanged
+  Frecuentes/Ocasionales block above** (`decision-log.md` D35's own
+  instruction for `ubiquitous-language.md`, "so the two sit side by side
+  without merging" — the identical relationship between the two grants,
+  applied here to the screen that surfaces them). Summary line reflects
+  readiness, not raw counts — the single most actionable fact ("how many
+  are ready right now"), same restraint as this screen's own empty-teaser
+  bullets elsewhere. If none are ready yet but tracked customers exist:
+  "Ninguna clienta ha llegado a su meta todavía." Never shows the
+  "frecuente"/"ocasional" category alongside a reward-progress row — two
+  independently computed signals with no Foundation-stated relationship
+  between them, not implied here (see §11). Styled identically to the two
+  rows above it — same "[Ver más ▸]" affordance, no visual demotion. See
+  §3.15/§3.16.
 - **This is now a real, fully-specified feature, not an illustrative
   placeholder** — the direct resolution of what was previously logged as
   Q8 (`company/business-decisions.md`, Resolved;
@@ -932,11 +1036,12 @@ see the two variants below for the other two reachable states.)
   `decision-log.md` D22). Ana sees a plain "Tus clientes" header here,
   rendered identically to "Rendimiento por bazar" — no asterisk, no visual
   demotion, ever.
-- **Gated by `subscriptionTier=paid` and `loyaltyEnabled=true` together**
-  (§2, §3.6) — not `subscriptionTier` alone. This screen is only ever
-  reached once both are true; the `loyaltyEnabled=false` state is handled
-  entirely at the main-view teaser (§3.6) and never routes here, and the
-  zero-Claims-yet state has its own screen (§3.13), not this one.
+- **Gated by `subscriptionTier=paid` alone** (§2, §3.6,
+  `decision-log.md` D34, correcting D22's original joint-gate wording) —
+  `loyaltyEnabled`'s current value plays no role in reaching this screen.
+  This screen is only ever reached once at least one Claim has been
+  recorded for this Business, whatever `loyaltyEnabled` currently reads;
+  zero Claims — for any reason — routes to §3.13 instead, not this one.
 - **The data behind this screen is Derived Customer Intelligence, never raw
   Customer or Claim data.** The Merchant Application never performs
   identification and never reads an individual Customer or Claim record
@@ -985,18 +1090,36 @@ see the two variants below for the other two reachable states.)
 │  vas a ver aquí cuántas son tus       │
 │  clientas frecuentes y cuántas         │
 │  ocasionales.                        │
+│                                │
+│  Puedes revisar esto en             │
+│  Configuración ("Activar clientes    │
+│  frecuentes").                      │
+│                                │
+│  Recompensas                       │
+│  Todavía no tienes clientas con      │
+│  seguimiento para mostrar aquí.       │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
 ```
-- **A real, reachable transitional state, not a hypothetical** — the normal
-  gap between activating loyalty tracking (`loyaltyEnabled=true`) and the
-  first Sale that actually produces a Claim. Without this state, §3.12 would
-  otherwise render as a silent, broken-looking blank screen the first time
-  a newly-loyalty-active paid merchant opened it — same reasoning §3.10 (its
-  "Rendimiento por bazar" counterpart) already established for the
-  equivalent gap in that section, and the same gap `ux-critic-findings.md`
-  RPT-MIN1 flagged as worth designing "whenever it becomes real."
+- **"Recompensas" gets one additional, non-tappable passive line** — same
+  restraint this screen already applies to itself; there is nothing to
+  drill into yet. Reached under the identical three-reason collapse D34
+  already established for the parent screen — no special-casing added for
+  Recompensas specifically. The existing case-agnostic Configuración
+  pointer above already covers Recompensas too (it's the same underlying
+  `loyaltyEnabled` toggle) — not duplicated per-section.
+- **A real, reachable state covering three distinct underlying reasons,
+  collapsed into one honest empty state** (`decision-log.md` D34): zero
+  Claims exist for this Business whether `loyaltyEnabled` has never been
+  turned on, is currently off, or is on with nothing collected yet — the
+  same screen either way, with no special-casing of which reason applies.
+  Without this state, §3.12 would otherwise render as a silent,
+  broken-looking blank screen the first time a paid merchant with zero
+  Claims opened it — same reasoning §3.10 (its "Rendimiento por bazar"
+  counterpart) already established for the equivalent gap in that section,
+  and the same gap `ux-critic-findings.md` RPT-MIN1 flagged as worth
+  designing "whenever it becomes real."
 - **Plain, factual, no guilt-tripping copy** — same brand posture as §3.10
   and `events.md` §3.17: having zero Claims yet is a normal, temporary state
   of a newly-activated capability, not a shortfall on Ana's part. Nothing
@@ -1008,17 +1131,33 @@ see the two variants below for the other two reachable states.)
   promise that she'll learn *who* a specific customer is. See RPT2-MAJ1
   (`ux-critic-findings.md`) for why this was corrected from an earlier
   "quiénes son" draft.
-- **No CTA is shown.** Unlike §3.10's "[ Ver Eventos ]" (which routes to an
-  existing tab she can act on directly), there's no equivalent action for
-  Ana to take here — Claims accumulate automatically as her existing sales
-  flow continues, and the actual claiming action happens on the *customer's*
-  device, never Ana's (`decision-log.md` D21). Inventing a tap target here
-  would either be a dead end or would misleadingly suggest Ana has something
-  to do; neither is designed.
-- Reached only when `loyaltyEnabled=true` and zero Claims exist yet (§2,
-  §3.6) — never reached when `loyaltyEnabled=false` (that state is handled
-  entirely at the main-view teaser, §3.6, which never links to this screen
-  at all).
+- **No tappable CTA is shown — that restraint stays exactly as it was
+  before D34 — but a light, case-agnostic text pointer to Configuración is
+  now included, since leaving the screen with zero signal would strand her
+  in two of the three reachable cases (never activated, currently off).**
+  Unlike §3.10's "[ Ver Eventos ]" (a tap target, routing to an existing
+  tab for a condition entirely within her control), a *tap target* here
+  would still require branching this screen's content on *why* it's
+  empty — exactly the special-casing `decision-log.md` D34 rules out for
+  this state. The pointer text avoids that problem by staying true
+  regardless of which of the three cases applies, and never naming or
+  branching on which one does: whether `loyaltyEnabled` has never been
+  turned on, is currently off, or is on with nothing collected yet, "Puedes
+  revisar esto en Configuración" is an accurate, case-agnostic statement in
+  all three. When `loyaltyEnabled=true`, Claims already accumulate
+  automatically as her existing sales flow continues, and the actual
+  claiming action happens on the *customer's* device, never Ana's
+  (`decision-log.md` D21) — no action of Ana's on this screen would speed
+  that up, which is why the pointer stays passive text, not a tap target.
+  A merchant who wants to start or stop collecting Claims can do so any
+  time from `product/02-ux/settings.md` ("Activar clientes frecuentes"),
+  the same place every other Business Capability change lives
+  (`architecture-principles.md` #1) — this screen names that destination
+  in passive text now, but still doesn't route her there itself.
+- Reached whenever zero Claims exist for this Business, regardless of
+  `loyaltyEnabled`'s current value (§2, §3.6, `decision-log.md` D34) — this
+  is now the one screen every zero-Claims case routes to, rather than a
+  passive, non-tappable note in `loyaltyEnabled=false`'s place.
 
 ### 3.14 Defensive fallback / load error
 ```
@@ -1036,6 +1175,221 @@ see the two variants below for the other two reachable states.)
 - Nav bar stays fully functional — a Resultados load failure never
   cascades into blocking Hoy/Inventario/Eventos or selling.
 
+### 3.15 Recompensas (paid) — con datos
+```
+┌───────────────────────────────┐
+│ ← Tus clientes                   │
+│  Recompensas                      │
+│  8 clientas con seguimiento ·        │
+│  1 con recompensa lista             │
+│                                │
+│  Con recompensa lista              │
+│  ┌───────────────────────────┐ │
+│  │ ana.compradora@gmail.com    │ │
+│  │ 10 de 10 · lista para        │ │
+│  │ entregar                     │ │
+│  └───────────────────────────┘ │
+│                                │
+│  En camino a su próxima recompensa │
+│  ┌───────────────────────────┐ │
+│  │ fer.lopez22@hotmail.com      │ │
+│  │ 6 de 10                      │ │
+│  └───────────────────────────┘ │
+│  ┌───────────────────────────┐ │
+│  │ maria.g@gmail.com             │ │
+│  │ 2 de 10                      │ │
+│  └───────────────────────────┘ │
+├───────────────────────────────┤
+│ Hoy  Inventario Eventos [Resultados] │
+└───────────────────────────────┘
+```
+- **Sort: customers with a completed cycle awaiting confirmation first
+  ("Con recompensa lista"), then remaining customers by
+  `currentCycleProgress` descending.** Justification: unlike §3.9's plain
+  magnitude sort (a passive fact), this ordering directly serves the one
+  thing this screen exists for — letting Ana spot who's ready for a
+  reward without scrolling, and secondarily see who's close. Not a
+  recommendation-flavored ranking (`company/backlog.md` #3's guardrail
+  doesn't apply — this is her own single-Business customer data, no
+  cross-vendor dimension).
+- **Section headers only render when they have ≥1 row** — reuses
+  `events.md` §3.4's already-established header-omission rule verbatim,
+  not a new convention.
+- **Full email shown, never masked, in both this list and §3.16's
+  detail.** D35 leaves this choice explicitly to `ux-designer` ("Whether
+  the merchant-facing UI ever renders the raw or masked form is a UX
+  decision"). Chosen because `company/CLAUDE.md`'s own validated friction
+  is literally "she can't tell who her repeat customers are" — a masked
+  email (`an***@gmail.com`) would often fail to let her actually
+  recognize someone she knows from WhatsApp/IG, defeating the point of
+  this specific, narrower, identified grant. Within D35's explicitly
+  sanctioned range either way — see §10.
+- **`Business.loyaltyRewardThreshold` (D37) assumed to always have a
+  value by the time this screen renders — an illustrative default (e.g.
+  10) applies until the merchant sets her own.** D37 explicitly leaves
+  "required blocking step vs. sensible default" to `ux-designer`; chosen
+  so this document never needs a "no threshold configured" empty state,
+  and never needs to design any Settings-side capture UI (out of scope
+  here — see §11). The exact default value is illustrative only, same
+  convention §3.12's own thresholds already use.
+- Reached only from §3.12's tappable "Recompensas" row — never
+  independently, so this screen is only ever entered when ≥1 Customer
+  record exists for this Business.
+- List length not fixed at this fidelity — same restraint this doc
+  already takes toward Historial's and "Top productos"'s own unbounded
+  lengths.
+
+### 3.16 Detalle de clienta
+```
+┌───────────────────────────────┐
+│ ← Recompensas                    │
+│  ana.compradora@gmail.com          │
+│                                │
+│  Edad: 25-34 años                  │
+│  Género: Mujer                     │
+│  Compras totales: 14                │
+│  Total gastado: $3,180              │
+│                                │
+│  Recompensa actual                 │
+│  10 de 10 · lista para entregar     │
+│                                │
+│  Recompensas entregadas: 1          │
+│                                │
+│      [ Confirmar recompensa       │
+│         entregada ]              │
+├───────────────────────────────┤
+│ Hoy  Inventario Eventos [Resultados] │
+└───────────────────────────────┘
+```
+- **Exactly D35's seven-field Loyalty Participation Record allowlist, in
+  the same order the allowlist itself is stated, never more, never
+  less**: email, edad, género, compras totales (`purchaseCount`), total
+  gastado (`lifetimeSpend`), recompensa actual (`currentCycleProgress`
+  vs. `Business.loyaltyRewardThreshold`), recompensas entregadas
+  (`completedCyclesCount`). **Structurally never rendered here, anywhere,
+  ever**: phone, address, payment credentials, any other Customer field,
+  any Customer belonging to another Business, raw Claim/Sale data — this
+  is a denylist enforced by the read edge's own contract (D35), not a
+  convention this screen chooses to follow.
+- **Optional fields (`ageRange`, `gender`) show "No indicado" when not
+  captured** — plain, factual, same brand posture as every other honest
+  gap state in this doc family; never implies she should go collect it.
+- **"Compras totales" deliberately doesn't assert whether it counts Sales
+  or SaleItems/Claims — see §8, an Architect-resolvable open question,
+  not a UX choice.** The label is honest regardless of which; this
+  document doesn't invent a counting-unit answer the Foundation hasn't
+  stated.
+- **"Recompensa actual" and "Compras totales" are two distinct counters,
+  never conflated** — `currentCycleProgress` (resets on confirm) vs.
+  `purchaseCount` (lifetime, never resets), per D35's schema. Rendered on
+  separate, clearly labeled lines specifically to avoid this confusion.
+- **"[ Confirmar recompensa entregada ]" only appears when
+  `currentCycleProgress >= Business.loyaltyRewardThreshold`** — nothing
+  to confirm otherwise. Placed on the detail screen, not the compact list
+  row (§3.15), a deliberate choice: this app family never places a
+  consequential write action on a compact/scannable list row (Historial
+  cards, §3.9's venue rows — none carry an action; actions live on the
+  detail screen that shows full context). One extra tap, traded for
+  avoiding an accidental reset from a scrolling list. See §6, §10.
+- **Speculative section, flagged explicitly**: the button and everything
+  downstream of it (§3.17/§3.18) are designed fully against
+  `product/99-rfc/0005-reward-cycle-confirmation-write-edge.md`'s
+  complete write contract, but that RFC's status is Proposed, not yet
+  Accepted. The read-only content above the button (everything else on
+  this screen) depends only on the already-Accepted D35/D37.
+
+### 3.17 Confirmar recompensa entregada — confirmación de efecto inmediato (**speculative — pending RFC 0005**)
+```
+┌───────────────────────────────┐
+│ ← ana.compradora@gmail.com        │
+│  Confirmar recompensa entregada    │
+│  Vas a registrar que ya le diste    │
+│  su recompensa a esta clienta.       │
+│  Su conteo (10 de 10) se reinicia    │
+│  a 0 y empieza a acumular otra vez   │
+│  para su siguiente recompensa.        │
+│                                │
+│  Una vez que confirmes, no vas a     │
+│  poder deshacerlo — hazlo solo       │
+│  cuando ya le hayas dado la          │
+│  recompensa.                         │
+│      [ Confirmar ahora ]           │
+└───────────────────────────────┘
+```
+- **Reuses `settings.md` §3.4's confirm-screen template shape — the same
+  two-tap commit mechanism (a single button committing a real, immediate
+  state change, copy stating plainly what changes before she commits) —
+  but deliberately not its reversibility.** Every one of `settings.md`'s
+  five instances of this shape is a self-service, bidirectional Business
+  Capability toggle (D25); each one's copy explicitly reassures Ana that
+  nothing lasting is lost (e.g. "Desactivar clientes frecuentes": "lo que
+  ya se juntó sigue disponible en Resultados — no se borra"). This action
+  is not reversible — RFC 0005 explicitly excludes "any reversal, undo, or
+  edit of a completed reward-cycle confirmation," because by the time she
+  taps "Confirmar ahora" the physical reward has already left her hands;
+  no software undo could retrieve it (RFC 0005's own reasoning, amended
+  2026-08-08). The new line above states that plainly, in the same "no
+  vas a poder... después" register `onboarding.md` §3.4c already
+  established for its own irreversible-write disclosure — not a new
+  tonal pattern for this document family — rather than borrowing
+  `settings.md`'s reassurance language, which would misrepresent this
+  specific action. **This correction is scoped to copy only.** It changes
+  nothing about the shared visual/interaction shape, and the section
+  stays exactly as speculative as before: everything here is still
+  designed fully against RFC 0005's complete contract, pending that RFC's
+  approval — this fix makes the copy complete against that contract, not
+  more settled than the RFC's own Proposed status allows.
+- Back arrow ("← [email]") or any implicit "no" → returns to §3.16
+  unchanged, no write attempted — same restraint as every cancel path in
+  this app family. **This is the one and only correction path this action
+  ever has.** Before "Confirmar ahora" is tapped, backing out costs
+  nothing; after, nothing in this app changes it — no in-app reversal is
+  invented here to soften that, consistent with RFC 0005's own explicit
+  exclusion.
+- **Effect stated verbatim from RFC 0005's contract**:
+  `currentCycleProgress → 0`, `completedCyclesCount += 1`, atomic,
+  nothing else editable — no create/delete Customer, no editing
+  `email`/`ageRange`/`gender`/`purchaseCount`/`lifetimeSpend`, no
+  Claim/Sale/SaleItem access, and no reversal, undo, or edit of the
+  confirmation itself once committed (RFC 0005's own explicit
+  exclusions) — the same "no undo by design" posture `home.md` §3.8/§11
+  already established for Finalizar Venta, this Foundation's single most
+  consequential atomic write, which likewise ships with no confirm-time
+  undo mechanism.
+
+### 3.18 Confirmar recompensa entregada — guardando / error (**speculative — pending RFC 0005**)
+```
+┌───────────────────────────────┐        ┌───────────────────────────────┐
+│  (pantalla anterior atenuada)      │        │      Guardando…                │
+└───────────────────────────────┘        └───────────────────────────────┘
+
+┌───────────────────────────────┐
+│  No pudimos guardar tu           │
+│  confirmación. Intenta de nuevo.  │
+│      [   Reintentar   ]           │
+└───────────────────────────────┘
+```
+- **Same near-instant/slow/error/retry convention already shared across
+  `home.md` §3.8c, `inventory.md` §3.10, `events.md` §3.9,
+  `onboarding.md` §3.5, `settings.md` §3.9/§3.10** — not reinvented here.
+- **Idempotent, keyed retry — `architecture-principles.md` #7, cited by
+  name.** This is Resultados' first-ever write, so this principle has
+  never been exercised in this document before: a stable idempotency key
+  is generated once when "Confirmar ahora" is first tapped and reused
+  unchanged on every retry of that attempt. The server treats a repeated
+  key as already-applied, returning the original result rather than
+  resetting `currentCycleProgress`/incrementing `completedCyclesCount` a
+  second time — critical here specifically, since a blind re-execution
+  would silently and wrongly cost the customer a second cycle's worth of
+  progress.
+- **Success → returns directly to §3.16, updated in place** ("0 de
+  {threshold}," `completedCyclesCount` incremented by 1, the confirm
+  button now absent since nothing is ready anymore), with a brief ambient
+  "Recompensa confirmada ✓" line — same posture as `settings.md`'s
+  "success → back to vista principal, row updated, no pending state" and
+  `home.md` §3.8f's own ambient-confirmation precedent ("Venta finalizada
+  ✓"), reused rather than inventing a new success-feedback shape.
+
 ## 4. Interaction flow (summary)
 
 ```
@@ -1051,10 +1405,36 @@ Main view:
   tap a Historial Sesión rápida card → Session detail (3.7)
   [paid only] tap "Rendimiento por bazar" → 3.9 (or 3.10 if this Business has
     no Event-grouped Sessions yet — see §2 step 4)
-  [paid + loyaltyEnabled=true] tap "Tus clientes" → 3.12 (or 3.13 if no Claim
-    has been recorded yet — see §2 step 4)
-  [paid + loyaltyEnabled=false] "Tus clientes" renders as a passive,
-    non-tappable note (§3.6) — nothing to tap, no destination reached
+  [paid only] tap "Tus clientes" → 3.12 (or 3.13 if this Business has zero
+    Claims recorded yet, for any reason — see §2 step 4, `decision-log.md`
+    D34)
+
+Tus clientes (3.12, con datos):
+  tap "Recompensas [Ver más ▸]" → Recompensas (3.15)
+
+Tus clientes (3.13, sin datos aún):
+  Recompensas note shown as passive text only, no destination.
+
+Recompensas (3.15):
+  tap a customer row → Detalle de clienta (3.16)
+
+Detalle de clienta (3.16):
+  [reward ready only] tap "Confirmar recompensa entregada"
+    → Confirmación de efecto inmediato (3.17) [speculative, RFC 0005]
+      → back / no → Detalle de clienta (3.16), unchanged
+      → Confirmar ahora → Guardando (3.18)
+        → error → Reintentar (3.18), idempotent retry
+        → success → Detalle de clienta (3.16), updated, "Recompensa
+          confirmada ✓"
+
+Load failure anywhere in this branch: covered by the existing whole-tab
+fallback (3.14) — Recompensas data resolves as part of the same initial
+Resultados load as everything else (§2/§3.1/§3.2), same "no dedicated
+sub-screen loading state" rule this doc already establishes. See §8/§11
+for the named, still-open, doc-set-wide refinement this connects to
+(`ux-critic-findings.md` RPT-S2) — not designed here, deliberately
+reusing existing precedent instead of inventing a new partial-failure
+pattern.
 
 Rendimiento por bazar (3.9):
   tap a venue row → filtered Historial for that Venue (3.11)
@@ -1081,17 +1461,32 @@ Elsewhere (entry points into this tab's screens, not from the tab itself):
 4. Main view — free tier, with a still-active Event (En curso present)
 5. Main view — free tier, no active Event (most common day-to-day)
 6. Main view — paid tier (adds Rendimiento por bazar always; adds Tus
-   clientes in whichever of its three states applies — populated,
-   zero-Claims-yet, or `loyaltyEnabled=false`)
+   clientes in whichever of its two states applies — populated, or zero
+   Claims recorded yet, `decision-log.md` D34)
 7. Session detail
 8. Event detail — closed (day-by-day breakdown + totals)
 9. Rendimiento por bazar (paid) — con datos
 10. Rendimiento por bazar (paid) — sin eventos registrados (empty state)
 11. Rendimiento por bazar — detalle de bazar (Historial filtrado)
-12. Tus clientes — segmentación (paid + seguimiento de clientas activo, con
-    datos)
-13. Tus clientes — sin datos aún (empty state)
+12. Tus clientes — segmentación (paid, con Claims registrados)
+13. Tus clientes — sin datos aún (empty state; covers `loyaltyEnabled` never
+    activated, currently off, or on with zero Claims — one state, per
+    `decision-log.md` D34)
 14. Defensive fallback / load error
+15. Recompensas (paid) — con datos
+16. Detalle de clienta (los siete campos exactos del allowlist de
+    Loyalty Participation Record, `decision-log.md` D35)
+17. Confirmar recompensa entregada — confirmación de efecto inmediato
+    (speculative — pending `product/99-rfc/0005-...`, Proposed)
+18. Confirmar recompensa entregada — guardando / error (speculative —
+    pending `product/99-rfc/0005-...`, Proposed)
+
+**This document is no longer purely read-side** — §3.17/§3.18 introduce
+Resultados' first-ever write, speculative and gated behind RFC 0005's own
+approval. Every other state in this document, including every other
+state in this amendment (§3.15, §3.16's read-only content, both
+§3.12/§3.13 appends), remains read-only, unchanged from the posture the
+paragraph below originally described.
 
 Notably fewer states than `home.md` (23), `inventory.md` (18), or
 `events.md` (18) — Resultados has no forms, no writes, no destructive
@@ -1112,9 +1507,11 @@ what §3.6/§3.12 are gated by and added §3.13 — neither changed how many
 | Ver el detalle de un día ya cerrado, desde Resultados | 2 (abrir pestaña → tocar la fila) | Shortest possible once she's browsing rather than being handed off directly. |
 | Ver el resumen completo de un evento ya cerrado, desde Resultados | 2 (abrir pestaña → tocar la tarjeta) | Shortest path when she's already browsing Resultados directly. |
 | Ver el resumen completo de un evento ya cerrado, desde Eventos | 3 (abrir Eventos → tocar tarjeta → Ver resumen en Resultados) | One hop more than arriving directly (`events.md` §6 counts only the 2 taps taken once already inside Eventos, not the initial tab-open — counted on the same basis as this row, the Eventos route costs one more tap than going to Resultados directly. Not a defect: Eventos' hand-off exists for someone who started there for Eventos' own reasons, not to be the fastest route to a report.) |
-| Ver rendimiento por bazar / Ver tus clientes (paid) | 2 (abrir pestaña → Ver más) | Same shape as the row above — a one-line teaser plus one tap into the full view. Assumes the row is tappable: "Rendimiento por bazar" always is, for a paid merchant; "Tus clientes" is too, whenever `loyaltyEnabled=true` (populated or its own §3.13 empty state) — when `loyaltyEnabled=false`, "Tus clientes" is a passive note with nothing to tap, so this scenario doesn't apply to it (§3.6, §4). |
+| Ver rendimiento por bazar / Ver tus clientes (paid) | 2 (abrir pestaña → Ver más) | Same shape as the row above — a one-line teaser plus one tap into the full view. Both rows are always tappable for any paid merchant — "Rendimiento por bazar" regardless of Event history, "Tus clientes" regardless of `loyaltyEnabled`'s value (`decision-log.md` D34) — each simply lands on its own populated or empty-state view (§3.6, §4). |
 | Ver qué eventos componen un renglón de "Rendimiento por bazar" | 3 (abrir pestaña → Ver más → tocar el renglón del lugar) | One tap deeper than reaching the summary itself (row above) — the same per-altitude cost §2 already establishes for Historial → Event detail, just entered from a different starting altitude. |
 | Ver el evento específico detrás de ese renglón | 4 (abrir pestaña → Ver más → tocar el renglón → tocar la tarjeta del evento) | Same destination and cost as reaching Event detail from Historial directly (two rows above) — the venue filter adds exactly one tap, never more. |
+| Ver el detalle de una clienta con seguimiento | 4 (abrir pestaña → Ver más [Tus clientes] → Ver más [Recompensas] → tocar la fila de la clienta) | One altitude deeper than "Tus clientes" itself, matching the same per-altitude cost §2/§6 already charge for "Rendimiento por bazar"'s own venue drill-down. |
+| Confirmar que ya le diste su recompensa a una clienta (speculative, RFC 0005) | 6 (los 4 anteriores + tocar "Confirmar recompensa entregada" + tocar "Confirmar ahora") | A consequential write deliberately requires an explicit confirm step, reusing `settings.md`'s own two-tap commit shape for every comparable Business/Customer-state change — never a bare single tap for an action with a real, atomic, hard-to-undo effect. |
 
 Resultados has no comparable hard speed requirement to Home's <3s bar
 (`company/backlog.md` #1) — same posture `inventory.md` §6 and `events.md`
@@ -1134,12 +1531,14 @@ there; no urgency is invented where none exists.
   "capture business truth once, reuse it forever").
 - **Paid-tier sections (§3.9/§3.10/§3.12/§3.13) appear or disappear as whole
   units based on Business capabilities — never a per-screen or per-visit
-  toggle Ana touches.** "Rendimiento por bazar" is gated by
-  `subscriptionTier` alone; "Tus clientes" is gated by `subscriptionTier`
-  **and** `loyaltyEnabled` together (`decision-log.md` D22). Whether either
-  section specifically shows data or its own empty state (§3.9 vs. §3.10;
-  §3.12 vs. §3.13) is a separate, data-based read, resolved automatically —
-  never a manual toggle either.
+  toggle Ana touches.** Both "Rendimiento por bazar" and "Tus clientes" are
+  gated by `subscriptionTier=paid` alone (`decision-log.md` D34, correcting
+  D22's original joint-gate wording). Whether either section specifically
+  shows data or its own empty state (§3.9 vs. §3.10; §3.12 vs. §3.13) is a
+  separate, data-based read, resolved automatically — never a manual toggle
+  either; `loyaltyEnabled` factors into that data-based read only insofar
+  as it determines whether Claims exist to show, not whether the section
+  itself is reachable.
 - Per-Product breakdowns (§3.7/§3.8) are aggregated automatically from
   SaleItems, never typed or summarized by Ana herself.
 - Cold-start vs. main-view resolution reuses the same "has anything closed
@@ -1156,6 +1555,21 @@ there; no urgency is invented where none exists.
   Loyalty-claim** — this doc never re-derives frequency/occasional counts
   of its own accord; §3.12 simply reads the one aggregate signal Loyalty-
   claim exposes read-only to Intelligence (`domain-model.md`).
+- `SaleItem.pricePaid` resolution — fully automatic at Sale-write time in
+  Selling (`decision-log.md` D33); Resultados only ever sums an
+  already-resolved value, never resolves or re-prices anything itself.
+- **Recompensas' populated/empty branching is a pure derivation of the
+  same "any Claim recorded?" read "Tus clientes" already resolves — never
+  a second, independently-tracked flag.**
+- **Readiness ("Con recompensa lista") is a pure comparison,
+  `currentCycleProgress >= Business.loyaltyRewardThreshold`, computed
+  once, never asked of Ana.**
+- **The reward-cycle reset itself (`currentCycleProgress → 0`,
+  `completedCyclesCount += 1`) is the one thing in this whole capability
+  that stays deliberately manual** — RFC 0005's own "it cannot be
+  automatic" finding: Ana might reach a threshold without the physical
+  reward on hand yet, so the reset must wait for her deliberate
+  confirmation, not fire the instant the counter crosses the line.
 
 ## 8. Open questions
 
@@ -1196,6 +1610,15 @@ there; no urgency is invented where none exists.
    segmentation algorithm/thresholds (what precisely counts as "frecuente"
    vs. "ocasional"); `company/CLAUDE.md`'s own scope note on this is
    unchanged by this resolution.
+   **Further corrected by `decision-log.md` D34 (2026-08-08):** the
+   joint-gate clause above (`subscriptionTier=paid` **and**
+   `loyaltyEnabled=true`) is itself corrected — Customer Segmentation now
+   gates on `subscriptionTier=paid` alone, matching "Rendimiento por
+   bazar"'s own gate. `loyaltyEnabled` is kept, narrowed back to its
+   original scope (whether Claims are actively collected), never a
+   visibility precondition. §3.6's former passive `loyaltyEnabled=false`
+   note and §3.13's zero-Claims empty state collapse into the single §3.13
+   state — see §2 step 4, §3.6, §3.12, §3.13 for the corrected design.
 
 2. **[Q9 — Resolved, via `product/99-rfc/0001-venue-entity.md`
    (Accepted) and `decision-log.md` D20; full record in
@@ -1284,6 +1707,19 @@ there; no urgency is invented where none exists.
    not an architecture gap — but genuinely undecided rather than an
    inference to flag. Not designed anywhere in this document until resolved.
 
+9. **[New, escalated — Architect-resolvable] Does `Customer.purchaseCount`
+   (D35) increment once per Sale, or once per SaleItem/Claim?** D22's own
+   established mechanism generates "one Claim per SaleItem in that Sale"
+   for the Sale-level Claim Token — if a customer buys 3 different items
+   in one Sale, does that count as 1 purchase or 3 toward her reward
+   cycle? This materially affects when she actually reaches a reward, not
+   just a cosmetic label — §3.16's "Compras totales" copy is deliberately
+   worded to avoid asserting either answer, but the underlying counting
+   unit is a real Foundation gap, not a UX choice, and looks directly
+   resolvable from existing Foundation text (D22's Claim-per-SaleItem
+   mechanism) without needing a Product Owner call. Named here rather
+   than resolved by inventing an answer.
+
 ## 9. Principle justification
 
 **global-principles.md:**
@@ -1295,8 +1731,10 @@ there; no urgency is invented where none exists.
   por bazar" empty state (§3.10) shows no fabricated venue data and forces
   no navigation elsewhere — she simply isn't shown something that doesn't
   exist yet, the same restraint as Resultados' own top-level cold start
-  (§3.3). The `loyaltyEnabled=false` note (§3.6) shows no invented
-  "Activar" control either, for the same reason.
+  (§3.3). "Tus clientes"'s own zero-Claims empty state (§3.13) shows no
+  invented "Activar" control either, for the same reason, and no longer
+  special-cases `loyaltyEnabled=false` as a distinct condition
+  (`decision-log.md` D34).
 - *"Never ask twice"* — nothing in this tab asks Ana to re-enter or confirm
   a number the system already computed; §7 is the direct enumeration.
 - *"Technology should disappear"* — loading states stay silent unless
@@ -1321,7 +1759,9 @@ there; no urgency is invented where none exists.
   shape §3.9 already computes, rather than deriving a second, parallel
   list; "Tus clientes" (§3.12) reuses the single Derived Customer
   Intelligence signal Loyalty-claim computes, rather than deriving its own
-  segmentation logic.
+  segmentation logic. Every dollar figure in this tab is a sum of
+  `SaleItem.pricePaid`, resolved once at Sale-write time by Selling, never
+  re-derived or re-priced here (`decision-log.md` D33).
 - *"Collect data today. Create intelligence tomorrow."* — directly names
   this tab's whole premise: free tier is the "collect" side (counts/totals
   over data already captured elsewhere), paid tier (§3.9/§3.12) is the
@@ -1338,16 +1778,19 @@ there; no urgency is invented where none exists.
 
 **architecture-principles.md:**
 - *#1 (capabilities resolved once, upstream)* — `subscriptionTier` gates
-  "Rendimiento por bazar" as a whole section (§3.9/§3.10); `subscriptionTier`
-  **and** `loyaltyEnabled` together gate "Tus clientes" (§3.6/§3.12/§3.13,
-  `decision-log.md` D22) — both decided at the Business level, never a
-  per-screen or per-visit question, and `registrationMode` never enters
-  either gate (it only selects which Claim mechanism a Sale uses,
-  `domain-model.md`'s "Multi-mechanism Claim resolution"). Whether either
+  both "Rendimiento por bazar" and "Tus clientes" identically, as whole
+  sections (§3.9/§3.10; §3.6/§3.12/§3.13, `decision-log.md` D34, correcting
+  D22's original joint-gate wording) — decided once at the Business level,
+  never a per-screen or per-visit question, and `registrationMode` never
+  enters either gate (it only selects which Claim mechanism a Sale uses,
+  `domain-model.md`'s "Multi-mechanism Claim resolution"). `loyaltyEnabled`
+  is a separate capability, resolved the same way, governing a separate
+  question (whether Claims are actively collected) — not a second
+  visibility gate stacked on top of `subscriptionTier`. Whether either
   section shows data or its own empty state is a separate, data-based axis
   — it doesn't contradict this principle, since each section is still
-  always present (or absent) purely by capability state; only its content
-  varies with what actually exists to show.
+  always present (or absent) purely by `subscriptionTier`; only its
+  content varies with what actually exists to show.
 - *#3 (optional relationships stay optional in the data model)* — Historial
   mixing Event-rollups and standalone Sesión-rápida rows (§2, §10) only
   works because `Session.eventId` is genuinely nullable, not a UI
@@ -1373,7 +1816,40 @@ there; no urgency is invented where none exists.
   table row also now includes a read-only edge to Loyalty-claim, scoped
   strictly to Derived Customer Intelligence (D22) — §3.12/§3.13 never
   design anything beyond consuming that one aggregate signal, consistent
-  with the same one-way rule.
+  with the same one-way rule. Reading `SaleItem.pricePaid` sits inside
+  Intelligence's existing read-only dependency on Selling — no new edge.
+  `Event.bazaarCost`, while a Selling-owned field this document *could*
+  technically read, is deliberately never read here — a restraint
+  exercised on purpose, not a gap.
+
+**Loyalty Participation view (2026-08-08 amendment) — additional principle grounding:**
+- *global-principles.md, "Never ask twice"* — `ageRange`/`gender`, once
+  captured at first Claim, are never re-asked; a returning customer's
+  scan matches the existing `(businessId, email)` record and increments
+  its counters (D37's dedup invariant), never creating a duplicate Ana
+  would have to reconcile.
+- *global-principles.md, "Capture business truth once, reuse it
+  forever"* — `lifetimeSpend`/`purchaseCount`/`currentCycleProgress`/
+  `completedCyclesCount` are all written once, by Loyalty-claim, at the
+  moment each Claim resolves (D35); this document only ever reads them,
+  never recomputes them.
+- *global-principles.md, "Business language before technical language"* —
+  "Recompensas," "recompensa lista," "compras totales" throughout;
+  "Customer," "Claim," `currentCycleProgress`, `loyaltyRewardThreshold`
+  never appear on screen.
+- *architecture-principles.md #1 (capabilities resolved once, upstream)*
+  — Recompensas gates on `subscriptionTier=paid` alone, the identical
+  whole-section gate as its two siblings, never a per-screen question.
+- *architecture-principles.md #4* — Customer and Claim are never named as
+  such anywhere in this amendment, same restraint the rest of this
+  document already applies.
+- *architecture-principles.md #6* — the new write (§3.17/§3.18) extends
+  Intelligence's already-existing edge into Loyalty-claim, same direction
+  as its two existing read grants, per RFC 0005's own explicit
+  dependency-direction check — no back-edge, no new dependency for
+  Selling.
+- *architecture-principles.md #7 (idempotent/keyed retry)* — §3.18's
+  retry, argued in full there.
 
 ## 10. Decisions made
 
@@ -1489,20 +1965,37 @@ there; no urgency is invented where none exists.
   algorithm/thresholds; tracked in §11, not as an open question here, since
   `company/CLAUDE.md` already scopes that out explicitly rather than
   treating it as awaiting a decision-owner's call.
-- **No self-service loyalty-activation control designed within this tab
-  for the `loyaltyEnabled=false` state (§3.6).** Q5
-  (`company/business-decisions.md`, Resolved) and `decision-log.md` D25
-  establish that Business Capabilities, including `loyaltyEnabled`, are
-  fully self-service and bidirectional at any time — but the actual toggle
-  ("Activar clientes frecuentes") is designed once, in
-  `product/02-ux/settings.md` (§3.3a/§3.4), reached from Home's header "▾,"
-  never duplicated here. §3.6's note now names Configuración as the real
-  place to go — a plain-text pointer, added now that Settings exists as an
-  Approved destination to point to — but stays non-tappable in this doc:
-  inventing a second, parallel "Activar" control inside Resultados would
-  duplicate a capability change this doc doesn't own, contradicting
-  `architecture-principles.md` #1 (each capability resolved once, upstream,
-  never a per-screen toggle).
+- **`decision-log.md` D34 corrects the joint-gate clause the Q8 resolution
+  above introduced.** "Tus clientes" now gates on `subscriptionTier=paid`
+  alone — the identical gate "Rendimiento por bazar" already used, per
+  `architecture-principles.md` #1. `loyaltyEnabled` is kept, narrowed back
+  to its original, correct scope (whether Loyalty-claim actively collects
+  Claims at all), never a second activation switch Ana must flip before
+  Resultados will show her whatever segmentation data already exists. The
+  two states this doc previously designed for the `loyaltyEnabled`
+  dimension — §3.6's passive, non-tappable `loyaltyEnabled=false` note, and
+  §3.13's zero-Claims-yet empty state — collapse into one: any paid
+  merchant with zero Claims recorded, for any reason, sees the same
+  tappable, naturally-empty §3.13 state, with no special-casing of *why*
+  it's empty. §1, §2, §3.4/§3.5/§3.6/§3.12/§3.13, §4, §5, §6, §7, §8 item
+  1, and §9 updated to match.
+- **The `loyaltyEnabled=false` state (formerly its own non-tappable note in
+  §3.6, pointing to Configuración) is retired** (`decision-log.md` D34). It
+  collapses into the same tappable, naturally-empty §3.13 state used for
+  "zero Claims recorded yet" — no distinct rendering, no branching on which
+  of the three underlying reasons applies, since `loyaltyEnabled` is no
+  longer a visibility precondition for this section at all. §3.13's own
+  copy retains a light, case-agnostic text pointer to Configuración ("Puedes
+  revisar esto en Configuración") — true regardless of which of the three
+  cases applies, and never naming or branching on which one does — so a
+  merchant in the never-activated or currently-off case still has a signal
+  of where the relevant control lives, without reintroducing the
+  special-casing D34 rules out. This stays passive text, not a tap target
+  (§3.13's own "No tappable CTA" reasoning, unaffected by this addition).
+  The actual toggle ("Activar clientes frecuentes") still lives exactly
+  where it always did — `product/02-ux/settings.md` (§3.3a/§3.4), reached
+  from Home's header "▾" — this doc simply no longer treats reaching it as
+  something Ana needs to do before "Tus clientes" becomes visible.
 - **No paid-tier upgrade/purchase flow designed anywhere in this tab.** The
   free-tier informational note (§3.4/§3.5) stays passive text, not a
   tappable CTA — payments/checkout are an explicit `company/CLAUDE.md`
@@ -1521,8 +2014,8 @@ there; no urgency is invented where none exists.
   `product/99-rfc/0001-venue-entity.md`'s own scope note that Venue is not a
   full location-management module.
 - **All merchant-facing copy that points at "Tus clientes" (§3.4/§3.5's
-  free-tier note, §3.6's `loyaltyEnabled=false` note, §3.13's empty state)
-  is worded as a count/category ("cuántas son tus clientas frecuentes y
+  free-tier note, §3.6's zero-Claims teaser, §3.13's empty state) is
+  worded as a count/category ("cuántas son tus clientas frecuentes y
   cuántas ocasionales"), never as an identity claim ("quiénes son tus
   clientas").** Corrected per `ux-critic`'s RPT2-MAJ1 finding
   (`ux-critic-findings.md`): the architecture (§3.12,
@@ -1533,7 +2026,68 @@ there; no urgency is invented where none exists.
   foreseeable expectation break given `company/CLAUDE.md`'s own framing of
   Ana's validated friction as "I can't tell who my repeat customers are" —
   the fix keeps every teaser's promise scoped to exactly what §3.12
-  delivers.
+  delivers. (§3.6's own note previously distinguished a
+  `loyaltyEnabled=false` case here; `decision-log.md` D34 collapses that
+  into the same zero-Claims teaser, unaffected by this count/category
+  wording rule either way.)
+- **Every dollar figure in this tab explicitly grounded as a sum of
+  `SaleItem.pricePaid` — applies `decision-log.md` D33.** Resolves the
+  exact ambient-assumption D33's own Context names ("Hoy: $850...
+  $14,230... $296 ticket promedio," rendered with no traceable source
+  before D33). No screen, state, computation, or gate changed — this is a
+  citation/grounding pass. **Deliberately does not add any profitability/
+  margin figure netting `Event.bazaarCost` against revenue anywhere in
+  this document** — out of scope by explicit Product Owner instruction
+  and by D33 itself.
+- **Loyalty Participation view designed as new sections within
+  `reports.md` (§3.15–§3.18), plus additive appends to §3.12/§3.13,
+  rather than a standalone document.** Grounded directly in RFC 0004's
+  own "adds content within [Resultados]" framing and this doc's own
+  §3.9→§3.11 precedent (a summary teaser → populated list → per-entity
+  detail).
+- **Full (not masked) email shown throughout.** D35 leaves this choice to
+  `ux-designer`; chosen because masking would undercut the very friction
+  this capability exists to solve (`company/CLAUDE.md`'s "can't tell who
+  my repeat customers are").
+- **Recompensas list sorted by readiness first, then progress
+  descending** — the ordering that most directly serves this screen's
+  purpose (spotting who's ready for a reward today), not a "Rendimiento
+  por bazar"-style neutral magnitude sort.
+- **"Confirmar recompensa entregada" placed on the customer-detail
+  screen, never on the compact list row** — consistent with this app
+  family's existing restraint of never placing a consequential write on
+  a scannable list row.
+- **`Business.loyaltyRewardThreshold` assumed to always carry a value
+  (illustrative default) rather than designing a "no threshold set"
+  state** — D37 explicitly leaves this shape open to `ux-designer`; this
+  choice keeps this document self-contained and defers the actual
+  Settings-side configuration surface entirely (§11).
+- **No new partial-section load-failure pattern designed** — Recompensas
+  data is deliberately architected to load as part of the same initial
+  Resultados resolve as everything else, so the existing whole-tab
+  fallback (§3.14) already covers it. `ux-critic-findings.md` RPT-S2
+  stays open for a future, more granular pass; not resolved here.
+- **The "Confirmar recompensa entregada" action, and only that action
+  (§3.16's button, §3.17, §3.18), is speculative — designed fully
+  against RFC 0005's complete contract, but flagged everywhere it
+  appears as pending that RFC's approval.** Everything else in this
+  amendment depends only on the already-Accepted D35/D37.
+- **§3.17's copy corrected to honestly disclose that "Confirmar recompensa
+  entregada" is not reversible, closing a gap `ux-critic` found in this
+  screen's reuse of `settings.md` §3.4's confirm-screen template.** Every
+  one of `settings.md`'s five instances of that template is a
+  self-service, bidirectional Business Capability toggle (D25) whose copy
+  reassures Ana nothing lasting is lost; this action isn't one of those —
+  RFC 0005 explicitly excludes any reversal, undo, or edit of a completed
+  confirmation, since the physical reward has already left Ana's hands by
+  the time she taps it. The fix adds one plain sentence stating that fact
+  before she commits, in the same disclosure register `onboarding.md`
+  §3.4c already established ("no vas a poder convertirlo en tu negocio
+  real después") — not a new tonal pattern for this document family, and
+  not a reason to invent a correction mechanism RFC 0005 deliberately
+  doesn't have. The section's "speculative — pending RFC 0005" framing is
+  unchanged by this fix; the copy is now complete against RFC 0005's
+  contract, not more settled than the RFC's own Proposed status allows.
 
 ## 11. Future considerations
 
@@ -1578,3 +2132,27 @@ there; no urgency is invented where none exists.
   keys off `venueId`, not any freeform text, so a Venue gaining a
   displayName correction or an address later has zero structural effect
   here.
+- A profitability/margin view netting `Event.bazaarCost` against Sale
+  revenue — **named here explicitly as a future idea, not designed now**
+  — would require moving `bazaarCost` out of `decision-log.md` D33's
+  deliberate "captured-but-not-computed" state, a Product Owner call this
+  document doesn't make.
+- **Settings-side `Business.loyaltyRewardThreshold` configuration UI** —
+  not designed anywhere in this document; D37 names it as open, this
+  amendment only consumes whatever value currently exists (defaulting
+  illustratively). A future `settings.md` amendment, likely following its
+  own established self-service-editable, immediate-effect pattern (D37's
+  own comparison to `defaultSellingMode`).
+- **Whether "frecuente"/"ocasional" (Derived Customer Intelligence) and
+  reward-cycle readiness (Loyalty Participation Record) should ever be
+  shown together or cross-filtered** — deliberately not designed; no
+  Foundation-stated relationship between the two independently-computed
+  signals exists today, and inventing one here would overstate what's
+  actually known.
+- **Finer-grained partial-section load failure**
+  (`ux-critic-findings.md` RPT-S2) — still open, doc-set-wide, not
+  resolved by this amendment; named explicitly rather than silently left
+  implicit.
+- **`Customer.purchaseCount`'s exact counting unit** (§8, item 9) — once
+  resolved by Architect, may change what number literally renders in
+  §3.16, with no structural change to the screen itself.

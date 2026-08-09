@@ -294,3 +294,157 @@ First finding produced by the new Horizontal Journey Review mode (`company/CLAUD
 Status: Low-Fidelity spec fixed and verified clean by both `ux-critic` and `reviewer` — no Blockers, no ubiquitous-language/domain-model conflict. `inventory.md`'s on-screen heading at §3.6/§3.7 (and §3.8's dimmed backdrop) changed from "Registrar mercancía" to "Registro de mercancía," differentiating it from the identically-worded CTA; both entry points that reach this screen (`home.md` §3.3's cold-start CTA and `inventory.md`'s own §3.3 cold-start CTA) are closed by this one change since both route to the same destination. **`reviewer` also found one Important finding: the Medium-Fidelity Figma build (frame `48:58`, likely `49:68`/`50:78` and their clones) has not been re-synced and still shows the old "Registrar mercancía" heading** — see `product/02b-medium-fidelity/inventory.md`'s own pending amendment-sync note. The Low-Fidelity spec itself is Approved as written; this finding isn't fully closed end-to-end until the Figma sync lands.
 
 **Related, out of scope for this pass:** the identical CTA-equals-next-heading pattern also exists in `events.md` (`[ Agendar evento ]` → §3.6's heading "Agendar evento," lines 178/302), unflagged in that document's own approved review. Not extended into this finding since Task scope was the Inventory-prep journey specifically and Eventos hasn't had its own Horizontal Journey Review yet — flagged here so it isn't rediscovered as if new when that review runs.
+
+---
+
+## `decision-log.md` D33 remediation — MVP pricing/event-cost operating model (`inventory.md`, `events.md`, `home.md`, `reports.md`)
+
+Two rounds. Round 1 (`ux-designer`'s initial amendment across all four documents) found 2 Major, 2 Minor, 1 Suggestion. Round 2 (Product Owner's scheduled-only ruling for "Ajustar precios," plus the wiring-completeness fixes) verified clean — no Blockers, no unresolved Majors, ready for `reviewer`. Full round-1/round-2 record lives in `company/bitacora.md`'s D33 entries, not restated here. This entry tracks only the Minor findings and hygiene notes still open after round 2, so they aren't lost once the batch moves to `reviewer`.
+
+### Minor Findings (open, non-blocking)
+
+**EVT-D33-MIN-A** — `events.md` §3.11 now carries two separate bullets both introducing "Ajustar precios," the second (added by the M2 fix) restating the first's sentence on Price Override reachability near-verbatim, with an unrelated "Costo" bullet sandwiched between them — an append-rather-than-merge artifact of the round-2 fix. Not ambiguous (both agree), but risks a future editor updating only one copy. Worth consolidating into a single bullet whenever this document is next touched.
+
+**INV-D33-MIN-A** — `inventory.md` §3.4's prose states the new price display + tap target "applies identically wherever this row shape reappears (§3.5, §3.12, §3.13, §3.17)," but none of those four wireframes were actually redrawn to show it — unlike the sibling per-Product marker `(P)/(S)/(C)`, which *was* correctly propagated into all four when it was added. Separately, within §3.4 itself the price figure renders as plain unbracketed text (`$150`) rather than `[ $150 ]`, silently contradicting this doc's own `[ ] = tappable` legend — the same class of gap INV-MIN1 already flagged for "Descartar." Not ambiguous given the explicit cross-referencing prose, but a real illustrative-completeness gap. Worth a pass whenever this document is next touched.
+
+### Documentation-hygiene notes — closed by Main, 2026-08-08
+
+- `events.md` §10 now records the MIN2 zero-Catalog-Product empty-state addition.
+- `events.md`, `inventory.md`, `home.md`, and `reports.md`'s top-of-file Status headers, and `product/02-ux/CLAUDE.md`'s own Status section, all now record the D33 amendment and its `reviewer` sign-off.
+
+---
+
+## `decision-log.md` D33 follow-on — "Define lo que vendes" moved into Onboarding (Product Owner decision, 2026-08-08)
+
+Two rounds, same batch discipline as the D33 pricing cycle above. Full narrative record lives in `company/bitacora.md`'s 2026-08-08 "Define lo que vendes moved into Onboarding" entry and `onboarding.md`/`home.md`/`inventory.md`'s own status headers — not restated here.
+
+### Major Findings — round 1, both closed in round 2
+
+**ONB-D33-MAJ1** — `home.md` §4's interaction-flow summary still cited the pre-correction cold-start test ("Catalog has Products" / "Catalog empty") after §2 step 3 had already been corrected to "at least one `available` InventoryUnit exists" — a stale copy in this document family's own designated canonical wiring section (`product/02-ux/CLAUDE.md`), the exact class of drift D31/D32 already treat as a real Medium-Fidelity build-defect risk.
+Status: Fixed. §4's branch labels corrected to match §2 exactly; §10 gained a bullet recording the fix and that it was caught during this remediation, not the original correction pass. `ux-critic` re-verified clean, swept the rest of `home.md` and found no other stale instance.
+
+**ONB-D33-MAJ2** — a new, foreseeable first-impression risk: `onboarding.md`'s new "Define lo que vendes" step lets a Product exist with zero stock for the first time ever, but `inventory.md`'s Catalog view rendered that state identically to "previously stocked, now sold out" ("0 disponibles," no distinguishing copy) — risking a fresh merchant seeing her own just-named products marked as if already sold out, directly against `onboarding.md` §1's own stated highest-stakes concern (a first impression reading as broken).
+Status: Fixed. A zero-`disponibles` row now shows "sin registrar" (never had a Lot received) distinct from "0 disponibles" (sold out) — derived read-side, no new stored field — applied identically to §3.4/§3.5/§3.12/§3.13/§3.17. `ux-critic` independently verified the derivation requires no schema change (checked directly against `domain-model.md`'s entity-relationships diagram) and that the copy stays in this document's established plain, non-judgmental register. Re-verified clean.
+
+### Suggestion — closed
+
+**ONB-D33-S1** — `onboarding.md` §3.5c's duplicate-Producto guarantee didn't explicitly state whether it covered both commit actions ("+ Agregar otro producto" and "Continuar") or only the illustrated one.
+Status: Fixed — wording now explicitly names both.
+
+### `reviewer` findings, closed by Main
+
+**ONB-D33-REV1 (Important)** — this cycle had no dedicated entry in this file (the gap this very entry closes).
+**ONB-D33-REV2 (Important)** — `inventory.md` §3.8a/§10 both claimed `Product.defaultPrice` is captured "here, and only here," now stale since `onboarding.md` §2.2a creates Products through the identical write path from a second entry point.
+Status: Fixed — both passages reworded to acknowledge Onboarding as a sibling entry point, never a second mechanism.
+
+**Suggestions, deferred, non-blocking:** (1) `onboarding.md` capitalizes "Selling Group" as if it were a ubiquitous-language term (22 instances) — no sibling document (`inventory.md`, `events.md`) uses the phrase at all, both just say "Product"; no merchant-facing leak (verified directly in the wireframes), purely an internal-prose consistency question. (2) A `decision-log.md` D19 citation in `onboarding.md` §2.2a was quoted with wording D19 doesn't actually contain — fixed directly (not deferred, small enough to close immediately). Item (1) is left open, worth a pass whenever this document is next touched.
+
+`reviewer` verdict: no Blockers. Both Important findings closed; ready to fold back into Approved.
+
+## Business Identity capture — restored into Onboarding (Product Owner decision, 2026-08-08)
+
+One round. Full narrative record lives in `company/bitacora.md`'s 2026-08-08 "D33 realized in Medium-Fidelity... business-identity capture fixed" entry — not restated here.
+
+### Major Findings — closed
+
+**ONB-ID-MAJ1** — `onboarding.md` §3.9's and §3.9a's intro copy ("Esto es lo que tus clientes van a ver en tu recibo digital") sat directly above three fields — Nombre, Logo, Descripción — implying all three reach the customer. Cross-checked against `home.md` §3.8f's actual receipt rendering: only `Business.name`/`Business.logo` are ever shown; `Business.description` is stored only. A merchant filling in Descripción believing it would reach her customer was being told something false on the one screen designed to build first-session trust.
+Status: Fixed. Intro narrowed to "Tu nombre y tu logo son lo que tus clientes van a ver en tu recibo digital" (both §3.9/§3.9a); Descripción given its own honest caption, "La guardamos con tu negocio — tu recibo no la muestra todavía." `ux-critic` independently re-verified the narrowed claim against `home.md` §3.8f directly.
+
+### Minor Findings — closed
+
+**ONB-ID-MIN1** — no error state was defined for a device-level logo file-selection failure (unsupported format, corrupted file) — a real occurrence on merchant-owned devices, left with no defined feedback or next step.
+Status: Fixed. A lightweight inline failure state added directly beneath "Subir logo" ("No pudimos mostrar ese archivo. Intenta con otro logo, si quieres."), not a new numbered §5 state — leaves Nombre/Descripción untouched, "Continuar" still gated on Nombre alone.
+
+**ONB-ID-MIN2** — §3.9a redundantly repeated §3.9's "Trae tu logo si ya tienes uno — no es necesario" after a logo had already been selected and was visibly rendered on the same screen.
+Status: Fixed. Line dropped from §3.9a, mirroring §3.5b→§3.5c's own established precedent for dropping a now-irrelevant intro line once state has changed.
+
+### Suggestion — closed
+
+**ONB-ID-S1** — §3.10a's error-state wireframe omitted an illustrative Descripción value, inconsistent with §3.5e's own convention of showing every captured example field.
+Status: Fixed — wireframe now shows "Ropa cómoda para toda la familia" alongside the existing Nombre/Logo example values.
+
+**Process note, not a UX finding:** the first fix attempt was never actually persisted to `onboarding.md` before being sent for `ux-critic` re-verification — `ux-designer` has no Write access by design and only produces replacement text in its report; Main is responsible for applying it and initially failed to. `ux-critic` correctly caught this (re-verification found the file byte-for-byte unchanged) rather than passing a fix that didn't exist. Main applied the fix directly on the second attempt; re-verification confirmed clean.
+
+**Suggestion, deferred, non-blocking:** §9's principle-justification prose (line ~797) grouped all three identity fields under one citation of `home.md` §3.8f without repeating the name/logo-vs-description scoping — internal agent-facing reasoning prose, not merchant-facing copy, so no effect on Ana's experience, but worth tightening for a future editor skimming in isolation. Fixed directly by Main (small enough to close immediately, not deferred).
+
+`ux-critic` verdict: clean, 0 Blockers, 0 unresolved Major/Minor. `reviewer` found 2 further Important findings (below) — both documentation-persistence gaps, closed by Main directly per this project's established pattern for that class of finding.
+
+**`reviewer` findings, closed by Main:**
+
+**ONB-ID-REV1 (Important)** — `Business.name`/`Business.logo`/`Business.description` had no `decision-log.md` entry, and were undocumented in `domain-model.md`/`ubiquitous-language.md`, despite `architect`'s correct "no RFC needed" finding being misread as "no Foundation change needed at all" — contradicting `domain-model.md`'s own rule that additive change still gets a plain entry (same class as D29).
+Status: Fixed — `decision-log.md` D36 added; `domain-model.md`'s Business entry and `ubiquitous-language.md`'s Business entry both updated to name the three new fields.
+
+**ONB-ID-REV2 (Important)** — this cycle's findings (ONB-ID-MAJ1, 2 Minor, 1 Suggestion) had no entry in this file — the gap this very entry closes.
+
+`reviewer` verdict: no Blockers. Both Important findings closed; ready to fold back into Approved.
+
+## `decision-log.md` D34 — Customer Segmentation gating correction (`reports.md`, `settings.md`)
+
+One round. Corrects D22's original joint gate (`subscriptionTier=paid` **and** `loyaltyEnabled=true`, required for "Tus clientes"/Customer Segmentation visibility) to `subscriptionTier=paid` alone — `loyaltyEnabled` narrowed back to gating only whether Loyalty-claim actively collects Claims, never a visibility precondition. Full narrative record lives in `company/bitacora.md`'s 2026-08-08 "RFC 0004 promoted... a related gating correction (D34)" entry — not restated here.
+
+### Major Findings — round 1, both closed in round 2
+
+**D34-MAJ1** — `reports.md`'s "Out of scope by explicit instruction" preamble (the "No specific customer-segmentation algorithm" bullet, before §1) still stated the old joint-gate rule in unqualified present tense — missed by the original correction pass since it wasn't named in the amendment's own list of touched sections.
+Status: Fixed. Bullet now states the corrected gate (`subscriptionTier=paid` alone, `loyaltyEnabled` narrowed to Claim collection only), citing D34.
+
+**D34-MAJ2** — §3.13's collapsed empty state ("Tus clientes — sin datos aún," now covering all three zero-Claims causes: never activated, currently off, on-with-nothing-collected) dropped all pointer/CTA language entirely, on the reasoning that any CTA would require branching on *why* the state is empty (correctly forbidden by D34). This conflated "no branching on the reason" with "no mention of Configuración at all" — leaving a merchant in the never-activated or currently-off case with zero signal that a real, actionable control exists.
+Status: Fixed. A light, case-agnostic text pointer added to the wireframe, the "No CTA" bullet, and §10's cross-referencing bullet — "Puedes revisar esto en Configuración ('Activar clientes frecuentes')," true regardless of which of the three cases applies, never naming or branching on which one does. Stays passive text, not a tap target — the original no-CTA reasoning (the actual claiming action happens on the customer's device, not Ana's, per D21) is preserved and unaffected.
+
+### Minor Finding — closed
+
+**D34-MIN1** — the top-of-file status-header paragraph (the original D22 amendment record) stated the old joint-gate rule with no forward pointer to the D34 correction, which sits ~50 lines later separated by two unrelated dated amendments — a reader stopping partway through the cumulative header could be misled.
+Status: Fixed — sentence now ends "...never `subscriptionTier` alone — corrected by D34 below." Historical paragraph itself left intact, per this project's cumulative-history convention (same as `decision-log.md`'s own "don't edit past entries" rule).
+
+`ux-critic` verdict: clean, 0 Blockers, 0 unresolved Major/Minor. `reviewer` found 3 further Important findings (below) — all documentation-persistence gaps, closed by Main directly per this project's established pattern for that class of finding.
+
+**`reviewer` findings, closed by Main:**
+
+**D34-REV1 (Important)** — `product/02-ux/CLAUDE.md`'s status log was stale for both `reports.md` and `settings.md` — neither entry mentioned the D34 amendment at all.
+Status: Fixed — both entries updated with a "Further amended 2026-08-08 (`decision-log.md` D34...)" note, matching the existing pattern for D33/D27 lines.
+
+**D34-REV2 (Important)** — this cycle's findings had no entry in this file — the gap this very entry closes.
+
+**D34-REV3 (Important)** — `decision-log.md` D34's own "Applied" paragraph omitted `domain-model.md`, even though `domain-model.md`'s "Multi-mechanism Claim resolution" Key Mechanism paragraph was demonstrably edited as part of this decision and explicitly cites D34 — breaking the convention every sibling entry (D33, D35, D36) follows of listing every Foundation file it touches.
+Status: Fixed — D34's Applied paragraph corrected to name `domain-model.md`.
+
+**Suggestions, deferred, non-blocking, pre-existing (not introduced by D34):** (1) `domain-model.md`'s Business Capabilities table row for `loyaltyEnabled` still reads "Whether a sold InventoryUnit's tag is claimable" — narrower than its actual scope, which also covers the Sale-level Claim Token/QR mechanism per D22. (2) `ubiquitous-language.md`'s Capability list still describes `loyaltyEnabled` as "off until the loyalty-claim module exists" — stale relative to D25/D27's self-service, bidirectional model. Both worth tightening whenever either file is next touched.
+
+`reviewer` verdict: no Blockers. All three Important findings closed; ready to fold back into Approved.
+
+## Frequent Customers Stage 2 — `customer-loyalty-registration.md` (new) and `reports.md` §3.15–§3.18 (Product Owner elevation to MVP-vision capability, 2026-08-08)
+
+Two rounds, covering both new/amended documents together since `ux-critic` reviewed them as one workstream. Full narrative record lives in `company/bitacora.md`'s 2026-08-08 "Frequent Customers Stage 2 Product specification finalized" entry — not restated here.
+
+### Major Findings — round 1, both closed
+
+**FC-MAJ1** — `customer-loyalty-registration.md` §3.5's "No, gracias" wireframe annotation labeled the button `tertiary, escape hatch` while the accompanying prose claimed it was "exactly as visually available as Continuar" — a direct contradiction against `company/brand/brand-guide.md`'s own Button hierarchy (Tertiary is explicitly text-only, a lower-prominence class than Primary's solid fill).
+Status: Fixed. Reclassified as Secondary (outlined/light-fill, full-size, equally-tappable) — genuinely equal prominence/availability without visual identity to "Continuar." Applied consistently across the wireframe annotation and three prose bullets (§3.5, §9's brand-guide.md and global-principles.md justifications).
+
+**FC-MAJ2** — `reports.md` §3.16–§3.18's "Confirmar recompensa entregada" reused `settings.md` §3.4's confirm-screen template — a shape used elsewhere only for reversible, bidirectional Business Capability toggles (D25) — for an action that, per `product/99-rfc/0005-reward-cycle-confirmation-write-edge.md`'s original contract, was atomic and left zero trace it had occurred.
+Status: Fixed in two parts. `architect` checked this against this Foundation's actual precedent (Sale finalization, `home.md` §3.8/§11 — this project's most consequential atomic write, which ships with no confirm screen and a deliberately deferred, non-blocking undo) and concluded an in-app reversal mechanism is not warranted (it couldn't retrieve a reward already physically handed over) — but the complete lack of any event trace was a real, precedent-inconsistent gap. RFC 0005 amended: added `Customer.lastRewardConfirmedAt` (internal-only timestamp, never merchant-facing), explicitly still excludes reversal/undo, and names the question of a future human dispute-resolution process as a separate, unresolved Business Decision. A second-round finding (below) closed the remaining copy gap.
+
+### Minor Findings — round 1, all closed
+
+**FC-MIN1** — `customer-loyalty-registration.md` §3.6 had no decline/back affordance, inconsistent with §3.5's own "always-available way to opt out" principle.
+Status: Fixed — "No, gracias" (same Secondary treatment, same destination §3.6b) added to §3.6, with supporting consistency edits across §2/§4/§5/§6/§3.6b.
+
+**FC-MIN2** — "Powered by Nahui" trust footer was absent from §3.6, the one screen its own stated phishing-prevention rationale would apply to most.
+Status: Fixed — added to §3.6, with a new bullet explaining why.
+
+**FC-MIN3** — Concurrent first-claim attribution race (two people opening the same still-unclaimed token near-simultaneously) wasn't named anywhere.
+Status: Fixed — named as a new Architect Decision candidate, §8 item 6, with a supporting parenthetical at §2 step 2. Not yet resolved — an open item, not a defect.
+
+### Major Finding — round 2, closed
+
+**FC-MAJ3** — Surfaced during round 1's own verification pass, not missed originally: `reports.md` §3.17's confirm-screen copy stated the reward-reset mechanics accurately but, unlike every one of `settings.md`'s five sibling instances of the same template (each of which reassures Ana nothing lasting is lost), gave no signal that this specific action has no correction path once committed.
+Status: Fixed. `ux-designer` added one plain disclosure line ("Una vez que confirmes, no vas a poder deshacerlo...") in the same register `onboarding.md` §3.4c already established for its own irreversible-write disclosure — not a new tonal pattern for this document family. Scoped to copy only; no reversal mechanism invented, consistent with RFC 0005's own exclusion. The section's "speculative — pending RFC 0005" framing is unchanged.
+
+### Suggestion — logged, not adjudicated by `ux-critic`, routed to `reviewer`
+
+**FC-S1** — `customer-loyalty-registration.md` is the only document in `product/02-ux/` that names `brand-guide.md`'s specific Button classes ("Primary," "Secondary," "Tertiary") by name, rather than describing relative prominence in implementation-independent hierarchy terms the way every sibling document does (`product/02-ux/CLAUDE.md`'s own "no color, no component names" fidelity rule). Likely necessary to unambiguously resolve FC-MAJ1's contradiction, but flagged as a real fidelity-rule deviation worth a second look — `ux-critic` judged this closer to document-structure/fidelity-rule compliance than pure UX quality, and left it for `reviewer` rather than adjudicating it directly.
+
+### Verification
+
+`ux-critic` verdict, final pass: clean — all 5 round-1 findings confirmed resolved with no regressions; FC-MAJ2/FC-MAJ3 confirmed resolved on the follow-up pass. Ready for `reviewer`'s Foundation-consistency pass (FC-S1 flagged for `reviewer`'s own judgment, not pre-resolved here).
+
+`reviewer` verdict: 1 Blocker (implementation-specific Button-class naming in §3.5/§3.6, closing FC-S1 — fixed by removing all component-name references, keeping the implementation-independent language the document already had) + 2 Important (undocumented `product/02-ux/` placement, resolved via `decision-log.md` D38 relocating the document to `product/02-ux-loyalty/`; no `product/02-ux/CLAUDE.md` status-index entry needed per that same ruling — tracked instead in `product/02-ux-loyalty/CLAUDE.md`'s own Status section). Re-verified clean on a final pass, including a fresh Foundation-consistency check against `domain-model.md`/`ubiquitous-language.md`/RFC 0004/RFC 0005. Folded into Approved (Draft-complete, `product/02-ux-loyalty/customer-loyalty-registration.md`).

@@ -3,6 +3,8 @@
 ## 1. Upstream spec reference
 `product/02-ux/inventory.md`, Approved (D23-amended, cross-reference/terminology only, folded back to plain Approved).
 
+**Amended 2026-08-08 for `decision-log.md` D33 (pricing/event-cost operating model).** The upstream spec gained new §3.4a (Editar precio — sheet) and §3.8a (Elegir producto — nuevo producto, precio inicial), plus price display on every existing Catalog row. This build (below) realizes both in Figma, as part of the same combined dispatch that also built `onboarding.md`'s "Define lo que vendes" step and `events.md`'s Costo/Ajustar precios work.
+
 ## 2. Figma file/frame links
 File `DPRnGD5JWjfoNBSlAFoVG4` ("Nahui — Medium-Fidelity UI"), page **"02 · Inventario"** (`45:2`). All 18 `inventory.md` §5 states covered across 19 frames (state 10's near-instant/slow sub-states split into two visual panels, same shape as `events.md`'s §3.9 split):
 
@@ -29,8 +31,30 @@ File `DPRnGD5JWjfoNBSlAFoVG4` ("Nahui — Medium-Fidelity UI"), page **"02 · In
 
 Shared Design System page: `0:1`. No new components required — all screens reuse existing symbols (`Button` incl. Destructive variant, `NavBar`, `FieldBox`, `SheetHandle`, `SearchField`, `AddNewRow`, `PickerListRow`, `Skeleton`, `NFCScanPrompt` reused directly from `home.md`'s build). One new, contained, non-componentized element: the `Eliminar línea (tap target)` wrapper frames (`56:189`/`56:190`) — see Known gaps.
 
+**Added 2026-08-08 — D33 pricing build. Node-state mapping confirmed directly against live Figma metadata (`get_metadata`), not inferred from the build report:**
+
+| Frame | inventory.md state |
+|---|---|
+| `735:532` | §3.4a Editar precio — sheet |
+| `735:5473` | §3.8a Elegir producto — nuevo producto, precio inicial |
+| `735:5510` | §3.6 Registrar mercancía — entry, Producto seleccionado via §3.8a (Chalecos, "1 · revisa antes de guardar") — a composed downstream frame showing the §3.8a picker's own selection landing correctly, same technique as the existing `127:1300` populated-picker clone |
+| `745:594` | §3.8 Elegir producto — picker sheet, typed "Chalecos" no-match state. Self-corrected by `ui-designer` mid-build (see `product/02-ux/CLAUDE.md`/session notes) — not a new spec state, a picker-content variant. |
+
+**Price display, all four existing Catalog-view frames** — a new `Price tap target` wrapper (56×44px, opens `735:532`) added per product row, three rows per frame (Pijama/Sudadera/Calcetines), 12 total:
+
+| Frame | Price tap targets |
+|---|---|
+| `47:38` (§3.5, pending-tag catalog) | `745:636`, `745:639`, `745:642` |
+| `47:65` (§3.17, "Terminar después" = §3.5) | mirrors `47:38`'s three, same pattern |
+| `52:138` (§3.12, post-save confirmation — buttons-only) | `745:654`, `745:657`, `745:660` |
+| `52:162` (§3.13, post-save confirmation — nfc-capable) | mirrors `52:138`'s three, same pattern |
+
+Confirmed live via `chrome-devtools-mcp`: the price tap target on `52:138` (Pijama row, `745:654`) opens `735:532` correctly. The other 11 weren't individually live-tested but are structurally identical clones of the same confirmed pattern.
+
 ## 3. Review status per screen
 Full cycle complete: `ui-designer` build → `ux-critic` review (1 Major: undersized delete tap target; 1 Minor: self-contradicting search-field content) → `ui-designer` remediation → `ux-critic` verification (clean, node-level re-check given a process flag on the remediation pass — see Known gaps) → `reviewer` Foundation-consistency pass: **0 Blockers, 0 Important findings.** **All 19 frames: complete. Third document to fully complete the Medium-Fidelity tier.**
+
+**D33 pricing build (2026-08-08).** `ui-designer` build (§3.4a/§3.8a frames + 12 price tap targets, above), part of a combined dispatch spanning this page plus `onboarding.md`/`events.md` → `ux-critic` review round 1: 3 Major + 2 Minor found across the combined build (self-contradictory picker typed-no-match state — self-caught and corrected by `ui-designer` mid-build before the round-1 report, see `745:594`'s note above; missing price display on 4/5 locations — fixed, the 12 tap targets above; visual-weight parity issue scoped to `events.md`'s "Ajustar precios" vs. "Cancelar evento," not this page) → `ui-designer` remediation → `ux-critic` verification: clean, all content/layout confirmed via direct screenshot inspection; 3 wiring-level claims flagged as unverified boundaries (outside `ux-critic`'s tool scope, ID004) → Main live-verified via `chrome-devtools-mcp` (the `52:138`→`735:532` hop above) → `reviewer` Foundation-consistency pass: **0 Blockers, 0 Important findings — clean** (spot-checked `745:594`, `47:38`/`47:65`/`52:138`/`52:162` directly). Folded into done.
 
 ## 4. Deviations from the upstream spec
 None.

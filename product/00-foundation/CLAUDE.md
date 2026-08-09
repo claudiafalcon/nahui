@@ -14,7 +14,7 @@ This folder is permanent product knowledge: what Nahui is, how its domain is mod
 
 ## Status
 
-**Domain Model v1 — frozen.** **Information Architecture v1 — frozen.** UX and UI have not been designed yet — do not infer screen layouts, components, or visual design from these documents. They intentionally stop at structure.
+**Domain Model v1 — baseline, evolves via governed `decision-log.md` entries, not permanently static (see `domain-model.md`'s own status line, updated `decision-log.md` D33).** **Information Architecture v1 — frozen.** UX and UI have not been designed yet — do not infer screen layouts, components, or visual design from these documents. They intentionally stop at structure.
 
 ## How future agents should use this
 

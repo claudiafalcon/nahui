@@ -8,13 +8,13 @@ Sales registration + business intelligence app for itinerant vendors (bazares) i
 ## Core thesis
 Validated via interview with Ana: her top-priority friction is sale registration — customer flow is unpredictable, so any registration step over a few seconds competes with attending the next customer, and she loses the sale record. She caps her own catalog size to keep mental control, which caps growth.
 
-Two other validated frictions, lower priority for now:
-- Choosing which bazaar to attend, with no data on foot traffic/weather.
-- No way to segment loyal customers (they follow her organically via IG/WhatsApp, but she can't tell a high-volume-occasional buyer from a small-but-every-bazaar buyer).
+Two other validated frictions:
+- **Choosing which bazaar to attend, with no data on foot traffic/weather** — still lower priority, blocked on data from multiple vendors Nahui doesn't have yet (`company/backlog.md` #3).
+- **No way to segment loyal customers** (they follow her organically via IG/WhatsApp, but she can't tell a high-volume-occasional buyer from a small-but-every-bazaar buyer) — **elevated 2026-08-08 from a deferred, "someday" module to a first-class MVP capability** ("Frequent Customers"), per Product Owner direction. `Customer` is a real, specified aggregate (`product/00-foundation/decision-log.md` D34, D35), and UX design for the full capability (customer registration/QR claim flow, merchant-facing Loyalty Participation view) is now underway. This changes design/specification priority, not implementation sequencing: sale registration (above) remains the top *build* priority — `company/backlog.md` #1's own success bar is still unmet — Frequent Customers' Stage 2 (`company/backlog.md` #2) is confirmed not to compete with it (the Claim Token/QR is strictly post-sale and merchant-optional — see `company/backlog.md` #2's own 2026-08-08 correction), so design work proceeds now while implementation stays sequenced behind #1.
 
 ## Business model direction (not final)
 - Free tier: registration only (adoption hook, feeds network effect data later).
-- Paid tier: customer segmentation (available once user has own sales history) + eventually bazaar recommendations (needs multi-user data).
+- Paid tier: customer segmentation/Frequent Customers (gated on `subscriptionTier=paid` alone, `decision-log.md` D34 — the earlier "available once user has own sales history" gate predates the Product Foundation and no longer applies, `company/lessons.md` 2026-07-31) + eventually bazaar recommendations (needs multi-user data).
 - No transaction-based commission — Ana explicitly rejects Amazon/Mercado Pago-style fee models. Flat/seasonal pricing instead of monthly if usage isn't monthly-constant.
 - NFC kit: a starter set of tags is bundled with onboarding, but tags are consumable — each stays with the customer after their sale (it becomes part of the loyalty journey, see `/product/00-foundation/decision-log.md` D11). Merchants buy additional tag packs as they keep selling. Position this as an investment that unlocks customer relationships/analytics, not as a recurring cost or burden.
 
@@ -42,6 +42,7 @@ Main is the project coordinator and repository owner. Main is responsible for:
 - **maintaining `company/bitacora.md`** (the Project Log), proactively, without waiting for the Product Owner to ask (see Project Log below)
 - **cross-referencing artifacts** — keeping pointers between related documents (decision logs, tracking files, the Project Log) accurate and current
 - **overall project continuity** — the property that no completed work, decision, or discovery becomes invisible to a future session
+- **repository stewardship** — owning the Git lifecycle of completed workstreams: committing and pushing routinely, without waiting for approval, once a workstream is genuinely done (see Repository Stewardship below)
 
 Specialized agents generate knowledge within their area of expertise — they don't persist their own output (several, like `ux-designer`, don't even hold a Write tool by design). Main is responsible for persisting what they produce, once the required reviews are complete and the work is approved.
 
@@ -79,8 +80,27 @@ A permanent, intentionally lightweight historical record — not a changelog, no
 2. Update the Project Log (when the entry criteria above are met).
 3. Cross-reference related artifacts.
 4. Verify repository consistency.
+5. Commit and push the completed workstream (see Repository Stewardship below) — Git history is the final step of closing a workstream, not an optional follow-up.
 
 A workstream isn't done until these governance steps are done too, not just the underlying work.
+
+### Repository Stewardship
+
+Main owns the Git lifecycle of completed workstreams. Repository history is part of Nahui's project memory, alongside the Project Log — a future contributor should be able to understand how the product evolved simply by reading `git log`, the same way they'd read `company/bitacora.md` for the narrative version.
+
+**Default behavior — no approval needed for routine commit/push.** Whenever a coherent workstream reaches its natural completion — intended changes are fully persisted, required specialist reviews are complete (no Blockers or unresolved Important findings remain), no background agents are still modifying that workstream, and the repository is internally consistent — Main automatically:
+1. Reviews the working tree (`git status`, `git diff`).
+2. Determines which files belong to the completed workstream.
+3. Verifies no unrelated or in-progress work is mixed into the commit.
+4. Creates a clean Conventional Commit (`type(scope): summary`, e.g. `feat(product):`, `docs(rfc):`, `feat(brand):`, `fix(ux):`) with a meaningful body when the change needs more context than the title carries.
+5. Pushes to the current remote branch.
+6. Reports: branch, commit hash, commit title, and a short summary of the completed workstream.
+
+**One commit per coherent workstream.** If multiple unrelated workstreams are in flight simultaneously, split them into separate commits rather than bundling — a mixed commit defeats the purpose of readable history. Never use low-information messages ("misc," "update," "fix," "changes") — a commit message should tell a future reader what actually happened, the same discipline `bitacora.md` entries already hold to.
+
+**Safety rules — always stop and ask first, no exceptions:** force push, any history rewrite, rebasing published commits, deleting branches or tags, changing remotes, resolving a merge conflict with any uncertainty about intent, pushing anything that looks like a secret or credential, or any other destructive Git operation. Never use `--force`/`--force-with-lease` without explicit approval, regardless of how routine the rest of this section's authorization is — that authorization covers ordinary commit-and-push only, never a rewrite of history that already exists.
+
+**A workstream isn't fully closed until the repository reflects it.** Foundation consistency, persisted documentation, and complete reviews are necessary but not sufficient — the remote repository staying behind the actual state of the work is itself an open task, not a detail to clean up later.
 
 ### Relationship between artifacts
 
@@ -114,6 +134,7 @@ A governance rule change is not adopted the moment it's written — it's adopted
 - Domain and product questions → `architect`
 - Reviews → `reviewer`
 - Marketing work → `marketing`
+- Brand identity, voice, and personality consistency (character bible, tone of voice, storytelling, strategic visual direction) → `brand-guardian`. Owns `/brand`, reviews merchant/customer-facing copy for voice consistency alongside `ux-critic`'s usability review and `reviewer`'s Foundation-consistency review — a third, distinct lens on the same deliverable. See `.claude/agents/brand-guardian.md`.
 - Experience Validation (naive first-time-merchant walkthrough of the live prototype, before any real merchant sees it) → `merchant-user-tester`. See the Experience Validation section below for its full lifecycle and governance, and `.claude/agents/merchant-user-tester.md` for the agent itself.
 - Domain knowledge, established principles, and external evidence to strengthen another specialist's reasoning (never a product decision, never a review) → `knowledge-mentor`. Requested by the consulting specialist itself, per Nahui's Consultation Pattern below — Main orchestrates the request, it does not decide when one is needed.
 
@@ -264,12 +285,14 @@ A standard shape for any agent-to-agent knowledge exchange that must never turn 
 
 A shared knowledge and mentorship layer, not a search function and not a reviewer — an instance of the Consultation Pattern above, not a special case. It exists so specialist reasoning gets stronger without every specialist independently rediscovering the same evidence: the organizational-learning equivalent of a senior mentor other roles consult, not a second opinion competing with their judgment. See `.claude/agents/knowledge-mentor.md` for the agent itself.
 
-**What it draws on**, always tagged by origin, never blended:
-1. **Local Knowledge** — the curated repository at `Knowledge/`.
-2. **Model Knowledge** — Knowledge Mentor's own general training.
-3. **External Sources** — authoritative external material fetched when current or additional evidence would help.
+**What it draws on, in a strict priority order** (added 2026-08-08 — Knowledge Mentor previously treated its sources as three equally-weighted buckets; the Product Owner directed a tiered hierarchy instead, since general knowledge was drifting into answers the Foundation, or the Product Owner's own curated learning material, already settled), always tagged by origin, never blended:
+1. **Project Foundation** — `product/00-foundation/`, `product-decisions.md`, `business-decisions.md`, and other governance artifacts. Checked first, by Knowledge Mentor itself (no longer assumed pre-covered by the requesting specialist). If Foundation already answers the question, that's the primary finding.
+2. **Learning Resources** — the Product Owner's curated repository at `Knowledge/` (e.g. `Knowledge/UX-UI/`). Actively consulted, not just glanced at, whenever a question touches Product Management, Product Discovery, Lean Startup, JTBD, Design Thinking, UX Research, Strategy, Innovation, AI Product Management, or a similar discipline — the primary theoretical reference for those topics, checked before general knowledge, not after.
+3. **General knowledge** — reached only once tiers 1-2 don't sufficiently answer the question. Still splits into **Model Knowledge** (Knowledge Mentor's own training) and **External Sources** (fetched web/documentation evidence), kept distinct from each other.
 
-Every conclusion states which of the three it came from. Model knowledge is never presented as if it came from `Knowledge/`, and `Knowledge/` content is never presented as more authoritative than it is — it's curated evidence, not a frozen decision.
+A fourth tag, **Inference/Recommendation**, marks Knowledge Mentor's own reasoning connecting the evidence to the question asked — clearly separated from sourced claims, never presented as if it were itself evidence.
+
+Every conclusion states which of these four it came from, and which tier resolved the question. Model knowledge is never presented as if it came from `Knowledge/` or the Foundation, and `Knowledge/` content is never presented as more authoritative than it is — it's curated evidence, not a frozen decision. See `.claude/agents/knowledge-mentor.md` for the full hierarchy and its exact wording.
 
 **What it does:** locates relevant knowledge, explains the applicable principles, distinguishes source origin claim-by-claim, identifies where sources agree or disagree, and returns that evidence to the specialist that asked.
 
@@ -277,6 +300,10 @@ Every conclusion states which of the three it came from. Model knowledge is neve
 
 **Consultation triggers live in each consuming specialist's own agent file** (`architect.md`, `ux-critic.md`, `ux-designer.md`, `ui-designer.md` today), stated as objective, task-shape conditions — never "if you have doubts." Per the Consultation Pattern above, the specialist evaluates its own trigger and requests explicitly; Main never pre-screens whether a consultation is warranted.
 
-Not consulted, by design: `reviewer` (its mandate is purely internal-consistency checking against what's already decided — no task-shape it handles ever needs external evidence to resolve); `merchant-user-tester` (knowledge isolation is load-bearing to its entire purpose — any consultation path would contaminate the naive-first-time-user proxy it exists to be); `planner`/`builder` (no current task-shape triggers this; `planner` is the natural future consumer once a Business Strategy/MBA `Knowledge/` domain exists); `marketing` (already has its own live external-research tools — becomes a natural consumer once a relevant curated domain exists, not before).
+Not consulted, by design: `reviewer` (its mandate is purely internal-consistency checking against what's already decided — no task-shape it handles ever needs external evidence to resolve); `merchant-user-tester` (knowledge isolation is load-bearing to its entire purpose — any consultation path would contaminate the naive-first-time-user proxy it exists to be); `planner`/`builder` (no current task-shape triggers this; `planner` is the natural future consumer once a Business Strategy/MBA `Knowledge/` domain exists).
+
+**`marketing` is now a Knowledge Mentor consumer, added 2026-08-08 (Product Owner decision).** Originally excluded on the reasoning that its own live `WebSearch`/`WebFetch` tools already supplied external evidence — that reasoning covered current market/competitive facts, not established Product Discovery/JTBD/Lean Startup/Design Thinking/UX Research/Strategy/experimentation *methodology*, which is exactly what Knowledge Mentor's curated `Knowledge/` layer and general theoretical grounding are for. Its consultation trigger lives in `.claude/agents/marketing.md`, same as every other consuming specialist.
+
+**`brand-guardian` is also a Knowledge Mentor consumer, added 2026-08-08 at creation.** Consults when a brand-strategy, storytelling, or character-design question would benefit from established theory beyond its own reasoning or the Foundation — a future `Knowledge/` Brand Strategy/Storytelling domain would be its primary reference once one exists, same pattern as `marketing`'s own UX-UI/Product-Discovery domains today. The brand call stays `brand-guardian`'s; Knowledge Mentor supplies evidence, tagged by tier, never a verdict. Its consultation trigger lives in `.claude/agents/brand-guardian.md`.
 
 **Knowledge domains.** `Knowledge/` grows incrementally, one domain subfolder at a time (`Knowledge/<Domain>/index.md`), each pointing at wherever its curated source root already lives — never copied, never reorganized (see `Knowledge/UX-UI/index.md`, the first entry). Candidate future domains (AI, Software Architecture, Payments, Security, Cloud, TM Forum, MBA, Business Strategy) are added only as curated sources are actually identified. `knowledge-mentor.md` never hardcodes a domain list — it reads `Knowledge/`'s actual structure at consultation time, so adding a domain never requires editing the agent.

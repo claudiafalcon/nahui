@@ -38,6 +38,17 @@ same behavior, never gated. Full UX Remediation cycle complete — `ux-critic`
 clean pass (zero Blockers/Majors/Minors, two Suggestions logged), `reviewer`
 clean pass (one Important documentation-hygiene finding, a stale cross-
 reference in §10's older bullet, fixed by Main) — folded back into Approved.
+**Amended 2026-08-08 (`decision-log.md` D33, MVP pricing operating model):**
+`Product.defaultPrice` capture added at Product creation (new §3.8a) and a
+Catalog-row-level price-edit affordance added (new §3.4a). Two remediation
+rounds — round 1 found 2 Major (a wiring-completeness gap in §4/§5/§6, plus
+a shared cross-document scope question resolved in `events.md`) + 2 Minor +
+1 Suggestion; round 2 closed both Majors, `ux-critic` verified clean (zero
+Blockers/unresolved Majors). Two Minor findings remain open, non-blocking
+(`ux-critic-findings.md`'s D33 entry: `INV-D33-MIN-A`, a wireframe-
+propagation/bracket-convention gap). `reviewer` clean (no Blockers, no
+Important findings) — folded back into Approved.
+**Amended 2026-08-08 (`decision-log.md` D33, "Define lo que vendes" moved into Onboarding):** a zero-`disponibles` Catalog row now distinguishes "sin registrar" (never had a Lot received, reachable for the first time now that Onboarding can create Products with zero stock) from "0 disponibles" (previously stocked, sold out) — resolves a first-impression risk `ux-critic` found where a fresh merchant's own named Products would otherwise read as already sold out. Copy-only, no schema change, applied identically to §3.4/§3.5/§3.12/§3.13/§3.17. `ux-critic` verified clean (zero Blockers, zero unresolved Majors). `reviewer` clean (no Blockers; two Important findings fixed by Main — a missing `ux-critic-findings.md` entry, and two stale passages here claiming `defaultPrice` capture was unique to this document, now updated to acknowledge Onboarding's sibling entry point) — folded back into Approved.
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -51,6 +62,13 @@ Out of scope by explicit instruction (`company/CLAUDE.md`, `domain-model.md`
 "Deliberate exceptions," `architecture-principles.md` #5, `decision-log.md` D9):
 no Supplier screen, no cost/margin display anywhere. See §8, item 1, for a
 wording conflict this surfaced in `information-architecture.md` (since fixed).
+This exclusion covers `InventoryEntry.cost`/Supplier only (`decision-log.md`
+D9) — Ana's own purchase cost, which stays completely invisible in this
+document, unchanged. It does **not** extend to `Product.defaultPrice`
+(`decision-log.md` D33) — the price Ana *charges* a customer, a distinct fact
+this document now captures at Product creation (§3.8a) and lets her edit
+per-Product (§3.4a). Selling price and purchase cost are unrelated facts on
+unrelated aggregates; one being newly in scope doesn't reopen the other.
 
 ## 1. Merchant goal
 
@@ -123,9 +141,7 @@ completes:
        (§3.13).
 ```
 
-This is the same underlying "does the Catalog have a Product" check Home
-already performs (`home.md` §2, step 3) — not re-derived independently; both
-tabs read the same fact.
+**This is deliberately a different, shallower test than Home's own §2 step 3 check** (`decision-log.md` D33 / `onboarding.md`'s 2026-08-08 amendment). Home tests for at least one `available` InventoryUnit, since offering "Iniciar Sesión Rápida" is a promise that something is sellable right now — a promise a named-but-unstocked Catalog can't honestly make (`home.md` §2 step 3, §3.3). Inventario's own question is narrower and carries no such promise: whether there's a Catalog to *display and receive against* at all — a zero-`disponibles` row (§3.4) is never a dead end here the way an all-dimmed selling grid would be in Home, since every Catalog row stays honestly labeled and fully tappable into Registrar Mercancía regardless of stock. The two tabs deliberately read different facts now; before `onboarding.md`'s "Define lo que vendes" step existed, they happened to coincide, since a Product could never exist without an accompanying Lot — that coincidence no longer holds, and this test's own substance was re-checked against it rather than assumed still correct by inertia (see `onboarding.md` §2.2a).
 
 `nfc ∈ registrationMode` gates whether an "Assign Tags" step exists **at all**
 in Inventario, per `information-architecture.md` ("`nfc ∉ registrationMode`
@@ -196,16 +212,18 @@ current tab in brackets.
   she skips straight to §3.6 (see §10) — tapping "Registrar mercancía" once on
   Home shouldn't require tapping it again here. *global-principles.md*, "the
   fastest interaction is the one that never happens."
+- **Reachable in practice now only as a defensive/legacy fallback.** Every merchant completing the current Onboarding flow (`onboarding.md` §2.2a) already has ≥1 Product by the time she first opens Inventario, so a true "no Product ever registered" state doesn't arise for any real, freshly-onboarded merchant — this screen is kept as the correct baseline for that fallback case, the same way `home.md`'s own §3.3 fallback stays defined even for cases expected to be rare.
 
 ### 3.4 Catalog view — normal
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
 │  ┌───────────────────────────┐ │
-│  │(P) Pijama          12 disponibles│ │  tappable → §3.6, prefilled
-│  │(S) Sudadera/Maxy     3 disponibles│ │
-│  │(C) Calcetines        0 disponibles│ │  needs restocking — dimmed, still
-│  └───────────────────────────┘ │  fully tappable → §3.6, prefilled
+│  │(P) Pijama    $150   12 disponibles│ │  row → §3.6, prefilled;
+│  │(S) Sudadera/Maxy $220 3 disponibles│ │  price [ $XXX ] → §3.4a
+│  │(C) Calcetines $60    0 disponibles│ │  sold out — dimmed, tappable
+│  │(D) Delantales $90      sin registrar│ │  never registered — dimmed, tappable
+│  └───────────────────────────┘ │  both → §3.6, prefilled (see below)
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
@@ -238,11 +256,113 @@ current tab in brackets.
   genuinely nothing to do with zero sellable units); Inventario's zero-stock
   row has the opposite relationship to tappability, because restocking is
   exactly Inventario's job.
-- **Both the marker and the zero-stock dimming rule apply identically
-  wherever this same row shape reappears** — §3.5 (pending-tag-work
-  variant), §3.12/§3.13 (post-save confirmation views), and §3.17
-  (deferred-tagging view, = §3.5) — no separate specification needed for
-  each; they all render the identical Catalog row.
+- **A zero-`disponibles` row's caption now distinguishes two different
+  zero-stock causes that can each reach it** (`onboarding.md`'s 2026-08-08
+  "Define lo que vendes" amendment, `decision-log.md` D33). Before that
+  amendment, a Product could never exist without an accompanying Lot, so
+  "0 disponibles" only ever meant "previously stocked, now sold out" and
+  needed no further distinguishing. That's no longer the only path to
+  zero: a Product created through Onboarding's "Define lo que vendes" step
+  reaches the Catalog with a name and a `defaultPrice` but zero units ever
+  received (`onboarding.md` §2.2a) — and both cases rendered identically,
+  as plain "0 disponibles," with nothing to tell them apart. The gap is
+  most likely to surface for a merchant fresh out of Onboarding who taps
+  the Inventario nav tab directly, out of curiosity, before ever tapping
+  "Registrar mercancía": §2 step 1 ("at least one Product ever
+  registered?") already sends her to this ordinary Catalog view rather
+  than to the cold-start screen's explanatory framing (§3.3), so every
+  Product she just named there would otherwise read as if already sold
+  out — precisely the "first impression that reads as intimidating or
+  broken" risk `onboarding.md` §1 names as this whole document family's
+  highest-stakes concern.
+  - **Fix:** a zero-`disponibles` row's caption now reads "sin registrar"
+    instead of "0 disponibles" when the Product has never had any
+    Lot/InventoryEntry received against it at all (Delantales, above) — a
+    plain, factual read of whether any receiving event has ever happened
+    for this Product, derived automatically the same way this doc already
+    derives "existing vs. new Product" at the picker (§3.8) — no new
+    stored field, no schema change, purely a read-side check. A Product
+    that was previously stocked and has since sold out in full
+    (Calcetines, above) keeps the existing "0 disponibles" caption,
+    unchanged — that framing was accurate and was never the problem.
+  - Both captions keep every other rule of the existing dimming treatment
+    identical: dimmed, fully tappable, routes to §3.6 prefilled with that
+    Product — "sin registrar" is not a new state, a disabled affordance,
+    or an extra tap; it's the identical row and destination, only the
+    caption text differs, so it stays honest about which zero it's
+    describing.
+  - Copy stays in this document's own established plain, factual,
+    non-judgmental register for a zero-data state (matching `events.md`
+    §3.17's precedent) — "sin registrar" states a fact, not a shortfall;
+    it never reads as "todavía no has vendido nada" or any other framing
+    that could land as a judgment on how little she's done since
+    finishing Onboarding.
+- **The marker, the zero-stock dimming rule, and the new "sin registrar" /
+  "0 disponibles" caption distinction above all apply identically wherever
+  this same row shape reappears** — §3.5 (pending-tag-work variant),
+  §3.12/§3.13 (post-save confirmation views), and §3.17 (deferred-tagging
+  view, = §3.5) — no separate specification needed for each; they all
+  render the identical Catalog row.
+- **Each row now also shows this Product's current `Product.defaultPrice`**
+  (`decision-log.md` D33), e.g. "$150" — plain informational text within
+  the row, except the price figure itself, which carries its own tap
+  target `[ $150 ]`, distinct from the rest of the row (which stays
+  tappable into §3.6, prefilled, exactly as before — unchanged). Tapping
+  the price opens the price-edit sheet (§3.4a), the Catalog-row-level edit
+  affordance D33 calls for — reusing this document's own existing
+  dimmed-backdrop sheet shape (§3.8/§3.9) rather than inventing a new
+  interaction. Applies identically wherever this row shape reappears
+  (§3.5, §3.12, §3.13, §3.17), the same "specified once, reused
+  everywhere" rule this doc's own marker/dimming treatment already
+  established.
+
+### 3.4a Editar precio — sheet (`decision-log.md` D33)
+```
+┌───────────────────────────────┐
+│ ← Inventario                     │  dimmed, visible underneath
+│  Pijama                          │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Precio                          │
+│   [ $150 ]                       │
+│  [ Cancelar ]  [ Guardar precio ]  │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- **Catalog-row-level edit affordance for `Product.defaultPrice`**
+  (`decision-log.md` D33: "a plain mutable current scalar... editable
+  later"), reached by tapping the price figure on any Catalog row (§3.4,
+  and identically on §3.5/§3.12/§3.13/§3.17). Reuses the exact
+  dimmed-backdrop sheet shape already established by "Elegir producto"
+  (§3.8) and "Descartar confirmation" (§3.9) — no new sheet/modal pattern
+  invented for this.
+- Pre-filled with the Product's current `defaultPrice`, immediately
+  editable — plain numeric peso entry, no currency picker or format
+  toggle, the same unadorned posture as Cantidad's own typed path (§3.6).
+- "Guardar precio" writes the new value directly to `Product.defaultPrice`
+  and closes the sheet back to the Catalog view it was opened from,
+  updated. "Cancelar" discards the edit and returns unchanged. Follows the
+  same near-instant/slow/error save convention as every other write in
+  this document (§3.10/§3.11) — a failed save leaves the sheet open with
+  her typed value intact, and per `architecture-principles.md` #7, this
+  write carries the same stable idempotency-key guarantee every other
+  retryable write in this doc family already carries.
+- **Editing a Product's price here never touches any already-recorded
+  `SaleItem.pricePaid`.** Those are resolved and stored at the moment each
+  Sale was written (`domain-model.md`'s "Price resolution" Key Mechanism,
+  D33) and never silently drift when `defaultPrice` changes later — the
+  same "never silently alter historical data" invariant D25 already
+  established for capability changes, extended here to price. This
+  document computes or displays no effect on past totals — that boundary
+  belongs entirely to `reports.md`.
+- **Not a discount, haggling, or point-of-sale mechanism.** This sheet
+  only ever changes a Product's normal going-forward price — never a
+  per-transaction, per-customer, or per-Event adjustment (`events.md`'s
+  own Price Override entry point is the only place an Event-specific
+  price lives, and it's a distinct write target from this one).
+  `decision-log.md` D33 explicitly rules out point-of-sale price
+  override/haggling and promotions/discount pricing — this screen is not,
+  and must never become, that mechanism.
 
 ### 3.5 Catalog view — with pending tag work (nfc-capable Businesses only)
 ```
@@ -368,6 +488,11 @@ the suffix. Only the untouched, still-default state carries the suffix.)
 - **On-screen heading now reads "Registro de mercancía" rather than repeating the CTA's imperative "Registrar mercancía" verbatim (§3.7 and §3.8's dimmed backdrop carry the identical fix) — resolves HJR-INV-M1.** The CTA that leads here (`home.md` §3.3; this doc's own §3.3/§3.4/§3.5/§3.12/§3.13/§3.17) is unchanged — "Registrar mercancía" is still the right action-verb for a button she's about to tap. What was broken is that the screen she lands on used the identical string as a passive title, so "go do this" and "you're now doing this" had no visible difference at the very first productive moment in the product. A noun-form heading in the same vocabulary family ("registro," not "registrar") reads naturally in Mexican Spanish as a form/screen label, grammatically distinguishes it from the button she just tapped, and invents no new vocabulary. Both entry points that reach this screen — `home.md` §3.3's cold-start CTA and this doc's own §3.3 cold-start CTA — route to this identical destination (§10's routing decision), so this single heading correction closes the repeat for both at once, not just one of them. Section titles below (§3.6, §3.7) and every "Registrar Mercancía" reference in §4/§5/§6/§7/§9/§10 keep naming this as the *Registrar Mercancía flow* — that's the flow's editorial name, distinct from the literal on-screen heading text now shown; no renumbering or cross-reference changes are needed.
 - Only Producto + Cantidad are asked — no Supplier, no cost field, per
   `architecture-principles.md` #5 and `decision-log.md` D9 (see §8, item 1).
+- **Price is never asked on this screen.** `Product.defaultPrice` is
+  resolved entirely upstream, inside the Elegir producto picker (§3.8/
+  §3.8a) — required once, at the exact moment a brand-new Product name is
+  created, never re-asked for an existing Product, never a second field
+  on this form (`decision-log.md` D33).
 - If reached by tapping a Catalog row (§3.4), Producto arrives already filled
   with that row's Product, and Cantidad defaults to 1 immediately — the row is
   already complete and Guardar mercancía is enabled with zero further taps,
@@ -540,6 +665,52 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   two Catalog rows over a casing or spacing difference, protecting
   *global-principles.md*'s own promise that she sees one number per Product
   ("Hoodie (4 available)").
+- **Selecting an existing match never asks about price.** That Product's
+  `defaultPrice` was already set, once, the first time it was created
+  (§3.8a) — reused automatically here, matching the same "never ask
+  twice" discipline this rule already applies to Product identity itself.
+
+### 3.8a Elegir producto — nuevo producto, precio inicial (`decision-log.md` D33)
+```
+┌───────────────────────────────┐
+│ ← Inventario                     │  dimmed, visible underneath
+│  Registro de mercancía            │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  ¿Qué llegó?                    │
+│  [ Chalecos ]                    │
+│  ─────────────────────────      │
+│  Nuevo producto: Chalecos          │
+│  Precio                          │
+│   [ $ ___ ]                      │
+│  [   Agregar "Chalecos"    ]      │  disabled until Precio has a value
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- Reached from §3.8 by tapping "+ Agregar 'Chalecos' como producto nuevo"
+  — the sheet expands in place rather than closing, asking exactly one
+  more question, required only because this is genuinely the first and
+  only moment it's needed.
+- **`Product.defaultPrice` (`decision-log.md` D33) is captured the first
+  time a Product is created — whether here or via Onboarding's "Define lo
+  que vendes" step (`onboarding.md` §2.2a) — never asked a second time for
+  an existing Product.** Required, no silent default: unlike Cantidad's deliberate default-to-1
+  (§3.6, INV-Q1), a price has no honest guessable default — substituting
+  a placeholder number would risk silently misrepresenting what she
+  actually charges, not just save her a tap. "Agregar 'Chalecos'" stays
+  disabled until Precio holds a value.
+- No separate save/error state of its own: like the rest of the draft
+  (Producto, Cantidad, committed lines, §3.7), this value is held in the
+  in-progress form and only actually written, atomically with the new
+  Product and the rest of the Lot, at "Guardar mercancía" (§3.10/§3.11) —
+  a save failure there already preserves everything typed, including a
+  not-yet-created Product's name and price (§3.11's existing guarantee,
+  extended to this one field).
+- Plain numeric peso entry — no currency picker, no decimal/whole-number
+  toggle invented here.
+- On "Agregar 'Chalecos'," returns to §3.6/§3.7 with Producto selected as
+  "Chalecos" and Cantidad defaulting to 1, exactly as the existing-Product
+  path already behaves.
 
 ### 3.9 Descartar confirmation
 ```
@@ -779,7 +950,11 @@ Open Inventario tab
 
 Catalog view:
   tap "Registrar mercancía" → 3.6 (blank)
-  tap a Product row → 3.6 (prefilled with that Product)
+  tap a Product row (outside the price figure) → 3.6 (prefilled with that
+    Product)
+  tap a Product row's price figure → 3.4a (Editar precio)
+      → Cancelar → back to Catalog view, unchanged
+      → Guardar precio → back to Catalog view, that row's price updated
   [nfc-capable + pending untagged units] tap "Continuar etiquetando"
     (primary action in this state, §3.5) → 3.14 (resume)
 
@@ -788,6 +963,11 @@ Registrar mercancía (3.6/3.7):
     trimmed — see §3.8) — Cantidad defaults to 1 the instant Producto
     resolves, marked "revisa antes de guardar" until touched (INV-Q1, §3.6),
     adjustable via [−]/[+] or typed entry (floor: 1)
+      within Elegir producto (3.8): typed text matches no existing Product
+        → "+ Agregar '...' como producto nuevo" → 3.8a (Precio required,
+          D33) → tap "Agregar '...'" (disabled until Precio has a value)
+          → back to 3.6/3.7, Producto resolved to the new name, Cantidad
+          defaulting to 1, exactly as the existing-Product path
   → tap "+ Agregar otro producto" → commits row, opens next blank row → repeat
   → tap "Guardar mercancía"
       → saving (3.10)
@@ -817,10 +997,12 @@ Asignar tags (nfc-capable Business only, 3.14):
 2. Resolving — slow
 3. Cold start — no Product ever registered
 4. Catalog view — normal
+4a. Editar precio — sheet, Catalog-row-level (D33)
 5. Catalog view — pending tag work (nfc-capable Businesses only)
 6. Registrar mercancía — entry (blank or shortcut-prefilled)
 7. Registrar mercancía — with committed lines, editing the next
 8. Elegir producto — picker sheet
+8a. Elegir producto — nuevo producto, precio inicial (D33)
 9. Descartar confirmation
 10. Guardar mercancía — saving (near-instant / slow)
 11. Guardar mercancía — error
@@ -836,11 +1018,13 @@ Asignar tags (nfc-capable Business only, 3.14):
 
 | Scenario | Taps / entries | Why it can't be fewer |
 |---|---|---|
-| Register 1 new Product line, quantity 1 (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto) + 1 (Guardar) | Cantidad defaults to 1 on Producto selection — no separate quantity step for the single-unit case, the most common one. |
+| Register 1 new Product line, quantity 1, Producto already exists in the Catalog (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto) + 1 (Guardar) | Cantidad defaults to 1 on Producto selection — no separate quantity step for the single-unit case, the most common one. |
+| Register 1 new Product line, quantity 1, brand-new Product name never typed before (buttons-only) | 1 (Registrar mercancía) + 1 (abrir Elegir producto) + 1 typed Product name + 1 ("+ Agregar... como producto nuevo") + 1 typed Precio + 1 ("Agregar...", §3.8a) + 1 (Guardar) = 7 actions | Precio is a new required, gating cost the instant a brand-new Product identity is created (`decision-log.md` D33) — unlike Cantidad's default-to-1, no honest guessable default exists for a price, so it can't be automated away (§3.8a). A one-time cost per Product identity only: every later restock of this same Product reuses the row above, and never re-asks Precio. |
 | Register 1 new Product line, quantity >1 (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto) + N−1 taps on `[+]` (or 1 typed entry) + 1 (Guardar) | Must still specify *how many* when it's not 1 — this is the information itself, not an artificial gate; typed entry stays the faster path for large counts. |
 | Register N Product lines (buttons-only) | 1 (open) + N×(1 elegir producto [+ adjustment taps if quantity ≠1]) + (N−1)×(agregar otro producto) + 1 (Guardar) | Each line is a distinct fact; the (N−1) "agregar otro" taps are the minimum structural cost of an arbitrary-length list, not padding. |
 | Restock an already-known, sold-out Product at quantity 1 (tap Catalog row) | 1 (row, prefills Producto + Cantidad defaults to 1) + 1 (Guardar) | Shortest possible — Product identity reused instead of re-searched, and the default removes the previously-required typed quantity for the common 1-unit-restock case. *global-principles.md*, "capture business truth once, reuse it forever." |
 | Same, nfc-capable Business, U total units in the Lot | + U scans, 1 per physical unit | Per-unit tagging is a domain requirement (`decision-log.md` D4), not a UX choice — one tag, one unit, no shortcut exists that preserves traceability. A failed read (§3.16) costs zero extra taps — she simply re-presents the same tag. |
+| Ajustar el precio de un Producto ya existente, fuera de Registrar mercancía (Editar precio, §3.4a) | 1 (tocar el precio en la fila del Catálogo) + 1 (Guardar precio) = 2 | Shortest possible — the price figure is its own tap target directly on the Catalog row (§3.4); no need to open Registrar mercancía at all for a pure price change (`decision-log.md` D33). |
 | Browse the Catalog only | 0 taps | Opening the tab is itself the answer; nothing to register. |
 
 Unlike Home's <3s-per-item bar (`company/backlog.md` #1, which is specifically
@@ -870,6 +1054,11 @@ comparable hard speed requirement — the floor above is about not adding
   explicitly asks via "Descartar."
 - Catalog-row shortcut prefilling Producto for a restock — removes a redundant
   search for something she's already looking at.
+- `Product.defaultPrice` resolution (`decision-log.md` D33) — captured
+  exactly once, here, at Product creation (§3.8a); never re-asked at
+  restock, never asked at Session/Sale time (`home.md`), never a
+  per-Event decision unless she deliberately opens `events.md`'s Price
+  Override entry point.
 
 ## 8. Open questions
 
@@ -953,7 +1142,10 @@ comparable hard speed requirement — the floor above is about not adding
 - *"Capture business truth once, reuse it forever"* — Product identity
   persists across Lots (D2); the Catalog-row shortcut and the picker's
   existing-Product list (using the matching rule, §3.8) both reuse it rather
-  than re-asking.
+  than re-asking. `Product.defaultPrice` is asked exactly once, at
+  Product creation (§3.8a), never re-asked at restock — matching the
+  identical pattern D2 already established for Product identity itself,
+  extended by `decision-log.md` D33.
 - *"The best interface stays out of the merchant's way"* — a failed save never
   drops her typed data (§3.11); a failed scan never drops queue progress
   (§3.16); a failed tab load never dead-ends her out of Inventario or blocks
@@ -1168,6 +1360,24 @@ comparable hard speed requirement — the floor above is about not adding
   standard UX Remediation cycle (`ux-critic`, then `reviewer`'s
   Foundation-consistency pass) before folding back into Approved status,
   same as HJR-INV-M1 above.
+- **`Product.defaultPrice` capture added at the exact moment a brand-new
+  Product name is created (§3.8a — or via Onboarding's "Define lo que
+  vendes" step, `onboarding.md` §2.2a, whichever comes first for a given
+  Product), and a Catalog-row-level edit
+  affordance added for an existing Product's price (§3.4a) — applies
+  `decision-log.md` D33.** Required, no silent default, unlike Cantidad's
+  own deliberate default-to-1 treatment (§3.6, INV-Q1) — a price has no
+  honest guessable default. Never re-asked for an existing Product, per
+  D33's "resolved once, upstream" framing and *global-principles.md*'s
+  "never ask twice" — the exact discipline this doc's own Elegir
+  producto matching rule already established for Product identity. The
+  edit affordance reuses this document's own dimmed-backdrop sheet shape
+  (§3.8/§3.9) rather than inventing a new interaction, per explicit
+  instruction. Neither addition introduces any point-of-sale discount,
+  haggling, or per-transaction price override — out of scope by D33
+  itself, same boundary `home.md`/`events.md` observe.
+- **Checked against `home.md`'s corrected §2 step 3 test (2026-08-08, `decision-log.md` D33) and found not to share its bug.** Inventario's Catalog view carries no "something is sellable right now" promise the way Home's "Iniciar Sesión Rápida" does — a zero-`disponibles` Catalog row is already honestly labeled and fully tappable (§3.4), never a disguised dead end. Left unchanged. The stale cross-reference claiming both tabs "read the same fact" is corrected in §2 to state the two tests now deliberately diverge, and why.
+- **A zero-`disponibles` Catalog row's caption now distinguishes "never registered" from "sold out" (§3.4, applying identically to §3.5, §3.12, §3.13, and §3.17 per that row shape's own "specified once, reused everywhere" convention) — resolves a first-impression risk `ux-critic` found in this document's D33/`onboarding.md` remediation.** Before `onboarding.md`'s 2026-08-08 "Define lo que vendes" amendment, a Product could never exist without an accompanying Lot, so a zero-`disponibles` row only ever meant "previously stocked, now sold out." That amendment makes a second, new meaning possible — "named in Onboarding, never stocked yet" — and both rendered identically, with zero distinguishing copy: a real risk for a merchant fresh out of Onboarding who taps the Inventario nav tab directly rather than "Registrar mercancía," lands on the ordinary Catalog view (§2 step 1's test is still satisfied), and sees every Product she just named marked as if already sold out. Fixed by giving a never-stocked zero-`disponibles` row its own caption, "sin registrar," derived automatically from whether any Lot/InventoryEntry has ever been received against that Product — no new stored field, no schema change. A previously-stocked, now-sold-out Product keeps the existing "0 disponibles" caption unchanged. Neither caption changes the row's dimming, tappability, or destination (§3.6, prefilled) — copy only, in this document's own plain, factual register (`events.md` §3.17's precedent).
 
 ## 11. Future considerations
 
@@ -1198,3 +1408,7 @@ comparable hard speed requirement — the floor above is about not adding
   design treats every failed scan the same way regardless of how many times
   it's happened in a row. Worth revisiting if real usage on defective/foil-
   heavy tag batches shows this matters.
+- Whether an existing Product's price history should ever be visible (a
+  simple audit trail) — explicitly out of scope: `decision-log.md` D33
+  states `defaultPrice` is a plain mutable current scalar, no version
+  history. Not designed; revisit only if D33 itself is revised.

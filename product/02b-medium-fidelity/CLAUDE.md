@@ -63,7 +63,13 @@ definition (`.claude/agents/ui-designer.md`) for the full rule.
 - `inventory.md` — **done**. Full cycle complete (one Major — undersized
   delete tap target — and one Minor — self-contradicting picker-sheet
   state — found, fixed, and re-verified clean). Third document to
-  complete the Medium-Fidelity tier.
+  complete the Medium-Fidelity tier. **Amended 2026-08-08 for
+  `decision-log.md` D33** (§3.4a Editar precio sheet, §3.8a new-product
+  price capture, 12 new price tap targets across all 4 Catalog-view
+  frames) — `ux-critic` clean after one remediation round (findings
+  scoped across the combined D33 build, not all on this page), `reviewer`
+  clean. Folded back into done. See `product/02b-medium-fidelity/inventory.md`
+  §2/§3 for the full node/review record.
 - `events.md` — **done**. Full cycle complete, zero Blockers, zero
   unresolved Important findings. First document to complete the
   Medium-Fidelity tier. **Amended 2026-08-05/06**: a redundant review
@@ -76,6 +82,13 @@ definition (`.claude/agents/ui-designer.md`) for the full rule.
   Important finding — the second cycle's changes were undocumented — closed
   by adding the missing record). See `product/02b-medium-fidelity/events.md`
   §3 for the full account and `company/bitacora.md` for the incident.
+  **Amended 2026-08-08 for `decision-log.md` D33** (Costo del evento field
+  on §3.6's Nuevo Evento form; two new states, §3.19 Ajustar precios list
+  and §3.20 its edit sheet) — `ux-critic` clean after one remediation round
+  (a visual-weight-parity fix between "Ajustar precios" and "Cancelar
+  evento," including a self-caught-and-fixed regression), `reviewer`
+  clean. Folded back into done. See `product/02b-medium-fidelity/events.md`
+  §2/§3 for the full node/review record.
 - `reports.md` — **done**. Full cycle complete (2 Major — undersized Día-row
   tap targets, weak tappability signal — and 1 Minor found, fixed, and
   re-verified clean; 2 Important doc-drift findings from `reviewer`, both
@@ -87,7 +100,18 @@ definition (`.claude/agents/ui-designer.md`) for the full rule.
   (retired activation-code path removed, new "Activar plan de pago"
   confirmation screen added) — `ux-critic` clean (1 tracking-file-only
   Minor, corrected), `reviewer` clean (1 non-blocking wording suggestion,
-  applied to the low-fi spec). Folded back into done.
+  applied to the low-fi spec). Folded back into done. **Amended 2026-08-08
+  for `decision-log.md` D33** (new "Define lo que vendes" step — Selling-
+  Group name/price capture moved from `inventory.md`'s inline flow into
+  Onboarding, on both real paths) — `ux-critic` clean (findings from that
+  round scoped to `inventory.md`/`events.md`, not this page), `reviewer`
+  clean. Folded back into done. **Not yet built in Medium-Fidelity: the
+  separate business-identity capture step (§2.2b/§3.9-§3.10a, "Tu negocio"
+  — Business.name/logo/description)**, still Low-Fidelity only — `ux-critic`
+  clean as of 2026-08-08, `reviewer`'s Foundation-consistency pass on that
+  section in progress. This page's own tracking file will need a second
+  amendment once that step is actually built in Figma; see
+  `product/02b-medium-fidelity/onboarding.md` §1's own flag.
 - `settings.md` — **done**. Built directly against the D27-corrected spec
   (retired "Activar venta con tags" activation-code path never existed in
   this build; new `defaultSellingMode` control added across 3 new frames).

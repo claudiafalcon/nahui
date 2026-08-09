@@ -93,6 +93,16 @@ carries a per-Product marker (first letter of `Product.name`), with an
 explicit non-scope note that true custom iconography needs a Product
 Decision/RFC. Full cycle complete, `ux-critic`/`reviewer` clean, folded
 back into Approved.
+**Amended 2026-08-08 (`decision-log.md` D33, MVP pricing operating model):**
+Home's existing dollar figures (§3.7's running total, §3.8f's receipt
+total) are now explicitly grounded as sums of `SaleItem.pricePaid`,
+resolved automatically at every tap/scan — no new screen, state, or tap
+added. Part of the same four-document D33 remediation as `inventory.md`/
+`events.md`/`reports.md`; `ux-critic` verified this document's portion
+clean in round 1, with no findings against it in either round. `reviewer`
+clean (no Blockers, no Important findings) — folded back into Approved.
+**Amended 2026-08-08 (`decision-log.md` D33, "Define lo que vendes" moved into Onboarding):** §2 step 3's cold-start test corrected from "Product ever registered" to "`available` InventoryUnit exists" — required once Onboarding could create Products with zero stock (`onboarding.md` §2.2a). Two remediation rounds — round 1's fix missed a stale copy of the old test in §4's own wiring section; round 2 corrected it. `ux-critic` verified clean (zero Blockers, zero unresolved Majors). `reviewer` clean (no Blockers, no findings against this document specifically) — folded back into Approved.
+**Amended 2026-08-08 (Product Owner decision, Business Identity captured at Onboarding):** §3.8f's receipt moment now shows the merchant's own captured identity (`Business.name`, and her own logo if she set one, per `onboarding.md` §2.2b) in place of "(marca Nahui)" — Nahui's own mark stepping back in favor of the merchant's, a deliberate brand-facing product decision, not an incidental side effect. Honest fallback: `Business.name` as plain text whenever no logo is set (the common case, treated as fully first-class, not a lesser rendering). No new screen, state, or tap — a content/asset-source change to an already-Approved state. Pending `ux-critic`/`reviewer` review before folding back into Approved.
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -134,9 +144,14 @@ Evaluated in this order, automatically, on every Home open:
        + 1, computed, never asked). Tapping it is the moment a new Session
        actually opens — see the folded-in sub-step below.
 
-3. Does the Catalog have at least one Product ever registered (has she ever
-   registered a Lot)?
-     → NO:  cold-start empty state → route to Inventario.
+3. Does at least one `available` InventoryUnit exist?
+     → NO:  cold-start empty state → route to Inventario. Reached whenever
+       nothing is currently sellable — before any Lot has ever been
+       received (including immediately after `onboarding.md`'s new
+       "Define lo que vendes" step, which creates named Products with a
+       `defaultPrice` but zero Lots/stock, `onboarding.md` §2.2a /
+       `decision-log.md` D33), or if every previously received unit has
+       since sold with nothing new received since.
      → YES: idle state → "Iniciar Sesión Rápida" is always the primary
        action. If an Event is scheduled but not yet active, show it as a
        small, non-blocking informational card — it never gates or adds a
@@ -234,6 +249,21 @@ Step 1 (an already-open Session) never re-runs any of this — the resolved
 `Session.operatingMode` is immutable for the remainder of that Session's
 `active` lifecycle.
 
+**Price resolution (folded into every tap/scan, `decision-log.md` D33):**
+every time an item is added to "Venta actual" (§3.8/§3.8a — a buttons-mode
+tap, §3.9, or an nfc-mode scan, §3.10), its `SaleItem.pricePaid` is
+resolved automatically, at that same write: this Session's Event's Price
+Override for the sold Product if one exists, else the Product's own
+`defaultPrice` (`domain-model.md`'s "Price resolution" Key Mechanism).
+This is never a merchant decision and never surfaces as a UI moment of any
+kind — no price picker, no confirmation, no per-item choice — the
+identical automation pattern this section already establishes for FIFO
+allocation (D5) and NFC Readiness (D23), and the same
+`architecture-principles.md` #1 discipline every other Session-time
+resolution here already follows. A Quick Session (no `eventId`) always
+resolves straight to the Product's `defaultPrice`, since there's no Event
+to carry a Price Override.
+
 **Framing note (approved refinement):** during an active session, selling
 becomes the *default entry point* of the application — not a locked screen. The
 merchant can always navigate to Inventario, Eventos, or Resultados, or reach
@@ -298,7 +328,7 @@ the persistent nav bar on every state, current tab in brackets.
 - One calm, plain-language line, never a technical status string.
   *global-principles.md*, "business language before technical language."
 
-### 3.3 Cold start (no Product ever registered)
+### 3.3 Cold start (no sellable inventory yet)
 ```
 ┌───────────────────────────────┐
 │  Nahui                        ▾ │
@@ -314,6 +344,14 @@ the persistent nav bar on every state, current tab in brackets.
   product grid isn't a shortcut, it's a disguised dead end.
   *global-principles.md*, "the fastest interaction is the one that never
   happens."
+- **Reached whenever zero `available` InventoryUnits exist** (2026-08-08
+  correction — see §10) — before any Lot has ever been received,
+  immediately after `onboarding.md`'s new "Define lo que vendes" step
+  (named Products, zero Lots/stock, `onboarding.md` §2.2a), or if every
+  previously received unit has since sold with nothing new received
+  since. Not the same test as "has a Product ever been registered" — a
+  named-but-unstocked Catalog is exactly the state this screen exists to
+  catch, not a state that should bypass it.
 - Routes into Inventario, an existing nav tab — no new destination invented for
   this one case. (Exactly where within Inventario is resolved in
   `product/02-ux/inventory.md` §3.6: directly into Registrar Mercancía
@@ -733,6 +771,13 @@ via §3.5)
 - Registration surface is the single biggest area on screen, always exactly
   one mode, resolved once at Session-start (§2/§3.6a) and never re-evaluated
   mid-Session. *architecture-principles.md* #1.
+- **"Hoy: $850 · 6 ventas" is a running sum of `SaleItem.pricePaid` across
+  every finalized Sale in this Session so far** (`decision-log.md` D33) —
+  never a flat per-item price times a count. Each item's own resolved
+  price (Event override or Product default) already reflects any
+  adjustment made in `events.md`'s "Ajustar precios," with zero
+  recomputation or re-decision happening here. Updates the instant a Sale
+  finalizes (§3.8c), same timing as the "N ventas" count beside it.
 
 ### 3.7a Session controls (▾) — sheet (resolves HOME-M4; extended per `settings.md` §2.1)
 ```
@@ -802,6 +847,16 @@ via §3.5)
   (see §3.8a) — the list shown here is always the true, current contents of
   the Sale, never a display that can silently diverge from what's actually
   saved (resolves HOME-B1 for the tap-to-add action).
+- **No live running subtotal is shown in the tray itself while a Sale is
+  in progress** — matching this section's own existing posture (item list
+  by Product name only, no price/unit/lot reference) and
+  `architecture-principles.md` #1: nothing about the resolved price needs
+  her attention or a decision mid-Sale, so nothing about it is surfaced
+  until Finalizar Venta's own total (§3.8f). The per-item name list stays
+  the state of record for what's in the Sale; the dollar figure appears
+  exactly once, at the boundary that already exists for a different
+  reason — "a Sale's start is implicit, its end is the only thing worth
+  ceremony" (§10).
 
 ### 3.8a Tap-to-add-item — sync states (new — resolves HOME-B1)
 ```
@@ -977,8 +1032,11 @@ legible — the same convention this document already uses elsewhere
 │                                │
 │                                │
 │                                │
-│          (marca Nahui)          │  the brand mark alone, centered —
-│                                │  not a QR / scan-pattern render
+│         Ropa Ana                │  Business.name — quiet, centered,
+│                                │  same position/weight the Nahui mark
+│                                │  previously held; her own logo
+│                                │  renders here instead if she set one
+│                                │  (see variant below) — never both
 │  (algún día vas a poder          │
 │   registrar aquí tu compra)      │  literal, future-tense, plain
 │                                │  text — not tappable, names no
@@ -987,6 +1045,15 @@ legible — the same convention this document already uses elsewhere
 │ [Hoy]  Inventario Eventos Resultados │  nav bar unchanged — reachable
 └───────────────────────────────┘   exactly as everywhere else;
                                       leaving Hoy ends the receipt early
+```
+
+**Variant — `Business.logo` set:**
+```
+│                                │
+│      [ logo del negocio ]       │  Business.logo, same centered position
+│                                │  and weight the name-as-text case above
+│                                │  holds — the two never render together
+│                                │
 ```
 - Reached only from §3.8c's success path, the instant the tray clears —
   never from a slow save (§3.8c, >~1.5s, until it actually resolves) or
@@ -1005,15 +1072,15 @@ legible — the same convention this document already uses elsewhere
   per-sale total (unchanged in role/prominence from the superseded
   draft — still the largest, most legible element on screen), and the
   future-registration placeholder (unchanged copy, new visual device).
-- **Visual device: the Nahui mark alone, not a QR/scan-pattern render.**
-  Confirmed rejected twice now — a rendered scan-pattern grid carries an
-  unhedgeable "this is live and scannable" claim no matter how it's
-  styled, and this document is a permanent spec describing every sale
-  forever, not a limited-run artifact. The Product Owner's branded
-  reference (a centered QR with the Nahui logo overlaid) is read here as
-  a composition cue only — centered, clean, brand-forward — carried over
-  to the brand mark alone, with the scan-pattern grid dropped entirely
-  rather than restyled.
+- **"$580" is the sum of `SaleItem.pricePaid` across every item in this
+  one Sale** (`decision-log.md` D33's Price resolution) — each item's
+  price was already resolved automatically, at the instant it was added
+  to "Venta actual" (§3.8a), from that Session's Event Price Override if
+  one exists, else the Product's `defaultPrice`. Nothing about this
+  number required a decision from Ana at any point in the Sale — it's a
+  pure read of values already fixed before Finalizar Venta was ever
+  tapped.
+- **Visual device: the merchant's own identity — `Business.name`, or her own `Business.logo` if she's set one — never a QR/scan-pattern render, and, as of this amendment, no longer Nahui's own mark either.** The scan-pattern-grid rejection from the original design stands unchanged (a rendered scan pattern carries an unhedgeable "this is live and scannable" claim no matter how it's styled, and this document describes every sale forever, not a limited-run artifact) — what changes here is whose identity fills that same centered, quiet position. `Business.name` is required on every Business (`onboarding.md` §2.2b), so this element is never empty; `Business.logo` is optional and, when set, renders alone in the identical position/weight — the two are never shown together, keeping this element the same single-item composition it's always been, just pointed at a different source. **Deliberate brand-facing decision, named explicitly rather than left as an incidental consequence of adding a form field:** Nahui's own mark steps back here in favor of the merchant's — the honest read of what this moment actually is for her, a receipt from *her* business, not an ad impression for the platform she happens to be using. See §10 for the full reasoning.
 - Copy is unchanged from the superseded draft: "(algún día vas a poder
   registrar aquí tu compra)" — names no specific mechanism, doesn't
   commit to a reward/gift framing (§8).
@@ -1352,11 +1419,12 @@ Open app
               principal (settings.md §3.3a, or §3.6 if a pending change
               already exists) → "← Hoy" → back to whichever of 3.4/3.5/3.6
               (and its 3.6a variant, unchanged) was current
-      → nothing active, Catalog has Products → "Iniciar Sesión Rápida"
-          (3.4/3.5) → tap (same NFC Readiness resolution as above) → selling
-          (same §3.6a inline secondary actions as above, when shown)
-      → Catalog empty ─────────────────────→ cold start (3.3) → Inventario
-          (inventory.md §3.6)
+      → at least one `available` InventoryUnit exists → "Iniciar Sesión
+          Rápida" (3.4/3.5) → tap (same NFC Readiness resolution as above)
+          → selling (same §3.6a inline secondary actions as above, when
+          shown)
+      → zero `available` InventoryUnits ────────────→ cold start (3.3) →
+          Inventario (inventory.md §3.6)
       → resolution fails ──────────────────→ fallback (3.14), Quick Session always reachable
 
 From any of Home's four non-Session header states (3.3 cold start; 3.4/3.5
@@ -1428,7 +1496,7 @@ and back to Hoy):
 
 1. Resolving (near-instant)
 2. Resolving — slow
-3. Cold start — no Product ever registered
+3. Cold start — no sellable inventory (no `available` InventoryUnit)
 4. Idle — no Event today, ready, no upcoming Event
 5. Idle — ready, with an upcoming (not-yet-active) Event card
 6. Event active, no Session opened today — "Continuar Día N"
@@ -1470,7 +1538,7 @@ and back to Hoy):
 | Nothing scheduled, ready (3.4) | 2* | 1 deliberate "start selling" commitment (protects Session-history integrity, prevents accidental first sale from a stray tap) + 1 to register the item. |
 | Event active, no session today (3.6) | 2* | Same reasoning — an existing Event doesn't remove the need for a deliberate day-start moment. |
 | Session already open, mid-selling (3.7-3.10) | **1** | The "start" decision was already made earlier; this is the target state for most of the selling day. |
-| Cold start, no products (3.3) | n/a — routes to Inventario | Cannot register a sale of nothing; a genuine prerequisite, not a repeated friction. |
+| Cold start, no sellable inventory (3.3) | n/a — routes to Inventario | Cannot register a sale of nothing; a genuine prerequisite, not a repeated friction. |
 | Resuming an unclosed session, either variant (3.13) | **1** | Treated identically to the normal ready/in-progress state — no extra step for having been interrupted, regardless of whether items survived. |
 
 *Floor stays 2 in the common case (Ready-matching-default, or
@@ -1533,6 +1601,10 @@ her actual top sellers within the first screenful regardless of Catalog size.
   exhausted, never on the first hiccup.
 - Buttons-mode grid ordering (3.9) — computed automatically from her own Sale
   history (most-frequently-sold-first), never a manual sort she configures.
+- Price resolution (`SaleItem.pricePaid`) — resolved automatically at the
+  instant each item is added, Event override if one exists else Product
+  default; never a merchant decision, never a UI moment (`decision-log.md`
+  D33, `domain-model.md`'s Price resolution Key Mechanism).
 
 ## 8. Open questions
 
@@ -1630,7 +1702,10 @@ her actual top sellers within the first screenful regardless of Catalog size.
   `defaultSellingMode` and a computed NFC Readiness check (`decision-log.md`
   D23), never re-asked per Sale; the rare Limited Ready override (§3.6a) is
   still a single, Session-start decision, not a recurring one; selling
-  surface (3.9/3.10) is single-mode, no toggle.
+  surface (3.9/3.10) is single-mode, no toggle. `SaleItem.pricePaid`
+  resolves the identical way — automatically, at write time, from Event
+  Price Override or Product default, never a per-item or per-Sale question
+  (`decision-log.md` D33).
 - *#2 (aggregate boundaries follow write-throughput needs)* — the 1-tap-per-item
   core loop, the optimistic instant add + silent background retry (3.8a), and
   the removal of "Nueva Venta" are only safe because Sale is its own
@@ -1991,6 +2066,20 @@ her actual top sellers within the first screenful regardless of Catalog size.
   as this document's other post-Approval amendments. Ready for the
   standard `ux-critic`/`reviewer` cycle before folding back into
   Approved.
+- **Price resolution (`decision-log.md` D33) confirmed as a zero-decision
+  automatic mechanism at every tap/scan, and both of Home's existing
+  dollar figures — the header's running total (§3.7) and the receipt's
+  per-sale total (§3.8f) — are now explicitly grounded as sums of
+  `SaleItem.pricePaid`, not previously-untraced numbers.** This closes
+  the exact ambient-assumption gap D33's own Context paragraph names
+  ("Hoy: $850 · 6 ventas"... "with no traceable source"). No new screen,
+  state, or tap was added anywhere in the tap-to-sell flow (§3.9/§3.10) —
+  this is a grounding/citation fix, confirming an already-Approved
+  interaction remains exactly as fast and decision-free as specified, now
+  traceable to a real domain field instead of an implicit assumption.
+- **§2 step 3's cold-start resolution test corrected from "at least one Product ever registered" to "at least one `available` InventoryUnit exists"** (2026-08-08, alongside `onboarding.md`'s new "Define lo que vendes" step, `decision-log.md` D33) — the original test's parenthetical ("has she ever registered a Lot") was an accurate proxy for "has anything to sell" only as long as a Product could never exist without an accompanying Lot; `onboarding.md`'s new step breaks that equivalence by design. Left uncorrected, a merchant fresh from that step would have been offered "Iniciar Sesión Rápida" (§3.4) — a promise something is sellable — and land on an entirely dimmed, non-tappable selling grid (§3.9) the instant she tapped it: precisely the "disguised dead end" §3.3's own design note already warns against, reached from the opposite direction. The corrected test also closes a second, previously latent instance of the identical gap: a merchant fully sold out mid-run (every unit sold, nothing new received) was also, under the old test, routed to the dead-end grid — now correctly routed to cold start instead.
+- **§4's own interaction-flow summary was still citing the pre-correction test after §2 step 3 was corrected above — fixed to match (2026-08-08, caught during `ux-critic`'s D33 remediation re-check, missed by the original correction).** §4's branch labels read "nothing active, Catalog has Products" / "Catalog empty" — the retired "Product ever registered" proxy §2 step 3 was already corrected to replace, above. Corrected to "at least one `available` InventoryUnit exists" / "zero `available` InventoryUnits," matching §2 exactly, since §4 is this document family's own designated canonical wiring section (`product/02-ux/CLAUDE.md`) and a stale copy there is exactly the kind of section-drift this project's own incident history (`decision-log.md` D31/D32) already treats as a real Medium-Fidelity build-defect risk when a doc's own §2 and §4 disagree about the same branch. No wireframe, state, or routing decision changes — §4 always described the identical branch §2 step 3 defines; only its own wording had fallen out of sync with a fix already applied one section away.
+- **2026-08-08: §3.8f's receipt now shows the merchant's own captured identity instead of Nahui's own mark — a deliberate brand-facing product decision, named explicitly per this document's own review discipline, not an incidental side effect of `onboarding.md`'s new identity-capture step.** Until this amendment, every receipt Ana ever showed a customer carried Nahui's own mark — reasonable when nothing else was available to show, but never actually a brand statement anyone chose on purpose; it was the honest fallback for an empty field, not a considered choice. Once `onboarding.md` §2.2b makes `Business.name` a required, always-populated field (and `Business.logo` an optional one), the honest fallback for an *absent logo* is her own business name as text, not Nahui's mark — Nahui's mark was never the right fallback for a missing merchant logo, it was only ever standing in for a data field this product hadn't captured yet. This is the correct, considered choice, not merely a technical consequence of a new field existing: the receipt moment (§3.8f) is Ana's own customer-facing surface, at the single instant in the whole product a real customer ever sees anything — reinforcing her own identity there, not Nahui's, is the more honest and more merchant-respecting choice, consistent with `brand-guide.md`'s tone (never positioning Nahui's own presence ahead of the merchant she serves) and with the general shift this identity-capture amendment represents across the product. **Fallback is `Business.name` as plain text, not Nahui's mark, and not a generic placeholder** — reasoned explicitly: `Business.name` is required (never blank, `onboarding.md` §2.2b), so there is always a genuine, honest thing to show; falling back to Nahui's own mark when only the logo (not the name) is missing would mean the *common* case — most merchants likely won't have a digital logo ready, per this amendment's own design note — shows Nahui's brand more often than the merchant's, exactly backwards from the stated intent. Not RFC-worthy — no aggregate boundary, domain term, or IA change (`Business.name`/`Business.logo` are additive fields `architect` already cleared as sitting inside Selling's existing read-only dependency on Identity); a content-source and asset-source change to an already-Approved state's third element, same category as this document's other post-Approval amendments.
 
 ## 11. Future considerations
 

@@ -3,6 +3,8 @@
 ## 1. Upstream spec reference
 `product/02-ux/onboarding.md`, Approved; amended for `decision-log.md` D27 (NFC capability corrected to derive from `subscriptionTier`, not kit/code activation). Medium-Fidelity work reflects that current, D27-amended state as of this rebuild.
 
+**Amended 2026-08-08 for the Day-0 "Define lo que vendes" move (`decision-log.md` D33, `company/bitacora.md` 2026-08-08).** The upstream spec gained new §2.2a/§3.5b-§3.5e (Selling-Group capture — Producto/Precio — moved out of `inventory.md`'s inline flow into a required Onboarding step on both real paths). This build (below) realizes that step in Figma. **Not yet reflected here or in Figma**: the same day's separate business-identity amendment (§2.2b/§3.9-§3.10a, "Tu negocio" — Business.name/logo/description capture) is still Low-Fidelity only, mid-`ux-critic` remediation — see `product/02-ux/CLAUDE.md`'s status log. This tracking file will need a second amendment once that step is built in Medium-Fidelity; do not treat the frame table below as covering it.
+
 ## 2. Figma file/frame links
 File `DPRnGD5JWjfoNBSlAFoVG4` ("Nahui — Medium-Fidelity UI"), page **"Onboarding — Medium Fidelity"** (`67:2`). All 12 `onboarding.md` §5 states covered across 12 frames (renumbered/reduced from 14 states/15 frames — the retired "Activar kit NFC" code-entry/validating/invalid sub-states are gone):
 
@@ -21,6 +23,26 @@ File `DPRnGD5JWjfoNBSlAFoVG4` ("Nahui — Medium-Fidelity UI"), page **"Onboardi
 | `71:965` | §3.6 Todo listo — Variant C (Ver un ejemplo) |
 | `71:970` | §3.8 Falla defensiva |
 
+**Added 2026-08-08 — "Define lo que vendes" (D33 Day-0 move), real paths only. Node-state mapping confirmed directly against live Figma metadata (`get_metadata` on page `67:2`), not inferred from the build report:**
+
+| Frame | onboarding.md state |
+|---|---|
+| `732:29` | §3.5b Define lo que vendes — entry (Empezar gratis) |
+| `732:5427` | §3.5c Define lo que vendes — con líneas agregadas (Empezar gratis) |
+| `732:5448` | §3.5d Guardando lo que vendes — near-instant (Empezar gratis) |
+| `732:5452` | §3.5d Guardando lo que vendes — slow (Empezar gratis) |
+| `732:5454` | §3.5e Guardando lo que vendes — error (Empezar gratis) |
+
+**Activar plan de pago's own copy of the entry/con-líneas/near-instant states** — nav-diverge clones, per `decision-log.md` D32's mandatory two-axis classification (content-identical, navigation-not-identical: this path must return to `88:1006`'s own downstream chain, not "Empezar gratis"'s):
+
+| Frame | onboarding.md state |
+|---|---|
+| `732:5460` | §3.5b Define lo que vendes — entry (Activar plan de pago) [nav-diverge] |
+| `732:5471` | §3.5c Define lo que vendes — con líneas agregadas (Activar plan de pago) [nav-diverge] |
+| `732:5490` | §3.5d Guardando lo que vendes — near-instant (Activar plan de pago) [nav-diverge] |
+
+No separate slow/error clones exist for the Activar plan de pago path — a real, disclosed coverage gap (only the happy near-instant save state is wired for this path's own copy), not an oversight: those states are visually identical to their Empezar gratis counterparts and add no new content, deprioritized the same way other same-content clone gaps are elsewhere in this file. Confirmed live: this path's chain terminates at `71:960` (Todo listo — Variant B), not `71:955` (Variant A) — verified by Main via a fresh `chrome-devtools-mcp` click-through of the full path, not inferred from static structure.
+
 State 11 (resume-after-interruption) has no separate frame by spec-mandated design — `onboarding.md` itself states it's pixel-identical to states 3-8.
 
 **Amended for D27:** removed `69:924` (§3.4 code-entry), `70:16`/`70:25` (§3.4a validando), `70:938` (§3.4b código inválido) — the retired activation-code mechanism. Added `88:1006` (new §3.4, "Activar plan de pago," a bare payment-confirmation screen, no input field). Updated `71:960`'s copy (no longer promises automatic tag-selling) and `68:4`'s path-choice subtext/button label. Also fixed a stale cross-reference in `70:954` (§3.4c) found during the rebuild's own spec cross-check, not part of the original diff. The `CodeEntry` component (`69:2`, Design System page) is no longer referenced by this page but was left defined, since `settings.md`'s parallel Figma rebuild may still use it — confirm before deleting.
@@ -29,6 +51,8 @@ Shared Design System page: `0:1`. No NavBar on any frame in this document — th
 
 ## 3. Review status per screen
 Full cycle complete for the pre-D27 build: `ui-designer` build → `ux-critic` review (0 Blockers, 0 Major; 2 Minor + 1 Suggestion, non-gating) → `reviewer` Foundation-consistency pass: **0 Blockers, 0 Important findings — clean.** Fifth document to complete the Medium-Fidelity tier. **D27 rebuild (this amendment)** — `ux-critic` verification: **clean, 0 Blockers, 0 Major** (1 Minor — tracking-file staleness, this file, now corrected). `reviewer` Foundation-consistency pass: **0 Blockers, 0 Important findings — clean** (1 non-blocking wording suggestion — §3.6 Variant B's "activa" → "cambia" word choice — applied to `product/02-ux/onboarding.md`). Folded back into done.
+
+**"Define lo que vendes" build (2026-08-08, D33 Day-0 move).** `ui-designer` build (8 new frames, above) → `ux-critic` review across 2 rounds as part of the combined Steps 2/3/4 Medium-Fidelity build spanning this page plus `inventory.md`/`events.md` (round 1: 3 Major + 2 Minor found, none scoped to this page's own frames — see `inventory.md`/`events.md` for the findings themselves; round 2 verification: clean) → `reviewer` Foundation-consistency pass: **0 Blockers, 0 Important findings — clean** (spot-checked the full Onboarding subtree on `67:2` directly). Main independently live-verified the Activar-plan-de-pago nav-diverge chain's destination via `chrome-devtools-mcp` (terminates correctly at `71:960`). Folded into done.
 
 ## 4. Deviations from the upstream spec
 None.

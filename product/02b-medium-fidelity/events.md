@@ -3,6 +3,8 @@
 ## 1. Upstream spec reference
 `product/02-ux/events.md`, Approved (D20/Venue-amended, folded back to plain Approved). Medium-Fidelity work in this file reflects that current state — no upstream amendment is in flight.
 
+**Amended 2026-08-08 for `decision-log.md` D33 (pricing/event-cost operating model).** The upstream spec gained a new "Costo del evento" field on §3.6's Nuevo Evento form, and two new states — §3.19 "Ajustar precios — lista por producto" and §3.20 "Editar precio para este evento — sheet." This build (below) realizes both in Figma, part of the same combined dispatch that also built `onboarding.md`'s "Define lo que vendes" step and `inventory.md`'s price-editing work.
+
 ## 2. Figma file/frame links
 File `DPRnGD5JWjfoNBSlAFoVG4` ("Nahui — Medium-Fidelity UI"), page **"Eventos — Medium Fidelity"** (`1:33`). All 18 `events.md` §5 states covered across 20 frames (§3.9's three visual sub-states split into their own frames):
 
@@ -29,6 +31,18 @@ File `DPRnGD5JWjfoNBSlAFoVG4` ("Nahui — Medium-Fidelity UI"), page **"Eventos 
 
 Shared Design System page: `0:1` (variable collections `Nahui/Colors`, `Nahui/Spacing & Radius`; text styles; component sets Button, NavBar, EventCard, FieldBox, AmbientToast; standalone components BackNav, SectionLabel, Skeleton, SheetHandle, PickerListRow, AddNewRow, SearchField).
 
+**Added 2026-08-08 — D33 pricing build. Node-state mapping confirmed directly against live Figma metadata (`get_metadata`), not inferred from the build report:**
+
+| Frame | events.md state |
+|---|---|
+| `10:7` | §3.6 Nuevo evento — formulario, now with "Costo del evento (opcional)" field (`736:615`/`736:616`/`736:617`), between Termina and the Guardar button, spacer `27:234` |
+| `10:14` | §3.11 Detalle — programado, now with a "Costo" row + "Ajustar precios" button (`737:615`/`737:616`), separated from "Cancelar evento" by a new spacer (`746:5587`) enforcing routine/destructive visual separation |
+| `738:616` | §3.19 Ajustar precios — lista por producto |
+| `738:651` | §3.19 Ajustar precios — zero-Catalog-Product empty variant |
+| `738:5556` | §3.20 Editar precio para este evento — sheet |
+
+`10:7`'s Costo field and `10:14`'s Ajustar-precios/spacer changes cascade to every existing clone of those two frames across this page's Journey 2 (`324:540`) and the demo page `160:2`'s equivalents, per this build's own report — not independently re-verified node-by-node here; flag for a targeted spot-check before treating every clone as confirmed in sync.
+
 ## 3. Review status per screen
 Full cycle complete: `ui-designer` build → `ux-critic` review (4 Major, 2 Minor found) → `ui-designer` remediation → `ux-critic` verification (clean, 0 Blockers, 0 unresolved Majors) → `reviewer` Foundation-consistency pass, round 1 (0 Blockers; 3 Important findings — brand-guide.md missing the new Destructive variant, missing tracking file, uncategorized brand-wide contrast issue — all addressed, see Known gaps below) → `reviewer` Foundation-consistency pass, round 2, with live Figma access throughout (spot-checked spec fidelity and ubiquitous-language on 3 representative frames, independently resolved the Blush-pill compliance question by direct inspection, independently re-confirmed all three round-1 fixes rather than trusting the round-1 report): **0 Blockers, 0 Important findings — clean.** **All 20 frames: complete. This is the first document to fully complete the Medium-Fidelity tier.**
 
@@ -43,6 +57,8 @@ Incidental finding from round 2: frame `10:18`'s visual distinction between the 
 All items independently re-verified clean by `ux-critic` in a dedicated remediation-verification pass, 2026-08-05.
 
 **Regression and restoration.** EVT-MF-MIN4's deletion removed the real Journey 2 Eventos-creation chain (previously `112:247`/`112:266`/`111:1077`, clones of `10:7`/`10:10`/`10:13`) — caught by the Product Owner, not by process. Per explicit Product Owner direction (`company/bitacora.md`, 2026-08-06): the legitimate fixes above were kept rather than reverted wholesale (a governance mistake in re-opening a closed document doesn't retroactively make its real findings wrong), while the regression itself was fully restored — see "Prototype-only clone frames" above for the new `324:540`/`324:559`/`324:563` IDs. Final verification, 2026-08-06: `ux-critic` clean (Journey 2 restoration + all 10 items above + full 20-frame sweep, 0 Blockers, 0 unresolved Majors) and `reviewer` clean (0 Blockers; this documentation entry itself was the one Important finding, now closed by its own existence).
+
+**D33 pricing build review (2026-08-08).** `ui-designer` build (above), part of a combined dispatch spanning this page plus `onboarding.md`/`inventory.md` → `ux-critic` review round 1: 3 Major + 2 Minor across the combined build, including one scoped to this page — visual-weight parity between "Ajustar precios" and "Cancelar evento" on `10:14` insufficiently distinguished a routine planning action from a destructive one → `ui-designer` remediation: "Ajustar precios" swapped from Secondary to Tertiary button variant (self-caught and corrected a regression this swap caused — Figma reset the instance's text override to the Tertiary master's default "Reintentar" — before reporting) and separated from "Cancelar evento" by the new `746:5587` spacer → `ux-critic` verification: clean, fix confirmed held (button variant + restored label text both independently re-checked) → `reviewer` Foundation-consistency pass: **0 Blockers, 0 Important findings — clean** (spot-checked `10:14` directly). `ux-critic` flagged 3 wiring-level claims across the combined build as unverified boundaries (ID004 — no reactions field exposed to its tools); Main independently live-verified those via `chrome-devtools-mcp`. Folded into done.
 
 ## 4. Deviations from the upstream spec
 None — no layout constraint forced a departure from `events.md`'s specified behavior, copy, or states.
