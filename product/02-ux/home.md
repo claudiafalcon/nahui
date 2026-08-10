@@ -104,6 +104,8 @@ clean (no Blockers, no Important findings) — folded back into Approved.
 **Amended 2026-08-08 (`decision-log.md` D33, "Define lo que vendes" moved into Onboarding):** §2 step 3's cold-start test corrected from "Product ever registered" to "`available` InventoryUnit exists" — required once Onboarding could create Products with zero stock (`onboarding.md` §2.2a). Two remediation rounds — round 1's fix missed a stale copy of the old test in §4's own wiring section; round 2 corrected it. `ux-critic` verified clean (zero Blockers, zero unresolved Majors). `reviewer` clean (no Blockers, no findings against this document specifically) — folded back into Approved.
 **Amended 2026-08-08 (Product Owner decision, Business Identity captured at Onboarding):** §3.8f's receipt moment now shows the merchant's own captured identity (`Business.name`, and her own logo if she set one, per `onboarding.md` §2.2b) in place of "(marca Nahui)" — Nahui's own mark stepping back in favor of the merchant's, a deliberate brand-facing product decision, not an incidental side effect. Honest fallback: `Business.name` as plain text whenever no logo is set (the common case, treated as fully first-class, not a lesser rendering). No new screen, state, or tap — a content/asset-source change to an already-Approved state. Pending `ux-critic`/`reviewer` review before folding back into Approved.
 **Amended 2026-08-09 (`decision-log.md` D40 — `loyaltyEnabled` retired, Frequent Customers unified as a Paid-tier-only capability):** §3.8f's future-registration placeholder is now gated on `subscriptionTier=paid` — a Free-tier receipt no longer shows it at all, three elements only (confirmation, total, business identity). A Paid-tier receipt keeps the placeholder, copy unchanged — the capability already exists automatically the instant `subscriptionTier=paid` (D40); only this specific receipt-moment interaction (what exactly renders here, whether a live QR eventually replaces the placeholder) remains undesigned, tracked as `product/02-ux/product-decisions.md` Q15, not resolved by this amendment. §3.8f, §4, §5, §8, §10, §11 updated.
+**Amended 2026-08-09 (Product Owner decision — Configuración entry-point relocated from the header's "▾" to a top-right icon-based menu):** the small "▾" dropdown next to the "Nahui"/session header — flagged by the Product Owner as not reading as discoverable or natural — is replaced by a top-right "⋯" (three-dot/overflow) icon, opening the identical session-controls sheet already specified (§3.6c/§3.7a), with no change to which Home states show it, when "Cerrar sesión" appears, or what Configuración itself does once reached. The sheet's Configuración row now also carries a gear icon ("⚙"), specifically distinguishing it from "Cerrar sesión" and from any other entry the sheet may carry in the future, per the Product Owner's explicit request. **Why "⋯" rather than a hamburger ("☰"):** a hamburger conventionally signals a full secondary navigation drawer with many destinations, which would misrepresent — and visually compete with — what's actually behind this trigger (a one-or-two-row sheet, not a parallel navigation system), undercutting `decision-log.md` D13's own ruling that this affordance is a sequencing/reachability fact, not a fifth nav tab, alongside the persistent, already-primary bottom nav bar. `settings.md` receives the matching correction in the same pass — see that document's own status header and §2.1/§8 item 3. Ready for `ux-critic`/`reviewer`.
+**Amended 2026-08-09 (Product Owner decision, resolving `product/02-ux/product-decisions.md` Q15 — the Digital Receipt's Claim Token QR is now real, not a placeholder):** §3.8f's Paid-tier receipt now renders a genuine, tappable/scannable Claim Token QR (`decision-log.md` D22) in the row the earlier textual future-registration placeholder held — the entry point into the already-Approved `product/02-ux-loyalty/customer-loyalty-registration.md` flow (§3.1 onward), which this amendment specifies the bridge into without redesigning. Explicitly supersedes, rather than silently contradicts, this document's own two prior "no QR-shaped render" passages (§3.8f's identity-element bullet; the historical 2026-08-05 entry) — both correctly rejected a decorative, non-functional QR graphic for carrying an unhedgeable liveness claim with nothing behind it, an objection that doesn't hold against a genuinely functional element navigating to a real destination. The Free-tier receipt is unaffected — still three elements, no QR, no placeholder, exactly as the 2026-08-09 D40 amendment above already established. Resolves Q15 (`product-decisions.md`): purely ephemeral, nothing persisted; no dedicated "decline to offer" action exists separate from the receipt's own already-specified exit mechanism. Flags, without resolving, that this activates `company/backlog.md` #2's Stage 2 for this one element ahead of its own stated gating, by direct Product Owner instruction. §3.8f, §4, §5, §7, §8, §10, §11 updated. `ux-critic`/`reviewer` review pending before folding back into Approved.
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -276,7 +278,7 @@ states. Opening Hoy while actively selling takes her directly back to selling
 never obstructed, and never gated by a confirmation.
 
 **Session-controls interlock (added — resolves HOME-M2):** session controls
-(▾ → the sheet in §3.7a) are reachable at any time, but carry exactly one
+(the header's "⋯" icon → the sheet in §3.7a) are reachable at any time, but carry exactly one
 interlock: if "Venta actual" holds 1+ items, tapping "Cerrar sesión" from that
 sheet does not open the close-session confirmation (§3.11) — it opens a
 blocking notice instead (§3.11a) that routes her back to the open Sale so she
@@ -290,7 +292,7 @@ always resumes exactly where she left off (§3.13, resolving HOME-B2 below).
 **This interlock is scoped to "Cerrar sesión" specifically — "Configuración,"
 the sheet's other entry per `settings.md` §2.1, is unaffected and reachable
 even with an open Sale, since it never touches Selling data.** Outside an
-open Session, the header's "▾" opens a lighter, Configuración-only variant
+open Session, the header's "⋯" icon opens a lighter, Configuración-only variant
 of the same sheet (§3.6c) on §3.3–§3.6, including the §3.6a
 Session-start-moment variants shown on top of §3.4/§3.5/§3.6 — a Session
 hasn't opened yet at that moment either, and a merchant seeing the
@@ -332,7 +334,7 @@ the persistent nav bar on every state, current tab in brackets.
 ### 3.3 Cold start (no sellable inventory yet)
 ```
 ┌───────────────────────────────┐
-│  Nahui                        ▾ │
+│  Nahui                        ⋯ │
 │  Aquí vas a ver tu día de       │
 │  venta en cuanto registres      │
 │  lo que traes.                  │
@@ -358,9 +360,10 @@ the persistent nav bar on every state, current tab in brackets.
   `product/02-ux/inventory.md` §3.6: directly into Registrar Mercancía
   (on-screen heading "Registro de mercancía," per HJR-INV-M1), not
   Inventario's own cold-start screen.)
-- **Header's "▾" opens the session-controls sheet (§3.6c) — "Configuración"
-  only, no "Cerrar sesión," since no Session is open yet (new — applies
-  `settings.md` §2.1's amendment).** Same affordance §3.7a already provides
+- **Header's "⋯" icon opens the session-controls sheet (§3.6c) — "Configuración"
+  only, no "Cerrar sesión," since no Session is open yet (applies
+  `settings.md` §2.1's amendment; relocated from the header's "▾" per the
+  Product Owner's 2026-08-09 decision — see status header).** Same affordance §3.7a already provides
   once a Session is active, extended here because the capabilities
   Configuración manages are meaningful to check even before Ana has ever
   registered a Product.
@@ -368,7 +371,7 @@ the persistent nav bar on every state, current tab in brackets.
 ### 3.4 Idle — no Event today, ready
 ```
 ┌───────────────────────────────┐
-│  Nahui                        ▾ │
+│  Nahui                        ⋯ │
 │        ¿Vas a vender hoy?       │
 │   [   Iniciar Sesión Rápida  ]  │
 ├───────────────────────────────┤
@@ -383,13 +386,14 @@ the persistent nav bar on every state, current tab in brackets.
   at the moment this button is tapped, this screen gains exactly one
   additional inline line beneath the button — see §3.6a. The screen shown
   above is the common case and is otherwise pixel-identical.
-- **Header's "▾" opens the session-controls sheet (§3.6c) — "Configuración"
-  only, same as §3.3 (new — applies `settings.md` §2.1's amendment).**
+- **Header's "⋯" icon opens the session-controls sheet (§3.6c) — "Configuración"
+  only, same as §3.3 (applies `settings.md` §2.1's amendment; icon relocated
+  2026-08-09 — see status header).**
 
 ### 3.5 Idle — ready, with an upcoming (not-yet-active) Event
 ```
 ┌───────────────────────────────┐
-│  Nahui                        ▾ │
+│  Nahui                        ⋯ │
 │  ┌───────────────────────────┐ │
 │  │ Plaza Norte                │ │  informational card, not a button
 │  │ empieza en 3 días           │ │
@@ -405,15 +409,16 @@ the persistent nav bar on every state, current tab in brackets.
 - "Iniciar Sesión Rápida" keeps full prominence even with the card present.
 - Same NFC Readiness disagreement note as §3.4: the event card is unaffected
   either way — see §3.6a for the rare additional line beneath the button.
-- **Header's "▾" opens the session-controls sheet (§3.6c) — "Configuración"
-  only, same as §3.3/§3.4 (new — applies `settings.md` §2.1's amendment).**
+- **Header's "⋯" icon opens the session-controls sheet (§3.6c) — "Configuración"
+  only, same as §3.3/§3.4 (applies `settings.md` §2.1's amendment; icon
+  relocated 2026-08-09 — see status header).**
   The event card and the sheet are unrelated — opening Configuración never
   touches the upcoming Event.
 
 ### 3.6 Event active, no Session opened today
 ```
 ┌───────────────────────────────┐
-│  Nahui                        ▾ │
+│  Nahui                        ⋯ │
 │      Plaza Norte                │
 │      Hoy es tu Día 2             │
 │      [   Continuar Día 2     ]  │
@@ -425,8 +430,9 @@ the persistent nav bar on every state, current tab in brackets.
   Sessions under the `eventId` (*domain-model.md*, read-side query across
   Sessions sharing that ID). *global-principles.md*, "never ask twice."
 - Same NFC Readiness disagreement note as §3.4/§3.5 — see §3.6a.
-- **Header's "▾" opens the session-controls sheet (§3.6c) — "Configuración"
-  only, same as §3.3–§3.5 (new — applies `settings.md` §2.1's amendment).**
+- **Header's "⋯" icon opens the session-controls sheet (§3.6c) — "Configuración"
+  only, same as §3.3–§3.5 (applies `settings.md` §2.1's amendment; icon
+  relocated 2026-08-09 — see status header).**
   An active Event with no Session yet still has nothing to close — "Cerrar
   sesión" doesn't apply until "Continuar Día 2" is actually tapped.
 
@@ -449,7 +455,7 @@ case (Ready, capability intact, matching default) shows none of this —
 pixel-identical to §3.4/§3.5/§3.6 as already specified, exactly as fast as
 today.
 
-**Header carries the "▾" affordance too, identically to §3.4/§3.5/§3.6 — every
+**Header carries the "⋯" icon too, identically to §3.4/§3.5/§3.6 — every
 wireframe below shows it.** Opening it reaches the same session-controls sheet
 as the resting screen (§3.6c) — reachable at this Session-start moment exactly
 as it is before or after it, since no Session is open yet even here. This
@@ -460,7 +466,7 @@ to want to reach Configuración right then (§2).
 **Limited Ready, `defaultSellingMode = nfc` (recommends `buttons`, overridable):**
 ```
 ┌───────────────────────────────┐
-│  Nahui                        ▾ │
+│  Nahui                        ⋯ │
 │        ¿Vas a vender hoy?       │
 │   [   Iniciar Sesión Rápida  ]  │
 │   Pocas prendas tienen tag       │
@@ -503,7 +509,7 @@ via §3.5)
 **Not Ready, `defaultSellingMode = nfc` (`nfc` withdrawn, one-time mention):**
 ```
 ┌───────────────────────────────┐
-│  Nahui                        ▾ │
+│  Nahui                        ⋯ │
 │        ¿Vas a vender hoy?       │
 │   [   Iniciar Sesión Rápida  ]  │
 │   Todavía no tienes prendas      │
@@ -550,7 +556,7 @@ HOME2-MAJ3; next-step link added once `settings.md` provided one to point
 to):**
 ```
 ┌───────────────────────────────┐
-│  Nahui                        ▾ │
+│  Nahui                        ⋯ │
 │        ¿Vas a vender hoy?       │
 │   [   Iniciar Sesión Rápida  ]  │
 │   Por ahora no puedes vender     │
@@ -644,7 +650,7 @@ become sufficient (new — closes D27-CROSS-M1, the one mention in this
 section pointed toward `nfc` rather than away from it):**
 ```
 ┌───────────────────────────────┐
-│  Nahui                        ▾ │
+│  Nahui                        ⋯ │
 │        ¿Vas a vender hoy?       │
 │   [   Iniciar Sesión Rápida  ]  │
 │   Ya tienes prendas con tag      │
@@ -699,14 +705,16 @@ via §3.5)
 ### 3.6c Session-controls sheet — cold start / idle / Event-active-no-Session states (new — applies `settings.md` §2.1's required amendment)
 ```
 ┌───────────────────────────────┐
-│  Nahui                        ▾ │  dimmed, still visible underneath
+│  Nahui                        ⋯ │  dimmed, still visible underneath
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  [       Configuración        ]  │
 ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
 ```
-- Reached by tapping the header "▾" from any of §3.3 (cold start), §3.4/§3.5
+- Reached by tapping the header's "⋯" icon (relocated from the header's "▾"
+  per the Product Owner's 2026-08-09 decision — see status header) from any
+  of §3.3 (cold start), §3.4/§3.5
   (idle, with or without an upcoming Event card), or §3.6 (Event active, no
   Session opened today) — the four Home states with a persistent header but
   no open Session — including whichever of §3.4/§3.5/§3.6's §3.6a
@@ -724,7 +732,10 @@ via §3.5)
 - Exactly one entry, "Configuración" — no "Cerrar sesión" row, since none of
   these four states has an open Session to close. Contrast with §3.7a,
   reached the identical way once a Session is active, which carries both
-  entries.
+  entries. The "Configuración" row carries a gear icon ("⚙"), the same
+  marker §3.7a's sheet uses, distinguishing it from "Cerrar sesión" and from
+  any entry the sheet may carry in the future (Product Owner decision,
+  2026-08-09).
 - Tapping "Configuración" routes to `settings.md`'s resolve step (§3.1/§3.2)
   → vista principal (§3.3a). Tapping outside the sheet, or a dismiss
   gesture, closes it and returns to whichever of §3.3–§3.6 it was opened
@@ -752,7 +763,7 @@ via §3.5)
 ### 3.7 Session active — ready, no Sale open (mode-agnostic shell)
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │  header = ambient info + session-controls
+│ Plaza Norte · Día 2         ⋯   │  header = ambient info + session-controls
 │ Hoy: $850 · 6 ventas             │  entry point
 ├───────────────────────────────┤
 │ Venta actual: (vacía)            │
@@ -763,7 +774,9 @@ via §3.5)
 └───────────────────────────────┘
 ```
 - Header doubles as passive info and the session-controls entry point —
-  tapping "▾" opens a small sheet (§3.7a) rather than acting immediately.
+  tapping the "⋯" icon opens a small sheet (§3.7a) rather than acting
+  immediately (relocated from the header's "▾" per the Product Owner's
+  2026-08-09 decision — see status header).
   Concrete implementation of "session controls stay reachable" from the
   framing note in §2 (updated — resolves HOME-M4; see §3.7a for what the
   sheet actually contains and why).
@@ -780,10 +793,10 @@ via §3.5)
   recomputation or re-decision happening here. Updates the instant a Sale
   finalizes (§3.8c), same timing as the "N ventas" count beside it.
 
-### 3.7a Session controls (▾) — sheet (resolves HOME-M4; extended per `settings.md` §2.1)
+### 3.7a Session controls (⋯) — sheet (resolves HOME-M4; extended per `settings.md` §2.1; entry-point icon relocated 2026-08-09, Product Owner decision — see status header)
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │  dimmed, still visible underneath
+│ Plaza Norte · Día 2         ⋯   │  dimmed, still visible underneath
 │ Hoy: $850 · 6 ventas             │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  [       Cerrar sesión        ]  │
@@ -806,10 +819,16 @@ via §3.5)
   it has no analytics surface of its own).
 - Shown as a small sheet rather than a single hardcoded action, because
   `information-architecture.md` ("Onboarding and Settings") committed this
-  exact affordance — "the header's ▾" — as the eventual reachability point
-  for Settings (`decision-log.md` D13). **That commitment is now realized:**
+  exact affordance — described in `decision-log.md` D13 at the time as "the
+  header's ▾," now realized as a top-right "⋯" icon (relocated 2026-08-09,
+  Product Owner decision — see status header; D13's own ruling, hangs off
+  session controls rather than a fifth nav tab, is unaffected, only its
+  illustrative glyph is stale) — as the eventual reachability point
+  for Settings. **That commitment is now realized:**
   per `settings.md` §2.1 (approved), the sheet carries two entries during an
-  active Session — "Cerrar sesión" (unchanged) and "Configuración" (new).
+  active Session — "Cerrar sesión" (unchanged) and "Configuración" (new, now
+  marked with a gear icon "⚙" distinguishing it from "Cerrar sesión" and any
+  future entry).
 - "Cerrar sesión" and "Configuración" are independent actions. Tapping
   "Cerrar sesión" proceeds to §3.11 (Venta actual empty) or §3.11a (Venta
   actual has 1+ items — blocked, resolves HOME-M2), per the interlock stated
@@ -823,7 +842,7 @@ via §3.5)
 ### 3.8 Session active — Sale in progress
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │
+│ Plaza Norte · Día 2         ⋯   │
 │ Hoy: $850 · 6 ventas             │
 ├───────────────────────────────┤
 │ Venta actual: 2 artículos   Cancelar│
@@ -912,7 +931,7 @@ shown inline, never a full-screen interruption
 ### 3.8b Cancelar venta actual — inline confirm (new — resolves HOME-M1)
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │
+│ Plaza Norte · Día 2         ⋯   │
 │ Hoy: $850 · 6 ventas             │
 ├───────────────────────────────┤
 │ Venta actual: 2 artículos          │
@@ -947,7 +966,7 @@ shown inline, never a full-screen interruption
 ### 3.8c Finalizar Venta — saving (near-instant / slow) (new — resolves HOME-B1)
 ```
 ┌───────────────────────────────┐        ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │        │ Plaza Norte · Día 2         ▾   │
+│ Plaza Norte · Día 2         ⋯   │        │ Plaza Norte · Día 2         ⋯   │
 │ Hoy: $850 · 6 ventas             │        │ Hoy: $850 · 6 ventas             │
 ├───────────────────────────────┤        ├───────────────────────────────┤
 │ Venta actual: 2 artículos          │        │        Cerrando venta…          │
@@ -965,7 +984,7 @@ shown inline, never a full-screen interruption
 ### 3.8d Finalizar Venta — error (new — resolves HOME-B1)
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │
+│ Plaza Norte · Día 2         ⋯   │
 │ Hoy: $850 · 6 ventas             │
 ├───────────────────────────────┤
 │ No se pudo cerrar la venta.        │
@@ -1038,10 +1057,17 @@ legible — the same convention this document already uses elsewhere
 │                                │  previously held; her own logo
 │                                │  renders here instead if she set one
 │                                │  (see variant below) — never both
-│  (algún día vas a poder          │  Paid tier only — decision-log.md
-│   registrar aquí tu compra)      │  D40; see the Free-tier variant below
-│                                │  text — not tappable, names no
-│                                │  mechanism
+│      ┌───────────────┐          │  Paid tier only — a real,
+│      │▪▪▪▪  ▪  ▪▪▪▪  │          │  tappable/scannable Claim
+│      │▪  ▪  ▪▪ ▪  ▪  │          │  Token QR (decision-log.md
+│      │▪▪▪▪  ▪▪ ▪▪▪▪  │          │  D22, D40) — replaces the
+│      │      ▪▪       │          │  former literal placeholder
+│      │▪▪ ▪▪▪▪  ▪▪    │          │  text (see the Free-tier
+│      │   ▪  ▪▪ ▪▪ ▪  │          │  variant below for the tier
+│      └───────────────┘          │  that gets none of this)
+│   Escanéala si quieres que      │
+│   te recuerden la próxima       │
+│   vez que compres aquí          │
 ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │  nav bar unchanged — reachable
 └───────────────────────────────┘   exactly as everywhere else;
@@ -1075,7 +1101,7 @@ Three elements only — confirmation, total, business identity. No future-regist
   an error (§3.8d) until a retry succeeds. Same trigger condition the
   superseded §3.8e used.
 - **Full-viewport replacement of §3.7, not an overlay on top of it.** No
-  header (no running total, no Día N, no session-controls "▾"), no
+  header (no running total, no Día N, no session-controls "⋯" icon), no
   "Venta actual" tray, no product grid — all deliberately absent, not
   merely dimmed, because during this moment the device is held toward
   the customer and none of that content has a legitimate reason to be
@@ -1088,8 +1114,9 @@ Three elements only — confirmation, total, business identity. No future-regist
   per-sale total (unchanged in role/prominence from the superseded
   draft — still the largest, most legible element on screen), the
   business identity (`Business.name`/`Business.logo`), and — Paid tier
-  only — the future-registration placeholder (unchanged copy, new visual
-  device). A Free-tier receipt ends at business identity.
+  only — a real, tappable/scannable Claim Token QR (`decision-log.md`
+  D22/D40), replacing, as of this amendment, the row's former textual
+  placeholder. A Free-tier receipt ends at business identity.
 - **"$580" is the sum of `SaleItem.pricePaid` across every item in this
   one Sale** (`decision-log.md` D33's Price resolution) — each item's
   price was already resolved automatically, at the instant it was added
@@ -1098,10 +1125,15 @@ Three elements only — confirmation, total, business identity. No future-regist
   number required a decision from Ana at any point in the Sale — it's a
   pure read of values already fixed before Finalizar Venta was ever
   tapped.
-- **Visual device: the merchant's own identity — `Business.name`, or her own `Business.logo` if she's set one — never a QR/scan-pattern render, and, as of this amendment, no longer Nahui's own mark either.** The scan-pattern-grid rejection from the original design stands unchanged (a rendered scan pattern carries an unhedgeable "this is live and scannable" claim no matter how it's styled, and this document describes every sale forever, not a limited-run artifact) — what changes here is whose identity fills that same centered, quiet position. `Business.name` is required on every Business (`onboarding.md` §2.2b), so this element is never empty; `Business.logo` is optional and, when set, renders alone in the identical position/weight — the two are never shown together, keeping this element the same single-item composition it's always been, just pointed at a different source. **Deliberate brand-facing decision, named explicitly rather than left as an incidental consequence of adding a form field:** Nahui's own mark steps back here in favor of the merchant's — the honest read of what this moment actually is for her, a receipt from *her* business, not an ad impression for the platform she happens to be using. See §10 for the full reasoning.
-- Copy is unchanged from the superseded draft: "(algún día vas a poder
-  registrar aquí tu compra)" — names no specific mechanism, doesn't
-  commit to a reward/gift framing (§8).
+- **Visual device: the merchant's own identity — `Business.name`, or her own `Business.logo` if she's set one — never a QR/scan-pattern render, and, as of this amendment, no longer Nahui's own mark either.** The scan-pattern-grid rejection from the original design stands unchanged (a rendered scan pattern carries an unhedgeable "this is live and scannable" claim no matter how it's styled, and this document describes every sale forever, not a limited-run artifact) — what changes here is whose identity fills that same centered, quiet position. `Business.name` is required on every Business (`onboarding.md` §2.2b), so this element is never empty; `Business.logo` is optional and, when set, renders alone in the identical position/weight — the two are never shown together, keeping this element the same single-item composition it's always been, just pointed at a different source. **Deliberate brand-facing decision, named explicitly rather than left as an incidental consequence of adding a form field:** Nahui's own mark steps back here in favor of the merchant's — the honest read of what this moment actually is for her, a receipt from *her* business, not an ad impression for the platform she happens to be using. See §10 for the full reasoning. **Scope note, added 2026-08-09:** this bullet governs the identity element specifically (`Business.name`/`Business.logo`) and is unaffected by, and doesn't conflict with, this amendment's addition of a genuine QR one row below it (see the bullets immediately following, and §10's supersession note) — Ana's own name/logo is still never rendered as a QR; only the separate future-registration row below it changes. The two positions shared one combined rejection before splitting into distinct elements (2026-08-08's Business Identity amendment); this note keeps that history legible rather than leaving the two passages to read as contradictory.
+- **Visual device for the future-registration row (Paid tier only): a real, tappable/scannable Claim Token — `decision-log.md` D22, generated automatically at Sale finalization whenever `subscriptionTier=paid` (D40) — rendered as a QR, replacing the literal textual placeholder this row previously carried.** Superseded by explicit Product Owner direction (2026-08-09), not contradicted: the two earlier "no QR-shaped render" rejections in this document (this section's own scan-pattern-grid rejection above, scoped to the identity element; the fuller historical rejection recorded later in this document's amendment history) both rejected a QR specifically because it was *decorative* — a graphic styled to look scannable while resolving to nothing, carrying an unhedgeable "this is live" claim with no real interaction behind it. What's specified here is different in kind: a genuinely functional element that, when engaged, actually navigates somewhere real — the already-built, already-Approved customer-facing flow at `product/02-ux-loyalty/customer-loyalty-registration.md` §3.1 onward. The original objection was never against QR shapes categorically, only against an unhedgeable liveness claim with nothing behind it; that risk doesn't apply to something that's actually live. See §10 for this reasoning in full.
+- **Entry point, nothing more.** Engaging this element is the entry point into `product/02-ux-loyalty/customer-loyalty-registration.md`'s own already-defined resolution logic, starting at its §3.1 (Resolving) and branching exactly per that document's own §2/§4: an existing customer identifies via email and continues to §3.11 (`Compra confirmada — cliente que regresa`); a new customer goes through §3.6's minimal, fully-skippable optional-fields step to §3.10 (`Registro exitoso — primera vez`); a malformed/expired/already-claimed token resolves to §3.3/§3.4. None of this is redesigned or restated here — this amendment specifies only the bridge (this element's appearance, and that engaging it is the entry point), never the destination flow, which was already fully specified and Approved before this amendment existed.
+- **Real-world mechanism vs. single-device demo realization, stated explicitly so the two aren't conflated.** In real operation, the customer scans this element with her own phone's camera, on her own separate device — the same "display an artifact the customer's own device resolves" pattern `decision-log.md` D21/D22 already establish at the Foundation level (an NFC tag, a QR, "a future claim mechanism") — so Ana's own screen is never touched by this interaction and stays exactly as it was: the receipt keeps showing until she ends it herself (below). This document's own `[ ]` = tappable convention is applied here to mark the element as genuinely live (unlike the decorative graphic the prior rejection ruled out), not as a literal claim that Ana's own finger is the intended actor. Separately — only because this is being built and demonstrated in a single-device, click-driven prototyping medium with no real camera (Figma Present mode), not a Low-Fidelity design decision — a direct tap on this element by whoever is driving the demo is the equivalent stand-in action, producing the identical destination. Realizing that stand-in mechanically is Medium-Fidelity's own job, per `product/02-ux/CLAUDE.md` §4 — not specified further here (see §11).
+- **No effect on Ana's own screen state, Session, or the exit mechanism below.** Nothing about this element being engaged ends the receipt, returns her to §3.7, or touches "Venta actual," the Session, or the header total — those remain governed entirely by the margin-zone tap/auto-return specified below, unchanged. The two are spatially and functionally distinct: this element sits in the centered column where the placeholder text previously sat; the exit tap lives in the outer margin specifically because that zone is where nothing else renders. A customer engaging this element via her own device never touches Ana's screen at all, so it can never interact with the exit mechanism either way. Consistent with `architecture-principles.md` #6 — Selling has no read dependency on Loyalty-claim (`decision-log.md` D35: "Selling is explicitly not granted this edge") — Ana's screen never reflects, and never attempts to reflect, whatever happens next on the customer's own device; she'd see any resulting Claim only later, asynchronously, in Resultados' "Tus clientes" (`reports.md` §3.12/§3.13), never here.
+- **Resolves `product/02-ux/product-decisions.md` Q15 — purely ephemeral, nothing persisted; no dedicated "decline to offer" action exists separately from this screen's own existing exit mechanism.** `decision-log.md` D40 states Ana "still controls whether she offers the QR during a particular Sale" — that control is located entirely in behavior she already has on this same screen: how long she holds the receipt open, and when she taps the margin zone to end it. No concrete reason surfaced during this design pass to add a distinct "skip" affordance or to persist a Sale's non-engagement — a Claim Token is generated automatically regardless (D22/D40); an unscanned one simply goes unclaimed, and nothing about that state needs tracking anywhere the merchant-facing product reads. See Q15's own resolution entry in `product-decisions.md`.
+- **Flag, not resolved here: this amendment activates the Sale-level Claim Token/QR bridge — `company/backlog.md` #2's Stage 2 — ahead of that item's own stated gating (behind backlog #1's success bar), by explicit, direct Product Owner instruction specific to this amendment.** Named rather than silently assumed (`decision-log.md` D34 already flagged this identical sequencing question without resolving it generally: "a business/prioritization call... remains open for the Product Owner/Planner"). This doesn't reopen or resolve that general question — it records that this one instruction overrides it for this one element, consistent with D34's own finding that a strictly-post-sale QR placement never touched backlog #1's <3s write-path gate in the first place.
+- **Consultation self-check (`company/CLAUDE.md`'s Consultation Pattern), not a live request — this bridge decomposes from already-Approved precedent, not a genuinely novel pattern.** "Display an artifact that hands a customer off to a separate, already-designed, cross-device flow" is already resolved at the Foundation level (`decision-log.md` D21/D22); "a tap that hands off into a different already-Approved document's own flow" has direct precedent within this exact document (§3.6a's "Ir a Configuración"/"Asignar tags" links); the demo-realization mechanism (a tap standing in for a camera scan) was specified directly by the Product Owner's own instruction. Flagged the same way `product/02-ux-loyalty/customer-loyalty-registration.md` §8 item 5 flags its own comparable self-check, for `ux-critic`/`reviewer` to challenge if this judgment doesn't hold.
+- **Copy, replacing the retired placeholder (2026-08-09).** "(algún día vas a poder registrar aquí tu compra)" — future-tense, deliberately mechanism-noncommittal — is no longer accurate now that the mechanism is real and present. Replaced by a caption beneath the QR: "Escanéala si quieres que te recuerden la próxima vez que compres aquí" — present tense, an offer rather than an instruction (`brand/tone-of-voice.md`, "suggestions read as offers, not instructions"), reusing the same "recordar"/"la próxima vez que compres" vocabulary `product/02-ux-loyalty/customer-loyalty-registration.md` §3.5 already establishes, so the two surfaces read as one voice. Still names no internal mechanism term — "Claim," "Claim Token," "QR" never appear in the on-screen copy, only in this document's own annotations (`global-principles.md`, Product Language). Doesn't commit to a reward/gift framing either — §8's Q14 flag stays open, now attached to real copy rather than a hypothetical.
 - **Ends primarily via a deliberate tap in a margin zone along the
   screen's outer edges — bottom edge foremost, not the centered column
   carrying the total/mark/placeholder, and not a tap anywhere on the
@@ -1133,21 +1165,18 @@ Three elements only — confirmation, total, business identity. No future-regist
   backgrounding) end the receipt immediately**, same as any other Home
   state — on return to Hoy she resolves fresh per §2/§3.13, landing on
   plain §3.7, never a lingering receipt from a now-past customer.
-- Session-controls ("▾") is not reachable from this screen — there's no
+- Session-controls ("⋯") is not reachable from this screen — there's no
   header to host it. A deliberate, temporary omission specific to this
   moment, not a removal: it's back, unchanged, the instant §3.7 returns.
 - Not the deferred "deshacer" (undo) toast scoped out in §11 — that
   remains a distinct, reversal-oriented mechanism; this stays a
   one-way, positive acknowledgment only.
-- Does not design, build, or commit to the Sale-level QR/Claim-Token
-  mechanism (`product/99-rfc/0002-loyalty-claim-complete-capability.md`,
-  `decision-log.md` D22) — that remains `company/backlog.md` #2's Stage
-  2, gated behind backlog #1's own success bar, not started.
+- **Superseded in part by this amendment (2026-08-09) — named explicitly, not silently dropped.** This bullet originally stated the section "does not design, build, or commit to the Sale-level QR/Claim-Token mechanism (`product/99-rfc/0002-loyalty-claim-complete-capability.md`, `decision-log.md` D22) — that remains `company/backlog.md` #2's Stage 2, gated behind backlog #1's own success bar, not started." No longer accurate for the narrow bridge specified above: by explicit, direct Product Owner instruction, this amendment does commit to rendering a real, functional Claim Token QR on the Paid-tier receipt and to it being the entry point into the already-Approved `product/02-ux-loyalty/customer-loyalty-registration.md` flow. What's not superseded: this amendment still doesn't redesign or alter that destination flow itself. See the backlog-sequencing flag above.
 
 ### 3.9 Session active — `Session.operatingMode = buttons` surface
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │
+│ Plaza Norte · Día 2         ⋯   │
 │ Hoy: $850 · 6 ventas             │
 ├───────────────────────────────┤
 │ Venta actual: (vacía)            │
@@ -1235,7 +1264,7 @@ Three elements only — confirmation, total, business identity. No future-regist
 ### 3.10 Session active — `Session.operatingMode = nfc` surface
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │
+│ Plaza Norte · Día 2         ⋯   │
 │ Hoy: $850 · 6 ventas             │
 ├───────────────────────────────┤
 │ Venta actual: (vacía)            │
@@ -1258,7 +1287,7 @@ Three elements only — confirmation, total, business identity. No future-regist
 ### 3.11 Close-session confirmation
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │  dimmed, still visible underneath
+│ Plaza Norte · Día 2         ⋯   │  dimmed, still visible underneath
 │ Hoy: $850 · 6 ventas             │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  ┌───────────────────────────┐ │
@@ -1283,7 +1312,7 @@ Three elements only — confirmation, total, business identity. No future-regist
 ### 3.11a Cerrar sesión blocked — Venta en curso (new — resolves HOME-M2)
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │  dimmed, still visible underneath
+│ Plaza Norte · Día 2         ⋯   │  dimmed, still visible underneath
 │ Hoy: $850 · 6 ventas             │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  ┌───────────────────────────┐ │
@@ -1339,7 +1368,7 @@ and left Variant B undefined.)
 **Variant A — Venta actual was empty at the moment of interruption:**
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │
+│ Plaza Norte · Día 2         ⋯   │
 │ Hoy: $850 · 6 ventas             │
 ├───────────────────────────────┤
 │ Venta actual: (vacía)            │
@@ -1358,7 +1387,7 @@ mechanism.
 **Variant B — Venta actual had 1+ items at the moment of interruption:**
 ```
 ┌───────────────────────────────┐
-│ Plaza Norte · Día 2         ▾   │
+│ Plaza Norte · Día 2         ⋯   │
 │ Hoy: $850 · 6 ventas             │
 ├───────────────────────────────┤
 │ Venta actual: 2 artículos          │
@@ -1452,7 +1481,7 @@ Session-start-moment variant (Limited Ready / Not Ready / capability
 revoked / Ready-but-`buttons`-default discoverability mention) happens to be
 showing on top of 3.4/3.5/3.6 at the time, since those are the same states
 with one extra line, not separate states:
-  → [rare] ▾ → session-controls sheet (3.6c) → Configuración
+  → [rare] ⋯ → session-controls sheet (3.6c) → Configuración
       → resolve (settings.md §3.1/§3.2) → vista principal (settings.md §3.3a,
         or §3.6 if a pending change already exists)
       → "← Hoy" → back to whichever of 3.3-3.6 (and its 3.6a variant, if any)
@@ -1470,9 +1499,18 @@ Inside selling (3.7-3.10):
       → error (3.8d) → Reintentar, o resolve via Cancelar venta actual (3.8b)
       → success → tray clears → full-viewport receipt (3.8f: "Venta
           finalizada ✓" + this sale's total + business identity, plus —
-          Paid tier only, `decision-log.md` D40 — a future-registration
-          placeholder) — replaces §3.7 entirely for the payment moment;
+          Paid tier only, `decision-log.md` D40 — a real, tappable/scannable
+          Claim Token QR) — replaces §3.7 entirely for the payment moment;
           no header, no grid, no Venta actual tray rendered
+          → [Paid tier only, `decision-log.md` D40] tap/scan the Claim
+            Token QR (§3.8f) → entry point into
+            `product/02-ux-loyalty/customer-loyalty-registration.md` §3.1
+            onward (Approved, out of this document's own scope to
+            redesign) — resolves per that document's own already-defined
+            logic; has no effect on this screen, this Session, or the exit
+            mechanism above, and produces no destination back into this
+            document (that document's own §4 confirms every terminal state
+            there is a genuine end of its own graph)
           → auto-returns to plain §3.7 after a generous, fixed dwell —
             no tap required, nothing gated on the customer
           → [any tap on the receipt] → returns to §3.7 immediately,
@@ -1488,7 +1526,7 @@ Inside selling (3.7-3.10):
   → [any point, 1+ items pending] Cancelar venta actual → inline confirm (3.8b)
       → No → back to 3.8, items untouched
       → Sí, cancelar → tray clears → back to 3.7
-  → [rare] ▾ → session-controls sheet (3.7a) → two independent entries:
+  → [rare] ⋯ → session-controls sheet (3.7a) → two independent entries:
       → Cerrar sesión
           → Venta actual empty     → confirm (3.11)
               → Cancelar → back to §3.7, unchanged
@@ -1524,11 +1562,13 @@ and back to Hoy):
    Capability revoked mention, or (new) Ready-but-still-on-botones tags-now-
    available mention — with a next-step link on every variant except Limited
    Ready, which offers an inline override instead (§3.6a)
-8. Session-controls sheet (▾) — cold start / idle / Event-active-no-Session
-   states — "Configuración" only (§3.6c; applies settings.md §2.1)
+8. Session-controls sheet (⋯) — cold start / idle / Event-active-no-Session
+   states — "Configuración" only, marked with a gear icon (§3.6c; applies
+   settings.md §2.1; icon relocated 2026-08-09, Product Owner decision)
 9. Session active, no Sale currently open — ready for next customer
-10. Session controls sheet (▾) — active Session — "Cerrar sesión" and
-    "Configuración" (updated — second entry added per settings.md §2.1)
+10. Session controls sheet (⋯) — active Session — "Cerrar sesión" and
+    "Configuración" (the latter marked with a gear icon; second entry added
+    per settings.md §2.1; icon relocated 2026-08-09, Product Owner decision)
 11. Session active, Sale in progress (1+ items in "Venta actual")
 12. Session active, Sale in progress — item sync retrying (silent, background)
 13. Session active, Sale in progress — item sync failed, non-blocking marker + inline Reintentar
@@ -1537,7 +1577,9 @@ and back to Hoy):
 16. Finalizar Venta — error
 17. Finalizar Venta — success, full-viewport receipt: "Venta finalizada ✓"
     + per-sale total + business identity, plus — Paid tier only,
-    `decision-log.md` D40 — a future-registration placeholder;
+    `decision-log.md` D40 — a real, tappable/scannable Claim Token QR, the
+    entry point into `product/02-ux-loyalty/customer-loyalty-registration.md`
+    (2026-08-09 amendment, supersedes the earlier textual placeholder);
     temporarily replacing §3.7 entirely (no header, no grid) —
     auto-returns to §3.7
     after a generous dwell, or immediately on any tap (resolves HOME-Q1;
@@ -1626,6 +1668,12 @@ her actual top sellers within the first screenful regardless of Catalog size.
   instant each item is added, Event override if one exists else Product
   default; never a merchant decision, never a UI moment (`decision-log.md`
   D33, `domain-model.md`'s Price resolution Key Mechanism).
+- Claim Token generation (`decision-log.md` D22/D40) — generated
+  automatically at Sale finalization whenever `subscriptionTier=paid`,
+  never a merchant decision or a UI moment of its own; §3.8f's QR is a pure
+  display of an already-resolved token, the same zero-decision pattern
+  already established for `SaleItem.pricePaid` (D33) and
+  `Session.operatingMode` (D23).
 
 ## 8. Open questions
 
@@ -1666,6 +1714,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
   (`decision-log.md` D40) — a Free-tier receipt no longer shows this
   placeholder at all (§3.8f, §10). See also `product/02-ux/product-decisions.md`
   Q15 — a related but distinct open item, not resolved by this note either.
+  **Now attached to real, on-screen copy rather than a hypothetical placeholder (2026-08-09) — still unresolved, not settled by this amendment.** The receipt's QR caption stays deliberately neutral/informational, the same non-committal posture the retired placeholder text held — this item (and Q14 in `product-decisions.md`) is what would need resolving before that caption could honestly shift toward reward/gift language.
 
 ## 9. Principle justification
 
@@ -1832,8 +1881,10 @@ her actual top sellers within the first screenful regardless of Catalog size.
   added to the session-controls sheet (§3.7a) below "Cerrar sesión," and the
   sheet itself is now reachable from Home's four non-Session header states
   (Cold start, Idle-no-event, Idle-with-event, Event-active-no-Session) via
-  a new "▾" affordance on the header (§3.3–§3.6, including the §3.6a
-  Session-start-moment variants shown on top of §3.4/§3.5/§3.6, and §3.6c) —
+  the header's session-controls icon (originally "▾," relocated 2026-08-09
+  to a top-right "⋯" — see the new bullet below) (§3.3–§3.6, including the
+  §3.6a Session-start-moment variants shown on top of §3.4/§3.5/§3.6, and
+  §3.6c) —
   not only from an active Session. "Cerrar sesión" stays scoped to an active
   Session, exactly as before; "Configuración" is available in every state,
   since capability self-service (D25) has no dependency on whether a
@@ -1841,6 +1892,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
   shared flow — this closes the gap `product/00-foundation`'s Architect
   readiness review flagged: without it, Configuración had no way to be
   reached from three of Home's four non-Session states.
+- **2026-08-09 (Product Owner decision): the entry-point trigger relocates from the header's "▾" to a top-right "⋯" icon; the sheet's "Configuración" row gains a gear icon ("⚙").** Raised because the Product Owner found the "▾" insufficiently discoverable/natural. Purely a trigger-level and sheet-row-marker change — no state gains or loses the entry point (the same four-state exclusion this document already establishes, §3.1/§3.2/§3.12/§3.14, is unchanged), "Cerrar sesión" stays scoped to an active Session exactly as before, and nothing about Configuración's own downstream behavior (settings.md §3.3a onward) is touched. **"⋯" chosen over a hamburger ("☰"):** a hamburger conventionally signals a full secondary navigation drawer with many destinations; adopting one here would misrepresent, and visually compete with, what's actually behind this trigger — a one-or-two-row sheet, not a parallel navigation system — undercutting decision-log.md D13's own ruling that this affordance is a sequencing/reachability fact, not a fifth nav tab, alongside the persistent, already-primary bottom nav bar. A three-dot overflow icon is the more standard, more honestly-scoped mobile convention for a small set of secondary actions attached to a screen, and directly answers the Product Owner's stated concern with a widely-recognized signifier the "▾" never was. The gear icon on "Configuración" specifically (not on "Cerrar sesión") answers the Product Owner's explicit request to distinguish it from any other entry the sheet may carry in the future. Every current-state wireframe and current-tense description of the trigger across this document (§2, §3.3–§3.7a, §3.8f, §4, §5) is updated to "⋯"; narrative describing the moment the "▾" affordance was first introduced (this bullet's own predecessor, and §3.7a's HOME-M4 history) is left as an accurate record of that point in time, not rewritten. settings.md receives the matching correction in the same pass — see that document's own status header and §2.1/§8 item 3.
 - **Framing: "selling becomes the default entry point," not "Home is the
   selling screen."** The persistent bottom nav stays reachable through every
   selling state; navigating away is never obstructed. Opening Hoy while
@@ -2063,6 +2115,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
     sale becomes data, a customer becomes a relationship) without
     forcing the four-pillar story onto a screen that doesn't need it to
     function.
+  - **Superseded 2026-08-09, for the placeholder element specifically — named explicitly, not silently edited.** This bullet's rejection was scoped to a *decorative*, non-functional graphic carrying an unhedgeable "this is live and scannable" claim with no real interaction behind it — correct at the time, for that risk. It doesn't extend to a genuinely functional element that, when engaged, actually navigates to a real, already-built destination (`product/02-ux-loyalty/customer-loyalty-registration.md` §3.1 onward) — that risk doesn't apply to something that's actually live. Per explicit, direct Product Owner instruction, §3.8f's current, dated 2026-08-09 amendment now specifies exactly this. Kept, not deleted, per this document's own amendment-history convention — it correctly records why a QR was rejected at the time, for the reason that applied at the time.
   - **Copy stays exactly as before** ("algún día vas a poder registrar
     aquí tu compra") — still names no mechanism, still doesn't commit to
     a reward/gift framing (`decision-log.md` D22's Claim Token is a
@@ -2105,6 +2158,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **§4's own interaction-flow summary was still citing the pre-correction test after §2 step 3 was corrected above — fixed to match (2026-08-08, caught during `ux-critic`'s D33 remediation re-check, missed by the original correction).** §4's branch labels read "nothing active, Catalog has Products" / "Catalog empty" — the retired "Product ever registered" proxy §2 step 3 was already corrected to replace, above. Corrected to "at least one `available` InventoryUnit exists" / "zero `available` InventoryUnits," matching §2 exactly, since §4 is this document family's own designated canonical wiring section (`product/02-ux/CLAUDE.md`) and a stale copy there is exactly the kind of section-drift this project's own incident history (`decision-log.md` D31/D32) already treats as a real Medium-Fidelity build-defect risk when a doc's own §2 and §4 disagree about the same branch. No wireframe, state, or routing decision changes — §4 always described the identical branch §2 step 3 defines; only its own wording had fallen out of sync with a fix already applied one section away.
 - **2026-08-08: §3.8f's receipt now shows the merchant's own captured identity instead of Nahui's own mark — a deliberate brand-facing product decision, named explicitly per this document's own review discipline, not an incidental side effect of `onboarding.md`'s new identity-capture step.** Until this amendment, every receipt Ana ever showed a customer carried Nahui's own mark — reasonable when nothing else was available to show, but never actually a brand statement anyone chose on purpose; it was the honest fallback for an empty field, not a considered choice. Once `onboarding.md` §2.2b makes `Business.name` a required, always-populated field (and `Business.logo` an optional one), the honest fallback for an *absent logo* is her own business name as text, not Nahui's mark — Nahui's mark was never the right fallback for a missing merchant logo, it was only ever standing in for a data field this product hadn't captured yet. This is the correct, considered choice, not merely a technical consequence of a new field existing: the receipt moment (§3.8f) is Ana's own customer-facing surface, at the single instant in the whole product a real customer ever sees anything — reinforcing her own identity there, not Nahui's, is the more honest and more merchant-respecting choice, consistent with `brand-guide.md`'s tone (never positioning Nahui's own presence ahead of the merchant she serves) and with the general shift this identity-capture amendment represents across the product. **Fallback is `Business.name` as plain text, not Nahui's mark, and not a generic placeholder** — reasoned explicitly: `Business.name` is required (never blank, `onboarding.md` §2.2b), so there is always a genuine, honest thing to show; falling back to Nahui's own mark when only the logo (not the name) is missing would mean the *common* case — most merchants likely won't have a digital logo ready, per this amendment's own design note — shows Nahui's brand more often than the merchant's, exactly backwards from the stated intent. Not RFC-worthy — no aggregate boundary, domain term, or IA change (`Business.name`/`Business.logo` are additive fields `architect` already cleared as sitting inside Selling's existing read-only dependency on Identity); a content-source and asset-source change to an already-Approved state's third element, same category as this document's other post-Approval amendments.
 - **2026-08-09: §3.8f's future-registration placeholder is now gated on `subscriptionTier=paid`, absent entirely on a Free-tier receipt (`decision-log.md` D40).** The original copy was written mechanism-noncommittal but tier-noncommittal too, before D40 existed — promising every merchant she'll "someday" get this is false for Free tier; only upgrading gets her there. Fix: a Free-tier receipt renders exactly three elements; a Paid-tier receipt is unaffected. **Not a design of the live QR interaction itself** — tracked as `product/02-ux/product-decisions.md` Q15, scoped explicitly to Paid-tier Sales.
+- **2026-08-09 (Product Owner decision, resolving `product/02-ux/product-decisions.md` Q15): §3.8f's Paid-tier receipt now renders a real, tappable/scannable Claim Token QR in place of the former literal placeholder text — the entry point into the already-Approved `product/02-ux-loyalty/customer-loyalty-registration.md` flow, §3.1 onward.** Needed to work end-to-end for the demo specifically; the design generalizes cleanly beyond the demo, since nothing about it is demo-specific except the single-device tap-stand-in for a camera scan (§3.8f). **Explicitly supersedes, not contradicts, the two prior "no QR-shaped render" passages in this document** — both correctly rejected a decorative, non-functional QR graphic for carrying an unhedgeable liveness claim with nothing behind it; that objection doesn't apply to a genuinely functional element navigating somewhere real. The identity element (`Business.name`/`Business.logo`) is unaffected and still never renders as a QR — only the separate future-registration row changes. Reasoning, the destination bridge, the demo-vs-production distinction, and the exit-mechanism non-conflict are specified in full in §3.8f's own bullets, not repeated here. **Does not redesign the destination flow** — already fully specified and Approved before this amendment; only the bridge is new. **Resolves Q15**: purely ephemeral, nothing persisted — Ana's existing control over the receipt's own exit already fully realizes D40's "she controls whether she offers the QR." **Flagged, not resolved:** this activates `company/backlog.md` #2's Stage 2 ahead of its own stated gating, by this specific Product Owner instruction; the general sequencing question `decision-log.md` D34 left open stays open. **Consultation self-check, not a live request:** this bridge decomposes from already-Approved precedent (`decision-log.md` D21/D22; §3.6a's own cross-document hand-off links) — not escalated to `knowledge-mentor`; flagged for `ux-critic`/`reviewer` to challenge if that judgment doesn't hold. Not RFC-worthy — no aggregate boundary, bounded-context edge, or ubiquitous-language term changes; D22 already named the QR as a Claim Token display mechanism, D40 already established per-Sale offering as UI-layer state. A UX state-design amendment to an already-Approved spec. Ready for the standard `ux-critic`/`reviewer` cycle before folding back into Approved.
 
 ## 11. Future considerations
 
@@ -2145,3 +2199,4 @@ her actual top sellers within the first screenful regardless of Catalog size.
   explicitly leaves the threshold's exact value as a business rule, not a
   Foundation constant; not designed here, and Ana never sees the number
   either way (§3.6a).
+- **Exact single-device demo realization of the QR-to-loyalty-flow bridge (§3.8f) — a Medium-Fidelity/`ui-designer` task, not specified further here**, per `product/02-ux/CLAUDE.md` §4: this document names the destination and confirms engaging the element is the entry point; which Figma node/frame a click resolves to, and how a demo returns from `product/02-ux-loyalty/customer-loyalty-registration.md`'s own terminal states (which, by that document's own design, has no "return to Merchant App" destination — a presenter-driven manual step, not a designed interaction) is build-layer wiring.
