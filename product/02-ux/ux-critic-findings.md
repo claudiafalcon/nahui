@@ -448,3 +448,53 @@ Status: Fixed. `ux-designer` added one plain disclosure line ("Una vez que confi
 `ux-critic` verdict, final pass: clean — all 5 round-1 findings confirmed resolved with no regressions; FC-MAJ2/FC-MAJ3 confirmed resolved on the follow-up pass. Ready for `reviewer`'s Foundation-consistency pass (FC-S1 flagged for `reviewer`'s own judgment, not pre-resolved here).
 
 `reviewer` verdict: 1 Blocker (implementation-specific Button-class naming in §3.5/§3.6, closing FC-S1 — fixed by removing all component-name references, keeping the implementation-independent language the document already had) + 2 Important (undocumented `product/02-ux/` placement, resolved via `decision-log.md` D38 relocating the document to `product/02-ux-loyalty/`; no `product/02-ux/CLAUDE.md` status-index entry needed per that same ruling — tracked instead in `product/02-ux-loyalty/CLAUDE.md`'s own Status section). Re-verified clean on a final pass, including a fresh Foundation-consistency check against `domain-model.md`/`ubiquitous-language.md`/RFC 0004/RFC 0005. Folded into Approved (Draft-complete, `product/02-ux-loyalty/customer-loyalty-registration.md`).
+
+## `loyaltyEnabled` retirement (`decision-log.md` D40) — `home.md`, `settings.md`, `reports.md`, `onboarding.md`, `product/02-ux-loyalty/customer-loyalty-registration.md` (2026-08-09)
+
+Full narrative record lives in `company/bitacora.md`'s 2026-08-09 D40 entries — not restated here; this section exists so this project's standing per-round findings log isn't missing an entry for a round its own tracking files reference.
+
+### Major Finding, closed — `home.md`/`settings.md`
+
+Both documents still described "clientes frecuentes" as something Configuración "manages" and that's "meaningful to check or change" there (`settings.md` §2.1; `home.md` §3.6c) — stale, contradicting the corrected model where Frequent Customers is a pure, automatic consequence of `subscriptionTier` with nothing for Ana to check or change directly at Configuración.
+Status: Fixed. Both passages corrected to name only what's actually manageable there (`subscriptionTier`, `defaultSellingMode`); Frequent Customers removed as a co-equal "managed" item. Verified clean, plus one further stale reference caught in the same sweep (below).
+
+### Minor Finding, closed — `settings.md`
+
+§1's merchant-goal framing still said "six actions below," with a `§2.3` cross-reference that no longer pointed at matching content — both left behind by the D40 scope reduction (six actions to four).
+Status: Fixed. "six" → "four," stale `§2.3` citation dropped (the claim stands on its own without a cross-reference).
+
+### Verification
+
+`ux-critic` verification pass: clean — both fixes read correctly in context, fresh full sweep of both documents (plus a cross-check of `onboarding.md`/`reports.md`/`customer-loyalty-registration.md`) found no other instance of the same pattern. `reviewer`'s Foundation-consistency pass: 1 Blocker (`ubiquitous-language.md`'s own "Claim" term definition still cited `loyaltyEnabled` after the Capability list and Sale entry were already fixed) — fixed directly by Main, re-verified. Folded into Approved.
+
+## Configuración entry-point relocation, "▾" → "⋯" (Product Owner decision, 2026-08-09)
+
+`home.md` and `settings.md` both amended: the small header dropdown is replaced by a top-right "⋯" (three-dot/overflow) icon, with a gear icon ("⚙") added to the sheet's "Configuración" row. Pure trigger relocation — reasoned in full in `home.md`'s own §10 (why "⋯" over a hamburger icon, per `decision-log.md` D13's "not a fifth nav tab" ruling).
+
+### Verification
+
+`ux-critic`: clean on first pass — every wireframe in both documents consistently shows "⋯," no accidental change to which Home states show the entry point or what Configuración does once reached, and every remaining "▾" reference correctly left as historical record (what an earlier draft looked like), never live current-state text. `reviewer`'s Foundation-consistency pass: clean — independently re-verified `decision-log.md` D13's ruling still holds against the new trigger (not just asserted), confirmed both documents' text agrees with each other directly. No Blockers, no Important findings against this round specifically (two Important findings from the same review dispatch were about D40-round tracking-file drift, not this relocation — see the entries above and below). Folded into Approved.
+
+## Digital Receipt Claim Token QR (Product Owner decision, 2026-08-09) — `home.md` §3.8f, `product/02-ux-loyalty/customer-loyalty-registration.md` §0
+
+`home.md` §3.8f amended: the Paid-tier Digital Receipt now specifies a real, tappable/scannable Claim Token QR in place of the former textual placeholder — the entry point into the already-Approved `customer-loyalty-registration.md` flow. Resolves `product/02-ux/product-decisions.md` Q15. Explicitly supersedes (not silently contradicts) this document's own two prior "no QR-shaped render" rejections — those rejected a decorative, non-functional graphic; this is a genuinely functional one navigating to a real destination, a different risk profile. Free-tier receipt unaffected.
+
+### Major Findings, closed — stale references left behind by the amendment, both in `home.md`
+
+**QR-MAJ1** — §8's "Future-registration placeholder" open item still quoted the retired placeholder copy as "today's copy" and stated Q15 was "not resolved by this note either" — both false the moment the amendment landed; only a trailing patch sentence had been appended, never correcting the item's own opening/closing claims.
+Status: Fixed. Item rewritten to state the actual current copy and Q15's Resolved status throughout, correctly distinguished from the still-open Q14 (reward/gift framing).
+
+**QR-MAJ2** — §11's future-considerations list still carried a bullet describing "the actual live QR/Claim-Token-offering interaction" as undesigned and tracked under Q15 — written for the *prior* 2026-08-09 (D40 tier-gating) amendment and never revisited by this one, directly contradicting §3.8f/§5/§10 in the same document.
+Status: Fixed. Bullet removed — the one genuinely still-open sliver (single-device demo-realization mechanics) is already owned by §3.8f's own bullet, not duplicated.
+
+**QR-MAJ3** — outside `home.md`: `customer-loyalty-registration.md` §0 still claimed `home.md` §3.8f "shows only a literal, mechanism-free placeholder, not a live QR yet" — false as of this amendment, and misleading to anyone (`ui-designer`, next) reading both documents together for the Medium-Fidelity build.
+Status: Fixed. Corrected to state `home.md` now renders a real QR, with this document unaffected as the already-Approved destination.
+
+### Minor Finding, closed
+
+§3.8f's own exit-mechanism bullet still called the QR row "placeholder" in one internal reference ("...carrying the total/mark/placeholder..."), inconsistent with every other reference in the same bullet set.
+Status: Fixed. "placeholder" → "QR."
+
+### Verification
+
+`ux-critic` verification pass: clean — all four fixes read correctly in context; fresh full sweep of both documents for `placeholder`/`algún día`/`Q15`/`not resolved`/`undesigned` found no further stale references (remaining hits are correctly-framed historical record). `reviewer`'s Foundation-consistency pass: no Blockers. Independently re-derived the RFC-trigger question (no new aggregate/bounded-context edge/ubiquitous-language term — D22 already named the QR mechanism, D40 already classified per-Sale offering as UI state) and confirmed it holds; cross-checked `product-decisions.md` Q15's resolution against `home.md` §3.8f's own text and found them in agreement. Two Important findings from this same dispatch were general documentation-hygiene gaps (this findings-log entry itself being missing; a stale "Ready for reviewer" status line on the D40 round) — closed separately, not specific to the QR bridge's own substance. One Suggestion (tighten the backlog #2 Stage 2 "flag, not resolved" language to distinguish design/spec work, already authorized, from implementation, still gated) — optional, not blocking. Folded into Approved.
