@@ -219,9 +219,9 @@ current tab in brackets.
 ┌───────────────────────────────┐
 │  Inventario                    │
 │  ┌───────────────────────────┐ │
-│  │(P) Pijama    $150   12 disponibles│ │  row → §3.6, prefilled;
-│  │(S) Sudadera/Maxy $220 3 disponibles│ │  price [ $XXX ] → §3.4a
-│  │(C) Calcetines $60    0 disponibles│ │  sold out — dimmed, tappable
+│  │(B) Bolsas    $350   12 disponibles│ │  row → §3.6, prefilled;
+│  │(A) Accesorios $180 3 disponibles│ │  price [ $XXX ] → §3.4a
+│  │(P) Playeras $280   0 disponibles│ │  sold out — dimmed, tappable
 │  │(D) Delantales $90      sin registrar│ │  never registered — dimmed, tappable
 │  └───────────────────────────┘ │  both → §3.6, prefilled (see below)
 │      [ Registrar mercancía ]    │
@@ -232,7 +232,7 @@ current tab in brackets.
 - List shows Product + available count only — never a Lot, InventoryEntry, or
   InventoryUnit reference. *architecture-principles.md* #4; matches
   *global-principles.md*, "she sees 'Hoodie (4 available)'."
-- A sold-out Product (Calcetines, 0 disponibles) stays visible rather than
+- A sold-out Product (Playeras, 0 disponibles) stays visible rather than
   disappearing: Product persists independent of stock (`domain-model.md` D2).
 - Tapping a row is a real shortcut, not decoration — see §3.6 annotation and
   §10.
@@ -243,7 +243,7 @@ current tab in brackets.
   doesn't invent its own logic for this. Gives the Catalog list the same
   at-a-glance differentiation the selling grid now has, on the two screens
   where Ana actually scans a list of what she sells.
-- **A zero-`disponibles` row (Calcetines, 0 disponibles) now renders
+- **A zero-`disponibles` row (Playeras, 0 disponibles) now renders
   dimmed** — the same visual dimming signal `home.md` §3.9 already applies
   to a sold-out ProductTile, reused here rather than inventing a second
   dimming rule. **Unlike the ProductTile case, this row stays fully
@@ -283,7 +283,7 @@ current tab in brackets.
     derives "existing vs. new Product" at the picker (§3.8) — no new
     stored field, no schema change, purely a read-side check. A Product
     that was previously stocked and has since sold out in full
-    (Calcetines, above) keeps the existing "0 disponibles" caption,
+    (Playeras, above) keeps the existing "0 disponibles" caption,
     unchanged — that framing was accurate and was never the problem.
   - Both captions keep every other rule of the existing dimming treatment
     identical: dimmed, fully tappable, routes to §3.6 prefilled with that
@@ -304,9 +304,9 @@ current tab in brackets.
   view, = §3.5) — no separate specification needed for each; they all
   render the identical Catalog row.
 - **Each row now also shows this Product's current `Product.defaultPrice`**
-  (`decision-log.md` D33), e.g. "$150" — plain informational text within
+  (`decision-log.md` D33), e.g. "$350" — plain informational text within
   the row, except the price figure itself, which carries its own tap
-  target `[ $150 ]`, distinct from the rest of the row (which stays
+  target `[ $350 ]`, distinct from the rest of the row (which stays
   tappable into §3.6, prefilled, exactly as before — unchanged). Tapping
   the price opens the price-edit sheet (§3.4a), the Catalog-row-level edit
   affordance D33 calls for — reusing this document's own existing
@@ -320,10 +320,10 @@ current tab in brackets.
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │  dimmed, visible underneath
-│  Pijama                          │
+│  Bolsas                          │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  Precio                          │
-│   [ $150 ]                       │
+│   [ $350 ]                       │
 │  [ Cancelar ]  [ Guardar precio ]  │
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
@@ -372,9 +372,9 @@ current tab in brackets.
 │  etiquetar                       │
 │   [  Continuar etiquetando  ]   │  primary action in this state
 │  ┌───────────────────────────┐ │
-│  │(P) Pijama          10 disponibles│ │
-│  │(S) Sudadera/Maxy     5 disponibles│ │
-│  │(C) Calcetines       20 disponibles│ │
+│  │(B) Bolsas          10 disponibles│ │
+│  │(A) Accesorios     5 disponibles│ │
+│  │(P) Playeras       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]     │  secondary — always available, not
 │                                │  the current task here
@@ -572,9 +572,9 @@ the suffix. Only the untouched, still-default state carries the suffix.)
 │  Registro de mercancía            │
 │                                │
 │ Ya agregaste:                    │
-│  Pijama — 10                [✕] │
-│  Sudadera/Maxy — 5            [✕] │
-│  Calcetines — 1 · revisa       [✕] │  committed without ever touching
+│  Bolsas — 10                [✕] │
+│  Accesorios — 5            [✕] │
+│  Playeras — 1 · revisa       [✕] │  committed without ever touching
 │                                │  Cantidad — marker carries through
 │ Producto                        │
 │  [ Elegir producto ▾ ]           │
@@ -590,9 +590,9 @@ the suffix. Only the untouched, still-default state carries the suffix.)
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
-*(The "Calcetines" line illustrates the "revisa antes de guardar" marker
-carrying through into the committed list per INV-Q1 above — "Pijama" and
-"Sudadera/Maxy" render plain because their quantities were deliberately
+*(The "Playeras" line illustrates the "revisa antes de guardar" marker
+carrying through into the committed list per INV-Q1 above — "Bolsas" and
+"Accesorios" render plain because their quantities were deliberately
 typed/adjusted.)*
 - "+ Agregar otro producto" commits the current row (now complete the moment
   Producto is chosen, since Cantidad defaults to 1) and opens a fresh blank
@@ -603,7 +603,7 @@ typed/adjusted.)*
   affordance requirement as §3.6** — bracketed in the wireframe above
   (`[ 1 · revisa antes de guardar ]`) for the same reason: the numeric
   value must never read as plain, static display text. Committed-line
-  quantities in the "Ya agregaste" list (e.g., "Pijama — 10") are
+  quantities in the "Ya agregaste" list (e.g., "Bolsas — 10") are
   already-saved values in this draft, not live editable fields — only
   `[✕]` is tappable on those rows. The affordance requirement applies to
   the one active, still-being-typed-into row, exactly as in §3.6.
@@ -635,9 +635,9 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  [ + Agregar "Chalecos" como      │  only shown once typed text doesn't
 │    producto nuevo ]              │  match an existing Product (see rule below)
 │                                │
-│  Pijama                          │
-│  Sudadera/Maxy                   │
-│  Calcetines                      │
+│  Bolsas                          │
+│  Accesorios                   │
+│  Playeras                      │
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
@@ -652,13 +652,13 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   automation."
 - **Matching rule (case-insensitive, trimmed):** her typed text is compared
   against existing Catalog Product names after lowercasing both sides and
-  trimming leading/trailing whitespace. "Pijama," "pijama," "PIJAMA," and
-  " Pijama " (trailing/leading space) all resolve to the same existing
+  trimming leading/trailing whitespace. "Bolsas," "bolsas," "BOLSAS," and
+  " Bolsas " (trailing/leading space) all resolve to the same existing
   Product — the "+ Agregar... como producto nuevo" row never appears for any
   of them, and selecting the matched result behaves exactly like tapping
-  "Pijama" from the list below. This is the one automatic normalization
+  "Bolsas" from the list below. This is the one automatic normalization
   applied to her typed text; it deliberately does **not** fuzzy-match or
-  auto-correct beyond case and whitespace — "Pijama" and "Pijamas" remain two
+  auto-correct beyond case and whitespace — "Bolsa" and "Bolsas" remain two
   distinct Products, since collapsing genuinely different names could
   silently merge two things she actually meant to keep separate. This
   directly prevents one real item's stock from being silently split across
@@ -716,8 +716,8 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │  dimmed, still visible underneath
-│  Pijama — 10                     │
-│  Sudadera/Maxy — 5                 │
+│  Bolsas — 10                     │
+│  Accesorios — 5                 │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  ┌───────────────────────────┐ │
 │  │ ¿Descartar los 2 productos │ │
@@ -761,8 +761,8 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  No se pudo guardar. Tus         │
 │  productos siguen aquí,          │
 │  intenta de nuevo.                │
-│  Pijama — 10                     │
-│  Sudadera/Maxy — 5                 │
+│  Bolsas — 10                     │
+│  Accesorios — 5                 │
 │      [   Reintentar   ]          │
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
@@ -779,9 +779,9 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  Inventario                    │
 │  Mercancía registrada ✓          │  ambient, fades — not a separate screen
 │  ┌───────────────────────────┐ │  requiring a tap to dismiss
-│  │(P) Pijama          10 disponibles│ │
-│  │(S) Sudadera/Maxy     5 disponibles│ │
-│  │(C) Calcetines       20 disponibles│ │
+│  │(B) Bolsas          10 disponibles│ │
+│  │(A) Accesorios     5 disponibles│ │
+│  │(P) Playeras       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
@@ -799,9 +799,9 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  Inventario                    │
 │  Mercancía lista para vender ✓   │
 │  ┌───────────────────────────┐ │
-│  │(P) Pijama          10 disponibles│ │
-│  │(S) Sudadera/Maxy     5 disponibles│ │
-│  │(C) Calcetines       20 disponibles│ │
+│  │(B) Bolsas          10 disponibles│ │
+│  │(A) Accesorios     5 disponibles│ │
+│  │(P) Playeras       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
@@ -817,10 +817,10 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 ┌───────────────────────────────┐
 │  Asignar tags                   │
 │  Lo que registraste:             │
-│  Pijama (10) · Sudadera (5)      │
-│  · Calcetines (20)                │
+│  Bolsas (10) · Accesorios (5)      │
+│  · Playeras (20)                │
 │                                │
-│  Etiquetando: Pijama              │
+│  Etiquetando: Bolsas              │
 │  Faltan 7 de 10                  │
 │                                │
 │      Acerca el tag a la          │
@@ -849,7 +849,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  Asignar tags                   │
 │  Este tag ya está asignado a     │
 │  otra prenda. Usa un tag nuevo.  │
-│  Etiquetando: Pijama              │
+│  Etiquetando: Bolsas              │
 │  Faltan 7 de 10                  │
 │      Acerca el tag a la          │
 │         prenda                   │
@@ -869,7 +869,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  Asignar tags                   │
 │  No se pudo leer el tag.          │
 │  Acércalo de nuevo a la prenda.    │
-│  Etiquetando: Pijama              │
+│  Etiquetando: Bolsas              │
 │  Faltan 7 de 10                  │
 │      Acerca el tag a la          │
 │         prenda                   │
@@ -905,9 +905,9 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  etiquetar                       │
 │   [  Continuar etiquetando  ]   │  primary action in this state
 │  ┌───────────────────────────┐ │
-│  │(P) Pijama          10 disponibles│ │
-│  │(S) Sudadera/Maxy     5 disponibles│ │
-│  │(C) Calcetines       20 disponibles│ │
+│  │(B) Bolsas          10 disponibles│ │
+│  │(A) Accesorios     5 disponibles│ │
+│  │(P) Playeras       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]     │  secondary — always available, not
 │                                │  the current task here
@@ -1254,10 +1254,10 @@ comparable hard speed requirement — the floor above is about not adding
   one"** (§3.8) — no separate "create Product" screen, consistent with Product
   being an independent, persistent identity (D2).
 - **Elegir producto matching is case-insensitive and whitespace-trimmed**
-  (§3.8) — resolving INV-M3: prevents "Pijama"/"pijama"/a trailing-space
+  (§3.8) — resolving INV-M3: prevents "Bolsas"/"bolsas"/a trailing-space
   variant from silently becoming two separate Products and fragmenting one
   real item's stock across two Catalog rows. Deliberately stops short of
-  fuzzy/typo-tolerant matching (e.g., "Pijama" vs. "Pijamas" stay distinct),
+  fuzzy/typo-tolerant matching (e.g., "Bolsa" vs. "Bolsas" stay distinct),
   since collapsing genuinely different names could silently merge two things
   she meant to keep separate — a narrower, safer rule than solving the general
   string-matching problem.

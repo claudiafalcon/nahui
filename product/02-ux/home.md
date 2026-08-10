@@ -846,7 +846,7 @@ via §3.5)
 │ Hoy: $850 · 6 ventas             │
 ├───────────────────────────────┤
 │ Venta actual: 2 artículos   Cancelar│
-│ Pijama · Calcetines               │
+│ Bolsas · Playeras               │
 │   [   zona de registro       ]   │
 │   [      Finalizar Venta     ]   │
 ├───────────────────────────────┤
@@ -883,7 +883,7 @@ via §3.5)
 Optimistic add (instant — no visible loading state on the item at all):
 ┌───────────────────────────────┐
 │ Venta actual: 3 artículos   Cancelar│
-│ Pijama · Calcetines · Sudadera     │  new item appears the instant she taps
+│ Bolsas · Playeras · Accesorios     │  new item appears the instant she taps
 ├───────────────────────────────┤     — never a spinner, never a delay
 │   [   zona de registro       ]   │
 │   [      Finalizar Venta     ]   │
@@ -896,12 +896,12 @@ happens behind the scenes; never surfaced unless it genuinely fails
 Persistent sync failure (only after automatic retries are exhausted):
 ┌───────────────────────────────┐
 │ Venta actual: 3 artículos   Cancelar│
-│ Pijama · Calcetines · Sudadera ⚠   │  small marker on the affected item only
+│ Bolsas · Playeras · Accesorios ⚠   │  small marker on the affected item only
 ├───────────────────────────────┤
 │   [   zona de registro       ]   │
 │   [      Finalizar Venta     ]   │
 └───────────────────────────────┘
-tapping the flagged item → "No se pudo guardar Sudadera. [ Reintentar ]"
+tapping the flagged item → "No se pudo guardar Accesorios. [ Reintentar ]"
 shown inline, never a full-screen interruption
 ```
 - An item appears in "Venta actual" the instant she taps a product tile —
@@ -935,7 +935,7 @@ shown inline, never a full-screen interruption
 │ Hoy: $850 · 6 ventas             │
 ├───────────────────────────────┤
 │ Venta actual: 2 artículos          │
-│ Pijama · Calcetines               │
+│ Bolsas · Playeras               │
 │ ¿Cancelar estos 2 artículos?       │
 │      [ No ]   [ Sí, cancelar ]     │
 ├───────────────────────────────┤
@@ -990,7 +990,7 @@ shown inline, never a full-screen interruption
 │ No se pudo cerrar la venta.        │
 │ Tus artículos siguen aquí.          │
 │ Venta actual: 2 artículos          │
-│ Pijama · Calcetines               │
+│ Bolsas · Playeras               │
 │      [   Reintentar   ]          │
 │      Cancelar venta actual         │
 ├───────────────────────────────┤
@@ -1052,7 +1052,7 @@ legible — the same convention this document already uses elsewhere
 │                                │
 │                                │
 │                                │
-│         Ropa Ana                │  Business.name — quiet, centered,
+│         Luna Mercado                │  Business.name — quiet, centered,
 │                                │  same position/weight the Nahui mark
 │                                │  previously held; her own logo
 │                                │  renders here instead if she set one
@@ -1089,7 +1089,7 @@ legible — the same convention this document already uses elsewhere
 │                                │
 │       Venta finalizada ✓        │
 │             $580                │
-│         Ropa Ana                │
+│         Luna Mercado                │
 │                                │
 ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │
@@ -1181,13 +1181,13 @@ Three elements only — confirmation, total, business identity. No future-regist
 ├───────────────────────────────┤
 │ Venta actual: (vacía)            │
 │  ┌─────────┐  ┌─────────┐       │
-│  │(P)      │  │(S)      │       │  per-Product marker — first letter of
-│  │ Pijama  │  │Sudadera │       │  Product.name, uppercased
-│  │         │  │ / Maxy  │       │  ordered most-frequently-sold first
+│  │(B)      │  │(A)      │       │  per-Product marker — first letter of
+│  │ Bolsas  │  │Accesorios│       │  Product.name, uppercased
+│  │         │  │         │       │  ordered most-frequently-sold first
 │  └─────────┘  └─────────┘       │
 │  ┌─────────┐  ┌─────────┐       │
-│  │(B)      │  │(C)      │       │  marker renders muted here too — same
-│  │Bufandas │  │Calcetines│      │  dimming as the rest of the tile, not
+│  │(G)      │  │(P)      │       │  marker renders muted here too — same
+│  │ Gorras  │  │Playeras │       │  dimming as the rest of the tile, not
 │  │         │  │0 disponibles│    │  a separate visual case
 │  └─────────┘  └─────────┘       │  sold out — dimmed, not tappable
 │  ┌─────────┐  ┌─────────┐       │
@@ -1223,7 +1223,7 @@ Three elements only — confirmation, total, business identity. No future-regist
   Resolves the sold-out half of HOME-M3.
 - **Each tile now carries a small, automatically-generated marker — the
   first letter of `Product.name`, uppercased and whitespace-trimmed** (e.g.
-  "Pijama" → "P," "Sudadera/Maxy" → "S"). Closes a real gap on the
+  "Bolsas" → "B," "Accesorios" → "A"). Closes a real gap on the
   highest-frequency screen in the app: before this, ProductTile had zero
   per-Product visual differentiator beyond its label text. Derived purely
   from `Product.name` — a fact already typed once, at Registrar Mercancía
@@ -1391,7 +1391,7 @@ mechanism.
 │ Hoy: $850 · 6 ventas             │
 ├───────────────────────────────┤
 │ Venta actual: 2 artículos          │
-│ Pijama · Calcetines               │
+│ Bolsas · Playeras               │
 │   [   zona de registro       ]   │
 │   [      Finalizar Venta     ]   │
 ├───────────────────────────────┤

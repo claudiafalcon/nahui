@@ -972,9 +972,9 @@ change:
 │  normal salvo que lo ajustes        │
 │  aquí.                            │
 │  ┌───────────────────────────┐ │
-│  │ Pijama                $150   │ │  tappable → 3.20
-│  │ Sudadera/Maxy           $220   │ │
-│  │ Calcetines              $60    │ │
+│  │ Bolsas                $350   │ │  tappable → 3.20
+│  │ Accesorios           $180   │ │
+│  │ Playeras              $280   │ │
 │  └───────────────────────────┘ │
 ├───────────────────────────────┤
 │ Hoy  Inventario [Eventos] Resultados │
@@ -1037,11 +1037,11 @@ registered no Products at all yet in Inventario:
 ```
 ┌───────────────────────────────┐
 │ ← Plaza Norte                    │  dimmed, visible underneath
-│  Pijama                          │
+│  Bolsas                          │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
-│  Precio normal: $150               │
+│  Precio normal: $350               │
 │  Precio para este evento           │
-│   [ $150 ]                       │
+│   [ $350 ]                       │
 │  [ Cancelar ]  [ Guardar precio ]  │
 ├───────────────────────────────┤
 │ Hoy  Inventario [Eventos] Resultados │
@@ -1051,7 +1051,7 @@ registered no Products at all yet in Inventario:
   with one deliberate difference in what it writes: this sheet writes an
   Event-scoped **Price Override** (`decision-log.md` D33 — "an
   internal-only entity owned by Event... a `(productId, overridePrice)`
-  pair"), never `Product.defaultPrice` itself. "Precio normal: $150" is
+  pair"), never `Product.defaultPrice` itself. "Precio normal: $350" is
   read-only context — the Product's own `defaultPrice`, unaffected by
   anything typed here — shown directly above the editable field so she
   always knows what she's adjusting away from.

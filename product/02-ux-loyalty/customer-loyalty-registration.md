@@ -171,16 +171,16 @@ Convention: `[ ]` = tappable, plain text = passive/informational — the one vis
 ```
 ┌───────────────────────────────┐
 │                                │
-│  Ropa Ana                        │  Business.name (or logo, if set —
+│  Luna Mercado                        │  Business.name (or logo, if set —
 │                                │  same source/precedent as
 │                                │  home.md §3.8f's receipt, never
 │                                │  both together)
 │                                │
-│  ¿Quieres que Ropa Ana te         │
+│  ¿Quieres que Luna Mercado te         │
 │  recuerde la próxima vez que      │
 │  le compres?                     │
 │                                │
-│  Con tu correo, Ropa Ana puede    │
+│  Con tu correo, Luna Mercado puede    │
 │  llevar la cuenta de tus          │
 │  compras aquí y, cuando juntes    │
 │  suficientes, darte algo a        │
@@ -219,7 +219,7 @@ Convention: `[ ]` = tappable, plain text = passive/informational — the one vis
 ```
 ┌───────────────────────────────┐
 │                                │
-│  Ropa Ana                        │
+│  Luna Mercado                        │
 │                                │
 │  Ya casi. Esto es opcional —      │
 │  puedes dejarlo en blanco.        │
@@ -279,12 +279,12 @@ Convention: `[ ]` = tappable, plain text = passive/informational — the one vis
 ```
 ┌───────────────────────────────┐
 │                                │
-│  Ropa Ana                        │
+│  Luna Mercado                        │
 │                                │
 │         ¡Listo!                  │
 │                                │
 │  Ya quedaste registrada con       │
-│  Ropa Ana. La próxima vez que     │
+│  Luna Mercado. La próxima vez que     │
 │  compres aquí, te va a             │
 │  reconocer.                      │
 │                                │
@@ -297,7 +297,7 @@ Convention: `[ ]` = tappable, plain text = passive/informational — the one vis
 ```
 ┌───────────────────────────────┐
 │                                │
-│  Ropa Ana                        │
+│  Luna Mercado                        │
 │                                │
 │    ¡Gracias! Ya contamos          │
 │    esta compra.                  │

@@ -409,15 +409,15 @@ its own — same scoping choice as the other three docs.
 │  Total histórico                  │
 │  48 ventas · $14,230 · $296 ticket promedio │
 │                                │
-│  Tu producto estrella: Pijama, con   │
+│  Tu producto estrella: Bolsas, con   │
 │  42 piezas vendidas en total.          │  ← same visual priority as
 │  Esta semana vendiste 4 ventas menos  │     "Total histórico"
 │  que la semana pasada.                 │
 │                                │
 │  Top productos · todo tu historial  │
-│   1. Pijama              42        │
-│   2. Sudadera/Maxy        25        │
-│   3. Calcetines           18        │
+│   1. Bolsas              42        │
+│   2. Accesorios        25        │
+│   3. Playeras           18        │
 │                                │
 │  En curso                       │
 │  ┌───────────────────────────┐ │
@@ -588,15 +588,15 @@ its own — same scoping choice as the other three docs.
 │  Total histórico                  │
 │  48 ventas · $14,230 · $296 ticket promedio │
 │                                │
-│  Tu producto estrella: Pijama, con   │
+│  Tu producto estrella: Bolsas, con   │
 │  42 piezas vendidas en total.          │  ← same visual priority as
 │  Esta semana vendiste 4 ventas menos  │     "Total histórico"
 │  que la semana pasada.                 │
 │                                │
 │  Top productos · todo tu historial  │
-│   1. Pijama              42        │
-│   2. Sudadera/Maxy        25        │
-│   3. Calcetines           18        │
+│   1. Bolsas              42        │
+│   2. Accesorios        25        │
+│   3. Playeras           18        │
 │                                │
 │  Historial                      │
 │  ┌───────────────────────────┐ │
@@ -636,15 +636,15 @@ its own — same scoping choice as the other three docs.
 │  Total histórico                  │
 │  48 ventas · $14,230 · $296 ticket promedio │
 │                                │
-│  Tu producto estrella: Pijama, con   │
+│  Tu producto estrella: Bolsas, con   │
 │  42 piezas vendidas en total.          │  ← same visual priority as
 │  Esta semana vendiste 4 ventas menos  │     "Total histórico"
 │  que la semana pasada.                 │
 │                                │
 │  Top productos · todo tu historial  │
-│   1. Pijama              42        │
-│   2. Sudadera/Maxy        25        │
-│   3. Calcetines           18        │
+│   1. Bolsas              42        │
+│   2. Accesorios        25        │
+│   3. Playeras           18        │
 │                                │
 │  Rendimiento por bazar    [Ver más ▸]│
 │  Plaza Norte · $780/día              │
@@ -751,9 +751,9 @@ variant below for the other reachable state, zero Claims recorded yet,
 │  8 ventas · $1,120 en total        │
 │                                │
 │  Por producto:                   │
-│   Pijama              5            │
-│   Sudadera/Maxy        2            │
-│   Calcetines           3            │
+│   Bolsas              5            │
+│   Accesorios        2            │
+│   Playeras           3            │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
@@ -785,9 +785,9 @@ variant below for the other reachable state, zero Claims recorded yet,
 │  Día 3 · 14 jul · 5 ventas · $610   │
 │                                │
 │  Por producto (todo el evento):    │
-│   Pijama              10           │
-│   Sudadera/Maxy        6            │
-│   Calcetines           4            │
+│   Bolsas              10           │
+│   Accesorios        6            │
+│   Playeras           4            │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘

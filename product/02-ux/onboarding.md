@@ -348,8 +348,8 @@ The demo path's one deliberate pause point, mirroring the pause the NFC path alr
 │  ¿Qué vendes?                    │
 │                                │
 │ Ya agregaste:                    │
-│  Pijama — $150                [✕] │
-│  Sudadera/Maxy — $220            [✕] │
+│  Bolsas — $350                [✕] │
+│  Accesorios — $180            [✕] │
 │                                │
 │ Producto                        │
 │  [ Escribe el nombre… ]          │
@@ -385,8 +385,8 @@ The demo path's one deliberate pause point, mirroring the pause the NFC path alr
 │  No pudimos guardar lo que        │
 │  vendes. Sigue aquí, intenta       │
 │  de nuevo.                       │
-│  Pijama — $150                   │
-│  Sudadera/Maxy — $220              │
+│  Bolsas — $350                   │
+│  Accesorios — $180              │
 │      [   Reintentar   ]          │
 └───────────────────────────────┘
 ```
@@ -565,7 +565,7 @@ No new wireframe — reaching any screen in §3.3 through §3.10a a second time 
 │  recibo digital.                  │
 │                                │
 │ Nombre de tu negocio             │
-│  [ Ropa Ana                ]     │
+│  [ Luna Mercado                ]     │
 │                                │
 │ Logo (opcional)                  │
 │  ┌────┐                          │
@@ -637,7 +637,7 @@ No new wireframe — reaching any screen in §3.3 through §3.10a a second time 
 ┌───────────────────────────────┐
 │  No pudimos guardar tu negocio.  │
 │  Sigue aquí, intenta de nuevo.    │
-│  Ropa Ana                        │
+│  Luna Mercado                        │
 │  [ logo seleccionado ]           │
 │  Ropa cómoda para toda la        │
 │  familia                         │
