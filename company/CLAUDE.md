@@ -255,6 +255,30 @@ A gate between Medium-Fidelity build/review and human-moderated User Validation,
 
 **Wiring-dependent findings.** `ux-critic` and `reviewer` inspect Figma structure and content, not reaction/wiring data (`company/infrastructure-decisions.md` ID004 — an accepted platform limitation). When a finding depends on knowing which states or capabilities can actually reach a given screen, neither agent may treat that as verified from content inspection alone — it must be named explicitly as an open boundary in the review. Main then either reproduces the specific path directly or dispatches `merchant-user-tester` at that boundary; a capability- or state-gated destination is never marked clean on spec/content inspection alone.
 
+**Default posture when Ana gets stuck: defect, not tester limitation (2026-08-09, Product Owner standing rule).** If `merchant-user-tester` is executing an already-approved merchant journey and cannot determine the next valid action, cannot navigate forward, reaches a dead end, sees stale placeholder content, lands in the wrong tier variant, or cannot reach an expected capability, that is a **Product/Prototype Defect until proven otherwise** — not a tester limitation, and not something Main explains away via its own structural read or a specialist's wiring-data inspection alone. Ana is the merchant acceptance tester; her job is to attempt the journey as a merchant would, never to understand Figma's internal structure or compensate for missing wiring. If the intended next step requires project knowledge a merchant wouldn't have, that requirement is itself the UX finding, not a reason to excuse the stuck point.
+
+The loop, applied every time:
+```
+APPROVED JOURNEY
+      ↓
+Ana attempts it end-to-end
+      ↓
+Can complete naturally?
+  YES → pass
+  NO  → defect
+      ↓
+trace root cause (route to the specialist who owns that layer)
+      ↓
+UX / UI fix
+      ↓
+Ana reruns FROM THE BEGINNING — never resumed from the stuck point
+```
+A full rerun from the beginning, not a resume, is required after every fix — it confirms the fix didn't just patch the one reported hop while leaving the journey broken elsewhere, and it's the only thing that actually earns a "pass." Validate the real clickable journey and its transitions, never individual frames in isolation — content/structure inspection (`ux-critic`/`reviewer`) and reaction-data inspection (`ui-designer`) are necessary but not sufficient; only Ana's own completed run closes a journey.
+
+**This sharpens, not replaces, the `Tooling Artifact` verification-status category below.** A tooling explanation (a `chrome-devtools-mcp` quirk, e.g. `infrastructure-decisions.md` ID012/ID013) is never assumed by default and is never closed by a specialist's structural read alone, however clean that data looks — it is only earned once Ana herself completes the same journey successfully after whatever fix or environment change was made. Until she does, the finding stays open as a defect, full stop. Main does not click through the product itself to "check" whether a stuck point is real before deciding whether to report it — that substitutes Main's spec-informed judgment for the naive-user reaction the entire agent exists to protect, the exact failure mode the knowledge-isolation rule above is designed to prevent. Main's own reproduction stays limited to genuine infrastructure diagnosis (is a tool connected, is a config correct) never to standing in for Ana's experience of the product.
+
+Do not surface routine wiring/design corrections that are already implied by an approved Product decision as a question back to the Product Owner — trace, route, fix, and rerun autonomously; only a genuinely new Product/Architecture/Business Decision earns an interruption, per Decision ownership below.
+
 **Coverage is a gate, not a queue.** A journey's Medium-Fidelity status cannot read "done" in `product/02b-medium-fidelity/CLAUDE.md` until `merchant-user-tester` has walked it Fully Tested per `product/02-ux/experience-validation-coverage.md`'s own legend, or Main logs a dated, named exception there (e.g., the artifact the path needs hasn't been obtained yet). This exists because dispatch priority alone left "Empezar gratis" — the exact path four real defects were later found in by hand — with zero persona coverage for as long as the capability existed; a defensible priority ranking is not the same thing as an enforced floor. Silence about an untested path is no longer acceptable; it's either walked or it's a named, owned exception.
 
 **Verification status, tracked by Main for every finding.** Every `experience-review-*.md` document generated through `merchant-user-tester` must classify each finding as one of: **Independently Verified** (Main reproduced the behavior itself — a click, a screen, a piece of copy — and it matched), **Partially Verified** (some but not all of the claim was checked), **Pending Verification** (not yet checked against anything beyond the agent's own report), or **Tooling Artifact** (traced to the automation mechanism itself — Playwright/Figma-canvas interaction quirks — not to the product). This keeps the agent's behavioral observations, Main's independent verification, and known tooling limitations from blurring together, and gives every downstream consumer (`ux-designer`, `ui-designer`, `ux-critic`, the Product Owner) an honest read on how much weight a finding can bear before it's acted on. Interpretive/felt reactions (confidence, trust, delight) aren't independently "verifiable" the way a click outcome is — tag the underlying factual claims they're built on, not the felt reaction itself as if it were a checkable fact.
