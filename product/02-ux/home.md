@@ -1136,7 +1136,7 @@ Three elements only — confirmation, total, business identity. No future-regist
 - **Copy, replacing the retired placeholder (2026-08-09).** "(algún día vas a poder registrar aquí tu compra)" — future-tense, deliberately mechanism-noncommittal — is no longer accurate now that the mechanism is real and present. Replaced by a caption beneath the QR: "Escanéala si quieres que te recuerden la próxima vez que compres aquí" — present tense, an offer rather than an instruction (`brand/tone-of-voice.md`, "suggestions read as offers, not instructions"), reusing the same "recordar"/"la próxima vez que compres" vocabulary `product/02-ux-loyalty/customer-loyalty-registration.md` §3.5 already establishes, so the two surfaces read as one voice. Still names no internal mechanism term — "Claim," "Claim Token," "QR" never appear in the on-screen copy, only in this document's own annotations (`global-principles.md`, Product Language). Doesn't commit to a reward/gift framing either — §8's Q14 flag stays open, now attached to real copy rather than a hypothetical.
 - **Ends primarily via a deliberate tap in a margin zone along the
   screen's outer edges — bottom edge foremost, not the centered column
-  carrying the total/mark/placeholder, and not a tap anywhere on the
+  carrying the total/mark/QR, and not a tap anywhere on the
   receipt — with a generous, fixed auto-return held in reserve as a
   backstop, not the common-case exit.** Both return to the same place —
   plain §3.7, tray already empty (§3.13 Variant A) — the tap simply gets
@@ -1698,23 +1698,31 @@ her actual top sellers within the first screenful regardless of Catalog size.
   with Ana, or simulating a larger catalog, before Builder locks in the exact
   scroll and ordering behavior. Not escalated to Architect — this is a
   validation recommendation, not a Foundation ambiguity.
-- **Future-registration placeholder's eventual "what it does" framing** —
-  today's copy ("algún día vas a poder registrar aquí tu compra") is
-  deliberately generic and commits to no specific mechanism. Whether the
-  eventual Stage 2 mechanism (`company/backlog.md` #2, Sale-level Claim
-  Token per `decision-log.md` D22) should ever be framed to Ana/the
-  customer as a reward or incentive ("regalo," or similar) isn't
+- **Future-registration/QR row's "what it does" framing** —
+  the row's copy ("Escanéala si quieres que te recuerden la próxima vez
+  que compres aquí," §3.8f) is present-tense and offer-shaped but still
+  deliberately neutral/informational — it names no reward or incentive.
+  Whether the underlying mechanism (`company/backlog.md` #2 Stage 2,
+  Sale-level Claim Token per `decision-log.md` D22) should ever be framed
+  to Ana/the customer as a reward or gift ("regalo," or similar) isn't
   resolved anywhere in the Foundation — D22's Claim Token is scoped to
   Customer Segmentation/intelligence, not confirmed to carry a
   reward/incentive mechanic. Not something `architect` can resolve from
-  what's already written; flagged as a genuine Product Decision to take
-  up if/when Stage 2 is actually designed — not blocking this amendment,
-  since this amendment's copy commits to nothing that would need to be
-  walked back. **Now explicitly scoped to Paid-tier receipts only**
-  (`decision-log.md` D40) — a Free-tier receipt no longer shows this
-  placeholder at all (§3.8f, §10). See also `product/02-ux/product-decisions.md`
-  Q15 — a related but distinct open item, not resolved by this note either.
-  **Now attached to real, on-screen copy rather than a hypothetical placeholder (2026-08-09) — still unresolved, not settled by this amendment.** The receipt's QR caption stays deliberately neutral/informational, the same non-committal posture the retired placeholder text held — this item (and Q14 in `product-decisions.md`) is what would need resolving before that caption could honestly shift toward reward/gift language.
+  what's already written; flagged as a genuine Product Decision, logged
+  as Q14 in `product/02-ux/product-decisions.md` and still Open — not
+  blocking this amendment, since the current copy commits to nothing
+  that would need to be walked back if Q14 resolves toward reward/gift
+  language later. **Now explicitly scoped to Paid-tier receipts only**
+  (`decision-log.md` D40) — a Free-tier receipt no longer shows this row
+  at all (§3.8f, §10). **As of the 2026-08-09 QR amendment, this row
+  renders a real, tappable/scannable QR rather than placeholder text** —
+  the row's presence/copy-tone question this item tracks is unchanged in
+  substance by that amendment, only its concrete on-screen form. Note,
+  for anyone cross-referencing history: `product/02-ux/product-decisions.md`
+  Q15 was a related but distinct question (whether a merchant's
+  non-engagement with the QR on a given Sale should be persisted) — Q15
+  is now Resolved (purely ephemeral, nothing persisted) and doesn't bear
+  on this item's own still-open question of reward/gift framing.
 
 ## 9. Principle justification
 
@@ -2185,7 +2193,6 @@ her actual top sellers within the first screenful regardless of Catalog size.
   untouched for several minutes) — deferred; the always-visible tray plus
   manual cancel may be sufficient, worth observing in real usage before adding
   a timer-based mechanism.
-- **The actual live QR/Claim-Token-offering interaction on a Paid-tier receipt** — the 2026-08-09 amendment only corrects which tier sees the placeholder at all. Tracked as `product/02-ux/product-decisions.md` Q15.
 - Día N / calendar-day reconciliation (see §8) may require a small addition to
   the Event/Session read-side query, pending Architect input.
 - A lightweight search/filter on the buttons-mode grid (§3.9), if a real
