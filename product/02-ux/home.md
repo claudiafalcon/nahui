@@ -106,6 +106,7 @@ clean (no Blockers, no Important findings) — folded back into Approved.
 **Amended 2026-08-09 (`decision-log.md` D40 — `loyaltyEnabled` retired, Frequent Customers unified as a Paid-tier-only capability):** §3.8f's future-registration placeholder is now gated on `subscriptionTier=paid` — a Free-tier receipt no longer shows it at all, three elements only (confirmation, total, business identity). A Paid-tier receipt keeps the placeholder, copy unchanged — the capability already exists automatically the instant `subscriptionTier=paid` (D40); only this specific receipt-moment interaction (what exactly renders here, whether a live QR eventually replaces the placeholder) remains undesigned, tracked as `product/02-ux/product-decisions.md` Q15, not resolved by this amendment. §3.8f, §4, §5, §8, §10, §11 updated.
 **Amended 2026-08-09 (Product Owner decision — Configuración entry-point relocated from the header's "▾" to a top-right icon-based menu):** the small "▾" dropdown next to the "Nahui"/session header — flagged by the Product Owner as not reading as discoverable or natural — is replaced by a top-right "⋯" (three-dot/overflow) icon, opening the identical session-controls sheet already specified (§3.6c/§3.7a), with no change to which Home states show it, when "Cerrar sesión" appears, or what Configuración itself does once reached. The sheet's Configuración row now also carries a gear icon ("⚙"), specifically distinguishing it from "Cerrar sesión" and from any other entry the sheet may carry in the future, per the Product Owner's explicit request. **Why "⋯" rather than a hamburger ("☰"):** a hamburger conventionally signals a full secondary navigation drawer with many destinations, which would misrepresent — and visually compete with — what's actually behind this trigger (a one-or-two-row sheet, not a parallel navigation system), undercutting `decision-log.md` D13's own ruling that this affordance is a sequencing/reachability fact, not a fifth nav tab, alongside the persistent, already-primary bottom nav bar. `settings.md` receives the matching correction in the same pass — see that document's own status header and §2.1/§8 item 3. `ux-critic`/`reviewer` both clean. Folded into Approved.
 **Amended 2026-08-09 (Product Owner decision, resolving `product/02-ux/product-decisions.md` Q15 — the Digital Receipt's Claim Token QR is now real, not a placeholder):** §3.8f's Paid-tier receipt now renders a genuine, tappable/scannable Claim Token QR (`decision-log.md` D22) in the row the earlier textual future-registration placeholder held — the entry point into the already-Approved `product/02-ux-loyalty/customer-loyalty-registration.md` flow (§3.1 onward), which this amendment specifies the bridge into without redesigning. Explicitly supersedes, rather than silently contradicts, this document's own two prior "no QR-shaped render" passages (§3.8f's identity-element bullet; the historical 2026-08-05 entry) — both correctly rejected a decorative, non-functional QR graphic for carrying an unhedgeable liveness claim with nothing behind it, an objection that doesn't hold against a genuinely functional element navigating to a real destination. The Free-tier receipt is unaffected — still three elements, no QR, no placeholder, exactly as the 2026-08-09 D40 amendment above already established. Resolves Q15 (`product-decisions.md`): purely ephemeral, nothing persisted; no dedicated "decline to offer" action exists separate from the receipt's own already-specified exit mechanism. Flags, without resolving, that this activates `company/backlog.md` #2's Stage 2 for this one element ahead of its own stated gating, by direct Product Owner instruction. §3.8f, §4, §5, §7, §8, §10, §11 updated. `ux-critic` round 1: 4 stale-reference findings (3 Major, 1 Minor) — fixed, verification clean. `reviewer` clean (2 Important findings, both documentation-tracking gaps — this `ux-critic-findings.md` entry and a stale status line, both closed separately). Folded into Approved.
+**Amended 2026-08-12 (Medium-Fidelity spec-gap escalation — SessionHeader title row during an active Quick Session):** closes an undocumented gap `ux-critic` flagged during Medium-Fidelity build, where an active Quick Session (no `eventId`) had no defined title-row content — a Medium-Fidelity build had defaulted to a blank title row, indistinguishable from a load failure, on Ana's own first-ever live selling screen. New §3.7b specifies the title row reads "Sesión rápida" wherever `Session.eventId` is null, applying to every active-Session wireframe in §3.7–§3.11a — the same term §3.4's "Iniciar Sesión Rápida" already established and `reports.md` §3.7 already assumed this document defined (it hadn't, until now). Small, bounded content addition — no new screen, flow, or navigation branch. §5 (item 9), §9 (architecture-principles.md #3), §10 updated.
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -839,6 +840,23 @@ via §3.5)
   Configuración writes only to Identity's Business Capabilities, never to
   Selling (*architecture-principles.md* #6).
 
+### 3.7b Session active header — Quick Session variant (`Session.eventId = null`; applies to every active-Session wireframe, §3.7–§3.11a)
+
+```
+┌───────────────────────────────┐
+│ Sesión rápida                ⋯ │
+│ Hoy: $850 · 6 ventas             │
+├───────────────────────────────┤
+│ ...                              │  rest of screen unchanged — see the
+└───────────────────────────────┘   base state this variant applies to
+```
+- Gap closed: every active-Session wireframe from §3.7 onward illustrates its header with "Plaza Norte · Día 2" — the Event-linked case — without ever stating what the same row shows for a Quick Session, a fully valid, equally-prioritized active-Session case per §2 step 1. A Medium-Fidelity build resolved this undocumented gap on its own, defaulting to a blank title row; this section resolves it here instead, per `product/02-ux/CLAUDE.md` §4 (a build-layer content gap "is flagged back to ux-designer... never invented or resolved unilaterally at the Figma layer").
+- **Title row reads "Sesión rápida"** — one complete title, no "Día N": a Quick Session has no `eventId` to group prior Sessions under and count against.
+- **Not a new term.** Reuses the exact vocabulary §3.4/§3.5's "Iniciar Sesión Rápida" already established, and the term `reports.md` §3.7 already assumed this document defined ("reusing Home's own vocabulary for the same concept, `home.md` §3.4") — this amendment makes that existing citation correct rather than inventing a fourth term for the same concept.
+- **Not "Nahui."** §3.3–§3.6's idle-state fallback exists for a genuinely different situation — no Session open yet, nothing operational to state. Once a Session is open — including a Quick Session, which `architecture-principles.md` #3 treats as fully first-class, modeled with a real nullable `eventId`, never a lesser or UI-only path — there is always a true, specific fact to state instead. Reusing "Nahui" would misrepresent an active working state as idle, the opposite of §2's framing note ("selling becomes the default entry point").
+- **Not blank.** No basis anywhere else in this document for an empty header — every other headered state states something. A blank row reads as a load failure, exactly as `ux-critic` flagged, on precisely the screen where a first-ever live selling session most needs to read as working. `global-principles.md`'s "technology should disappear" describes a calm, *correct* render, not an absent one.
+- Applies identically to §3.7, §3.7a (dimmed header behind the sheet), §3.8–§3.8d, §3.9/§3.10, §3.11/§3.11a — one content rule, cross-referenced per §4's shared-states convention rather than redrawn at each. §3.8f is unaffected — already specified with no header at all.
+
 ### 3.8 Session active — Sale in progress
 ```
 ┌───────────────────────────────┐
@@ -1566,6 +1584,9 @@ and back to Hoy):
    states — "Configuración" only, marked with a gear icon (§3.6c; applies
    settings.md §2.1; icon relocated 2026-08-09, Product Owner decision)
 9. Session active, no Sale currently open — ready for next customer
+   (header reads Venue.displayName · Día N when eventId is set, or "Sesión
+   rápida" when it isn't — §3.7b; applies identically to items 10–21
+   wherever they carry a header)
 10. Session controls sheet (⋯) — active Session — "Cerrar sesión" and
     "Configuración" (the latter marked with a gear icon; second entry added
     per settings.md §2.1; icon relocated 2026-08-09, Product Owner decision)
@@ -1793,7 +1814,10 @@ her actual top sellers within the first screenful regardless of Catalog size.
   cheap-to-append root, independent of Session's lock.
 - *#3 (optional relationships stay optional in the data model)* — Quick
   Session always works with `eventId` null; the defensive fallback (3.14)
-  relies on this being a real modeled property, not a UI trick.
+  relies on this being a real modeled property, not a UI trick; §3.7b's
+  Quick Session header content ("Sesión rápida") is the direct UI
+  consequence of treating that null `eventId` as fully first-class rather
+  than a fallback needing borrowed or blank chrome.
 - *#4 (internal-only entities never leak into language)* — InventoryUnit /
   InventoryEntry / SaleItem never appear in Home's copy or structure.
 - *#6 (one-way dependency direction)* — Home only reads from Selling/Inventory;
@@ -1806,6 +1830,16 @@ her actual top sellers within the first screenful regardless of Catalog size.
   already reads (`decision-log.md` D23).
 
 ## 10. Decisions made
+
+- **Session-active header title row now has explicit content for a Quick
+  Session (§3.7b, closes a Medium-Fidelity spec-gap escalation,
+  `product/02-ux/CLAUDE.md` §4).** Reads "Sesión rápida" — reusing the term
+  §3.4/§3.5 and `reports.md` §3.7 already established — rather than the
+  idle-state "Nahui" fallback or a blank row. Grounded in
+  `architecture-principles.md` #3 (Quick Session as fully first-class) and
+  `global-principles.md`'s "technology should disappear" (a calm, correct
+  render, not an empty one). Applies to §3.7–§3.11a, excluding §3.8f (no
+  header by design).
 
 - **A compact, automatically-generated per-Product marker (first letter of
   `Product.name`, uppercased) is added to every tile in the buttons-mode
