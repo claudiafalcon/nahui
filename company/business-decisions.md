@@ -30,6 +30,11 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 - **Applied and verified.** `company/brand/brand-guide.md`'s Colors section (new Coral AA+ entry). Figma rollout complete via a single component-level fix — new variable `color/coral-aa` (`#C13F26`) in the `Nahui/Colors` collection, rebound on the shared `Button` component's Primary fill and Tertiary text (not a per-document change). `ux-critic` independently verified via a direct instance-level sweep across all six Medium-Fidelity documents: zero wrong-colored instances found anywhere; Secondary/Destructive/NavBar/decorative-Coral (chevrons, teaser links) all confirmed genuinely untouched. One Minor process note (not a design defect): the build report's own self-counted Tertiary-instance tallies were inaccurate on 2 of 6 pages, though every instance found was still correctly colored — see `company/infrastructure-decisions.md` ID001 addendum.
 - **Status:** Resolved.
 
+### Q16 — What is the actual best technical solution for NFC reads that lets Ana use only her own phone, never a separate reader device?
+
+- **Original question:** The provisional cloud architecture (`evidence/2026-08-12-innovation-accounting/innovation-accounting-draft.md` §2a) named Web NFC (`NDEFReader`) as the read mechanism, with an open caveat: it works on Chrome/Android but not iOS Safari. The Product Owner's explicit business requirement, given directly rather than a device-target pick: **Ana must never need to buy a separate reader — her own phone is the only hardware in the loop** — and asked for a joint Architect + Knowledge Mentor investigation into the actual best solution meeting that constraint, not a forced choice between the options already named.
+- **Status:** Open — dispatched to `architect` (2026-08-12), which may consult `knowledge-mentor` per the standard Consultation Pattern if the question needs external technical evidence beyond the Foundation. Not yet resolved.
+
 ### Q13 — Should the Merchant Experience Kit maintain a full parallel Spanish page, and if so, what keeps it in sync?
 
 - **Raised by:** `reviewer`'s Foundation-consistency review of the Merchant Experience Kit FigJam board (2026-08-05), which declined to rule on this itself and asked it be routed to `architect`; `architect` then classified it here rather than resolving it unilaterally.
@@ -42,6 +47,22 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 - **Status:** Open. Blocks the Kit's "Approved / primary-reference" sign-off until answered — `reviewer` and `ux-designer` are to treat the Spanish page as not independently authoritative in the meantime, with any future content fix applied and verified on both pages explicitly, not left to accidental catch-up.
 
 ## Resolved
+
+### Q15 — Cloud infrastructure vendor shape: component-by-component stack, or a single-vendor bundle?
+
+- **Original question:** the provisional cloud architecture (`evidence/2026-08-12-innovation-accounting/innovation-accounting-draft.md` §2b) priced two shapes for the same real MVP: Vercel + Render + Neon + Clerk + Cloudflare R2 + Resend as five separate vendors (~$32–42 USD/mo, ~$590–780 MXN/mo), versus Supabase (Postgres + Auth + Storage + Edge Functions bundled) + Vercel as two vendors (~$45 USD/mo, ~$830 MXN/mo).
+- **Resolution (Product Owner, 2026-08-12):** **Supabase + Vercel bundle**, accepting the ~$50 MXN/month premium for fewer vendor relationships to operate at pilot scale (3 merchants). Matches Main's own recommendation at the time — operational simplicity dominates marginal cost savings this early; the component stack becomes the better call once real scale justifies optimizing any single piece (most likely the database) independently.
+- **Real recurring cost, confirmed the same round:** the team's Claude Code Max subscription is **$100 USD/month** (~$1,850 MXN/month at the draft's own ~18.5 MXN/USD rate) — previously listed as a pending amount in the investment table, now confirmed. This is a real, already-being-paid tooling cost, distinct from the cloud-infrastructure decision above but resolved in the same conversation.
+- **Applied:** `evidence/2026-08-12-innovation-accounting/innovation-accounting-draft.md` §2b (investment/monthly-cost tables), the timeline artifact's own §04.
+- **Status:** Resolved.
+
+### Q14 — What authentication concept should the real backend use for merchant login?
+
+- **Original question:** `product/00-foundation/domain-model.md` has never modeled authentication — the Medium-Fidelity prototype never needed one, since it was always an account-free demo. Named as a real Foundation gap in the cloud-viability draft (`evidence/2026-08-12-innovation-accounting/innovation-accounting-draft.md` §2a), not invented there to fill it.
+- **Resolution (Product Owner, 2026-08-12):** **Phone number + SMS/WhatsApp OTP**, over email magic-link or traditional email+password. No password to create, remember, or reset — matches this project's own standing low-friction thesis (`company/CLAUDE.md`'s core thesis: any registration-adjacent step over a few seconds competes with the next customer) and is already the dominant, trusted onboarding pattern in Mexico via WhatsApp itself.
+- **Not yet done:** this is a directional Product Owner decision, not yet a modeled domain concept — `architect` still needs to design how this fits `domain-model.md`'s Business/Session aggregates (what identifies a returning session, where the phone number lives, whether this introduces any new aggregate) before `builder` can implement it. Track as a follow-up architecture task, not assumed complete by this entry alone.
+- **Applied:** `evidence/2026-08-12-innovation-accounting/innovation-accounting-draft.md` §2a (open-item #3), the timeline artifact's own §04.
+- **Status:** Resolved (directionally) — architecture design of the concept itself is a separate, not-yet-dispatched follow-up.
 
 ### Q5 — Are Business Capabilities ever merchant-self-service-editable after onboarding?
 

@@ -44,11 +44,11 @@ Siguiendo el formato del curso (hipótesis de valor, hipótesis de crecimiento, 
 | | |
 |---|---|
 | **Datos** | Todo lo que ya define el modelo de dominio congelado: `Sale`, `SaleItem`, `Session`, `Event`, `Product`, `Business` — nada nuevo que inventar, solo persistirlo en una base de datos real en vez de un prototipo estático. |
-| **Infraestructura tecnológica** | Frontend: React + TypeScript, empaquetado como PWA, alojado en Vercel. Backend: un solo servicio Node.js/TypeScript organizado en los mismos módulos que ya define el modelo de dominio (`identity`/`inventory`/`selling`/`intelligence`), alojado en Render. Base de datos: PostgreSQL gestionado en Neon (escala a cero — encaja con el uso real esperado, concentrado en días de bazar, no continuo). El límite al escalar: ninguno relevante a esta etapa piloto — la arquitectura elegida específicamente evita comprometerse a infraestructura de "siempre encendida" antes de tener uso real que lo justifique. |
-| **Integraciones** | Autenticación de comerciantes (Clerk o Supabase Auth). Lectura NFC vía Web NFC API del navegador (`NDEFReader`) — **advertencia real, no resuelta:** esto solo funciona en Chrome/Android, no en iOS Safari. Si el hardware NFC de la Product Owner apunta a un flujo iOS, esta decisión cambia (app nativa o lector externo USB/Bluetooth) — pendiente de confirmación, no asumido aquí. |
-| **Capacidades humanas** | Para construirlo: una persona con dominio de React/TypeScript/Node y del modelo de dominio ya congelado de Nahui (tiempo propio del equipo actual, sin costo adicional en efectivo). Para operarlo a esta escala piloto: ninguna persona operativa adicional — la arquitectura elegida (servicios gestionados, sin servidores propios) no requiere un administrador de infraestructura dedicado. |
+| **Infraestructura tecnológica** | Frontend: React + TypeScript, empaquetado como PWA, alojado en Vercel. Backend/base de datos: **Supabase (Postgres + Auth + Storage + Edge Functions) — paquete de un solo proveedor, elegido por la Product Owner el 2026-08-12** (`company/business-decisions.md` Q15) sobre el stack por componente original (Render + Neon + Clerk + R2 por separado). **Punto abierto, no resuelto aquí:** el backend original se describía como un servicio Node.js/TypeScript propio en Render, organizado en los módulos del modelo de dominio (`identity`/`inventory`/`selling`/`intelligence`); falta que `architect` confirme cómo esa misma organización modular se traduce a Supabase Edge Functions (funciones serverless) en vez de un servicio Node de larga duración — no es solo un cambio de proveedor, podría ser un cambio de modelo de ejecución. |
+| **Integraciones** | Autenticación de comerciantes: **teléfono + código OTP por SMS/WhatsApp, decidido por la Product Owner el 2026-08-12** (`company/business-decisions.md` Q14), vía Supabase Auth (que soporta OTP por teléfono de forma nativa). Lectura NFC: **bajo investigación conjunta `architect`+`knowledge-mentor`, dispatched 2026-08-12** (`company/business-decisions.md` Q16) — el requisito real de negocio es que Ana nunca necesite comprar un lector aparte, solo su propio teléfono; Web NFC (`NDEFReader`) cubre Android/Chrome pero no iOS Safari, y la investigación busca la mejor solución real que cumpla esa restricción, no solo elegir entre las opciones ya conocidas. |
+| **Capacidades humanas** | Para construirlo: una persona con dominio de React/TypeScript y del modelo de dominio ya congelado de Nahui (tiempo propio del equipo actual, sin costo adicional en efectivo). Para operarlo a esta escala piloto: ninguna persona operativa adicional — la arquitectura elegida (servicios gestionados, sin servidores propios) no requiere un administrador de infraestructura dedicado. |
 
-**Brecha real en la Fundación, nombrada explícitamente, no inventada para llenar el hueco:** no existe todavía ningún concepto de autenticación/login en `domain-model.md` ni en `onboarding.md` — el prototipo nunca necesitó uno porque siempre fue una demo sin cuentas reales. Antes de construir el backend real, esto necesita una Decisión de Producto/Arquitectura propia (cómo entra Ana a su cuenta al día siguiente), no debe inventarse dentro de este documento.
+**Brecha real en la Fundación — parcialmente resuelta:** no existe todavía ningún concepto de autenticación/login en `domain-model.md` ni en `onboarding.md` — el prototipo nunca necesitó uno porque siempre fue una demo sin cuentas reales. La Product Owner ya decidió el enfoque (teléfono + OTP, arriba), pero `architect` todavía no ha diseñado cómo ese concepto encaja en las agregaciones existentes (`Business`, `Session`) — sigue siendo trabajo de arquitectura pendiente, no completado por esta decisión direccional.
 
 ---
 
@@ -61,11 +61,21 @@ Siguiendo el formato del curso (hipótesis de valor, hipótesis de crecimiento, 
 | Dominio `nahui.app` (registro) | $188 MXN | Real — ya pagado |
 | Correo (GoDaddy) | $263.88 MXN | Real — ya pagado |
 | Tarjeta NFC de prueba (1 unidad, envío al día siguiente) | $174.50 MXN | Real — ya pagado, precio de urgencia, **no representativo del costo unitario a escala** (ver abajo) |
-| Suscripción Claude Code Max (herramienta de desarrollo del equipo) | Dato pendiente | Real — ya se está pagando, falta que la Product Owner confirme el monto exacto |
+| Suscripción Claude Code Max (herramienta de desarrollo del equipo) | $100 USD/mes (~$1,850 MXN/mes) | Real — confirmado por la Product Owner 2026-08-12 (`company/business-decisions.md` Q15). Es un costo recurrente mensual, no una inversión única — no se suma a la línea de abajo, que es solo inversión inicial de un solo pago. |
 | Desarrollo (tiempo propio del equipo) | $0 USD en efectivo | Real, mismo criterio que el ejemplo de SAiFE ("tiempo propio, sin costo en efectivo") |
-| **Total inversión inicial confirmada hasta hoy** | **≈$626 MXN** (sin la suscripción de Claude Code, pendiente) | Calculado, suma de las líneas "Real" de arriba |
+| **Total inversión inicial de un solo pago** | **≈$626 MXN** | Calculado, suma de las líneas de pago único arriba (dominio + correo + tarjeta NFC de prueba) |
 
 ### Costo de operación mensual (Proyectado — ningún comerciante real está usando la versión en la nube todavía)
+
+**Decisión de la Product Owner, 2026-08-12 (`company/business-decisions.md` Q15): el paquete de un solo proveedor (Supabase + Vercel) es el elegido**, aceptando la prima de ~$50 MXN/mes sobre el stack por componente a cambio de menos proveedores que operar a esta escala piloto (3 comerciantes). El stack por componente queda documentado abajo como la alternativa considerada, no como el plan.
+
+| Concepto | Cifra (USD) | Cifra aprox. (MXN, ~18.5/USD) | Tipo de dato |
+|---|---|---|---|
+| **Supabase Pro** (Postgres + Auth + Storage + Edge Functions) | **$25/mes** | **~$460 MXN** | Real — cotización de mercado, agosto 2026 |
+| **Vercel Pro** (frontend) | **$20/mes** | **~$370 MXN** | Real — cotización de mercado |
+| **Total, paquete elegido** | **~$45/mes** | **~$830 MXN/mes** | Calculado |
+
+*Alternativa considerada, no elegida — stack por componente:*
 
 | Concepto | Cifra (USD) | Cifra aprox. (MXN, ~18.5/USD) | Tipo de dato |
 |---|---|---|---|
@@ -76,7 +86,6 @@ Siguiendo el formato del curso (hipótesis de valor, hipótesis de crecimiento, 
 | Cloudflare R2 (logos de negocio) | $0/mes hasta 10 GB | $0 | Proyectado — nivel gratuito suficiente a esta escala |
 | Resend (correo transaccional, recuperación de contraseña) | $0/mes hasta 3,000 correos | $0 | Proyectado — nivel gratuito suficiente a esta escala |
 | **Total, stack por componente** | **~$32-42/mes** | **~$590-780 MXN/mes** | Calculado |
-| *Alternativa de un solo proveedor: Supabase Pro ($25/mes) + Vercel Pro ($20/mes)* | *~$45/mes* | *~$830 MXN/mes* | Proyectado — comparación, no elegida todavía |
 
 **Tarjetas NFC a escala (distinto del precio de urgencia de arriba):** entre $0.08 y $0.15 USD por unidad (~$1.50-2.80 MXN) en pedidos de 500-1,000+ piezas en AliExpress/Alibaba — no es una cotización confirmada con un proveedor específico, es un rango observado en el mercado hoy. Proyectado, no Real.
 
@@ -97,8 +106,15 @@ Este número solo sirve para tener una referencia de orden de magnitud hoy — s
 
 ## Resumen de lo que sigue pendiente de tu revisión (nada de esto es final)
 
-1. Confirmar el costo real de la suscripción Claude Code Max para completar la tabla de inversión inicial.
-2. Confirmar si el hardware NFC ya adquirido apunta a Android/Chrome (Web NFC funciona) o a iOS (necesitaría una decisión de arquitectura distinta).
-3. Decidir el concepto de autenticación/login — brecha real en la Fundación, nombrada, no inventada.
-4. Decidir una cifra de precio (o confirmar que sigue sin decidirse) para poder completar el modelo de negocio.
-5. Elegir entre el stack por componente (~$590-780 MXN/mes) y la alternativa de un solo proveedor Supabase+Vercel (~$830 MXN/mes) — la diferencia es simplicidad operativa contra costo, no hay una respuesta obviamente correcta a esta escala.
+**Resueltas 2026-08-12** (`company/business-decisions.md` Q14/Q15) — ya no bloquean este borrador:
+
+1. ~~Confirmar el costo real de la suscripción Claude Code Max~~ — **$100 USD/mes, confirmado.**
+2. ~~Decidir el concepto de autenticación/login~~ — **teléfono + OTP por SMS/WhatsApp, decidido.** (El diseño de arquitectura del concepto en sí sigue pendiente de `architect`.)
+3. ~~Elegir entre el stack por componente y el paquete de un solo proveedor~~ — **Supabase + Vercel, elegido.**
+
+**Aún abiertas:**
+
+4. **Confirmar la mejor solución técnica real para que Ana lea tags NFC usando solo su propio teléfono, sin comprar un lector aparte.** Ya no es una simple confirmación Android-vs-iOS — es una investigación conjunta `architect`+`knowledge-mentor`, dispatched 2026-08-12 (`company/business-decisions.md` Q16), buscando la mejor opción real, no solo eligiendo entre las ya conocidas.
+5. Decidir una cifra de precio (o confirmar que sigue sin decidirse) para poder completar el modelo de negocio. `company/CLAUDE.md` ya fija el formato (precio fijo o estacional, no mensual) — falta la cifra. Ofrecido: que `marketing` investigue precios comparables de herramientas SaaS para pequeños comerciantes en México, como punto de referencia, si eso ayuda a anclar una cifra inicial.
+6. Diseño de arquitectura del concepto de autenticación (teléfono + OTP) dentro de `domain-model.md` — la decisión direccional ya está tomada, pero `architect` todavía no ha definido cómo encaja en `Business`/`Session`.
+7. Confirmar cómo la organización modular del backend original (`identity`/`inventory`/`selling`/`intelligence` como servicio Node en Render) se traduce a Supabase Edge Functions, ahora que ese es el proveedor elegido — no es solo un cambio de proveedor, podría ser un cambio de modelo de ejecución.
