@@ -74,9 +74,11 @@ This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the re
      → First-verification branch. The moment `onboarding.md §3.5`'s own
        Business-creation write next succeeds (unchanged, that document's
        own mechanism, not redesigned here), Owner-ness is produced as a
-       pure structural consequence of that write being the first one this
-       verified identity has ever triggered — never asked, never shown,
-       never named on any screen this document or `onboarding.md` define.
+       pure structural consequence of that write being the one write path
+       capable of creating a Business at all, gated only on the acting
+       User being verified (`decision-log.md` D44) — never asked, never
+       shown, never named on any screen this document or `onboarding.md`
+       define.
        This document's own job stops the instant verification succeeds: it
        hands off directly to `onboarding.md §3.3` (Bienvenida + Elegir cómo
        empezar), cited verbatim — the identical fresh entry point a true
@@ -380,7 +382,7 @@ Any interruption up to and including a still-unconfirmed code:
 - "+52" is automatic context, never typed.
 - Whether a given confirmed code represents a first-ever or a returning verification is resolved automatically, never asked to her as a separate question ("¿ya tienes cuenta?" never appears anywhere).
 - The resend cooldown counts down automatically; she never tracks elapsed time herself.
-- Owner-ness — fully automatic, a pure structural consequence of "first-ever verification for this phone," never a question, never a picker, per the Product Owner's explicit scope constraint.
+- Owner-ness — fully automatic, a pure structural consequence of the atomic Business-creation write (`decision-log.md` D44), never a question, never a picker, per the Product Owner's explicit scope constraint.
 - Whether a client also auto-fires "Confirmar" the instant a 6th digit lands (without changing the underlying required, gated action itself) is a High-Fidelity/implementation nicety, deliberately left undecided here — below this document's abstraction level, the same way exact digit-grouping in the phone field is.
 
 ## 8. Open questions
