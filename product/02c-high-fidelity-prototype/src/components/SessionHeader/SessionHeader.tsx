@@ -19,6 +19,13 @@ import styles from './SessionHeader.module.css';
  * See README "Naming — Venta rápida (2026-08-13)" for the full rationale,
  * including the flagged terminology-density note (this label now sits
  * directly above "Venta actual" and "N ventas" in the same header).
+ *
+ * "Cerrar sesión" → "Cerrar jornada de venta" (Terminology Review pass,
+ * 2026-08-13). The approved spec's own copy for this menu item is "Cerrar
+ * sesión" (home.md §3.7a/§3.11a/§3.12) — this build renders "Cerrar jornada
+ * de venta" instead. Same disclosure discipline as the header title above:
+ * a prototype-only naming decision, not a spec authoring change. See README
+ * "Naming — Cerrar jornada de venta (2026-08-13)" for the full rationale.
  */
 export function SessionHeader({
   revenue,
@@ -56,7 +63,7 @@ export function SessionHeader({
               onCloseSession();
             }}
           >
-            Cerrar sesión
+            Cerrar jornada de venta
           </button>
           <button
             className={`${styles.sheetRow} stitchBottom`}

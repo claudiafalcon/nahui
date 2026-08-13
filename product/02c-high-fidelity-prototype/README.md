@@ -818,6 +818,111 @@ none showed a first-impression-blocking issue on review; per this pass's
 own "avoid endless polish cycles" instruction, they were left alone rather
 than polished for polish's sake.
 
+## Terminology Review pass (2026-08-13) — Product Owner-requested, focused
+copy/naming review before further work continues
+
+Explicitly not a design pass: no layout, component, or workflow change —
+copy and naming only, evaluated against the merchant's real-world mental
+model, not against what "sounds nicer." Same reasoning discipline as the
+Demo Polish pass's "Sesión rápida" → "Venta rápida" rename (which this pass
+re-examined, not just repeated).
+
+**1. "Cerrar sesión" → "Cerrar jornada de venta."** The Product Owner's own
+framing: closing is ending a selling workflow, not logging out. Five
+candidates were evaluated against one concrete domain-model constraint, not
+picked for style: `ubiquitous-language.md` defines **Session** as "one
+working day of selling" (can contain many Sales — the header's own "Hoy:
+$850 · 6 ventas" proves it), while **Venta** is already this build's
+established term for *one individual transaction* — "Venta actual,"
+"Finalizar Venta" (completes one Sale), "N ventas" in the header. Any
+rename phrased "cerrar/finalizar + venta" risks a merchant reading it as
+"finish the sale in progress" (an action "Finalizar Venta" and "Cancelar"
+already own, doing something different — completing or discarding *one*
+transaction, not the whole working period):
+
+- **"Cerrar venta rápida"** — rejected. "Venta" is the head noun being
+  closed; sitting one menu-tap away from "Venta actual" and "N ventas" in
+  the same header, it reads as "close this current quick sale," not "end
+  the day." Fails the constraint directly.
+- **"Finalizar venta rápida"** — rejected, worse than the above. Reuses the
+  *exact verb* ("Finalizar") from "Finalizar Venta," the button a merchant
+  has already tapped once per completed Sale all day — the single highest
+  collision risk of the four.
+- **"Finalizar venta del día"** — rejected. Same verb/noun collision as
+  above, *plus* a factual error: "the day's sale" (singular) implies one
+  Sale spans the whole day, contradicting the domain model this build's own
+  header displays ("6 ventas," not "1 venta del día"). This phrase would
+  actively teach the wrong mental model of what a Session is, not just risk
+  ambiguity.
+- **"Cerrar jornada de venta" — adopted.** "Jornada" (workday/shift) is the
+  head noun being closed; "de venta" is a modifier ("a workday of
+  selling"), not the object "cerrar" acts on — so neither the verb nor the
+  noun collides with "Finalizar Venta." "Jornada" is also a genuinely
+  merchant-native Mexican Spanish market-vendor term ("una buena jornada de
+  ventas" is ordinary tianguis/bazaar vocabulary), and it maps exactly onto
+  Session's own domain definition ("one working day of selling") rather
+  than onto Sale's. It also reads coherently with the resulting
+  `CloseSummary` screen's own title, "Día cerrado" — closing a "jornada"
+  (a day's work) resulting in "Día cerrado" (Day closed) reinforces rather
+  than introduces a fourth, competing term.
+
+Changed in `SessionHeader.tsx` (the "⋯" menu's action label) and
+`Selling.tsx` (the blocked-interlock body copy, "Termínala o cancélala
+antes de cerrar la jornada de venta," kept consistent with the renamed
+trigger it describes). The confirm step itself ("¿Ya terminaste por hoy?" /
+"Sí, cerrar") was left untouched — it already never said "sesión" and
+already reads as merchant-native.
+
+**This is a prototype-only naming decision, not a spec correction** — same
+disclosure status as the "Venta rápida" rename. `product/02-ux/home.md`
+itself still specifies "Cerrar sesión" throughout (§3.7a, §3.11a's own
+title and body copy, §3.12's flow references) and is unowned by this
+build; if the Product Owner wants this rename to persist beyond this
+prototype, it needs to land back in the approved spec through
+`ux-designer`, not just here.
+
+**2. Full-slice terminology sweep — nothing else changed.** Every screen
+title, button, menu, and action string in `src/screens/` and
+`src/components/` was reviewed against the merchant's mental model, not
+just greppable spec-term matches:
+
+- Inventario flow ("Registrar mercancía," "Registro de mercancía,"
+  "Elegir producto," "¿Qué llegó?," "Ya agregaste," "+ Agregar otro
+  producto," "Guardar mercancía," "Descartar" / "Sí, descartar," "Guardar
+  precio") — all already merchant vocabulary matching `inventory.md`
+  verbatim, no engineering/technical terms found.
+- Selling flow ("Venta actual," "Finalizar Venta," "Cancelar" /
+  "¿Cancelar este/estos N artículo(s)?" / "Sí, cancelar," "Cerrando
+  venta…," "Venta finalizada ✓") — already consistent, and specifically
+  checked against the same "does this collide with Venta-as-one-transaction"
+  test just applied to "Cerrar sesión": none of these do, since each one
+  *is* correctly describing the single in-progress Sale, not the Session.
+- Home idle/cold-start ("¿Vas a vender hoy?," "Iniciar Venta Rápida" — the
+  prior pass's own rename, re-checked here and still correct on the same
+  reasoning), receipt ("Total," "Continuar vendiendo"), and close summary
+  ("Día cerrado," "Entendido") — all read as plain merchant language, no
+  technical/implementation terms surfaced.
+- `Placeholder.tsx` ("Esta sección no está incluida en este prototipo…")
+  is scaffolding disclosure copy, not a merchant-facing product label —
+  correctly out of scope for this review.
+
+No second stale term was found. The prior Demo Polish pass's own claim
+("A terminology-consistency sweep of the rest of the slice found nothing
+else stale… Cerrar sesión, Venta actual, disponibles, Finalizar Venta")
+is now superseded for "Cerrar sesión" specifically by this pass's finding
+above — that prior sweep checked for internal *consistency*, not for
+mental-model fit against the merchant's actual vocabulary, which is the
+narrower, sharper test this pass applied.
+
+**Verification.** `tsc -b && vite build` clean (zero errors). No file
+under `src/domain/` (`types.ts`, `store.tsx`, `selectors.ts`, `format.ts`,
+`id.ts`) was read for editing purposes or modified — confirmed via
+`git status`/`git diff --stat` scoped to that directory, both empty.
+Grep-verified: zero remaining "Cerrar sesión" (or "Cerrar Sesión") strings
+render in any component's JSX — every remaining occurrence in the codebase
+is inside a disclosure comment citing the approved spec's own term, not
+user-facing copy.
+
 ## File structure
 
 ```

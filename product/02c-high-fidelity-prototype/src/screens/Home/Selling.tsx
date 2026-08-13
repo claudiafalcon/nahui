@@ -174,7 +174,7 @@ export function Selling({
       {closeBlockedOpen && (
         <Sheet onDismiss={() => setCloseBlockedOpen(false)}>
           <p className={styles.confirmTitle}>Tienes una venta sin terminar ({articulos(items.length)}).</p>
-          <p className={styles.confirmBody}>Termínala o cancélala antes de cerrar la sesión.</p>
+          <p className={styles.confirmBody}>Termínala o cancélala antes de cerrar la jornada de venta.</p>
           <Button onClick={() => setCloseBlockedOpen(false)}>Entendido</Button>
         </Sheet>
       )}
