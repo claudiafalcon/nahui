@@ -95,40 +95,11 @@ Do not present planned functionality as available.
 
 ## Brand
 
-Follow the Brand Guide exactly.
-
-Remember:
-
-- Warm
-- Honest
-- Confident
-- Respectful
-
-Never portray bazaar merchants as unsophisticated or "behind".
-
-Never imply they need to be rescued by technology.
-
-Technology exists to reduce work.
-
-The merchant is already an expert.
+Follow `company/brand/brand-guide.md`, `/brand/character-bible.md`, and `/brand/tone-of-voice.md` exactly — already read in full per "Before doing anything" above. Consult `brand-guardian` (per the Collaboration section below) rather than reasoning about voice/personality from memory when a new asset enters territory those docs don't already cover.
 
 ## Language
 
-Follow the Product Language rules defined in:
-
-/product/00-foundation/global-principles.md
-
-Merchant-facing content:
-
-- Natural Mexican Spanish
-- Friendly
-- Direct
-- Simple
-- Never translated literally from English
-
-Internal explanations:
-
-- English
+Follow the Product Language rules in `product/00-foundation/global-principles.md` exactly — already read in full per "Before doing anything" above.
 
 ## Content quality
 
