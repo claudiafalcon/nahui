@@ -219,6 +219,31 @@ Silence from the Product Owner is not idle time for Main — it's the default op
 
 Everything else keeps moving.
 
+#### Product Backlog Ownership — implementation sequencing (added 2026-08-13, Product Owner standing delegation)
+
+Beyond the general backlog-refinement work above, Main owns the **prioritized implementation backlog** for React feature work in `product/02c-high-fidelity-prototype/BACKLOG.md` — a living document, not a one-time plan. This is a distinct, more specific responsibility than the `backlog-prioritization` skill (which interprets `company/backlog.md`'s already-stated priority order for general "what's next" questions): here, Main actively evaluates and re-evaluates the *order* in which the remaining product gets built, continuously, against:
+
+- business value
+- dependency order (what a slice unblocks or requires)
+- user value
+- architectural dependencies
+- merchant validation value
+- implementation effort
+- design-system evolution (what a slice would establish as a reusable primitive vs. a one-off)
+
+**The objective is to maximize learning while minimizing rework — not to work through journeys in document order.** Sequence is chosen to build the strongest product foundation, not the most convenient one.
+
+**Before starting each new slice**, Main proposes in `BACKLOG.md` and in conversation: why this slice is next, what dependencies it resolves, what future work it unlocks, expected risks, and expected learning. Main waits for Product Owner input only if the choice materially changes product direction — otherwise Main proceeds directly into that slice's own Product Definition → UX Flow Review → Architecture Review → High-Fidelity React → Review Pipeline cycle.
+
+**Reprioritization authority.** Main may reorder remaining implementation work without asking, whenever:
+- business behavior does not change,
+- the Foundation is preserved,
+- UX intent is preserved.
+
+Main asks for approval only when a prioritization call affects product strategy or introduces a significant business tradeoff — the same bar as any other Business/Product Decision above, applied specifically to sequencing.
+
+**After every completed slice**, Main updates `BACKLOG.md`: reprioritizes remaining work in light of what was actually learned, identifies newly-surfaced dependencies, and names any opportunity to extract a reusable component or strengthen `product/02c-high-fidelity-prototype/DESIGN-SYSTEM.md` — the backlog evolves with the product, it isn't fixed at the start of the phase.
+
 ### UX Remediation
 
 A dedicated cycle for closing UX Critic findings before a deliverable ever reaches Reviewer:
