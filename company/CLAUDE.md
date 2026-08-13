@@ -233,7 +233,12 @@ Beyond the general backlog-refinement work above, Main owns the **prioritized im
 
 **The objective is to maximize learning while minimizing rework — not to work through journeys in document order.** Sequence is chosen to build the strongest product foundation, not the most convenient one.
 
-**Before starting each new slice**, Main proposes in `BACKLOG.md` and in conversation: why this slice is next, what dependencies it resolves, what future work it unlocks, expected risks, and expected learning. Main waits for Product Owner input only if the choice materially changes product direction — otherwise Main proceeds directly into that slice's own Product Definition → UX Flow Review → Architecture Review → High-Fidelity React → Review Pipeline cycle.
+**Before starting each new slice**, Main proposes in `BACKLOG.md` and in conversation: why this slice is next, what dependencies it resolves, what future work it unlocks, expected risks, and expected learning. Main waits for Product Owner input only if the choice materially changes product direction — otherwise Main proceeds directly into that slice's own build cycle.
+
+**Two distinct workflows, per `decision-log.md` D43 — pick the right one per slice, don't default to the heavier one:**
+
+- **Migration Workflow** — for any journey with an already-Approved Medium-Fidelity spec (`product/02-ux/*.md`, tracked historically in the now-dormant `product/02b-medium-fidelity/`): `Approved UX Specification → Architecture Gap Analysis → High-Fidelity React Implementation → Review Pipeline → Approved Slice`. The Approved spec is the implementation contract, not a draft — `architect`'s Architecture Gap Analysis identifies implementation gaps only (missing domain-model fields, write-path strategy, scope boundaries against other not-yet-built slices), it does not redesign or re-evaluate the approved UX. Product/UX discussions are not reopened during a migration slice unless a genuine contradiction, missing requirement, or real implementation blocker surfaces — named explicitly and routed through Decision Ownership, never silently resolved by relitigating the spec.
+- **New-Feature Workflow** — D42's full 7 stages (Product Definition → UX Flow Review → Architecture Review → High-Fidelity React → Review Pipeline → Product Approval → Backend Integration), reserved for a feature with no prior Approved spec at all. Becomes Nahui's default process only once every existing Medium-Fidelity journey has been migrated — until then, the Migration Workflow is what actually runs for each item in `BACKLOG.md`.
 
 **Reprioritization authority.** Main may reorder remaining implementation work without asking, whenever:
 - business behavior does not change,

@@ -13,12 +13,30 @@ later renamed into or merged with `product/03-build` once backend
 integration (Stage 7) actually starts is a genuinely open future decision,
 deliberately not resolved now — see `decision-log.md` D42 point 3.
 
+## Two workflows (D43) — pick the right one per slice
+
+- **Migration Workflow** — for any journey with an already-Approved
+  Medium-Fidelity spec (currently: Eventos, Resultados, Onboarding,
+  Configuración; Hoy/Inventario already migrated as Slice 1):
+  `Approved UX Specification → Architecture Gap Analysis → High-Fidelity
+  React Implementation → Review Pipeline → Approved Slice`. The Approved
+  `product/02-ux/*.md` doc is the implementation contract — `architect`'s
+  Architecture Gap Analysis identifies implementation gaps only (missing
+  domain-model fields, write-path strategy, scope boundaries against other
+  not-yet-built slices), it never redesigns or re-evaluates the approved UX.
+  This is what actually runs for every remaining item in `BACKLOG.md` today.
+- **New-Feature Workflow** — D42's full 7 stages (Product Definition → UX
+  Flow Review → Architecture Review → High-Fidelity React → Review Pipeline
+  → Product Approval → Backend Integration), reserved for a feature with no
+  prior Approved spec. Becomes default only once every existing
+  Medium-Fidelity journey has been migrated.
+
 ## Where this fits
 
-- Upstream: an **Approved** Low-Fidelity spec in `product/02-ux/` (which also
-  covers the workflow's Product Definition and UX Flow Review stages, D42),
-  plus an Approved Architecture Review (Stage 3, `architect`). Real build work
-  never starts ahead of either.
+- Upstream: an **Approved** Low-Fidelity/Medium-Fidelity spec in
+  `product/02-ux/`, plus an Approved Architecture Review or Gap Analysis
+  (`architect`, per whichever workflow above applies). Real build work never
+  starts ahead of either.
 - Downstream: Backend Integration (Stage 7) — replacing mocked services with
   production services while preserving the approved interaction model, in
   place, on this same codebase. Not a rewrite into a separate folder.

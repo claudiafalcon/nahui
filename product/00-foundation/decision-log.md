@@ -2,6 +2,33 @@
 
 Chronological. Each entry: the decision, why it was made, and what it superseded if anything. Don't edit past entries when a decision changes later — add a new entry that supersedes it, so the reasoning trail stays intact.
 
+## D43 — Two distinct React-adoption workflows: a Migration Workflow for journeys with an already-Approved Medium-Fidelity UX spec, and D42's full 7-stage workflow reserved for genuinely new features
+
+Clarifies D42, which is left unedited per this log's own convention — this entry narrows how D42 applies, it doesn't reverse anything in it. Raised when the Product Owner, reviewing the proposed Onboarding slice, distinguished two cases D42's own text didn't separate: a journey that already has an Approved Medium-Fidelity UX specification (six of them exist — Hoy, Inventario, Eventos, Resultados, Onboarding, Configuración, per `product/02b-medium-fidelity/CLAUDE.md`'s own now-dormant tracking) versus a genuinely new feature with no prior spec at all. D42's full 7-stage workflow (Product Definition → UX Flow Review → Architecture Review → High-Fidelity React → Review Pipeline → Product Approval → Backend Integration) was written for the second case; applying its Stage 1/2 in full to the first case would mean re-litigating UX work that's already Approved and settled, which is exactly the "endless polish cycle" this project has repeatedly had to correct itself out of.
+
+**Ruling — two workflows, not one:**
+
+**Migration Workflow** (for any journey with an already-Approved Medium-Fidelity spec — currently: Eventos, Resultados, Onboarding, Configuración; Hoy/Inventario already migrated as Slice 1):
+```
+Approved UX Specification (product/02-ux/*.md, already Approved — treated as the implementation contract)
+        ↓
+Architecture Gap Analysis (architect — implementation-readiness only, see below)
+        ↓
+High-Fidelity React Implementation (ui-designer, product/02c-high-fidelity-prototype/)
+        ↓
+Review Pipeline (ux-critic → reviewer → merchant-user-tester)
+        ↓
+Approved Slice
+```
+
+The already-Approved `product/02-ux/*.md` document is the implementation contract, not a draft to reopen. `architect`'s Architecture Gap Analysis identifies implementation gaps only — domain-model fields the spec needs but the current `src/domain/` doesn't yet have, write-path strategy, scope boundaries against other not-yet-built slices — it does not redesign or re-evaluate the approved UX. Product or UX discussions are not reopened during a migration slice unless `architect` (or any later reviewer) surfaces a genuine contradiction, a missing requirement, or a real implementation blocker requiring Product Owner input — named explicitly and routed through Decision Ownership like any other escalation, not silently resolved by relitigating the spec.
+
+**New-Feature Workflow** (D42's full 7 stages, unedited) — reserved for a feature with no prior Approved spec at all. Becomes Nahui's *default* process only once every existing Medium-Fidelity journey has been migrated through the workflow above — until then, the Migration Workflow is what Main actually runs for each item in `product/02c-high-fidelity-prototype/BACKLOG.md`.
+
+**Validation:** Slice 1 (Home/Inventario/Selling/Receipt) is confirmed, retroactively, as the first successful instance of the Migration Workflow — it built directly on `home.md`/`inventory.md`'s already-Approved specs, and `reviewer`'s Blocker/`ux-critic`'s Major findings during that slice were implementation-correctness findings against the approved contract, not UX redesigns. This is the precedent the Migration Workflow generalizes.
+
+**Applied:** `company/CLAUDE.md`'s "Product Backlog Ownership" section (D42-adjacent) gains a description of the two workflows and when each applies. `product/02c-high-fidelity-prototype/CLAUDE.md` and `BACKLOG.md` updated to name the Migration Workflow as what actually runs for each remaining known journey.
+
 ## D42 — React-first workflow adopted as the standing feature-development process; `product/02c-high-fidelity-prototype/` promoted from single pre-decision experiment to Nahui's primary living prototype and standing home for all future feature UI work; `product/02b-medium-fidelity/`/Figma downgraded to optional/legacy
 
 Raised when the Product Owner formally accepted the completed High-Fidelity React vertical-slice experiment (`product/02c-high-fidelity-prototype/`, placed there under D41 as an explicitly pre-decision artifact) as validating a company-wide React-first workflow, replacing the Low/Medium/High-Fidelity Figma pipeline for all future feature work. This is exactly the "afterward" decision D41 named as pending ("the Product Owner will decide afterward whether it becomes the primary living prototype / start of the production frontend") — not a fresh Architecture judgment call, but applying an already-rendered decision to the artifact D41 made contingent on it. Classified and resolved the same way as D12/D13/D24/D31/D38/D41: a repository/pipeline-organization decision, touching no aggregate, bounded context, ubiquitous-language term, or frozen Foundation content — `domain-model.md`, `architecture-principles.md`, and `information-architecture.md` are unaffected in substance.

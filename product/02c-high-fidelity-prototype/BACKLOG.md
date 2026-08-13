@@ -7,6 +7,14 @@ architectural dependencies, merchant validation value, implementation
 effort, and design-system evolution. Not worked in document order; worked in
 the order that builds the strongest product foundation.
 
+**Every item below already has an Approved Medium-Fidelity spec, so each
+follows the Migration Workflow (`decision-log.md` D43), not the full
+New-Feature Workflow:** `Approved UX Specification → Architecture Gap
+Analysis → High-Fidelity React Implementation → Review Pipeline → Approved
+Slice`. The Approved `product/02-ux/*.md` doc is the implementation
+contract — Architecture Gap Analysis identifies implementation gaps only,
+it does not reopen the UX itself.
+
 This is a different document from `company/backlog.md` (the company's own
 higher-level, phase-gating priority list — Sale registration, Customer
 Segmentation, Bazaar recommendation). This file is the more granular
@@ -78,7 +86,7 @@ pre-seeded, D36). Full record: `README.md`.
 
 **Expected learning.** Whether the real Onboarding flow, built with the same Swing Tag design system, holds together as a first impression — this is literally the first screen a real merchant would ever see, and hasn't been visually designed at all yet in this codebase.
 
-This does not change product direction, business behavior, the Foundation, or UX intent — it builds an already-approved spec. Proceeding directly into Onboarding's Architecture Review (Stage 3; Stage 1/2 are already satisfied by the existing approved `onboarding.md`) unless told otherwise.
+This does not change product direction, business behavior, the Foundation, or UX intent — it builds an already-approved spec via the Migration Workflow (D43): `onboarding.md` is the implementation contract, and `architect`'s next step is an Architecture Gap Analysis (implementation-readiness only, not a UX re-evaluation), reported back before the React build starts.
 
 ## Backlog order after Onboarding (subject to re-evaluation after each slice)
 
