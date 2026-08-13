@@ -1,5 +1,20 @@
 .backdrop {
-  position: absolute;
+  /* Fixed, not absolute (merchant-user-tester finding, 2026-08-13):
+     `position: absolute` resolves against the nearest *positioned* ancestor,
+     not the screen. Every Sheet consumer that happens to sit inside another
+     `position: relative` container (e.g. SessionHeader inside Selling.tsx's
+     `.transactionPanel`, ~118px tall) got a backdrop clipped to that
+     container's own box instead of the full screen — the panel then
+     overflowed out of it and physically covered nearby real controls
+     (SessionHeader's own trigger button and header text), so a second tap
+     meant to close the menu, or a tap meant to land "outside" it, actually
+     hit whichever sheet row happened to sit at that same screen point.
+     `position: fixed` positions against the viewport (or nearest ancestor
+     that establishes a containing block for fixed elements — see
+     `.app-shell`'s `contain: layout` in global.css, added alongside this
+     fix so the backdrop still confines to the device-frame illustration on
+     desktop preview instead of escaping to the real browser viewport). */
+  position: fixed;
   inset: 0;
   background: rgba(45, 45, 45, 0.32);
   z-index: 50;

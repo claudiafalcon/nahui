@@ -62,6 +62,21 @@ input {
   flex-direction: column;
   position: relative;
   overflow-x: hidden;
+  /* Containing block for `position: fixed` descendants (Sheet.module.css's
+     `.backdrop` fix, 2026-08-13): `position: relative` alone does NOT make
+     an element a containing block for `fixed`-positioned children — only a
+     transform/filter/perspective/will-change or `contain: layout|paint|
+     content|strict` does. Without this, Sheet's now-`fixed` backdrop would
+     resolve against the real browser viewport instead of this device-frame
+     illustration: harmless on mobile widths (app-shell already fills the
+     viewport there), but on the >430px desktop preview below it would cover
+     the whole page — including the `#E2DED6` area outside the frame — and
+     ignore this element's own rounded corners and `overflow: hidden`.
+     `contain: layout` confines it correctly with no layout side effects,
+     since app-shell is already the outermost app container (no margins to
+     collapse across its boundary, nothing outside it that needs to see
+     inside). */
+  contain: layout;
 }
 
 @media (min-width: 431px) {
