@@ -1,0 +1,137 @@
+/*
+  ReceiptTicket — this prototype's signature element ("Tag Tear").
+
+  home.md §3.8f specifies a full-viewport screen that temporarily *replaces*
+  the selling shell entirely (no header, no tray, no grid) at the exact
+  moment the device turns toward the customer. Rather than treat that as a
+  blank page with three lines of text, this reinterprets it as a literal
+  market ticket — the physical price-tag/ticket-stub Ana already tears off
+  for a customer — torn from a roll and dropped into view.
+
+  Pushed further this pass (v1 self-critique explicitly flagged the notch
+  as too restrained): larger notches top *and* bottom, so the ticket reads
+  as a stub floating between two tears; a slight rotational swing on
+  drop-in instead of a straight vertical slide.
+*/
+
+.screen {
+  position: absolute;
+  inset: 0;
+  background: var(--color-paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 30;
+  transform-origin: top center;
+  animation: swingIn var(--duration-slow) var(--ease-settle);
+}
+
+.screen::before,
+.screen::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 26px;
+  background-image: radial-gradient(circle at 15px 13px, var(--color-balanced) 12px, transparent 12.5px);
+  background-size: 30px 26px;
+  background-repeat: repeat-x;
+  pointer-events: none; /* never intercept the exit-zone tap beneath it */
+}
+
+.screen::before {
+  top: -1px;
+}
+
+.screen::after {
+  bottom: -1px;
+  background-position: 15px 13px;
+  transform: rotate(180deg);
+}
+
+@keyframes swingIn {
+  from { transform: translateY(-22px) rotate(-1.4deg); opacity: 0; }
+  60% { transform: translateY(2px) rotate(0.6deg); opacity: 1; }
+  to { transform: translateY(0) rotate(0deg); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen { animation: none; }
+}
+
+.body {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-6) var(--space-16);
+}
+
+.confirmation {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-success);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.2px;
+}
+
+.totalBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.totalLabel {
+  font: var(--text-meta);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #9C9186;
+}
+
+.total {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(48px, 15vw, 64px);
+  line-height: 1;
+  color: var(--color-tezontle-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+.business {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.businessName {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 20px;
+  color: var(--color-obsidian);
+}
+
+.businessMeta {
+  font: var(--text-meta);
+  color: #9C9186;
+}
+
+.exitZone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22%;
+  min-height: 96px;
+  /* Deliberately no visible marker/label/boundary — home.md §3.8f: "no
+     rendered marker, no label, no visible boundary for the zone itself." */
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}

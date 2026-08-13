@@ -1,0 +1,42 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(45, 45, 45, 0.32);
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn var(--duration-base) var(--ease-standard);
+}
+
+.panel {
+  width: 100%;
+  background: var(--color-paper);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 14px var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+  box-shadow: var(--shadow-sheet);
+  animation: slideUp var(--duration-base) var(--ease-settle);
+  position: relative;
+}
+
+.handle {
+  display: block;
+  width: 36px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-hilo);
+  margin: 0 auto var(--space-4);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(28px); opacity: 0.6; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop, .panel { animation: none; }
+}

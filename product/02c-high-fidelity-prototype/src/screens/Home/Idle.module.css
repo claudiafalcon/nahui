@@ -1,0 +1,92 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  position: relative;
+  z-index: 2;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--color-obsidian);
+}
+
+.menuBtn {
+  appearance: none;
+  border: 1.5px solid var(--color-hilo);
+  background: var(--color-white);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-obsidian);
+  font-size: 20px;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+.menuBtn:active {
+  transform: scale(0.92);
+  background: var(--color-hilo);
+}
+
+.wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* The oversized, softly-tinted BrandMark — Nahui's own "four elements
+   converging" mark reused at watermark scale, anchoring the otherwise
+   empty canvas asymmetrically instead of leaving it dead. Not a new
+   decorative device: the same mark ColdStart already uses, just rescaled
+   and repositioned, so the two related cold/idle states read as one
+   family rather than two unrelated treatments. Positioned to bridge
+   toward the greeting text below it, rather than floating alone in the
+   upper corner with a dead gap underneath. */
+.watermark {
+  position: absolute;
+  top: 6%;
+  right: -100px;
+  opacity: 0.16;
+  transform: rotate(-8deg);
+  animation: drift 9s var(--ease-standard) infinite alternate;
+}
+
+@keyframes drift {
+  from { transform: rotate(-8deg) translateY(0); }
+  to { transform: rotate(-5deg) translateY(10px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watermark { animation: none; }
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+
+.question {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 1.15;
+  color: var(--color-obsidian);
+  max-width: 11ch;
+}
+
+.cta {
+  max-width: 300px;
+}

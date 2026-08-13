@@ -1,0 +1,67 @@
+/*
+  TagStub — see TagStub.tsx for the full rationale. A miniature swing-tag:
+  rounded square, punched hole, a short loop of "string," per-Product tone.
+*/
+.tag {
+  --size: 34px;
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) 2px;
+  background: var(--tone-bg, var(--color-blush));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transform: rotate(var(--tilt, 0deg));
+  box-shadow: 0 1px 2px rgba(45, 45, 45, 0.14);
+}
+
+.tag::before {
+  /* the punched hole */
+  content: '';
+  position: absolute;
+  top: 15%;
+  left: 15%;
+  width: 14%;
+  height: 14%;
+  min-width: 3px;
+  min-height: 3px;
+  border-radius: 50%;
+  background: var(--color-paper);
+}
+
+.string {
+  /* a short loop of string through the hole — a thin arc sitting just
+     outside the tag's own top-left corner, echoing the receipt's own
+     torn-from-a-roll materiality at the smallest scale this system uses. */
+  position: absolute;
+  top: -22%;
+  left: -8%;
+  width: 46%;
+  height: 46%;
+  border: 1.5px solid var(--tone-bg, var(--color-blush));
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  opacity: 0.85;
+}
+
+.letter {
+  font: var(--text-label);
+  font-weight: 700;
+  color: var(--tone-ink, var(--color-tezontle-dark));
+  padding-left: 8%;
+}
+
+.tag.muted {
+  background: var(--color-hilo);
+  box-shadow: none;
+  transform: rotate(0deg);
+}
+.muted .string {
+  border-color: var(--color-hilo);
+}
+.muted .letter {
+  color: #9C9186;
+}

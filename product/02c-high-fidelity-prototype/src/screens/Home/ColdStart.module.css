@@ -1,0 +1,69 @@
+.wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-6);
+  padding: var(--space-8) var(--space-6);
+  overflow: hidden;
+}
+
+/* A soft, concentric halo behind the mark — built from box-shadow rings
+   (no gradient), a small nod to "four elements converging at a shared
+   center" (brand-guide.md) without literally re-drawing the mark bigger a
+   second time on the same screen. Gives the icon real presence instead of
+   floating alone in flat canvas. */
+.mark {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  background: var(--color-blush);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    0 0 0 14px color-mix(in srgb, var(--color-blush) 14%, transparent),
+    0 0 0 32px color-mix(in srgb, var(--color-blush) 7%, transparent);
+  animation: markSettle var(--duration-slow) var(--ease-settle) both;
+}
+
+@keyframes markSettle {
+  from { transform: scale(0.7) rotate(-14deg); opacity: 0; }
+  to { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mark { animation: none; }
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--color-obsidian);
+}
+
+.body {
+  font: var(--text-body);
+  color: #6B6259;
+  max-width: 30ch;
+}
+
+.cta {
+  max-width: 280px;
+  position: relative;
+  z-index: 1;
+}

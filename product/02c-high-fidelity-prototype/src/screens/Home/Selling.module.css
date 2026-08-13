@@ -1,0 +1,97 @@
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* The unified "active transaction" surface — SessionHeader + VentaActualTray
+   composed as one continuous paper-toned zone (see Selling.tsx for why this
+   composition changed from two flat rows on the bare canvas). Its own torn
+   bottom edge is the same perforation device the receipt and the sheets
+   use — a market ticket sitting above the merchandise, not a card: no side
+   radius, no shadow, full-bleed, a flat material change between two zones
+   of the same screen. */
+.transactionPanel {
+  position: relative;
+  background: var(--color-paper);
+  padding-bottom: 14px;
+  transition: background-color var(--duration-base) var(--ease-standard);
+}
+
+.transactionPanel::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 12px;
+  background-image: radial-gradient(circle at 10px 1px, var(--color-balanced) 6px, transparent 6.5px);
+  background-size: 20px 12px;
+  background-repeat: repeat-x;
+}
+
+/* Once a Sale is actually open, the panel itself carries a quiet, warmer
+   wash (still paper-family, never Coral) — the screen's own "something is
+   happening" cue, independent of reading any number. */
+.transactionPanelActive {
+  background: color-mix(in srgb, var(--color-blush) 7%, var(--color-paper));
+}
+
+.gridScroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-4) var(--space-8);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.footer {
+  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--color-hilo);
+  background: var(--color-balanced);
+}
+
+.footerCount {
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+.emptyGrid {
+  text-align: center;
+  color: #8A8177;
+  font: var(--text-body-sm);
+  padding: var(--space-8) var(--space-4);
+}
+
+.confirmTitle {
+  font: var(--text-heading);
+  margin-bottom: var(--space-2);
+}
+
+.confirmBody {
+  font: var(--text-body);
+  color: #6B6259;
+  margin-bottom: var(--space-4);
+}
+
+.confirmRow {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.confirmRow > * {
+  flex: 1;
+}
+
+.savingLine {
+  text-align: center;
+  padding: var(--space-8);
+  color: #6B6259;
+  font: var(--text-body);
+}

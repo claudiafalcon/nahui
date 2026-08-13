@@ -1,0 +1,136 @@
+/*
+  Design tokens — Nahui High-Fidelity prototype.
+
+  Source of truth for color/type/spacing/radius: company/brand/brand-guide.md
+  (the shipped, tactical execution spec). Every color below with a name that
+  matches brand-guide.md is that exact hex value, unchanged — this file does
+  not reinvent Nahui's identity.
+
+  Two tokens are additive extensions, named and flagged as such below
+  (--color-paper, --color-hilo) — introduced in service of a warmer, more
+  tactile "market paper" feel per this prototype's design plan, never as a
+  replacement for a brand-guide.md value.
+*/
+
+:root {
+  /* ---- Brand colors (company/brand/brand-guide.md, verbatim) ---- */
+  --color-coral: #E86248;           /* decorative/illustration only — never text/fill on white */
+  --color-coral-aa: #C13F26;        /* Primary button fill, tertiary/link text — WCAG AA safe */
+  --color-tezontle: #D94C3A;        /* hover/pressed for coral-aa elements */
+  --color-tezontle-dark: #A72C2C;   /* high-contrast accent, active nav tab, destructive fill */
+  --color-blush: #F2887C;           /* tints, badge fills — never body text */
+  --color-obsidian: #2D2D2D;        /* body text + icons on light backgrounds */
+  --color-balanced: #F4F4F4;        /* default app/page background */
+  --color-white: #FFFFFF;           /* card/sheet surfaces */
+
+  --color-success: #2E7D46;
+  --color-warning: #C8811A;
+  --color-error: #A72C2C;
+
+  /* ---- Additive extensions (this prototype only — named, not shipped tokens) ---- */
+  --color-paper: #FFFCF8;   /* warm card surface for tag/ticket-shaped elements — extension */
+  --color-hilo: #E8DFD3;    /* warm sand divider/border — extension, replaces cold gray */
+
+  /* ---- Product identity — "the tag drawer" (v2, additive extension) ----
+     A closed set of 12 hand-picked swatches, every one of them either an
+     already-shipped brand-guide.md hex (Blush, Coral, Tezontle) or a new
+     tone mixed to sit inside the exact same warm coral→terracotta→clay
+     family — never a hue borrowed from outside the palette (no blue, no
+     green, no violet). The idea this expresses: Ana's own stall keeps an
+     assorted drawer of colored cardstock tags/thread, not one repeated
+     swatch — each Product gets a *consistent*, deterministic tone (hashed
+     from Product.name, presentation-only, no schema change) so the same
+     Product reads as the same color everywhere it appears (Catalog row,
+     selling tile, Venta Actual chip). 12 rather than a smaller round number
+     specifically because 8 produced a real, observed collision at only 4
+     Products in this build's own walkthrough — same "fast-scan aid, not a
+     uniqueness guarantee" honesty the letter-marker itself already carries
+     (home.md §3.9's own "letter collisions... are acceptable" precedent),
+     just tuned so collisions are the exception at Ana's real catalog sizes
+     rather than the norm. See src/styles/productIdentity.ts. */
+  --tag-1-bg: #F2887C; /* Blush — shipped */
+  --tag-1-ink: #A72C2C;
+  --tag-2-bg: #E86248; /* Coral — shipped, decorative-only use (brand-guide.md) */
+  --tag-2-ink: #FFFCF8;
+  --tag-3-bg: #D94C3A; /* Tezontle — shipped */
+  --tag-3-ink: #FFFCF8;
+  --tag-4-bg: #C97B5A; /* Clay — new, same family */
+  --tag-4-ink: #FFFCF8;
+  --tag-5-bg: #E3AFA6; /* Dusty rose — new, same family */
+  --tag-5-ink: #A72C2C;
+  --tag-6-bg: #8C5A3C; /* Mocha — new, same family, deliberately distinct from --color-warning */
+  --tag-6-ink: #FFFCF8;
+  --tag-7-bg: #A85A3E; /* Terracotta deep — new, same family */
+  --tag-7-ink: #FFFCF8;
+  --tag-8-bg: #C9B79A; /* Sand deep — new, same family, deeper than --color-hilo */
+  --tag-8-ink: #2D2D2D;
+  --tag-9-bg: #E4A96F; /* Apricot — new, same family */
+  --tag-9-ink: #2D2D2D;
+  --tag-10-bg: #7A3B2E; /* Brick deep — new, same family */
+  --tag-10-ink: #FFFCF8;
+  --tag-11-bg: #F0C9A8; /* Peach soft — new, same family */
+  --tag-11-ink: #A72C2C;
+  --tag-12-bg: #B3733A; /* Caramel — new, same family */
+  --tag-12-ink: #FFFCF8;
+
+  /* ---- Ambient texture — a near-invisible echo of the brand mark's own
+     "four elements meeting at a shared center," tiled underneath every
+     screen's canvas. 5% opacity, obsidian, no color of its own — texture,
+     not decoration: the same move as fabric weave under a market stall's
+     paper goods. Applied once, at the app shell's own background
+     (see global.css) — never per-component. */
+  --pattern-weave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='none' stroke='%232D2D2D' stroke-width='1.5' stroke-linecap='round' opacity='0.02'%3E%3Cpath d='M28 22v10M23 27h10'/%3E%3Cpath d='M90 76v10M85 81h10'/%3E%3C/g%3E%3C/svg%3E");
+
+  /* ---- Typography (brand-guide.md: Fredoka display / Inter UI) ---- */
+  --font-display: 'Fredoka', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Type scale (brand-guide.md, format: size/line-height, weight) */
+  --text-display-xl: 600 40px/48px var(--font-display);
+  --text-display-lg: 600 32px/40px var(--font-display);
+  --text-display-md: 500 24px/32px var(--font-display);
+  --text-heading: 600 20px/28px var(--font-ui);
+  --text-body: 400 16px/24px var(--font-ui);
+  --text-body-sm: 400 14px/20px var(--font-ui);
+  --text-label: 600 12px/16px var(--font-ui);
+  --text-meta: 500 11px/14px var(--font-ui);
+
+  /* ---- Spacing scale ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- Radius scale ---- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* ---- Elevation (used sparingly — sheets/tickets only) ---- */
+  --shadow-sheet: 0 -8px 24px rgba(45, 45, 45, 0.12);
+  --shadow-ticket: 0 12px 32px rgba(167, 44, 44, 0.14), 0 2px 8px rgba(45, 45, 45, 0.06);
+
+  /* ---- Motion ---- */
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-settle: cubic-bezier(0.34, 1.42, 0.64, 1); /* slight overshoot — a tag
+    dropped/clipped into place, not a mechanical fade. Used only for the
+    handful of moments that represent something landing: a sale item
+    joining the stack, the receipt itself, a nav tab's indicator. */
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 420ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}

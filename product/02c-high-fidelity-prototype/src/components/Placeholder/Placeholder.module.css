@@ -1,0 +1,27 @@
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--color-obsidian);
+}
+
+.body {
+  font: var(--text-body-sm);
+  color: #8A8177;
+  max-width: 32ch;
+}
+
+.back {
+  margin-top: var(--space-4);
+}
