@@ -69,7 +69,17 @@ export function ReceiptTicket({
   }, [total]);
 
   return (
-    <div className={styles.screen}>
+    <div className={`${styles.screen} grain`}>
+      {/* the punched hole + string loop — the explicit "reveal" this pass
+          adds: the receipt is not just torn-ticket-*styled*, it's the same
+          TagStub shape (hole, string, tilt) the whole system already uses
+          at small scale, now at its biggest. Ties the Catalog marker, the
+          selling tile's pinned tag, and this full-screen moment into one
+          legible, fractal vocabulary. */}
+      <div className={styles.loop} aria-hidden="true">
+        <span className={styles.hole} />
+      </div>
+
       <div className={styles.body}>
         <div className={styles.confirmation}>Venta finalizada ✓</div>
 

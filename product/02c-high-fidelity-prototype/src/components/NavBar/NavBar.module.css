@@ -9,21 +9,10 @@
   z-index: 40;
 }
 
-/* The nav sits behind a perforation line rather than a flat hairline — the
-   same "torn from a roll" device the receipt and the transaction panel use,
-   at its smallest scale. One signature vocabulary reused system-wide, not
-   a one-off flourish confined to the receipt alone. */
-.bar::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: 0;
-  right: 0;
-  height: 7px;
-  background-image: radial-gradient(circle at 8px 0px, var(--color-balanced) 4px, transparent 4.5px);
-  background-size: 16px 7px;
-  background-repeat: repeat-x;
-}
+/* The nav sits behind the shared perforation strip (patterns.css .tearTop
+   .tearSm) — the same "torn from a roll" device the transaction panel and
+   Sheet use, drawn from one shared token/formula (--tear-notch-sm) rather
+   than each component's own hand-tuned gradient (v2's own gap). */
 
 .item {
   flex: 1;
@@ -73,15 +62,18 @@
   color: var(--color-tezontle-dark);
 }
 
-/* a small pip that pops in under the active tab's label — a deliberately
-   tiny, per-tab motion moment rather than a bar-wide sliding indicator
-   (which would need cross-item position math this component doesn't have
-   a safe way to compute against safe-area padding). */
+/* a small pip that pops in under the active tab's label — echoes the
+   system's own punched-hole motif (a ring, not a solid dot) rather than a
+   generic active-state indicator. A deliberately tiny, per-tab motion
+   moment rather than a bar-wide sliding indicator (which would need
+   cross-item position math this component doesn't have a safe way to
+   compute against safe-area padding). */
 .pip {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--color-tezontle-dark);
+  background: var(--color-balanced);
+  border: 1.5px solid var(--color-tezontle-dark);
   opacity: 0;
   transform: scale(0.4);
   transition: opacity var(--duration-fast) var(--ease-standard),

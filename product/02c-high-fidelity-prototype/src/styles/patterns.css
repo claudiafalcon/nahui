@@ -1,0 +1,104 @@
+/*
+  patterns.css — Design System v3's shared primitives.
+
+  Everything in this file is a *system-level* primitive, not a per-screen
+  decoration: the point of this pass (per the dispatching task) was to stop
+  reinventing the same visual idea once per component and instead name it
+  once, here, so every consumer is provably drawing from the same rule.
+  Imported once in global.css, alongside tokens.css.
+
+  What lives here vs. tokens.css: tokens.css holds *values* (colors, the
+  --stitch-line gradient, the --tear-notch sizes); this file holds *shapes*
+  built from those values that get reused as literal classNames across
+  component CSS Modules (CSS Modules can still reference plain global
+  classes — these are intentionally NOT `:local`).
+*/
+
+/* ---- Grain — applied to every literal "cardstock/paper" surface (tiles,
+   sheets, the receipt), never to plain canvas. See tokens.css for the
+   rationale on why this replaced v2's --pattern-weave.
+
+   Deliberately does NOT set `position` itself (a real v3 bug, caught during
+   this same pass: `.grain` originally forced `position: relative` on its
+   host, which silently overrode ReceiptTicket's own required
+   `position: absolute` — same specificity, later in cascade order — and
+   collapsed the full-viewport ticket down to its own content height. Every
+   current consumer (ProductTile, Sheet, ReceiptTicket) already establishes
+   its own positioning context; `.grain` only requires that one already
+   exist, never sets it. */
+.grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--pattern-grain);
+  border-radius: inherit;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* ---- Perforation strip (small scale) — the "torn from a roll" sprocket-
+   hole edge shared by NavBar, the Selling transaction panel, and Sheet's
+   rising edge (three separate v2 components each hand-rolled their own
+   copy of this same gradient at slightly different sizes — v3's actual
+   fix). One shared formula, driven by --tear-notch-sm, applied via a
+   top and/or bottom modifier. ReceiptTicket uses a deliberately different,
+   deeper scallop at --tear-notch-lg (see ReceiptTicket.module.css) — it's
+   the one place the perforation reads as a genuine *tear* rather than a
+   row of sprocket holes, a distinction named on purpose, not an
+   inconsistency. */
+.tearTop::before,
+.tearBottom::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: calc(var(--tear-notch-sm) + 3px);
+  background-image: radial-gradient(
+    circle at calc(var(--tear-notch-sm) * 2) 0px,
+    var(--color-balanced) var(--tear-notch-sm),
+    transparent calc(var(--tear-notch-sm) + 0.5px)
+  );
+  background-size: calc(var(--tear-notch-sm) * 4) calc(var(--tear-notch-sm) + 3px);
+  background-repeat: repeat-x;
+  pointer-events: none;
+}
+.tearTop::before {
+  top: -1px;
+}
+.tearBottom::after {
+  bottom: -1px;
+  transform: rotate(180deg);
+}
+
+/* ---- Stitch divider — replaces a plain 1px hilo hairline anywhere this
+   build separates content (list rows, sheet rows, footers). Bottom/top
+   orientation via modifier. */
+.stitchBottom,
+.stitchTop {
+  background-repeat: repeat-x;
+  background-size: 8px 1.5px;
+}
+.stitchBottom {
+  background-image: var(--stitch-line);
+  background-position: bottom left;
+}
+.stitchTop {
+  background-image: var(--stitch-line);
+  background-position: top left;
+}
+
+/* ---- Money tag — the hard rule this pass introduces: a price that
+   belongs to a specific Product or transaction renders inside a small
+   tilted tag, never as bare running text (README §3/§4). Deliberately NOT
+   applied to a live aggregate/summary numeral (e.g. SessionHeader's "Hoy:
+   $X"), which stays plain Fredoka per the existing type-restraint rule —
+   this is a discrete price, not a running total. */
+.moneyTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--color-paper);
+  border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) 3px;
+  border: 1.5px solid var(--tone-bg, var(--color-hilo));
+  box-shadow: 0 1px 2px rgba(45, 45, 45, 0.1);
+}

@@ -10,7 +10,12 @@ import styles from './Sheet.module.css';
 export function Sheet({ onDismiss, children }: { onDismiss?: () => void; children: ReactNode }) {
   return (
     <div className={styles.backdrop} onClick={onDismiss}>
-      <div className={styles.panel} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div
+        className={`${styles.panel} grain tearTop tearSm`}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
         <span className={styles.handle} aria-hidden="true" />
         {children}
       </div>

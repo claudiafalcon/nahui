@@ -60,7 +60,7 @@ export function CatalogView({
         ))}
       </div>
 
-      <div className={styles.footer}>
+      <div className={`${styles.footer} stitchTop`}>
         <Button onClick={onRegister}>Registrar mercancía</Button>
       </div>
 

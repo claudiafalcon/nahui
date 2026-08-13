@@ -67,19 +67,23 @@
   width: 100%;
   text-align: left;
   border: none;
-  background: transparent;
+  background-color: transparent;
   padding: 14px 4px;
   font: var(--text-body);
   color: var(--color-obsidian);
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  border-bottom: 1px solid var(--color-hilo);
   cursor: pointer;
+  position: relative;
 }
 
+/* the shared .stitchBottom global class (patterns.css) is applied from JSX
+   on every row; the last row's own divider is suppressed here rather than
+   the JSX branching a separate className, since "no divider after the
+   last item" is a pure layout detail. */
 .sheetRow:last-child {
-  border-bottom: none;
+  background-image: none;
 }
 
 .sheetRow.destructive {

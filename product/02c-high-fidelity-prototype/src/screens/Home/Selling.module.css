@@ -15,20 +15,8 @@
 .transactionPanel {
   position: relative;
   background: var(--color-paper);
-  padding-bottom: 14px;
+  padding-bottom: 16px;
   transition: background-color var(--duration-base) var(--ease-standard);
-}
-
-.transactionPanel::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 12px;
-  background-image: radial-gradient(circle at 10px 1px, var(--color-balanced) 6px, transparent 6.5px);
-  background-size: 20px 12px;
-  background-repeat: repeat-x;
 }
 
 /* Once a Sale is actually open, the panel itself carries a quiet, warmer
@@ -47,14 +35,14 @@
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
   align-content: start;
 }
 
 .footer {
-  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--color-hilo);
-  background: var(--color-balanced);
+  padding: 14px var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  background-color: var(--color-balanced);
+  position: relative;
 }
 
 .footerCount {

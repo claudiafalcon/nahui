@@ -38,19 +38,38 @@
 /* the stack of tag chips — the actual "an active sale looks like something
    is accumulating" fix. Each chip carries its Product's own tone (the same
    tone already on that Product's selling tile) and drops/settles into the
-   row as it's added, rather than appending to a sentence. */
+   row as it's added, rather than appending to a sentence.
+
+   v3: a thin string line runs above the chips (echoing the tag's own
+   string loop, at collection scale) — Ana's own tags-on-a-string, not just
+   loose colored pills. */
 .chipRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px 6px;
+  position: relative;
+  padding-top: 9px;
+}
+
+.chipRow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 2px;
+  right: 2px;
+  height: 1.5px;
+  background-image: var(--stitch-line);
+  background-size: 8px 1.5px;
+  background-repeat: repeat-x;
+  opacity: 0.7;
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: color-mix(in srgb, var(--tone-bg) 14%, var(--color-paper));
-  border: 1px solid color-mix(in srgb, var(--tone-bg) 35%, var(--color-hilo));
+  background: color-mix(in srgb, var(--tone-bg) 20%, var(--color-paper));
+  border: 1.5px solid color-mix(in srgb, var(--tone-bg) 55%, var(--color-hilo));
   border-radius: var(--radius-pill);
   padding: 3px 10px 3px 3px;
   animation: chipSettle var(--duration-base) var(--ease-settle) both;

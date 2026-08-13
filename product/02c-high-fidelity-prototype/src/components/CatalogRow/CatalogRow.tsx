@@ -29,17 +29,16 @@ export function CatalogRow({
 
   return (
     <div
-      className={`${styles.row} ${dimmed ? styles.dimmed : ''}`}
+      className={`${styles.row} stitchBottom ${dimmed ? styles.dimmed : ''}`}
       style={{ '--tone-bg': tone.bg } as CSSProperties}
     >
-      <span className={styles.rail} aria-hidden="true" />
-      <TagStub name={name} muted={dimmed} size={38} />
+      <TagStub name={name} muted={dimmed} size={48} />
       <button className={styles.main} onClick={onTapRow}>
         <span className={styles.name}>{name}</span>
         <span className={styles.caption}>{caption}</span>
       </button>
       <button
-        className={styles.price}
+        className={`${styles.price} moneyTag`}
         onClick={(e) => {
           e.stopPropagation();
           onTapPrice();

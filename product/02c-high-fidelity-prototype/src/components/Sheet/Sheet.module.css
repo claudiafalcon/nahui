@@ -16,6 +16,17 @@
   box-shadow: var(--shadow-sheet);
   animation: slideUp var(--duration-base) var(--ease-settle);
   position: relative;
+  overflow: hidden;
+}
+
+/* The shared .tearTop perforation (patterns.css) is normally drawn just
+   *outside* its host's top edge — fine for a square edge (NavBar, the
+   transaction panel) but the sheet's own top corners are rounded
+   (radius-xl), so the strip is pulled inside and clipped by .panel's own
+   `overflow: hidden` instead, reading as a torn edge rising up out of the
+   sheet rather than a rectangle floating above a curve. */
+.panel:global(.tearTop)::before {
+  top: 0;
 }
 
 .handle {

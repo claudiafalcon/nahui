@@ -89,7 +89,7 @@ export function RegisterMerchandise({
           <div className={styles.committed}>
             <span className={styles.committedTitle}>Ya agregaste:</span>
             {committed.map((line) => (
-              <div key={line.productId} className={styles.committedRow}>
+              <div key={line.productId} className={`${styles.committedRow} stitchBottom`}>
                 <TagStub name={line.productName} size={28} />
                 <span className={styles.committedName}>
                   {line.productName} — {line.quantity}
@@ -131,7 +131,7 @@ export function RegisterMerchandise({
         )}
       </div>
 
-      <div className={styles.footer}>
+      <div className={`${styles.footer} stitchTop`}>
         <Button disabled={!canSave} onClick={handleSave}>
           Guardar mercancía
         </Button>

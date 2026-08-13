@@ -1,17 +1,24 @@
 /*
-  ReceiptTicket — this prototype's signature element ("Tag Tear").
+  ReceiptTicket — Nahui's signature element ("the Swing Tag," at full
+  scale — see README "Design System — v3" §2).
 
   home.md §3.8f specifies a full-viewport screen that temporarily *replaces*
   the selling shell entirely (no header, no tray, no grid) at the exact
-  moment the device turns toward the customer. Rather than treat that as a
-  blank page with three lines of text, this reinterprets it as a literal
-  market ticket — the physical price-tag/ticket-stub Ana already tears off
-  for a customer — torn from a roll and dropped into view.
+  moment the device turns toward the customer. This reinterprets it as a
+  literal market ticket — the physical price-tag/ticket-stub Ana already
+  tears off for a customer — torn from a roll and dropped into view, now
+  made explicit (v3) as the *same shape* as every small TagStub marker
+  elsewhere in the app: a punched hole + string loop at the top, in
+  addition to the torn scalloped edges top and bottom.
 
-  Pushed further this pass (v1 self-critique explicitly flagged the notch
-  as too restrained): larger notches top *and* bottom, so the ticket reads
-  as a stub floating between two tears; a slight rotational swing on
-  drop-in instead of a straight vertical slide.
+  v3 pushes past v1/v2's own self-critique ("the scalloped edge... could
+  read as more deliberate at a slightly larger notch size"): the notch
+  radius now comes from the shared --tear-notch-lg token (15px, up from a
+  hardcoded 12px), and a real punched hole/string loop was added — the
+  detail that actually closes the loop between this screen and every
+  small tag elsewhere, rather than leaving the receipt as "a card with a
+  scalloped edge" that happens to share a color family with the rest of
+  the system.
 */
 
 .screen {
@@ -24,6 +31,7 @@
   z-index: 30;
   transform-origin: top center;
   animation: swingIn var(--duration-slow) var(--ease-settle);
+  overflow: hidden;
 }
 
 .screen::before,
@@ -32,9 +40,13 @@
   position: absolute;
   left: 0;
   right: 0;
-  height: 26px;
-  background-image: radial-gradient(circle at 15px 13px, var(--color-balanced) 12px, transparent 12.5px);
-  background-size: 30px 26px;
+  height: calc(var(--tear-notch-lg) * 2 + 2px);
+  background-image: radial-gradient(
+    circle at calc(var(--tear-notch-lg) + 3px) calc(var(--tear-notch-lg) + 1px),
+    var(--color-balanced) var(--tear-notch-lg),
+    transparent calc(var(--tear-notch-lg) + 0.5px)
+  );
+  background-size: calc((var(--tear-notch-lg) + 3px) * 2) calc(var(--tear-notch-lg) * 2 + 2px);
   background-repeat: repeat-x;
   pointer-events: none; /* never intercept the exit-zone tap beneath it */
 }
@@ -45,13 +57,43 @@
 
 .screen::after {
   bottom: -1px;
-  background-position: 15px 13px;
   transform: rotate(180deg);
 }
 
+/* the punched hole + string loop — full-scale version of TagStub's own
+   device, sitting just above the torn top edge so the ticket visibly
+   "hangs" the same way every small marker in the system does. */
+.loop {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-3deg);
+  width: 34px;
+  height: 22px;
+  border: 3px solid var(--color-tezontle-dark);
+  border-bottom-color: transparent;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  opacity: 0.9;
+  z-index: 1;
+}
+
+.hole {
+  position: absolute;
+  bottom: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-paper);
+  border: 2.5px solid var(--color-tezontle-dark);
+  box-shadow: inset 0 1px 2px rgba(45, 45, 45, 0.3);
+}
+
 @keyframes swingIn {
-  from { transform: translateY(-22px) rotate(-1.4deg); opacity: 0; }
-  60% { transform: translateY(2px) rotate(0.6deg); opacity: 1; }
+  from { transform: translateY(-22px) rotate(-2.2deg); opacity: 0; }
+  55% { transform: translateY(3px) rotate(1.2deg); opacity: 1; }
+  75% { transform: translateY(-1px) rotate(-0.4deg); }
   to { transform: translateY(0) rotate(0deg); opacity: 1; }
 }
 
@@ -101,6 +143,17 @@
   line-height: 1;
   color: var(--color-tezontle-dark);
   font-variant-numeric: tabular-nums;
+  padding-bottom: 10px;
+  /* the "money always sits on a tag" rule (README §3), at its quietest
+     possible execution here on purpose — the hero number gets a stitched
+     underline, not a boxed backing, so it still reads as the one thing on
+     this screen that matters (v2's own "Chanel — one accessory" restraint
+     carried forward, not abandoned just because this pass adds a system
+     rule). */
+  background-image: var(--stitch-line);
+  background-repeat: repeat-x;
+  background-size: 9px 2px;
+  background-position: bottom center;
 }
 
 .business {

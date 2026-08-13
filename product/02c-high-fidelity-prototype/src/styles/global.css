@@ -1,4 +1,5 @@
 @import './tokens.css';
+@import './patterns.css';
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -10,13 +11,15 @@ html, body, #root {
 
 body {
   margin: 0;
-  /* Ambient texture (--pattern-weave, tokens.css): a near-invisible echo of
-     the brand mark tiled under every screen. Applied once, here, at the
-     outermost layer — most content zones (grid scroll areas, cold-start/
-     idle canvases, catalog lists) never paint their own opaque background,
-     so it shows through consistently everywhere except surfaces that are
-     deliberately a different material (paper tiles, sheets, nav bar). */
-  background-image: var(--pattern-weave);
+  /* Ambient texture (--pattern-grain, tokens.css v3): a genuine paper-fiber
+     grain under every screen's canvas, replacing v2's near-invisible
+     brand-mark cross-hatch. Most content zones (grid scroll areas, cold-
+     start/idle canvases, catalog lists) never paint their own opaque
+     background, so it shows through consistently; paper surfaces (tiles,
+     sheets, the receipt) layer their own `.grain` on top (patterns.css) so
+     the texture reads as "this object is made of cardstock," not a global
+     wash. */
+  background-image: var(--pattern-grain);
   background-color: var(--color-balanced);
   color: var(--color-obsidian);
   font: var(--text-body);
@@ -53,7 +56,7 @@ input {
   margin: 0 auto;
   min-height: 100vh;
   min-height: 100dvh;
-  background-image: var(--pattern-weave);
+  background-image: var(--pattern-grain);
   background-color: var(--color-balanced);
   display: flex;
   flex-direction: column;

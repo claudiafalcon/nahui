@@ -1,36 +1,27 @@
+/*
+  CatalogRow — v3: the thin per-Product accent rail is dropped (the marker
+  itself now carries full color at real size, so a separate sliver was
+  redundant, see README "Design System — v3" §3/"what's dropped"). The
+  divider is the shared stitch-rule (patterns.css .stitchBottom) instead of
+  a plain hilo hairline — the discipline this build's own "flat list, no
+  card-per-row" rule keeps intact (no bordered/shadowed row was
+  introduced), just with a divider that's specific to a clothing vendor's
+  own material world instead of a generic gray line.
+*/
 .row {
   width: 100%;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-1) var(--space-3) 12px;
-  border-bottom: 1px solid var(--color-hilo);
-  background: none;
-  border-left: none;
-  border-right: none;
-  border-top: none;
+  padding: var(--space-3) var(--space-1) 14px 4px;
+  /* background-color, not the `background` shorthand — the shorthand would
+     reset the .stitchBottom global class's own background-image (patterns
+     .css), since both target the same property family on this element. */
+  background-color: transparent;
+  border: none;
   text-align: left;
   cursor: pointer;
   position: relative;
-}
-
-/* A thin per-Product rail at the row's own leading edge — the same tone
-   this Product's tag/tile carries everywhere else it appears. Deliberately
-   not a card (no side radius, no shadow, no inset) — a flat identity cue
-   on an otherwise plain list row, per this build's own "flat list, no
-   card-per-row" discipline. */
-.rail {
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--tone-bg);
-}
-
-.row.dimmed .rail {
-  background: var(--color-hilo);
 }
 
 .row.dimmed .name,
@@ -62,20 +53,21 @@
   color: #6B6259;
 }
 
+/* the price tag — money that belongs to this specific Product, so it sits
+   inside the shared .moneyTag primitive (patterns.css) rather than a plain
+   outlined pill. */
 .price {
   appearance: none;
-  border: 1.5px solid var(--color-hilo);
-  background: var(--color-paper);
-  border-radius: var(--radius-pill);
-  padding: 8px 16px;
+  padding: 8px 14px;
   font: var(--text-body-sm);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-coral-aa);
   cursor: pointer;
   flex-shrink: 0;
   transition: transform var(--duration-fast) var(--ease-standard);
+  transform: rotate(-2deg);
 }
 
 .price:active {
-  transform: scale(0.94);
+  transform: rotate(-2deg) scale(0.94);
 }

@@ -44,7 +44,7 @@ export function Idle({
       {menuOpen && (
         <Sheet onDismiss={() => setMenuOpen(false)}>
           <button
-            className={sheetStyles.sheetRow}
+            className={`${sheetStyles.sheetRow} stitchBottom`}
             onClick={() => {
               setMenuOpen(false);
               onOpenSettingsPlaceholder();

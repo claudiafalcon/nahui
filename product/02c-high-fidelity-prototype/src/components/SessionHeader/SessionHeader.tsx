@@ -42,7 +42,7 @@ export function SessionHeader({
       {menuOpen && (
         <Sheet onDismiss={() => setMenuOpen(false)}>
           <button
-            className={`${styles.sheetRow} ${styles.destructive}`}
+            className={`${styles.sheetRow} ${styles.destructive} stitchBottom`}
             onClick={() => {
               setMenuOpen(false);
               onCloseSession();
@@ -51,7 +51,7 @@ export function SessionHeader({
             Cerrar sesión
           </button>
           <button
-            className={styles.sheetRow}
+            className={`${styles.sheetRow} stitchBottom`}
             onClick={() => {
               setMenuOpen(false);
               onOpenSettingsPlaceholder();

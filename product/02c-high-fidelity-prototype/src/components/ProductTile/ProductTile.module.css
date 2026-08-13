@@ -1,87 +1,114 @@
+/*
+  ProductTile — v3: the tile is the Swing Tag shape at "medium" scale (see
+  ProductTile.tsx doc comment / README "Design System — v3"). Full tone
+  wash (not a thin accent bar), a die-cut corner, and its own TagStub
+  marker pinned overlapping the top-left corner rather than living inside
+  the card's own padding.
+
+  Structure: `.tile` (outer button, overflow: visible — lets `.pin` break
+  the frame) > `.pin` (the marker, absolutely positioned, poking above the
+  top edge) + `.surface` (the actual toned/die-cut card, overflow: hidden —
+  this is what clips the die-cut wedge cleanly to the corner; without a
+  separate clipping layer the wedge either gets cut off *with* the pin, or
+  floats free of the tile *with* the pin — a real bug caught and fixed
+  during this pass, see README "Design System — v3" for the note on why
+  this two-layer structure is necessary, not incidental complexity).
+*/
 .tile {
   appearance: none;
   border: none;
   cursor: pointer;
-  background: var(--color-paper);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3) var(--space-3) 14px;
+  background: none;
+  padding: 0;
+  margin-top: 14px;
+  display: block;
+  width: 100%;
+  position: relative;
+  overflow: visible;
+  text-align: left;
+}
+
+.surface {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
   align-items: flex-start;
-  text-align: left;
-  min-height: 108px;
-  position: relative;
+  width: 100%;
+  min-height: 104px;
+  padding: 20px var(--space-3) 14px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--tone-bg) 22%, var(--color-paper));
+  border: 1.5px solid color-mix(in srgb, var(--tone-bg) 45%, transparent);
+  box-shadow: 0 1px 0 rgba(45, 45, 45, 0.05);
   overflow: hidden;
   transition: transform var(--duration-fast) var(--ease-standard),
     background-color var(--duration-base) var(--ease-standard),
     box-shadow var(--duration-base) var(--ease-standard);
-  box-shadow: 0 1px 0 rgba(45, 45, 45, 0.05);
 }
 
-/* the die-cut corner — a small wedge in the canvas color biting into the
-   tile's own top-right corner, echoing the receipt's torn-ticket edge at
-   the smallest scale this system uses. A pseudo-element wedge, not a
-   clip-path on the tile itself, so it never fights the tile's own rounded
-   geometry or its tap-target hit area. */
-.tile::after {
+/* the die-cut corner — a wedge in the canvas color biting into the tile's
+   own top-right corner, echoing the receipt's torn-ticket edge at the
+   smallest structural scale this system uses. Clipped by `.surface`'s own
+   overflow: hidden, so only the portion actually straddling the corner is
+   ever visible — the fix for the v3 bug named above. */
+.surface::after {
   content: '';
   position: absolute;
-  top: -9px;
-  right: -9px;
-  width: 22px;
-  height: 22px;
+  top: -10px;
+  right: -10px;
+  width: 26px;
+  height: 26px;
   background: var(--color-balanced);
   transform: rotate(45deg);
   border-radius: 3px;
 }
 
-/* the accent — a thin, per-Product-toned bar along the tile's own bottom
-   edge. The same tone reappears on this Product's TagStub, its Catalog
-   row, and its Venta Actual chip once tapped — one color, learned once,
-   recognized everywhere, the actual answer to "recognizability of
-   products" without invented product photography. */
-.accent {
+/* the pinned marker — deliberately breaks the tile's own frame (negative
+   top offset relative to `.tile`, which is overflow: visible), the literal
+   "a tag pinned onto folded merchandise" read this pass leads with, rather
+   than an icon boxed inside the card. */
+.pin {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 4px;
-  background: var(--tone-bg);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-}
-
-.topRow {
+  top: -14px;
+  left: 12px;
   display: flex;
   align-items: center;
   gap: 6px;
+  z-index: 1;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 22px;
   width: 100%;
+  position: relative;
 }
 
 .countBadge {
   font: var(--text-meta);
   font-weight: 700;
-  color: var(--color-tezontle-dark);
-  background: var(--color-hilo);
+  color: var(--color-white);
+  background: var(--color-tezontle-dark);
   border-radius: var(--radius-pill);
   padding: 2px 7px;
   line-height: 1.4;
+  box-shadow: 0 1px 3px rgba(45, 45, 45, 0.25);
 }
 
-.tile:active:not(:disabled) {
+.tile:active:not(:disabled) .surface {
   transform: scale(0.96);
-  background: color-mix(in srgb, var(--tone-bg) 16%, var(--color-paper));
+  background: color-mix(in srgb, var(--tone-bg) 32%, var(--color-paper));
 }
 
 /* a tile already tapped into this Sale reads as visibly "in progress" —
-   a quiet toned wash and a slightly stronger accent, not a badge alone,
-   so an active sale's own tiles read differently from the resting grid
-   around them at a glance. */
-.tile.active {
-  background: color-mix(in srgb, var(--tone-bg) 9%, var(--color-paper));
-}
-.tile.active .accent {
-  height: 6px;
+   a stronger toned wash and border, not a badge alone, so an active sale's
+   own tiles read differently from the resting grid around them at a
+   glance. */
+.tile.active .surface {
+  background: color-mix(in srgb, var(--tone-bg) 34%, var(--color-paper));
+  border-color: var(--tone-bg);
 }
 
 .name {
@@ -95,16 +122,14 @@
   color: #8A8177;
 }
 
-.tile.soldOut {
+.tile.soldOut .surface {
   cursor: default;
-  opacity: 0.55;
+  opacity: 0.6;
+  background: var(--color-paper);
+  border-color: var(--color-hilo);
 }
 
 .tile.soldOut .name,
 .tile.soldOut .caption {
   color: #9C9186;
-}
-
-.tile.soldOut .accent {
-  background: var(--color-hilo);
 }

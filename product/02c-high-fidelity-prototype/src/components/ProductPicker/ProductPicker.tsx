@@ -73,7 +73,7 @@ export function ProductPicker({
         autoFocus
       />
       {showAddNew && (
-        <button className={styles.addNew} onClick={() => setCreatingName(query.trim())}>
+        <button className={`${styles.addNew} stitchBottom`} onClick={() => setCreatingName(query.trim())}>
           + Agregar "{query.trim()}" como producto nuevo
         </button>
       )}
@@ -84,8 +84,8 @@ export function ProductPicker({
           </p>
         )}
         {visible.map((p) => (
-          <button key={p.id} className={styles.option} onClick={() => onSelectExisting(p)}>
-            <TagStub name={p.name} size={26} />
+          <button key={p.id} className={`${styles.option} stitchBottom`} onClick={() => onSelectExisting(p)}>
+            <TagStub name={p.name} size={30} />
             {p.name}
           </button>
         ))}

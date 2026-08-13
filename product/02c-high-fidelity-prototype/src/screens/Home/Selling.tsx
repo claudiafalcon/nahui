@@ -82,7 +82,9 @@ export function Selling({
           continuous paper-toned surface with its own torn lower edge,
           reading as a single "this is where the live transaction lives"
           zone, distinct from the catalog grid below it. */}
-      <div className={`${styles.transactionPanel} ${items.length > 0 ? styles.transactionPanelActive : ''}`}>
+      <div
+        className={`${styles.transactionPanel} grain tearBottom tearSm ${items.length > 0 ? styles.transactionPanelActive : ''}`}
+      >
         <SessionHeader
           revenue={totals.revenue}
           count={totals.count}
@@ -115,7 +117,7 @@ export function Selling({
           </div>
 
           {items.length > 0 && (
-            <div className={styles.footer}>
+            <div className={`${styles.footer} stitchTop`}>
               <Button onClick={handleFinalize}>
                 Finalizar Venta <span className={styles.footerCount}>· {articulos(items.length)}</span>
               </Button>

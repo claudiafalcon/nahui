@@ -73,13 +73,38 @@
   --tag-12-bg: #B3733A; /* Caramel — new, same family */
   --tag-12-ink: #FFFCF8;
 
-  /* ---- Ambient texture — a near-invisible echo of the brand mark's own
-     "four elements meeting at a shared center," tiled underneath every
-     screen's canvas. 5% opacity, obsidian, no color of its own — texture,
-     not decoration: the same move as fabric weave under a market stall's
-     paper goods. Applied once, at the app shell's own background
-     (see global.css) — never per-component. */
-  --pattern-weave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='none' stroke='%232D2D2D' stroke-width='1.5' stroke-linecap='round' opacity='0.02'%3E%3Cpath d='M28 22v10M23 27h10'/%3E%3Cpath d='M90 76v10M85 81h10'/%3E%3C/g%3E%3C/svg%3E");
+  /* ---- Ambient texture (v3) — a genuine cardstock/paper grain (fractal
+     noise), replacing v2's near-invisible brand-mark cross-hatch (self-
+     assessed in this same pass as contributing nothing legible at 2%
+     opacity — see README "Design System — v3"). Applied at the app-shell
+     canvas level (global.css) *and* on every literal paper/cardstock
+     surface — ProductTile, Sheet, ReceiptTicket — via the `.grain` class in
+     patterns.css, because grain reads as texture only on a surface that's
+     supposed to feel like actual paper, not as a page-wide wash. */
+  --pattern-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.176 0 0 0 0 0.176 0 0 0 0 0.176 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* ---- The stitch-rule (v3, new) — a dashed "sewing machine" line,
+     replacing plain 1px hilo hairlines wherever this build divides content.
+     Specific to Ana as a *clothing* vendor (not just "a market vendor") —
+     her own product is literally stitched. One primitive value, reused as a
+     background-image tile (see e.g. CatalogRow.module.css) rather than
+     redrawn per component, so every divider in the system is provably the
+     same line. */
+  --stitch-line: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-obsidian) 24%, transparent) 0 3px,
+    transparent 3px 8px
+  );
+
+  /* ---- Tear/perforation scale (v3) — the two sizes the signature "Swing
+     Tag" perforation motif is drawn at, named once so NavBar, the
+     transaction panel, Sheet, and ReceiptTicket all reference the same two
+     values instead of each hand-tuning their own radius/spacing (v2's own
+     gap: the receipt's notch and the nav's notch shared no token, and per
+     the v1 self-critique the small scale read as too faint to register as
+     the same device at all). */
+  --tear-notch-sm: 7px;
+  --tear-notch-lg: 15px;
 
   /* ---- Typography (brand-guide.md: Fredoka display / Inter UI) ---- */
   --font-display: 'Fredoka', system-ui, sans-serif;

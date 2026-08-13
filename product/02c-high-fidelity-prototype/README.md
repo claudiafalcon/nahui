@@ -424,6 +424,276 @@ from describing it — but the receipt-plus-tag-chip-plus-tile-accent system
 working together, system-wide, off one reused physical metaphor, is the
 strongest case this pass has for it.
 
+## Design System — v3 (2026-08-13) — Product Owner direct feedback: v2 confirmed
+as a real improvement over Figma Medium-Fidelity and v1, but the next pass
+should establish Nahui's visual *language* first, not keep polishing screens
+
+The Product Owner's own framing for this pass, relayed directly: *"What
+should make Nahui instantly recognizable? What is Nahui's signature visual
+element? What recurring visual language ties together inventory, products,
+selling, receipts, loyalty and events? ... Do not optimize one screen at a
+time. Instead, establish a coherent design language first, then apply it
+consistently ... I would rather see one bold, coherent direction than five
+conservative improvements."* This section is that answer — a design-system
+document first, an implementation record second. Functional behavior,
+merchant workflow, domain concepts, and navigation intent are unchanged
+throughout (verified below); this pass is visual-only.
+
+### 1. Nahui's visual thesis
+
+**Ana's whole business already runs on tags.** What she has is a rack of
+tagged garments. What she sells is a tag coming off that rack. What she
+hands over is a torn ticket stub. Nahui doesn't decorate a checkout screen
+with a market motif borrowed from Ana's world — it *is built from* one
+physical object she already touches a hundred times a bazaar: the swing
+tag / price tag, punched hole and string and all, rendered at five
+different scales, from a tiny catalog marker up to the full-screen receipt.
+The test this pass was held to: a merchant should recognize a Nahui screen
+by its *silhouette* — the shape of its corners, its markers, its dividers —
+not only by its color, the way v1 and (to a lesser extent) v2 both still
+required.
+
+### 2. The signature element(s) — "the Swing Tag," at five scales
+
+One shape — a rounded body, a die-cut corner notch, a punched hole, a
+loop of string, a small hand-placed tilt — reused as literal *structure*,
+not ornament, at five scales across the app:
+
+1. **Micro (16–20px)** — `VentaActualTray`'s chips, now hanging from a
+   stitched "string" line drawn across the top of the tray, not just
+   loose colored pills.
+2. **Small (44–56px)** — `CatalogRow`'s marker, enlarged from v2's 38px and
+   given real weight (a visible border, a bigger punched hole, a firmer
+   string) so it reads as an actual object, not an icon.
+3. **Medium (the tile itself)** — `ProductTile` *is* the tag shape now: a
+   full tone wash (not a thin accent sliver), a die-cut corner, and its own
+   marker *pinned outside the frame*, overlapping the top-left corner
+   rather than living inside the card's padding — a tag pinned onto a
+   folded stack of merchandise, not an icon boxed inside a rounded
+   rectangle.
+4. **Large (full-bleed strips)** — the Selling transaction panel's torn
+   lower edge, `NavBar`'s rising edge, `Sheet`'s rising edge — now drawn
+   from one shared formula (`--tear-notch-sm`, `patterns.css`'s
+   `.tearTop`/`.tearBottom`) instead of three components each hand-rolling
+   their own slightly-different gradient, which is what v2 actually shipped
+   despite its own README claiming one shared vocabulary (a real
+   discrepancy this pass corrected — see §6).
+5. **Full screen — `ReceiptTicket`**, pushed past v1/v2's own self-critique
+   ("the scalloped edge... could read as more deliberate at a slightly
+   larger notch size"): a bigger notch (`--tear-notch-lg`, 15px, up from a
+   hardcoded 12px), *and*, new in v3, an actual punched hole + string loop
+   at the very top — the explicit reveal that the receipt isn't just
+   torn-ticket-*styled*, it's the same TagStub shape as every small marker
+   in the app, just at its biggest size. This is the moment the system
+   closes the loop for the merchant: the receipt she just handed a
+   customer is visibly the same object as the tag she pinned on the rack
+   an hour earlier.
+
+Why this is specifically Nahui's and not any generic merchant/payment
+app's: no POS or fintech product's structural DNA is a physical clothing
+tag, because none of them are built for a vendor who spends her day
+literally tagging garments. A rounded-corner coral system with soft tiles
+(v1's real risk, and v2's own named residual risk) is imitable by any
+competitor in an afternoon; a system where five completely different UI
+surfaces are provably the same die-cut, punched, stringed shape at
+different scale is not.
+
+### 3. The design-system direction — primitives, stated as a system
+
+New in v3, centralized in `src/styles/patterns.css` (imported once,
+alongside `tokens.css`) rather than re-implemented per component — this is
+the literal answer to "what graduates from a one-off screen decision to a
+real primitive":
+
+- **`.grain`** — a genuine paper/cardstock fiber texture (SVG
+  `feTurbulence`, `--pattern-grain` in `tokens.css`), applied to every
+  literal paper surface (`ProductTile`, `Sheet`, `ReceiptTicket`) and once
+  at the app-shell canvas. **Replaces v2's `--pattern-weave`** (a 2%-opacity
+  brand-mark cross-hatch that, honestly assessed against the actual
+  screenshots taken during this pass, contributed nothing legible — see §6,
+  "what gets dropped").
+- **`.tearTop` / `.tearBottom`** — the shared small-scale perforation strip
+  (`--tear-notch-sm`), one formula reused by `NavBar`, the transaction
+  panel, and `Sheet`'s rising edge. `ReceiptTicket` keeps its own
+  deliberately *deeper* scallop at `--tear-notch-lg` — a genuine tear, not
+  a row of sprocket holes — named as an intentional distinction, not an
+  inconsistency.
+- **`--stitch-line` / `.stitchTop` / `.stitchBottom`** — a new primitive
+  this pass introduces: a dashed "sewing machine" line replacing every
+  plain 1px hilo hairline (`CatalogRow`, `RegisterMerchandise`'s committed
+  lines, `SessionHeader`'s sheet rows, `ProductPicker`'s rows, every
+  footer divider). Specific to Ana as a *clothing* vendor, not just "a
+  market vendor" generically — her own product is literally stitched.
+  Cheap to apply everywhere a divider already existed, which is exactly
+  why it reads as systemic rather than decorative.
+- **`.moneyTag`** — the hard rule this pass adds: **a price that belongs
+  to a specific Product or transaction renders inside a small tilted tag,
+  never as bare running text.** Applied to `CatalogRow`'s price (now a
+  tilted tag-shaped tap target instead of an outlined pill) and to
+  `ReceiptTicket`'s total (a quiet stitched underline under the hero
+  number — deliberately the lightest possible execution of the rule, so
+  the one number that actually matters keeps v2's own "Chanel — one
+  accessory" restraint rather than getting boxed in). **Deliberately not**
+  applied to `SessionHeader`'s running "Hoy: $X" — that's a live
+  aggregate, not a discrete price, and stays plain Fredoka per the
+  existing type-restraint rule. A rule that applied to every number on
+  screen wouldn't be a rule, it'd be a decoration.
+- **Per-Product tone** (`productIdentity.ts`, unchanged in substance from
+  v2 — still 12 hand-picked swatches, still deterministic, still
+  presentation-only) now does real work instead of a thin accent: it's the
+  tile's own background wash, the marker's own fill, the price tag's own
+  border. The selling grid is now visibly "an assorted rack of colored
+  tags," which is the literal, structural answer to "recognizability of
+  products," not a color-coding afterthought.
+
+### 4. Rationale — tied to Ana's actual context
+
+Ana is mid-sale, phone in one hand, a customer waiting, deciding in
+seconds whether to trust a screen enough to keep using it instead of her
+notebook. Every choice above optimizes for *recognition speed under real
+pressure*, not decoration:
+
+- **A shape she already knows beats a color she has to learn.** A tag's
+  silhouette (notch, hole, string) is legible at a glance because it's not
+  an abstract UI convention — it's an object from her own stall. Color
+  alone (v1's whole strategy, and still most of v2's) requires learning an
+  arbitrary mapping; a shape she recognizes from her own physical world
+  requires nothing.
+- **The stitch-rule and grain add real texture without adding a single
+  extra tap, read, or decision.** Both are pure background-layer
+  primitives — zero interaction cost, all of the "this feels like a
+  physical, considered product" payoff. This matches
+  `global-principles.md`'s own UX principle that the fastest interaction
+  is the one that never happens: visual richness here costs Ana nothing.
+- **The marker breaking the tile's frame is a deliberate risk, taken for
+  a reason.** A tag pinned *onto* a surface, not contained *inside* a
+  card, is a stronger, more literal read of "this represents real
+  merchandise" than a bordered rectangle with an icon in the corner — the
+  exact difference between a generic dashboard tile and something that
+  looks like it was designed for a market stall specifically.
+- **This is what makes it a merchant tool, not a generic SaaS dashboard.**
+  A generic dashboard shows a price in a stat card or plain text; Nahui
+  shows a price on a tag, because that's genuinely how prices exist in
+  Ana's world. A generic empty state uses an icon-and-copy hero; Nahui's
+  cold start uses the same tilted tag-badge treatment the rest of the
+  system uses. Nothing here is arbitrary brand flourish — every primitive
+  traces back to an object Ana already owns.
+
+### 5. Extending to Loyalty and Events (a system question, not a scope
+expansion — neither has a built screen in this slice)
+
+The whole point of promoting these from "something v2 did once" to named
+primitives in `patterns.css` is that they're not screen-specific. A future
+Loyalty punch-card is, structurally, a strip of the same punched-hole
+motif already used at micro scale — stamps instead of a hole-and-string,
+same shared vocabulary. A future Events surface (a market day) reads
+naturally as a paper wristband/entry ticket using the exact same
+`.tearTop`/`.tearBottom` perforation primitive `NavBar` and `Sheet` already
+consume — no new visual language would need inventing, only a new
+consumer of the same tokens. That extensibility is the actual test of
+whether this pass produced a *system* rather than five more one-off
+decorations, and it's why the primitives live in one shared file instead
+of being redrawn per screen.
+
+### 6. Honest accounting — what's kept, what changed, what's dropped
+
+**Kept, because it already worked:** the shipped brand palette exactly as
+`brand-guide.md` states it (no reinvention); the `--color-paper`/
+`--color-hilo` extensions; the Fredoka/Inter restraint rule (extended, not
+loosened — see the money-tag scoping note in §3); the flat-list-no-
+card-per-row discipline in `CatalogRow`; the torn-ticket receipt as the
+hero signature moment; the 12-tone deterministic per-Product color system;
+the existing motion easing curves (`--ease-settle`'s slight overshoot).
+These are the actual foundation this pass builds on, not things reinvented
+for novelty's sake.
+
+**Changed, because it was real but too quiet to register:** every
+perforation notch is bigger and now token-driven instead of hand-tuned per
+component; `TagStub` itself is heavier (a visible border, a bigger hole, a
+firmer string) since it now has to carry the system's entire vocabulary,
+not just be a small letter marker; `ProductTile` went from "a card with a
+thin colored accent" to "the tag shape itself, with the marker breaking
+its frame"; every plain hairline divider became the stitch-rule.
+
+**Dropped, after an honest look at the actual rendered screenshots (the
+Product Owner's own instruction — "critically assess v1 and v2 honestly,"
+not assume the last build was automatically the right foundation):**
+
+- **v2's `--pattern-weave`** (the 2%-opacity brand-mark cross-hatch). It
+  is not visible in a single screenshot taken during this pass, at any
+  zoom level checked — a decorative idea that never actually shipped
+  legibly. Replaced by real paper grain, applied only where the metaphor
+  is literal (actual paper/cardstock surfaces), not as a page-wide wash.
+- **The thin 3–6px colored accent bar/rail** on `ProductTile` and
+  `CatalogRow` as the *primary* color cue — too subtle to read as "this
+  grid is colorful" from a normal viewing distance, confirmed by
+  comparing v2's own screenshots against this pass's. Replaced by full
+  tone washes and a marker with real size and weight.
+- **A real, non-cosmetic bug caught by actually screenshotting this
+  pass's own work, not assumed away:** `patterns.css`'s first draft of
+  `.grain` set `position: relative` on its host as a convenience. Because
+  `ReceiptTicket`'s `.screen` specifically requires `position: absolute`
+  (`inset: 0`, full-viewport), and both rules share the same specificity
+  with `.grain` loading later in cascade order, `.grain` silently
+  overrode it — collapsing the full-screen receipt down to its own content
+  height and pushing its bottom scalloped edge up to sit awkwardly mid-
+  screen, right under the business name, instead of at the true bottom of
+  the viewport. Caught by literally screenshotting the receipt state and
+  noticing a stray row of gray circles where none should be, root-caused
+  with `getBoundingClientRect`/`getComputedStyle` (confirmed `position:
+  relative` where `absolute` was required), and fixed by removing
+  `.grain`'s own `position` declaration entirely — every current consumer
+  already establishes its own positioning context, so the primitive never
+  needed to set one. Documented in `patterns.css` itself so a future
+  consumer doesn't reintroduce the same assumption.
+- **A second bug from the same restructuring work:** `ProductTile`'s
+  die-cut corner notch, when the tile was first given `overflow: visible`
+  (needed so the new pinned marker could break the frame above the tile),
+  stopped being clipped to the corner and rendered as a stray floating
+  white diamond beside the tile instead of a clean bite out of its corner
+  — visible in this pass's own first-draft screenshot. Fixed by splitting
+  `ProductTile` into two layers: an outer `.tile` (`overflow: visible`,
+  hosts only the breaking-the-frame marker) wrapping an inner `.surface`
+  (`overflow: hidden`, hosts the toned card and its die-cut corner) — the
+  clipping the notch needs and the overflow the marker needs were never
+  compatible on one element, so they're now on two.
+- **v2's own documentation overstated what shipped**, a discrepancy this
+  pass corrected rather than perpetuated: v2's README claimed `Sheet`
+  "gains the receipt's own perforation motif at progressively smaller
+  scale," but `Sheet.module.css` at the start of this pass had no such
+  treatment — only a plain handle pill. `Sheet` now genuinely has the
+  perforation (via the shared `.tearTop`/`.tearSm` primitive, clipped to
+  its own rounded corners via `overflow: hidden`), closing a gap between
+  what was documented and what was actually built.
+
+**What still feels the most generic after this pass, named rather than
+hidden:** the Idle/ColdStart screens' fundamental composition (a centered
+badge, a headline, one CTA, a lot of resting canvas below it) is still the
+closest thing in this system to "any onboarding empty state" — improved
+(the badge now carries the tag family's own tilt and grain, tying it to
+the rest of the system rather than being a one-off hero treatment) but not
+restructured, on the same reasoning v2 already gave and this pass didn't
+find a better answer to: there is only one action to offer on that screen,
+and "density is not the objective." This is the one place a future pass
+should look first if the Product Owner wants to push further.
+
+### Verification — functional behavior unchanged
+
+No file under `src/domain/` (`types.ts`, `store.tsx`, `selectors.ts`,
+`format.ts`, `id.ts`) was read for editing purposes or modified — confirmed
+via `git status`/`git diff --stat` scoped to that directory, both empty, at
+the end of this pass. Every visual primitive added is either pure CSS
+(`patterns.css`, `tokens.css`) or a presentation-only prop/className change
+in an existing component; no new store action, no new selector, no new
+domain-shaped data was introduced. The full scripted walkthrough (Home cold
+start → register a Product → Catalog → Selling → tap a tile twice → close
+edge cases → Finalizar Venta → receipt → back to Catalog with the real
+decremented count) was re-run against this build via a real headless-Chrome
+session driving the live dev server, not a static mock, and every state
+transition (`disponibles` counts, running totals, the receipt's own total)
+matched hand-calculated expectations exactly as in v1/v2 — nothing in the
+underlying data flow changed, only its presentation.
+
 ## File structure
 
 ```
@@ -434,6 +704,10 @@ product/02c-high-fidelity-prototype/
     main.tsx, App.tsx         — StoreProvider + tab shell (frozen 4-tab nav)
     styles/
       tokens.css              — design tokens (see "Design plan" above)
+      patterns.css              — v3: shared system primitives (.grain,
+                                 .tearTop/.tearBottom, .stitchTop/
+                                 .stitchBottom, .moneyTag) — see "Design
+                                 System — v3" §3
       global.css               — resets, app-shell device frame
       productIdentity.ts       — v2: deterministic per-Product tone/tilt
                                  (presentation-only, derives from Product.name)

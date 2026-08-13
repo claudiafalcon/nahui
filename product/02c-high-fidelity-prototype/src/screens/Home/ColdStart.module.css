@@ -19,7 +19,7 @@
 .mark {
   width: 56px;
   height: 56px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) 3px;
   background: var(--color-blush);
   display: flex;
   align-items: center;
@@ -27,6 +27,7 @@
   position: relative;
   z-index: 1;
   box-shadow:
+    0 4px 10px rgba(45, 45, 45, 0.14),
     0 0 0 14px color-mix(in srgb, var(--color-blush) 14%, transparent),
     0 0 0 32px color-mix(in srgb, var(--color-blush) 7%, transparent);
   animation: markSettle var(--duration-slow) var(--ease-settle) both;
@@ -34,7 +35,8 @@
 
 @keyframes markSettle {
   from { transform: scale(0.7) rotate(-14deg); opacity: 0; }
-  to { transform: scale(1) rotate(0deg); opacity: 1; }
+  60% { transform: scale(1.04) rotate(-5deg); opacity: 1; }
+  to { transform: scale(1) rotate(-3deg); opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
