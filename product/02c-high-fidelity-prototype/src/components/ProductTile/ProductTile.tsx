@@ -49,9 +49,23 @@ export function ProductTile({
           rather than a floating shape — see .surface's own comment). */}
       <span className={styles.pin}>
         <TagStub name={name} muted={soldOut} size={40} />
-        {active && <span className={styles.countBadge}>×{countInSale}</span>}
+        {active && (
+          <span key={countInSale} className={styles.countBadge}>
+            ×{countInSale}
+          </span>
+        )}
       </span>
-      <span className={`${styles.surface} grain`}>
+      {/* `key` forces a remount on every qty change (not just the first tap),
+          replaying `.confirmBump`/`.countBadge`'s own entrance keyframes —
+          the tactile "yes, got it" feedback a real tap during a live sale
+          needs, distinct from `:active`'s press-only scale (which reverts
+          the instant she lifts her thumb, before she's looked back down at
+          the tile). Only applied once `active` (never on the tile's own
+          first paint), so a fresh grid never appears to "pop" on load. */}
+      <span
+        key={active ? countInSale : 'idle'}
+        className={`${styles.surface} grain ${active ? styles.confirmBump : ''}`}
+      >
         <span className={styles.body}>
           <span className={styles.name}>{name}</span>
           <span className={styles.caption}>{soldOut ? '0 disponibles' : `${available} disponibles`}</span>

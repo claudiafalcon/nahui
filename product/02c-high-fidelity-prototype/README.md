@@ -4,6 +4,13 @@ Real, running React/TypeScript vertical slice: **Home → Inventario → Registr
 mercancía → Selling → Digital receipt.** Built per `decision-log.md` D41 —
 placement/architecture ruling only; this file is the artifact itself.
 
+**Design system reference:** `DESIGN-SYSTEM.md` — the structured, reusable
+rules (tokens, primitives, the Swing Tag at five scales, typography/motion
+roles, content conventions). This README stays the *history* of how the
+system was arrived at, pass by pass (the "Design plan" / "Design System —
+v1/v2/v3/Demo Polish" sections below) — `DESIGN-SYSTEM.md` is the *what a
+new screen should follow*, stated once instead of re-derived from prose.
+
 Not disposable demo code, not yet `03-build`. The Product Owner will decide,
 from what's running here, whether this becomes Nahui's primary living
 prototype. Scope, source-of-truth hierarchy, and functional/visual freedom
@@ -694,11 +701,125 @@ transition (`disponibles` counts, running totals, the receipt's own total)
 matched hand-calculated expectations exactly as in v1/v2 — nothing in the
 underlying data flow changed, only its presentation.
 
+## Demo Polish pass (2026-08-13) — Product Owner-approved visual direction
+(v3), focused pass to prepare for showing this to a real external audience
+
+The Product Owner approved v3's Swing Tag direction outright — this pass is
+explicitly *not* another design exploration. It is bounded: consistency,
+polish, and first-impression quality on top of what's already approved,
+"fix only issues that materially improve the first impression," not an
+exhaustive audit. Functional behavior, merchant workflow, domain concepts,
+and navigation are unchanged throughout (verified below, same discipline as
+every prior pass).
+
+**1. Naming — "Sesión rápida" → "Venta rápida."** Replaced in both places
+the approved spec's own copy appears in this build: `SessionHeader`'s title
+row and `Idle`'s primary CTA (now "Iniciar Venta Rápida"). Reasoning
+(Product Owner's own framing, adopted as-is): Ana is starting a selling
+workflow, not a login session — "sesión" reads as a technical/account term
+where "venta" is already her working vocabulary. **This is a prototype-only
+naming decision, not a spec correction** — `product/02-ux/home.md` itself
+still specifies "Sesión rápida" (§3.4, §3.7b) and is unowned by this build;
+if the Product Owner wants this rename to persist beyond this prototype, it
+needs to land back in the approved spec through `ux-designer`, not just
+here. Flagged, not silently done. Both occurrences were kept identical on
+purpose — the spec's own §3.7b amendment explicitly reuses one term across
+the CTA and the header to close a prior cross-screen-consistency gap;
+diverging the two would reintroduce exactly that gap. **One honest
+residual concern, not resolved, surfaced for the Product Owner to weigh:**
+"Venta rápida" (the header eyebrow) now sits directly above "Hoy: $X · N
+ventas" and "Venta actual: N artículos" — three distinct uses of "venta"
+in roughly 80px of vertical space, naming three different domain concepts
+(the Session, a count of finalized Sales, the in-progress Sale). Mitigated
+today by treatment, not wording (`DESIGN-SYSTEM.md` §7) — the eyebrow is
+small-caps/letter-spaced/grey, "Venta actual" is bold sentence-case — but
+this is worth a fresh look if a future pass adds a fourth "venta"-prefixed
+label to the same zone. A terminology-consistency sweep of the rest of the
+slice found nothing else stale — every other label (Registrar mercancía,
+Guardar mercancía, Cerrar sesión, Venta actual, disponibles, Finalizar
+Venta) already matches its approved spec section consistently.
+
+**2. Selling screen — interaction feedback, not a redesign.** The screen's
+composition (the unified transaction panel, the tag-chip tray, the tile
+grid) was already strong from v3 and is unchanged. The one real gap: tapping
+a tile had no confirmation *after* release — `:active`'s press-scale reverts
+the instant a thumb lifts, before a merchant mid-sale has looked back down
+at what she tapped. Added `confirmBump` (`ProductTile.module.css`) — a
+quick settle-scale plus a brief tone-colored glow — and `badgePop` for the
+count badge, both keyed to remount on every count-in-sale change (not just
+the first tap), so tapping the same tile twice lands twice. Both use the
+system's existing `--ease-settle` curve (§6 of `DESIGN-SYSTEM.md`) — no new
+motion language, and both respect `prefers-reduced-motion`. Verified with a
+6-Product catalog (not just the 2-Product minimal walkthrough) that the
+"assorted rack of colored tags" read holds up convincingly at a realistic
+catalog size — screenshots reviewed during this pass; see "Honest
+self-assessment" below for the one state (a 1–2-Product catalog) where the
+grid still reads sparse, and why that wasn't chased further.
+
+**3/4. Design language — reinforced, not extended.** No new signature
+element was added or considered, per explicit instruction. `DESIGN-SYSTEM.md`
+is the concrete deliverable for "reinforce, don't invent": it names the
+Swing Tag's five scales, the four shared primitives, and the rules
+governing them in one place, so a future component reaches for an existing
+primitive by default instead of re-deriving one from README prose.
+
+**A real (if small) bug found and fixed during self-review, not cosmetic.**
+`Selling.tsx`'s transaction panel, `NavBar`, and `Sheet` all referenced a
+`tearSm` class in their JSX (`grain tearBottom tearSm`, `tearTop tearSm`)
+that `patterns.css` never actually defined — an unknown CSS class, silently
+ignored by the browser, so it never caused a visible defect, but it read as
+load-bearing (referenced in three components' own code comments as "the
+shared token") when it was dead. `--tear-notch-sm` already does the sizing
+work directly inside `.tearTop`/`.tearBottom`. Removed from all three
+consumers; confirmed via a clean production build that the compiled CSS
+bundle size is byte-identical before/after (`28.32 kB`), which is the
+expected signature of removing a selector that was never doing anything.
+
+**Verification.** `tsc -b && vite build` clean (zero errors) both before
+committing to the interaction-feedback change and after the `tearSm`
+cleanup. A scripted Puppeteer walkthrough against a live Chrome instance
+(not a mock) re-ran the full loop — cold start → register 1–6 Products
+(both the minimal 2-Product path and a realistic 6-Product catalog) →
+Catalog → Selling (empty, single-item, multi-item, sold-out, multi-Product)
+→ Finalizar Venta → receipt — with screenshots reviewed at each step;
+`disponibles` counts, running totals, and the receipt's own total matched
+hand-calculated expectations exactly, confirming this pass changed
+presentation only. No file under `src/domain/` was read for editing
+purposes or modified.
+
+**Honest self-assessment.** The rename is complete and consistent (grep-
+verified — every remaining "Sesión rápida"/"Sesión Rápida" string in the
+codebase is inside a disclosure comment explaining the deviation, not
+user-facing copy). The Selling screen at a realistic catalog size (5–6
+Products) is genuinely the strongest screen in this build — the "assorted
+rack of colored tags" thesis reads immediately and confidently, and the new
+tap-confirmation feedback closes the one real interaction gap this pass
+found. Where this is honestly still thin: a 1–2-Product catalog (exactly
+what a from-scratch live walkthrough produces before more Products are
+added) leaves real empty canvas below the grid on any modern phone height —
+confirmed by testing both catalog sizes side by side. Not chased further
+this pass: it's the same accepted "only one thing to show, density isn't
+the objective" limitation v2/v3 already named for Idle/ColdStart, it isn't
+fixable without either inventing filler content (explicitly against this
+system's own restraint principle) or artificially padding tile size, and
+the fix that actually matters is operational, not visual — **whoever runs
+the live demo should register 4–6 Products up front**, matching how Ana's
+real catalog would look, not the 2-Product minimal-path state. Worth
+naming as explicit demo guidance rather than a design defect. The receipt,
+ColdStart, and Idle screens were reviewed but not touched further this
+pass — each already went through multiple targeted revisions in v1–v3 and
+none showed a first-impression-blocking issue on review; per this pass's
+own "avoid endless polish cycles" instruction, they were left alone rather
+than polished for polish's sake.
+
 ## File structure
 
 ```
 product/02c-high-fidelity-prototype/
-  README.md                  — this file
+  README.md                  — this file (history, pass-by-pass)
+  DESIGN-SYSTEM.md           — structured reference (tokens, primitives,
+                               the Swing Tag at five scales, typography/
+                               motion roles, content conventions)
   package.json, tsconfig*.json, vite.config.ts, index.html
   src/
     main.tsx, App.tsx         — StoreProvider + tab shell (frozen 4-tab nav)

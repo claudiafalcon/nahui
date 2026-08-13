@@ -53,7 +53,7 @@ function TabIcon({ tab, active }: { tab: TabKey; active: boolean }) {
 
 export function NavBar({ active, onChange }: { active: TabKey; onChange: (tab: TabKey) => void }) {
   return (
-    <nav className={`${styles.bar} tearTop tearSm`} aria-label="Navegación principal">
+    <nav className={`${styles.bar} tearTop`} aria-label="Navegación principal">
       {TABS.map((tab) => {
         const isActive = tab.key === active;
         return (

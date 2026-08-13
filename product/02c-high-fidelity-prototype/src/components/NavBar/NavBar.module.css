@@ -9,10 +9,16 @@
   z-index: 40;
 }
 
-/* The nav sits behind the shared perforation strip (patterns.css .tearTop
-   .tearSm) — the same "torn from a roll" device the transaction panel and
-   Sheet use, drawn from one shared token/formula (--tear-notch-sm) rather
-   than each component's own hand-tuned gradient (v2's own gap). */
+/* The nav sits behind the shared perforation strip (patterns.css .tearTop,
+   sized from --tear-notch-sm) — the same "torn from a roll" device the
+   transaction panel and Sheet use, drawn from one shared token/formula
+   rather than each component's own hand-tuned gradient (v2's own gap).
+   Demo Polish pass (2026-08-13): dropped a dead `tearSm` class this
+   component (and Selling's transaction panel, and Sheet) referenced in
+   JSX but that patterns.css never actually defined — harmless (an unknown
+   class is simply ignored) but real, unused cruft found during this pass's
+   self-review; --tear-notch-sm already does the sizing work via .tearTop
+   itself, so no behavior changed by removing it. */
 
 .item {
   flex: 1;

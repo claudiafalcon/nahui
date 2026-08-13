@@ -11,7 +11,7 @@ export function Sheet({ onDismiss, children }: { onDismiss?: () => void; childre
   return (
     <div className={styles.backdrop} onClick={onDismiss}>
       <div
-        className={`${styles.panel} grain tearTop tearSm`}
+        className={`${styles.panel} grain tearTop`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

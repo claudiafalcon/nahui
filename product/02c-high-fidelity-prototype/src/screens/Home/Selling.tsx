@@ -83,7 +83,7 @@ export function Selling({
           reading as a single "this is where the live transaction lives"
           zone, distinct from the catalog grid below it. */}
       <div
-        className={`${styles.transactionPanel} grain tearBottom tearSm ${items.length > 0 ? styles.transactionPanelActive : ''}`}
+        className={`${styles.transactionPanel} grain tearBottom ${items.length > 0 ? styles.transactionPanelActive : ''}`}
       >
         <SessionHeader
           revenue={totals.revenue}

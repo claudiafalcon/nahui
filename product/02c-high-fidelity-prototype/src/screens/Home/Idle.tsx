@@ -6,12 +6,16 @@ import styles from './Idle.module.css';
 import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css';
 
 /** home.md §3.4 — idle, ready to sell, no Session open yet. Same two
- * elements the approved spec calls for (greeting question, "Iniciar Sesión
- * Rápida") — composition below is a High-Fidelity revision: an asymmetric
- * layout anchored by an oversized, softly-tinted BrandMark watermark
- * instead of a perfectly centered stack floating in empty space. Reuses
- * Nahui's own mark at a different scale (already established in ColdStart)
- * rather than inventing a new decorative device for this screen alone. */
+ * elements the approved spec calls for (greeting question, the primary CTA)
+ * — composition below is a High-Fidelity revision: an asymmetric layout
+ * anchored by an oversized, softly-tinted BrandMark watermark instead of a
+ * perfectly centered stack floating in empty space. Reuses Nahui's own mark
+ * at a different scale (already established in ColdStart) rather than
+ * inventing a new decorative device for this screen alone.
+ *
+ * CTA copy: "Iniciar Venta Rápida," not the approved spec's own "Iniciar
+ * Sesión Rápida" — a Demo Polish-pass naming decision, see README "Naming —
+ * Venta rápida (2026-08-13)." */
 export function Idle({
   onStartSession,
   onOpenSettingsPlaceholder,
@@ -36,7 +40,7 @@ export function Idle({
         <div className={styles.content}>
           <h1 className={styles.question}>¿Vas a vender hoy?</h1>
           <Button className={styles.cta} onClick={onStartSession}>
-            Iniciar Sesión Rápida
+            Iniciar Venta Rápida
           </Button>
         </div>
       </div>
