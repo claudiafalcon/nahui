@@ -6,6 +6,12 @@ Entries are never deleted once fixed; mark them Fixed with the outcome instead, 
 
 **Status:** All 15 Blocker/Major findings (HOME-B1/B2/M1–M4, INV-M1–M3, EVT-M1–M3, RPT-M1–M3) are Fixed and verified — see each finding's own status line below for its specific remediation and cross-reference. Severity order within each document is preserved exactly as `ux-critic` reported it: Blocker → Major → Minor → Suggestion. Minor findings and Suggestions were explicitly out of scope for this remediation round (per `company/CLAUDE.md`: they don't gate the cycle) and remain Open, untouched.
 
+## Known Limitations
+
+Added 2026-08-12, as part of `company/CLAUDE.md`'s UX Remediation exit criteria. Distinct from the Blocker/Major/Minor/Suggestion findings below: this section tracks defects that were deliberately **accepted, not fixed** — a secondary-path Blocker that received its one fix-and-verify round, where a further sibling instance of the same defect class surfaced afterward and was consciously logged here rather than triggering another open-ended round. Never used for something still genuinely unresolved or untriaged — only for something a specific decision was made to accept. Entries are never deleted, same non-deletion discipline as the rest of this log; if a limitation is later fixed (e.g., picked up by a subsequent exhaustive caller-audit), mark it Closed with the fix reference, don't remove it.
+
+*No entries yet — this section is established as of the 2026-08-12 exit-criteria addition; nothing has been triaged through it since.*
+
 **Lifecycle audit (2026-08-02):** `reviewer` independently verified all 15 IDs below against the actual content of `home.md`/`inventory.md`/`events.md`/`reports.md` on disk (not just this log's own narrative) — each has concrete, specific remediation evidence and an explicit "verified clean by `ux-critic`" statement at the owning document's status header. The per-finding `Status: Open.` lines were simply never updated after the fact — a documentation-hygiene gap, not an unresolved-work gap. Corrected below.
 
 **New Suggestion-level observations surfaced during verification** (none block the cycle; logged here so they aren't lost):
