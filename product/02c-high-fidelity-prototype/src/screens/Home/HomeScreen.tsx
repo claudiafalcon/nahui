@@ -13,7 +13,8 @@ type HomeUiState =
   | { kind: 'resolved' }
   | { kind: 'receipt'; receipt: Receipt }
   | { kind: 'closed'; count: number; revenue: number }
-  | { kind: 'settings-placeholder' };
+  | { kind: 'settings-placeholder' }
+  | { kind: 'assign-tags-placeholder' };
 
 /**
  * home.md §2 — resolution/decision logic, evaluated automatically on every
@@ -28,11 +29,18 @@ export function HomeScreen({ onNavigateToRegister }: { onNavigateToRegister: () 
 
   const session = activeSession(state);
 
+  if (!state.business) return null; // defensive — AppRouter only mounts this once onboarding is complete
+
+  if (ui.kind === 'assign-tags-placeholder') {
+    return <Placeholder title="Asignar Tags" onBack={() => setUi({ kind: 'resolved' })} />;
+  }
+
   if (ui.kind === 'receipt') {
     return (
       <ReceiptTicket
         total={ui.receipt.total}
         businessName={ui.receipt.businessName}
+        businessLogo={ui.receipt.businessLogo}
         onExit={() => setUi({ kind: 'resolved' })}
       />
     );
@@ -68,8 +76,10 @@ export function HomeScreen({ onNavigateToRegister }: { onNavigateToRegister: () 
 
   return (
     <Idle
+      defaultSellingMode={state.business.defaultSellingMode}
       onStartSession={startSession}
       onOpenSettingsPlaceholder={() => setUi({ kind: 'settings-placeholder' })}
+      onOpenAssignTagsPlaceholder={() => setUi({ kind: 'assign-tags-placeholder' })}
     />
   );
 }

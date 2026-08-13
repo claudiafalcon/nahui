@@ -15,15 +15,29 @@ import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css
  *
  * CTA copy: "Iniciar Venta Rápida," not the approved spec's own "Iniciar
  * Sesión Rápida" — a Demo Polish-pass naming decision, see README "Naming —
- * Venta rápida (2026-08-13)." */
+ * Venta rápida (2026-08-13)."
+ *
+ * §3.6a Not Ready — the demo Onboarding path is the only path in this build
+ * that can ever set `defaultSellingMode = 'nfc'` (onboarding.md §2.2), and
+ * NFCTag assignment ("Asignar Tags," inventory.md §3.14) isn't modeled at
+ * all in this build (disclosed in README.md) — so NFC Readiness always
+ * evaluates Not Ready whenever that's true, never Ready or Limited Ready.
+ * "Asignar tags" is a visible but stubbed/no-op link (routes to an honest
+ * Placeholder, the same "never hidden" treatment already given to
+ * Eventos/Resultados/Configuración) rather than a broken tap. */
 export function Idle({
+  defaultSellingMode,
   onStartSession,
   onOpenSettingsPlaceholder,
+  onOpenAssignTagsPlaceholder,
 }: {
+  defaultSellingMode: 'buttons' | 'nfc';
   onStartSession: () => void;
   onOpenSettingsPlaceholder: () => void;
+  onOpenAssignTagsPlaceholder: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const notReady = defaultSellingMode === 'nfc';
 
   return (
     <>
@@ -42,6 +56,16 @@ export function Idle({
           <Button className={styles.cta} onClick={onStartSession}>
             Iniciar Venta Rápida
           </Button>
+          {notReady && (
+            <div className={styles.readinessNote}>
+              <p className={styles.readinessLine}>
+                Todavía no tienes prendas con tag para hoy — vas a vender con botones.
+              </p>
+              <button className={styles.readinessLink} onClick={onOpenAssignTagsPlaceholder}>
+                Asignar tags
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

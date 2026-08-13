@@ -1,0 +1,148 @@
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.heading {
+  font: var(--text-heading);
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+
+.body {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  padding: 0 var(--space-4) var(--space-2);
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.committed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.committedTitle {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: #6B6259;
+}
+
+.committedRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 4px 10px;
+  position: relative;
+}
+
+.committedName {
+  flex: 1;
+  min-width: 0;
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
+
+/* the price tag — money that belongs to this specific Product, so it sits
+   inside the shared .moneyTag primitive (patterns.css) rather than merged
+   into the plain name string. Same treatment as CatalogRow's own .price
+   (src/components/CatalogRow/CatalogRow.module.css). */
+.priceTag {
+  padding: 6px 10px;
+  font: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--color-coral-aa);
+  flex-shrink: 0;
+  transform: rotate(-2deg);
+}
+
+.removeBtn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #8A8177;
+  font-size: 18px;
+  padding: 4px 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.input {
+  width: 100%;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  font: var(--text-body);
+  background: var(--color-white);
+  color: var(--color-obsidian);
+}
+
+.priceField {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+  height: 48px;
+  background: var(--color-white);
+}
+
+.pesoSign {
+  font: var(--text-body);
+  font-weight: 600;
+  color: #6B6259;
+}
+
+.priceInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font: var(--text-body);
+  font-weight: 600;
+}
+
+.error {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+}
+
+.addAnother {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.addAnother:disabled {
+  color: #C4BCB0;
+  cursor: not-allowed;
+}
+
+.footer {
+  padding: 14px var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  background-color: var(--color-balanced);
+}

@@ -163,6 +163,14 @@
   gap: var(--space-1);
 }
 
+.businessLogo {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 1.5px solid var(--color-hilo);
+}
+
 .businessName {
   font-family: var(--font-display);
   font-weight: 500;

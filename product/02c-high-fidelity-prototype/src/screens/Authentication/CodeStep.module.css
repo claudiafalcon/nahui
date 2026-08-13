@@ -1,0 +1,95 @@
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6) var(--space-8);
+}
+
+.back {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+  margin-bottom: var(--space-2);
+}
+
+.heading {
+  font: var(--text-display-md);
+  color: var(--color-obsidian);
+}
+
+.body {
+  font: var(--text-body);
+  color: #6B6259;
+}
+
+.confirmation {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.input {
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  font: var(--text-body);
+  font-weight: 600;
+  letter-spacing: 4px;
+  background: var(--color-white);
+  color: var(--color-obsidian);
+}
+
+.error {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+}
+
+.cta {
+  max-width: 320px;
+}
+
+.resendLine {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.countdown {
+  color: #8A8177;
+}
+
+.resendBtn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 0;
+}
+
+.savingLine {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B6259;
+  font: var(--text-body);
+}

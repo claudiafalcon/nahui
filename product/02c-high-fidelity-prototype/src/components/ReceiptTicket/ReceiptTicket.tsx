@@ -24,10 +24,12 @@ const COUNT_UP_MS = 620;
 export function ReceiptTicket({
   total,
   businessName,
+  businessLogo,
   onExit,
 }: {
   total: number;
   businessName: string;
+  businessLogo?: string;
   onExit: () => void;
 }) {
   const [displayTotal, setDisplayTotal] = useState(0);
@@ -89,6 +91,7 @@ export function ReceiptTicket({
         </div>
 
         <div className={styles.business}>
+          {businessLogo && <img className={styles.businessLogo} src={businessLogo} alt="" />}
           <span className={styles.businessName}>{businessName}</span>
         </div>
       </div>
