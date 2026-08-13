@@ -243,10 +243,10 @@ Reached after **5 incorrect attempts on the same code**, stated explicitly as th
 │                                │
 │  Ingresa el código                │
 │                                │
-│  Ya intentaste varias veces con   │
-│  este código, así que dejó de     │
-│  ser válido. Pide uno nuevo y      │
-│  con gusto lo confirmamos.        │
+│  Después de varios intentos,      │
+│  este código ya no es válido.     │
+│  Pide uno nuevo y con gusto        │
+│  lo confirmamos.                  │
 │                                │
 │  [   Reenviar código   ]         │
 │                                │
@@ -254,7 +254,7 @@ Reached after **5 incorrect attempts on the same code**, stated explicitly as th
 ```
 **Deliberadamente a soft, code-level invalidation — never a hard account or device lockout.** Resend is available immediately, no waiting period beyond it. This is a real, considered design choice, not an oversight: a full lockout after a handful of wrong guesses would be the kind of "bureaucratic, intimidating" moment `brand/brand-guide.md`'s tone explicitly warns against, at the exact first moment she's forming an impression of the product. The copy states what happened plainly, offers the fix in the same breath, and never frames the situation as something she did wrong (`brand/tone-of-voice.md`, "never imply a merchant needed rescuing," extended here to "never imply she needs correcting").
 
-**Flagged for a `brand-guardian` consultation, not treated as settled.** This is genuinely new emotional/tonal territory for this document family — every existing error/fallback state across `home.md`/`inventory.md`/`onboarding.md` is about a *system* failure (a save that didn't go through), never about a merchant's own repeated mistake triggering a security limit. Following the identical posture `onboarding.md §2.2b` already established for a comparably novel situation (its device-upload affordance) — reasoned here from precedented primitives rather than treated as needing its own fresh consultation before a first draft exists, but named explicitly so `ux-critic`/`reviewer` can route it if that reasoning doesn't hold, since this document's own tooling has no way to request that consultation directly. **Specific question for that consultation, stated so it isn't lost:** does "dejó de ser válido... con gusto lo confirmamos" read as respecting her intelligence rather than scolding her, and is this the right register for the product's first-ever "you got it wrong, here's a limit" moment?
+**Copy revised per `brand-guardian` consultation (2026-08-13).** The original draft — "Ya intentaste varias veces con este código, así que dejó de ser válido" — made *her* the grammatical subject of the failure clause and used a causal "así que," reading as a tally of her attempts being reported back to her rather than a system-state fact, breaking from this document family's own established pattern (`tone-of-voice.md`'s "no pudimos guardar" precedent, where the system, not the merchant, is always the subject of what-went-wrong). Revised to make "este código" the subject instead, dropping the causal "así que" — same information (she still learns why, per `character-bible.md`'s "tells the truth about what it does and doesn't know yet"), same soft-invalidation behavior, same two-beat fact-then-path-forward shape as every other error state in this family. `brand-guardian` also flagged this register as `tone-of-voice.md`-Hypothesis-tagged, not yet validated against a real merchant reaction — worth a real check once this ships, not a blocker now.
 
 ### 3.7d Verificando código — error de plataforma
 Distinct from a wrong code — this is a genuine send/confirm failure (network drop, platform error) where the code's correctness was never actually determined.
@@ -367,7 +367,7 @@ None of the items below block this document's own completion. Both are named exp
 1. **Architect Question (proposed Q17, `product/02-ux/architect-questions.md`) — the User/Owner/Seller domain model this document's flow needs to actually be implementable.** `domain-model.md` today has no User/Account aggregate, no Role concept, no Business↔User relationship — Business is modeled as belonging to "an install" (`onboarding.md §2.1`'s own language), not to an authenticated identity. This is the concrete follow-up `company/business-decisions.md` Q14 already named as owed ("architect still needs to design how this fits domain-model.md's Business/Session aggregates... before builder can implement it").
 2. **Product Decision (proposed Q18, `product/02-ux/product-decisions.md`) — §2.2 case 3 (a verified phone, on a session-less device, already tied to an existing already-onboarded Business).** Genuinely undecided: whether a Business belongs to a device or an identity, and whether this mock/local-data prototype can even represent "same Business, second device" today.
 3. **Provisional prototype defaults, not frozen domain invariants (Product Owner clarification, 2026-08-13):** the specific numbers chosen here by judgment call — 6-digit code, 30-second resend cooldown, 5-minute code validity, 5-attempt soft-invalidation bound — are product/prototype defaults, not settled Foundation rules. They should be revisited when a real authentication provider is integrated (Stage 7, Backend Integration) — a real SMS/OTP vendor may impose its own constraints (code length, delivery/expiry timing, rate limits) that supersede these values outright, and even absent that, they should be checked against a real or simulated first-run test before being treated as final, same evidence-driven caution `onboarding.md §8` items 1/5/6 already recommend for its own judgment calls. Nothing in this document's flow logic (§2, §4) depends on the exact values — only on their existence and the branches they gate.
-4. **Flagged for `brand-guardian`, not yet consulted:** §3.7c's "too many attempts" copy — the specific question is stated in full at §3.7c itself.
+4. **`brand-guardian` consultation complete (2026-08-13)** — §3.7c's "too many attempts" copy revised per that consultation's finding (subject/causal-structure fix, same soft-invalidation design); flagged as `tone-of-voice.md`-Hypothesis-tagged, worth a real merchant-reaction check once shipped, not blocking now.
 
 ## 9. Principle justification
 
@@ -393,7 +393,7 @@ None of the items below block this document's own completion. Both are named exp
 - **No interstitial "¡verificado!" screen between OTP success and `onboarding.md §3.3`.** A first-time verification hands off silently and immediately — adding a ceremony screen here would pad a moment `onboarding.md §3.3`'s own warm welcome copy already covers, the same restraint `onboarding.md §10` already applied when it merged its own Bienvenida and path-choice screens into one.
 - **Device-level session persistence assumed** — verified once per device, never re-asked on subsequent opens. The storage mechanism itself is left below this document's abstraction level, the same treatment `onboarding.md §0` already gives comparable platform questions.
 - **+52-prefixed, 10-digit Mexican mobile number; 6-digit code; 30-second resend cooldown; 5-minute code validity; 5-attempt soft-invalidation bound** — five explicit judgment calls, none derived from the Foundation, all named plainly rather than silently assumed (§3.3, §3.6, §3.7b, §3.7c).
-- **§3.7c's "too many attempts" state is a soft, code-level invalidation, never a hard account/device lockout** — reasoned explicitly against `brand/brand-guide.md`'s tone, not defaulted to a generic security pattern. Flagged for a `brand-guardian` consultation before being treated as fully settled (§3.7c, §8).
+- **§3.7c's "too many attempts" state is a soft, code-level invalidation, never a hard account/device lockout** — reasoned explicitly against `brand/brand-guide.md`'s tone, not defaulted to a generic security pattern. Copy itself revised per a completed `brand-guardian` consultation — see §3.7c, §8.
 - **§2.2 case 3 (returning phone, new device, already-onboarded Business) is explicitly marked "Not yet resolved"** rather than invented — routed to a new Product Decision (Q18) and a new Architect Question (Q17).
 - **No logout / account-session-management UI designed** — out of scope, named in §11, not silently omitted.
 

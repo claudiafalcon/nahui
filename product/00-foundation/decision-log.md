@@ -2,6 +2,18 @@
 
 Chronological. Each entry: the decision, why it was made, and what it superseded if anything. Don't edit past entries when a decision changes later — add a new entry that supersedes it, so the reasoning trail stays intact.
 
+## D45 — `authentication.md` fits `product/02-ux/`, per D13's precedent, not D38's
+
+Raised when `authentication.md`'s own author flagged, per `product/02-ux/CLAUDE.md`'s Rule, that a document outside the frozen four-nav-tab structure needs an Architect ruling before landing in that folder — the same gap D13 (Onboarding/Settings) and D38 (Loyalty-claim) each resolved for their own document.
+
+**Ruling: same folder, no new folder.** Checked D38's threshold test first — is this actually part of the same deploy target/audience as the rest of `product/02-ux/`? Yes: `authentication.md` is explicitly the gate preceding the Merchant Application itself, same device, same audience (Ana, future Sellers via invitation — never a customer), handing off directly into `onboarding.md §3.3`. Unlike loyalty-claim, nothing about it is a structurally separate surface. D38's new-folder trigger does not fire.
+
+Applied D13's test next: does it even reach "should this be a nav tab," or does it resolve out of that question first? It does the latter, more completely than Onboarding itself does — a first-run sequencing fact preceding not just the four tabs but Onboarding too, never revisited once a device holds a verified session, no persistent nav bar on any of its screens because not even a Business exists yet. Same shape D13 already ruled on, one step further upstream.
+
+**Not RFC-worthy** — same class as D12/D13/D24/D38/D41/D42, a repository/placement decision touching no aggregate, bounded context, or ubiquitous-language term.
+
+**Applied:** `product/02-ux/authentication.md` confirmed in place, no move. `product/02-ux/CLAUDE.md`'s Status section gains an entry for this document.
+
 ## D44 — RFC 0007 promoted: `User` and `BusinessMembership` schematized as new aggregate roots; Business creation gains a structural Owner-Membership invariant
 
 **Promotes `product/99-rfc/0007-user-and-business-membership.md` (Status: Accepted) in full, as drafted — no amendments.** Product Owner decision: the first verified User creates the Business during onboarding and becomes its OWNER, atomically; additional Users join an existing Business later through a separate, future invitation flow with a SELLER-role `BusinessMembership`, not built in this slice. Activates the concern D17 already named and deliberately deferred (*"a future multi-employee capability (multiple sellers under one Business account)... could be built whenever prioritized, not blocked on a data source"*).
