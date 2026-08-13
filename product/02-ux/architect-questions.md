@@ -13,7 +13,12 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
-_(none currently — every open ambiguity so far has required a Product or Business decision; see the two sibling logs above)_
+### Q17 — What is the User/Owner/Seller domain model (and Business↔User relationship) needed to implement `authentication.md`'s phone+OTP access flow?
+
+- **Raised by:** `ux-designer`, designing `product/02-ux/authentication.md`.
+- **Question:** `authentication.md` designs the merchant-facing phone+OTP screens implementing `company/business-decisions.md` Q14 (Resolved directionally: phone + SMS/WhatsApp OTP) — but that entry itself states plainly that "architect still needs to design how this fits domain-model.md's Business/Session aggregates... before builder can implement it." `domain-model.md` today has no User/Account aggregate, no `OWNER`/`SELLER` role concept, and no Business↔User relationship — Business was previously modeled as belonging to "an install" (`onboarding.md §2.1`), not an authenticated identity. `authentication.md` assumes (a) the first-ever verified phone produces a structural Owner fact once `onboarding.md §3.5`'s Business-creation write next succeeds, and (b) could not resolve what happens when an already-onboarded phone re-verifies from a session-less device (Product Decision Q18) — that gap depends on whether a Business is looked up by device or by identity.
+- **Proposed resolution:** `product/99-rfc/0007-user-and-business-membership.md` (Status: Proposed) — drafted by `architect` in direct response to this question, schematizing `User` (global aggregate root, identified by `phone`) and `BusinessMembership` (its own aggregate root, `role: OWNER | SELLER`), with Business creation gaining a structural invariant (no Business without an atomically-created OWNER Membership). Not yet Accepted/promoted to `decision-log.md`.
+- **Status:** Open, pending Product Owner Accept on RFC 0007. Doesn't block `authentication.md`'s own Low-Fidelity screens (verification UI doesn't depend on the answer); blocks that document's eventual Architecture Gap Analysis and blocks Q18 (below) from being answerable.
 
 ## Resolved
 

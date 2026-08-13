@@ -8,6 +8,13 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
+### Q18 — What happens when an already-verified phone tied to an existing already-onboarded Business completes OTP verification again from a device with no local session?
+
+- **Question:** `product/02-ux/authentication.md §2.2` designs two of three branches (first-ever verification → `onboarding.md §3.3`; same-device return → silent pass-through). It explicitly does not design the third: a phone that verifies successfully, on a device with no local session, already tied to an existing Business (new device, reinstall, etc.).
+- **Why this can't be answered yet:** depends on whether a Business belongs to a device or an identity (`product/02-ux/architect-questions.md` Q17, open pending Product Owner Accept on `product/99-rfc/0007-user-and-business-membership.md`) and on whether this mock/local-data prototype can represent "same Business, second device" at all today.
+- **What's already resolved, not reopened:** the other two branches of the same tree, fully designed in `authentication.md §2.2/§3.3–3.9`.
+- **Status:** Open. Doesn't block `authentication.md`'s Low-Fidelity completion (marked "Not yet resolved" rather than invented, per that folder's own §4 rule) — blocks only the eventual device-loss/reinstall recovery experience, real but not urgent at pilot scale (3 merchants, `company/business-decisions.md` Q16).
+
 ### Q14 — Should the future Customer Segmentation registration (Stage 2, `company/backlog.md` #2) ever be framed to Ana/the customer as a reward or gift ("regalo")?
 
 - **Question:** `home.md` §3.8f's digital receipt carries a `FutureRegistrationPlaceholder` with deliberately generic, mechanism-committing-to-nothing copy ("algún día vas a poder registrar aquí tu compra"). Whether the eventual Stage 2 mechanism (Sale-level Claim Token, `decision-log.md` D22) should be framed with reward/incentive language ("regalo" or similar) once it's actually designed isn't resolved anywhere in the Foundation.
