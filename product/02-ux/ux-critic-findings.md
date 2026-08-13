@@ -12,6 +12,16 @@ Added 2026-08-12, as part of `company/CLAUDE.md`'s UX Remediation exit criteria.
 
 *No entries yet — this section is established as of the 2026-08-12 exit-criteria addition; nothing has been triaged through it since.*
 
+## `authentication.md` — first-pass review (2026-08-13)
+
+New document (Phone → OTP → Owner-identity access gate preceding `onboarding.md`, `decision-log.md` D44/D45). First-pass `ux-critic` review found 1 Major + 2 Minor, all fixed and independently re-verified clean in the same round — no Blockers, no remediation cycle needed beyond one pass.
+
+- **AUTH-M1 — Fixed, verified.** No designed state existed for a pasted, non-numeric OTP code, despite §3.4 already handling the identical edge case for the phone field. Mattered more here, not less — the flow's own SMS/WhatsApp channel (§2.3) makes pasting the whole delivered message a plausible real source, at the exact first-ever-interaction moment §1 names as highest-risk for losing trust. Fixed: new §3.6b, mirroring §3.4's non-blocking, corrects-in-place treatment exactly.
+- **AUTH-MIN1 — Fixed, verified.** §4's canonical interaction-flow diagram omitted two branches already fully designed in prose (§3.4's paste case, §3.6a's resend tap) — a gap against this folder's own §4 rule that every branch resolves to a named destination in that diagram. Fixed: both branches (plus the new §3.6b branch) added to §4.
+- **AUTH-MIN2 — Fixed, verified.** §3.8's "pixel-identical on resume" guarantee didn't address whether §3.6's resend countdown reflects real elapsed time after an interruption. Fixed: §3.8 now states the countdown is recomputed from real elapsed time on resume — the one stated exception to "pixel-identical."
+
+Verification pass also confirmed a stale reference `ux-critic` separately flagged (not a formal finding): `authentication.md` §8 described `architect-questions.md` Q17 as open/pending after Q17 had already been Resolved via `decision-log.md` D44. Corrected in the same remediation pass.
+
 **Lifecycle audit (2026-08-02):** `reviewer` independently verified all 15 IDs below against the actual content of `home.md`/`inventory.md`/`events.md`/`reports.md` on disk (not just this log's own narrative) — each has concrete, specific remediation evidence and an explicit "verified clean by `ux-critic`" statement at the owning document's status header. The per-finding `Status: Open.` lines were simply never updated after the fact — a documentation-hygiene gap, not an unresolved-work gap. Corrected below.
 
 **New Suggestion-level observations surfaced during verification** (none block the cycle; logged here so they aren't lost):
