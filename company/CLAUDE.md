@@ -126,10 +126,14 @@ A governance rule change is not adopted the moment it's written — it's adopted
 
 **The specific case that established this pattern:** when `decision-log.md` gains an entry that tightens or corrects an earlier rule (the way D27 corrected the NFC-activation model), step 2 means cross-referencing every other Approved artifact in `product/02-ux/` and `product/02b-medium-fidelity/` that references the affected term or rule — not only the artifact actively being amended. A rule correction that only ever gets checked against the artifact that triggered it leaves every other artifact built under the old, looser rule unexamined — this is what already happened once with D27 and NFC-gated content, and again with D31's §4 rule before this cascade was formalized. This pattern generalizes beyond `decision-log.md` specifically — any governance change with retroactive scope follows the same five steps, whatever artifact it originates from.
 
+### Terminology drift inside the living prototype (added D42)
+
+Under the React-first workflow, `ux-critic`/`reviewer`/`merchant-user-tester` increasingly review the running prototype (`product/02c-high-fidelity-prototype/`) directly, per the standard Review Pipeline — but `ubiquitous-language.md` and the Approved `product/02-ux/*.md`/`product/02-ux-loyalty/*.md` specs remain the actual frozen source of truth for terminology, not the prototype. Any terminology or copy decision made directly inside the prototype that diverges from an Approved spec (Nahui's own prior example: "Sesión rápida" → "Venta rápida," "Cerrar sesión" → "Cerrar jornada de venta," both self-disclosed as prototype-only in `product/02c-high-fidelity-prototype/README.md`) must be flagged back through `ux-designer`/`architect` before it's treated as canonical — never silently absorbed as fact merely because it's what everyone reviewing sees running live. A prototype-only naming decision stays disclosed as exactly that until it's actually landed back in the approved spec.
+
 ### Delegation
 
-- Low-Fidelity UX work (behavior, flows, ASCII wireframes) → `ux-designer`
-- Medium-Fidelity UI work (real layouts, navigation, component hierarchy, in Figma, strictly on top of an Approved Low-Fidelity spec) → `ui-designer`
+- Low-Fidelity UX work (behavior, flows, ASCII wireframes — also covering the standing feature workflow's Product Definition and UX Flow Review stages, D42) → `ux-designer`
+- High-Fidelity UI work (React/TypeScript, in `product/02c-high-fidelity-prototype/`, strictly on top of an Approved Low-Fidelity spec and an Approved architecture review — the standing default execution medium as of D42) → `ui-designer`. Figma stays available only for brainstorming, concept exploration, marketing assets, illustrations, diagrams, and documentation support — never required for product validation.
 - UX/UI quality review, any fidelity → `ux-critic` (fidelity-aware — scales its checks to Low/Medium/High; no separate "UI Critic" agent exists)
 - Domain and product questions → `architect`
 - Reviews → `reviewer`

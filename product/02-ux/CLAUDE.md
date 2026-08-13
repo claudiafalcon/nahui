@@ -10,9 +10,13 @@ Scope is the Merchant Application only, per `information-architecture.md`'s own 
 - Upstream: `product/00-foundation/` — domain model, information architecture, and
   principles are frozen ground truth. Every doc here cites them; none of them
   restate, contradict, or re-derive foundation content.
-- Downstream: the `builder` subagent implements from these specs once a doc is
-  approved. These docs are the handoff artifact — implementation-independent by
-  design, so visual/technical decisions don't leak backward into them.
+- Downstream (React-first as of D42): an Architecture Review, then `ui-designer`
+  builds the feature as a React/TypeScript living prototype
+  (`product/02c-high-fidelity-prototype/`) once a doc is approved. `builder`/
+  `03-build` enters only at backend-integration time, once the prototype's
+  interaction model is itself approved. These docs are the handoff artifact —
+  implementation-independent by design, so visual/technical decisions don't
+  leak backward into them.
 - Sibling: `company/backlog.md` gates what's real/in-progress vs. blocked. Don't
   design for a backlog item marked "Blocked by" or "Do not start" — flag it as an
   open question instead.
@@ -25,6 +29,9 @@ here without an Architect/RFC decision first (`product/00-foundation/decision-lo
 `product/99-rfc/README.md`).
 
 ## Document structure (every file, same order)
+
+§1 also serves as the standing feature workflow's Product Definition stage (D42) — state the business objective, the acceptance criteria, and any scope boundaries explicitly whenever they're non-obvious, not just the merchant goal in isolation. No separate pre-UX artifact exists; this document's own front matter is where that lightweight definition lives.
+
 1. Merchant goal
 2. Resolution / decision logic
 3. Low-fidelity wireframes

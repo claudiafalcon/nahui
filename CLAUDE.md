@@ -9,8 +9,8 @@ AI-native company building sales/business-intelligence tools for itinerant vendo
 - `/product/01-validation` — throwaway prototypes to test hypotheses. Not production code. Optimize for speed, not quality.
 - `/product/02-ux` — low-fidelity UX specifications for merchant-facing experiences, reviewed one at a time before implementation.
 - `/product/02-ux-loyalty` — low-fidelity UX specifications for the customer-facing Loyalty-claim surface — explicitly not part of the Merchant Application (`decision-log.md` D38). Same pipeline stage and fidelity discipline as `/product/02-ux`, different deploy target.
-- `/product/02b-medium-fidelity` — tracking for Medium-Fidelity UI (real layouts, in Figma) built on top of an Approved Low-Fidelity spec. Tracking only — actual designs live in Figma.
-- `/product/02c-high-fidelity-prototype` — real code: the High-Fidelity React/TypeScript living-prototype experiment (`decision-log.md` D41). Not disposable (`01-validation`'s charter), not yet validated/committed (`03-build`'s charter) — a distinct pre-decision stage holding the artifact itself, not tracking.
+- `/product/02b-medium-fidelity` — dormant/legacy as of D42. Tracking for Medium-Fidelity UI (real layouts, in Figma) built on top of an Approved Low-Fidelity spec; six completed tracking files retained as historical record. Not used for new feature work — superseded by `/product/02c-high-fidelity-prototype`.
+- `/product/02c-high-fidelity-prototype` — Nahui's primary living prototype: real React/TypeScript code, the standing home for all future feature UI work (`decision-log.md` D41, D42). Not disposable (`01-validation`'s charter), not yet backend-integrated (`03-build`'s charter) — see the folder's own `CLAUDE.md`.
 - `/product/03-build` — code that survived validation, worth maintaining.
 - `/product/04-scale` — features that require multiple users/network effects (not yet started).
 - `/evidence` — weekly progress snapshots for course deliverables. Not part of the product.

@@ -1,5 +1,14 @@
 # Medium-Fidelity UI — product/02b-medium-fidelity
 
+**Dormant as of D42 — superseded by `product/02c-high-fidelity-prototype/` as
+the standing UI-build stage.** The Product Owner adopted a React-first
+workflow after a completed High-Fidelity vertical-slice experiment; Figma is
+no longer required for product validation and this folder's six tracking
+files below are retained purely as historical record, per this project's own
+"never edit past entries" convention. No new tracking file is created here
+for any future feature — see `decision-log.md` D42 and root `CLAUDE.md`'s
+"Where things live" for the current pipeline.
+
 Tracking only. The actual designs live in Figma, produced by the `ui-designer`
 agent via Figma MCP tools — `ui-designer` has no Write access to `product/`,
 same constraint as `ux-designer`. Each file here is a lightweight index: Figma
