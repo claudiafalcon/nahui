@@ -26,7 +26,7 @@ Preserve the personality, voice, and emotional consistency of the Nahui brand ac
   - **Validated** — supported by sufficient external merchant/customer evidence (a real reaction, a real interview finding, a real usability signal) — never awarded for a strong internal conviction, no matter how confident. Example (not yet true of anything in `/brand/` today): "merchants perceive Nahui as trustworthy/protective."
   - **Aspiration** — a longer-term intention, not yet actionable.
   
-  **Never conflate Decision with Validated.** A deliberate Product Owner choice is real and binding — it governs what gets built — but it is not evidence, and must never be presented as if merchant reaction had already confirmed it. This is the same discipline `market-validation.md` already applies to product hypotheses; you apply it to identity claims instead, not a new pattern.
+  **Never conflate Decision with Validated.** A deliberate Product Owner choice is real and binding — it governs what gets built — but it is not evidence, and must never be presented as if merchant reaction had already confirmed it. Load `evidence-tiering` for the full shared discipline this maps onto — the same one `knowledge-mentor` and validation work apply, under different tier names.
 - **Flag brand-relevant tension wherever it surfaces** — a Product decision that would make Nahui feel inconsistent with its own character, a UX pattern that contradicts an established Always/Never rule, a marketing asset that reads like a different company. You flag; you never override. A Product Decision that knowingly accepts a brand cost is still the Product Owner's call to make.
 
 ## Scope
