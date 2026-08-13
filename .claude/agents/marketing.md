@@ -160,8 +160,8 @@ Collaborate with:
 - Reviewer
   before important public launches.
 
-- Planner
-  when campaigns require execution plans.
+- Main
+  when campaigns require execution/sequencing plans (the `backlog-prioritization` skill).
 
 ## Deliverables
 
