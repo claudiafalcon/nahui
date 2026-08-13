@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../../domain/store';
+import { makeId } from '../../domain/id';
 import { ProductPicker } from '../../components/ProductPicker/ProductPicker';
 import { QuantityStepper } from '../../components/QuantityStepper/QuantityStepper';
 import { Button } from '../../components/Button/Button';
@@ -7,8 +8,18 @@ import { Sheet } from '../../components/Sheet/Sheet';
 import { TagStub } from '../../components/TagStub/TagStub';
 import styles from './RegisterMerchandise.module.css';
 
+/**
+ * Which Product this in-progress line refers to. `existing` names a real,
+ * already-written Product. `new` is a not-yet-real identity picked up in
+ * "¿Qué llegó?" this same visit — inventory.md §3.8a: held here, in local
+ * draft/committed state, and only actually written (atomically with the
+ * rest of the Lot) at "Guardar mercancía" — see `commitLot` in `store.tsx`.
+ */
+type ProductRef = { kind: 'existing'; productId: string } | { kind: 'new'; name: string; price: number };
+
 interface Line {
-  productId: string;
+  key: string; // stable local identity for React lists/removal — a pending `new` line has no real productId yet
+  product: ProductRef;
   productName: string;
   quantity: number;
   touched: boolean;
@@ -29,13 +40,19 @@ export function RegisterMerchandise({
   onSaved: (lastProductId: string) => void;
   onBack: () => void;
 }) {
-  const { state, addProduct, commitLot } = useStore();
+  const { state, commitLot } = useStore();
   const initialProduct = state.products.find((p) => p.id === initialProductId);
 
   const [committed, setCommitted] = useState<Line[]>([]);
   const [draft, setDraft] = useState<Line | null>(
     initialProduct
-      ? { productId: initialProduct.id, productName: initialProduct.name, quantity: 1, touched: false }
+      ? {
+          key: initialProduct.id,
+          product: { kind: 'existing', productId: initialProduct.id },
+          productName: initialProduct.name,
+          quantity: 1,
+          touched: false,
+        }
       : null,
   );
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -61,14 +78,26 @@ export function RegisterMerchandise({
     if (lines.length === 0) return;
     setSaving(true);
     window.setTimeout(() => {
-      commitLot(lines.map((l) => ({ productId: l.productId, quantity: l.quantity })));
+      // The atomic write, per inventory.md §3.8a: any `new` line's Product
+      // identity is minted here, inside commitLot's own transaction — never
+      // before. `resolved` mirrors `lines`' order, so its last entry is the
+      // productId (real or freshly-minted) of the line just saved.
+      const resolved = commitLot(
+        lines.map((l) => ({
+          quantity: l.quantity,
+          product:
+            l.product.kind === 'existing'
+              ? { kind: 'existing' as const, productId: l.product.productId }
+              : { kind: 'new' as const, name: l.product.name, defaultPrice: l.product.price },
+        })),
+      );
       setSaving(false);
-      onSaved(lines[lines.length - 1].productId);
+      onSaved(resolved[resolved.length - 1]);
     }, 260);
   }
 
-  function removeCommitted(productId: string) {
-    setCommitted((c) => c.filter((l) => l.productId !== productId));
+  function removeCommitted(key: string) {
+    setCommitted((c) => c.filter((l) => l.key !== key));
   }
 
   if (saving) {
@@ -89,13 +118,13 @@ export function RegisterMerchandise({
           <div className={styles.committed}>
             <span className={styles.committedTitle}>Ya agregaste:</span>
             {committed.map((line) => (
-              <div key={line.productId} className={`${styles.committedRow} stitchBottom`}>
+              <div key={line.key} className={`${styles.committedRow} stitchBottom`}>
                 <TagStub name={line.productName} size={28} />
                 <span className={styles.committedName}>
                   {line.productName} — {line.quantity}
                   {!line.touched && <span className={styles.reviewFlag}> · revisa</span>}
                 </span>
-                <button className={styles.removeBtn} onClick={() => removeCommitted(line.productId)} aria-label={`Quitar ${line.productName}`}>
+                <button className={styles.removeBtn} onClick={() => removeCommitted(line.key)} aria-label={`Quitar ${line.productName}`}>
                   ✕
                 </button>
               </div>
@@ -147,12 +176,26 @@ export function RegisterMerchandise({
           products={state.products}
           onDismiss={() => setPickerOpen(false)}
           onSelectExisting={(product) => {
-            setDraft({ productId: product.id, productName: product.name, quantity: 1, touched: false });
+            setDraft({
+              key: product.id,
+              product: { kind: 'existing', productId: product.id },
+              productName: product.name,
+              quantity: 1,
+              touched: false,
+            });
             setPickerOpen(false);
           }}
           onCreateNew={(name, price) => {
-            const product = addProduct(name, price);
-            setDraft({ productId: product.id, productName: product.name, quantity: 1, touched: false });
+            // Not written to the store yet (inventory.md §3.8a) — held as a
+            // pending `new` identity in local draft state until "Guardar
+            // mercancía" atomically resolves it via commitLot.
+            setDraft({
+              key: makeId('draft'),
+              product: { kind: 'new', name, price },
+              productName: name,
+              quantity: 1,
+              touched: false,
+            });
             setPickerOpen(false);
           }}
         />

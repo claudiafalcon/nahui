@@ -65,10 +65,23 @@ export interface Receipt {
   subscriptionTier: 'free' | 'paid';
 }
 
+/**
+ * A pending Lot line at "Guardar mercancía" time. `product` either points at
+ * an already-real Product (`existing`) or carries the not-yet-written
+ * identity of a Product created in the "¿Qué llegó?" picker this same visit
+ * (`new`) — the picker never writes to the store itself (inventory.md
+ * §3.8a/§3.9: nothing is real until this atomic write).
+ */
+export interface CommitLotLine {
+  quantity: number;
+  product: { kind: 'existing'; productId: ID } | { kind: 'new'; name: string; defaultPrice: number };
+}
+
 interface StoreValue {
   state: AppState;
-  addProduct: (name: string, defaultPrice: number) => Product;
-  commitLot: (lines: { productId: ID; quantity: number }[]) => void;
+  /** Returns the resolved productId for each line, same order as input —
+   * a freshly-minted id for `new` lines, the given id for `existing` ones. */
+  commitLot: (lines: CommitLotLine[]) => ID[];
   editPrice: (productId: ID, newPrice: number) => void;
   startSession: () => void;
   addItemToSale: (productId: ID) => boolean;
@@ -92,33 +105,46 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
-  function addProduct(name: string, defaultPrice: number): Product {
-    const product: Product = {
-      id: makeId('prod'),
-      name: name.trim(),
-      defaultPrice,
-      createdAt: Date.now(),
-    };
-    setState((s) => ({ ...s, products: [...s.products, product] }));
-    return product;
-  }
-
-  function commitLot(lines: { productId: ID; quantity: number }[]) {
-    if (lines.length === 0) return;
+  /**
+   * inventory.md §3.8a/§3.9: the entire Lot write — including minting any
+   * genuinely-new Product identities picked up in "¿Qué llegó?" this same
+   * visit — happens atomically, only here, only at "Guardar mercancía."
+   * Nothing before this point (picking/typing a new Product+price in the
+   * picker, adding it to the in-progress list, discarding, or backing out)
+   * may write a Product into the store — see `RegisterMerchandise.tsx`,
+   * which holds pending new-Product identities in its own local draft/
+   * committed state until it calls this.
+   */
+  function commitLot(lines: CommitLotLine[]): ID[] {
+    if (lines.length === 0) return [];
     const lotId = makeId('lot');
     const receivedAt = Date.now();
-    const entries = lines.map((line) => ({
+
+    const newProducts: Product[] = [];
+    const resolvedProductIds: ID[] = lines.map((line) => {
+      if (line.product.kind === 'existing') return line.product.productId;
+      const product: Product = {
+        id: makeId('prod'),
+        name: line.product.name.trim(),
+        defaultPrice: line.product.defaultPrice,
+        createdAt: receivedAt,
+      };
+      newProducts.push(product);
+      return product.id;
+    });
+
+    const entries = lines.map((line, i) => ({
       id: makeId('entry'),
       lotId,
-      productId: line.productId,
+      productId: resolvedProductIds[i],
       quantity: line.quantity,
     }));
     const units: InventoryUnit[] = [];
-    lines.forEach((line) => {
-      for (let i = 0; i < line.quantity; i += 1) {
+    lines.forEach((line, i) => {
+      for (let u = 0; u < line.quantity; u += 1) {
         units.push({
           id: makeId('unit'),
-          productId: line.productId,
+          productId: resolvedProductIds[i],
           lotId,
           status: 'available',
           receivedAt,
@@ -127,10 +153,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
     setState((s) => ({
       ...s,
+      products: [...s.products, ...newProducts],
       lots: [...s.lots, { id: lotId, receivedAt }],
       entries: [...s.entries, ...entries],
       units: [...s.units, ...units],
     }));
+
+    return resolvedProductIds;
   }
 
   function editPrice(productId: ID, newPrice: number) {
@@ -260,7 +289,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value: StoreValue = {
     state,
-    addProduct,
     commitLot,
     editPrice,
     startSession,

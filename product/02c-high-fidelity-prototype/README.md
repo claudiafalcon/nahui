@@ -217,10 +217,11 @@ screenshot.
 ## UX ambiguity / Foundation gaps flagged (none blocking; stated honestly
 rather than silently resolved)
 
-No genuine contradiction in the approved specs was found. Three small,
-low-stakes implementation-completion judgment calls were made where the
-low-fi spec is intentionally loose (not contradictory) — named here so
-they're visible, not because they need escalation:
+One genuine contradiction against the approved specs was found and fixed —
+see "`ProductPicker` premature-write Blocker" in the changelog below. Beyond
+that, three small, low-stakes implementation-completion judgment calls were
+made where the low-fi spec is intentionally loose (not contradictory) —
+named here so they're visible, not because they need escalation:
 
 1. **`inventory.md` §3.6's "Guardar mercancía enabled once Producto is
    chosen"** describes the single-row case. When 1+ lines are already
@@ -922,6 +923,70 @@ Grep-verified: zero remaining "Cerrar sesión" (or "Cerrar Sesión") strings
 render in any component's JSX — every remaining occurrence in the codebase
 is inside a disclosure comment citing the approved spec's own term, not
 user-facing copy.
+
+## `ProductPicker` premature-write Blocker (2026-08-13) — `reviewer`
+Foundation-consistency pass, fixed
+
+`reviewer`'s Foundation-consistency pass found a genuine contradiction
+against `inventory.md` §3.8a/§3.9, not a judgment call: `ProductPicker`'s
+`onCreateNew` handler was wired straight to `store.tsx`'s `addProduct` — an
+immediate `setState` write of a real Product into `state.products` the
+instant a merchant confirmed a new Product's name+price in the "¿Qué
+llegó?" sheet, before "Guardar mercancía" was ever tapped. §3.8a is explicit
+that the price "is held in the in-progress form and only actually written,
+atomically with the new Product and the rest of the Lot, at 'Guardar
+mercancía'"; §3.9's discard guarantee implies the same for the Product
+itself. Because the write was immediate and the store had no rollback/
+`removeProduct` action, three ordinary interactions left a **permanent
+phantom Catalog entry** with 0 units, forever: creating a new Product then
+"Descartar" → "Sí, descartar" (which only cleared local draft/committed
+state, never the already-written store Product); creating a new Product
+then "← Inventario" with no save (no confirmation gate on that path); and
+the already-disclosed tab-switch draft reset (local-only, same gap). Worse,
+`InventoryScreen`'s cold-start check (via `catalogRows`, itself a 1:1 map
+over `state.products`) meant a single abandoned new-Product attempt silently
+and permanently retired Inventario's cold-start state, even with nothing
+real ever registered.
+
+**Fix.** `ProductPicker.onCreateNew` no longer touches the store at all —
+`RegisterMerchandise` now holds a pending new-Product identity
+(`{ kind: 'new', name, price }`, structurally parallel to how it already
+holds `{ kind: 'existing', productId }` for a chosen Product) in its own
+local `draft`/`committed` state, same place quantity already correctly
+lived. `store.tsx`'s `addProduct` action is gone; `commitLot` — the single
+write transaction "Guardar mercancía" triggers — now resolves any `new`
+lines into real Products (minting `id`/`createdAt` exactly as `addProduct`
+used to) atomically alongside the Lot/InventoryEntry/InventoryUnit writes it
+already performed, and returns the resolved `productId` per line so the
+caller can still report which Product was just saved. Nothing about the
+approved visual design, the Swing Tag system, or any other behavior changed.
+
+**Traced after the fix:**
+(a) create a new Product, "Descartar" → "Sí, descartar" — `commitLot` is
+never called, so no Product is ever written to `state.products`.
+(b) create a new Product, "← Inventario" to back out without saving — same:
+`onBack` only navigates, no store call happens on that path either.
+(c) create a new Product, actually complete "Guardar mercancía" — `commitLot`
+resolves the pending `new` line into a real Product with the correct
+name/price, written atomically with its Lot/InventoryEntry/InventoryUnit,
+exactly as before the fix.
+(d) `InventoryScreen`'s cold-start check (`catalogRows(state).length === 0`)
+correctly still shows cold-start whenever no Product was ever actually
+saved, since `state.products` can no longer gain an entry from an abandoned
+picker interaction.
+
+**Verification.** `tsc -b && vite build` both clean, zero errors. Only
+`src/domain/store.tsx` and `src/screens/Inventory/RegisterMerchandise.tsx`
+changed — `ProductPicker.tsx`'s own callback signature (`onCreateNew(name,
+price)`) was already correct and untouched; the bug was entirely in what its
+caller did with that callback. `src/domain/store.tsx` genuinely needed a
+domain-layer change here (moving the write itself, not just its caller) —
+kept to the minimum: `addProduct` removed as a standalone action (it had no
+other caller), its Product-minting logic moved inside `commitLot`'s existing
+transaction, and `commitLot`'s signature changed from a flat
+`{ productId, quantity }[]` to `{ product: {kind:'existing'|'new', ...},
+quantity }[]` so it can resolve either kind of line — no other write path,
+FIFO logic, Session/Sale lifecycle, or selector changed.
 
 ## File structure
 
