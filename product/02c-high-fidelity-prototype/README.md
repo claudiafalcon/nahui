@@ -170,6 +170,12 @@ cleanly to an unrelated SaaS receipt.
   Sale, and receipt state — lives in the global store and *does* survive
   tab switches and reloads; this is a narrower, disclosed gap, not a
   reset of the core loop.
+- **`CloseSummary.tsx`'s single button reads "Entendido," not the approved
+  spec's "Ver detalle."** `home.md` §3.12's close-summary is deliberately
+  two numbers only (free tier) with no further detail screen built in this
+  slice, so a "ver detalle" label would point at a destination that doesn't
+  exist here — "Entendido" is a plausible, deliberate demo substitution for
+  that reason, not an oversight.
 
 ## Deviations from Medium-Fidelity's visual treatment (named explicitly, per
 the task's own request — this should be the norm, not the exception, for a

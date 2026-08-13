@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../../domain/store';
 import { catalogRows } from '../../domain/selectors';
 import { CatalogRow } from '../../components/CatalogRow/CatalogRow';
@@ -35,6 +35,10 @@ export function CatalogView({
 
   const rows = catalogRows(state);
   const editingProduct = rows.find((r) => r.product.id === editingId)?.product;
+
+  const draftPriceValue = useMemo(() => parseFloat(draftPrice), [draftPrice]);
+  const draftPriceValid =
+    draftPrice.trim().length > 0 && !Number.isNaN(draftPriceValue) && draftPriceValue > 0;
 
   return (
     <>
@@ -84,9 +88,9 @@ export function CatalogView({
               Cancelar
             </Button>
             <Button
+              disabled={!draftPriceValid}
               onClick={() => {
-                const n = parseFloat(draftPrice);
-                if (Number.isFinite(n) && n > 0) editPrice(editingProduct.id, n);
+                editPrice(editingProduct.id, draftPriceValue);
                 setEditingId(null);
               }}
             >

@@ -170,11 +170,6 @@
   color: var(--color-obsidian);
 }
 
-.businessMeta {
-  font: var(--text-meta);
-  color: #9C9186;
-}
-
 .exitZone {
   position: absolute;
   left: 0;
