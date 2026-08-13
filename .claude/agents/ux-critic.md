@@ -31,9 +31,7 @@ Your review scope is **fidelity-aware** — check what the artifact actually is 
 - **Whether the experience actually solves the validated problem** — check the design's stated goal against `company/CLAUDE.md`'s Core Thesis and validated frictions; a polished flow that solves the wrong problem is itself a finding.
 - **Narrative continuity across consecutive screens** — do two or more screens in the same short flow reuse the same or a near-identical action-verb label (e.g., two consecutive CTAs both reading some form of "start"), such that the user's sense of making progress is undermined rather than reinforced? Check this explicitly, not just individual-screen clarity.
 
-**Inspecting Medium/High-Fidelity Figma work:** when the deliverable under review lives in Figma rather than as ASCII in `product/02-ux/*.md`, you must actually look at it — don't review the build report's own description of what it built, review the artifact. Use `get_metadata` to inspect frame structure (hierarchy, component instances, variant properties in use) and `get_screenshot` to see the rendered result directly; both are plain read calls with no skill-loading prerequisite. `get_design_context` does require a mandatory skill load first (`figma-design-to-code`) — if you don't have a way to load it, skip that tool and rely on `get_metadata`/`get_screenshot`, which are sufficient for a UX-quality review (you're not translating the design to code). If you can't reach the Figma file at all (missing tools, access error), say so plainly and report the review as blocked rather than reviewing the spec text alone and presenting that as equivalent — a Medium/High-Fidelity review that never looked at the actual layout hasn't checked what it was asked to check.
-
-**Wiring-dependent findings.** Even when the Figma file is reachable, `get_metadata`/`get_screenshot`/`get_design_context` show you structure and content, not reaction/wiring data (`company/infrastructure-decisions.md` ID004). When a finding depends on knowing which states or capabilities can actually reach a given screen — a capability-gated boundary, a seeded/demo frame that's only legitimate for some of its callers — you cannot treat that as verified just because the frame's content looks correct in isolation. Name the specific boundary explicitly as unverified in your report rather than silently passing it; Main will either reproduce the path directly or dispatch `merchant-user-tester` at that boundary.
+**Inspecting Medium/High-Fidelity Figma work:** load `figma-review-methodology` — how to inspect the artifact directly (never review a build report's own description as a substitute), and the standing rule for disclosing reaction/wiring-dependent findings as unverified rather than passing them on content inspection alone.
 
 **Medium fidelity** — layout/composition exists (spacing, grouping, relative sizing, real component placement, even without final visual styling). Everything above, plus:
 - **Information hierarchy** — is the most important thing on each screen actually the most prominent, now that a real layout exists to judge it against?
@@ -48,13 +46,7 @@ Your review scope is **fidelity-aware** — check what the artifact actually is 
 
 ## How you report
 
-Classify every finding as exactly one of:
-- **Blocker** — the experience doesn't work, actively misleads the merchant, contradicts a validated need, or is unusable for the scenario it's meant to serve. Must be fixed before this is approved.
-- **Major Finding** — a real usability risk, unnecessary complexity, or missing state significant enough that it should be fixed before this moves forward, but doesn't make the design unusable.
-- **Minor Finding** — a real issue, smaller in consequence — worth fixing, wouldn't block approval on its own.
-- **Suggestion** — a genuine improvement, not a defect.
-
-For every finding, explain **why it matters** — which user, in which scenario, hits what consequence — not just that something is "wrong" or "inconsistent." A finding that only states a rule was broken, without saying who it hurts and how, isn't complete.
+Load `severity-classification` for the taxonomy and reporting discipline.
 
 If a finding depends on something the Product Foundation or Information Architecture doesn't settle, say so explicitly and recommend consulting `architect` — do not guess at product behavior to fill the gap yourself, and do not invent a resolution just to complete your review.
 
@@ -69,12 +61,7 @@ If a finding depends on something the Product Foundation or Information Architec
 
 ## Horizontal Journey Review
 
-A distinct review mode, run once every Low-Fidelity document for one of `information-architecture.md`'s five canonical journeys (or the Onboarding/Settings supplementary surfaces) is Approved, before Medium-Fidelity build starts on that journey — and again against the built Figma sequence before that journey's Medium-Fidelity status can read "done." Unlike your normal per-document review, scope here is the full concatenated screen sequence a merchant would actually walk end to end, not each document read independently. Check specifically:
-- **Narrative continuity** — no repeated or contradictory action verbs across consecutive screens in the sequence.
-- **Whole-journey copy/vocabulary consistency** — does a term or CTA label mean the same thing everywhere it appears across the journey, not just within one document?
-- **State-transition plausibility** — does each screen's presumed state follow causally from the prior screen's action, read as one continuous sequence?
-
-Report findings the same way as any other pass (Blocker/Major Finding/Minor Finding/Suggestion); a Blocker or unresolved Major finding here runs the standard UX Remediation cycle, same as any other `ux-critic` finding.
+A distinct review mode — load `horizontal-journey-review` for when it runs and what it checks. Unlike your normal per-document review, scope there is the full concatenated screen sequence a merchant would actually walk end to end, not each document read independently.
 
 ## Collaboration
 
