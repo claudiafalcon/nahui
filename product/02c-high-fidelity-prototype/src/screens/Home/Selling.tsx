@@ -52,6 +52,12 @@ export function Selling({
     name: findProduct(state, productId)?.name ?? '',
     qty,
   }));
+  // Running subtotal of the open Sale — same reduce over SaleItem.pricePaid
+  // store.tsx's own finalizeSale already uses for the final total (Fix 3,
+  // merchant-user-tester finding, 2026-08-13). Presentation-only, derived
+  // entirely from data the store already exposes (Sale.items); no
+  // src/domain/ change — same discipline as `lines` above.
+  const subtotal = items.reduce((sum, item) => sum + item.pricePaid, 0);
 
   function handleCloseSessionRequest() {
     if (items.length > 0) {
@@ -91,7 +97,7 @@ export function Selling({
           onCloseSession={handleCloseSessionRequest}
           onOpenSettingsPlaceholder={onOpenSettingsPlaceholder}
         />
-        <VentaActualTray lines={lines} onCancel={() => setCancelConfirmOpen(true)} />
+        <VentaActualTray lines={lines} subtotal={subtotal} onCancel={() => setCancelConfirmOpen(true)} />
       </div>
 
       {saving ? (

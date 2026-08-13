@@ -29,7 +29,7 @@ export function Idle({
     <>
       <div className={styles.topbar}>
         <span className={styles.wordmark}>Nahui</span>
-        <button className={styles.menuBtn} onClick={() => setMenuOpen(true)} aria-label="Controles">
+        <button className={styles.menuBtn} onClick={() => setMenuOpen((open) => !open)} aria-label="Controles">
           ⋯
         </button>
       </div>

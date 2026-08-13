@@ -49,7 +49,11 @@ export function SessionHeader({
             Hoy: <strong>{pesos(revenue)}</strong> · {count} {pluralize(count, 'venta', 'ventas')}
           </span>
         </div>
-        <button className={styles.menuBtn} onClick={() => setMenuOpen(true)} aria-label="Controles de venta">
+        <button
+          className={styles.menuBtn}
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label="Controles de venta"
+        >
           ⋯
         </button>
       </header>

@@ -23,6 +23,17 @@
   color: #8A8177;
 }
 
+/* Running subtotal (Fix 3) — same "plain Fredoka, no tag" execution as
+   SessionHeader's own .stat strong (DESIGN-SYSTEM.md §3: a sum-in-progress
+   stays plain Fredoka, not .moneyTag), scaled down to sit inline in this
+   row's body-sm label instead of that header's larger stat line. */
+.subtotal {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--color-tezontle-dark);
+  font-variant-numeric: tabular-nums;
+}
+
 .cancel {
   appearance: none;
   border: none;
