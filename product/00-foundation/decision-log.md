@@ -2,6 +2,16 @@
 
 Chronological. Each entry: the decision, why it was made, and what it superseded if anything. Don't edit past entries when a decision changes later — add a new entry that supersedes it, so the reasoning trail stays intact.
 
+## D41 — High-Fidelity vertical-slice prototype gets its own folder, `product/02c-high-fidelity-prototype/`
+
+Raised when the Product Owner approved a real React/TypeScript "living prototype" vertical slice (Home → Inventario → Registrar mercancía → Selling → Digital receipt), built with real application state (mock/local data, no backend) — explicitly not disposable demo code ("I want enough architecture that we can continue building from it"), but also explicitly not yet validated/committed the way `03-build` content is (the Product Owner will decide afterward whether it becomes the primary living prototype / start of the production frontend). Classified as an Architect Decision, resolved directly (no RFC) — same category as D12/D13/D24/D31/D38: a repository/pipeline-organization question, touching no aggregate, bounded context, ubiquitous-language term, or frozen nav structure.
+
+**Ruling:** new folder, `product/02c-high-fidelity-prototype/`, following D24's letter-suffix convention — not `01-validation` (its "throwaway/speed-over-quality" charter directly contradicts the Product Owner's own instruction for this artifact), not `03-build` (that folder's charter, "survived validation, worth maintaining," is a post-decision state this artifact hasn't reached), and not `02b-medium-fidelity` (tracking-only by D24's own ruling — this folder holds the real code itself).
+
+**Scope note:** this ruling covers placement only. It does not evaluate the vertical slice's actual conformance to `domain-model.md`'s aggregates — that's a separate review, due once the slice exists.
+
+**Applied:** root `CLAUDE.md`'s "Where things live" list gains the new folder, same treatment D24 gave `02b-medium-fidelity/`.
+
 ## D1 — Registration mode is a Business capability, not a selling-screen choice
 The original validation prototype (`product/01-validation/registro.html`) exposed Buttons/NFC as a tab the seller switches live while selling. This was correct for validating registration *speed* (the actual hypothesis under test) but is wrong as a permanent interaction model. `registrationMode` now lives on Business, resolved once at Session start. The selling screen never asks.
 
