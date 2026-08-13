@@ -205,6 +205,16 @@ Same screen as §3.6, once the cooldown elapses — not a distinct destination, 
 ```
 Tapping it replays §3.5's send action (same idempotency guarantee), returns to §3.6 with the cooldown restarted, and shows a brief, self-dismissing ambient confirmation — "Código reenviado" — reusing the identical ambient-confirmation pattern `home.md §3.8e` already established for "Venta finalizada ✓," rather than inventing a new one.
 
+### 3.6b Código — formato inválido (inline)
+Reached whenever a paste or similar places non-numeric characters into the Código field — most plausibly, per this flow's own channel (§2.3), pasting the entire delivered message ("Tu código de Nahui es: 123456") rather than just the code itself. Not reachable through ordinary typing, since "Confirmar" stays disabled until the field holds exactly 6 digits — the identical shape §3.4 already handles for the phone field.
+```
+Código
+ [ Tu código de Nahui es... ]
+ Verifica tu código — solo dígitos, a 6 números.
+[       Confirmar       ]   (disabled)
+```
+Non-blocking, corrects in place — nothing was ever submitted, so nothing "failed" from her side. Same treatment as §3.4's equivalent state for the phone field.
+
 ### 3.7 Verificando código — near-instant / slow
 ```
 ┌───────────────────────────────┐        ┌───────────────────────────────┐
@@ -268,7 +278,7 @@ Distinct from a wrong code — this is a genuine send/confirm failure (network d
 Her typed code isn't lost. Retrying replays the same confirm attempt under the same idempotency key (§3.7's own guarantee) — critical here specifically, since this is the one ambiguous-outcome case `architecture-principles.md` #7 exists for: if the original attempt actually succeeded server-side and only the confirmation was lost, a blind retry must never risk a second, duplicate provisioning consequence for a first-time phone.
 
 ### 3.8 Retomar autenticación interrumpida
-No new wireframe — reaching any screen in §3.3–§3.7d a second time (after the app was closed, backgrounded, or crashed mid-flow) renders it pixel-identical, with whatever she'd already typed (her phone number, a partially-typed code) still present. Same guarantee `onboarding.md §3.7`/`home.md §3.13`/`inventory.md §3.7` already make for their own in-progress work. *global-principles.md*, "never ask twice." Never restarts from §3.3 once she's made real progress past it.
+No new wireframe — reaching any screen in §3.3–§3.7d a second time (after the app was closed, backgrounded, or crashed mid-flow) renders it pixel-identical, with whatever she'd already typed (her phone number, a partially-typed code) still present. The one exception to "pixel-identical": §3.6's resend countdown is recomputed from real elapsed time on resume, not frozen at its pre-interruption value or reset to a fresh 0:30 — the number changes, nothing else about the screen does. Same guarantee `onboarding.md §3.7`/`home.md §3.13`/`inventory.md §3.7` already make for their own in-progress work. *global-principles.md*, "never ask twice." Never restarts from §3.3 once she's made real progress past it.
 
 ### 3.9 Falla defensiva — no se pudo determinar el estado inicial
 ```
@@ -289,17 +299,29 @@ Open app (any time)
         no screen in this document shown at all
       → in-progress (phone typed, or code sent, not yet confirmed),
         interrupted ────────────────────────────────────────────────→
-        resume exact step (§3.8)
+        resume exact step (§3.8) — countdown recomputed from real
+        elapsed time, not frozen or reset
       → fresh, no session ────────────────────────────────────────────→
         Número celular (§3.3)
       → resolution itself fails ──────────────────────────────────────→
         fallback (§3.9), Reintentar
 
-From §3.3, type a valid number:
+From §3.3, type a number:
 
-  Enviar código
+  A paste (or similar) produces a superficially-complete, non-numeric
+  value ───────────────────────────────────────────────────────────→
+    formato inválido (§3.4), corrects in place, back to §3.3
+
+  A valid 10-digit number, Enviar código
     → enviando (§3.5) → error (§3.5a) → Reintentar
     → success → Ingresa el código (§3.6/§3.6a)
+        → A paste (or similar) places non-numeric characters into the
+          code field ────────────────────────────────────────────────→
+          formato inválido (§3.6b), corrects in place, back to §3.6
+        → (§3.6a only) Reenviar código ─────────────────────────────→
+          replays §3.5's send (same idempotency guarantee), returns to
+          §3.6 with cooldown restarted, ambient "Código reenviado"
+          confirmation
         → Confirmar → verificando (§3.7)
             → código incorrecto (§3.7a) → back to §3.6/§3.6a, retype
             → código expirado (§3.7b) → Reenviar código → back to §3.5
@@ -334,13 +356,14 @@ Any interruption up to and including a still-unconfirmed code:
 6. Enviando código — error
 7. Ingresa el código — entry (cooldown active)
 8. Ingresa el código — reenvío disponible (cooldown elapsed)
-9. Verificando código (near-instant / slow)
-10. Verificando código — código incorrecto
-11. Verificando código — código expirado
-12. Verificando código — demasiados intentos
-13. Verificando código — error de plataforma
-14. Retomar autenticación interrumpida (resumes any of states 3–13, pixel-identical, in-progress data intact)
-15. Falla defensiva — no se pudo determinar el estado inicial
+9. Código — formato inválido (inline)
+10. Verificando código (near-instant / slow)
+11. Verificando código — código incorrecto
+12. Verificando código — código expirado
+13. Verificando código — demasiados intentos
+14. Verificando código — error de plataforma
+15. Retomar autenticación interrumpida (resumes any of states 3–14, pixel-identical — except §3.6's resend countdown, recomputed from real elapsed time — in-progress data intact)
+16. Falla defensiva — no se pudo determinar el estado inicial
 
 ## 6. Minimum step count
 
@@ -364,7 +387,7 @@ Any interruption up to and including a still-unconfirmed code:
 
 None of the items below block this document's own completion. Both are named explicitly rather than invented around, per this folder's own §4 rule that every branch resolves to a named destination or an explicit "Not yet resolved" marker.
 
-1. **Architect Question (proposed Q17, `product/02-ux/architect-questions.md`) — the User/Owner/Seller domain model this document's flow needs to actually be implementable.** `domain-model.md` today has no User/Account aggregate, no Role concept, no Business↔User relationship — Business is modeled as belonging to "an install" (`onboarding.md §2.1`'s own language), not to an authenticated identity. This is the concrete follow-up `company/business-decisions.md` Q14 already named as owed ("architect still needs to design how this fits domain-model.md's Business/Session aggregates... before builder can implement it").
+1. **Architect Question Q17 (`product/02-ux/architect-questions.md`) — Resolved.** Was: the User/Owner/Seller domain model this document's flow needs to actually be implementable. `domain-model.md` previously had no User/Account aggregate, no Role concept, no Business↔User relationship — Business was modeled as belonging to "an install" (`onboarding.md §2.1`'s own language), not to an authenticated identity — the concrete follow-up `company/business-decisions.md` Q14 already named as owed. **Resolved** via `product/99-rfc/0007-user-and-business-membership.md`, Accepted and promoted in full via `decision-log.md` D44 — `User` (global aggregate root, identified by `phone`) and `BusinessMembership` (`role: OWNER | SELLER`) are now part of `domain-model.md`/`ubiquitous-language.md`, with Business creation carrying the structural Owner-Membership invariant this document's §2.2 first-verification branch already assumed. No amendment to this document's own flow logic (§2.2/§4) was needed — it already describes exactly the behavior D44 makes implementable.
 2. **Product Decision (proposed Q18, `product/02-ux/product-decisions.md`) — §2.2 case 3 (a verified phone, on a session-less device, already tied to an existing already-onboarded Business).** Genuinely undecided: whether a Business belongs to a device or an identity, and whether this mock/local-data prototype can even represent "same Business, second device" today.
 3. **Provisional prototype defaults, not frozen domain invariants (Product Owner clarification, 2026-08-13):** the specific numbers chosen here by judgment call — 6-digit code, 30-second resend cooldown, 5-minute code validity, 5-attempt soft-invalidation bound — are product/prototype defaults, not settled Foundation rules. They should be revisited when a real authentication provider is integrated (Stage 7, Backend Integration) — a real SMS/OTP vendor may impose its own constraints (code length, delivery/expiry timing, rate limits) that supersede these values outright, and even absent that, they should be checked against a real or simulated first-run test before being treated as final, same evidence-driven caution `onboarding.md §8` items 1/5/6 already recommend for its own judgment calls. Nothing in this document's flow logic (§2, §4) depends on the exact values — only on their existence and the branches they gate.
 4. **`brand-guardian` consultation complete (2026-08-13)** — §3.7c's "too many attempts" copy revised per that consultation's finding (subject/causal-structure fix, same soft-invalidation design); flagged as `tone-of-voice.md`-Hypothesis-tagged, worth a real merchant-reaction check once shipped, not blocking now.
