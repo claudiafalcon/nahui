@@ -5,7 +5,7 @@ description: Procedure for answering "what's next" for Nahui from backlog priori
 
 # Backlog Prioritization
 
-This skill replaced the `planner` agent (retired — see `company/infrastructure-decisions.md` for the migration record). It is invoked directly by Main, not dispatched as a subagent; there is no persona or independent judgment here beyond applying the procedure below to current repository state.
+This skill replaced the `planner` agent (retired — see `company/bitacora.md`, 2026-08-12, for the migration record). It is invoked directly by Main, not dispatched as a subagent; there is no persona or independent judgment here beyond applying the procedure below to current repository state.
 
 ## Procedure
 
