@@ -1319,6 +1319,23 @@ Gap Analysis → React Implementation → Review Pipeline (`ux-critic` +
 `reviewer`, both clean after one fix round, independently re-verified) +
 `merchant-user-tester` (clean) → Approved Slice.**
 
+**Post-approval fix, found by the Product Owner directly (not any review
+pass): `.app-shell` (`global.css` — the device-frame/desktop-preview
+treatment every screen in this product gets: rounded corners, shadow,
+centered against `#E2DED6` at widths >430px) was only applied inside
+`App.tsx`.** `AuthenticationFlow`/`OnboardingFlow`, rendered directly by the
+new top-level `AppRouter` before a user is authenticated/onboarded, never
+got that wrapper — they rendered flat, edge-to-edge, with none of that
+framing, a visible inconsistency against every other screen in the app.
+Missed by every automated review pass this slice went through, since none
+of them exercised a desktop-width viewport specifically. Fixed by moving
+`.app-shell` up from `App.tsx` into `AppRouter.tsx`, wrapping all three of
+its branches (`AuthenticationFlow` / `OnboardingFlow` / `App`) identically —
+`App.tsx` itself now returns a bare fragment. Both `PhoneStep`/`Welcome`
+(and every other new screen) already carried their own `flex: 1` on their
+root wrapper, so no layout changes were needed beyond moving the wrapping
+div itself. `tsc -b && vite build` clean after the change.
+
 ## File structure
 
 ```

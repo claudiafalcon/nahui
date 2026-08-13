@@ -31,17 +31,28 @@ export function AppRouter() {
   const { state } = useStore();
 
   const authenticated = state.currentUser?.phoneVerifiedAt != null;
-  if (!authenticated) {
-    // authentication.md §2.2: a first-ever verification hands off silently
-    // and directly into onboarding.md §3.3 — no interstitial "¡verificado!"
-    // screen (§10). Nothing further to do here: once `verifyOtp` sets
-    // `phoneVerifiedAt`, this component re-renders and falls through below.
-    return <AuthenticationFlow />;
-  }
 
-  if (!isOnboardingComplete(state)) {
-    return <OnboardingFlow />;
-  }
-
-  return <App />;
+  // `.app-shell` (global.css) is the device-frame/desktop-preview treatment
+  // shared by every screen this product renders, regardless of auth state —
+  // owned here, at the true top-level component, rather than inside `App`,
+  // so Authentication/Onboarding get the identical frame `App`'s own tabs
+  // always have (previously a real gap: those two flows rendered flat,
+  // edge-to-edge, with no card/shadow on desktop widths — caught in review,
+  // see README.md).
+  return (
+    <div className="app-shell">
+      {!authenticated ? (
+        // authentication.md §2.2: a first-ever verification hands off
+        // silently and directly into onboarding.md §3.3 — no interstitial
+        // "¡verificado!" screen (§10). Nothing further to do here: once
+        // `verifyOtp` sets `phoneVerifiedAt`, this component re-renders and
+        // falls through below.
+        <AuthenticationFlow />
+      ) : !isOnboardingComplete(state) ? (
+        <OnboardingFlow />
+      ) : (
+        <App />
+      )}
+    </div>
+  );
 }

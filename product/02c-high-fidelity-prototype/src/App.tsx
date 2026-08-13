@@ -16,7 +16,7 @@ export default function App() {
   const [inventoryView, setInventoryView] = useState<InventoryView>({ mode: 'catalog' });
 
   return (
-    <div className="app-shell">
+    <>
       <main className={styles.main}>
         {activeTab === 'hoy' && (
           <HomeScreen
@@ -43,6 +43,6 @@ export default function App() {
       </main>
 
       <NavBar active={activeTab} onChange={setActiveTab} />
-    </div>
+    </>
   );
 }
