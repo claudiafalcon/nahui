@@ -1,6 +1,6 @@
 # 0007 — User and BusinessMembership: authenticated Owner identity, atomic Business-creation invariant, domain shape ready for multiple Users per Business
 
-Status: Proposed
+Status: Accepted
 
 ## The idea
 
