@@ -140,22 +140,39 @@ instance (`ResultadosLoadError.tsx`, already disclosed). Owner: Stage 7
 slice should attempt these individually — build them together once a real
 backend makes the failure modes genuine.
 
-### B. Genuine regressions — not deferred, real defects
+### B. Genuine regressions — fixed (2026-08-14)
 
 Unlike (A), these were built in Medium-Fidelity, are structurally reachable
 today (their save paths already exist and run in React), and simply never
 got their error/retry branch wired — caught during Slice 2's own review and
-narrowed to a disclosure instead of fixed. **These should be fixed directly,
-independent of any larger slice.**
+narrowed to a disclosure instead of fixed at the time. **Both fixed directly,
+independent of any larger slice — no longer pending.**
 
 - **BusinessIdentity save error/retry** (`onboarding.md` §3.10a) — Medium-Fi
-  frame `763:56` exists; `BusinessIdentity.tsx` never passes
-  `error`/`errorLabel`/`onRetry` to `WritingState`.
+  frame `763:56` exists; `BusinessIdentity.tsx` now passes
+  `error`/`errorLabel`/`onRetry` to `WritingState`, identical shape to
+  §3.5a's already-correct wiring in `OnboardingFlow.tsx`, **including the
+  itemized Nombre/logo/Descripción preview §3.10a's wireframe shows on the
+  error screen itself** (`WritingState`'s new `children` prop, additive and
+  a no-op for every other caller). Fixed, not yet triggerable (same
+  disclosed convention as (A) — the local mock write never fails). Full
+  record: `docs/passes/slice-2-authentication-onboarding.md`.
 - **SellingGroups save error/retry** (`onboarding.md` §3.5e) — Medium-Fi
-  frame `732:5454` exists; `SellingGroups.tsx` has the identical gap.
-
-**Owner:** next available slot, not gated on anything — smallest, cheapest
-fix in this entire inventory.
+  frame `732:5454` exists; `SellingGroups.tsx` had the identical gap, fixed
+  the same way, **including the Selling-Group-lines preview §3.5e's
+  wireframe shows**. Fixed, not yet triggerable, same convention. **Corrected
+  in a follow-up fix round (`ux-critic` Findings A/B):** the initial fix
+  reused the normal state's interactive `committedList` (title, TagStub, live
+  `[✕]` remove button) as the error preview, and only showed already-
+  committed lines, so a merchant who typed one product and tapped
+  "Continuar" directly — without ever using "+ Agregar otro producto" —
+  saw a blank error screen on a failed save. Now a separate, purpose-built
+  passive rendering (`previewLines`/`.errorPreview`) — plain "Nombre —
+  $Precio" text lines, no title, no `[✕]`, matching §3.5e's wireframe
+  exactly — and it always includes the still-uncommitted active row when
+  it's save-ready, not only already-committed lines, so the preview is never
+  blank when real unsaved data exists. Full record:
+  `docs/passes/slice-2-authentication-onboarding.md`.
 
 ### C. Stale disclosure — correct this, don't rebuild yet
 

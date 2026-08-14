@@ -14,6 +14,13 @@ const SAVE_DELAY_MS = 260;
  * abstraction level, no cropping/editing of any kind). The inline failure
  * state (a file that can't be shown as a logo preview) *is* genuinely
  * reachable — selecting a non-image file — not a static/unwired state.
+ *
+ * §3.10a's save error/retry is now wired (`WritingState`'s `error`/
+ * `errorLabel`/`onRetry`, identical shape to §3.5a in `OnboardingFlow.tsx`) —
+ * a real, correctly-rendering branch, never triggered in this build since
+ * the local mock write never fails, the same disclosed-not-wired convention
+ * `BACKLOG.md`'s migration inventory already documents for §3.5a. Previously
+ * a genuine regression (`BACKLOG.md` migration inventory §B) — closed.
  */
 export function BusinessIdentity({
   onSaved,
@@ -24,7 +31,7 @@ export function BusinessIdentity({
   const [description, setDescription] = useState('');
   const [logo, setLogo] = useState<string | undefined>(undefined);
   const [logoError, setLogoError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const canContinue = name.trim().length > 0;
@@ -48,14 +55,38 @@ export function BusinessIdentity({
 
   function handleContinue() {
     if (!canContinue) return;
-    setSaving(true);
+    setSaveState('saving');
     window.setTimeout(() => {
       onSaved({ name: name.trim(), logo, description: description.trim() || undefined });
     }, SAVE_DELAY_MS);
   }
 
-  if (saving) {
+  if (saveState === 'saving') {
     return <WritingState label="Guardando tu negocio…" />;
+  }
+
+  if (saveState === 'error') {
+    // §3.10a — never actually reached in this build (this prototype's local
+    // write never fails), the same disclosed-not-wired convention already
+    // established for §3.5a. Retrying replays the exact already-typed
+    // Nombre/Descripción and already-selected Logo, since this is the same
+    // component instance and none of that state was ever cleared — and per
+    // §3.10a's own wireframe, that preservation is shown, not just true:
+    // Nombre/logo/Descripción render above "Reintentar," reusing the exact
+    // logo-preview markup (`.logoPreview`) the non-error screen already uses.
+    return (
+      <WritingState
+        error
+        errorLabel="No pudimos guardar tu negocio. Sigue aquí, intenta de nuevo."
+        onRetry={handleContinue}
+      >
+        <div className={styles.errorPreview}>
+          <span className={styles.errorPreviewName}>{name.trim()}</span>
+          {logo && <img className={styles.logoPreview} src={logo} alt="Logo de tu negocio" />}
+          {description.trim() && <p className={styles.errorPreviewDescription}>{description.trim()}</p>}
+        </div>
+      </WritingState>
+    );
   }
 
   return (

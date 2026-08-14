@@ -18,13 +18,29 @@ interface CommittedLine {
  * guaranteed empty, so the existing-vs-new ambiguity `inventory.md`'s own
  * two-step picker exists to resolve can never arise here). No back arrow,
  * no nav bar, no "Descartar" equivalent (§3.5c's own reasoning).
+ *
+ * §3.5e's save error/retry is wired (`WritingState`'s `error`/`errorLabel`/
+ * `onRetry`, identical shape to §3.5a in `OnboardingFlow.tsx`) — a real,
+ * correctly-rendering branch, never triggered in this build since the local
+ * mock write never fails, the same disclosed-not-wired convention
+ * `BACKLOG.md`'s migration inventory already documents for §3.5a. Retrying
+ * replays `handleContinue`, which recomputes the identical committed lines
+ * plus active-row draft from unchanged component state — nothing typed is
+ * ever lost or re-asked-for. Previously a genuine regression (`BACKLOG.md`
+ * migration inventory §B) — closed. The error preview itself (`previewLines`)
+ * is a separate, purpose-built passive rendering — plain "Nombre — $Precio"
+ * lines per §3.5e's own wireframe, never the normal state's interactive
+ * `committedList` — and always includes the still-uncommitted active row
+ * when it's save-ready, not only already-committed lines, so the preview is
+ * never blank for a merchant who typed one product and tapped "Continuar"
+ * directly (`ux-critic` Findings A/B — both closed).
  */
 export function SellingGroups({ onSaved }: { onSaved: (lines: { name: string; defaultPrice: number }[]) => void }) {
   const [committed, setCommitted] = useState<CommittedLine[]>([]);
   const [draftName, setDraftName] = useState('');
   const [draftPrice, setDraftPrice] = useState('');
   const [dupError, setDupError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
 
   const draftPriceValue = useMemo(() => parseFloat(draftPrice), [draftPrice]);
   const draftValid =
@@ -54,19 +70,35 @@ export function SellingGroups({ onSaved }: { onSaved: (lines: { name: string; de
     commitDraft();
   }
 
+  // Committed lines plus, when it's ready to save, the still-uncommitted
+  // active/draft row — the exact set `handleContinue` writes. Read from one
+  // place so the write path and §3.5e's error preview can never disagree
+  // about what's actually about to be (or was just attempted to be) saved.
+  // Previously `handleContinue` folded the draft row into a local variable
+  // only at save time, so a merchant who typed one product and tapped
+  // "Continuar" without ever using "+ Agregar otro producto" — a real path
+  // §3.5c's own gating rule allows — saw a blank error preview on a failed
+  // save even though her row was never lost (`ux-critic` Finding A).
+  const previewLines = useMemo(() => {
+    const lines = committed.map((c) => ({ name: c.name, price: c.price }));
+    if (draftValid && !isDuplicate(draftName)) {
+      lines.push({ name: draftName.trim(), price: draftPriceValue });
+    }
+    return lines;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [committed, draftValid, draftName, draftPriceValue]);
+
   function handleContinue() {
-    let lines = committed.map((c) => ({ name: c.name, defaultPrice: c.price }));
-    if (draftValid) {
-      if (isDuplicate(draftName)) {
-        setDupError(`Ya agregaste "${draftName.trim()}" — bórrala con [✕] si quieres cambiar el precio`);
-        return;
-      }
-      lines = [...lines, { name: draftName.trim(), defaultPrice: draftPriceValue }];
-    } else if (!draftEmpty) {
+    if (draftValid && isDuplicate(draftName)) {
+      setDupError(`Ya agregaste "${draftName.trim()}" — bórrala con [✕] si quieres cambiar el precio`);
+      return;
+    }
+    if (!draftValid && !draftEmpty) {
       return; // guard — Continuar is disabled in this state, see canContinue
     }
+    const lines = previewLines.map((l) => ({ name: l.name, defaultPrice: l.price }));
     if (lines.length === 0) return;
-    setSaving(true);
+    setSaveState('saving');
     window.setTimeout(() => onSaved(lines), 260);
   }
 
@@ -74,8 +106,70 @@ export function SellingGroups({ onSaved }: { onSaved: (lines: { name: string; de
     setCommitted((c) => c.filter((l) => l.key !== key));
   }
 
-  if (saving) {
+  // The normal editable state's own committed list — "Ya agregaste:" title,
+  // TagStub, live "✕" remove button. §3.5e's error preview deliberately does
+  // NOT reuse this: its wireframe draws committed lines as plain text with
+  // no `[✕]`, this doc family's own bracket-notation convention marking a
+  // passive reminder rather than an editable list. Reusing this interactive
+  // markup there would also let a merchant remove a line from `committed`
+  // before retrying, breaking §3.5e's own "nothing is lost, retry replays
+  // the same state" guarantee (`ux-critic` Finding B) — see `errorPreview`
+  // below for the separate, purpose-built passive rendering.
+  const committedList = committed.length > 0 && (
+    <div className={styles.committed}>
+      <span className={styles.committedTitle}>Ya agregaste:</span>
+      {committed.map((line) => (
+        <div key={line.key} className={`${styles.committedRow} stitchBottom`}>
+          <TagStub name={line.name} size={28} />
+          <span className={styles.committedName}>{line.name}</span>
+          <span className={`${styles.priceTag} moneyTag`}>{pesos(line.price)}</span>
+          <button
+            className={styles.removeBtn}
+            onClick={() => removeCommitted(line.key)}
+            aria-label={`Quitar ${line.name}`}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (saveState === 'saving') {
     return <WritingState label="Guardando lo que vendes…" />;
+  }
+
+  if (saveState === 'error') {
+    // §3.5e — never actually reached in this build (this prototype's local
+    // write never fails), the same disclosed-not-wired convention already
+    // established for §3.5a. `previewLines` is the exact set `handleContinue`
+    // is about to retry-write — every already-committed Selling Group plus
+    // the still-uncommitted active row, when it holds a valid Producto +
+    // Precio (§3.5b's own "Continuar" gate) — so this preview is never blank
+    // when real unsaved data exists on screen, even for a merchant who typed
+    // one product and tapped "Continuar" directly. Rendered as a separate,
+    // purpose-built passive block (§3.5e's own wireframe: plain "Nombre —
+    // $Precio" lines, no title, no `[✕]`) rather than reusing `committedList`
+    // — that markup is live/editable and tapping its remove button here
+    // would let a merchant shrink `committed` before retrying, breaking this
+    // guarantee that retrying replays the exact same state.
+    return (
+      <WritingState
+        error
+        errorLabel="No pudimos guardar lo que vendes. Sigue aquí, intenta de nuevo."
+        onRetry={handleContinue}
+      >
+        {previewLines.length > 0 && (
+          <div className={styles.errorPreview}>
+            {previewLines.map((line, i) => (
+              <p key={`${line.name}-${i}`} className={styles.errorPreviewLine}>
+                {line.name} — {pesos(line.price)}
+              </p>
+            ))}
+          </div>
+        )}
+      </WritingState>
+    );
   }
 
   return (
@@ -89,25 +183,7 @@ export function SellingGroups({ onSaved }: { onSaved: (lines: { name: string; de
       )}
 
       <div className={styles.scroll}>
-        {committed.length > 0 && (
-          <div className={styles.committed}>
-            <span className={styles.committedTitle}>Ya agregaste:</span>
-            {committed.map((line) => (
-              <div key={line.key} className={`${styles.committedRow} stitchBottom`}>
-                <TagStub name={line.name} size={28} />
-                <span className={styles.committedName}>{line.name}</span>
-                <span className={`${styles.priceTag} moneyTag`}>{pesos(line.price)}</span>
-                <button
-                  className={styles.removeBtn}
-                  onClick={() => removeCommitted(line.key)}
-                  aria-label={`Quitar ${line.name}`}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        {committedList}
 
         <div className={styles.field}>
           <span className={styles.label}>Producto</span>

@@ -112,3 +112,27 @@
 .cta {
   flex-shrink: 0;
 }
+
+/* §3.10a's error wireframe — Nombre/logo/Descripción shown above
+   "Reintentar," reusing .logoPreview for the image itself. No display
+   markup already existed for Nombre/Descripción as read-only text (the
+   non-error screen only ever shows them inside editable inputs), so these
+   two are minimal, purpose-built for this preview. */
+.errorPreview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.errorPreviewName {
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.errorPreviewDescription {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  text-align: center;
+}

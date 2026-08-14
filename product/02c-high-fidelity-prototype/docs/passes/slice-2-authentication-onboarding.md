@@ -255,6 +255,56 @@ fixed in one batch, `tsc -b && vite build` clean before and after:
    don't pass `error`/`errorLabel`/`onRetry` to `WritingState` at all, so
    they have no error+retry UI whatsoever, a disclosed gap rather than an
    untriggered branch.
+   **Update, 2026-08-14: this disclosed gap is now closed.**
+   `BusinessIdentity.tsx` and `SellingGroups.tsx` both now pass
+   `error`/`errorLabel`/`onRetry` to `WritingState`, identical shape to
+   §3.5a's already-correct wiring in `OnboardingFlow.tsx` — retry replays
+   each screen's own already-captured data (`handleContinue` re-run against
+   unchanged component state), never asking her to redo anything. Both
+   branches remain, like §3.5a, never actually triggered by this
+   prototype's local mock write (it doesn't fail) — the correct,
+   reachable-if-write-fails branch, same disclosed convention, not a
+   simulated failure. `tsc -b && vite build` clean. `BACKLOG.md`'s
+   migration inventory section B updated from "genuine regression" to
+   "fixed."
+   **Follow-up, same day: the itemized data preview is now included too,**
+   matching both wireframes exactly, not just the underlying preservation
+   guarantee. §3.10a's and §3.5e's own ASCII both draw the actual preserved
+   data on the error screen itself, above "Reintentar" — Nombre/logo/
+   Descripción for §3.10a, the committed Selling Group lines for §3.5e —
+   which the first fix's wiring didn't yet render. `WritingState` gained an
+   optional `children` slot (error variant only; §3.5a's caller is
+   unaffected). `BusinessIdentity.tsx`'s error branch now shows Nombre and
+   Descripción as plain text plus the logo (reusing the exact `.logoPreview`
+   image markup the non-error screen already uses); `SellingGroups.tsx`'s
+   error branch now shows the same committed-lines list (`TagStub` + name +
+   `.moneyTag` price) the normal state renders, factored into one shared
+   `committedList` value so both states render literally the same markup,
+   not a re-description of it. `tsc -b && vite build` clean.
+   **Correction, same day — `ux-critic` Findings A/B, both closed:** the
+   `SellingGroups.tsx` half of the above turned out wrong on inspection.
+   (A) `handleContinue` folded the active/draft row into a local variable
+   only at save time, never committing it — so a merchant who typed one
+   product and tapped "Continuar" directly, without ever using "+ Agregar
+   otro producto" (a real path §3.5c's own gating rule allows), saw a bare
+   error screen with no itemized content at all on a failed save, even
+   though nothing was actually lost. (B) The error preview reused
+   `committedList` verbatim — the exact interactive markup the normal state
+   uses, "Ya agregaste:" title and live `[✕]` remove button included —
+   contradicting §3.5e's own wireframe (plain text lines, no `[✕]`, this doc
+   family's own bracket-notation convention for a passive reminder) and
+   letting a merchant shrink `committed` from the error screen itself before
+   retrying, undercutting the "retry replays the exact same state" guarantee
+   and this project's "exactly one action" convention for error/retry
+   screens. Fixed together: a new `previewLines` value (committed lines plus
+   the active/draft row whenever it's save-ready) is now the single source
+   both `handleContinue`'s write and the error preview read from, and the
+   error branch renders it through a separate, purpose-built passive block
+   (`.errorPreview`/`.errorPreviewLine` — plain "Nombre — $Precio" text, no
+   title, no `TagStub`, no remove button), the same shape
+   `BusinessIdentity.tsx`'s own error preview already correctly used. The
+   `SellingGroups.tsx` error branch no longer reuses `committedList` at all.
+   `tsc -b && vite build` clean.
 2. **`.moneyTag` Design System violation in `SellingGroups.tsx`** (`ux-critic`
    Minor #1). The committed Selling Group line rendered `{name} —
    {pesos(price)}` as plain merged text; `DESIGN-SYSTEM.md` §3's hard rule

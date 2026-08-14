@@ -146,3 +146,20 @@
   padding: 14px var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
   background-color: var(--color-balanced);
 }
+
+/* §3.5e's error preview — plain "Nombre — $Precio" lines, no title, no
+   TagStub, no `[✕]`. Deliberately not `.committed`/`.committedRow`: those
+   are the normal state's own interactive markup (see `SellingGroups.tsx`'s
+   comment on why the error branch never reuses it). Same passive-text
+   treatment `BusinessIdentity.module.css`'s own `.errorPreview` block uses
+   for its error state. */
+.errorPreview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.errorPreviewLine {
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
