@@ -14,6 +14,7 @@ import { todayKey } from '../../domain/dates';
 import { SessionHeader } from '../../components/SessionHeader/SessionHeader';
 import { VentaActualTray } from '../../components/VentaActualTray/VentaActualTray';
 import { ProductTile } from '../../components/ProductTile/ProductTile';
+import { NFCScanPrompt } from '../../components/NFCScanPrompt/NFCScanPrompt';
 import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
 import type { Receipt } from '../../domain/store';
@@ -21,22 +22,38 @@ import { articulos, pesos, pluralize } from '../../domain/format';
 import styles from './Selling.module.css';
 
 /**
- * home.md §3.7/§3.8/§3.9 — active Session, buttons-mode selling surface
- * (this slice is always buttons mode — see
- * docs/passes/slice-1-home-inventario.md's "Scope decisions" section).
- * §3.9's grid: most-frequently-sold-first, sold-out tiles dimmed but
- * present, per-Product letter marker.
+ * home.md §3.7/§3.8/§3.9/§3.10 — active Session, mode-agnostic shell
+ * (SessionHeader + VentaActualTray, §3.7) with an exclusive registration
+ * zone that branches on `Session.operatingMode` (§2/§3.6a: resolved once at
+ * Session-start, never re-evaluated mid-Session):
+ * - `'buttons'` (§3.9) — the scrollable, frequency-ordered ProductTile grid,
+ *   unchanged since Slice 1.
+ * - `'nfc'` (§3.10, NFC Selling pass, D43) — no product grid at all, not
+ *   grayed out, not present: replaced entirely by `NFCScanPrompt` (reused
+ *   from the Asignar Tags slice, per the Architecture Gap Analysis's own
+ *   instruction), simulating a scan by resolving `addItemToSaleByTag`
+ *   against a randomly-picked currently-tagged-and-available unit — the
+ *   same "mock the physical mechanism, keep the domain layer honest"
+ *   posture `AssignTags.tsx`'s own scan simulation already established, not
+ *   a new convention invented here.
  */
 export function Selling({
   onSaleFinalized,
   onSessionClosed,
   onOpenSettings,
+  onNavigateToAssignTags,
 }: {
   onSaleFinalized: (receipt: Receipt) => void;
   onSessionClosed: (summary: { count: number; revenue: number }, sessionId: string) => void;
   onOpenSettings: () => void;
+  /** Fix round, `docs/passes/slice-7-nfc-selling.md` (ux-critic Major) —
+   * the same `HomeScreen.tsx`-owned hand-off `Idle.tsx`/`EventResume.tsx`
+   * already use for §3.6a's "Asignar tags" mention, threaded one level
+   * deeper so §3.10's no-match scan fallback can offer it too (see
+   * `handleScan`'s own doc comment below). */
+  onNavigateToAssignTags: () => void;
 }) {
-  const { state, addItemToSale, cancelSale, finalizeSale, closeSession } = useStore();
+  const { state, addItemToSale, addItemToSaleByTag, cancelSale, finalizeSale, closeSession } = useStore();
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [closeBlockedOpen, setCloseBlockedOpen] = useState(false);
@@ -51,7 +68,15 @@ export function Selling({
   // the same ambient, self-dismissing toast mechanism already established
   // in Eventos
   // (`EventsList.tsx`'s `toast`/`ambientMessage`), not a new UI primitive.
-  const [stockHint, setStockHint] = useState<string | null>(null);
+  // Fix round, `docs/passes/slice-7-nfc-selling.md` (ux-critic Major) —
+  // `stockHint` now optionally carries a tappable link, so the one
+  // sibling-less dead end in this file (§3.10's no-match scan fallback, see
+  // `handleScan` below) can offer a next step the same way every other
+  // "you can't do X right now" moment in this file family already does,
+  // without introducing a second hint mechanism.
+  const [stockHint, setStockHint] = useState<{ message: string; link?: { label: string; onTap: () => void } } | null>(
+    null,
+  );
   const stockHintTimeout = useRef<number | undefined>(undefined);
 
   const session = activeSession(state);
@@ -104,10 +129,89 @@ export function Selling({
   // src/domain/ change — same discipline as `lines` above.
   const subtotal = items.reduce((sum, item) => sum + item.pricePaid, 0);
 
-  function handleDisabledTap(productName: string) {
-    setStockHint(`Necesitas registrar stock de ${productName}.`);
+  function showHint(message: string, link?: { label: string; onTap: () => void }) {
+    setStockHint({ message, link });
     window.clearTimeout(stockHintTimeout.current);
+    // Bug found live by `merchant-user-tester`, reproduced directly in the
+    // browser (docs/passes/slice-7-nfc-selling.md): a fixed timeout — even a
+    // longer one — races real interaction latency ("notice the message,
+    // read it, decide, move a cursor/finger, tap") for the one message in
+    // this file that wraps an actual decision+action rather than a passive
+    // fact. A link-bearing hint therefore doesn't auto-dismiss at all — same
+    // persistent-until-resolved treatment as `NfcSessionStartNote.tsx`'s
+    // "Not Ready" variant, which never times out either. It's cleared only
+    // by a real event: `handleScan`'s own successful-resolution branch
+    // clearing it before it can go stale, or this screen unmounting
+    // (Session close, etc.), never by a clock. Every other `stockHint`
+    // caller in this file stays passive/glance-only and keeps its 2400ms
+    // auto-dismiss unchanged.
+    if (link) {
+      stockHintTimeout.current = undefined;
+      return;
+    }
     stockHintTimeout.current = window.setTimeout(() => setStockHint(null), 2400);
+  }
+
+  function handleDisabledTap(productName: string) {
+    showHint(`Necesitas registrar stock de ${productName}.`);
+  }
+
+  /**
+   * home.md §3.10's own scan simulation (see this file's top doc comment) —
+   * picks a random currently-tagged-and-available unit and resolves the
+   * scan against it, exactly the way a real NFC read would resolve against
+   * whichever physical tag she actually holds near the phone.
+   *
+   * **Genuine open gap at the wireframe level, `product/02-ux/
+   * product-decisions.md` Q2's own remaining task for `ux-designer`:** §3.10
+   * as Approved defines only the empty-tray idle prompt, and Q2 leaves the
+   * *exact placement* of a no-match resolution affordance on that screen
+   * formally undesigned. The *mechanism* itself, though, is already decided
+   * by Q2's own text — "the merchant is guided to tag the unit immediately
+   * when the situation arises," via "the redirect from Selling into
+   * Inventario's Asignar Tags flow," named there as "a sanctioned UI
+   * hand-off pattern already used elsewhere" (the same one §3.6a's own Not
+   * Ready mention already uses: "Todavía no tienes prendas con tag para
+   * hoy… [Asignar tags]," see `NfcSessionStartNote.tsx`'s `not-ready`
+   * variant). Fix round, `docs/passes/slice-7-nfc-selling.md` (ux-critic
+   * Major): a scan matching zero `available` tagged units (e.g. every
+   * tagged unit for a Product already sold this Session, or a customer
+   * wants a Product whose only remaining stock happens to be untagged —
+   * FIFO substitution doesn't apply in nfc mode) now offers that same
+   * hand-off — a tappable "Asignar tags" link inside this file's existing
+   * ambient-hint mechanism (`showHint`, already established above for a
+   * sold-out buttons-mode tile tap), not a new UI primitive and not a full
+   * modal interruption. This closes the "dead end" finding specifically;
+   * the exact wireframe placement on §3.10 itself remains Q2's own open
+   * item, not invented here.
+   */
+  function handleScan() {
+    const pool = state.units.filter((u) => u.status === 'available' && u.tagId != null);
+    const candidate = pool[Math.floor(Math.random() * pool.length)];
+    const noMatchLink = { label: 'Asignar tags', onTap: onNavigateToAssignTags };
+    if (!candidate?.tagId) {
+      showHint('No hay ninguna prenda con tag lista para escanear.', noMatchLink);
+      return;
+    }
+    const result = addItemToSaleByTag(candidate.tagId);
+    if (!result.ok) {
+      // Defensively unreachable in practice — `candidate` above was drawn
+      // from the exact live set `addItemToSaleByTag` itself re-derives —
+      // but never silently dropped either way (same disclosure as above).
+      showHint('No hay ninguna prenda con tag lista para escanear.', noMatchLink);
+      return;
+    }
+    // A real scan resolving successfully is one of the two events allowed
+    // to clear a persistent no-match hint (the other being the "Asignar
+    // tags" link navigating away) — see `showHint`'s own doc comment. Left
+    // in place unlikely to fire mid-Session (the no-match condition rarely
+    // self-resolves while scanning continues) but must clear correctly if
+    // it does, rather than leaving a stale "no match" message on screen
+    // next to a Sale that just gained an item.
+    if (stockHint?.link) {
+      window.clearTimeout(stockHintTimeout.current);
+      setStockHint(null);
+    }
   }
 
   function handleCloseSessionRequest() {
@@ -156,26 +260,54 @@ export function Selling({
         <div className={styles.savingLine}>Cerrando venta…</div>
       ) : (
         <>
-          {stockHint && <p className={styles.stockHint}>{stockHint}</p>}
+          {stockHint && (
+            <p className={styles.stockHint}>
+              {stockHint.message}
+              {stockHint.link && (
+                <>
+                  {' '}
+                  <button className={styles.stockHintLink} onClick={stockHint.link.onTap}>
+                    {stockHint.link.label}
+                  </button>
+                </>
+              )}
+            </p>
+          )}
 
-          <div className={styles.gridScroll}>
-            {grid.length === 0 ? (
-              <p className={styles.emptyGrid}>Todavía no tienes productos registrados.</p>
-            ) : (
-              <div className={styles.grid}>
-                {grid.map(({ product, available }) => (
-                  <ProductTile
-                    key={product.id}
-                    name={product.name}
-                    available={available}
-                    countInSale={countByProduct.get(product.id)}
-                    onTap={() => addItemToSale(product.id)}
-                    onDisabledTap={() => handleDisabledTap(product.name)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          {session.operatingMode === 'nfc' ? (
+            <div className={styles.nfcSurface}>
+              <NFCScanPrompt
+                onTap={handleScan}
+                ariaLabel="Acerca el tag del producto"
+                label={
+                  <>
+                    Acerca el tag del
+                    <br />
+                    producto
+                  </>
+                }
+              />
+            </div>
+          ) : (
+            <div className={styles.gridScroll}>
+              {grid.length === 0 ? (
+                <p className={styles.emptyGrid}>Todavía no tienes productos registrados.</p>
+              ) : (
+                <div className={styles.grid}>
+                  {grid.map(({ product, available }) => (
+                    <ProductTile
+                      key={product.id}
+                      name={product.name}
+                      available={available}
+                      countInSale={countByProduct.get(product.id)}
+                      onTap={() => addItemToSale(product.id)}
+                      onDisabledTap={() => handleDisabledTap(product.name)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {items.length > 0 && (
             <div className={`${styles.footer} stitchTop`}>

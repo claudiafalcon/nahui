@@ -125,6 +125,21 @@
   padding: 2px;
 }
 
+/* home.md §3.6a's Limited Ready override, once flipped — "Vas a usar tags
+   esta sesión · [ Cambiar ]" is one line, not a stacked line+link the way
+   every other §3.6a variant renders (contrast .readinessLink above) — the
+   same link styling, inline within the sentence instead of on its own row. */
+.readinessLinkInline {
+  display: inline;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 0;
+}
+
 /* home.md §3.5 — the upcoming-Event card: "visually secondary," never a
    button masquerading as the primary CTA. A quiet paper-toned strip above
    the greeting, tappable only into Eventos' own detail screen. */

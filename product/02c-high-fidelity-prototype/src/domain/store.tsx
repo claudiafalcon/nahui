@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { makeId } from './id';
 import { addDaysToKey, dateKey, rangesOverlap, todayKey } from './dates';
-import { eventStatus } from './selectors';
+import { eventStatus, nfcCapable, nfcReadiness } from './selectors';
 import type {
   AppState,
   Business,
@@ -95,6 +95,12 @@ function loadState(): AppState {
                 pendingSubscriptionTier: parsed.business.pendingSubscriptionTier ?? null,
                 pendingSubscriptionTierEffectiveDate: parsed.business.pendingSubscriptionTierEffectiveDate ?? null,
                 pendingSubscriptionTierAcknowledged: parsed.business.pendingSubscriptionTierAcknowledged ?? false,
+                // NFC Selling pass (D43) — an older saved Business has no
+                // `nfcAvailabilityNudgeShown` key at all; defaulted to
+                // `false` (not yet shown), the same honest "never seen it
+                // yet" starting value `completeOnboarding` writes for a
+                // brand-new Business.
+                nfcAvailabilityNudgeShown: parsed.business.nfcAvailabilityNudgeShown ?? false,
               }
             : parsed.business,
         };
@@ -226,9 +232,35 @@ interface StoreValue {
   setPriceOverride: (eventId: ID, productId: ID, overridePrice: number) => void;
   /** home.md §2 / events.md §2 — `eventId` is optional; omitted (or `null`)
    * for a Quick Session, exactly as before. The existing "any active Session
-   * blocks a new one" guard already generalizes correctly with no change. */
-  startSession: (eventId?: ID | null) => void;
+   * blocks a new one" guard already generalizes correctly with no change.
+   * **NFC Selling pass (D43):** `overrideToNfc` is Ana's own Limited Ready
+   * override choice (§3.6a's "Usar tags de todos modos"), resolved locally
+   * in the UI *before* this tap (`useNfcSessionStart.ts`) and threaded
+   * through here — it can't be derived from stored state, since it's a
+   * one-off, per-tap choice, never persisted. Defaults to `false` (no
+   * override) so every other existing call site stays correct with no
+   * change. `Session.operatingMode` itself is now resolved for real inside
+   * this function (see its own body) rather than hardcoded — the same
+   * "never trust a UI-computed value, recheck defensively at the write"
+   * posture `setPriceOverride` above already establishes. */
+  startSession: (eventId?: ID | null, overrideToNfc?: boolean) => void;
   addItemToSale: (productId: ID) => boolean;
+  /** home.md §3.10 — the nfc-mode counterpart to `addItemToSale` above:
+   * resolves the *specific* scanned unit (`tagId` match) rather than
+   * `addItemToSale`'s FIFO oldest-unit selection, reusing its identical
+   * price-resolution/Sale-creation logic otherwise. Mirrors
+   * `assignTagToNextPendingUnit`'s discriminated-result shape. `'no-match'`
+   * covers the genuinely open gap `product/02-ux/product-decisions.md` Q2
+   * names (a scan that matches no `available` tagged unit) — this build
+   * never invents a resolution UI for it (see `Selling.tsx`'s own caller),
+   * only guarantees the write path itself never silently does the wrong
+   * thing. */
+  addItemToSaleByTag: (
+    tagId: string,
+  ) =>
+    | { ok: true; unitId: ID; productId: ID }
+    | { ok: false; reason: 'no-active-session' }
+    | { ok: false; reason: 'no-match' };
   cancelSale: () => void;
   finalizeSale: () => Receipt | null;
   closeSession: () => void;
@@ -259,6 +291,14 @@ interface StoreValue {
    * `defaultSellingMode` — never written as a side effect of any
    * `subscriptionTier` action, in either direction. */
   changeDefaultSellingMode: (mode: SessionOperatingMode) => void;
+  /** home.md §3.6a's fourth variant (Ready-but-`buttons`, shown once ever) —
+   * sets `Business.nfcAvailabilityNudgeShown = true`, permanently. Fired
+   * once, via a `useEffect`, the first time that variant actually renders
+   * (`useNfcSessionStart.ts`) — mirrors `reconcilePendingSubscriptionTier`'s
+   * own one-time-acknowledgment write pattern above, at the field-write
+   * level (no two-phase landing logic needed here, since this flag has only
+   * one direction and no effective date to wait on). */
+  markNfcAvailabilityNudgeShown: () => void;
   /** settings.md §2.4 — simulates a pending `subscriptionTier` change
    * "landing" with no real scheduled job (D25 leaves the actual billing
    * mechanism external): called once whenever Configuración's own vista
@@ -456,6 +496,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       pendingSubscriptionTier: null,
       pendingSubscriptionTierEffectiveDate: null,
       pendingSubscriptionTierAcknowledged: false,
+      nfcAvailabilityNudgeShown: false,
     };
     const membership: BusinessMembership = {
       id: makeId('mem'),
@@ -498,6 +539,58 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   /** onboarding.md §3.6 — "Entrar" tapped, or auto-continued. */
   function acknowledgeOnboarding() {
     setState((s) => (s.business ? { ...s, business: { ...s.business, onboardingAcknowledged: true } } : s));
+  }
+
+  /**
+   * Shared Price resolution (D33, domain-model.md "Price resolution") —
+   * extracted so `addItemToSale` (Buttons mode) and `addItemToSaleByTag`
+   * (nfc mode) resolve "what does this Sale item cost" through exactly one
+   * mechanism, mirroring the `mintProduct`/`resolveVenue` extraction pattern
+   * above rather than two independently-built, copy-pasted implementations
+   * of the same domain rule (fix round, `docs/passes/slice-7-nfc-selling.md`
+   * — a `reviewer`-caught Important finding: the two write paths previously
+   * each reimplemented this lookup separately, despite doc comments already
+   * describing it as "reuse"). Returns `null` only when `productId` doesn't
+   * resolve to a real Product — defensively unreachable through the real UI,
+   * same posture every other guard in this file already applies.
+   */
+  function resolvePricePaid(s: AppState, session: Session, productId: ID): number | null {
+    const product = s.products.find((p) => p.id === productId);
+    if (!product) return null;
+    const override = session.eventId
+      ? s.priceOverrides.find((po) => po.eventId === session.eventId && po.productId === productId)
+      : undefined;
+    return override?.overridePrice ?? product.defaultPrice;
+  }
+
+  /**
+   * Shared "find-or-create this Session's open Sale, append one SaleItem,
+   * mark the sold InventoryUnit reserved" write — the other half of the
+   * `addItemToSale`/`addItemToSaleByTag` extraction (see
+   * `resolvePricePaid` above for the full rationale). Pure, given the
+   * current state `s` — same shape as `mintProduct`/`resolveVenue`: called
+   * from inside each caller's own `setState` updater, never calling
+   * `setState` itself, so both write paths still go through exactly one
+   * `setState` call each (no behavior change to when/how state actually
+   * commits).
+   */
+  function appendItemToOpenSale(
+    s: AppState,
+    sessionId: ID,
+    productId: ID,
+    unitId: ID,
+    pricePaid: number,
+  ): Pick<AppState, 'sales' | 'units'> {
+    let sales = s.sales;
+    let sale = sales.find((sa) => sa.sessionId === sessionId && sa.status === 'open');
+    if (!sale) {
+      sale = { id: makeId('sale'), sessionId, items: [], status: 'open' };
+      sales = [...sales, sale];
+    }
+    const item: SaleItem = { id: makeId('item'), productId, unitId, pricePaid };
+    sales = sales.map((sa) => (sa.id === sale!.id ? { ...sa, items: [...sa.items, item] } : sa));
+    const units = s.units.map((u) => (u.id === unitId ? { ...u, status: 'reserved' as InventoryUnitStatus } : u));
+    return { sales, units };
   }
 
   function editPrice(productId: ID, newPrice: number) {
@@ -616,24 +709,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function startSession(eventId: ID | null = null) {
+  function startSession(eventId: ID | null = null, overrideToNfc: boolean = false) {
     setState((s) => {
       if (!s.business) return s; // defensive — Home only mounts once onboarding is complete
       if (s.sessions.some((sess) => sess.status === 'active')) return s; // never ask twice
-      // NFC Readiness / Session-start resolution (decision-log.md D23),
-      // narrowed by this pass's own disclosed scope decision: NFCTag
-      // assignment ("Asignar Tags," inventory.md §3.14) isn't modeled at
-      // all in this build, so no InventoryUnit can ever carry an assigned
-      // tag — NFC Readiness therefore always evaluates Not Ready, and
-      // Session.operatingMode always resolves silently to 'buttons', even
-      // for the demo Onboarding path (the only path that ever seeds
-      // defaultSellingMode='nfc', onboarding.md §2.2). This is the one
-      // real, structural consequence: home.md §3.6a's Not Ready one-time
-      // mention ("Todavía no tienes prendas con tag para hoy...") is what
-      // the demo path's Idle screen shows instead — see Idle.tsx and
-      // docs/passes/slice-2-authentication-onboarding.md's "NFC Readiness
-      // always evaluates Not Ready" disclosure.
-      const operatingMode: SessionOperatingMode = 'buttons';
+
+      // NFC Readiness / Session-start resolution (home.md §2, decision-log.md
+      // D23) — committed only here, at the Session-start tap, since
+      // `Session` doesn't exist to write it onto any earlier. Computed
+      // defensively from `s` (never trusting a UI-computed value, same
+      // posture `setPriceOverride` above already establishes) rather than
+      // any value passed in — the one exception is `overrideToNfc` itself,
+      // which is genuinely a per-tap merchant choice with no other honest
+      // source (see this function's own `StoreValue` doc comment).
+      const capability = nfcCapable(s);
+      const readiness = nfcReadiness(s);
+      const defaultMode = s.business.defaultSellingMode;
+
+      let operatingMode: SessionOperatingMode = 'buttons';
+      if (defaultMode === 'nfc' && capability) {
+        if (readiness === 'ready') operatingMode = 'nfc';
+        else if (readiness === 'limited' && overrideToNfc) operatingMode = 'nfc';
+        // 'not-ready', or 'limited' without an override, both stay 'buttons'
+        // — an operational impossibility/a recommendation she didn't
+        // override, never a merchant-facing error (home.md §3.6a).
+      }
+
       const session: Session = {
         id: makeId('sess'),
         eventId,
@@ -648,6 +749,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   function addItemToSale(productId: ID): boolean {
     const session = state.sessions.find((sess) => sess.status === 'active');
     if (!session) return false;
+    // Defensive re-check (fix round, `docs/passes/slice-7-nfc-selling.md`,
+    // reviewer Suggestion) — the `'buttons'` grid is only ever rendered
+    // while `Session.operatingMode === 'buttons'` (`Selling.tsx`'s own
+    // exclusive-zone branch), so this is unreachable through the real UI,
+    // but never trust a UI-computed value alone, same posture
+    // `setPriceOverride`/`startSession` already apply elsewhere in this file.
+    if (session.operatingMode !== 'buttons') return false;
 
     // FIFO allocation, Buttons mode (decision-log.md D5): oldest available
     // InventoryUnit for this Product, automatically, no merchant decision.
@@ -656,39 +764,61 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .sort((a, b) => a.receivedAt - b.receivedAt)[0];
     if (!candidate) return false;
 
-    const product = state.products.find((p) => p.id === productId);
-    if (!product) return false;
+    // Price resolution (D33, domain-model.md "Price resolution") — shared
+    // with `addItemToSaleByTag` via `resolvePricePaid` (see that function's
+    // own doc comment for why this is now one implementation, not two).
+    const pricePaid = resolvePricePaid(state, session, productId);
+    if (pricePaid == null) return false;
 
-    // Price resolution (D33, domain-model.md "Price resolution"): this
-    // Session's Event's Price Override for the sold Product if one exists,
-    // else the Product's own defaultPrice — never a merchant decision, never
-    // asked mid-Sale. A Quick Session (eventId: null) always falls straight
-    // to defaultPrice, since there's no Event to carry an override.
-    const override = session.eventId
-      ? state.priceOverrides.find((po) => po.eventId === session.eventId && po.productId === productId)
-      : undefined;
-    const pricePaid = override?.overridePrice ?? product.defaultPrice;
-
-    setState((s) => {
-      let sales = s.sales;
-      let sale = sales.find((sa) => sa.sessionId === session.id && sa.status === 'open');
-      if (!sale) {
-        sale = { id: makeId('sale'), sessionId: session.id, items: [], status: 'open' };
-        sales = [...sales, sale];
-      }
-      const item: SaleItem = {
-        id: makeId('item'),
-        productId,
-        unitId: candidate.id,
-        pricePaid,
-      };
-      sales = sales.map((sa) => (sa.id === sale!.id ? { ...sa, items: [...sa.items, item] } : sa));
-      const units = s.units.map((u) =>
-        u.id === candidate.id ? { ...u, status: 'reserved' as InventoryUnitStatus } : u,
-      );
-      return { ...s, sales, units };
-    });
+    setState((s) => ({ ...s, ...appendItemToOpenSale(s, session.id, productId, candidate.id, pricePaid) }));
     return true;
+  }
+
+  /**
+   * home.md §3.10 — nfc-mode's own registration write, sharing
+   * `addItemToSale` above's price-resolution/Sale-creation logic through the
+   * `resolvePricePaid`/`appendItemToOpenSale` helpers (fix round,
+   * `docs/passes/slice-7-nfc-selling.md` — see those helpers' own doc
+   * comments; this was previously a second, independently-written copy of
+   * the same logic, not an actual shared code path) with one swap: the unit
+   * is resolved by the *specific* scanned `tagId`
+   * (`u.tagId === tagId && u.status === 'available'`) rather than FIFO's
+   * oldest-available-for-this-Product selection — there is no Product to
+   * select by here, only a physical tag already tied to exactly one unit.
+   * `'no-match'` is `product/02-ux/product-decisions.md` Q2's own genuinely
+   * open gap (a scan matching no `available` tagged unit) — this function
+   * only guarantees that case is never silently mishandled; it does not
+   * invent a resolution UI for it (see `Selling.tsx`'s own caller/disclosure).
+   */
+  function addItemToSaleByTag(
+    tagId: ID,
+  ):
+    | { ok: true; unitId: ID; productId: ID }
+    | { ok: false; reason: 'no-active-session' }
+    | { ok: false; reason: 'no-match' } {
+    const session = state.sessions.find((sess) => sess.status === 'active');
+    if (!session) return { ok: false, reason: 'no-active-session' };
+    // Defensive re-check (fix round, reviewer Suggestion — same posture as
+    // `addItemToSale`'s own re-check above): the `NFCScanPrompt` surface is
+    // only ever rendered while `Session.operatingMode === 'nfc'`
+    // (`Selling.tsx`'s own exclusive-zone branch), so this is unreachable
+    // through the real UI. No dedicated reason code exists for "wrong mode"
+    // — `'no-match'` already reads correctly here ("this scan can't resolve
+    // to a sellable item right now"), so it's reused rather than adding a
+    // reason variant nothing in the UI would ever branch on differently.
+    if (session.operatingMode !== 'nfc') return { ok: false, reason: 'no-match' };
+
+    const candidate = state.units.find((u) => u.tagId === tagId && u.status === 'available');
+    if (!candidate) return { ok: false, reason: 'no-match' };
+
+    const pricePaid = resolvePricePaid(state, session, candidate.productId);
+    if (pricePaid == null) return { ok: false, reason: 'no-match' };
+
+    setState((s) => ({
+      ...s,
+      ...appendItemToOpenSale(s, session.id, candidate.productId, candidate.id, pricePaid),
+    }));
+    return { ok: true, unitId: candidate.id, productId: candidate.productId };
   }
 
   function cancelSale() {
@@ -819,6 +949,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => (s.business ? { ...s, business: { ...s.business, defaultSellingMode: mode } } : s));
   }
 
+  /** home.md §3.6a's fourth variant — see this function's own `StoreValue`
+   * doc comment above. Idempotent — a second call (defensively unreachable
+   * once `useNfcSessionStart.ts`'s own effect has fired once) is a no-op in
+   * effect, since it only ever sets the flag to `true`. */
+  function markNfcAvailabilityNudgeShown() {
+    setState((s) => (s.business ? { ...s, business: { ...s.business, nfcAvailabilityNudgeShown: true } } : s));
+  }
+
   /** settings.md §2.4 — see the `StoreValue` interface doc comment above for
    * the full two-phase reasoning. Reads/writes only `state.business`'s own
    * pending-change fields; never touches `defaultSellingMode` (§2.3's
@@ -895,6 +1033,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setPriceOverride,
     startSession,
     addItemToSale,
+    addItemToSaleByTag,
     cancelSale,
     finalizeSale,
     closeSession,
@@ -902,6 +1041,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     requestDowngradeToFree,
     cancelPendingSubscriptionTierChange,
     changeDefaultSellingMode,
+    markNfcAvailabilityNudgeShown,
     reconcilePendingSubscriptionTier,
     signOut,
     resetPrototype,

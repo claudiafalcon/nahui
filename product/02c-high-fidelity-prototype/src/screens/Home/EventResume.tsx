@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Sheet } from '../../components/Sheet/Sheet';
 import { Button } from '../../components/Button/Button';
 import { pesos, pluralize } from '../../domain/format';
+import { useNfcSessionStart } from './useNfcSessionStart';
+import { NfcSessionStartNote } from './NfcSessionStartNote';
 import styles from './Idle.module.css';
 import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css';
 
@@ -28,11 +30,17 @@ import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css
  * headline and the primary CTA — the exact composition order the amendment
  * specifies (identity → Día N → same-day-sales line → primary CTA →
  * §3.6a's own lines, if any).
+ *
+ * **§3.6a (NFC Selling pass, D43) — shares `useNfcSessionStart`/
+ * `NfcSessionStartNote` with `Idle.tsx`** rather than duplicating the same
+ * four-variant branching a second time (§3.6a's own text: "applies
+ * identically wherever a new Session is about to open — §3.4... §3.5...
+ * §3.6"). `overrideToNfc` is threaded through `onContinue` at the moment of
+ * *this* tap, same as `Idle.tsx`'s own `onStartSession`.
  */
 export function EventResume({
   venueName,
   dayNumber,
-  defaultSellingMode,
   todaySales,
   onContinue,
   onOpenSettings,
@@ -40,9 +48,11 @@ export function EventResume({
 }: {
   venueName: string;
   dayNumber: number;
-  defaultSellingMode: 'buttons' | 'nfc';
   todaySales?: { total: number; count: number } | null;
-  onContinue: () => void;
+  /** NFC Selling pass (D43) — `overrideToNfc` is whatever
+   * `useNfcSessionStart`'s own local override state currently reads at the
+   * moment of this tap (always `false` outside the Limited Ready variant). */
+  onContinue: (overrideToNfc: boolean) => void;
   onOpenSettings: () => void;
   /** §3.6a's "Asignar tags" link — routes into Inventario's real Asignar
    * Tags queue (inventory.md §3.14, Asignar Tags pass, D43). Prop name kept
@@ -51,7 +61,7 @@ export function EventResume({
   onOpenAssignTagsPlaceholder: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const notReady = defaultSellingMode === 'nfc';
+  const { variant, overrideToNfc, toggleOverride } = useNfcSessionStart();
 
   return (
     <>
@@ -72,19 +82,16 @@ export function EventResume({
               Ya vendiste {pesos(todaySales.total)} · {todaySales.count} {pluralize(todaySales.count, 'venta', 'ventas')} hoy
             </p>
           )}
-          <Button className={styles.cta} onClick={onContinue}>
+          <Button className={styles.cta} onClick={() => onContinue(overrideToNfc)}>
             Continuar Día {dayNumber}
           </Button>
-          {notReady && (
-            <div className={styles.readinessNote}>
-              <p className={styles.readinessLine}>
-                Todavía no tienes prendas con tag para hoy — vas a vender con botones.
-              </p>
-              <button className={styles.readinessLink} onClick={onOpenAssignTagsPlaceholder}>
-                Asignar tags
-              </button>
-            </div>
-          )}
+          <NfcSessionStartNote
+            variant={variant}
+            overrideToNfc={overrideToNfc}
+            onToggleOverride={toggleOverride}
+            onOpenAssignTags={onOpenAssignTagsPlaceholder}
+            onOpenSettings={onOpenSettings}
+          />
         </div>
       </div>
 

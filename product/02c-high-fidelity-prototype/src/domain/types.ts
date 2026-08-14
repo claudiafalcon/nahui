@@ -119,6 +119,20 @@ export interface Business {
   pendingSubscriptionTier: 'free' | 'paid' | null;
   pendingSubscriptionTierEffectiveDate: string | null;
   pendingSubscriptionTierAcknowledged: boolean;
+  /**
+   * NFC Selling pass (Migration Workflow D43, `home.md` §3.6a's fourth
+   * Session-start variant — "Ready, but `defaultSellingMode = buttons`...
+   * tags now available"). `true` once that one-time discoverability mention
+   * has actually been shown — the exact render `useNfcSessionStart.ts`
+   * (`src/screens/Home/`) fires its own one-time mutator for, mirroring
+   * `pendingSubscriptionTierAcknowledged`'s own "shown once ever" flag
+   * pattern above. Never reset once set — §3.6a's own explicit rule ("she
+   * may genuinely prefer botones... repeating this mention... would read as
+   * the app second-guessing a choice she's entitled to make"), so this stays
+   * `true` for the life of the Business even if the readiness/
+   * `defaultSellingMode` disagreement it flagged persists indefinitely.
+   */
+  nfcAvailabilityNudgeShown: boolean;
 }
 
 /** Selling context — Eventos (`events.md`, `decision-log.md` D8/D17/D20). */

@@ -39,6 +39,20 @@
   align-content: start;
 }
 
+/* home.md §3.10 — the nfc-mode registration surface: no product grid at
+   all, replaced entirely by the shared NFCScanPrompt (Asignar Tags' own
+   component, inventory.md §3.14), centered in the same flexible region
+   .gridScroll occupies in buttons mode — same shell, mutually exclusive
+   content (architecture-principles.md #1: "the merchant never switches
+   between them while selling," vision.md). */
+.nfcSurface {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4) var(--space-4) var(--space-8);
+}
+
 .footer {
   padding: 14px var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
   background-color: var(--color-balanced);
@@ -60,6 +74,26 @@
   font: var(--text-body-sm);
   font-weight: 600;
   color: var(--color-warning);
+}
+
+/* Fix round, docs/passes/slice-7-nfc-selling.md (ux-critic Major) — the
+   §3.10 no-match scan fallback's own "Asignar tags" hand-off, inline within
+   the same sentence as .stockHint's warning text (mirrors
+   Idle.module.css's .readinessLinkInline: an inline link within one line of
+   copy, not a stacked line+link — this hint is a single short line to begin
+   with). Coral, not warning-colored: the surrounding text is flagging why
+   the tap didn't work, the link itself is an ordinary next-step action,
+   same distinction every sibling readiness link in this file family makes. */
+.stockHintLink {
+  display: inline;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 700;
+  padding: 0;
+  text-decoration: underline;
 }
 
 .emptyGrid {

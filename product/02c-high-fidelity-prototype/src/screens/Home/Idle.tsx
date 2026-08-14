@@ -4,6 +4,8 @@ import { Sheet } from '../../components/Sheet/Sheet';
 import { BrandMark } from '../../components/BrandMark/BrandMark';
 import { daysFromToday } from '../../domain/dates';
 import { pesos, pluralize } from '../../domain/format';
+import { useNfcSessionStart } from './useNfcSessionStart';
+import { NfcSessionStartNote } from './NfcSessionStartNote';
 import styles from './Idle.module.css';
 import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css';
 
@@ -26,15 +28,17 @@ import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css
  * step to Quick Session ("Quick Session works regardless," domain-model.md).
  * "Iniciar Venta Rápida" keeps full prominence with or without the card.
  *
- * §3.6a Not Ready — `Session.operatingMode` resolution is untouched by the
- * Asignar Tags pass (D43, out of that pass's own explicit scope): NFC
- * Readiness still always evaluates Not Ready regardless of how many units
- * actually carry a tag, so this note and its trigger condition
- * (`defaultSellingMode === 'nfc'`) are unchanged. What changed is only the
- * destination: "Asignar tags" now routes into Inventario's real Asignar
- * Tags queue (`inventory.md` §3.14, via `onOpenAssignTagsPlaceholder`,
- * unrenamed to keep this diff scoped) instead of a Home-local Placeholder
- * stub.
+ * **§3.6a (NFC Selling pass, D43) — all four Session-start variants are now
+ * real**, via the shared `useNfcSessionStart`/`NfcSessionStartNote` pair
+ * (see those files' own doc comments): Limited Ready (inline override),
+ * Not Ready, capability revoked, and the one-time Ready-but-`buttons`
+ * discoverability nudge. `overrideToNfc` — Limited Ready's own local
+ * override choice — is threaded through `onStartSession` at the moment of
+ * *this* tap (§6's footnote: "before the existing Session-start tap"),
+ * never gating or delaying it. "Asignar tags" routes into Inventario's real
+ * Asignar Tags queue (`inventory.md` §3.14, via
+ * `onOpenAssignTagsPlaceholder`, unrenamed from the Asignar Tags pass to
+ * keep that diff scoped) instead of a Home-local Placeholder stub.
  *
  * **Same-day resume line (§3.4/§3.5, closes `architect-questions.md` Q19).**
  * `todaySales` is `todaySalesSummary(state, null)` — the Quick Session scope
@@ -44,7 +48,6 @@ import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css
  * greeting and the primary CTA, exactly the position both wireframes show —
  * pixel-identical to the base state otherwise. */
 export function Idle({
-  defaultSellingMode,
   upcomingEventVenueName,
   upcomingEventStartDate,
   onTapUpcomingEvent,
@@ -53,17 +56,19 @@ export function Idle({
   onOpenSettings,
   onOpenAssignTagsPlaceholder,
 }: {
-  defaultSellingMode: 'buttons' | 'nfc';
   upcomingEventVenueName?: string;
   upcomingEventStartDate?: string;
   onTapUpcomingEvent?: () => void;
   todaySales?: { total: number; count: number } | null;
-  onStartSession: () => void;
+  /** NFC Selling pass (D43) — `overrideToNfc` is whatever
+   * `useNfcSessionStart`'s own local override state currently reads at the
+   * moment of this tap (always `false` outside the Limited Ready variant). */
+  onStartSession: (overrideToNfc: boolean) => void;
   onOpenSettings: () => void;
   onOpenAssignTagsPlaceholder: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const notReady = defaultSellingMode === 'nfc';
+  const { variant, overrideToNfc, toggleOverride } = useNfcSessionStart();
   const showUpcomingCard = Boolean(upcomingEventVenueName && upcomingEventStartDate && onTapUpcomingEvent);
 
   return (
@@ -97,19 +102,16 @@ export function Idle({
               Ya vendiste {pesos(todaySales.total)} · {todaySales.count} {pluralize(todaySales.count, 'venta', 'ventas')} hoy
             </p>
           )}
-          <Button className={styles.cta} onClick={onStartSession}>
+          <Button className={styles.cta} onClick={() => onStartSession(overrideToNfc)}>
             Iniciar Venta Rápida
           </Button>
-          {notReady && (
-            <div className={styles.readinessNote}>
-              <p className={styles.readinessLine}>
-                Todavía no tienes prendas con tag para hoy — vas a vender con botones.
-              </p>
-              <button className={styles.readinessLink} onClick={onOpenAssignTagsPlaceholder}>
-                Asignar tags
-              </button>
-            </div>
-          )}
+          <NfcSessionStartNote
+            variant={variant}
+            overrideToNfc={overrideToNfc}
+            onToggleOverride={toggleOverride}
+            onOpenAssignTags={onOpenAssignTagsPlaceholder}
+            onOpenSettings={onOpenSettings}
+          />
         </div>
       </div>
 

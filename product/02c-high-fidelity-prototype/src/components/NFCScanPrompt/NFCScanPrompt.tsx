@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import styles from './NFCScanPrompt.module.css';
 
 /**
@@ -11,10 +12,33 @@ import styles from './NFCScanPrompt.module.css';
  * own `NFCScanPrompt`, reused on `home.md`'s NFC selling surface too) rather
  * than anything "Tag"-adjacent — `src/components/TagStub/` is a distinct,
  * decorative per-Product marker with no relationship to `NFCTag`/`tagId`.
+ *
+ * **`label`/`ariaLabel` (NFC Selling pass, D43).** Optional overrides so this
+ * exact component can be reused, unchanged, on `home.md` §3.10's selling
+ * surface — whose own approved copy is "Acerca el tag del producto," not
+ * Asignar Tags' "Acerca el tag a la prenda" — per the Architecture Gap
+ * Analysis's own instruction ("reusing `NFCScanPrompt` from the Asignar Tags
+ * slice"). Default (no props passed) is unchanged, so `AssignTags.tsx`'s
+ * existing call site needs no change.
  */
-export function NFCScanPrompt({ onTap, disabled }: { onTap: () => void; disabled?: boolean }) {
+export function NFCScanPrompt({
+  onTap,
+  disabled,
+  label,
+  ariaLabel,
+}: {
+  onTap: () => void;
+  disabled?: boolean;
+  label?: ReactNode;
+  ariaLabel?: string;
+}) {
   return (
-    <button className={styles.prompt} onClick={onTap} disabled={disabled} aria-label="Acerca el tag a la prenda">
+    <button
+      className={styles.prompt}
+      onClick={onTap}
+      disabled={disabled}
+      aria-label={ariaLabel ?? 'Acerca el tag a la prenda'}
+    >
       <span className={styles.ring} aria-hidden="true">
         <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
           <circle cx="17" cy="17" r="3.4" fill="currentColor" />
@@ -29,9 +53,13 @@ export function NFCScanPrompt({ onTap, disabled }: { onTap: () => void; disabled
         </svg>
       </span>
       <span className={styles.label}>
-        Acerca el tag a la
-        <br />
-        prenda
+        {label ?? (
+          <>
+            Acerca el tag a la
+            <br />
+            prenda
+          </>
+        )}
       </span>
     </button>
   );

@@ -129,6 +129,37 @@ and `home.md` §3.6a's remaining variants remain untouched — item D.2, a
 separate later slice. Full record, including every disclosed judgment call
 and simplification: `docs/passes/slice-6-asignar-tags.md`.
 
+## What's built (Slice 7, complete — NFC Selling, 2026-08-14)
+
+`home.md` §2's NFC Readiness sub-step, §3.6a's remaining three Session-start
+variants, and §3.10's own nfc-mode selling surface, per `product/02-ux/home.md`
+(Approved). Real, computed `nfcReadiness` (`taggedAvailableCount` vs.
+`totalAvailableCount`, a disclosed illustrative `NFC_READINESS_THRESHOLD`
+constant, D23 — the threshold is a "configurable product/business rule," not
+Foundation-frozen); `startSession` now resolves `Session.operatingMode` for
+real (capability × readiness × `defaultSellingMode` × the Limited Ready
+`overrideToNfc` override) instead of hardcoding `'buttons'`. The shared
+`useNfcSessionStart`/`NfcSessionStartNote` pair (`src/screens/Home/`) realizes
+all four §3.6a variants identically on `Idle.tsx`/`EventResume.tsx`: Limited
+Ready's inline "Usar tags de todos modos"/"Cambiar" override, Not Ready's
+"Asignar tags" mention, capability-revoked's "Ir a Configuración" mention, and
+the new one-time Ready-but-`buttons` discoverability nudge
+(`Business.nfcAvailabilityNudgeShown`, mirroring
+`pendingSubscriptionTierAcknowledged`'s own shown-once pattern). `Selling.tsx`
+now branches on `session.operatingMode`: `'nfc'` renders §3.10's surface (same
+`SessionHeader`/`VentaActualTray` shell, zero product grid) via `NFCScanPrompt`
+(reused from the Asignar Tags slice, now with optional `label`/`ariaLabel`
+props) and the new `addItemToSaleByTag` write path (mirrors
+`assignTagToNextPendingUnit`'s discriminated-result shape, reuses
+`addItemToSale`'s price-resolution logic against the specific scanned unit).
+**`product/02-ux/product-decisions.md` Q2 (a scan matching no `available`
+tagged unit — e.g. a Product's only remaining stock is untagged mid-Session)
+is a genuine, disclosed open gap, not resolved by this slice** — the write
+path never silently mishandles it, but no dedicated resolution UI was
+invented for it, per this slice's own explicit instruction not to. Full
+record, including every disclosed judgment call:
+`docs/passes/slice-7-nfc-selling.md`.
+
 ## Migration inventory (authoritative — knowledge-architecture backlog hygiene pass, 2026-08-14)
 
 Full lineage audit (Foundation → Approved UX → Medium Fidelity → React →
@@ -201,24 +232,17 @@ independent of any larger slice — no longer pending.**
   blank when real unsaved data exists. Full record:
   `docs/passes/slice-2-authentication-onboarding.md`.
 
-### C. Stale disclosure — correct this, don't rebuild yet
+### C. Stale disclosure — resolved (2026-08-14, Slice 7)
 
-- **NFC Session-start, `home.md` §3.6a's three non-NFC-surface variants**
-  (Limited Ready inline override, capability-revoked mention, Ready-but-
-  `buttons` one-time nudge) — Slice 1 disclosed these as correctly
-  out-of-scope because `subscriptionTier` was pinned to `'free'` at the
-  time. **Slice 4 (Configuración) removed that pin** — Paid is now reachable
-  in-app. The original "by construction, not by an unstated omission"
-  framing is no longer accurate; these are now genuinely reachable states
-  with no implementation, same tier as (D) below, not a settled boundary.
-  Reclassify from "correctly scoped out" to **Approved, pending React
-  migration**, dependent on (D)(2) below (NFC Selling — (D)(1)/Asignar Tags
-  is now complete, `InventoryUnit.tagId` is real, but Session-open-time NFC
-  Readiness evaluation was explicitly out of that slice's own scope and
-  `startSession` still always resolves `'buttons'` regardless of how many
-  units actually carry a tag; without that resolution logic, NFC Readiness
-  still can't reach Limited Ready or the capability-revoked case in
-  practice, only the nudge case is independently reachable today).
+- ~~**NFC Session-start, `home.md` §3.6a's three non-NFC-surface variants**~~
+  — **complete, Slice 7 (2026-08-14).** Was: reclassified from "correctly
+  scoped out" to "Approved, pending React migration" after Slice 4 removed
+  the `subscriptionTier='free'` pin. Now fully migrated — `startSession`
+  resolves real `Session.operatingMode` from computed NFC Readiness ×
+  capability × `defaultSellingMode`, and the shared `useNfcSessionStart`/
+  `NfcSessionStartNote` pair (`src/screens/Home/`) renders all four
+  variants, including the inline Limited Ready override. See "What's built
+  (Slice 7)" above and `docs/passes/slice-7-nfc-selling.md`.
 
 ### D. Sequenced feature gaps — the real NFC/payment-tier chain
 
@@ -232,17 +256,17 @@ Dependency order matters here; each depends on the one above it unless noted.
    and the §2 step 3/step 4 auto-entry/completion wiring. See "What's built
    (Slice 6)" above and `docs/passes/slice-6-asignar-tags.md`. Unlocks (2)
    and Frequent Customers Stage 1.
-2. **NFC Selling** (`home.md` §3.10, the registration surface itself, plus
-   the (C) variants above once reachable) — Approved, Medium-Fi built (full
-   demo chain), React always renders buttons-mode regardless of
-   `Session.operatingMode`. **Classification: Partially migrated** (the
-   domain field, the Settings toggle, the tagging queue itself, and one
-   §3.6a variant are real; the selling surface itself and three §3.6a
-   variants are not). **Depends on (1), now satisfied** — no longer blocked,
-   though NFC Readiness still always resolves Not Ready until this item
-   itself is built (`store.tsx`'s `startSession` disclosure, unchanged by
-   Slice 6 — Asignar Tags writes `tagId` for real now, but Session-open-time
-   NFC Readiness evaluation was explicitly out of this slice's scope).
+2. ~~**NFC Selling**~~ — **complete, Slice 7 (2026-08-14).** Was: Approved,
+   Medium-Fi built (full demo chain), React always rendered buttons-mode
+   regardless of `Session.operatingMode`. Now fully migrated — real
+   `nfcReadiness` selector, real `startSession` resolution (capability ×
+   readiness × `defaultSellingMode` × the Limited Ready override), all four
+   `home.md` §3.6a Session-start variants, and §3.10's own nfc-mode selling
+   surface (`Selling.tsx`, `addItemToSaleByTag`). See "What's built (Slice
+   7)" above and `docs/passes/slice-7-nfc-selling.md`. One genuine, disclosed
+   open gap remains: `product-decisions.md` Q2 (a scan matching no
+   `available` tagged unit) has no designed resolution UI — not invented by
+   this slice, per its own explicit instruction.
 3. **Paid Receipt Claim Token / QR** (`home.md` §3.8f) — Approved
    2026-08-09, not built; `ReceiptTicket.tsx` renders only the Free-tier
    variant for every tier, with a stale comment claiming Paid is
@@ -410,9 +434,9 @@ This does not change product direction, business behavior, the Foundation, or UX
    in the inventory, do this regardless of what's picked as "next slice."
 6. ~~Asignar Tags~~ (D.1) — **complete, Slice 6 (2026-08-14).** See "What's
    built (Slice 6)" above.
-7. **NFC Selling** (D.2) — depends on 6, now satisfied. Recommended next
-   slice — see below (recommendation unchanged from the prior pass; the
-   dependency it was waiting on is now built).
+7. ~~NFC Selling~~ (D.2) — **complete, Slice 7 (2026-08-14).** See "What's
+   built (Slice 7)" above and `docs/passes/slice-7-nfc-selling.md`. One
+   genuine, disclosed open gap remains: `product-decisions.md` Q2.
 8. **Paid Receipt Claim Token / QR** (D.3) — depends only on Configuración
    (already built); can run in parallel with 7, not strictly after it.
 9. **Customer Loyalty Registration** (D.4) — separate deploy target, own
@@ -426,7 +450,14 @@ This does not change product direction, business behavior, the Foundation, or UX
 `company/backlog.md` #3 (Bazaar recommendation) stays explicitly out of this
 sequencing — blocked, no data source exists, not attempted.
 
-### Recommended next implementation slice: **NFC Selling** (D.2)
+### Historical: recommendation that led to NFC Selling (Slice 7, complete)
+
+**NFC Selling (D.2) is complete** — see "What's built (Slice 7)" above; the
+next-slice recommendation (Paid Receipt Claim Token/QR, D.3, or another
+candidate) is Main's own re-evaluation to make against `company/CLAUDE.md`'s
+Product Backlog Ownership criteria, not re-derived here. The reasoning below
+is retained as historical record of why NFC Selling was picked as the prior
+next slice.
 
 Asignar Tags (D.1) — the precondition the prior pass's own recommendation
 below was building toward — is now complete (Slice 6, 2026-08-14):

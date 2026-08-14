@@ -103,6 +103,7 @@ export function HomeScreen({
         onSaleFinalized={(receipt) => setUi({ kind: 'receipt', receipt })}
         onSessionClosed={(summary, sessionId) => setUi({ kind: 'closed', ...summary, venueName, dayNumber, sessionId })}
         onOpenSettings={() => setUi({ kind: 'settings' })}
+        onNavigateToAssignTags={onNavigateToAssignTags}
       />
     );
   }
@@ -115,9 +116,8 @@ export function HomeScreen({
       <EventResume
         venueName={venueName}
         dayNumber={dayNumber}
-        defaultSellingMode={state.business.defaultSellingMode}
         todaySales={todaySalesSummary(state, activeEvent.id)}
-        onContinue={() => startSession(activeEvent.id)}
+        onContinue={(overrideToNfc) => startSession(activeEvent.id, overrideToNfc)}
         onOpenSettings={() => setUi({ kind: 'settings' })}
         onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
       />
@@ -132,12 +132,11 @@ export function HomeScreen({
 
   return (
     <Idle
-      defaultSellingMode={state.business.defaultSellingMode}
       upcomingEventVenueName={upcomingEvent ? findVenue(state, upcomingEvent.venueId)?.displayName : undefined}
       upcomingEventStartDate={upcomingEvent?.startDate}
       onTapUpcomingEvent={upcomingEvent ? () => onNavigateToEvent(upcomingEvent.id) : undefined}
       todaySales={todaySalesSummary(state, null)}
-      onStartSession={() => startSession()}
+      onStartSession={(overrideToNfc) => startSession(undefined, overrideToNfc)}
       onOpenSettings={() => setUi({ kind: 'settings' })}
       onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
     />

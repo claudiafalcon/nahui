@@ -89,6 +89,52 @@ export function nfcCapable(state: AppState): boolean {
   return state.business?.subscriptionTier === 'paid';
 }
 
+/** NFC Selling pass (Migration Workflow D43, `home.md` §2's "NFC Readiness
+ * sub-step, folded into Session-start," `decision-log.md` D23). Distinct
+ * from, and checked independently of, `nfcCapable` above — a Business can be
+ * `nfc`-capable (Paid tier) with zero tagged stock (Not Ready), and §3.6a
+ * treats "capability revoked" as a separate Session-start trigger from
+ * readiness itself. */
+
+/** How many currently-sellable units already carry an assigned tag —
+ * `taggedAvailableCount` in the Architecture Gap Analysis's own naming. */
+export function taggedAvailableCount(state: AppState): number {
+  return state.units.filter((u) => u.status === 'available' && u.tagId != null).length;
+}
+
+/** Every currently-sellable unit, tagged or not — `taggedAvailableCount` plus
+ * `pendingTagCount` (the live untagged queue above), never a second,
+ * independently-derived count of `state.units`. */
+export function totalAvailableCount(state: AppState): number {
+  return taggedAvailableCount(state) + pendingTagCount(state);
+}
+
+/**
+ * Disclosed, illustrative constant (`decision-log.md` D23: the readiness
+ * threshold is "a configurable product/business rule, not hard-coded into
+ * the Foundation") — never surfaced to Ana as a number or percentage
+ * anywhere in the UI (`home.md` §3.6a's own explicit rule: "the readiness
+ * threshold itself stays invisible to Ana"). 0.8 (80% of sellable stock
+ * already tagged) is this build's own illustrative choice, not a Product
+ * Owner-set business rule — a future pass may make this a real Configuración
+ * value without changing anything about how `nfcReadiness` below consumes it.
+ */
+export const NFC_READINESS_THRESHOLD = 0.8;
+
+export type NfcReadiness = 'ready' | 'limited' | 'not-ready';
+
+/** `home.md` §2's own three-way resolution: zero tagged sellable stock is
+ * always Not Ready regardless of how much is still pending; otherwise
+ * Ready/Limited Ready is a pure threshold comparison against
+ * `NFC_READINESS_THRESHOLD` above. */
+export function nfcReadiness(state: AppState): NfcReadiness {
+  const tagged = taggedAvailableCount(state);
+  if (tagged === 0) return 'not-ready';
+  const total = totalAvailableCount(state);
+  if (total === 0) return 'not-ready'; // defensive — unreachable when tagged > 0
+  return tagged / total >= NFC_READINESS_THRESHOLD ? 'ready' : 'limited';
+}
+
 /** How many finalized SaleItems this Product has ever sold — drives the
  * selling grid's most-frequently-sold-first ordering (home.md §3.9).
  * Exported (Resultados pass, D43) so `topProductsAllTime` below reuses this
