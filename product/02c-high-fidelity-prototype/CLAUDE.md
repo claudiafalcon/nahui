@@ -97,6 +97,31 @@ reference for Backend Integration (Stage 7).
   conventions) — what should carry forward into every future feature, not
   just this one.
 
+## Per-slice bounded context files (knowledge-architecture refactor, Stage 3,
+2026-08-13)
+
+While a slice is actively in progress — from the Architecture Gap Analysis
+through build, review, fix rounds, and merchant validation — Main maintains
+one working file at `context/<slice-name>.md` (e.g., `context/resultados.md`)
+holding exactly what every dispatch touching that slice actually needs:
+the Gap Analysis's findings, the load-bearing decision-log citations for
+this slice specifically, the current build/review status, and a running
+log of what's been found and fixed so far. Every dispatch for that slice —
+the build itself, each fix round, each verification pass — references this
+file by pointer instead of Main re-typing the same 500-1000 words of
+context into every dispatch prompt from scratch, which is both a real,
+avoidable generation cost for Main and a redundant re-derivation cost for
+whichever agent reads it.
+
+**This is a working file, not a permanent archive.** Once a slice is fully
+Approved and complete, its context file's content is superseded by that
+slice's own entry in README.md's per-pass archive (see the next section) —
+the two are not meant to duplicate each other long-term. At that point the
+context file is either deleted or reduced to a one-line pointer at the
+archive entry, Main's call at the time, made explicitly rather than left to
+silently rot as stale, contradictory context a future dispatch might
+mistakenly read.
+
 ## Status
 
 First feature slice (Home → Inventario → Registrar mercancía → Selling →
