@@ -221,17 +221,16 @@ Everything else keeps moving.
 
 #### Product Backlog Ownership — implementation sequencing (added 2026-08-13, Product Owner standing delegation)
 
-Beyond the general backlog-refinement work above, Main owns the **prioritized implementation backlog** for React feature work in `product/02c-high-fidelity-prototype/BACKLOG.md` — a living document, not a one-time plan. This is a distinct, more specific responsibility than the `backlog-prioritization` skill (which interprets `company/backlog.md`'s already-stated priority order for general "what's next" questions): here, Main actively evaluates and re-evaluates the *order* in which the remaining product gets built, continuously, against:
+Beyond the general backlog-refinement work above, Main owns the **prioritized implementation backlog** for React feature work in `product/02c-high-fidelity-prototype/BACKLOG.md` — a living document, not a one-time plan. This is a distinct, more specific responsibility than the `backlog-prioritization` skill (which interprets `company/backlog.md`'s already-stated priority order for general "what's next" questions): here, Main actively evaluates and re-evaluates the *order* in which the remaining product gets built, continuously.
 
-- business value
-- dependency order (what a slice unblocks or requires)
-- user value
-- architectural dependencies
-- merchant validation value
-- implementation effort
-- design-system evolution (what a slice would establish as a reusable primitive vs. a one-off)
+**The objective is not to finish documents — it's to maximize product learning while continuously building a coherent product.** Slices are never chosen primarily for implementation risk or ease. **Evaluated in this strict priority order (2026-08-13, Product Owner refinement):**
 
-**The objective is to maximize learning while minimizing rework — not to work through journeys in document order.** Sequence is chosen to build the strongest product foundation, not the most convenient one.
+1. **Product learning value** — which slice validates the biggest product assumptions, and which provides the most meaningful merchant feedback? An entirely-untested core assumption (e.g., an entire selling mode no merchant persona has ever exercised) outranks a well-understood, expected feature, even if the expected feature has been repeatedly requested.
+2. **Merchant value** — which slice delivers the highest immediate value to merchants, once reached?
+3. **Dependency graph** — which slices unblock the most future work?
+4. **Technical effort** — a tie-breaker only, applied when the criteria above are genuinely comparable between candidates. Never the deciding factor on its own, and never evaluated before the three above it.
+
+Design-system evolution (what a slice would establish as a reusable primitive vs. a one-off) remains a factor worth naming in each slice's own proposal, but sits alongside effort as a secondary consideration, not a primary sequencing criterion.
 
 **Before starting each new slice**, Main proposes in `BACKLOG.md` and in conversation: why this slice is next, what dependencies it resolves, what future work it unlocks, expected risks, and expected learning. Main waits for Product Owner input only if the choice materially changes product direction — otherwise Main proceeds directly into that slice's own build cycle.
 

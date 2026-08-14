@@ -99,15 +99,66 @@ next slice.
 | **Resultados (Free-tier only)** | Directly serves `company/backlog.md` #2's spirit without needing its blocked dependencies | Depends on nothing new — reads existing Sale/Session data | Ana explicitly wanted this and hit a wall (all 3 walkthroughs) | Read-only, no new write path, lowest architectural risk of the three | Real, already-surfaced want; would close a named finding | Low-medium — mostly display logic over data that already exists | Chart/summary display patterns, first of their kind in this build |
 | **Configuración** | Unlocks Paid tier / `nfc`, which unlocks backlog #2 in full | Prerequisite for NFC-mode and Frequent Customers, not valuable alone | Lower standalone value — capability management, not a task Ana starts her day wanting to do | Straightforward — no new aggregate, just capability writes already modeled | Low on its own; high once it unblocks NFC/Paid-tier testing | Low-medium | Toggle/settings-row patterns |
 
-## Recommendation — next slice (pending Main's re-evaluation post-Eventos)
+## Recommendation — next slice: **Configuración** (re-evaluated under refined criteria, 2026-08-13)
 
 **Eventos (Slice 3) is now complete** — see "What's built (Slice 3)" above.
-The priority table and recommendation below are retained as-built from the
-pre-Eventos pass (historical record of why Eventos was picked next) rather
-than rewritten here — re-evaluating which candidate comes after it is
-Main's own ownership call (this file's own header), not `ui-designer`'s to
-make unilaterally. Per "Backlog order" below, Resultados (Free-tier) was
-already the standing second choice.
+This re-evaluation applies the Product Owner's refinement to
+`company/CLAUDE.md`'s Product Backlog Ownership section (2026-08-13):
+sequencing is no longer led by effort/risk, but by product learning value
+first, merchant value second, dependency graph third, effort as a
+tie-breaker only. The pre-Eventos priority table above predates this
+refinement and is retained as historical record, not reapplied here.
+
+**1. Product learning value — Configuración wins decisively, not narrowly.**
+Of the two remaining candidates, only one gates an entirely untested core
+product assumption. `defaultSellingMode: 'nfc'` — one of exactly two selling
+modes this product's own domain model defines — has never been exercised by
+a single `merchant-user-tester` walk across this project's entire history.
+Every prior mention of it in this file says the same thing: "structurally
+unreachable end-to-end," "NFC Readiness always resolves Not Ready... NFCTag
+assignment isn't modeled at all." Configuración is the only slice that can
+ever open that door — it's the sole gate to `subscriptionTier=paid`, which
+is itself the other genuinely untested assumption (does a merchant actually
+opt into the paid tier from inside the app at all — Nahui's core
+monetization path, never once exercised end-to-end). Resultados, by
+contrast, mostly *confirms* an already-strongly-signaled want (Ana has
+explicitly asked for it in every walkthrough this session ran) rather than
+*testing* a real unknown — valuable, but a different, lower-risk kind of
+learning under the new ordering's own explicit instruction: "an
+entirely-untested core assumption... outranks a well-understood, expected
+feature, even if repeatedly requested." Honest caveat, not glossed over:
+Configuración alone gets us to `nfc` mode being *reachable*, not to full NFC
+*selling* being exercisable — "Asignar Tags" (tagging inventory units,
+Inventario's own unbuilt corner) is still needed after this slice for a
+complete NFC sale to actually happen. Configuración is the necessary first
+domino, not the whole chain — still the higher-learning choice, since
+nothing downstream of it is reachable at all today.
+
+**2. Merchant value — real, though more indirect for the capability toggles
+themselves; immediate and concrete for the sign-out addition.** Ana doesn't
+wake up wanting to visit Configuración the way she wants to check Resultados
+— but the Product Owner directly identified a real, currently-live gap
+during this same conversation: there is no way anywhere in the built product
+to sign out of the phone-verified session `authentication.md`/RFC 0007
+introduced (Slice 2). That's not a hypothetical future need — it's a
+correctness gap in an already-shipped feature, surfaced by actually using
+it. Closing it is immediate, concrete merchant value, not a "someday" one.
+
+**3. Dependency graph — Configuración is the single largest unlock left in
+the entire backlog.** It's the sole prerequisite for NFC-mode selling and
+both stages of Frequent Customers (`company/backlog.md` #2). Resultados
+unlocks comparatively little downstream — it's closer to a leaf feature.
+
+**4. Effort — roughly comparable, not the deciding factor either way.** Both
+are low-medium; Configuración gains a small, well-scoped addition (the
+sign-out function) but neither candidate's effort is high enough to override
+what criteria 1–3 already decided.
+
+**Net: Configuración is next**, confirming the direction already agreed in
+conversation before this formal re-evaluation, now reasoned explicitly
+against the refined criteria rather than the old effort-led ordering.
+Resultados remains the standing next-after candidate — nothing above lowers
+its value, it's simply outranked by a bigger untested assumption this pass.
 
 ### Historical: recommendation that led to Eventos (Slice 3)
 
