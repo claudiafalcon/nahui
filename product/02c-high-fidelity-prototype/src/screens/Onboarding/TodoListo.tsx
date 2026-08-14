@@ -8,7 +8,7 @@ const AUTO_CONTINUE_MS = 2600;
 
 const COPY: Record<OnboardingPath, string> = {
   free: 'Ya puedes registrar lo que traes y empezar a vender.',
-  paid: 'Ya puedes vender con botones. Cuando tengas mercancía etiquetada, cambia a vender con tags en Configuración.',
+  paid: 'Ya puedes vender con botones. Si quieres vender con tags, cámbialo en Configuración: de ahí te llevamos a etiquetar tu mercancía, o a registrarla primero si aún no tienes.',
   demo: 'Esto es un ejemplo de cómo se ve tu negocio en Nahui. Explora lo que quieras — no es información real.',
 };
 

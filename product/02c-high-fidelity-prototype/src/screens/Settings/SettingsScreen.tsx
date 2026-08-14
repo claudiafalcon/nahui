@@ -45,6 +45,7 @@ function confirmCopy(action: ConfirmAction): { title: string; body: string[]; ct
         title: 'Cambiar a vender con tags',
         body: [
           'Desde tu próxima sesión, vas a empezar vendiendo con tags, siempre que tengas mercancía etiquetada lista. Si no tienes tags listos ese día, vendes con botones sin problema.',
+          'Si tienes mercancía sin etiquetar, te llevamos a etiquetarla en cuanto confirmes. Si aún no has registrado mercancía, primero te pedimos que la registres.',
         ],
         ctaLabel: 'Cambiar ahora',
       };
@@ -78,7 +79,22 @@ function confirmCopy(action: ConfirmAction): { title: string; body: string[]; ct
  * other tab's own resolving/defensive-fallback states — see `BACKLOG.md`'s
  * migration inventory, section (A), for the full consolidated disclosure.
  */
-export function SettingsScreen({ onBack }: { onBack: () => void }) {
+export function SettingsScreen({
+  onBack,
+  onSwitchedToTags,
+}: {
+  onBack: () => void;
+  /** settings.md §2.6 (`decision-log.md` D46, corrected per its own
+   * Addendum — architect ruling) — called the instant "Cambiar a vender con
+   * tags" (`'tags-on'`) finishes writing `defaultSellingMode`. This
+   * component never reads or queries any `InventoryUnit`/Catalog fact to
+   * decide where she lands next — it only writes the field and hands off
+   * navigation via this bare callback (a lightweight entry marker, set by
+   * the caller); `inventory.md` §2's own new step 0 owns the routing
+   * decision entirely, avoiding the Identity→Inventory→Identity dependency
+   * back-edge `architecture-principles.md` #6 forbids. */
+  onSwitchedToTags: () => void;
+}) {
   const {
     state,
     activatePaidPlan,
@@ -132,6 +148,19 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
           cancelPendingSubscriptionTierChange();
           break;
       }
+
+      // settings.md §2.6 (`decision-log.md` D46, corrected per its own
+      // Addendum) — "Cambiar a vender con tags" doesn't return to this
+      // screen's own vista principal like every other action above; the
+      // instant the write succeeds it unconditionally hands off navigation
+      // into `inventory.md` §2's own resolution, carrying nothing more than
+      // a bare entry marker. No `InventoryUnit`/Catalog fact is read here —
+      // see this component's own `onSwitchedToTags` doc comment.
+      if (action === 'tags-on') {
+        onSwitchedToTags();
+        return;
+      }
+
       setSubView({ kind: 'main' });
     }, SAVE_DELAY_MS);
   }

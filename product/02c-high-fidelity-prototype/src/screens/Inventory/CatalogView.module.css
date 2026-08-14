@@ -16,6 +16,16 @@
   color: var(--color-success);
 }
 
+/* inventory.md §3.3a/§3.4 (`decision-log.md` D46 Addendum) — the one-time
+   ambient banner acknowledging "Cambiar a vender con tags," plain factual
+   register matching §3.4's "sin registrar" precedent, never a warning. */
+.settingsBanner {
+  margin: 0 var(--space-4) var(--space-2);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
 /* inventory.md §3.5 — the pending-tag-work status line + primary CTA,
    unboxed, directly under the header — the identical shape home.md §3.6
    uses for "Hoy es tu Día 2" + "[ Continuar Día 2 ]" (2026-08-07 amendment,

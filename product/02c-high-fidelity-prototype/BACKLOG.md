@@ -183,6 +183,55 @@ which stays entirely untouched by this slice. New dependency:
 `qrcode.react`. Full record, including every disclosed judgment call:
 `docs/passes/slice-8-paid-receipt-qr.md`.
 
+## Fix round — D46 (tag-assignment auto-entry gates on merchant intent, not mere capability, 2026-08-14)
+
+Raised by the Product Owner directly, testing Slices 6-7: a Paid merchant
+who registered merchandise was unconditionally auto-routed into Asignar
+Tags the moment `Guardar mercancía` succeeded, regardless of whether she'd
+ever chosen `nfc` as her selling mode — Slice 6's own gate read
+`nfc ∈ registrationMode` (capability, `subscriptionTier=paid`), not
+`Business.defaultSellingMode === 'nfc'` (her actual, self-service-chosen
+intent). `decision-log.md` D46 (plus its own same-day Addendum, an
+`architect` ruling that the first drafted spec fix would have closed an
+Identity→Inventory dependency cycle) corrects this: two entry points now
+trigger auto-tagging — after `Guardar mercancía`, and immediately after
+switching `defaultSellingMode` to `nfc` in Configuración — both gated on
+intent, never on capability alone.
+
+Full spec cascade: `settings.md` (new §2.6, entry-marker-only handoff —
+never reads Inventory-owned state), `inventory.md` (new §2 "step 0"
+highest-priority trigger, reusing the identical whole-Catalog untagged
+check step 2 already runs), `onboarding.md` (a Horizontal Journey Review
+caught a now-impossible causal order in the Paid-tier milestone screen —
+"tag first, then switch," backwards under D46 — corrected in §3.6 Variant
+B/§2.3/§7). `ux-critic`/`reviewer` clean on the full spec cascade (1 Major
++ 1 Suggestion found and fixed across the two review rounds — see each
+document's own status header).
+
+React re-implementation: `InventoryScreen.tsx`'s post-`Guardar mercancía`
+gate and `CatalogView.tsx`'s pending-tag-work nudge gate both corrected
+from `nfcCapable(state)` to `state.business?.defaultSellingMode === 'nfc'`.
+New `enteredViaSettingsTagsOn` one-shot marker carries the Settings→
+Inventario handoff (`SettingsScreen.tsx` → `HomeScreen.tsx` → `App.tsx`),
+verified to write only `defaultSellingMode` and never read any
+`InventoryUnit`/Catalog fact (the architect's dependency-cycle constraint,
+checked directly in code, not just asserted). Two new one-time landing
+banners (`InventoryColdStart.tsx`/`CatalogView.tsx`) cover the
+already-fully-tagged and register-first outcomes. `TodoListo.tsx`'s
+Paid-path milestone copy corrected to match the fixed spec. `ux-critic`/
+`reviewer` found 2 findings on the React implementation (a missing
+disclosure sentence in the Settings confirm copy; a stale one-time banner
+that could linger and contradict the live pending-tag nudge) — both fixed
+and re-verified clean.
+
+Merchant-user-tester walkthrough (fresh, cleared-storage state, full Paid
+onboarding → merchandise registration → switch to tags → tagging →
+first NFC sale) confirmed the corrected behavior end-to-end: no premature
+auto-routing, the Onboarding milestone screen's corrected copy read
+correctly, the Settings switch matched its own disclosure exactly, and
+tagging completion gave a clear, correctly-timed confirmation. Full
+record: `decision-log.md` D46 (+ Addendum).
+
 ## Migration inventory (authoritative — knowledge-architecture backlog hygiene pass, 2026-08-14)
 
 Full lineage audit (Foundation → Approved UX → Medium Fidelity → React →

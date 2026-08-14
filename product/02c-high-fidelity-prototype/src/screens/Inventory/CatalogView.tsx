@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../../domain/store';
-import { catalogRows, nfcCapable, pendingTagCount } from '../../domain/selectors';
+import { catalogRows, pendingTagCount } from '../../domain/selectors';
 import { articulos } from '../../domain/format';
 import { CatalogRow } from '../../components/CatalogRow/CatalogRow';
 import { Button } from '../../components/Button/Button';
@@ -23,12 +23,21 @@ export function CatalogView({
   onRegisterProduct,
   onContinueTagging,
   confirmationMessage,
+  settingsTagsBanner,
 }: {
   onRegister: () => void;
   onRegisterProduct: (productId: string) => void;
   /** §3.5/§3.17 — resumes Asignar Tags exactly where she left off. */
   onContinueTagging: () => void;
   confirmationMessage?: string | null;
+  /** inventory.md §3.3a/§3.4 (`decision-log.md` D46 Addendum) — the one-time
+   * ambient banner shown when this view was reached via `settings.md` §2.6's
+   * "Cambiar a vender con tags" handoff and step 0 found nothing to
+   * auto-route her into. Rendered once, prepended above the Catalog list,
+   * never re-shown afterward — the caller (`InventoryScreen`) owns the
+   * "shown exactly once" discipline, this component only renders whatever
+   * it's handed. */
+  settingsTagsBanner?: string | null;
 }) {
   const { state, editPrice } = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -54,8 +63,12 @@ export function CatalogView({
   // cached): deferring tagging and later selling some of those same
   // untagged units via FIFO in buttons mode must silently shrink this
   // count, not just refresh whenever Asignar Tags itself is reopened.
+  // Gate corrected per `decision-log.md` D46: this reads her actual chosen
+  // selling mode (`defaultSellingMode === 'nfc'`), never mere nfc capability
+  // (`subscriptionTier === 'paid'`) — a Paid merchant who stays in
+  // `buttons` mode never sees this nudge.
   const pendingCount = pendingTagCount(state);
-  const pendingTagWork = nfcCapable(state) && pendingCount > 0;
+  const pendingTagWork = state.business?.defaultSellingMode === 'nfc' && pendingCount > 0;
 
   return (
     <>
@@ -63,6 +76,8 @@ export function CatalogView({
         <span className={styles.wordmark}>Inventario</span>
       </div>
       {toast && <p className={styles.confirmation}>{toast} ✓</p>}
+
+      {settingsTagsBanner && <p className={styles.settingsBanner}>{settingsTagsBanner}</p>}
 
       {pendingTagWork && (
         <div className={styles.pendingTagBlock}>

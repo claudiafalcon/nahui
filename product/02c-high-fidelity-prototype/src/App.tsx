@@ -63,6 +63,16 @@ export default function App() {
               setInventoryView({ mode: 'assign-tags' });
               setActiveTab('inventario');
             }}
+            onNavigateToInventarioViaSettingsTagsOn={() => {
+              // settings.md §2.6 (`decision-log.md` D46 Addendum) — the
+              // instant "Cambiar a vender con tags" writes
+              // `defaultSellingMode`, hand off into Inventario carrying only
+              // a bare entry marker; `InventoryScreen`'s own step 0 (D46
+              // Addendum) decides what she actually sees from there — this
+              // callback never reads any Inventory-owned fact itself.
+              setInventoryView({ mode: 'catalog', enteredViaSettingsTagsOn: true });
+              setActiveTab('inventario');
+            }}
           />
         )}
 
@@ -90,6 +100,9 @@ export default function App() {
               setInventoryView({ mode: 'catalog', tagsComplete: true });
             }}
             onBackToCatalog={() => setInventoryView({ mode: 'catalog' })}
+            onSettingsTagsOnMarkerHandled={() =>
+              setInventoryView((v) => (v.mode === 'catalog' ? { ...v, enteredViaSettingsTagsOn: false } : v))
+            }
             assignTagsEntry={assignTagsEntry}
             assignTagsSegmentTotals={assignTagsSegmentTotals}
             onAssignTagsSegmentTotalsChange={setAssignTagsSegmentTotals}

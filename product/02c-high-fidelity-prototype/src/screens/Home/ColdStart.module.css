@@ -104,6 +104,18 @@
   max-width: 30ch;
 }
 
+/* inventory.md §3.3a (`decision-log.md` D46 Addendum) — the one-time
+   "Cambiaste a vender con tags." acknowledgment line, prepended above this
+   shared body copy. Plain factual register, not a warning — same weight
+   treatment CatalogView.module.css's own `.settingsBanner` uses for the
+   identical line at the Catalog-view variant. */
+.banner {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+  max-width: 30ch;
+}
+
 .cta {
   max-width: 280px;
   position: relative;

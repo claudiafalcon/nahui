@@ -38,6 +38,7 @@ export function HomeScreen({
   onNavigateToEvent,
   onNavigateToResultadosSession,
   onNavigateToAssignTags,
+  onNavigateToInventarioViaSettingsTagsOn,
 }: {
   onNavigateToRegister: () => void;
   onNavigateToEvent: (eventId: string) => void;
@@ -50,6 +51,11 @@ export function HomeScreen({
    * routes into Inventario's real Asignar Tags queue (inventory.md §3.14,
    * Asignar Tags pass, D43), replacing the earlier honest Placeholder stub. */
   onNavigateToAssignTags: () => void;
+  /** settings.md §2.6 (`decision-log.md` D46 Addendum) — forwarded straight
+   * through to `SettingsScreen`'s own `onSwitchedToTags`; this component
+   * adds no logic of its own, it only carries the callback across the tab
+   * boundary Configuración itself doesn't own. */
+  onNavigateToInventarioViaSettingsTagsOn: () => void;
 }) {
   const { state, startSession } = useStore();
   const [ui, setUi] = useState<HomeUiState>({ kind: 'resolved' });
@@ -91,7 +97,12 @@ export function HomeScreen({
   if (ui.kind === 'settings') {
     // settings.md — the real Configuración flow (Migration Workflow, D43),
     // replacing this branch's earlier honest Placeholder.
-    return <SettingsScreen onBack={() => setUi({ kind: 'resolved' })} />;
+    return (
+      <SettingsScreen
+        onBack={() => setUi({ kind: 'resolved' })}
+        onSwitchedToTags={onNavigateToInventarioViaSettingsTagsOn}
+      />
+    );
   }
 
   if (session) {
