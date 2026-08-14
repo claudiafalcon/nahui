@@ -889,13 +889,19 @@ trigger it describes). The confirm step itself ("¿Ya terminaste por hoy?" /
 "Sí, cerrar") was left untouched — it already never said "sesión" and
 already reads as merchant-native.
 
-**This is a prototype-only naming decision, not a spec correction** — same
-disclosure status as the "Venta rápida" rename. `product/02-ux/home.md`
-itself still specifies "Cerrar sesión" throughout (§3.7a, §3.11a's own
-title and body copy, §3.12's flow references) and is unowned by this
-build; if the Product Owner wants this rename to persist beyond this
-prototype, it needs to land back in the approved spec through
-`ux-designer`, not just here.
+**Formalized into the approved spec, 2026-08-13 (Product Owner decision).**
+Originally disclosed here as prototype-only, same status as the "Venta
+rápida" rename — `product/02-ux/home.md` at the time still specified
+"Cerrar sesión" throughout (§3.7a, §3.11a's own title and body copy, §3.12's
+flow references). The Product Owner has since formalized this rename back
+into `home.md` itself (see that document's own 2026-08-13 status-header
+amendment and §10), reasoning that "sesión" is now reserved exclusively for
+the RFC 0007 authenticated-User/device context — freeing `settings.md`'s new
+account-level sign-out action (`product/02-ux/settings.md §2.5`) to simplify
+from "Cerrar sesión en este teléfono" to plain "Cerrar sesión" in the same
+pass, with no remaining collision. This build's own copy already matched;
+no code change was needed here, only the spec catching up to what was
+already live.
 
 **2. Full-slice terminology sweep — nothing else changed.** Every screen
 title, button, menu, and action string in `src/screens/` and
