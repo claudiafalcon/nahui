@@ -44,6 +44,10 @@ export function EventResume({
   todaySales?: { total: number; count: number } | null;
   onContinue: () => void;
   onOpenSettings: () => void;
+  /** §3.6a's "Asignar tags" link — routes into Inventario's real Asignar
+   * Tags queue (inventory.md §3.14, Asignar Tags pass, D43). Prop name kept
+   * as-is (not a stub anymore) to keep that pass's diff scoped to wiring,
+   * not a cosmetic rename. */
   onOpenAssignTagsPlaceholder: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);

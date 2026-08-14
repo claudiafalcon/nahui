@@ -37,7 +37,14 @@ export function RegisterMerchandise({
   onBack,
 }: {
   initialProductId?: string;
-  onSaved: (lastProductId: string) => void;
+  /** AT-M1 fix (`AssignTags.tsx`) — alongside the last-saved productId,
+   * hands back exactly what this specific `commitLot` call wrote (productId
+   * + quantity per line, existing lines with a repeated Product merged into
+   * one), so a caller auto-entering Asignar Tags right after can freeze a
+   * receipt scoped to only this commit — never the live, business-wide
+   * pending-tag queue, which may also hold an older, unrelated deferred
+   * Lot's own backlog. */
+  onSaved: (lastProductId: string, entryBreakdown: { productId: string; quantity: number }[]) => void;
   onBack: () => void;
 }) {
   const { state, commitLot } = useStore();
@@ -91,8 +98,19 @@ export function RegisterMerchandise({
               : { kind: 'new' as const, name: l.product.name, defaultPrice: l.product.price },
         })),
       );
+      // AT-M1 — exactly what this commit wrote, merging any repeated
+      // Product across lines into a single quantity (defensive: the form
+      // itself never produces two lines for the same Product today, but the
+      // receipt should stay correct even if that ever changes).
+      const entryBreakdown: { productId: string; quantity: number }[] = [];
+      const entryTotals = new Map<string, number>();
+      lines.forEach((l, i) => {
+        const productId = resolved[i];
+        entryTotals.set(productId, (entryTotals.get(productId) ?? 0) + l.quantity);
+      });
+      entryTotals.forEach((quantity, productId) => entryBreakdown.push({ productId, quantity }));
       setSaving(false);
-      onSaved(resolved[resolved.length - 1]);
+      onSaved(resolved[resolved.length - 1], entryBreakdown);
     }, 260);
   }
 

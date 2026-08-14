@@ -17,6 +17,17 @@ export default function App() {
   const [inventoryView, setInventoryView] = useState<InventoryView>({ mode: 'catalog' });
   const [eventsView, setEventsView] = useState<EventsView>({ mode: 'list' });
   const [resultadosView, setResultadosView] = useState<ResultadosView>({ mode: 'main' });
+  // AT-M1/AT-M2 fix round (`AssignTags.tsx`) — both owned here, alongside
+  // `inventoryView`, rather than inside `AssignTags` itself, so a plain
+  // "Terminar después" → "Continuar etiquetando" defer/resume — which
+  // unmounts/remounts `<AssignTags>` (`InventoryScreen.tsx` swaps it out
+  // whenever `inventoryView.mode` leaves `'assign-tags'`) — never loses
+  // either. `assignTagsEntry` is replaced only when a fresh `commitLot`
+  // actually triggers a new entry (AT-M1); `assignTagsSegmentTotals` is
+  // updated by `AssignTags` itself, per-Product, as its own doc comment
+  // describes (AT-M2).
+  const [assignTagsEntry, setAssignTagsEntry] = useState<{ productId: string; quantity: number }[] | null>(null);
+  const [assignTagsSegmentTotals, setAssignTagsSegmentTotals] = useState<Record<string, number>>({});
 
   return (
     <>
@@ -44,6 +55,14 @@ export default function App() {
               setResultadosView({ mode: 'session-detail', sessionId, returnTo: { mode: 'main' } });
               setActiveTab('resultados');
             }}
+            onNavigateToAssignTags={() => {
+              // home.md §3.6a's "Asignar tags" link — routes into
+              // Inventario's own Asignar Tags queue (inventory.md §3.14),
+              // same destination §3.5/§3.17's "Continuar etiquetando"
+              // resumes, not a Home-local stub.
+              setInventoryView({ mode: 'assign-tags' });
+              setActiveTab('inventario');
+            }}
           />
         )}
 
@@ -52,7 +71,28 @@ export default function App() {
             view={inventoryView}
             onOpenRegister={(prefillProductId) => setInventoryView({ mode: 'register', prefillProductId })}
             onSaved={(lastProductId) => setInventoryView({ mode: 'catalog', justSaved: lastProductId })}
+            onOpenAssignTags={(entryBreakdown) => {
+              // AT-M1 — only a fresh `commitLot` (RegisterMerchandise's own
+              // save, threading its breakdown through) replaces the frozen
+              // receipt; resuming via "Continuar etiquetando" or Home's
+              // "Asignar tags" link calls this with no argument, so the
+              // receipt from whichever commit is still the live session's
+              // own stays exactly as it was.
+              if (entryBreakdown) setAssignTagsEntry(entryBreakdown);
+              setInventoryView({ mode: 'assign-tags' });
+            }}
+            onTagsComplete={() => {
+              // Tagging queue reached zero — nothing left to freeze a
+              // receipt or a denominator against until a future commitLot
+              // starts a genuinely new session.
+              setAssignTagsEntry(null);
+              setAssignTagsSegmentTotals({});
+              setInventoryView({ mode: 'catalog', tagsComplete: true });
+            }}
             onBackToCatalog={() => setInventoryView({ mode: 'catalog' })}
+            assignTagsEntry={assignTagsEntry}
+            assignTagsSegmentTotals={assignTagsSegmentTotals}
+            onAssignTagsSegmentTotalsChange={setAssignTagsSegmentTotals}
           />
         )}
 

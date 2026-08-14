@@ -16,7 +16,6 @@ import { EventResume } from './EventResume';
 import { Selling } from './Selling';
 import { ReceiptTicket } from '../../components/ReceiptTicket/ReceiptTicket';
 import { CloseSummary } from './CloseSummary';
-import { Placeholder } from '../../components/Placeholder/Placeholder';
 import { SettingsScreen } from '../Settings/SettingsScreen';
 import type { Receipt } from '../../domain/store';
 
@@ -24,8 +23,7 @@ type HomeUiState =
   | { kind: 'resolved' }
   | { kind: 'receipt'; receipt: Receipt }
   | { kind: 'closed'; count: number; revenue: number; venueName?: string; dayNumber?: number; sessionId: string }
-  | { kind: 'settings' }
-  | { kind: 'assign-tags-placeholder' };
+  | { kind: 'settings' };
 
 /**
  * home.md §2 — resolution/decision logic, evaluated automatically on every
@@ -39,6 +37,7 @@ export function HomeScreen({
   onNavigateToRegister,
   onNavigateToEvent,
   onNavigateToResultadosSession,
+  onNavigateToAssignTags,
 }: {
   onNavigateToRegister: () => void;
   onNavigateToEvent: (eventId: string) => void;
@@ -47,6 +46,10 @@ export function HomeScreen({
    * named) — lands directly on Resultados' Session detail for this
    * Session, skipping the main list entirely. */
   onNavigateToResultadosSession: (sessionId: string) => void;
+  /** §3.6a's "Asignar tags" link (Idle/EventResume, both instances) —
+   * routes into Inventario's real Asignar Tags queue (inventory.md §3.14,
+   * Asignar Tags pass, D43), replacing the earlier honest Placeholder stub. */
+  onNavigateToAssignTags: () => void;
 }) {
   const { state, startSession } = useStore();
   const [ui, setUi] = useState<HomeUiState>({ kind: 'resolved' });
@@ -54,10 +57,6 @@ export function HomeScreen({
   const session = activeSession(state);
 
   if (!state.business) return null; // defensive — AppRouter only mounts this once onboarding is complete
-
-  if (ui.kind === 'assign-tags-placeholder') {
-    return <Placeholder title="Asignar Tags" onBack={() => setUi({ kind: 'resolved' })} />;
-  }
 
   if (ui.kind === 'receipt') {
     return (
@@ -120,7 +119,7 @@ export function HomeScreen({
         todaySales={todaySalesSummary(state, activeEvent.id)}
         onContinue={() => startSession(activeEvent.id)}
         onOpenSettings={() => setUi({ kind: 'settings' })}
-        onOpenAssignTagsPlaceholder={() => setUi({ kind: 'assign-tags-placeholder' })}
+        onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
       />
     );
   }
@@ -140,7 +139,7 @@ export function HomeScreen({
       todaySales={todaySalesSummary(state, null)}
       onStartSession={() => startSession()}
       onOpenSettings={() => setUi({ kind: 'settings' })}
-      onOpenAssignTagsPlaceholder={() => setUi({ kind: 'assign-tags-placeholder' })}
+      onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
     />
   );
 }

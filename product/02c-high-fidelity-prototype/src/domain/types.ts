@@ -206,6 +206,19 @@ export interface InventoryUnit {
   lotId: ID;
   status: InventoryUnitStatus;
   receivedAt: number; // inherited from Lot.receivedAt — drives FIFO ordering (D5)
+  /**
+   * Asignar Tags (`inventory.md` §3.14-§3.17, Migration Workflow D43) — the
+   * domain-model's 1:1 NFCTag attribute, modeled here as a nullable scalar
+   * rather than a separate `NFCTag` entity (no other field/behavior needs to
+   * hang off a tag besides "which unit does it belong to," so a second
+   * aggregate would be pure ceremony). `null` = untagged (every unit
+   * `commitLot` mints starts here, regardless of `nfc` capability — tagging
+   * is optional at the capability level, never a precondition for
+   * `status = 'available'`, `inventory.md` §8 item 2/Q2). Set exactly once,
+   * by `assignTagToNextPendingUnit` (`store.tsx`) — never cleared or
+   * reassigned by any other write path in this slice.
+   */
+  tagId: string | null;
 }
 
 /** Selling context */

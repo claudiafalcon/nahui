@@ -16,6 +16,23 @@
   color: var(--color-success);
 }
 
+/* inventory.md §3.5 — the pending-tag-work status line + primary CTA,
+   unboxed, directly under the header — the identical shape home.md §3.6
+   uses for "Hoy es tu Día 2" + "[ Continuar Día 2 ]" (2026-08-07 amendment,
+   reused here rather than the old boxed informational-card shape). */
+.pendingTagBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.pendingTagLine {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
 .list {
   flex: 1;
   overflow-y: auto;

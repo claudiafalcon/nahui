@@ -80,6 +80,15 @@ function loadState(): AppState {
           venues: Array.isArray(parsed.venues) ? parsed.venues : [],
           events: Array.isArray(parsed.events) ? parsed.events : [],
           priceOverrides: Array.isArray(parsed.priceOverrides) ? parsed.priceOverrides : [],
+          // Backward-compat with localStorage written before the Asignar
+          // Tags pass (D43/Migration Workflow) — an older saved unit has no
+          // `tagId` key at all. Defaulted to `null` (untagged), the same
+          // value every unit already starts at via `commitLot` — an existing
+          // walkthrough resumes as a fully untagged, resumable tagging queue
+          // rather than losing its Inventory history.
+          units: Array.isArray(parsed.units)
+            ? parsed.units.map((u) => ({ ...u, tagId: u.tagId ?? null }))
+            : parsed.units,
           business: parsed.business
             ? {
                 ...parsed.business,
@@ -178,6 +187,21 @@ interface StoreValue {
    * a freshly-minted id for `new` lines, the given id for `existing` ones. */
   commitLot: (lines: CommitLotLine[]) => ID[];
   editPrice: (productId: ID, newPrice: number) => void;
+  /** inventory.md §3.14 — Asignar Tags' own write, one scan at a time
+   * (`addItemToSale`'s per-event-write shape, not `commitLot`'s batch
+   * shape). "Next pending unit" = first entry in `state.units` (existing
+   * array order — already matches §3.14's "in the order she entered them")
+   * where `status === 'available' && tagId == null`. Global across every
+   * Lot/Product (`inventory.md` §2 step 2's own business-wide gate), never
+   * scoped to the Lot that was just registered. `already-assigned` is
+   * checked before `queue-empty` — a business-logic conflict (§3.15) is
+   * distinct from there being nothing left to tag (§2 step 4/§3.13). */
+  assignTagToNextPendingUnit: (
+    tagId: string,
+  ) =>
+    | { ok: true; unitId: ID; productId: ID }
+    | { ok: false; reason: 'already-assigned' }
+    | { ok: false; reason: 'queue-empty' };
   /** events.md §3.6 "Guardar evento" — the atomic Event-creation write.
    * Resolves `venue` (mint-or-find, `resolveVenue`'s own logic) inside the
    * same transaction, and re-checks the D17 overlap rule at write time
@@ -354,6 +378,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           lotId,
           status: 'available',
           receivedAt,
+          tagId: null,
         });
       }
     });
@@ -480,6 +505,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ...s,
       products: s.products.map((p) => (p.id === productId ? { ...p, defaultPrice: newPrice } : p)),
     }));
+  }
+
+  /**
+   * inventory.md §3.14 — one scan, one write. §3.16 ("scan failed," a
+   * genuine physical read failure) never reaches this function at all —
+   * it's simulated entirely client-side in `AssignTags.tsx`, the same
+   * "mock the physical mechanism, keep the domain layer honest" posture
+   * this codebase's phone-OTP mock already established. This function only
+   * ever sees a tag that *did* read successfully, and decides the one real
+   * business-logic question: is it already spoken for (§3.15)?
+   */
+  function assignTagToNextPendingUnit(
+    tagId: ID,
+  ): { ok: true; unitId: ID; productId: ID } | { ok: false; reason: 'already-assigned' } | { ok: false; reason: 'queue-empty' } {
+    if (state.units.some((u) => u.tagId === tagId)) {
+      return { ok: false, reason: 'already-assigned' };
+    }
+    const next = state.units.find((u) => u.status === 'available' && u.tagId == null);
+    if (!next) {
+      return { ok: false, reason: 'queue-empty' };
+    }
+    setState((s) => ({
+      ...s,
+      units: s.units.map((u) => (u.id === next.id ? { ...u, tagId } : u)),
+    }));
+    return { ok: true, unitId: next.id, productId: next.productId };
   }
 
   /**
@@ -838,6 +889,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     acknowledgeOnboarding,
     commitLot,
     editPrice,
+    assignTagToNextPendingUnit,
     createEvent,
     cancelEvent,
     setPriceOverride,

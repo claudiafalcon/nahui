@@ -9,8 +9,10 @@ the source of truth): Phone → OTP → Owner identity → Business onboarding �
 Home → Inventario → Registrar mercancía → Selling → Digital receipt, plus
 Eventos (scheduling, an Event-active Home resolution branch, Event
 close/rollup), Configuración (the four Business Capability actions plus the
-account-level "Cerrar sesión"), and Resultados (Free/Paid-tier review,
-Session/Event/Venue drill-down).
+account-level "Cerrar sesión"), Resultados (Free/Paid-tier review,
+Session/Event/Venue drill-down), and Asignar Tags (Inventario's NFC-tagging
+queue for nfc-capable Businesses, auto-entered after Guardar mercancía,
+resumable via the Catalog view's own pending-tag status).
 
 **Design system reference:** `DESIGN-SYSTEM.md` — the structured, reusable
 rules (tokens, primitives, the Swing Tag at five scales, typography/motion
@@ -61,6 +63,7 @@ content-preserving extraction: nothing summarized or reworded, only moved.
 - **[`docs/passes/slice-3-eventos.md`](docs/passes/slice-3-eventos.md)** — Eventos in full (scheduling, Event-active Home resolution, close/rollup), plus two follow-on merchant-user-tester-driven fixes (sold-out tile tap feedback; the same-day-resume sales-visibility trust gap, Q19).
 - **[`docs/passes/slice-4-configuracion.md`](docs/passes/slice-4-configuracion.md)** — the four Business Capability actions (`subscriptionTier` × 2, `defaultSellingMode` × 2) plus the account-level "Cerrar sesión" sign-out action.
 - **[`docs/passes/slice-5-resultados.md`](docs/passes/slice-5-resultados.md)** — Free/Paid-tier review (Session/Event/Venue drill-down, "Rendimiento por bazar," "Tus clientes"), plus its own review-pipeline fix round.
+- **[`docs/passes/slice-6-asignar-tags.md`](docs/passes/slice-6-asignar-tags.md)** — Inventario's NFC-tagging queue (`InventoryUnit.tagId`, `assignTagToNextPendingUnit`, the live pending-tag selectors, the §3.5/§3.13/§3.14-§3.17 screens), plus rewiring Home's "Asignar tags" link away from its Placeholder stub, plus a `ux-critic` fix round (3 Major + 2 Minor — the "Lo que registraste" receipt and the "Faltan N de M" denominator both lifted out of `AssignTags` into `App.tsx` so neither is lost/misscoped across a defer/resume cycle; Error red replaced with plain body text for the two routine scan-failure states; a fixed-height error-line slot; a stable shell instead of a blank flash).
 
 **A slice currently in progress** has its own live working file at
 `context/<slice-name>.md` instead (see `CLAUDE.md`'s "Per-slice bounded
@@ -91,7 +94,8 @@ product/02c-high-fidelity-prototype/
       productIdentity.ts       — v2: deterministic per-Product tone/tilt
                                  (presentation-only, derives from Product.name)
     domain/
-      types.ts                — Product/Lot/InventoryEntry/InventoryUnit/
+      types.ts                — Product/Lot/InventoryEntry/InventoryUnit
+                                 (including `tagId`, Asignar Tags pass, D43)/
                                  Session/Sale/SaleItem/Business (including
                                  the pending-subscriptionTier-change
                                  triple)/User/BusinessMembership/Venue/Event/
@@ -104,13 +108,16 @@ product/02c-high-fidelity-prototype/
                                  activatePaidPlan/requestDowngradeToFree/
                                  cancelPendingSubscriptionTierChange/
                                  changeDefaultSellingMode/
-                                 reconcilePendingSubscriptionTier/signOut),
+                                 reconcilePendingSubscriptionTier/signOut/
+                                 assignTagToNextPendingUnit),
                                  localStorage-persisted
       selectors.ts             — pure derived reads (catalog rows, selling
                                  grid order, session totals, eventStatus/
                                  dayNumberForDate/eventRollup/eventsForList,
                                  Resultados' own all-time/per-Product/
-                                 per-Venue rollups and sales-trend comparison)
+                                 per-Venue rollups and sales-trend comparison,
+                                 pendingTagUnits/pendingTagCount/
+                                 pendingTagBreakdown/nfcCapable)
       dates.ts                  — calendar-date utilities (dateKey/todayKey,
                                  formatDateRange/formatShortDateRange,
                                  addDaysToKey, rangesOverlap — the D17
@@ -118,12 +125,14 @@ product/02c-high-fidelity-prototype/
       onboardingResolution.ts — pathFromCapabilities/isOnboardingComplete,
                                  the router's own pure-function resolution
       demoSeed.ts               — "Ver un ejemplo" seed data
-      format.ts, id.ts         — pesos/pluralize formatting, id generator
+      format.ts, id.ts         — pesos/pluralize/articulos formatting, id
+                                 generator
     components/                — Button, NavBar, SessionHeader, ProductTile,
                                  TagStub, VentaActualTray, ReceiptTicket
                                  (signature element), Sheet, CatalogRow,
                                  QuantityStepper, ProductPicker, VenuePicker,
-                                 EventTypeSheet, Placeholder, BrandMark
+                                 EventTypeSheet, Placeholder, BrandMark,
+                                 NFCScanPrompt (Asignar Tags pass, D43)
     screens/
       Authentication/          — AuthenticationFlow, PhoneStep, CodeStep
       Onboarding/               — OnboardingFlow, Welcome, ConfirmPaid,
@@ -132,8 +141,12 @@ product/02c-high-fidelity-prototype/
       Home/                    — HomeScreen (resolution per home.md §2),
                                  ColdStart, Idle, EventResume, Selling,
                                  CloseSummary
-      Inventory/                — InventoryScreen, CatalogView,
-                                 RegisterMerchandise, InventoryColdStart
+      Inventory/                — InventoryScreen ({mode,...} resolution,
+                                 including 'assign-tags'), CatalogView
+                                 (including the §3.5 pending-tag-work
+                                 variant), RegisterMerchandise,
+                                 InventoryColdStart, AssignTags (§3.14-§3.17,
+                                 Asignar Tags pass, D43)
       Events/                    — EventsScreen ({mode,...} resolution,
                                  mirrors InventoryScreen), EventsColdStart,
                                  EventsList, NuevoEvento, EventDetail,

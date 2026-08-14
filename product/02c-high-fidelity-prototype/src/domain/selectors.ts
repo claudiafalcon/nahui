@@ -1,5 +1,5 @@
 import { addDaysToKey, dateKey } from './dates';
-import type { AppState, Event, ID, Product, Session, Venue } from './types';
+import type { AppState, Event, ID, InventoryUnit, Product, Session, Venue } from './types';
 
 /** Pure, derived reads over AppState — no mutation, mirrors domain-model.md's
  * "the merchant experiences Products, the platform preserves traceability." */
@@ -34,6 +34,59 @@ export function catalogRows(state: AppState) {
       available: availableCount(state, product.id),
       everReceived: everReceived(state, product.id),
     }));
+}
+
+/** Asignar Tags (`inventory.md` §3.14-§3.17, Migration Workflow D43). Every
+ * selector below reads `InventoryUnit.tagId` live, every call — never
+ * cached/snapshotted (§2 step 2's own business-wide gate): a merchant can
+ * defer tagging (§3.17), sell some of those same untagged units via FIFO in
+ * buttons mode in the meantime (`addItemToSale`), then resume — a consumed
+ * unit (`status` no longer `'available'`) must silently drop out of the
+ * queue, which falls out for free from the filter below as long as nothing
+ * caches the result. */
+
+/** The live tagging queue itself — every `available`, untagged unit, in
+ * `state.units`' own array order (the order she entered them, `inventory.md`
+ * §3.14's own "in the order she entered them" requirement — no separate
+ * ordering field needed). Scoped globally across every Lot/Product, never to
+ * one Lot, per the Architecture Gap Analysis's own confirmation against §2
+ * step 2's business-wide gate. */
+export function pendingTagUnits(state: AppState): InventoryUnit[] {
+  return state.units.filter((u) => u.status === 'available' && u.tagId == null);
+}
+
+/** §2 step 2 / §3.5's own gate — "how many articles are left to tag." */
+export function pendingTagCount(state: AppState): number {
+  return pendingTagUnits(state).length;
+}
+
+/** Per-Product breakdown of the live tagging queue, grouped in the order
+ * each Product first appears in it (mirrors `pendingTagUnits`' own queue
+ * order, per-unit, collapsed to one row per Product) — drives §3.14's "Lo
+ * que registraste: Bolsas (10) · Accesorios (5)" summary line and, via its
+ * first entry, "Etiquetando: Bolsas / Faltan 7 de 10." */
+export function pendingTagBreakdown(state: AppState): { product: Product; count: number }[] {
+  const order: ID[] = [];
+  const counts = new Map<ID, number>();
+  for (const unit of pendingTagUnits(state)) {
+    if (!counts.has(unit.productId)) order.push(unit.productId);
+    counts.set(unit.productId, (counts.get(unit.productId) ?? 0) + 1);
+  }
+  return order
+    .map((productId) => {
+      const product = state.products.find((p) => p.id === productId);
+      return product ? { product, count: counts.get(productId)! } : null;
+    })
+    .filter((row): row is { product: Product; count: number } => row != null);
+}
+
+/** `decision-log.md` D27 — `nfc` capability derives from `subscriptionTier`
+ * alone, never from kit/code activation. Gates whether "Assign Tags" exists
+ * at all in Inventario (`inventory.md` §2's own capability check) — a
+ * Business-level fact, independent of any single Session's resolved
+ * `Session.operatingMode` (*architecture-principles.md* #1). */
+export function nfcCapable(state: AppState): boolean {
+  return state.business?.subscriptionTier === 'paid';
 }
 
 /** How many finalized SaleItems this Product has ever sold — drives the

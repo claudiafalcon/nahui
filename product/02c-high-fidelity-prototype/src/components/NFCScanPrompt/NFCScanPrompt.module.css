@@ -1,0 +1,64 @@
+.prompt {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.prompt:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* A soft, concentric halo behind the glyph — the same "ringed" device
+   ColdStart's own .mark already uses for its brand-mark watermark, reused
+   here rather than inventing a second halo treatment (README's own "no new
+   visual language should need inventing" instruction). */
+.ring {
+  width: 88px;
+  height: 88px;
+  border-radius: var(--radius-pill);
+  background: var(--color-blush);
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4px 10px rgba(45, 45, 45, 0.14),
+    0 0 0 12px color-mix(in srgb, var(--color-blush) 16%, transparent),
+    0 0 0 26px color-mix(in srgb, var(--color-blush) 8%, transparent);
+  animation: pulse 1.8s var(--ease-standard) infinite;
+}
+
+.prompt:active:not(:disabled) .ring {
+  transform: scale(0.96);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    animation: none;
+  }
+}
+
+.label {
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-obsidian);
+  text-align: center;
+  line-height: 1.35;
+}

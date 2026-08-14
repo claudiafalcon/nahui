@@ -26,15 +26,15 @@ import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css
  * step to Quick Session ("Quick Session works regardless," domain-model.md).
  * "Iniciar Venta Rápida" keeps full prominence with or without the card.
  *
- * §3.6a Not Ready — the demo Onboarding path is the only path in this build
- * that can ever set `defaultSellingMode = 'nfc'` (onboarding.md §2.2), and
- * NFCTag assignment ("Asignar Tags," inventory.md §3.14) isn't modeled at
- * all in this build (disclosed in
- * docs/passes/slice-2-authentication-onboarding.md) — so NFC Readiness always
- * evaluates Not Ready whenever that's true, never Ready or Limited Ready.
- * "Asignar tags" is a visible but stubbed/no-op link (routes to an honest
- * Placeholder, the same "never hidden" treatment already given to
- * Eventos/Resultados/Configuración) rather than a broken tap.
+ * §3.6a Not Ready — `Session.operatingMode` resolution is untouched by the
+ * Asignar Tags pass (D43, out of that pass's own explicit scope): NFC
+ * Readiness still always evaluates Not Ready regardless of how many units
+ * actually carry a tag, so this note and its trigger condition
+ * (`defaultSellingMode === 'nfc'`) are unchanged. What changed is only the
+ * destination: "Asignar tags" now routes into Inventario's real Asignar
+ * Tags queue (`inventory.md` §3.14, via `onOpenAssignTagsPlaceholder`,
+ * unrenamed to keep this diff scoped) instead of a Home-local Placeholder
+ * stub.
  *
  * **Same-day resume line (§3.4/§3.5, closes `architect-questions.md` Q19).**
  * `todaySales` is `todaySalesSummary(state, null)` — the Quick Session scope

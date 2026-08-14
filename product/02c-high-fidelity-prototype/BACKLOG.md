@@ -102,6 +102,33 @@ structurally unreachable, same as "Tus clientes"'s own populated branch.
 Full record, including every disclosed judgment call: `README.md`'s
 "Resultados pass" section.
 
+## What's built (Slice 6, complete — Asignar Tags, 2026-08-14)
+
+Inventario's NFC-tagging queue in full, per `product/02-ux/inventory.md`
+§3.14-§3.17 (Approved). `InventoryUnit.tagId` (nullable, D43's own domain
+addition) and the new `assignTagToNextPendingUnit` write path (one scan, one
+unit, global across every Lot/Product — never a Lot-scoped queue); four new
+live selectors (`pendingTagUnits`/`pendingTagCount`/`pendingTagBreakdown`/
+`nfcCapable`, the last one D27-correct — `subscriptionTier=paid` alone, not
+kit/code activation). Screens: the active tagging queue (§3.14, pure
+scan-driven, no per-unit confirm tap), both error states (§3.15
+"already-assigned," §3.16 "scan failed" — simulated entirely client-side,
+same posture as this codebase's own phone-OTP mock), deferral (§3.17, = §3.5)
+and the Catalog view's own previously-unbuilt §3.5 pending-tag-work variant
+("Continuar etiquetando" as primary CTA, "Registrar mercancía" demoted to
+secondary in that one state, per the spec's own 2026-08-07 task-priority
+amendment). Auto-entry after "Guardar mercancía" (§2 step 3, nfc-capable →
+Asignar Tags directly, no intermediate question) and the "lista para vender"
+completion confirmation (§2 step 4 → §3.13) are both wired through
+`InventoryScreen`'s own resolution logic. Also rewires Home's "Asignar tags"
+link (`Idle.tsx`/`EventResume.tsx`, both instances) away from its earlier
+honest Placeholder stub to this real screen — the link's own trigger
+condition (`defaultSellingMode === 'nfc'`) is unchanged, out of this slice's
+explicit scope. NFC selling mode itself, `Session.operatingMode` resolution,
+and `home.md` §3.6a's remaining variants remain untouched — item D.2, a
+separate later slice. Full record, including every disclosed judgment call
+and simplification: `docs/passes/slice-6-asignar-tags.md`.
+
 ## Migration inventory (authoritative — knowledge-architecture backlog hygiene pass, 2026-08-14)
 
 Full lineage audit (Foundation → Approved UX → Medium Fidelity → React →
@@ -185,24 +212,37 @@ independent of any larger slice — no longer pending.**
   framing is no longer accurate; these are now genuinely reachable states
   with no implementation, same tier as (D) below, not a settled boundary.
   Reclassify from "correctly scoped out" to **Approved, pending React
-  migration**, dependent on (D)(1) below (Asignar Tags — without it, NFC
-  Readiness still can't reach Limited Ready or the capability-revoked case
-  in practice, only the nudge case is independently reachable today).
+  migration**, dependent on (D)(2) below (NFC Selling — (D)(1)/Asignar Tags
+  is now complete, `InventoryUnit.tagId` is real, but Session-open-time NFC
+  Readiness evaluation was explicitly out of that slice's own scope and
+  `startSession` still always resolves `'buttons'` regardless of how many
+  units actually carry a tag; without that resolution logic, NFC Readiness
+  still can't reach Limited Ready or the capability-revoked case in
+  practice, only the nudge case is independently reachable today).
 
 ### D. Sequenced feature gaps — the real NFC/payment-tier chain
 
 Dependency order matters here; each depends on the one above it unless noted.
 
-1. **Asignar Tags** (Inventario, `inventory.md` §3.14-§3.17) — Approved,
-   Medium-Fi built (3 frames + `NFCScanPrompt` component), React has only a
-   `Placeholder` stub. **Classification: Approved, pending React migration.**
-   No dependency — buildable now. Unlocks (2) and Frequent Customers Stage 1.
+1. ~~**Asignar Tags**~~ — **complete, Slice 6 (2026-08-14).** Was: Approved,
+   Medium-Fi built (3 frames + `NFCScanPrompt` component), React had only a
+   `Placeholder` stub. Now fully migrated — `InventoryUnit.tagId`,
+   `assignTagToNextPendingUnit`, the four new selectors, all four screen
+   states (§3.14-§3.17) plus the previously-unbuilt §3.5 Catalog variant,
+   and the §2 step 3/step 4 auto-entry/completion wiring. See "What's built
+   (Slice 6)" above and `docs/passes/slice-6-asignar-tags.md`. Unlocks (2)
+   and Frequent Customers Stage 1.
 2. **NFC Selling** (`home.md` §3.10, the registration surface itself, plus
    the (C) variants above once reachable) — Approved, Medium-Fi built (full
    demo chain), React always renders buttons-mode regardless of
    `Session.operatingMode`. **Classification: Partially migrated** (the
-   domain field, the Settings toggle, and one §3.6a variant are real; the
-   surface itself and three variants are not). **Depends on (1).**
+   domain field, the Settings toggle, the tagging queue itself, and one
+   §3.6a variant are real; the selling surface itself and three §3.6a
+   variants are not). **Depends on (1), now satisfied** — no longer blocked,
+   though NFC Readiness still always resolves Not Ready until this item
+   itself is built (`store.tsx`'s `startSession` disclosure, unchanged by
+   Slice 6 — Asignar Tags writes `tagId` for real now, but Session-open-time
+   NFC Readiness evaluation was explicitly out of this slice's scope).
 3. **Paid Receipt Claim Token / QR** (`home.md` §3.8f) — Approved
    2026-08-09, not built; `ReceiptTicket.tsx` renders only the Free-tier
    variant for every tier, with a stale comment claiming Paid is
@@ -359,7 +399,7 @@ its value, it's simply outranked by a bigger untested assumption this pass.
 
 This does not change product direction, business behavior, the Foundation, or UX intent — it builds an already-approved spec via the Migration Workflow (D43): `events.md` is the implementation contract, and `architect`'s next step is an Architecture Gap Analysis (implementation-readiness only, not a UX re-evaluation), reported back before the React build starts.
 
-## Backlog order — revised 2026-08-14, post migration-inventory hygiene pass
+## Backlog order — revised 2026-08-14, post Asignar Tags (Slice 6)
 
 1. ~~Onboarding~~ — complete, Slice 2.
 2. ~~Eventos~~ — complete, Slice 3.
@@ -368,50 +408,68 @@ This does not change product direction, business behavior, the Foundation, or UX
 5. **Fix the two genuine regressions (B)** — BusinessIdentity + SellingGroups
    save-error/retry wiring. Not a slice; a direct, ungated fix, cheapest item
    in the inventory, do this regardless of what's picked as "next slice."
-6. **Asignar Tags** (D.1) — no dependency, buildable now. Recommended next
-   slice — see below.
-7. **NFC Selling** (D.2) — depends on 6.
+6. ~~Asignar Tags~~ (D.1) — **complete, Slice 6 (2026-08-14).** See "What's
+   built (Slice 6)" above.
+7. **NFC Selling** (D.2) — depends on 6, now satisfied. Recommended next
+   slice — see below (recommendation unchanged from the prior pass; the
+   dependency it was waiting on is now built).
 8. **Paid Receipt Claim Token / QR** (D.3) — depends only on Configuración
-   (already built); can run in parallel with 6/7, not strictly after them.
+   (already built); can run in parallel with 7, not strictly after it.
 9. **Customer Loyalty Registration** (D.4) — separate deploy target, own
-   future sequencing, not gated on 6-8, needs its own backlog line outside
+   future sequencing, not gated on 7-8, needs its own backlog line outside
    this file.
 10. **Cross-app Loyalty data bridge** (D.5) — depends on 8 and 9 both
     existing; architecture-level, likely Stage 7-adjacent.
 11. **Populated "Tus clientes"/Recompensas** (D.6) — terminal consumer,
-    depends on the full 6→10 chain; nothing to build here directly.
+    depends on the full 7→10 chain; nothing to build here directly.
 
 `company/backlog.md` #3 (Bazaar recommendation) stays explicitly out of this
 sequencing — blocked, no data source exists, not attempted.
 
-### Recommended next implementation slice: **Asignar Tags**
+### Recommended next implementation slice: **NFC Selling** (D.2)
 
-Applying `company/CLAUDE.md`'s stated order — product learning value first,
-merchant value second, dependency graph third, effort as tie-breaker only:
+Asignar Tags (D.1) — the precondition the prior pass's own recommendation
+below was building toward — is now complete (Slice 6, 2026-08-14):
+`InventoryUnit.tagId` is a real, written field, and a merchant can actually
+work a tagging queue to completion. NFC Selling is the direct next domino:
+the registration surface itself (`home.md` §3.10) and `home.md` §3.6a's
+three remaining non-NFC-surface variants (Limited Ready, capability-revoked,
+Ready-but-buttons — reclassified in section C above) all still render
+buttons-mode/Not-Ready unconditionally, since Session-open-time NFC
+Readiness evaluation (`store.tsx`'s `startSession`) was explicitly out of
+Slice 6's own scope and is untouched. This is the same untested-core-
+assumption argument the prior recommendation already made for why this
+chain matters — reapplied one link further down the chain now that its own
+precondition is satisfied, not re-derived from scratch:
 
 **1. Product learning value — decisive.** `defaultSellingMode: 'nfc'` is one
 of exactly two selling modes this product's domain model defines, and it has
 never been exercised by a single `merchant-user-tester` walk in this
-project's history. Configuración (Slice 4) opened the door to Paid tier but
-deliberately didn't walk through it — NFC Readiness still always resolves
-Not Ready. Asignar Tags is the one remaining precondition for testing
-whether NFC selling holds together at all as a real merchant flow — the
-single largest untested core assumption left in the backlog.
+project's history. Configuración (Slice 4) opened the door to Paid tier;
+Asignar Tags (Slice 6) opened the door to a real tagged Catalog. NFC Selling
+is now the *only* remaining precondition for testing whether NFC selling
+holds together at all as a real merchant flow — the single largest untested
+core assumption left in the backlog.
 
-**2. Merchant value — real but indirect on its own**, same shape as
-Configuración's own reasoning: tagging inventory isn't a task Ana wakes up
-wanting to do, but it's the direct enabler of NFC selling, which is a real
-product bet (`domain-model.md`'s own two-selling-mode design), not a nice-to-have.
+**2. Merchant value — real and direct**, unlike Asignar Tags' own indirect
+framing (tagging inventory isn't a task Ana wakes up wanting to do). NFC
+Selling *is* the product bet itself (`domain-model.md`'s own two-selling-mode
+design) — a merchant who chose `nfc` actually gets to sell that way for the
+first time in this build.
 
-**3. Dependency graph — the largest remaining unlock.** It's the sole
-prerequisite for NFC Selling (D.2) and Frequent Customers Stage 1. Nothing
-in (C) or (D.2) is reachable without it.
+**3. Dependency graph — the sole remaining gate on the NFC/payment-tier
+chain.** It's the direct prerequisite for section (C)'s three reclassified
+`home.md` §3.6a variants (Limited Ready, capability-revoked, Ready-but-
+buttons) — none of them are reachable without a real selling surface to
+resolve `Session.operatingMode` against.
 
-**4. Effort — low-medium**, comparable to Configuración's own estimate;
-doesn't override 1-3.
+**4. Effort — medium**, the largest single remaining item in the D chain
+(a new selling surface plus `Session.operatingMode` resolution logic, not
+just a domain field and a queue screen the way Asignar Tags was); doesn't
+override 1-3.
 
-**Sequencing note:** the Paid Receipt QR (D.3) has no dependency on Asignar
-Tags and could be pulled forward in parallel if a second build track is
-available — it's independent, not blocked. But as a single next slice,
-Asignar Tags has the larger, more decisive learning value and unlocks
-strictly more downstream work.
+**Sequencing note:** the Paid Receipt QR (D.3) has no dependency on NFC
+Selling and could be pulled forward in parallel if a second build track is
+available — it's independent, not blocked. But as a single next slice, NFC
+Selling has the larger, more decisive learning value and is the one item
+left that a real merchant-flow validation of `nfc` actually depends on.
