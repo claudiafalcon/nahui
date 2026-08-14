@@ -11,11 +11,12 @@ import styles from './WritingState.module.css';
  * `OnboardingFlow.tsx`'s `'creating-error'` state) — a real,
  * correctly-rendering branch, never triggered in this build, the same
  * disclosed-not-wired convention already established for this codebase's
- * other sync-failure states (README.md "Scope decisions"). §3.10a
- * (`BusinessIdentity.tsx`) and §3.5e (`SellingGroups.tsx`) do not pass
+ * other sync-failure states (`BACKLOG.md`'s migration inventory, section A).
+ * §3.10a (`BusinessIdentity.tsx`) and §3.5e (`SellingGroups.tsx`) do not pass
  * `error`/`errorLabel`/`onRetry` to this component at all, so those two
  * screens currently have no error+retry UI whatsoever — not merely an
- * untriggered branch, but a disclosed gap (README.md "Scope decisions").
+ * untriggered branch, but a genuine regression, tracked in `BACKLOG.md`'s
+ * migration inventory, section B.
  */
 export function WritingState({
   label,

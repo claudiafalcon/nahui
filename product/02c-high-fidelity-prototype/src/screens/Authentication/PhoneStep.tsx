@@ -14,7 +14,7 @@ const SEND_DELAY_MS = 260; // near-instant convention (§3.5), matching every ot
  * `sendState`'s `'error'` case — but never actually triggered: this
  * prototype's local mock send never fails, the same disclosed-not-wired
  * convention already established for this codebase's other sync-failure
- * states (README.md "Scope decisions"). §3.4's format-invalid state *is*
+ * states (`BACKLOG.md`'s migration inventory, section A). §3.4's format-invalid state *is*
  * genuinely reachable, through real interaction (pasting a non-numeric
  * value) — the field is deliberately never auto-stripped of non-digit
  * characters, so a paste carries through exactly as typed.

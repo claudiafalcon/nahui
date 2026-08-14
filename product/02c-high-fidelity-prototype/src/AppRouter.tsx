@@ -23,9 +23,10 @@ import { OnboardingFlow } from './screens/Onboarding/OnboardingFlow';
  * tapped but not yet confirmed): those live as local component state inside
  * `AuthenticationFlow`/`OnboardingFlow`, the same disclosed-simplification
  * shape `RegisterMerchandise.tsx`'s own in-progress draft already has
- * (README.md "Scope decisions") — reload or a tab switch away from the flow
- * resets to that flow's fresh entry point rather than the exact mid-typing
- * step. See README.md for the full disclosure.
+ * (docs/passes/slice-1-home-inventario.md "Scope decisions") — reload or a
+ * tab switch away from the flow resets to that flow's fresh entry point
+ * rather than the exact mid-typing step. See
+ * docs/passes/slice-2-authentication-onboarding.md for the full disclosure.
  */
 export function AppRouter() {
   const { state } = useStore();
@@ -38,7 +39,7 @@ export function AppRouter() {
   // so Authentication/Onboarding get the identical frame `App`'s own tabs
   // always have (previously a real gap: those two flows rendered flat,
   // edge-to-edge, with no card/shadow on desktop widths — caught in review,
-  // see README.md).
+  // see docs/passes/slice-2-authentication-onboarding.md).
   return (
     <div className="app-shell">
       {!authenticated ? (

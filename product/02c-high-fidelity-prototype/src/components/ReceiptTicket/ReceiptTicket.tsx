@@ -6,11 +6,16 @@ const AUTO_RETURN_MS = 25_000; // "generous, fixed... tens of seconds" — home.
 const COUNT_UP_MS = 620;
 
 /**
- * home.md §3.8f — Finalizar Venta success, receipt moment. Free-tier variant
- * only in this slice (three elements: confirmation, total, business
- * identity) — see README.md "Scope decisions" for why subscriptionTier is
- * fixed at 'free' here, which correctly keeps the Claim Token/QR bridge
- * (Paid tier only) out of this slice without contradicting the spec.
+ * home.md §3.8f — Finalizar Venta success, receipt moment. Renders only the
+ * Free-tier variant (three elements: confirmation, total, business
+ * identity), regardless of the current Business's actual `subscriptionTier`.
+ * This was correct when originally built in Slice 1, when `subscriptionTier`
+ * could only ever be `'free'` for a real path — no longer accurate as of
+ * Slice 4 (Configuración), which made `paid` genuinely self-service
+ * reachable. A Paid-tier Business today still gets this Free-tier receipt;
+ * the Paid-tier Claim Token/QR bridge (D22/D40) is not built. Tracked as
+ * `BACKLOG.md`'s migration inventory (D.3), not a scope decision anymore —
+ * a real, pending gap.
  *
  * Pushed further in this revision (self-critique from v1 explicitly named
  * the scallop as "the one place a second design pass would look first"):

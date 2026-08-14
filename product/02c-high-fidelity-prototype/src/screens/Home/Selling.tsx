@@ -22,7 +22,8 @@ import styles from './Selling.module.css';
 
 /**
  * home.md §3.7/§3.8/§3.9 — active Session, buttons-mode selling surface
- * (this slice is always buttons mode — see README.md "Scope decisions").
+ * (this slice is always buttons mode — see
+ * docs/passes/slice-1-home-inventario.md's "Scope decisions" section).
  * §3.9's grid: most-frequently-sold-first, sold-out tiles dimmed but
  * present, per-Product letter marker.
  */
@@ -46,8 +47,9 @@ export function Selling({
   // zero feedback, read by a first-time merchant as the app being broken
   // (`merchant-user-tester` finding, `product/02-ux/
   // experience-review-2026-08-13-eventos.md`, routed as a direct fix).
-  // Small gap-fill, disclosed in README.md — reuses the same ambient,
-  // self-dismissing toast mechanism already established in Eventos
+  // Small gap-fill, disclosed in docs/passes/slice-3-eventos.md — reuses
+  // the same ambient, self-dismissing toast mechanism already established
+  // in Eventos
   // (`EventsList.tsx`'s `toast`/`ambientMessage`), not a new UI primitive.
   const [stockHint, setStockHint] = useState<string | null>(null);
   const stockHintTimeout = useRef<number | undefined>(undefined);

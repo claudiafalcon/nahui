@@ -27,7 +27,8 @@ export function pathFromCapabilities(business: Business): OnboardingPath {
  * `BusinessMembership` on it at all yet. Both `isOnboardingComplete` and
  * `OnboardingFlow`'s own resume-step logic must ask this question, not
  * merely "does a Business exist" — bug found by `merchant-user-tester`,
- * fixed here (see README.md's pass history).
+ * fixed here (see docs/passes/slice-2-authentication-onboarding.md's fix
+ * disclosure).
  */
 export function businessForCurrentUser(state: AppState): Business | null {
   const { business, currentUser, memberships } = state;

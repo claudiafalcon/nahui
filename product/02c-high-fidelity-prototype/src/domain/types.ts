@@ -6,12 +6,16 @@
  * These mirror the relevant aggregates in `product/00-foundation/domain-model.md`
  * for this slice only — not a full re-implementation of the Foundation.
  *
- * Scope decisions (see README.md "Scope decisions" for the full reasoning):
- * - Business operates at `subscriptionTier = 'free'` for the two real
- *   Onboarding paths; only the demo ("Ver un ejemplo") path ever reaches
- *   `paid`/`nfc` in this slice — `onboarding.md` §2.2's own capability table.
- * - Event/Venue/Eventos are out of this slice's scope — every Session here is
- *   a Quick Session (`eventId: null`), matching home.md §3.7b.
+ * Scope decisions, as originally built in Slice 1
+ * (docs/passes/slice-1-home-inventario.md) — both since superseded by later
+ * slices, see the paragraphs below:
+ * - Originally, `subscriptionTier = 'free'` for the two real Onboarding
+ *   paths, reachable at `paid`/`nfc` only via the demo path. Superseded by
+ *   Slice 4 (Configuración) — `paid`/`nfc` are now self-service reachable
+ *   from inside the app for any Business, not only the demo seed.
+ * - Originally, Event/Venue/Eventos were out of scope, every Session a Quick
+ *   Session (`eventId: null`). Superseded by Slice 3 — see "Eventos
+ *   additions" below.
  * - Full unit-level traceability IS modeled (Product → Lot → InventoryEntry →
  *   InventoryUnit, with FIFO consumption, D3/D5) — not the simplified
  *   single-quantity fallback the brief permits, because it's real, cheap-to-model
@@ -40,7 +44,8 @@ export type ID = string;
  * most one `User` ever held in `AppState` at a time (`currentUser`) — a
  * disclosed simplification of RFC 0007's "looked up by phone, globally"
  * shape, which only has real work to do once a second device/session
- * exists. See README.md's disclosure for this build's authentication pass.
+ * exists. See docs/passes/slice-2-authentication-onboarding.md's disclosure
+ * for this build's authentication pass.
  */
 export interface User {
   id: ID;

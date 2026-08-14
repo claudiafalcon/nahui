@@ -101,7 +101,7 @@ export function NuevoEvento({ onSaved, onBack }: { onSaved: (eventId: string) =>
         // `canSave` already excludes an overlap by the time this tap is
         // reachable, so `createEvent` never actually returns `ok:false`
         // here in practice. Kept as a real, correctly-rendering branch —
-        // see README.md's disclosure section.
+        // see docs/passes/slice-3-eventos.md's disclosure section.
         setSaveState('error');
       }
     }, 260);

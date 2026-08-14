@@ -75,7 +75,8 @@ function confirmCopy(action: ConfirmAction): { title: string; body: string[]; ct
  * "Cerrar sesión" action (§2.5). §3.1/§3.2 (Resolving, near-instant/slow)
  * are architecturally inapplicable in this build — state loads synchronously
  * from `localStorage`, the identical posture already established for every
- * other tab's own resolving/defensive-fallback states (see README.md).
+ * other tab's own resolving/defensive-fallback states — see `BACKLOG.md`'s
+ * migration inventory, section (A), for the full consolidated disclosure.
  */
 export function SettingsScreen({ onBack }: { onBack: () => void }) {
   const {

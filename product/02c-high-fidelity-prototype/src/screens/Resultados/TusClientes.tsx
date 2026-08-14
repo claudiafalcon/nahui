@@ -11,7 +11,8 @@ import styles from './Resultados.module.css';
  * §3.12's populated segmentation view, and Recompensas' whole populated
  * flow (§3.15-§3.18) that hangs off it, are structurally unreachable here —
  * explicitly out of scope for this slice per the dispatching task, honestly
- * disclosed here and in README.md rather than stubbed silently.
+ * disclosed here and in `BACKLOG.md`'s migration inventory (D.6) rather than
+ * stubbed silently.
  */
 export function TusClientes({ onBack }: { onBack: () => void }) {
   return (

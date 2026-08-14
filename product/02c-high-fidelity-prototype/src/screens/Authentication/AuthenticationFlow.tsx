@@ -16,7 +16,7 @@ type AuthStep = { kind: 'phone'; prefill?: string } | { kind: 'code'; phone: str
  * sent-but-unconfirmed code lives only in this component's own local state,
  * the same "resets on reload/tab-away, not on ordinary in-flow navigation"
  * shape `RegisterMerchandise.tsx`'s own in-progress draft already has
- * (README.md "Scope decisions"). Within a single mount of this flow —
+ * (docs/passes/slice-1-home-inventario.md "Scope decisions"). Within a single mount of this flow —
  * including tapping back and forth between §3.3 and §3.6 via "← Cambiar
  * número" — nothing typed is lost, which is the guarantee that actually
  * matters for the walkthrough this pass builds.

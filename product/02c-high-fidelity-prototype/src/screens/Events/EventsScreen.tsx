@@ -25,8 +25,8 @@ export type EventsView =
  * "show what's actually there, not a technical history" posture Home/
  * Inventario's own cold starts already apply — rather than rendering an
  * Events list with every section silently absent and no CTA-adjacent
- * explanation. Named here, not silently resolved (README.md's disclosure
- * section).
+ * explanation. Named here, not silently resolved
+ * (docs/passes/slice-3-eventos.md's disclosure section).
  */
 export function EventsScreen({
   view,

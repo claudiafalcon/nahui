@@ -102,23 +102,150 @@ structurally unreachable, same as "Tus clientes"'s own populated branch.
 Full record, including every disclosed judgment call: `README.md`'s
 "Resultados pass" section.
 
-## What's not built
+## Migration inventory (authoritative — knowledge-architecture backlog hygiene pass, 2026-08-14)
 
-- **Asignar Tags (Inventario)** — NFCTag assignment isn't modeled at all;
-  `nfc` mode is reachable end-to-end (`subscriptionTier=paid` via
-  Configuración) but NFC Readiness always resolves Not Ready, since no
-  InventoryUnit can ever carry an assigned tag. A full NFC sale still needs
-  this built before it's actually exercisable.
-- **Frequent Customers / Customer Segmentation** (`company/backlog.md` #2)
-  — Stage 1 (NFC-mechanism Claim resolution) needs Asignar Tags built first;
-  Stage 2 (Sale-QR mechanism) is now unblocked on the Paid-tier-reachability
-  side (Configuración), but still needs its own Claim-resolution mechanism
-  built. Free-tier Resultados (counts/totals only, no segmentation) does
-  **not** need any of this and is buildable now.
-- **Loyalty-claim** (`product/02-ux-loyalty/`) — explicitly out of the
-  merchant-app IA (D10/D21/D38), a structurally separate deploy target.
-  Not part of this backlog's sequencing; revisited only once Frequent
-  Customers' merchant-side Stage 2 is itself in progress.
+Full lineage audit (Foundation → Approved UX → Medium Fidelity → React →
+Backlog) run across every slice, 2026-08-13/14. Supersedes the old, thinner
+"What's not built" list below it — every item here has a precise
+classification, a stated dependency, a deploy target, and an owner. No
+implementation code changed during this pass; this is documentation only.
+
+**Classification vocabulary used throughout:** Fully migrated · Partially
+migrated · Approved, pending React migration · Deferred to backend
+integration · Separate deploy target · Genuine regression · Not yet
+designed (architecture-level).
+
+### A. Deferred to backend integration (Stage 7) — one consolidated entry
+
+All 14 states below are Approved, built in Medium-Fidelity Figma, and absent
+from React for the same structural reason: this prototype's state resolves
+synchronously from `localStorage` — there is no async boundary for a
+loading/error state to occupy. Building any of these now would mean
+simulating a failure mode that can't yet genuinely occur. **Correctly
+deferred, not a current gap** — but previously untracked except for one
+instance (`ResultadosLoadError.tsx`, already disclosed). Owner: Stage 7
+(Backend Integration), no earlier slice.
+
+| Slice | States | Approved UX citation |
+|---|---|---|
+| Home | Resolving (§3.1/§3.2), item-sync failure (§3.8a), Finalizar Venta error (§3.8d), fallback (§3.14) | `home.md` |
+| Inventario | Resolving (§3.1/§3.2), Guardar error (§3.11), fallback (§3.18) | `inventory.md` |
+| Authentication | Resolving/defensive fallback (§3.1/§3.2/§3.9) | `authentication.md` |
+| Onboarding | Resolving/defensive fallback (§3.1/§3.2/§3.8) | `onboarding.md` |
+| Eventos | Resolving/load-error (§3.1/§3.2/§3.18) | `events.md` |
+| Configuración | Resolving (§3.1/§3.2), Guardar error (§3.10), Cerrar sesión error (§3.8b) | `settings.md` |
+| Resultados | Resolving (§3.1/§3.2); fallback already built (§3.14, `ResultadosLoadError.tsx`) | `reports.md` |
+
+**Dependency:** a real async load/write path, i.e. Stage 7 itself. No earlier
+slice should attempt these individually — build them together once a real
+backend makes the failure modes genuine.
+
+### B. Genuine regressions — not deferred, real defects
+
+Unlike (A), these were built in Medium-Fidelity, are structurally reachable
+today (their save paths already exist and run in React), and simply never
+got their error/retry branch wired — caught during Slice 2's own review and
+narrowed to a disclosure instead of fixed. **These should be fixed directly,
+independent of any larger slice.**
+
+- **BusinessIdentity save error/retry** (`onboarding.md` §3.10a) — Medium-Fi
+  frame `763:56` exists; `BusinessIdentity.tsx` never passes
+  `error`/`errorLabel`/`onRetry` to `WritingState`.
+- **SellingGroups save error/retry** (`onboarding.md` §3.5e) — Medium-Fi
+  frame `732:5454` exists; `SellingGroups.tsx` has the identical gap.
+
+**Owner:** next available slot, not gated on anything — smallest, cheapest
+fix in this entire inventory.
+
+### C. Stale disclosure — correct this, don't rebuild yet
+
+- **NFC Session-start, `home.md` §3.6a's three non-NFC-surface variants**
+  (Limited Ready inline override, capability-revoked mention, Ready-but-
+  `buttons` one-time nudge) — Slice 1 disclosed these as correctly
+  out-of-scope because `subscriptionTier` was pinned to `'free'` at the
+  time. **Slice 4 (Configuración) removed that pin** — Paid is now reachable
+  in-app. The original "by construction, not by an unstated omission"
+  framing is no longer accurate; these are now genuinely reachable states
+  with no implementation, same tier as (D) below, not a settled boundary.
+  Reclassify from "correctly scoped out" to **Approved, pending React
+  migration**, dependent on (D)(1) below (Asignar Tags — without it, NFC
+  Readiness still can't reach Limited Ready or the capability-revoked case
+  in practice, only the nudge case is independently reachable today).
+
+### D. Sequenced feature gaps — the real NFC/payment-tier chain
+
+Dependency order matters here; each depends on the one above it unless noted.
+
+1. **Asignar Tags** (Inventario, `inventory.md` §3.14-§3.17) — Approved,
+   Medium-Fi built (3 frames + `NFCScanPrompt` component), React has only a
+   `Placeholder` stub. **Classification: Approved, pending React migration.**
+   No dependency — buildable now. Unlocks (2) and Frequent Customers Stage 1.
+2. **NFC Selling** (`home.md` §3.10, the registration surface itself, plus
+   the (C) variants above once reachable) — Approved, Medium-Fi built (full
+   demo chain), React always renders buttons-mode regardless of
+   `Session.operatingMode`. **Classification: Partially migrated** (the
+   domain field, the Settings toggle, and one §3.6a variant are real; the
+   surface itself and three variants are not). **Depends on (1).**
+3. **Paid Receipt Claim Token / QR** (`home.md` §3.8f) — Approved
+   2026-08-09, not built; `ReceiptTicket.tsx` renders only the Free-tier
+   variant for every tier, with a stale comment claiming Paid is
+   unreachable (no longer true since Slice 4). **Classification: Approved,
+   pending React migration.** Independent of (1)/(2) — Paid-tier reachability
+   alone (already built, Slice 4) is its only real precondition. Can be
+   built in parallel with (1)/(2), not after.
+4. **Customer Loyalty Registration** (`product/02-ux-loyalty/customer-loyalty-registration.md`)
+   — Approved (Draft-complete), fully built in Medium-Fidelity (14 real
+   frames, 0 open findings). **Classification: Separate deploy target** —
+   not a migration item inside `02c-high-fidelity-prototype` at all, per
+   D38. Needs its own backlog line and its own future sequencing outside
+   this file, not "pending React migration" inside this codebase.
+5. **Cross-app Loyalty data bridge** — the mechanism by which the Merchant
+   Application would actually receive Derived Customer Intelligence
+   computed by (4), once (4) exists. **Classification: Not yet designed
+   (architecture-level)** — this prototype has no backend and no
+   cross-app integration mechanism of any kind yet (everything is
+   per-app `localStorage`), so even a complete (3) + complete (4) would not,
+   by themselves, make data flow between them. This is a Stage 7-adjacent
+   architecture question, not a UI migration item — no RFC currently
+   specifies it. **Depends on (3) and (4) both existing**, and likely on
+   Stage 7 (a real backend) to be meaningful at all.
+6. **Populated "Tus clientes" / Recompensas states** (`reports.md`
+   §3.12/§3.15-§3.18) — the screens exist and are correct
+   (`TusClientesScreen.tsx` et al.), permanently showing the honest empty
+   state. **Classification: Implemented, not exercisable.** Depends on the
+   full chain above ((1) through (5)) — this is the terminal consumer, not
+   an independent gap. Nothing to build here directly; it will start
+   working once its upstream dependencies do.
+
+### E. Smaller partial migrations and copy drift — all non-urgent
+
+None of these block anything above; fix opportunistically.
+
+- **Cancel-venta confirm weight** (`home.md` §3.8b) — spec calls for a
+  lighter inline confirm than Close-session's full sheet; React collapsed
+  both to the same `Sheet` component. **Partially migrated.**
+- **Registrar mercancía draft persistence** (`inventory.md` §3.6/§3.7) —
+  draft doesn't survive nav-tab switches (disclosed). **Partially migrated.**
+- **Auth/Onboarding pre-write resume state** (`authentication.md` §3.8,
+  `onboarding.md` §2.1 case 5) — typed phone/unsent code/tapped-but-
+  unconfirmed path lost on reload (disclosed, low-cost). **Partially
+  migrated.**
+- **Demo seed data** (`onboarding.md` §11) — thinner than spec (no Event, no
+  Customer/Claim seeded) — direct cause of NFC always resolving Not Ready on
+  the demo path specifically. **Partially migrated.**
+- **Configuración §3.9 saving-state granularity** — Figma has distinct
+  near-instant/slow frames; React has one fixed-260ms state, undisclosed
+  until this pass. **Partially migrated.**
+- **SET-D27-MIN1** (`02b/settings.md`) — no inline signal that a
+  `defaultSellingMode → nfc` change becomes moot under a pending downgrade;
+  never carried into 02c, no owning item until now. **Partially migrated.**
+- **Eventos copy drift** — "Nuevo evento" (React) vs. spec's "Agendar
+  evento"; an extra "✓" on the cancel-ambient message not in the spec. **Not
+  a migration gap** — route through `ux-designer` per D42's terminology-
+  drift rule before treating either as canonical.
+- **Resultados empty-Historial copy** — `ResultadosMain.tsx` renders an
+  invented empty-state line the spec says shouldn't render at all when
+  there are zero cards. **Not a migration gap** — same D42 routing.
 
 ## Priority evaluation
 
@@ -215,13 +342,59 @@ its value, it's simply outranked by a bigger untested assumption this pass.
 
 This does not change product direction, business behavior, the Foundation, or UX intent — it builds an already-approved spec via the Migration Workflow (D43): `events.md` is the implementation contract, and `architect`'s next step is an Architecture Gap Analysis (implementation-readiness only, not a UX re-evaluation), reported back before the React build starts.
 
-## Backlog order after Onboarding (subject to re-evaluation after each slice)
+## Backlog order — revised 2026-08-14, post migration-inventory hygiene pass
 
 1. ~~Onboarding~~ — complete, Slice 2.
 2. ~~Eventos~~ — complete, Slice 3.
-3. **Resultados (Free-tier)** — real, already-surfaced merchant want; low risk; standing next candidate, subject to Main's own re-evaluation.
-4. **Configuración** — unlocks Paid tier/`nfc`, prerequisite for Frequent Customers Stage 1/2.
-5. **Frequent Customers Stage 1 (NFC-mechanism)** — depends on 4 (and Inventario's Asignar Tags, currently unbuilt within Inventario itself).
-6. **Frequent Customers Stage 2 (Sale-QR mechanism)** — depends on 4; `company/backlog.md` #2's own stated priority ordering (Stage 1 before Stage 2) is preserved here.
+3. ~~Resultados (Free-tier + Paid-tier UI)~~ — complete, Slice 5.
+4. ~~Configuración~~ — complete, Slice 4. Unlocked Paid tier/`nfc` reachability.
+5. **Fix the two genuine regressions (B)** — BusinessIdentity + SellingGroups
+   save-error/retry wiring. Not a slice; a direct, ungated fix, cheapest item
+   in the inventory, do this regardless of what's picked as "next slice."
+6. **Asignar Tags** (D.1) — no dependency, buildable now. Recommended next
+   slice — see below.
+7. **NFC Selling** (D.2) — depends on 6.
+8. **Paid Receipt Claim Token / QR** (D.3) — depends only on Configuración
+   (already built); can run in parallel with 6/7, not strictly after them.
+9. **Customer Loyalty Registration** (D.4) — separate deploy target, own
+   future sequencing, not gated on 6-8, needs its own backlog line outside
+   this file.
+10. **Cross-app Loyalty data bridge** (D.5) — depends on 8 and 9 both
+    existing; architecture-level, likely Stage 7-adjacent.
+11. **Populated "Tus clientes"/Recompensas** (D.6) — terminal consumer,
+    depends on the full 6→10 chain; nothing to build here directly.
 
-`company/backlog.md` #3 (Bazaar recommendation) stays explicitly out of this sequencing — blocked, no data source exists, not attempted.
+`company/backlog.md` #3 (Bazaar recommendation) stays explicitly out of this
+sequencing — blocked, no data source exists, not attempted.
+
+### Recommended next implementation slice: **Asignar Tags**
+
+Applying `company/CLAUDE.md`'s stated order — product learning value first,
+merchant value second, dependency graph third, effort as tie-breaker only:
+
+**1. Product learning value — decisive.** `defaultSellingMode: 'nfc'` is one
+of exactly two selling modes this product's domain model defines, and it has
+never been exercised by a single `merchant-user-tester` walk in this
+project's history. Configuración (Slice 4) opened the door to Paid tier but
+deliberately didn't walk through it — NFC Readiness still always resolves
+Not Ready. Asignar Tags is the one remaining precondition for testing
+whether NFC selling holds together at all as a real merchant flow — the
+single largest untested core assumption left in the backlog.
+
+**2. Merchant value — real but indirect on its own**, same shape as
+Configuración's own reasoning: tagging inventory isn't a task Ana wakes up
+wanting to do, but it's the direct enabler of NFC selling, which is a real
+product bet (`domain-model.md`'s own two-selling-mode design), not a nice-to-have.
+
+**3. Dependency graph — the largest remaining unlock.** It's the sole
+prerequisite for NFC Selling (D.2) and Frequent Customers Stage 1. Nothing
+in (C) or (D.2) is reachable without it.
+
+**4. Effort — low-medium**, comparable to Configuración's own estimate;
+doesn't override 1-3.
+
+**Sequencing note:** the Paid Receipt QR (D.3) has no dependency on Asignar
+Tags and could be pulled forward in parallel if a second build track is
+available — it's independent, not blocked. But as a single next slice,
+Asignar Tags has the larger, more decisive learning value and unlocks
+strictly more downstream work.

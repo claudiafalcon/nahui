@@ -29,7 +29,8 @@ import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css
  * §3.6a Not Ready — the demo Onboarding path is the only path in this build
  * that can ever set `defaultSellingMode = 'nfc'` (onboarding.md §2.2), and
  * NFCTag assignment ("Asignar Tags," inventory.md §3.14) isn't modeled at
- * all in this build (disclosed in README.md) — so NFC Readiness always
+ * all in this build (disclosed in
+ * docs/passes/slice-2-authentication-onboarding.md) — so NFC Readiness always
  * evaluates Not Ready whenever that's true, never Ready or Limited Ready.
  * "Asignar tags" is a visible but stubbed/no-op link (routes to an honest
  * Placeholder, the same "never hidden" treatment already given to

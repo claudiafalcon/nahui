@@ -6,7 +6,8 @@ import type { CommitLotLine } from './store';
  * Lots/InventoryUnits via the existing `commitLot` write path (real stock,
  * so Home's own idle state, `home.md` §2.4, resolves correctly), but no
  * Event, no Customer/Claim, and the NFC-readiness/Claim minimums §11
- * otherwise recommends are explicitly skipped. Disclosed in README.md —
+ * otherwise recommends are explicitly skipped. Disclosed in
+ * `BACKLOG.md`'s migration inventory, section E ("Demo seed data") —
  * "Ver un ejemplo" is deliberately the thinnest of the three paths in this
  * pass, reusing the two real paths' own plumbing rather than its own
  * mechanism (`onboarding.md` §2.2's own reasoning for why it's seeded at

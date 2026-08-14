@@ -9,7 +9,8 @@ const VERIFY_DELAY_MS = 260; // near-instant convention (§3.7)
 /**
  * authentication.md §3.6/§3.6a/§3.6b/§3.7/§3.7a-d — Ingresa el código.
  *
- * Mock verification (RFC 0007 §5, disclosed in README.md): any 6-digit code
+ * Mock verification (RFC 0007 §5, disclosed in
+ * docs/passes/slice-2-authentication-onboarding.md): any 6-digit code
  * is accepted, so `verifying` always succeeds. §3.7a (código incorrecto),
  * §3.7b (código expirado), §3.7c (demasiados intentos), and §3.7d (error de
  * plataforma) are all built as real, correctly-rendering `codeError`

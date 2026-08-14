@@ -131,7 +131,8 @@ export type OnboardingPath = 'free' | 'paid' | 'demo';
  * until `createEvent`'s own atomic transaction resolves it — the identical
  * "nothing is real until the atomic write" discipline this codebase's own
  * `ProductPicker` premature-write Blocker fix already established (see
- * README.md), applied here preventively rather than found as a bug.
+ * docs/passes/slice-1-home-inventario.md), applied here preventively rather
+ * than found as a bug.
  */
 export type VenueRef = { kind: 'existing'; venueId: ID } | { kind: 'new'; displayName: string };
 
@@ -147,7 +148,7 @@ interface StoreValue {
   state: AppState;
   /** authentication.md §3.7 (Confirmar) — mock verification: any 6-digit
    * code is accepted (RFC 0007 §5's own suggested simplification, disclosed
-   * in README.md). Creates the device's `User` row on a first-ever
+   * in docs/passes/slice-2-authentication-onboarding.md). Creates the device's `User` row on a first-ever
    * verification, or resolves the existing one on a returning verification
    * for the same phone. Returns the resolved User. */
   verifyOtp: (phone: string, code: string) => User;
@@ -369,7 +370,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   /**
    * authentication.md §3.7 — mock verification (RFC 0007 §5, disclosed in
-   * README.md): any 6-digit code is accepted, so this never fails. This
+   * docs/passes/slice-2-authentication-onboarding.md): any 6-digit code is accepted, so this never fails. This
    * prototype is a single localStorage instance per device, so there is at
    * most one `User` ever relevant (`state.currentUser`) — a lookup "by
    * phone, globally" (RFC 0007 §1) only has real work to do once a second
@@ -579,7 +580,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       // real, structural consequence: home.md §3.6a's Not Ready one-time
       // mention ("Todavía no tienes prendas con tag para hoy...") is what
       // the demo path's Idle screen shows instead — see Idle.tsx and
-      // README.md's disclosure for this pass.
+      // docs/passes/slice-2-authentication-onboarding.md's "NFC Readiness
+      // always evaluates Not Ready" disclosure.
       const operatingMode: SessionOperatingMode = 'buttons';
       const session: Session = {
         id: makeId('sess'),

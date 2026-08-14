@@ -30,7 +30,7 @@ type PreWriteStep =
  *   confirmation) — nothing exists yet to persist, so this lives as local
  *   `preWrite` state. A reload before the first real write (§3.5) resets to
  *   §3.3 rather than resuming the exact confirm screen — a disclosed,
- *   low-cost simplification (README.md): per onboarding.md §2.1 case 5's
+ *   low-cost simplification (docs/passes/slice-2-authentication-onboarding.md): per onboarding.md §2.1 case 5's
  *   own framing, "there's no typed data to preserve there, just a bare
  *   confirm tap not yet taken."
  * - **Once `state.business` exists *and belongs to `state.currentUser`***
@@ -47,7 +47,8 @@ type PreWriteStep =
  *   being silently resumed into a *different*, previously-onboarded
  *   phone's stale `state.business` on the same device — this is the same
  *   distinction `isOnboardingComplete` makes, and for the same reason (bug
- *   found by `merchant-user-tester`, fixed here — see README.md).
+ *   found by `merchant-user-tester`, fixed here — see
+ *   docs/passes/slice-2-authentication-onboarding.md's fix disclosure).
  */
 export function OnboardingFlow() {
   const { state, completeOnboarding, setBusinessIdentity, createProducts, acknowledgeOnboarding, commitLot } =
