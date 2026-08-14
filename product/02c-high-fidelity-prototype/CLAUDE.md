@@ -89,9 +89,15 @@ reference for Backend Integration (Stage 7).
 
 ## Where the actual content lives
 
-- `README.md` — the real build history: every pass, every bug found and
-  fixed, every scope decision and its rationale, in the order it actually
-  happened. Read this first.
+- `README.md` — the current, durable reference: what's built, how to run it,
+  file structure, and an index into the full pass-by-pass build history.
+  Read this first. **The pass history itself lives in `docs/passes/`**
+  (knowledge-architecture refactor, Stage 4, 2026-08-13) — every pass, every
+  bug found and fixed, every scope decision and its rationale, preserved in
+  full and content-unchanged, just split out so it isn't read in full by
+  default on every dispatch. Follow `README.md`'s own index to the specific
+  pass archive when a question actually needs that history, rather than
+  reading every archive "just in case."
 - `DESIGN-SYSTEM.md` — the reusable design language (tokens, the Swing Tag
   primitive at its five scales, typography/motion roles, content
   conventions) — what should carry forward into every future feature, not
