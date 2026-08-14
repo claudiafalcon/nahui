@@ -26,15 +26,23 @@ import styles from './SessionHeader.module.css';
  * de venta" instead. Same disclosure discipline as the header title above:
  * a prototype-only naming decision, not a spec authoring change. See README
  * "Naming — Cerrar jornada de venta (2026-08-13)" for the full rationale.
+ *
+ * `eventId`-aware title (Eventos pass, D43, `home.md` §3.7b): a Quick
+ * Session (no `title` prop) keeps "Venta rápida"; an Event-linked Session
+ * passes `title="{Venue.displayName} · Día N"` (`events.md` §3.14's own
+ * header convention, e.g. "Plaza Norte · Día 2") — same slot, same
+ * treatment, only the content differs.
  */
 export function SessionHeader({
   revenue,
   count,
+  title,
   onCloseSession,
   onOpenSettingsPlaceholder,
 }: {
   revenue: number;
   count: number;
+  title?: string;
   onCloseSession: () => void;
   onOpenSettingsPlaceholder: () => void;
 }) {
@@ -44,7 +52,7 @@ export function SessionHeader({
     <>
       <header className={styles.header}>
         <div className={styles.text}>
-          <span className={styles.title}>Venta rápida</span>
+          <span className={styles.title}>{title ?? 'Venta rápida'}</span>
           <span className={styles.stat}>
             Hoy: <strong>{pesos(revenue)}</strong> · {count} {pluralize(count, 'venta', 'ventas')}
           </span>

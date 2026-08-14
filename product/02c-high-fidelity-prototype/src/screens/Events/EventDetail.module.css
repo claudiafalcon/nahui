@@ -1,0 +1,88 @@
+.topbar {
+  padding: var(--space-4) var(--space-4) var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.back {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.venue {
+  font: var(--text-heading);
+  color: var(--color-obsidian);
+}
+
+.subline {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.cost {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.dayRows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dayRow {
+  font: var(--text-body-sm);
+  color: var(--color-obsidian);
+}
+
+.rollup {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.emptyBody {
+  font: var(--text-body);
+  color: #6B6259;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.continueWrap {
+  padding: var(--space-4) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+}
+
+.confirmTitle {
+  font: var(--text-heading);
+  margin-bottom: var(--space-4);
+}
+
+.confirmRow {
+  display: flex;
+  gap: 12px;
+}

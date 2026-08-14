@@ -150,6 +150,52 @@ content addition to already-enumerated states, same treatment as the
 2026-08-08 Business Identity receipt amendment above. `events.md` §3.14
 receives the matching addition in the same pass — see that document's own
 status header.
+**Further amended 2026-08-13 (Product Owner decision — §3.7's ongoing header
+redefined context-scoped, not Session-scoped; closes a
+`merchant-user-tester` re-walk finding surfaced on top of the already-Applied
+`architect-questions.md` Q19):** §3.7's "Hoy: $X · N ventas" — and every
+active-Session wireframe rendering the identical row (§3.7a, §3.7b, §3.8,
+§3.8b, §3.9, §3.10, the dimmed header behind §3.11/§3.11a) — is redefined
+from a running sum of this one Session's own Sales to a running sum of every
+finalized Sale today sharing this Session's `eventId` (`eventId = null` for a
+Quick Session, matching every other Quick Session today; the specific
+Event's `eventId` for an Event-linked Session, matching every other Session
+under that Event today). Not Architect-resolvable — `architect`'s own Q19
+ruling explicitly declined to rule on this, naming it "a deeper, separate
+question... not resolving here... a legitimate, separate design call,"
+precisely because it redefines an already-Approved, deliberately-reasoned
+Session-scoped definition (`decision-log.md` D33) rather than interpreting
+existing Foundation. The Product Owner has now made that call directly: "The
+merchant interprets 'Hoy' as 'everything I've sold today in the context I'm
+currently working in'... this avoids the trust issue where reopening the app
+after closing a session shows '$0 · 0 ventas' even though the merchant has
+already sold today." Necessity confirmed by a `merchant-user-tester` re-walk
+of Q19's own fix: Q19's ambient "Ya vendiste $X · N ventas hoy" line
+(§3.4/§3.5/§3.6) correctly warns Ana *before* she resumes selling that a
+closed same-day Session's sales still exist — but the live selling screen's
+own §3.7 header, the number she's actually looking at continuously once
+she's resumed, still reset to Session-scoped $0 immediately after,
+reproducing the identical trust gap Q19 set out to close, one screen later.
+Reuses the identical `todaySalesSummary`-shaped query `architect-questions.md`
+Q19 already established (`SUM(SaleItem.pricePaid)`/`COUNT(Sale)` across the
+same Session set), applied here to an ongoing header instead of a one-time
+ambient line — no new query, no new field. **"Venta actual" (§3.8), the
+close-confirmation dialog (§3.11), and the closing-summary screen (§3.12) are
+explicitly unaffected** — all three stay scoped to the single active/closing
+Session, a deliberately different kind of fact (one-time transactional
+confirmation, not ambient status); see §3.7's own bullets below for the
+reasoning and for a small, necessary relabel to §3.11's preview line this
+scope split otherwise leaves ambiguous. `events.md` needs no matching
+change — confirmed, not assumed: its own §3.14 same-day-resume row (Q19)
+already computes the identical context-scoped fact for the Event-linked
+case, and its "Vendiendo ahora" hand-off (§3.15) renders no running total of
+its own; both hand off into this same Home selling surface rather than
+duplicating it. No new screen, state, or tap — a content/scope amendment to
+already-enumerated states, same treatment as the 2026-08-08 Business
+Identity receipt amendment and this document's own preceding 2026-08-13
+entries. §3.7, §3.7a (cross-reference only), §3.11 (preview-line relabel
+only), §10 updated. Pending `ux-critic`/`reviewer` review before folding back
+into Approved.
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -913,13 +959,70 @@ via §3.5)
 - Registration surface is the single biggest area on screen, always exactly
   one mode, resolved once at Session-start (§2/§3.6a) and never re-evaluated
   mid-Session. *architecture-principles.md* #1.
-- **"Hoy: $850 · 6 ventas" is a running sum of `SaleItem.pricePaid` across
-  every finalized Sale in this Session so far** (`decision-log.md` D33) —
-  never a flat per-item price times a count. Each item's own resolved
-  price (Event override or Product default) already reflects any
-  adjustment made in `events.md`'s "Ajustar precios," with zero
-  recomputation or re-decision happening here. Updates the instant a Sale
-  finalizes (§3.8c), same timing as the "N ventas" count beside it.
+- **"Hoy: $850 · 6 ventas" is now context-scoped, not Session-scoped
+  (Product Owner decision, 2026-08-13, correcting this document's original
+  D33 grounding) — a running sum of `SaleItem.pricePaid` / count of
+  finalized Sale across every Session sharing this Session's own `eventId`
+  and falling on today's calendar date, not only this one Session's own
+  contribution.** For a Quick Session (`eventId = null`), that means every
+  other Quick Session finalized today; for an Event-linked Session, every
+  other Session under that same Event finalized today. Reuses, unchanged,
+  the identical `todaySalesSummary`-shaped query `architect-questions.md`
+  Q19 already established and §3.4/§3.5/§3.6's same-day-resume lines ("Ya
+  vendiste $X · N ventas hoy") already compute (`global-principles.md`,
+  "capture business truth once, reuse it forever") — the only thing new is
+  *where* that same fact renders: an ongoing header Ana glances at
+  continuously while selling, rather than a one-time ambient line shown once
+  at Session-start. No new query, no new fetch, no new field. Updates the
+  instant any Sale under this scope finalizes (§3.8c), same timing as
+  before. Each item's own resolved price (Event override or Product
+  default) already reflects any adjustment made in `events.md`'s "Ajustar
+  precios," with zero recomputation happening here — unchanged from the
+  original D33 grounding.
+- **Applies to every wireframe rendering this same header row** — §3.7
+  itself, §3.7a (dimmed, behind the sheet), §3.7b (Quick Session title-row
+  variant — its total is context-scoped identically), §3.8, §3.8b, §3.9,
+  §3.10, and the dimmed header behind §3.11/§3.11a — one content rule,
+  cross-referenced rather than redefined at each, per
+  `product/02-ux/CLAUDE.md` §4's shared-states convention.
+- **Does not change: "Venta actual."** The current in-progress transaction —
+  the tray Ana is actively building toward Finalizar Venta — stays scoped to
+  the single active Sale, exactly as before ("Venta actual: 2 artículos,"
+  §3.8). Nothing about this amendment touches its content, its
+  cancel/confirm mechanics (§3.8b), or its receipt (§3.8f).
+- **Does not change: the close-confirmation dialog (§3.11, "¿Ya terminaste
+  por hoy?") or the closing-summary screen (§3.12, "Día N cerrado — N ventas
+  registradas — $X en total").** Both stay Session-scoped — reporting only
+  the specific Session being closed right now, not the context total. A
+  deliberately different kind of fact from the ongoing header above, not an
+  oversight left uncorrected: the header is an *ambient, continuous status*
+  fact — the number Ana glances at repeatedly, at arbitrary moments, while
+  selling is still ongoing and nothing has been decided — while §3.11's
+  preview and §3.12's summary are a *one-time, transactional confirmation* —
+  "here is exactly what you're about to close / just closed," a receipt for
+  a single, already-committed action. Conflating the two would mean "Día 2
+  cerrado — 6 ventas registradas" could report a number Ana never actually
+  saw accumulate under this Session — undermining the one moment this flow
+  most needs to be literally true. Same "in-progress vs. closed" distinction
+  `events.md` §3.14's own Q19 amendment already draws between its "hasta
+  ahora" in-progress row and a finished Día row — applied here one layer
+  deeper, between two states within this document rather than two rows on
+  one screen.
+- **New adjacency this creates, addressed directly rather than left
+  implicit:** §3.11's confirm dialog renders as an overlay on top of the
+  dimmed §3.7 header — the two numbers are now visible on screen at once,
+  and can legitimately differ the moment this isn't Ana's first Session of
+  the day under this scope (e.g. a lunch-break reopen, `decision-log.md`
+  D15). A header reading "Hoy: $1,600 · 10 ventas" behind a dialog reading
+  "6 ventas · $850" is correct — the dialog is about this Session's own 6
+  ventas, the header is about all 10 today — but rendered with zero
+  relabeling, it reads exactly like the discrepancy `architect-questions.md`
+  Q19 already found erodes trust, one layer deeper. §3.11's own preview line
+  is relabeled to disambiguate: "Esta sesión: 6 ventas · $850" (was: "6
+  ventas · $850") — a wording-only fix, no new field, no new query, same
+  number as before. §3.12 needs no matching fix — it's a full-viewport
+  replacement of §3.7 (no header, §3.8f's own precedent), so the two numbers
+  are never simultaneously on screen there.
 
 ### 3.7a Session controls (⋯) — sheet (resolves HOME-M4; extended per `settings.md` §2.1; entry-point icon relocated 2026-08-09, Product Owner decision — see status header)
 ```
@@ -1449,7 +1552,7 @@ Three elements only — confirmation, total, business identity. No future-regist
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  ┌───────────────────────────┐ │
 │  │  ¿Ya terminaste por hoy?    │ │
-│  │  6 ventas · $850             │ │
+│  │  Esta sesión: 6 ventas · $850 │ │
 │  │  [ Cancelar ]  [ Sí, cerrar ]│ │
 │  └───────────────────────────┘ │
 ├───────────────────────────────┤
@@ -2385,6 +2488,34 @@ her actual top sellers within the first screenful regardless of Catalog size.
   Coexists independently with §3.6a's NFC/capability lines. `events.md`
   §3.14 receives the matching addition, worded for an in-progress (not
   closed) day per the same finding.
+- **2026-08-13 (Product Owner decision): §3.7's ongoing "Hoy: $X · N ventas"
+  header is now context-scoped (every finalized Sale today sharing this
+  Session's `eventId`), not Session-scoped (only this Session's own
+  Sales).** Closes a `merchant-user-tester` re-walk finding that Q19's own
+  fix (the pre-resume ambient "Ya vendiste $X · N ventas hoy" line,
+  §3.4/§3.5/§3.6) wasn't sufficient on its own — the live selling screen's
+  own header still reset to Session-scoped $0 the moment she actually
+  resumed, the exact number she's looking at continuously while selling.
+  Reuses Q19's identical query, unchanged, applied to a continuous status
+  line instead of a one-time ambient one. **Deliberately does not extend to
+  "Venta actual" (single active Sale), the close-confirmation dialog
+  (§3.11), or the closing-summary screen (§3.12)** — all three report on a
+  specific committed transaction/Session, a one-time transactional fact, not
+  an ambient status fact re-read at arbitrary moments; conflating the two
+  would make §3.12's own closing numbers untrue to what actually happened
+  inside the Session being closed. Introduces one small, necessary side
+  effect: §3.11's dialog now overlays a header that can legitimately show a
+  larger number than the Session it's about to close, so its own preview
+  line is relabeled "Esta sesión: N ventas · $X" (was bare "N ventas · $X")
+  to keep the two simultaneously-visible numbers legible as two different,
+  correctly-scoped facts rather than reading as the same discrepancy Q19
+  already fixed once. Classified by the Product Owner directly, not
+  `architect` — `architect`'s own Q19 ruling explicitly declined to resolve
+  this broader question, naming it "a legitimate, separate design call."
+  `events.md` needs no matching amendment — confirmed, not assumed: §3.7 is
+  the only place an ongoing running total renders; `events.md` §3.14's own
+  Q19 row is already context-scoped and one-time, and §3.15's "Vendiendo
+  ahora" hand-off carries no total of its own.
 
 ## 11. Future considerations
 

@@ -49,16 +49,18 @@ Not Ready in this build since NFCTag assignment isn't modeled (disclosed in
 `README.md`). Full record, including every disclosed simplification:
 `README.md`'s "Authentication + Onboarding pass" section.
 
+## What's built (Slice 3, complete — Eventos, 2026-08-13)
+
+Journey 2 (Event scheduling) in full, the remaining 2/3 of Journey 3
+(Event-active Home resolution — "Continuar Día N"), and Journey 4 (Event
+close/rollup), per `product/02-ux/events.md` (Approved). `Event`/`Venue`/
+Price Override are real, written aggregates — `Session.eventId` is no
+longer always `null`. Home's resolution logic now covers all four of §2's
+numbered steps, not three. Full record: `README.md`'s "Eventos pass"
+section.
+
 ## What's not built
 
-- **Eventos** (Journey 2: Event scheduling) — nav tab is a placeholder. No
-  Event entity, no "Nuevo Evento," no Event-active Home resolution branch.
-  Approved spec exists (`product/02-ux/events.md`).
-- **"Continuar Día N"** (the other 2/3 of Journey 3's Home-resolution
-  logic) — currently unreachable; `Session.eventId` is always `null` in
-  this codebase. Depends on Eventos existing.
-- **Event close / rollup** (Journey 4) — depends on Eventos + multi-day
-  Sessions existing.
 - **Resultados** (Journey 5: Review) — nav tab is a placeholder. No
   Session/Event history view, no Free-tier counts/totals, no Paid-tier
   segmentation. Approved spec exists (`product/02-ux/reports.md`).
@@ -97,7 +99,17 @@ next slice.
 | **Resultados (Free-tier only)** | Directly serves `company/backlog.md` #2's spirit without needing its blocked dependencies | Depends on nothing new — reads existing Sale/Session data | Ana explicitly wanted this and hit a wall (all 3 walkthroughs) | Read-only, no new write path, lowest architectural risk of the three | Real, already-surfaced want; would close a named finding | Low-medium — mostly display logic over data that already exists | Chart/summary display patterns, first of their kind in this build |
 | **Configuración** | Unlocks Paid tier / `nfc`, which unlocks backlog #2 in full | Prerequisite for NFC-mode and Frequent Customers, not valuable alone | Lower standalone value — capability management, not a task Ana starts her day wanting to do | Straightforward — no new aggregate, just capability writes already modeled | Low on its own; high once it unblocks NFC/Paid-tier testing | Low-medium | Toggle/settings-row patterns |
 
-## Recommendation — next slice: **Eventos**
+## Recommendation — next slice (pending Main's re-evaluation post-Eventos)
+
+**Eventos (Slice 3) is now complete** — see "What's built (Slice 3)" above.
+The priority table and recommendation below are retained as-built from the
+pre-Eventos pass (historical record of why Eventos was picked next) rather
+than rewritten here — re-evaluating which candidate comes after it is
+Main's own ownership call (this file's own header), not `ui-designer`'s to
+make unilaterally. Per "Backlog order" below, Resultados (Free-tier) was
+already the standing second choice.
+
+### Historical: recommendation that led to Eventos (Slice 3)
 
 **Onboarding (Slice 2) is complete** — see "What's built (Slice 2)" above; the recommendation that follows is for the slice after it, superseding the prior "next slice: Onboarding" pass.
 
@@ -116,8 +128,8 @@ This does not change product direction, business behavior, the Foundation, or UX
 ## Backlog order after Onboarding (subject to re-evaluation after each slice)
 
 1. ~~Onboarding~~ — complete, Slice 2.
-2. **Eventos** — proposed above; highest unlock count of any remaining slice; real architectural validation (the untested 2/3 of Home's resolution logic).
-3. **Resultados (Free-tier)** — real, already-surfaced merchant want; low risk; can be resequenced ahead of Eventos if a future checkpoint shows stronger demand for it.
+2. ~~Eventos~~ — complete, Slice 3.
+3. **Resultados (Free-tier)** — real, already-surfaced merchant want; low risk; standing next candidate, subject to Main's own re-evaluation.
 4. **Configuración** — unlocks Paid tier/`nfc`, prerequisite for Frequent Customers Stage 1/2.
 5. **Frequent Customers Stage 1 (NFC-mechanism)** — depends on 4 (and Inventario's Asignar Tags, currently unbuilt within Inventario itself).
 6. **Frequent Customers Stage 2 (Sale-QR mechanism)** — depends on 4; `company/backlog.md` #2's own stated priority ordering (Stage 1 before Stage 2) is preserved here.

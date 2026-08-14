@@ -1,0 +1,115 @@
+.topbar {
+  padding: var(--space-4) var(--space-4) var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.back {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
+.heading {
+  font: var(--text-heading);
+  padding: 0 var(--space-4) var(--space-1);
+}
+
+.intro {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  padding: 0 var(--space-4) var(--space-3);
+}
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--space-4);
+}
+
+.row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-1) 14px 4px;
+  background-color: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.price {
+  appearance: none;
+  padding: 8px 14px;
+  font: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--color-coral-aa);
+  cursor: pointer;
+  flex-shrink: 0;
+  transform: rotate(-2deg);
+}
+
+.empty {
+  padding: var(--space-6) var(--space-4);
+  font: var(--text-body);
+  color: #6B6259;
+}
+
+.sheetTitle {
+  font: var(--text-heading);
+  margin-bottom: var(--space-1);
+}
+
+.normalPrice {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  margin-bottom: var(--space-3);
+}
+
+.overrideLabel {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+  margin-bottom: var(--space-2);
+}
+
+.priceField {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+  height: 48px;
+  margin-bottom: var(--space-4);
+  background: var(--color-white);
+}
+
+.pesoSign {
+  font: var(--text-body);
+  font-weight: 600;
+  color: #6B6259;
+}
+
+.priceInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font: var(--text-body);
+  font-weight: 600;
+}

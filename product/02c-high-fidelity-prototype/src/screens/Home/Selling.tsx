@@ -1,6 +1,16 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
-import { activeSession, findProduct, openSaleForSession, sellingGridRows, sessionTotals } from '../../domain/selectors';
+import {
+  activeSession,
+  dayNumberForDate,
+  findProduct,
+  findVenue,
+  openSaleForSession,
+  sellingGridRows,
+  sessionTotals,
+  todaySalesSummary,
+} from '../../domain/selectors';
+import { todayKey } from '../../domain/dates';
 import { SessionHeader } from '../../components/SessionHeader/SessionHeader';
 import { VentaActualTray } from '../../components/VentaActualTray/VentaActualTray';
 import { ProductTile } from '../../components/ProductTile/ProductTile';
@@ -30,14 +40,47 @@ export function Selling({
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [closeBlockedOpen, setCloseBlockedOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Sold-out tile tap feedback — not in home.md §3.9's original text (which
+  // assumed a native `disabled` button needed no separate message, "there's
+  // no tap to respond to"). A real device tap on a disabled button produces
+  // zero feedback, read by a first-time merchant as the app being broken
+  // (`merchant-user-tester` finding, `product/02-ux/
+  // experience-review-2026-08-13-eventos.md`, routed as a direct fix).
+  // Small gap-fill, disclosed in README.md — reuses the same ambient,
+  // self-dismissing toast mechanism already established in Eventos
+  // (`EventsList.tsx`'s `toast`/`ambientMessage`), not a new UI primitive.
+  const [stockHint, setStockHint] = useState<string | null>(null);
+  const stockHintTimeout = useRef<number | undefined>(undefined);
 
   const session = activeSession(state);
   if (!session) return null; // defensive — HomeScreen only mounts this once a Session exists
 
   const sale = openSaleForSession(state, session.id);
   const items = sale?.items ?? [];
+  // Session-scoped — still what the close-confirm dialog and
+  // `onSessionClosed`/closing-summary report on (Product Owner decision,
+  // 2026-08-13): closing a Session always summarizes that specific Session,
+  // never the wider context. Left untouched, no longer fed to SessionHeader.
   const totals = sessionTotals(state, session.id);
+  // Context-scoped — every finalized Sale today across every Session sharing
+  // this Session's `eventId` (`null` for a Quick Session, per
+  // `todaySalesSummary`'s own `eventId=null` convention). Feeds
+  // SessionHeader's ongoing "Hoy: $X · N ventas" line, distinct from
+  // `totals` above on purpose — SessionHeader always renders a value
+  // (unlike §3.7b's conditional ambient line elsewhere), so default to
+  // zero rather than `todaySalesSummary`'s `null` "no Sales yet" case.
+  const contextTotals = todaySalesSummary(state, session.eventId) ?? { total: 0, count: 0 };
   const grid = sellingGridRows(state);
+
+  // home.md §3.7b — Quick Session keeps "Venta rápida" (title stays
+  // undefined, SessionHeader's own default); an Event-linked Session
+  // resolves "{Venue.displayName} · Día N" instead (events.md §3.14's own
+  // header convention), reusing the identical dayNumberForDate computation
+  // Eventos itself reads (`decision-log.md` D15) — never re-derived.
+  const event = session.eventId ? state.events.find((e) => e.id === session.eventId) : undefined;
+  const headerTitle = event
+    ? `${findVenue(state, event.venueId)?.displayName ?? ''} · Día ${dayNumberForDate(state, event.id, todayKey())}`
+    : undefined;
 
   // Local, read-only aggregation of the open Sale's own items — grouped by
   // Product for the tag-chip stack (VentaActualTray) and the tile's own
@@ -58,6 +101,12 @@ export function Selling({
   // entirely from data the store already exposes (Sale.items); no
   // src/domain/ change — same discipline as `lines` above.
   const subtotal = items.reduce((sum, item) => sum + item.pricePaid, 0);
+
+  function handleDisabledTap(productName: string) {
+    setStockHint(`Necesitas registrar stock de ${productName}.`);
+    window.clearTimeout(stockHintTimeout.current);
+    stockHintTimeout.current = window.setTimeout(() => setStockHint(null), 2400);
+  }
 
   function handleCloseSessionRequest() {
     if (items.length > 0) {
@@ -92,8 +141,9 @@ export function Selling({
         className={`${styles.transactionPanel} grain tearBottom ${items.length > 0 ? styles.transactionPanelActive : ''}`}
       >
         <SessionHeader
-          revenue={totals.revenue}
-          count={totals.count}
+          revenue={contextTotals.total}
+          count={contextTotals.count}
+          title={headerTitle}
           onCloseSession={handleCloseSessionRequest}
           onOpenSettingsPlaceholder={onOpenSettingsPlaceholder}
         />
@@ -104,6 +154,8 @@ export function Selling({
         <div className={styles.savingLine}>Cerrando venta…</div>
       ) : (
         <>
+          {stockHint && <p className={styles.stockHint}>{stockHint}</p>}
+
           <div className={styles.gridScroll}>
             {grid.length === 0 ? (
               <p className={styles.emptyGrid}>Todavía no tienes productos registrados.</p>
@@ -116,6 +168,7 @@ export function Selling({
                     available={available}
                     countInSale={countByProduct.get(product.id)}
                     onTap={() => addItemToSale(product.id)}
+                    onDisabledTap={() => handleDisabledTap(product.name)}
                   />
                 ))}
               </div>
@@ -158,7 +211,7 @@ export function Selling({
         <Sheet onDismiss={() => setCloseConfirmOpen(false)}>
           <p className={styles.confirmTitle}>¿Ya terminaste por hoy?</p>
           <p className={styles.confirmBody}>
-            {totals.count} {pluralize(totals.count, 'venta', 'ventas')} · {pesos(totals.revenue)}
+            Esta sesión: {totals.count} {pluralize(totals.count, 'venta', 'ventas')} · {pesos(totals.revenue)}
           </p>
           <div className={styles.confirmRow}>
             <Button variant="secondary" onClick={() => setCloseConfirmOpen(false)}>

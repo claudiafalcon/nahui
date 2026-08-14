@@ -50,6 +50,18 @@
   font-weight: 500;
 }
 
+/* Sold-out tile tap feedback — ambient, self-dismissing, same mechanism as
+   Eventos' "Evento cancelado ✓" (see Selling.tsx's doc comment). Uses
+   --color-warning rather than --color-success: this isn't confirming a
+   completed action, it's flagging why a tap didn't do anything — no
+   trailing "✓". */
+.stockHint {
+  margin: 0 var(--space-4) var(--space-2);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-warning);
+}
+
 .emptyGrid {
   text-align: center;
   color: #8A8177;

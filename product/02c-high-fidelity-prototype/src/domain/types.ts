@@ -21,6 +21,13 @@
  * `BusinessMembership`, the first authenticated-identity concepts in this
  * Foundation. See `store.tsx`'s `verifyOtp`/`completeOnboarding` for the
  * write paths and their invariants.
+ *
+ * Eventos additions (Migration Workflow, D43; `product/02-ux/events.md`
+ * Approved) — `Venue`, `Event`, `PriceOverride`, and `Session.eventId`
+ * generalized from a hardcoded `null` to `ID | null`. See `store.tsx`'s
+ * `createEvent`/`cancelEvent`/`setPriceOverride` and `selectors.ts`'s
+ * `eventStatus`/`dayNumberForDate` for the write/read rules these types
+ * exist to support.
  */
 
 export type ID = string;
@@ -91,6 +98,62 @@ export interface Business {
   onboardingAcknowledged: boolean;
 }
 
+/** Selling context — Eventos (`events.md`, `decision-log.md` D8/D17/D20). */
+
+/**
+ * A place Ana sells (`domain-model.md`: "independent identity, referenced by
+ * ID from Event... owned by the Selling context," `decision-log.md` D20).
+ * Minimum viable for this slice — no address/notes/`active` toggle, since
+ * `events.md` §11 designs no UI surface for capturing or editing them (the
+ * same structurally-present-but-UI-absent treatment D9 already established
+ * for Supplier/cost). No `businessId` field, matching this prototype's
+ * existing single-Business scoping convention (`Product`, `Lot`, etc. carry
+ * no `businessId` either — the whole `AppState` is implicitly one Business).
+ */
+export interface Venue {
+  id: ID;
+  displayName: string;
+}
+
+/** The closed, 6-value Event type enum (`decision-log.md` D16) — internal
+ * English keys per `ubiquitous-language.md`; Spanish labels are mapped only
+ * at the UI layer (see `src/screens/Events/eventTypeLabels.ts`), never
+ * stored. "Market"'s Spanish rendering is "Tianguis," not a literal
+ * translation — `events.md` §3.8's own EVT-M1 remediation. */
+export type EventType = 'Bazaar' | 'Expo' | 'Pop-up' | 'Festival' | 'Market' | 'Office Sale';
+
+/**
+ * A scheduled occasion to sell (`domain-model.md`: "light root... does NOT
+ * own Session as a strict aggregate"). **Status is never a stored field** —
+ * `scheduled`/`active`/`closed`/`cancelled` is computed live, every time,
+ * from `startDate`/`endDate` vs. today plus `cancelledAt` (`events.md` §2's
+ * own explicit rule; see `selectors.ts`'s `eventStatus`). `cancelledAt` is
+ * the one stored, manual fact — the only merchant-initiated transition in
+ * the whole lifecycle (`scheduled → cancelled`, `events.md` §2).
+ */
+export interface Event {
+  id: ID;
+  venueId: ID; // required, not nullable — D20
+  type: EventType;
+  startDate: string; // 'YYYY-MM-DD', local calendar date — see dates.ts
+  endDate: string; // 'YYYY-MM-DD', inclusive, >= startDate
+  bazaarCost: number; // optional at entry, always stored as a number (0 default) — D33
+  cancelledAt: number | null;
+}
+
+/**
+ * Internal-only entity owned by `Event` (no identity or lookup outside its
+ * parent Event — the same shape `InventoryEntry` has under `Lot`,
+ * `decision-log.md` D33). One row per `(eventId, productId)` pair whose
+ * price Ana has adjusted specifically for that Event; absence of a row
+ * means "use `Product.defaultPrice`," never a stored copy of the default.
+ */
+export interface PriceOverride {
+  eventId: ID;
+  productId: ID;
+  overridePrice: number;
+}
+
 /** Inventory context */
 
 export interface Product {
@@ -128,7 +191,14 @@ export type SessionOperatingMode = 'buttons' | 'nfc';
 
 export interface Session {
   id: ID;
-  eventId: null; // Quick Session only, in this slice — see scope note above
+  // Generalized from a hardcoded `null` (Eventos build, D43) — `null` for a
+  // Quick Session, or the Event this Session's Día belongs to. Never set
+  // after the Session opens (`Session.operatingMode`'s own immutability
+  // precedent, D23) and never retroactively assignable — a Session only
+  // ever gets an `eventId` through Home's own resolution at open time
+  // (`home.md` §2, `events.md` §2's "note on what Session→Event linking is,
+  // and isn't").
+  eventId: ID | null;
   operatingMode: SessionOperatingMode;
   status: 'active' | 'closed';
   openedAt: number;
@@ -171,4 +241,7 @@ export interface AppState {
   units: InventoryUnit[];
   sessions: Session[];
   sales: Sale[];
+  venues: Venue[];
+  events: Event[];
+  priceOverrides: PriceOverride[];
 }

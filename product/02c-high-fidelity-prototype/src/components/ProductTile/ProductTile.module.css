@@ -128,7 +128,13 @@
   }
 }
 
-.tile:active:not(:disabled) .surface {
+/* No longer gated on :not(:disabled) — a sold-out tile is no longer a
+   native `disabled` button (see ProductTile.tsx's onDisabledTap doc
+   comment), so it still gets this press-scale on tap; `.soldOut`'s own
+   rule below (later in this file, same specificity) still wins on
+   background/opacity/border, so the muted look is preserved — only the
+   transform reads as "yes, that tap registered." */
+.tile:active .surface {
   transform: scale(0.96);
   background: color-mix(in srgb, var(--tone-bg) 32%, var(--color-paper));
 }

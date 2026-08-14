@@ -1,8 +1,18 @@
 import { useState } from 'react';
 import { useStore } from '../../domain/store';
-import { hasAnyAvailableUnit, activeSession } from '../../domain/selectors';
+import {
+  hasAnyAvailableUnit,
+  activeSession,
+  activeEventForBusiness,
+  dayNumberForDate,
+  findVenue,
+  todaySalesSummary,
+  upcomingEventForBusiness,
+} from '../../domain/selectors';
+import { todayKey } from '../../domain/dates';
 import { ColdStart } from './ColdStart';
 import { Idle } from './Idle';
+import { EventResume } from './EventResume';
 import { Selling } from './Selling';
 import { ReceiptTicket } from '../../components/ReceiptTicket/ReceiptTicket';
 import { CloseSummary } from './CloseSummary';
@@ -12,18 +22,25 @@ import type { Receipt } from '../../domain/store';
 type HomeUiState =
   | { kind: 'resolved' }
   | { kind: 'receipt'; receipt: Receipt }
-  | { kind: 'closed'; count: number; revenue: number }
+  | { kind: 'closed'; count: number; revenue: number; venueName?: string; dayNumber?: number }
   | { kind: 'settings-placeholder' }
   | { kind: 'assign-tags-placeholder' };
 
 /**
  * home.md §2 — resolution/decision logic, evaluated automatically on every
- * open. This slice never reaches an Event-scheduled branch (Eventos is out
- * of scope), so only three of the four numbered steps are reachable here:
- * an active Session outranks everything (step 1); otherwise cold start vs.
+ * open. Now covers all four numbered steps, per the Eventos pass (D43): an
+ * active Session outranks everything (step 1); otherwise, an active Event
+ * with no Session currently active (step 2 — see `EventResume.tsx`'s own
+ * comment for the corrected reading applied here); otherwise cold start vs.
  * idle, gated on whether any `available` InventoryUnit exists (step 3).
  */
-export function HomeScreen({ onNavigateToRegister }: { onNavigateToRegister: () => void }) {
+export function HomeScreen({
+  onNavigateToRegister,
+  onNavigateToEvent,
+}: {
+  onNavigateToRegister: () => void;
+  onNavigateToEvent: (eventId: string) => void;
+}) {
   const { state, startSession } = useStore();
   const [ui, setUi] = useState<HomeUiState>({ kind: 'resolved' });
 
@@ -51,6 +68,8 @@ export function HomeScreen({ onNavigateToRegister }: { onNavigateToRegister: () 
       <CloseSummary
         count={ui.count}
         revenue={ui.revenue}
+        venueName={ui.venueName}
+        dayNumber={ui.dayNumber}
         onContinue={() => setUi({ kind: 'resolved' })}
       />
     );
@@ -61,11 +80,33 @@ export function HomeScreen({ onNavigateToRegister }: { onNavigateToRegister: () 
   }
 
   if (session) {
+    const eventForSession = session.eventId ? state.events.find((e) => e.id === session.eventId) : undefined;
+    const venueName = eventForSession ? findVenue(state, eventForSession.venueId)?.displayName : undefined;
+    const dayNumber = eventForSession
+      ? dayNumberForDate(state, eventForSession.id, todayKey())
+      : undefined;
     return (
       <Selling
         onSaleFinalized={(receipt) => setUi({ kind: 'receipt', receipt })}
-        onSessionClosed={(summary) => setUi({ kind: 'closed', ...summary })}
+        onSessionClosed={(summary) => setUi({ kind: 'closed', ...summary, venueName, dayNumber })}
         onOpenSettingsPlaceholder={() => setUi({ kind: 'settings-placeholder' })}
+      />
+    );
+  }
+
+  const activeEvent = activeEventForBusiness(state);
+  if (activeEvent) {
+    const venueName = findVenue(state, activeEvent.venueId)?.displayName ?? '';
+    const dayNumber = dayNumberForDate(state, activeEvent.id, todayKey());
+    return (
+      <EventResume
+        venueName={venueName}
+        dayNumber={dayNumber}
+        defaultSellingMode={state.business.defaultSellingMode}
+        todaySales={todaySalesSummary(state, activeEvent.id)}
+        onContinue={() => startSession(activeEvent.id)}
+        onOpenSettingsPlaceholder={() => setUi({ kind: 'settings-placeholder' })}
+        onOpenAssignTagsPlaceholder={() => setUi({ kind: 'assign-tags-placeholder' })}
       />
     );
   }
@@ -74,10 +115,16 @@ export function HomeScreen({ onNavigateToRegister }: { onNavigateToRegister: () 
     return <ColdStart onRegister={onNavigateToRegister} />;
   }
 
+  const upcomingEvent = upcomingEventForBusiness(state);
+
   return (
     <Idle
       defaultSellingMode={state.business.defaultSellingMode}
-      onStartSession={startSession}
+      upcomingEventVenueName={upcomingEvent ? findVenue(state, upcomingEvent.venueId)?.displayName : undefined}
+      upcomingEventStartDate={upcomingEvent?.startDate}
+      onTapUpcomingEvent={upcomingEvent ? () => onNavigateToEvent(upcomingEvent.id) : undefined}
+      todaySales={todaySalesSummary(state, null)}
+      onStartSession={() => startSession()}
       onOpenSettingsPlaceholder={() => setUi({ kind: 'settings-placeholder' })}
       onOpenAssignTagsPlaceholder={() => setUi({ kind: 'assign-tags-placeholder' })}
     />

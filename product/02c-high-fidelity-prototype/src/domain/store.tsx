@@ -1,9 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { makeId } from './id';
+import { dateKey, rangesOverlap, todayKey } from './dates';
+import { eventStatus } from './selectors';
 import type {
   AppState,
   Business,
   BusinessMembership,
+  Event,
+  EventType,
   ID,
   InventoryUnit,
   InventoryUnitStatus,
@@ -13,6 +17,7 @@ import type {
   Session,
   SessionOperatingMode,
   User,
+  Venue,
 } from './types';
 
 const STORAGE_KEY = 'nahui-hifi-prototype-v1';
@@ -38,6 +43,9 @@ function initialState(): AppState {
     units: [],
     sessions: [],
     sales: [],
+    venues: [],
+    events: [],
+    priceOverrides: [],
   };
 }
 
@@ -56,7 +64,18 @@ function loadState(): AppState {
         Array.isArray(parsed.memberships) &&
         'currentUser' in parsed
       ) {
-        return parsed;
+        // Backward-compat with localStorage written before the Eventos pass
+        // (D43) — an older saved state simply has no venues/events/
+        // priceOverrides keys at all. Defaulting them to empty arrays here
+        // (rather than rejecting the whole saved state) is what lets an
+        // existing walkthrough resume normally instead of silently losing
+        // Authentication/Onboarding/Catalog/Sale history it already has.
+        return {
+          ...parsed,
+          venues: Array.isArray(parsed.venues) ? parsed.venues : [],
+          events: Array.isArray(parsed.events) ? parsed.events : [],
+          priceOverrides: Array.isArray(parsed.priceOverrides) ? parsed.priceOverrides : [],
+        };
       }
     }
   } catch {
@@ -89,6 +108,27 @@ export interface CommitLotLine {
 
 /** `onboarding.md` §2.2's three-way capability table. */
 export type OnboardingPath = 'free' | 'paid' | 'demo';
+
+/**
+ * A pending Venue selection at "Guardar evento" time (`events.md` §3.6/§3.7)
+ * — the exact structural mirror of `CommitLotLine.product` above. `existing`
+ * points at an already-real Venue (tapped from Elegir lugar's list);
+ * `new` carries a not-yet-written `displayName` typed into the same picker's
+ * "+ Agregar... como lugar nuevo" row. Nothing is written to `state.venues`
+ * until `createEvent`'s own atomic transaction resolves it — the identical
+ * "nothing is real until the atomic write" discipline this codebase's own
+ * `ProductPicker` premature-write Blocker fix already established (see
+ * README.md), applied here preventively rather than found as a bug.
+ */
+export type VenueRef = { kind: 'existing'; venueId: ID } | { kind: 'new'; displayName: string };
+
+/** `events.md` §3.6's D17 overlap-validation variant — `createEvent` never
+ * returns a bare boolean; a rejected save names the specific conflicting
+ * Event and its Venue's `displayName` so the form can render "Esas fechas
+ * se cruzan con {venue} ({rango})" without a second lookup. */
+export type CreateEventResult =
+  | { ok: true; eventId: ID }
+  | { ok: false; conflictingEvent: Event; conflictingVenueName: string };
 
 interface StoreValue {
   state: AppState;
@@ -124,7 +164,32 @@ interface StoreValue {
    * a freshly-minted id for `new` lines, the given id for `existing` ones. */
   commitLot: (lines: CommitLotLine[]) => ID[];
   editPrice: (productId: ID, newPrice: number) => void;
-  startSession: () => void;
+  /** events.md §3.6 "Guardar evento" — the atomic Event-creation write.
+   * Resolves `venue` (mint-or-find, `resolveVenue`'s own logic) inside the
+   * same transaction, and re-checks the D17 overlap rule at write time
+   * (defensive re-check — the form itself already blocks the tap, same
+   * "never trust the UI alone" posture `setPriceOverride`'s own defensive
+   * re-check below applies). */
+  createEvent: (fields: {
+    venue: VenueRef;
+    type: EventType;
+    startDate: string;
+    endDate: string;
+    bazaarCost: number;
+  }) => CreateEventResult;
+  /** events.md §3.12 — sets `cancelledAt`; only meaningful while the
+   * Event's *computed* status is still `scheduled` (§2, §3.11). */
+  cancelEvent: (eventId: ID) => void;
+  /** events.md §3.20 (D33) — writes/updates this Event's Price Override for
+   * one Product. Defensively re-checks the Event's computed status is still
+   * `scheduled` at write time (§3.20: "unreachable at all once active, not
+   * just hidden") — a no-op if it isn't, never a thrown error, matching this
+   * codebase's existing defensive-guard style (`startSession`, `finalizeSale`). */
+  setPriceOverride: (eventId: ID, productId: ID, overridePrice: number) => void;
+  /** home.md §2 / events.md §2 — `eventId` is optional; omitted (or `null`)
+   * for a Quick Session, exactly as before. The existing "any active Session
+   * blocks a new one" guard already generalizes correctly with no change. */
+  startSession: (eventId?: ID | null) => void;
   addItemToSale: (productId: ID) => boolean;
   cancelSale: () => void;
   finalizeSale: () => Receipt | null;
@@ -157,6 +222,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    */
   function mintProduct(name: string, defaultPrice: number, createdAt: number): Product {
     return { id: makeId('prod'), name: name.trim(), defaultPrice, createdAt };
+  }
+
+  /**
+   * events.md §3.7 — mint-or-find resolution for a Venue picked/typed in
+   * Elegir lugar, mirroring `mintProduct` above: given a `VenueRef`, either
+   * resolve it to an already-real Venue's id, or mint a brand-new one.
+   * `existing` is trusted as-is (the picker already resolved which Venue
+   * she tapped). `new` re-applies the same case-insensitive/trimmed match
+   * the picker's own UI already used to decide to show "+ Agregar... como
+   * lugar nuevo" in the first place (§3.7's matching rule) — a second,
+   * defensive check here rather than trusting the UI layer's classification
+   * alone, so two callers can never mint two different Venues for what's
+   * actually the same trimmed name typed a second time.
+   */
+  function resolveVenue(ref: VenueRef, existingVenues: Venue[]): { venueId: ID; newVenue: Venue | null } {
+    if (ref.kind === 'existing') return { venueId: ref.venueId, newVenue: null };
+    const trimmed = ref.displayName.trim();
+    const match = existingVenues.find((v) => v.displayName.trim().toLowerCase() === trimmed.toLowerCase());
+    if (match) return { venueId: match.id, newVenue: null };
+    const venue: Venue = { id: makeId('venue'), displayName: trimmed };
+    return { venueId: venue.id, newVenue: venue };
   }
 
   /**
@@ -322,7 +408,90 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   }
 
-  function startSession() {
+  /**
+   * events.md §3.6 "Guardar evento" — the atomic Event-creation write:
+   * resolves the pending Venue selection (mint-or-find, `resolveVenue`) and
+   * enforces D17's overlap rule, both inside the same transaction. D17: "at
+   * most one Event per Business may be `scheduled` or `active` with an
+   * overlapping date range at a time," checked against every other Event
+   * whose *computed* status (`eventStatus`, never a stored field) is
+   * `scheduled`/`active` — a cancelled or already-closed Event never
+   * conflicts. Returns a named conflict, never a bare boolean (§3.6's own
+   * overlap-validation variant: "names the conflicting Event, not a
+   * generic 'fechas inválidas'").
+   */
+  function createEvent(fields: {
+    venue: VenueRef;
+    type: EventType;
+    startDate: string;
+    endDate: string;
+    bazaarCost: number;
+  }): CreateEventResult {
+    const now = Date.now();
+    const conflicting = state.events.find(
+      (e) =>
+        (eventStatus(e, now) === 'scheduled' || eventStatus(e, now) === 'active') &&
+        rangesOverlap(fields.startDate, fields.endDate, e.startDate, e.endDate),
+    );
+    if (conflicting) {
+      const venue = state.venues.find((v) => v.id === conflicting.venueId);
+      return { ok: false, conflictingEvent: conflicting, conflictingVenueName: venue?.displayName ?? '' };
+    }
+
+    const { venueId, newVenue } = resolveVenue(fields.venue, state.venues);
+    const event: Event = {
+      id: makeId('event'),
+      venueId,
+      type: fields.type,
+      startDate: fields.startDate,
+      endDate: fields.endDate,
+      bazaarCost: fields.bazaarCost,
+      cancelledAt: null,
+    };
+    setState((s) => ({
+      ...s,
+      venues: newVenue ? [...s.venues, newVenue] : s.venues,
+      events: [...s.events, event],
+    }));
+    return { ok: true, eventId: event.id };
+  }
+
+  /** events.md §3.12/§2 — the only merchant-initiated Event transition.
+   * Meaningful only while the Event's computed status is still `scheduled`
+   * (§3.11: "Cancelar evento" is offered only on that detail screen) — a
+   * defensive no-op otherwise, never a thrown error, matching this
+   * codebase's existing guard style. */
+  function cancelEvent(eventId: ID) {
+    setState((s) => {
+      const event = s.events.find((e) => e.id === eventId);
+      if (!event || eventStatus(event, Date.now()) !== 'scheduled') return s;
+      return { ...s, events: s.events.map((e) => (e.id === eventId ? { ...e, cancelledAt: Date.now() } : e)) };
+    });
+  }
+
+  /** events.md §3.20 (D33) — writes/updates one Product's Price Override for
+   * one Event. Defensively re-checks the Event's computed status is still
+   * `scheduled` at write time — "Ajustar precios" is offered only on the
+   * scheduled detail screen (§3.11), and §3.20 is explicit that this
+   * capability is "unreachable at all once active, not just hidden," so the
+   * write path itself must not trust that the UI never got there some other
+   * way. Upserts: replaces this (eventId, productId) pair's row if one
+   * exists, else appends — never two rows for the same pair. */
+  function setPriceOverride(eventId: ID, productId: ID, overridePrice: number) {
+    setState((s) => {
+      const event = s.events.find((e) => e.id === eventId);
+      if (!event || eventStatus(event, Date.now()) !== 'scheduled') return s;
+      const exists = s.priceOverrides.some((po) => po.eventId === eventId && po.productId === productId);
+      const priceOverrides = exists
+        ? s.priceOverrides.map((po) =>
+            po.eventId === eventId && po.productId === productId ? { ...po, overridePrice } : po,
+          )
+        : [...s.priceOverrides, { eventId, productId, overridePrice }];
+      return { ...s, priceOverrides };
+    });
+  }
+
+  function startSession(eventId: ID | null = null) {
     setState((s) => {
       if (!s.business) return s; // defensive — Home only mounts once onboarding is complete
       if (s.sessions.some((sess) => sess.status === 'active')) return s; // never ask twice
@@ -341,7 +510,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const operatingMode: SessionOperatingMode = 'buttons';
       const session: Session = {
         id: makeId('sess'),
-        eventId: null,
+        eventId,
         operatingMode,
         status: 'active',
         openedAt: Date.now(),
@@ -364,6 +533,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const product = state.products.find((p) => p.id === productId);
     if (!product) return false;
 
+    // Price resolution (D33, domain-model.md "Price resolution"): this
+    // Session's Event's Price Override for the sold Product if one exists,
+    // else the Product's own defaultPrice — never a merchant decision, never
+    // asked mid-Sale. A Quick Session (eventId: null) always falls straight
+    // to defaultPrice, since there's no Event to carry an override.
+    const override = session.eventId
+      ? state.priceOverrides.find((po) => po.eventId === session.eventId && po.productId === productId)
+      : undefined;
+    const pricePaid = override?.overridePrice ?? product.defaultPrice;
+
     setState((s) => {
       let sales = s.sales;
       let sale = sales.find((sa) => sa.sessionId === session.id && sa.status === 'open');
@@ -371,13 +550,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         sale = { id: makeId('sale'), sessionId: session.id, items: [], status: 'open' };
         sales = [...sales, sale];
       }
-      // Price resolution (D33): the Product's defaultPrice, resolved at write
-      // time — never asked. (No Event Price Override in this slice's scope.)
       const item: SaleItem = {
         id: makeId('item'),
         productId,
         unitId: candidate.id,
-        pricePaid: product.defaultPrice,
+        pricePaid,
       };
       sales = sales.map((sa) => (sa.id === sale!.id ? { ...sa, items: [...sa.items, item] } : sa));
       const units = s.units.map((u) =>
@@ -456,6 +633,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     acknowledgeOnboarding,
     commitLot,
     editPrice,
+    createEvent,
+    cancelEvent,
+    setPriceOverride,
     startSession,
     addItemToSale,
     cancelSale,

@@ -19,6 +19,7 @@ export function ProductTile({
   available,
   countInSale,
   onTap,
+  onDisabledTap,
 }: {
   name: string;
   available: number;
@@ -29,16 +30,32 @@ export function ProductTile({
    * hasn't, at a glance, mid-transaction. */
   countInSale?: number;
   onTap: () => void;
+  /** Called instead of `onTap` when the tile is sold out (`available <= 0`).
+   * A native `disabled` button intercepts pointer events entirely — a real
+   * device tap on it produces literally nothing, which a first-time
+   * merchant reads as the app being broken rather than "no stock"
+   * (`merchant-user-tester` finding, `product/02-ux/
+   * experience-review-2026-08-13-eventos.md`). Left unwired, a sold-out tap
+   * is still a harmless no-op — same as before. */
+  onDisabledTap?: () => void;
 }) {
   const soldOut = available <= 0;
   const tone = toneForProduct(name);
   const active = !!countInSale && countInSale > 0;
 
+  function handleClick() {
+    if (soldOut) {
+      onDisabledTap?.();
+    } else {
+      onTap();
+    }
+  }
+
   return (
     <button
       className={`${styles.tile} ${soldOut ? styles.soldOut : ''} ${active ? styles.active : ''}`}
-      onClick={onTap}
-      disabled={soldOut}
+      onClick={handleClick}
+      aria-disabled={soldOut || undefined}
       aria-label={`${name}, ${available} disponibles${active ? `, ${countInSale} en esta venta` : ''}`}
       style={{ '--tone-bg': tone.bg } as CSSProperties}
     >

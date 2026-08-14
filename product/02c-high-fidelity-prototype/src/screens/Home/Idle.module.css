@@ -91,6 +91,17 @@
   max-width: 300px;
 }
 
+/* home.md §3.4/§3.5/§3.6 same-day-resume amendment (architect-questions.md
+   Q19) — "Ya vendiste $X · N ventas hoy." A plain factual line, not a
+   warning or a recommendation (contrast .readinessLine below), so it reads
+   as a fact already true rather than something to act on. */
+.todaySalesLine {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+  max-width: 300px;
+}
+
 .readinessNote {
   display: flex;
   flex-direction: column;
@@ -112,4 +123,37 @@
   font: var(--text-body-sm);
   font-weight: 600;
   padding: 2px;
+}
+
+/* home.md §3.5 — the upcoming-Event card: "visually secondary," never a
+   button masquerading as the primary CTA. A quiet paper-toned strip above
+   the greeting, tappable only into Eventos' own detail screen. */
+.upcomingCard {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-paper);
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: var(--space-2);
+  cursor: pointer;
+  text-align: left;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.upcomingCard:active {
+  transform: scale(0.98);
+}
+
+.upcomingVenue {
+  font: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--color-obsidian);
+}
+
+.upcomingCountdown {
+  font: var(--text-meta);
+  color: #6B6259;
 }
