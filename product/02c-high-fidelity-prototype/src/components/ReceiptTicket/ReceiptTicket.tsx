@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { pesos } from '../../domain/format';
 import styles from './ReceiptTicket.module.css';
 
@@ -6,16 +7,16 @@ const AUTO_RETURN_MS = 25_000; // "generous, fixed... tens of seconds" — home.
 const COUNT_UP_MS = 620;
 
 /**
- * home.md §3.8f — Finalizar Venta success, receipt moment. Renders only the
+ * home.md §3.8f — Finalizar Venta success, receipt moment. Renders the
  * Free-tier variant (three elements: confirmation, total, business
- * identity), regardless of the current Business's actual `subscriptionTier`.
- * This was correct when originally built in Slice 1, when `subscriptionTier`
- * could only ever be `'free'` for a real path — no longer accurate as of
- * Slice 4 (Configuración), which made `paid` genuinely self-service
- * reachable. A Paid-tier Business today still gets this Free-tier receipt;
- * the Paid-tier Claim Token/QR bridge (D22/D40) is not built. Tracked as
- * `BACKLOG.md`'s migration inventory (D.3), not a scope decision anymore —
- * a real, pending gap.
+ * identity) for every Business, and, as of the Paid Receipt Claim Token/QR
+ * pass (`BACKLOG.md` D.3), a fourth element — a real, scannable Claim Token
+ * QR + caption — whenever this specific `Receipt` was captured at
+ * finalization time with `subscriptionTier === 'paid'` (D40; never a live
+ * re-read of `Business.subscriptionTier`, per D33's write-time-capture
+ * precedent — see `store.tsx`'s `finalizeSale`). A Free-tier receipt (or a
+ * Paid-tier one somehow missing its token) renders exactly the original
+ * three-element variant, unchanged.
  *
  * Pushed further in this revision (self-critique from v1 explicitly named
  * the scallop as "the one place a second design pass would look first"):
@@ -30,11 +31,19 @@ export function ReceiptTicket({
   total,
   businessName,
   businessLogo,
+  subscriptionTier,
+  claimToken,
   onExit,
 }: {
   total: number;
   businessName: string;
   businessLogo?: string;
+  /** §3.8f's own tier gate — captured on the `Receipt` at finalization time,
+   * never re-derived live. */
+  subscriptionTier: 'free' | 'paid';
+  /** Present only when `subscriptionTier === 'paid'` (`store.tsx`'s
+   * `finalizeSale`) — structurally absent for Free tier, not merely hidden. */
+  claimToken?: string;
   onExit: () => void;
 }) {
   const [displayTotal, setDisplayTotal] = useState(0);
@@ -99,6 +108,60 @@ export function ReceiptTicket({
           {businessLogo && <img className={styles.businessLogo} src={businessLogo} alt="" />}
           <span className={styles.businessName}>{businessName}</span>
         </div>
+
+        {/* Paid tier only (`decision-log.md` D22/D40, `home.md` §3.8f) — a
+            real, scannable Claim Token QR, not a decorative placeholder. It
+            encodes a well-formed but necessarily mock URL
+            (`https://loyalty.nahui.mx/c/<claimToken>`) — the destination,
+            `product/02-ux-loyalty/customer-loyalty-registration.md`, is a
+            separate, confirmed-unbuilt deploy target (D38); this won't
+            resolve if actually scanned, a disclosed limitation, not a bug.
+            No `onClick`/navigation on this element: §3.8f's own `[ ]`
+            notation marks it live for the *customer's* separate device, not
+            a tap target on Ana's own screen ("Ana's own screen is never
+            touched by this interaction"). Building a stub destination
+            screen here would mean fabricating part of that separate,
+            already-Approved-elsewhere flow — out of this slice's scope. */}
+        {subscriptionTier === 'paid' && claimToken && (
+          <div className={styles.claimBlock}>
+            {/* Fix round, docs/passes/slice-8-paid-receipt-qr.md
+                (knowledge-mentor consultation) — was `aria-hidden="true"`.
+                The caption right below ("Escanéala...") grammatically
+                depends on this QR as its antecedent ("-la"); hiding the QR
+                from the accessibility tree left a screen-reader user
+                hearing an orphaned pronoun with nothing to refer to. The
+                QR is also information-bearing (a real, resolvable URL), not
+                pure decoration, so the "decorative, described by nearby
+                text" aria-hidden exception doesn't cleanly apply (WCAG SC
+                1.1.1). Remedy chosen: give the wrapper its own accessible
+                name (`role="img"` + `aria-label`) rather than rewriting the
+                caption to drop the pronoun — the caption is copied verbatim
+                from `home.md`'s own approved copy, and this layer's own
+                mandate is to lay out existing spec copy, not rewrite it. */}
+            <div className={styles.claimQr} role="img" aria-label="Código QR para que te recuerden la próxima vez que compres aquí">
+              <QRCodeSVG
+                value={`https://loyalty.nahui.mx/c/${claimToken}`}
+                size={132}
+                // qrcode.react's fgColor/bgColor render as literal SVG fill
+                // attributes, not CSS — can't reference a `var(...)` custom
+                // property. Hardcoded to mirror --color-paper/--color-obsidian
+                // (tokens.css) exactly, kept in sync by eye, not by reference.
+                bgColor="#FFFCF8"
+                fgColor="#2D2D2D"
+                level="M"
+                marginSize={0}
+                // The SVG itself is now reachable via the wrapper's own
+                // `role="img"`/`aria-label` above — hide the inner SVG
+                // itself from the accessibility tree so AT doesn't
+                // announce it a second time as an unlabeled nested image.
+                aria-hidden="true"
+              />
+            </div>
+            <p className={styles.claimCaption}>
+              Escanéala si quieres que te recuerden la próxima vez que compres aquí
+            </p>
+          </div>
+        )}
       </div>
 
       <button className={styles.exitZone} onClick={onExit} aria-label="Continuar vendiendo" />

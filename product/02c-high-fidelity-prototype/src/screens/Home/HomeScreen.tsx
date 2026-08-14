@@ -64,6 +64,8 @@ export function HomeScreen({
         total={ui.receipt.total}
         businessName={ui.receipt.businessName}
         businessLogo={ui.receipt.businessLogo}
+        subscriptionTier={ui.receipt.subscriptionTier}
+        claimToken={ui.receipt.claimToken}
         onExit={() => setUi({ kind: 'resolved' })}
       />
     );

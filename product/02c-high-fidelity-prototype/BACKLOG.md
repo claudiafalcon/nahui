@@ -160,6 +160,29 @@ invented for it, per this slice's own explicit instruction not to. Full
 record, including every disclosed judgment call:
 `docs/passes/slice-7-nfc-selling.md`.
 
+## What's built (Slice 8, complete — Paid Receipt Claim Token/QR, 2026-08-14)
+
+`home.md` §3.8f's Paid-tier receipt variant, per `product/02-ux/home.md`
+(Approved). `Receipt` (`store.tsx`, ephemeral, still never part of
+`AppState`/`localStorage`) gains `claimToken?: string`, computed by
+`finalizeSale()` — an opaque mock token (`mintClaimToken`, a
+non-cryptographic djb2 hash over `Sale.id`/`Business.id`/the finalization
+timestamp, never the raw Sale ID in cleartext, per `decision-log.md` D22) —
+whenever `state.business.subscriptionTier === 'paid'` at the exact instant
+of finalization; structurally absent (`undefined`) for Free tier.
+`ReceiptTicket.tsx` renders a fourth element, a real `qrcode.react` QR
+(encoding a mock `https://loyalty.nahui.mx/c/<claimToken>` URL) plus its
+verbatim caption, gated on `subscriptionTier === 'paid' && claimToken` —
+matching `home.md` §3.8f's own write-time-capture condition exactly
+(`decision-log.md` D33's precedent), never a live re-read of
+`Business.subscriptionTier`. No in-app tap-navigation on the QR element —
+Ana's own screen is never touched by this interaction per the spec's own
+text, and building a stub destination would fabricate part of the separate,
+already-Approved-elsewhere `customer-loyalty-registration.md` flow (D38),
+which stays entirely untouched by this slice. New dependency:
+`qrcode.react`. Full record, including every disclosed judgment call:
+`docs/passes/slice-8-paid-receipt-qr.md`.
+
 ## Migration inventory (authoritative — knowledge-architecture backlog hygiene pass, 2026-08-14)
 
 Full lineage audit (Foundation → Approved UX → Medium Fidelity → React →
@@ -267,13 +290,15 @@ Dependency order matters here; each depends on the one above it unless noted.
    open gap remains: `product-decisions.md` Q2 (a scan matching no
    `available` tagged unit) has no designed resolution UI — not invented by
    this slice, per its own explicit instruction.
-3. **Paid Receipt Claim Token / QR** (`home.md` §3.8f) — Approved
-   2026-08-09, not built; `ReceiptTicket.tsx` renders only the Free-tier
-   variant for every tier, with a stale comment claiming Paid is
-   unreachable (no longer true since Slice 4). **Classification: Approved,
-   pending React migration.** Independent of (1)/(2) — Paid-tier reachability
-   alone (already built, Slice 4) is its only real precondition. Can be
-   built in parallel with (1)/(2), not after.
+3. ~~**Paid Receipt Claim Token / QR**~~ (`home.md` §3.8f) — **complete,
+   Slice 8 (2026-08-14).** Was: Approved 2026-08-09, not built;
+   `ReceiptTicket.tsx` rendered only the Free-tier variant for every tier,
+   with a stale comment claiming Paid was unreachable (no longer true since
+   Slice 4). Now fully migrated — `Receipt.claimToken` (ephemeral, mock,
+   write-time-captured), `ReceiptTicket`'s fourth element (a real
+   `qrcode.react` QR + verbatim caption), gated exactly on §3.8f's own
+   Paid-tier condition. See "What's built (Slice 8)" above and
+   `docs/passes/slice-8-paid-receipt-qr.md`.
 4. **Customer Loyalty Registration** (`product/02-ux-loyalty/customer-loyalty-registration.md`)
    — Approved (Draft-complete), fully built in Medium-Fidelity (14 real
    frames, 0 open findings). **Classification: Separate deploy target** —
@@ -437,8 +462,9 @@ This does not change product direction, business behavior, the Foundation, or UX
 7. ~~NFC Selling~~ (D.2) — **complete, Slice 7 (2026-08-14).** See "What's
    built (Slice 7)" above and `docs/passes/slice-7-nfc-selling.md`. One
    genuine, disclosed open gap remains: `product-decisions.md` Q2.
-8. **Paid Receipt Claim Token / QR** (D.3) — depends only on Configuración
-   (already built); can run in parallel with 7, not strictly after it.
+8. ~~Paid Receipt Claim Token / QR~~ (D.3) — **complete, Slice 8
+   (2026-08-14).** See "What's built (Slice 8)" above and
+   `docs/passes/slice-8-paid-receipt-qr.md`.
 9. **Customer Loyalty Registration** (D.4) — separate deploy target, own
    future sequencing, not gated on 7-8, needs its own backlog line outside
    this file.

@@ -178,6 +178,57 @@
   color: var(--color-obsidian);
 }
 
+/* Paid-tier Claim Token QR (D22/D40, home.md §3.8f) — fourth element,
+   between business identity and the exit margin. `.exitZone` above is
+   already scoped to the bottom margin band only, so this centered block
+   never intrudes into it; kept modest in size so it stays a supporting
+   element beneath the hero total, never competing with it. */
+.claimBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  /* no extra margin — `.body`'s own flex `gap: var(--space-8)` already
+     spaces this block from `.business` above it, consistent with every
+     other element in the stack. */
+}
+
+/* Fix round, docs/passes/slice-8-paid-receipt-qr.md (ux-critic Minor 1) —
+   the bordered/rounded card treatment this block carried previously read as
+   this app's established tappable-card grammar (CatalogRow, ProductTile,
+   TagStub all use the identical padding+border+radius combination for real
+   tap targets), even though this element is deliberately inert (no
+   onClick — see the component's own doc comment above and "Tap-behavior
+   decision" in the pass doc). Smaller/cleaner fix chosen over adding a new
+   tap-acknowledgment toast: drop the border so the QR reads as plain
+   layout — just the SVG on the ticket's own paper — rather than inviting a
+   tap in the first place. `border-radius` dropped alongside it since
+   there's no longer a border for it to round. `padding`/`background` kept
+   for legibility (a small quiet margin around the QR's own quiet zone). */
+.claimQr {
+  padding: var(--space-2);
+  background: var(--color-paper);
+  line-height: 0; /* no inline-SVG baseline gap */
+}
+
+.claimCaption {
+  max-width: 220px;
+  text-align: center;
+  font: var(--text-meta);
+  /* Fix round, docs/passes/slice-8-paid-receipt-qr.md (ux-critic Major) —
+     #9C9186 (this codebase's "de-emphasized/disabled" gray) computes to
+     ~3:1 against --color-paper, failing WCAG AA's 4.5:1 floor for this
+     11px normal-weight text — a real problem here specifically because
+     this caption is the QR block's entire load-bearing explanation, not
+     decorative. #6B6259 is this same codebase's established "secondary
+     but still load-bearing" text gray (already used this way in ~20 other
+     screens — see e.g. EventsList.module.css's .cardSub/.sectionLabel);
+     it computes to ~5.85:1 against --color-paper, clearing AA with real
+     margin, without inventing a new token. */
+  color: #6B6259;
+  letter-spacing: 0.1px;
+}
+
 .exitZone {
   position: absolute;
   left: 0;

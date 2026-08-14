@@ -120,6 +120,41 @@ export interface Receipt {
   businessName: string;
   businessLogo?: string;
   subscriptionTier: 'free' | 'paid';
+  /** `home.md` §3.8f/`decision-log.md` D22 — the Paid-tier Claim Token,
+   * generated automatically at Sale finalization whenever
+   * `subscriptionTier=paid` (D40), `undefined` (structurally absent, not
+   * merely hidden) for Free tier. An opaque, mock, non-cryptographic
+   * transformation of `Sale.id` — deliberately never the raw Sale ID in
+   * cleartext, per D22's "never the raw Sale ID" spirit — and, per
+   * `product-decisions.md` Q15, purely ephemeral: it lives only on this
+   * in-memory `Receipt` return value, never written to `Sale`/`AppState`/
+   * `localStorage` (see `mintClaimToken`'s own doc comment below). */
+  claimToken?: string;
+}
+
+/**
+ * A deliberately unsophisticated, opaque mock token — real cryptographic
+ * signing is out of scope for a backend-less prototype (this pass's own
+ * dispatching task). Folds `openSale.id`, `business.id`, and the
+ * finalization timestamp through a small non-cryptographic string hash
+ * (djb2) rather than concatenating/encoding them directly, so the token
+ * itself never contains a recognizable, reversible fragment of the raw
+ * Sale ID — the specific thing D22 rules out ("never the raw Sale ID").
+ * Base36-encoded to stay short and QR-friendly. Collision-resistance and
+ * unguessability are explicitly not load-bearing here — nothing downstream
+ * in this prototype (there is no downstream; the destination flow is a
+ * separate, confirmed-unbuilt deploy target per D38) ever validates or
+ * looks this token up.
+ */
+function mintClaimToken(saleId: ID, businessId: ID, finalizedAt: number): string {
+  const raw = `${saleId}:${businessId}:${finalizedAt}`;
+  let hash = 5381;
+  for (let i = 0; i < raw.length; i += 1) {
+    hash = (hash * 33) ^ raw.charCodeAt(i);
+  }
+  // unsigned, base36, padded — an opaque-looking short token, not a literal
+  // encoding of any single input field.
+  return (hash >>> 0).toString(36);
 }
 
 /**
@@ -845,6 +880,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     const total = openSale.items.reduce((sum, i) => sum + i.pricePaid, 0);
     const itemCount = openSale.items.length;
+    const finalizedAt = Date.now();
 
     setState((s) => {
       const unitIds = new Set(openSale.items.map((i) => i.unitId));
@@ -852,7 +888,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         unitIds.has(u.id) ? { ...u, status: 'sold' as InventoryUnitStatus } : u,
       );
       const sales: Sale[] = s.sales.map((sa) =>
-        sa.id === openSale.id ? { ...sa, status: 'finalized', finalizedAt: Date.now() } : sa,
+        sa.id === openSale.id ? { ...sa, status: 'finalized', finalizedAt } : sa,
       );
       return { ...s, units, sales };
     });
@@ -864,6 +900,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       businessName: state.business.name,
       businessLogo: state.business.logo,
       subscriptionTier: state.business.subscriptionTier,
+      // `home.md` §3.8f/D22/D40 — Paid tier only; structurally absent
+      // (`undefined`, not merely hidden) for Free tier. Computed here, at
+      // finalization write time, never re-derived from a later live read of
+      // `state.business.subscriptionTier` (D33 write-time-capture precedent).
+      claimToken:
+        state.business.subscriptionTier === 'paid'
+          ? mintClaimToken(openSale.id, state.business.id, finalizedAt)
+          : undefined,
     };
   }
 
