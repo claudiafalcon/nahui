@@ -904,10 +904,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       // (`undefined`, not merely hidden) for Free tier. Computed here, at
       // finalization write time, never re-derived from a later live read of
       // `state.business.subscriptionTier` (D33 write-time-capture precedent).
+      //
+      // Disclosed demo-sync wiring (Product Owner request, live-demo prep):
+      // rather than `mintClaimToken(...)`'s real per-Sale hash, this is
+      // hardcoded to `'demo-nueva'` — the exact seed-token key
+      // `product/02c-loyalty-prototype/src/domain/seed.ts` defines for its
+      // "valid token, brand-new email → full registration flow" scenario,
+      // the loyalty app's most illustrative, complete demo path. This makes
+      // the QR on a Paid-tier receipt resolve to a real, working page on the
+      // now-deployed `loyalty.nahui.app` for a live walkthrough, standing in
+      // for the real cross-app Loyalty data bridge (`BACKLOG.md` item 10,
+      // D.5), which is still future work — no shared backend exists between
+      // these two independently-mocked prototypes today. `mintClaimToken`
+      // itself is left intact below as a real-token-shape reference/
+      // fallback; it's simply not what gets assigned here.
+      //
+      // Real limitation this demo trick carries: because the loyalty app
+      // has no real per-sale resolution, every Paid-tier sale's QR in this
+      // build encodes the identical token. A customer who successfully
+      // registers via one scan will see "ya fue registrada" on any
+      // subsequent scan, until the loyalty app's own test data is reset.
+      // Acceptable for a single demo walkthrough, not a multi-customer
+      // simulation.
       claimToken:
-        state.business.subscriptionTier === 'paid'
-          ? mintClaimToken(openSale.id, state.business.id, finalizedAt)
-          : undefined,
+        state.business.subscriptionTier === 'paid' ? 'demo-nueva' : undefined,
     };
   }
 

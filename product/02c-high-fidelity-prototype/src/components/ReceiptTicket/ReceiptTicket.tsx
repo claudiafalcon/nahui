@@ -111,12 +111,16 @@ export function ReceiptTicket({
 
         {/* Paid tier only (`decision-log.md` D22/D40, `home.md` §3.8f) — a
             real, scannable Claim Token QR, not a decorative placeholder. It
-            encodes a well-formed but necessarily mock URL
-            (`https://loyalty.nahui.mx/c/<claimToken>`) — the destination,
-            `product/02-ux-loyalty/customer-loyalty-registration.md`, is a
-            separate, confirmed-unbuilt deploy target (D38); this won't
-            resolve if actually scanned, a disclosed limitation, not a bug.
-            No `onClick`/navigation on this element: §3.8f's own `[ ]`
+            encodes `https://loyalty.nahui.app/c/<claimToken>` — the
+            destination, `product/02-ux-loyalty/customer-loyalty-registration.md`,
+            is a separate deploy target (D38), now live at
+            `product/02c-loyalty-prototype/`. `claimToken` is currently a
+            fixed, disclosed demo value (`store.tsx`'s `Receipt.claimToken`
+            assignment, see its own comment) standing in for the real
+            cross-app resolution mechanism (D.5, not yet built) — so this
+            QR *does* resolve to a real, working registration flow when
+            actually scanned, not a mock/dead link. No `onClick`/navigation
+            on this element: §3.8f's own `[ ]`
             notation marks it live for the *customer's* separate device, not
             a tap target on Ana's own screen ("Ana's own screen is never
             touched by this interaction"). Building a stub destination
@@ -140,7 +144,7 @@ export function ReceiptTicket({
                 mandate is to lay out existing spec copy, not rewrite it. */}
             <div className={styles.claimQr} role="img" aria-label="Código QR para que te recuerden la próxima vez que compres aquí">
               <QRCodeSVG
-                value={`https://loyalty.nahui.mx/c/${claimToken}`}
+                value={`https://loyalty.nahui.app/c/${claimToken}`}
                 size={132}
                 // qrcode.react's fgColor/bgColor render as literal SVG fill
                 // attributes, not CSS — can't reference a `var(...)` custom
