@@ -1,3 +1,43 @@
+/* Same topbar/wordmark/menuBtn shape Idle.module.css already established for
+   the identical "⋯" entry-point affordance (settings.md §2.1) — reused
+   verbatim here rather than hand-rolled a second time, since this is the
+   same visual treatment, not a new one. */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  position: relative;
+  z-index: 2;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--color-obsidian);
+}
+
+.menuBtn {
+  appearance: none;
+  border: 1.5px solid var(--color-hilo);
+  background: var(--color-white);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-obsidian);
+  font-size: 20px;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+.menuBtn:active {
+  transform: scale(0.92);
+  background: var(--color-hilo);
+}
+
 .wrap {
   flex: 1;
   position: relative;

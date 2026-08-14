@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { makeId } from './id';
-import { dateKey, rangesOverlap, todayKey } from './dates';
+import { addDaysToKey, dateKey, rangesOverlap, todayKey } from './dates';
 import { eventStatus } from './selectors';
 import type {
   AppState,
@@ -70,11 +70,24 @@ function loadState(): AppState {
         // (rather than rejecting the whole saved state) is what lets an
         // existing walkthrough resume normally instead of silently losing
         // Authentication/Onboarding/Catalog/Sale history it already has.
+        // Same treatment, one level deeper, for the Configuración pass
+        // (D43): an older saved `business` object has no pending-change
+        // triple at all — defaulted here (`!= null` reads already used
+        // throughout this file treat `undefined` and `null` identically, but
+        // patching it here keeps a re-serialized state honestly typed).
         return {
           ...parsed,
           venues: Array.isArray(parsed.venues) ? parsed.venues : [],
           events: Array.isArray(parsed.events) ? parsed.events : [],
           priceOverrides: Array.isArray(parsed.priceOverrides) ? parsed.priceOverrides : [],
+          business: parsed.business
+            ? {
+                ...parsed.business,
+                pendingSubscriptionTier: parsed.business.pendingSubscriptionTier ?? null,
+                pendingSubscriptionTierEffectiveDate: parsed.business.pendingSubscriptionTierEffectiveDate ?? null,
+                pendingSubscriptionTierAcknowledged: parsed.business.pendingSubscriptionTierAcknowledged ?? false,
+              }
+            : parsed.business,
         };
       }
     }
@@ -194,6 +207,63 @@ interface StoreValue {
   cancelSale: () => void;
   finalizeSale: () => Receipt | null;
   closeSession: () => void;
+  /** settings.md §2.2/§3.4 "Activar plan de pago" — immediate: sets
+   * `subscriptionTier='paid'` directly, per Q11's own today-illustrative
+   * assignment ("she's confirming a payment already arranged"). Reachable
+   * only from the Free-tier vista principal (no pending change can exist
+   * there), so this never needs to touch the pending triple. Never touches
+   * `defaultSellingMode` — `nfc` becomes available only as a read-time
+   * derivation from the new `subscriptionTier` value (D27), never written
+   * here directly. */
+  activatePaidPlan: () => void;
+  /** settings.md §2.2/§3.5 "Volver al plan gratis" — deferred: sets the
+   * pending-change triple (§2.4/D25/D29's own shape). Does **not** touch
+   * `subscriptionTier` yet — it stays `'paid'` until the effective date
+   * actually lands (`reconcilePendingSubscriptionTier`). The illustrative
+   * effective date (Q11 open, `dates.ts`'s own disclosed judgment call) is
+   * computed here, once, at request time — never re-computed on every read. */
+  requestDowngradeToFree: () => void;
+  /** settings.md §2.2/§3.7 "Cancelar cambio pendiente" — clears the pending
+   * triple entirely; `subscriptionTier` is untouched (still `'paid'`), since
+   * the pending write never touched it either. */
+  cancelPendingSubscriptionTierChange: () => void;
+  /** settings.md §2.3 "Cambiar a vender con tags/con botones" — immediate,
+   * no pending-value/effective-date pair at all (D27: this field carries no
+   * billing-cycle implication in either direction). Per §2.3's own explicit
+   * invariant, this is the *only* write path that may ever touch
+   * `defaultSellingMode` — never written as a side effect of any
+   * `subscriptionTier` action, in either direction. */
+  changeDefaultSellingMode: (mode: SessionOperatingMode) => void;
+  /** settings.md §2.4 — simulates a pending `subscriptionTier` change
+   * "landing" with no real scheduled job (D25 leaves the actual billing
+   * mechanism external): called once whenever Configuración's own vista
+   * principal (§3.3a) mounts. Two-phase, driven by the persisted
+   * `pendingSubscriptionTierAcknowledged` flag (not local component state)
+   * so the "shown exactly once" guarantee survives a reload between the
+   * landing open and the next one: the first open on/after the effective
+   * date flips `subscriptionTier` and marks `acknowledged=true`, returning
+   * the landed value so the caller can render §2.4's one-time acknowledgment
+   * line; the *next* open (already acknowledged) clears the pending triple
+   * entirely and returns `justLanded: false`. A no-op (and `justLanded:
+   * false`) whenever no pending change exists yet, or its effective date is
+   * still in the future. */
+  reconcilePendingSubscriptionTier: () => { justLanded: boolean; tier?: 'free' | 'paid'; effectiveDate?: string };
+  /** settings.md §2.5/§2.5a, authentication.md §2.2 case 2, RFC 0007 §1 —
+   * ends this device's verified-phone session without touching the Business
+   * or any of its data. **Critical correctness point:** sets
+   * `currentUser.phoneVerifiedAt = null` in place — never
+   * `currentUser: null` — preserving the existing `User` row's `id`/`phone`/
+   * `createdAt`. `verifyOtp` only resolves the *same* `User` row on a
+   * returning verification when `state.currentUser && state.currentUser.phone
+   * === phone`; nulling `currentUser` entirely would mint a *second* `User`
+   * id for the same phone on re-verification, violating RFC 0007 §1's
+   * global-phone-identity invariant. Touches only `currentUser` — `business`/
+   * `memberships`/products/sessions/sales are structurally untouched
+   * (RFC 0007's own guarantee, §2.5's "nothing is lost" copy).
+   * `AppRouter.tsx` falls back to `AuthenticationFlow` automatically the
+   * instant `phoneVerifiedAt` clears — no further navigation call needed
+   * here. */
+  signOut: () => void;
   resetPrototype: () => void;
 }
 
@@ -357,6 +427,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       name: '',
       ...capabilities,
       onboardingAcknowledged: false,
+      pendingSubscriptionTier: null,
+      pendingSubscriptionTierEffectiveDate: null,
+      pendingSubscriptionTierAcknowledged: false,
     };
     const membership: BusinessMembership = {
       id: makeId('mem'),
@@ -620,6 +693,136 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   }
 
+  /** settings.md §2.2/§3.4 "Activar plan de pago" — immediate. Reachable only
+   * from the Free-tier vista principal (no pending change can exist there —
+   * see this function's own `StoreValue` doc comment), so under normal play
+   * the pending triple is already empty here. Defensively clears it anyway
+   * (same shape `cancelPendingSubscriptionTierChange` already writes)
+   * to close a latent, currently-unreachable edge: if a downgrade just landed
+   * this same mount (`reconcilePendingSubscriptionTier` flips the tier and
+   * sets `acknowledged=true` but deliberately keeps the other two pending
+   * fields for one render, §2.4's own design) and Ana immediately activates
+   * paid again before the next Settings mount would otherwise clear them,
+   * those stale fields never get a chance to linger. */
+  function activatePaidPlan() {
+    setState((s) =>
+      s.business
+        ? {
+            ...s,
+            business: {
+              ...s.business,
+              subscriptionTier: 'paid',
+              pendingSubscriptionTier: null,
+              pendingSubscriptionTierEffectiveDate: null,
+              pendingSubscriptionTierAcknowledged: false,
+            },
+          }
+        : s,
+    );
+  }
+
+  /** settings.md §2.2/§3.5 "Volver al plan gratis" — deferred; writes the
+   * pending triple only, `subscriptionTier` stays `'paid'` until it lands. */
+  function requestDowngradeToFree() {
+    setState((s) => {
+      if (!s.business) return s;
+      const effectiveDate = addDaysToKey(todayKey(), 30); // see dates.ts's own disclosed judgment call
+      return {
+        ...s,
+        business: {
+          ...s.business,
+          pendingSubscriptionTier: 'free',
+          pendingSubscriptionTierEffectiveDate: effectiveDate,
+          pendingSubscriptionTierAcknowledged: false,
+        },
+      };
+    });
+  }
+
+  /** settings.md §2.2/§3.7 "Cancelar cambio pendiente" — clears the pending
+   * triple; `subscriptionTier` untouched. */
+  function cancelPendingSubscriptionTierChange() {
+    setState((s) =>
+      s.business
+        ? {
+            ...s,
+            business: {
+              ...s.business,
+              pendingSubscriptionTier: null,
+              pendingSubscriptionTierEffectiveDate: null,
+              pendingSubscriptionTierAcknowledged: false,
+            },
+          }
+        : s,
+    );
+  }
+
+  /** settings.md §2.3 "Cambiar a vender con tags/con botones" — immediate,
+   * the *only* write path allowed to touch `defaultSellingMode` (§2.3's own
+   * "never written by any other action" invariant — never called as a side
+   * effect of any `subscriptionTier` action, and this function itself never
+   * reads or writes `subscriptionTier`). */
+  function changeDefaultSellingMode(mode: SessionOperatingMode) {
+    setState((s) => (s.business ? { ...s, business: { ...s.business, defaultSellingMode: mode } } : s));
+  }
+
+  /** settings.md §2.4 — see the `StoreValue` interface doc comment above for
+   * the full two-phase reasoning. Reads/writes only `state.business`'s own
+   * pending-change fields; never touches `defaultSellingMode` (§2.3's
+   * invariant applies here too — this function has no reason to touch it and
+   * doesn't). */
+  function reconcilePendingSubscriptionTier(): {
+    justLanded: boolean;
+    tier?: 'free' | 'paid';
+    effectiveDate?: string;
+  } {
+    const b = state.business;
+    if (!b || b.pendingSubscriptionTier == null || b.pendingSubscriptionTierEffectiveDate == null) {
+      return { justLanded: false };
+    }
+    if (b.pendingSubscriptionTierEffectiveDate > todayKey()) {
+      return { justLanded: false }; // not yet landed
+    }
+    if (!b.pendingSubscriptionTierAcknowledged) {
+      // Landing moment — flip the tier, mark acknowledged, but keep the
+      // pending fields themselves for this one render so the caller can
+      // still read `pendingSubscriptionTierEffectiveDate` for the
+      // acknowledgment line's own date.
+      const tier = b.pendingSubscriptionTier;
+      const effectiveDate = b.pendingSubscriptionTierEffectiveDate;
+      setState((s) =>
+        s.business
+          ? { ...s, business: { ...s.business, subscriptionTier: tier, pendingSubscriptionTierAcknowledged: true } }
+          : s,
+      );
+      return { justLanded: true, tier, effectiveDate };
+    }
+    // Already acknowledged once, on an earlier open — this is the "next
+    // Configuración open" §2.4 says renders as an ordinary row: clear the
+    // pending triple entirely now.
+    setState((s) =>
+      s.business
+        ? {
+            ...s,
+            business: {
+              ...s.business,
+              pendingSubscriptionTier: null,
+              pendingSubscriptionTierEffectiveDate: null,
+              pendingSubscriptionTierAcknowledged: false,
+            },
+          }
+        : s,
+    );
+    return { justLanded: false };
+  }
+
+  /** settings.md §2.5/§2.5a — see the `StoreValue` interface doc comment
+   * above for the full correctness reasoning (why `phoneVerifiedAt: null`,
+   * never `currentUser: null`). */
+  function signOut() {
+    setState((s) => (s.currentUser ? { ...s, currentUser: { ...s.currentUser, phoneVerifiedAt: null } } : s));
+  }
+
   function resetPrototype() {
     setState(initialState());
   }
@@ -641,6 +844,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     cancelSale,
     finalizeSale,
     closeSession,
+    activatePaidPlan,
+    requestDowngradeToFree,
+    cancelPendingSubscriptionTierChange,
+    changeDefaultSellingMode,
+    reconcilePendingSubscriptionTier,
+    signOut,
     resetPrototype,
   };
 

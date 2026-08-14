@@ -38,13 +38,13 @@ export function SessionHeader({
   count,
   title,
   onCloseSession,
-  onOpenSettingsPlaceholder,
+  onOpenSettings,
 }: {
   revenue: number;
   count: number;
   title?: string;
   onCloseSession: () => void;
-  onOpenSettingsPlaceholder: () => void;
+  onOpenSettings: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -81,7 +81,7 @@ export function SessionHeader({
             className={`${styles.sheetRow} stitchBottom`}
             onClick={() => {
               setMenuOpen(false);
-              onOpenSettingsPlaceholder();
+              onOpenSettings();
             }}
           >
             ⚙ Configuración

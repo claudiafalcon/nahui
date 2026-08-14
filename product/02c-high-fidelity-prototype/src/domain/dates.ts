@@ -92,6 +92,21 @@ export function formatShortDateRange(startKey: string, endKey: string): string {
   return `${sd} ${MONTHS_SHORT_ES[sm - 1]} - ${ed} ${MONTHS_SHORT_ES[em - 1]}`;
 }
 
+/** `settings.md` §2.2's own illustrative Q11 assignment — "Volver al plan
+ * gratis" is deferred to "the end of your current billing period," a
+ * concrete date this Foundation has no billing-cycle model to actually
+ * compute (§8 item 1, Open — Q11). `+30` days from the day the change is
+ * requested is this prototype's own plain, disclosed judgment call standing
+ * in for that unresolved rule — same "provisional prototype default, not a
+ * frozen domain invariant" posture `authentication.md §8` item 3 already
+ * takes for its own numeric judgment calls (code length, cooldowns). */
+export function addDaysToKey(key: string, days: number): string {
+  const [y, m, d] = key.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+  return dateKey(dt.getTime());
+}
+
 /** Whether two inclusive date ranges overlap at all — the D17 check
  * (`decision-log.md`: "at most one Event per Business may be `scheduled`/
  * `active` with an overlapping date range at a time"). */

@@ -17,13 +17,14 @@ import { Selling } from './Selling';
 import { ReceiptTicket } from '../../components/ReceiptTicket/ReceiptTicket';
 import { CloseSummary } from './CloseSummary';
 import { Placeholder } from '../../components/Placeholder/Placeholder';
+import { SettingsScreen } from '../Settings/SettingsScreen';
 import type { Receipt } from '../../domain/store';
 
 type HomeUiState =
   | { kind: 'resolved' }
   | { kind: 'receipt'; receipt: Receipt }
   | { kind: 'closed'; count: number; revenue: number; venueName?: string; dayNumber?: number }
-  | { kind: 'settings-placeholder' }
+  | { kind: 'settings' }
   | { kind: 'assign-tags-placeholder' };
 
 /**
@@ -75,8 +76,10 @@ export function HomeScreen({
     );
   }
 
-  if (ui.kind === 'settings-placeholder') {
-    return <Placeholder title="Configuración" onBack={() => setUi({ kind: 'resolved' })} />;
+  if (ui.kind === 'settings') {
+    // settings.md — the real Configuración flow (Migration Workflow, D43),
+    // replacing this branch's earlier honest Placeholder.
+    return <SettingsScreen onBack={() => setUi({ kind: 'resolved' })} />;
   }
 
   if (session) {
@@ -89,7 +92,7 @@ export function HomeScreen({
       <Selling
         onSaleFinalized={(receipt) => setUi({ kind: 'receipt', receipt })}
         onSessionClosed={(summary) => setUi({ kind: 'closed', ...summary, venueName, dayNumber })}
-        onOpenSettingsPlaceholder={() => setUi({ kind: 'settings-placeholder' })}
+        onOpenSettings={() => setUi({ kind: 'settings' })}
       />
     );
   }
@@ -105,14 +108,14 @@ export function HomeScreen({
         defaultSellingMode={state.business.defaultSellingMode}
         todaySales={todaySalesSummary(state, activeEvent.id)}
         onContinue={() => startSession(activeEvent.id)}
-        onOpenSettingsPlaceholder={() => setUi({ kind: 'settings-placeholder' })}
+        onOpenSettings={() => setUi({ kind: 'settings' })}
         onOpenAssignTagsPlaceholder={() => setUi({ kind: 'assign-tags-placeholder' })}
       />
     );
   }
 
   if (!hasAnyAvailableUnit(state)) {
-    return <ColdStart onRegister={onNavigateToRegister} />;
+    return <ColdStart onRegister={onNavigateToRegister} onOpenSettings={() => setUi({ kind: 'settings' })} />;
   }
 
   const upcomingEvent = upcomingEventForBusiness(state);
@@ -125,7 +128,7 @@ export function HomeScreen({
       onTapUpcomingEvent={upcomingEvent ? () => onNavigateToEvent(upcomingEvent.id) : undefined}
       todaySales={todaySalesSummary(state, null)}
       onStartSession={() => startSession()}
-      onOpenSettingsPlaceholder={() => setUi({ kind: 'settings-placeholder' })}
+      onOpenSettings={() => setUi({ kind: 'settings' })}
       onOpenAssignTagsPlaceholder={() => setUi({ kind: 'assign-tags-placeholder' })}
     />
   );

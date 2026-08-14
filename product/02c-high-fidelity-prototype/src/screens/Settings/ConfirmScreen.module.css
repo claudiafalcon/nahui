@@ -1,0 +1,46 @@
+/* Same shape as Onboarding/ConfirmScreen.module.css (ConfirmPaid/ConfirmDemo)
+   — a local copy, not a cross-feature import, matching this codebase's own
+   established convention of each screen folder owning its own CSS Modules
+   (e.g. RegisterMerchandise/SellingGroups each style their own near-identical
+   "committed rows" pattern locally rather than sharing one file across
+   folders). settings.md §3.4/§3.5's generic immediate/deferred-effect
+   templates are visually the same "heading + body + primary CTA" shape
+   onboarding.md §3.4 already established for its own "Activar plan de pago"
+   confirm screen — reused here, not reinvented. */
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6) var(--space-8);
+}
+
+.back {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+  margin-bottom: var(--space-2);
+}
+
+.heading {
+  font: var(--text-display-md);
+  color: var(--color-obsidian);
+}
+
+.body {
+  font: var(--text-body);
+  color: #6B6259;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.cta {
+  margin-top: var(--space-2);
+}

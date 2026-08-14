@@ -29,11 +29,11 @@ import styles from './Selling.module.css';
 export function Selling({
   onSaleFinalized,
   onSessionClosed,
-  onOpenSettingsPlaceholder,
+  onOpenSettings,
 }: {
   onSaleFinalized: (receipt: Receipt) => void;
   onSessionClosed: (summary: { count: number; revenue: number }) => void;
-  onOpenSettingsPlaceholder: () => void;
+  onOpenSettings: () => void;
 }) {
   const { state, addItemToSale, cancelSale, finalizeSale, closeSession } = useStore();
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
@@ -145,7 +145,7 @@ export function Selling({
           count={contextTotals.count}
           title={headerTitle}
           onCloseSession={handleCloseSessionRequest}
-          onOpenSettingsPlaceholder={onOpenSettingsPlaceholder}
+          onOpenSettings={onOpenSettings}
         />
         <VentaActualTray lines={lines} subtotal={subtotal} onCancel={() => setCancelConfirmOpen(true)} />
       </div>

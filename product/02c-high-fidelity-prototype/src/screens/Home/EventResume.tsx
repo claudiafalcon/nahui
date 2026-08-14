@@ -35,7 +35,7 @@ export function EventResume({
   defaultSellingMode,
   todaySales,
   onContinue,
-  onOpenSettingsPlaceholder,
+  onOpenSettings,
   onOpenAssignTagsPlaceholder,
 }: {
   venueName: string;
@@ -43,7 +43,7 @@ export function EventResume({
   defaultSellingMode: 'buttons' | 'nfc';
   todaySales?: { total: number; count: number } | null;
   onContinue: () => void;
-  onOpenSettingsPlaceholder: () => void;
+  onOpenSettings: () => void;
   onOpenAssignTagsPlaceholder: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -90,7 +90,7 @@ export function EventResume({
             className={`${sheetStyles.sheetRow} stitchBottom`}
             onClick={() => {
               setMenuOpen(false);
-              onOpenSettingsPlaceholder();
+              onOpenSettings();
             }}
           >
             ⚙ Configuración

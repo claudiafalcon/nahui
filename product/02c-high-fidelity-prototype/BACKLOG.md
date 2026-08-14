@@ -59,23 +59,41 @@ longer always `null`. Home's resolution logic now covers all four of §2's
 numbered steps, not three. Full record: `README.md`'s "Eventos pass"
 section.
 
+## What's built (Slice 4, complete — Configuración, 2026-08-13)
+
+The four Business Capability actions (`subscriptionTier` × 2 directions —
+including the deferred "Volver al plan gratis" pending-change indicator and
+its own cancel action, `defaultSellingMode` × 2 directions), plus the new
+account-level "Cerrar sesión" (`settings.md §2.5/§2.5a`, `authentication.md
+§2.2` case 2, RFC 0007), per `product/02-ux/settings.md` (Approved). Closes
+the exact gap this file's own prior "what's not built" entry named:
+`subscriptionTier=paid` and `nfc` are now reachable from inside the app for
+the first time, without going through the demo-onboarding seed — verified
+directly (a real free-path Business, brought to Paid+`nfc` purely through
+Configuración, correctly drives `Idle.tsx`'s existing NFC-Not-Ready nudge
+with zero code changes there). Also closes a real, live correctness gap the
+Product Owner identified directly: there was previously no way anywhere in
+the built product to sign out of the phone-verified session Slice 2
+introduced. Full record, including one real bug found and fixed by this
+pass's own verification walkthrough (a landing-render bug in §2.4's pending-
+change acknowledgment): `README.md`'s "Configuración pass" section.
+
 ## What's not built
 
 - **Resultados** (Journey 5: Review) — nav tab is a placeholder. No
   Session/Event history view, no Free-tier counts/totals, no Paid-tier
   segmentation. Approved spec exists (`product/02-ux/reports.md`).
-- **Configuración** (Settings) — placeholder. No capability toggles
-  (`subscriptionTier`, `defaultSellingMode`), no way to reach Paid tier or
-  `nfc` from inside the app. Approved spec exists (`product/02-ux/settings.md`).
-- **NFC/`nfc` registration mode** — structurally unreachable end-to-end
-  (needs `subscriptionTier=paid`, reachable only via Configuración, which
-  doesn't exist yet) and Asignar Tags (part of Inventario) is unbuilt.
+- **Asignar Tags (Inventario)** — NFCTag assignment isn't modeled at all;
+  `nfc` mode is reachable end-to-end (`subscriptionTier=paid` via
+  Configuración) but NFC Readiness always resolves Not Ready, since no
+  InventoryUnit can ever carry an assigned tag. A full NFC sale still needs
+  this built before it's actually exercisable.
 - **Frequent Customers / Customer Segmentation** (`company/backlog.md` #2)
-  — Stage 1 (NFC-mechanism Claim resolution) needs `nfc` mode built first;
-  Stage 2 (Sale-QR mechanism) needs Paid tier reachable first, i.e.
-  Configuración. Neither is buildable yet without an earlier slice.
-  Free-tier Resultados (counts/totals only, no segmentation) does **not**
-  need any of this and is buildable now.
+  — Stage 1 (NFC-mechanism Claim resolution) needs Asignar Tags built first;
+  Stage 2 (Sale-QR mechanism) is now unblocked on the Paid-tier-reachability
+  side (Configuración), but still needs its own Claim-resolution mechanism
+  built. Free-tier Resultados (counts/totals only, no segmentation) does
+  **not** need any of this and is buildable now.
 - **Loyalty-claim** (`product/02-ux-loyalty/`) — explicitly out of the
   merchant-app IA (D10/D21/D38), a structurally separate deploy target.
   Not part of this backlog's sequencing; revisited only once Frequent

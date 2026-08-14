@@ -49,7 +49,7 @@ export function Idle({
   onTapUpcomingEvent,
   todaySales,
   onStartSession,
-  onOpenSettingsPlaceholder,
+  onOpenSettings,
   onOpenAssignTagsPlaceholder,
 }: {
   defaultSellingMode: 'buttons' | 'nfc';
@@ -58,7 +58,7 @@ export function Idle({
   onTapUpcomingEvent?: () => void;
   todaySales?: { total: number; count: number } | null;
   onStartSession: () => void;
-  onOpenSettingsPlaceholder: () => void;
+  onOpenSettings: () => void;
   onOpenAssignTagsPlaceholder: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -118,7 +118,7 @@ export function Idle({
             className={`${sheetStyles.sheetRow} stitchBottom`}
             onClick={() => {
               setMenuOpen(false);
-              onOpenSettingsPlaceholder();
+              onOpenSettings();
             }}
           >
             ⚙ Configuración

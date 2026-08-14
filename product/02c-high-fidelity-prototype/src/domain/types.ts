@@ -96,6 +96,24 @@ export interface Business {
    * she's actually seen the milestone screen.
    */
   onboardingAcknowledged: boolean;
+  /**
+   * `settings.md` §2.2/§2.4, `decision-log.md` D25/D29's own already-specified
+   * pending-change triple — the deferred-effect shape for a `subscriptionTier`
+   * downgrade ("Volver al plan gratis"). `pendingSubscriptionTier` names the
+   * target value this Business is moving *to*, `pendingSubscriptionTierEffectiveDate`
+   * ('YYYY-MM-DD') is when it lands, `pendingSubscriptionTierAcknowledged`
+   * tracks whether the one-time landing acknowledgment (§2.4) has already
+   * been shown once. All three are set together (`requestDowngradeToFree`)
+   * and cleared together (`cancelPendingSubscriptionTierChange`, or the
+   * second Configuración open after landing, `reconcilePendingSubscriptionTier`
+   * in store.tsx) — never independently. `null`/`false` when no change is
+   * pending, the common case. `defaultSellingMode` carries no equivalent
+   * pending pair at all (§2.3, D27) — both its directions are immediate,
+   * with nothing to defer.
+   */
+  pendingSubscriptionTier: 'free' | 'paid' | null;
+  pendingSubscriptionTierEffectiveDate: string | null;
+  pendingSubscriptionTierAcknowledged: boolean;
 }
 
 /** Selling context — Eventos (`events.md`, `decision-log.md` D8/D17/D20). */
