@@ -2,6 +2,14 @@
 
 Chronological. Each entry: the decision, why it was made, and what it superseded if anything. Don't edit past entries when a decision changes later — add a new entry that supersedes it, so the reasoning trail stays intact.
 
+## D47 — `Claim` schematized with an explicit field table
+
+`ubiquitous-language.md` defined **Claim** only in prose ("the act of linking a Customer to an already-sold SaleItem... resolvable through multiple mechanisms... all converging on the identical terminal write") — every other aggregate/entity in the domain model has an explicit field table except this one, a real gap surfaced by `architect`'s Gap Analysis ahead of `product/02c-loyalty-prototype/`'s first build (the Customer Loyalty Registration React implementation, `product/02-ux-loyalty/customer-loyalty-registration.md`).
+
+**Schema:** `Claim { id, businessId, customerId, saleItemId, claimedAt }`. `businessId` is denormalized for query convenience, matching the same Business-scoping discipline every other aggregate root in this model already carries (D35) — not a new requirement, just naming what was already implied. One Claim per SaleItem, per `ubiquitous-language.md`'s own definition; a Sale's SaleItems become individually claimable as Claims are created against them (this is what makes `customer-loyalty-registration.md` §2 step 2's "already-claimed" check — some SaleItems claimed, some not — coherent).
+
+**Not RFC-worthy** — same class as D37's own dedup-rule/`loyaltyRewardThreshold` additions: no new aggregate, no bounded-context edge, no ubiquitous-language redefinition, just a field table for a concept the Foundation already named and reasoned about in prose.
+
 ## D46 — Tag-assignment auto-entry gates on merchant intent (`defaultSellingMode = 'nfc'`), not mere capability (`nfc ∈ registrationMode`)
 
 Raised by the Product Owner directly, testing the just-shipped Asignar Tags/NFC Selling slices: a Paid merchant who registers merchandise is unconditionally auto-routed into the Asignar Tags queue the moment `Guardar mercancía` succeeds, regardless of whether she has any intention of ever using `nfc` as her selling mode — `inventory.md`'s own auto-continuation trigger (§2 step 2, §3.14, §9) reads `nfc ∈ registrationMode` (Selling Mode Capability, i.e. `subscriptionTier = 'paid'`), not `defaultSellingMode = 'nfc'` (her actual chosen mode).
