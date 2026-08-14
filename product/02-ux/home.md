@@ -107,6 +107,23 @@ clean (no Blockers, no Important findings) — folded back into Approved.
 **Amended 2026-08-09 (Product Owner decision — Configuración entry-point relocated from the header's "▾" to a top-right icon-based menu):** the small "▾" dropdown next to the "Nahui"/session header — flagged by the Product Owner as not reading as discoverable or natural — is replaced by a top-right "⋯" (three-dot/overflow) icon, opening the identical session-controls sheet already specified (§3.6c/§3.7a), with no change to which Home states show it, when "Cerrar sesión" appears, or what Configuración itself does once reached. The sheet's Configuración row now also carries a gear icon ("⚙"), specifically distinguishing it from "Cerrar sesión" and from any other entry the sheet may carry in the future, per the Product Owner's explicit request. **Why "⋯" rather than a hamburger ("☰"):** a hamburger conventionally signals a full secondary navigation drawer with many destinations, which would misrepresent — and visually compete with — what's actually behind this trigger (a one-or-two-row sheet, not a parallel navigation system), undercutting `decision-log.md` D13's own ruling that this affordance is a sequencing/reachability fact, not a fifth nav tab, alongside the persistent, already-primary bottom nav bar. `settings.md` receives the matching correction in the same pass — see that document's own status header and §2.1/§8 item 3. `ux-critic`/`reviewer` both clean. Folded into Approved.
 **Amended 2026-08-09 (Product Owner decision, resolving `product/02-ux/product-decisions.md` Q15 — the Digital Receipt's Claim Token QR is now real, not a placeholder):** §3.8f's Paid-tier receipt now renders a genuine, tappable/scannable Claim Token QR (`decision-log.md` D22) in the row the earlier textual future-registration placeholder held — the entry point into the already-Approved `product/02-ux-loyalty/customer-loyalty-registration.md` flow (§3.1 onward), which this amendment specifies the bridge into without redesigning. Explicitly supersedes, rather than silently contradicts, this document's own two prior "no QR-shaped render" passages (§3.8f's identity-element bullet; the historical 2026-08-05 entry) — both correctly rejected a decorative, non-functional QR graphic for carrying an unhedgeable liveness claim with nothing behind it, an objection that doesn't hold against a genuinely functional element navigating to a real destination. The Free-tier receipt is unaffected — still three elements, no QR, no placeholder, exactly as the 2026-08-09 D40 amendment above already established. Resolves Q15 (`product-decisions.md`): purely ephemeral, nothing persisted; no dedicated "decline to offer" action exists separate from the receipt's own already-specified exit mechanism. Flags, without resolving, that this activates `company/backlog.md` #2's Stage 2 for this one element ahead of its own stated gating, by direct Product Owner instruction. §3.8f, §4, §5, §7, §8, §10, §11 updated. `ux-critic` round 1: 4 stale-reference findings (3 Major, 1 Minor) — fixed, verification clean. `reviewer` clean (2 Important findings, both documentation-tracking gaps — this `ux-critic-findings.md` entry and a stale status line, both closed separately). Folded into Approved.
 **Amended 2026-08-12 (Medium-Fidelity spec-gap escalation — SessionHeader title row during an active Quick Session):** closes an undocumented gap `ux-critic` flagged during Medium-Fidelity build, where an active Quick Session (no `eventId`) had no defined title-row content — a Medium-Fidelity build had defaulted to a blank title row, indistinguishable from a load failure, on Ana's own first-ever live selling screen. New §3.7b specifies the title row reads "Sesión rápida" wherever `Session.eventId` is null, applying to every active-Session wireframe in §3.7–§3.11a — the same term §3.4's "Iniciar Sesión Rápida" already established and `reports.md` §3.7 already assumed this document defined (it hadn't, until now). Small, bounded content addition — no new screen, flow, or navigation branch. §5 (item 9), §9 (architecture-principles.md #3), §10 updated.
+**Amended 2026-08-13 (Architect-caught wording-precision fix, ahead of the
+Eventos build — no behavior change):** §2 step 2's literal text is
+corrected to match Foundation it had drifted from: the gating condition
+now reads "Event status = active AND no Session is currently active" (the
+direct complement of step 1, dropping the stale "no Session opened yet
+under it today" qualifier, which read as literally false — and would have
+incorrectly fallen through to plain idle, §3.4 — on the exact lunch-break-
+resume case `decision-log.md` D15's own worked example describes), and N's
+computation is corrected from a raw Session-row count to D15's distinct-
+calendar-date rule (`domain-model.md`'s "Día N" computation, which this
+document's own §3.6 wireframe and `events.md`/`reports.md` already reuse).
+Classified by `architect` as Architect-resolvable from existing Foundation
+alone — no Product Owner input needed, no new decision. The underlying
+behavior `events.md` §1/D15 already specify is unchanged; only §2 step 2's
+literal wording is brought into agreement with them. Same category as this
+document's own EVT-Q1/EVT-Q2-style precision fixes (see `events.md`'s
+status header for that precedent).
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -142,11 +159,17 @@ Evaluated in this order, automatically, on every Home open:
        step never re-runs NFC Readiness or re-resolves the mode; see the
        folded-in sub-step below for where that resolution actually happens.
 
-2. Is there an Event with status = active, with no Session opened yet under
-   it today?
-     → YES: show "Continuar Día N" (N = existing Sessions under this eventId
-       + 1, computed, never asked). Tapping it is the moment a new Session
-       actually opens — see the folded-in sub-step below.
+2. Is there an Event with status = active, and no Session is currently
+   active (the direct complement of step 1 — dropping the earlier "opened
+   yet today" qualifier, so a same-day resume, e.g. after a lunch break,
+   still lands here rather than falling through to step 3; matches
+   `decision-log.md` D15's own worked example)?
+     → YES: show "Continuar Día N" (N = the number of distinct calendar
+       dates before today with at least one Session under this eventId,
+       plus one for today — `decision-log.md` D15, `domain-model.md`'s "Día
+       N" computation — never a raw count of Session rows, and unchanged by
+       a same-day resume). Tapping it is the moment a new Session actually
+       opens — see the folded-in sub-step below.
 
 3. Does at least one `available` InventoryUnit exist?
      → NO:  cold-start empty state → route to Inventario. Reached whenever
@@ -2201,6 +2224,35 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **2026-08-08: §3.8f's receipt now shows the merchant's own captured identity instead of Nahui's own mark — a deliberate brand-facing product decision, named explicitly per this document's own review discipline, not an incidental side effect of `onboarding.md`'s new identity-capture step.** Until this amendment, every receipt Ana ever showed a customer carried Nahui's own mark — reasonable when nothing else was available to show, but never actually a brand statement anyone chose on purpose; it was the honest fallback for an empty field, not a considered choice. Once `onboarding.md` §2.2b makes `Business.name` a required, always-populated field (and `Business.logo` an optional one), the honest fallback for an *absent logo* is her own business name as text, not Nahui's mark — Nahui's mark was never the right fallback for a missing merchant logo, it was only ever standing in for a data field this product hadn't captured yet. This is the correct, considered choice, not merely a technical consequence of a new field existing: the receipt moment (§3.8f) is Ana's own customer-facing surface, at the single instant in the whole product a real customer ever sees anything — reinforcing her own identity there, not Nahui's, is the more honest and more merchant-respecting choice, consistent with `brand-guide.md`'s tone (never positioning Nahui's own presence ahead of the merchant she serves) and with the general shift this identity-capture amendment represents across the product. **Fallback is `Business.name` as plain text, not Nahui's mark, and not a generic placeholder** — reasoned explicitly: `Business.name` is required (never blank, `onboarding.md` §2.2b), so there is always a genuine, honest thing to show; falling back to Nahui's own mark when only the logo (not the name) is missing would mean the *common* case — most merchants likely won't have a digital logo ready, per this amendment's own design note — shows Nahui's brand more often than the merchant's, exactly backwards from the stated intent. Not RFC-worthy — no aggregate boundary, domain term, or IA change (`Business.name`/`Business.logo` are additive fields `architect` already cleared as sitting inside Selling's existing read-only dependency on Identity); a content-source and asset-source change to an already-Approved state's third element, same category as this document's other post-Approval amendments.
 - **2026-08-09: §3.8f's future-registration placeholder is now gated on `subscriptionTier=paid`, absent entirely on a Free-tier receipt (`decision-log.md` D40).** The original copy was written mechanism-noncommittal but tier-noncommittal too, before D40 existed — promising every merchant she'll "someday" get this is false for Free tier; only upgrading gets her there. Fix: a Free-tier receipt renders exactly three elements; a Paid-tier receipt is unaffected. **Not a design of the live QR interaction itself** — tracked as `product/02-ux/product-decisions.md` Q15, scoped explicitly to Paid-tier Sales.
 - **2026-08-09 (Product Owner decision, resolving `product/02-ux/product-decisions.md` Q15): §3.8f's Paid-tier receipt now renders a real, tappable/scannable Claim Token QR in place of the former literal placeholder text — the entry point into the already-Approved `product/02-ux-loyalty/customer-loyalty-registration.md` flow, §3.1 onward.** Needed to work end-to-end for the demo specifically; the design generalizes cleanly beyond the demo, since nothing about it is demo-specific except the single-device tap-stand-in for a camera scan (§3.8f). **Explicitly supersedes, not contradicts, the two prior "no QR-shaped render" passages in this document** — both correctly rejected a decorative, non-functional QR graphic for carrying an unhedgeable liveness claim with nothing behind it; that objection doesn't apply to a genuinely functional element navigating somewhere real. The identity element (`Business.name`/`Business.logo`) is unaffected and still never renders as a QR — only the separate future-registration row changes. Reasoning, the destination bridge, the demo-vs-production distinction, and the exit-mechanism non-conflict are specified in full in §3.8f's own bullets, not repeated here. **Does not redesign the destination flow** — already fully specified and Approved before this amendment; only the bridge is new. **Resolves Q15**: purely ephemeral, nothing persisted — Ana's existing control over the receipt's own exit already fully realizes D40's "she controls whether she offers the QR." **Flagged, not resolved:** this activates `company/backlog.md` #2's Stage 2 ahead of its own stated gating, by this specific Product Owner instruction; the general sequencing question `decision-log.md` D34 left open stays open. **Consultation self-check, not a live request:** this bridge decomposes from already-Approved precedent (`decision-log.md` D21/D22; §3.6a's own cross-document hand-off links) — not escalated to `knowledge-mentor`; flagged for `ux-critic`/`reviewer` to challenge if that judgment doesn't hold. Not RFC-worthy — no aggregate boundary, bounded-context edge, or ubiquitous-language term changes; D22 already named the QR as a Claim Token display mechanism, D40 already established per-Sale offering as UI-layer state. A UX state-design amendment to an already-Approved spec. Ready for the standard `ux-critic`/`reviewer` cycle before folding back into Approved.
+- **2026-08-13 (architect-caught wording-precision fix, ahead of the
+  Eventos build): §2 step 2's gating condition and Día N computation
+  corrected to match already-settled Foundation, no behavior change.**
+  `architect`'s Architecture Gap Analysis for the upcoming Eventos slice
+  found step 2's literal text had drifted from Foundation in two ways: (1)
+  "N = existing Sessions under this eventId + 1, computed, never asked"
+  contradicted `decision-log.md` D15 and `domain-model.md`'s own "Día N"
+  computation verbatim — Día N is computed from *distinct calendar dates*
+  of Sessions sharing an eventId, never a raw Session-row count; (2) the
+  gating condition "no Session opened yet under it today" is literally
+  false the moment Ana closes a Session for a lunch break and reopens Home
+  the same day (a Session *was* already opened under that Event today),
+  which would have incorrectly routed her to plain idle (step 3) instead
+  of "Continuar Día N," losing Event-awareness for the rest of that day —
+  directly contradicting D15's own worked example (a lunch-break resume
+  "does not increment the day number") and this document's §1 (Home should
+  already know "today is Bazar Plaza Norte, Día 2," not ask). Corrected
+  reading, resolved entirely from existing Foundation (classified
+  Architect-resolvable, no Product Owner input needed): the condition is
+  now "Event status = active AND no Session is currently active" (the
+  direct complement of step 1, dropping the "opened yet today" qualifier),
+  and N is computed as distinct calendar dates before today with a Session
+  under this eventId, plus one for today — invariant to whether today is a
+  fresh day or a same-day resume. §3.6's wireframe display ("Continuar Día
+  2") and every other section referencing this branch are unaffected —
+  they never asserted the raw-count formula themselves, only §2's own
+  prose did. Not RFC-worthy — no aggregate boundary, domain term, or IA
+  change; a literal-text-only correction to an already-Approved spec, same
+  category as `events.md`'s EVT-Q1/EVT-Q2 precedent.
 
 ## 11. Future considerations
 
