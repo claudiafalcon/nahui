@@ -1,0 +1,51 @@
+.button {
+  width: 100%;
+  min-height: 52px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 20px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+  padding: 0 var(--space-6);
+}
+
+.primary {
+  background: var(--color-coral-aa);
+  color: var(--color-white);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--color-tezontle);
+}
+
+/* "No, gracias" — a real, full-size, equally-tappable opt-out, not a
+ * de-emphasized text link (customer-loyalty-registration.md §3.5's own
+ * annotation). Same size and tap weight as Primary, visually distinct via
+ * an outline instead of a solid fill, so the pair stays distinguishable
+ * without either one reading as suppressed. */
+.decline {
+  background: var(--color-white);
+  color: var(--color-obsidian);
+  /* Fix round (ux-critic Minor, WCAG 1.4.11) — this outline is the
+     decline button's sole boundary cue against the white card;
+     --color-border-strong (see index.css) clears the 3:1 floor
+     --color-border itself doesn't. */
+  border-color: var(--color-border-strong);
+}
+
+.decline:hover:not(:disabled) {
+  border-color: var(--color-obsidian);
+}
+
+.button:disabled {
+  background: var(--color-border);
+  border-color: var(--color-border);
+  color: var(--color-muted);
+  cursor: default;
+}

@@ -1,0 +1,38 @@
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  min-height: 47px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  /* Fix round (ux-critic Minor, WCAG 1.4.11) — the unselected chip's border
+     is its sole boundary cue against the white card; --color-border-strong
+     (see index.css) clears the 3:1 floor --color-border itself doesn't. */
+  border: 1.5px solid var(--color-border-strong);
+  background: var(--color-white);
+  color: var(--color-obsidian);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.chip:hover {
+  border-color: var(--color-coral-aa);
+}
+
+/* Selection signaled by two independent cues — fill AND font-weight,
+ * never color alone (company/brand/brand-guide.md's OptionChip spec,
+ * WCAG 1.4.1), first built specifically for this screen. */
+.selected {
+  background: var(--color-coral-aa);
+  border-color: var(--color-coral-aa);
+  color: var(--color-white);
+  font-weight: 700;
+}

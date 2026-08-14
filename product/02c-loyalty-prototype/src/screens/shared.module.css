@@ -1,0 +1,130 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  text-align: center;
+  padding: var(--space-4) 0;
+}
+
+.stackLeft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  text-align: left;
+}
+
+.heading {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 500;
+  color: var(--color-obsidian);
+}
+
+.heading.error {
+  color: var(--color-error);
+}
+
+.big {
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.body {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--color-obsidian);
+}
+
+/* Reserved for a write/save failure with real, entered data at risk
+ * (brand-guide.md's Error-usage rule) — e.g. §3.9's "No pudimos guardar."
+ * Never used for a passive, retry-only load failure (§3.3/§3.12 stay
+ * plain-toned). */
+.bodyError {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--color-error);
+}
+
+.muted {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-muted);
+}
+
+/* Fix round (ux-critic Major) — the §3.5/§9 trust-disclosure sentence
+ * ("Esto es solo con este negocio…") is the single most trust-load-bearing
+ * line on this screen for a stranger with zero prior trust in the page;
+ * `.muted` (14px, the same treatment used for genuinely secondary
+ * fine-print like field labels) worked against that purpose. A distinct
+ * inset callout — body-weight (16px, matching `.body` above it, never
+ * weaker) plus its own subtle boundary — reads as deliberately called out
+ * rather than as an afterthought, without borrowing Error-red or any other
+ * alert-toned treatment this isn't (brand-guide.md's Error-usage rule
+ * still reserved for real data-at-risk failures). */
+.trustNote {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--color-obsidian);
+  background: var(--color-balanced);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--color-coral-aa);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: none;
+}
+
+.input {
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  /* Fix round (ux-critic Minor, WCAG 1.4.11) — this border is the input's
+     sole boundary cue against the white card; --color-border-strong (see
+     index.css) clears the 3:1 floor --color-border itself doesn't. */
+  border: 1.5px solid var(--color-border-strong);
+  padding: 0 var(--space-4);
+  font-size: 16px;
+  color: var(--color-obsidian);
+  outline: none;
+  transition: border-color 120ms ease;
+}
+
+.input:focus {
+  border-color: var(--color-coral-aa);
+}
+
+.inputError {
+  border-color: var(--color-error);
+}
+
+.errorText {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-error);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.optionalGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
