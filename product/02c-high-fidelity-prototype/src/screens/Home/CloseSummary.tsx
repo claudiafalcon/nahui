@@ -12,18 +12,28 @@ import styles from './ColdStart.module.css';
  * passive line) mirrors the eyebrow/body shape "Día cerrado" already
  * establishes, extended the same way `SessionHeader`'s own eventId-aware
  * title already is: same slot, same treatment, only the content differs.
+ *
+ * **"Ver detalle" (Resultados pass, D43) — closes the exact wiring gap the
+ * Gap Analysis named.** `home.md` §3.12 always specified this hand-off
+ * (`reports.md` §2 step 3, §6: "1 tap" from close to Session detail); it was
+ * never wired because Resultados didn't exist yet when this screen was
+ * first built. Primary action now, above "Entendido" — the faster,
+ * more-informative path (§6's own minimum-step-count table treats it as the
+ * expected route, not a secondary option).
  */
 export function CloseSummary({
   count,
   revenue,
   venueName,
   dayNumber,
+  onViewDetail,
   onContinue,
 }: {
   count: number;
   revenue: number;
   venueName?: string;
   dayNumber?: number;
+  onViewDetail: () => void;
   onContinue: () => void;
 }) {
   return (
@@ -36,9 +46,12 @@ export function CloseSummary({
           <br />{pesos(revenue)} en total
         </p>
       </div>
-      <Button className={styles.cta} variant="secondary" onClick={onContinue}>
-        Entendido
-      </Button>
+      <div className={styles.ctaStack}>
+        <Button onClick={onViewDetail}>Ver detalle</Button>
+        <Button variant="secondary" onClick={onContinue}>
+          Entendido
+        </Button>
+      </div>
     </div>
   );
 }

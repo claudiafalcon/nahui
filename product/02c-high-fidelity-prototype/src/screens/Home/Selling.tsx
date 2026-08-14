@@ -32,7 +32,7 @@ export function Selling({
   onOpenSettings,
 }: {
   onSaleFinalized: (receipt: Receipt) => void;
-  onSessionClosed: (summary: { count: number; revenue: number }) => void;
+  onSessionClosed: (summary: { count: number; revenue: number }, sessionId: string) => void;
   onOpenSettings: () => void;
 }) {
   const { state, addItemToSale, cancelSale, finalizeSale, closeSession } = useStore();
@@ -221,7 +221,7 @@ export function Selling({
               onClick={() => {
                 closeSession();
                 setCloseConfirmOpen(false);
-                onSessionClosed(totals);
+                onSessionClosed(totals, session.id);
               }}
             >
               Sí, cerrar

@@ -1,4 +1,4 @@
-import { dateKey } from './dates';
+import { addDaysToKey, dateKey } from './dates';
 import type { AppState, Event, ID, Product, Session, Venue } from './types';
 
 /** Pure, derived reads over AppState — no mutation, mirrors domain-model.md's
@@ -37,8 +37,12 @@ export function catalogRows(state: AppState) {
 }
 
 /** How many finalized SaleItems this Product has ever sold — drives the
- * selling grid's most-frequently-sold-first ordering (home.md §3.9). */
-function salesCount(state: AppState, productId: ID): number {
+ * selling grid's most-frequently-sold-first ordering (home.md §3.9).
+ * Exported (Resultados pass, D43) so `topProductsAllTime` below reuses this
+ * exact per-Product count rather than reimplementing it — reports.md's own
+ * instruction ("sellingGridRows's internal per-product sales-count logic
+ * already computes this per product — expose/reuse it"). */
+export function salesCount(state: AppState, productId: ID): number {
   let count = 0;
   for (const sale of state.sales) {
     if (sale.status !== 'finalized') continue;
@@ -267,4 +271,259 @@ export function todaySalesSummary(state: AppState, eventId: ID | null): { total:
     for (const item of sale.items) total += item.pricePaid;
   }
   return count > 0 ? { total, count } : null;
+}
+
+/** Resultados (`product/02-ux/reports.md`, Migration Workflow D43) — every
+ * selector below is a pure, read-only derivation over `AppState`, exactly
+ * the same discipline as everything above. No new domain-model field or
+ * write path — reports.md is a read-only slice (§1) except for §3.17/§3.18's
+ * "Confirmar recompensa entregada" write, explicitly out of scope for this
+ * build per the dispatching task (structurally unreachable — `Customer`/
+ * `Claim` don't exist anywhere in this domain layer). */
+
+/** §2 step 1's cold-start gate — "has any Session ever reached status =
+ * closed," distinct from "an active Session exists" (`activeSession` above
+ * answers a different question). */
+export function hasAnyClosedSession(state: AppState): boolean {
+  return state.sessions.some((s) => s.status === 'closed');
+}
+
+/** "Total histórico" (§3.4/§3.5/§3.6) — sum/count of `SaleItem.pricePaid`
+ * across every finalized Sale this Business has ever recorded, all-time, no
+ * Session/Event scoping. `sessionTotals` above is the identical computation
+ * scoped to one Session; this is its all-time-scoped sibling, needed because
+ * no existing selector sums across every Session at once. */
+export function allTimeTotals(state: AppState): { revenue: number; count: number } {
+  let revenue = 0;
+  let count = 0;
+  for (const sale of state.sales) {
+    if (sale.status !== 'finalized') continue;
+    count += 1;
+    for (const item of sale.items) revenue += item.pricePaid;
+  }
+  return { revenue, count };
+}
+
+/** "Top productos · todo tu historial" (§3.4/§3.5/§3.6) — every Product with
+ * ≥1 finalized SaleItem ever, ranked by piece count descending. Reuses
+ * `salesCount` (the exact per-Product logic `sellingGridRows` already
+ * computes) rather than re-deriving it — the one all-time-scope difference
+ * is `sellingGridRows`'s own tie-break-by-registration-order and
+ * zero-count rows, neither of which this ranked, filtered list needs. */
+export function topProductsAllTime(state: AppState): { product: Product; count: number }[] {
+  return state.products
+    .map((product) => ({ product, count: salesCount(state, product.id) }))
+    .filter((row) => row.count > 0)
+    .sort((a, b) => b.count - a.count);
+}
+
+/** Per-Product SaleItem counts within one Session (§3.7's "Por producto") —
+ * `sessionTotals` only gives revenue/count, never a per-Product axis. Rows
+ * ordered by Product registration order (`catalogRows`'s own convention),
+ * not by count — §3.7's own wireframe example ("Bolsas 5, Accesorios 2,
+ * Playeras 3") isn't itself count-sorted, so this doesn't invent a ranking
+ * the spec never asked for. */
+export function sessionProductBreakdown(state: AppState, sessionId: ID): { product: Product; count: number }[] {
+  const counts = new Map<ID, number>();
+  for (const sale of state.sales) {
+    if (sale.sessionId !== sessionId || sale.status !== 'finalized') continue;
+    for (const item of sale.items) counts.set(item.productId, (counts.get(item.productId) ?? 0) + 1);
+  }
+  return state.products
+    .slice()
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .filter((p) => counts.has(p.id))
+    .map((p) => ({ product: p, count: counts.get(p.id)! }));
+}
+
+/** Same per-Product breakdown as above, summed across every Session sharing
+ * this `eventId` (§3.8's "Por producto (todo el evento)") — the identical
+ * cross-Session union `eventRollup`/`eventDayRows` already build, extended
+ * with the one extra axis (Product) they don't carry. */
+export function eventProductBreakdown(state: AppState, eventId: ID): { product: Product; count: number }[] {
+  const sessionIds = new Set(state.sessions.filter((s) => s.eventId === eventId).map((s) => s.id));
+  const counts = new Map<ID, number>();
+  for (const sale of state.sales) {
+    if (!sessionIds.has(sale.sessionId) || sale.status !== 'finalized') continue;
+    for (const item of sale.items) counts.set(item.productId, (counts.get(item.productId) ?? 0) + 1);
+  }
+  return state.products
+    .slice()
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .filter((p) => counts.has(p.id))
+    .map((p) => ({ product: p, count: counts.get(p.id)! }));
+}
+
+export type HistorialRow =
+  | { kind: 'event'; sortKey: string; event: Event }
+  | { kind: 'quick-session'; sortKey: string; session: Session };
+
+/** §2 step 2 / §3.4-§3.6's "Historial" — every closed Event (one rollup row
+ * each, reusing `eventsForList`'s own `pasados`, already status-filtered and
+ * sorted) merged with every standalone closed Quick Session (`eventId ===
+ * null`), most-recent-first. `sortKey` is each row's own comparable date —
+ * an Event's `endDate`, a Quick Session's closed (or opened, defensively)
+ * calendar date — so a single `localeCompare` sort interleaves both kinds
+ * correctly instead of needing two separately-rendered lists. */
+export function historialRows(state: AppState): HistorialRow[] {
+  const { pasados } = eventsForList(state);
+  const eventRows: HistorialRow[] = pasados.map((event) => ({ kind: 'event', sortKey: event.endDate, event }));
+  const quickSessionRows: HistorialRow[] = state.sessions
+    .filter((s) => s.eventId === null && s.status === 'closed')
+    .map((session) => ({
+      kind: 'quick-session',
+      sortKey: dateKey(session.closedAt ?? session.openedAt),
+      session,
+    }));
+  return [...eventRows, ...quickSessionRows].sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+}
+
+/** §3.4's "En curso" — one entry per still-`active` Event, each carrying
+ * only the Día rows whose Session has actually *closed* (never today's row
+ * while a Session for today is still open — the same "today's date is
+ * represented by a separate ambient line, not a tappable row" rule
+ * `EventDetail.tsx`'s own active-Event body already applies) plus that
+ * Día's specific `sessionId`, the tap-through target for Session detail
+ * (§3.7, §4: "tap an 'En curso' Día row → Session detail"). Reuses
+ * `eventDayRows`'s own per-day sales/revenue aggregation rather than
+ * re-deriving it — adds only the one field it doesn't carry.
+ *
+ * **Disclosed judgment call — same-calendar-date reopen.** If a date has more
+ * than one *closed* Session (a lunch-break resume, closed twice the same
+ * day), the most-recently-closed one is used as that Día's representative
+ * Session — Session detail is inherently per-Session, and `eventDayRows`
+ * itself already aggregates across Sessions per day, so some choice is
+ * needed here; this extends Q1's own already-acknowledged "Día N counting"
+ * ambiguity (`product/02-ux/product-decisions.md` Q1) rather than
+ * introducing a new one. An Event with zero closed Días yet (just started,
+ * still selling) is omitted from the result entirely — nothing to review
+ * yet, consistent with "nothing here is a dead end" never meaning "show an
+ * empty card."
+ */
+export function enCursoRows(
+  state: AppState,
+): { event: Event; dayRows: { dayNumber: number; dateKey: string; sales: number; revenue: number; sessionId: ID }[] }[] {
+  const activeEvents = state.events.filter((e) => eventStatus(e) === 'active');
+  return activeEvents
+    .map((event) => {
+      const rows = eventDayRows(state, event.id)
+        .filter(
+          (r) => !state.sessions.some((s) => s.eventId === event.id && s.status === 'active' && dateKey(s.openedAt) === r.dateKey),
+        )
+        .map((r) => {
+          const sessionId = sessionIdForEventDate(state, event.id, r.dateKey);
+          return sessionId ? { ...r, sessionId } : null;
+        })
+        .filter((r): r is { dayNumber: number; dateKey: string; sales: number; revenue: number; sessionId: ID } => r != null);
+      return { event, dayRows: rows };
+    })
+    .filter((e) => e.dayRows.length > 0);
+}
+
+/** The most-recently-closed Session under `eventId` on one specific calendar
+ * date — the same resolution `enCursoRows` above uses internally, exposed
+ * standalone for Event detail's own Día rows (§3.8: "Día rows are tappable
+ * → Session detail (§3.7) for that specific day"), which need it outside
+ * the `enCursoRows`/active-Event context (a closed Event's Día rows are
+ * never "en curso"). `undefined` when no Session ever closed on that date —
+ * defensive; every date `eventDayRows` produces has ≥1 Session by
+ * construction, so this is never actually hit through the real UI. */
+export function sessionIdForEventDate(state: AppState, eventId: ID, targetDateKey: string): ID | undefined {
+  const closedForDate = state.sessions
+    .filter((s) => s.eventId === eventId && s.status === 'closed' && dateKey(s.openedAt) === targetDateKey)
+    .sort((a, b) => (a.closedAt ?? 0) - (b.closedAt ?? 0));
+  return closedForDate[closedForDate.length - 1]?.id;
+}
+
+/** "Rendimiento por bazar" (§3.9) — one row per Venue, `$ promedio/día`
+ * descending. Reuses the identical "sum `SaleItem.pricePaid` across every
+ * finalized Sale in a closed Session" computation `eventRollup` already
+ * performs, grouped by `venueId` instead of `eventId` (reports.md's own
+ * instruction). `eventCount` only counts Events that actually produced ≥1
+ * closed Session — a `scheduled` Event with nothing sold yet would otherwise
+ * inflate a Venue's "N eventos" with zero contribution to its own
+ * `avgPerDay`, which this all-time performance view has no reason to show. */
+export function venuePerformance(
+  state: AppState,
+): { venue: Venue; eventCount: number; sessionCount: number; revenue: number; avgPerDay: number }[] {
+  const rows: { venue: Venue; eventCount: number; sessionCount: number; revenue: number; avgPerDay: number }[] = [];
+  for (const venue of state.venues) {
+    const venueEvents = state.events.filter((e) => e.venueId === venue.id);
+    let revenue = 0;
+    let sessionCount = 0;
+    let eventCount = 0;
+    for (const event of venueEvents) {
+      const closedSessions = state.sessions.filter((s) => s.eventId === event.id && s.status === 'closed');
+      if (closedSessions.length === 0) continue;
+      eventCount += 1;
+      sessionCount += closedSessions.length;
+      const sessionIds = new Set(closedSessions.map((s) => s.id));
+      for (const sale of state.sales) {
+        if (sale.status !== 'finalized' || !sessionIds.has(sale.sessionId)) continue;
+        for (const item of sale.items) revenue += item.pricePaid;
+      }
+    }
+    if (eventCount === 0) continue;
+    rows.push({ venue, eventCount, sessionCount, revenue, avgPerDay: Math.round(revenue / sessionCount) });
+  }
+  return rows.sort((a, b) => b.avgPerDay - a.avgPerDay);
+}
+
+/** §3.11's "detalle de bazar" — Historial filtered to one Venue's closed
+ * Events only (Quick Sessions never appear here, same as they never
+ * contribute to `venuePerformance`'s own aggregate — a Quick Session has no
+ * `eventId`, and therefore no Venue). Reuses `eventsForList`'s own `pasados`
+ * rather than re-deriving the closed-status filter. */
+export function venueHistorialRows(state: AppState, venueId: ID): Event[] {
+  return eventsForList(state).pasados.filter((e) => e.venueId === venueId);
+}
+
+function mondayOfWeek(targetDateKey: string): string {
+  const [y, m, d] = targetDateKey.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const day = date.getDay(); // 0 = Sunday … 6 = Saturday
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diffToMonday);
+  return dateKey(date.getTime());
+}
+
+/**
+ * §3.4's sales-trend headline statement ("esta semana vendiste N ventas
+ * menos/más que la semana pasada") — a genuinely new aggregation reports.md
+ * itself leaves as "a read-side computation detail, not specified at this
+ * fidelity" (§3.4's own annotation). **Disclosed judgment call:** weeks are
+ * Monday-first calendar weeks (not a rolling trailing-7-days window) — the
+ * calendar week a Mexican merchant would actually recognize by name ("esta
+ * semana"), computed from `Sale.finalizedAt` (the same moment
+ * `todaySalesSummary` already reads for its own "hoy" scoping) via
+ * `dateKey`, never re-priced or re-derived.
+ *
+ * **Graceful omission, not a fabricated comparison** (§3.4's own explicit
+ * rule): if Ana's very first closed Session postdates last week's Sunday —
+ * i.e. she wasn't using Nahui at all last week — this returns `null` rather
+ * than comparing this week against a week she never had, mirroring the same
+ * restraint `venuePerformance`'s empty state and §3.10 already apply to "no
+ * fabricated venue data."
+ */
+export function salesTrend(state: AppState, now: number = Date.now()): { thisWeek: number; lastWeek: number } | null {
+  const closedSessionDateKeys = state.sessions.filter((s) => s.status === 'closed').map((s) => dateKey(s.openedAt));
+  if (closedSessionDateKeys.length === 0) return null;
+  const earliestSessionDateKey = closedSessionDateKeys.sort()[0];
+
+  const todayKey = dateKey(now);
+  const thisMonday = mondayOfWeek(todayKey);
+  const lastMonday = addDaysToKey(thisMonday, -7);
+  const lastSunday = addDaysToKey(thisMonday, -1);
+
+  if (earliestSessionDateKey > lastSunday) return null; // she wasn't active yet last week
+
+  let thisWeek = 0;
+  let lastWeek = 0;
+  for (const sale of state.sales) {
+    if (sale.status !== 'finalized' || sale.finalizedAt == null) continue;
+    const dk = dateKey(sale.finalizedAt);
+    if (dk >= thisMonday && dk <= todayKey) thisWeek += 1;
+    else if (dk >= lastMonday && dk <= lastSunday) lastWeek += 1;
+  }
+  return { thisWeek, lastWeek };
 }

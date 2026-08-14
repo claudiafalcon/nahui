@@ -1,24 +1,22 @@
 import { useState } from 'react';
 import { NavBar, type TabKey } from './components/NavBar/NavBar';
-import { Placeholder } from './components/Placeholder/Placeholder';
 import { HomeScreen } from './screens/Home/HomeScreen';
 import { InventoryScreen, type InventoryView } from './screens/Inventory/InventoryScreen';
 import { EventsScreen, type EventsView } from './screens/Events/EventsScreen';
+import { ResultadosScreen, type ResultadosView } from './screens/Resultados/ResultadosScreen';
 import styles from './App.module.css';
 
 /**
  * information-architecture.md — frozen four-tab nav (Hoy · Inventario ·
- * Eventos · Resultados). This slice builds Hoy + Inventario + Eventos in
- * full (Eventos added per the Migration Workflow, D43); Resultados stays
- * reachable (nav is never blocked) but renders an honest "not built in this
- * slice" state — see Placeholder. Eventos' own "Ver resumen en Resultados"
- * hand-off (events.md §3.16) uses the identical Placeholder pattern, not a
- * new category of gap (see EventDetail.tsx).
+ * Eventos · Resultados). All four tabs are real as of the Resultados pass
+ * (Migration Workflow, D43) — Hoy/Inventario/Eventos already were; this pass
+ * closes the last one.
  */
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('hoy');
   const [inventoryView, setInventoryView] = useState<InventoryView>({ mode: 'catalog' });
   const [eventsView, setEventsView] = useState<EventsView>({ mode: 'list' });
+  const [resultadosView, setResultadosView] = useState<ResultadosView>({ mode: 'main' });
 
   return (
     <>
@@ -38,6 +36,13 @@ export default function App() {
               // entry point.
               setEventsView({ mode: 'detail', eventId });
               setActiveTab('eventos');
+            }}
+            onNavigateToResultadosSession={(sessionId) => {
+              // home.md §3.12 "Ver detalle" (reports.md §2 step 3) — lands
+              // directly on Resultados' Session detail, skipping the main
+              // list entirely, regardless of Resultados' own tab state.
+              setResultadosView({ mode: 'session-detail', sessionId, returnTo: { mode: 'main' } });
+              setActiveTab('resultados');
             }}
           />
         )}
@@ -61,9 +66,24 @@ export default function App() {
               // §2/§3.6, not a second selling surface.
               setActiveTab('hoy');
             }}
+            onNavigateToResultados={(eventId) => {
+              // events.md §3.16 "Ver resumen en Resultados" (reports.md §2
+              // step 3) — lands directly on Resultados' Event detail for
+              // that specific Event, skipping the main list entirely.
+              setResultadosView({ mode: 'event-detail', eventId, returnTo: { mode: 'main' } });
+              setActiveTab('resultados');
+            }}
           />
         )}
-        {activeTab === 'resultados' && <Placeholder title="Resultados" onBack={() => setActiveTab('hoy')} />}
+
+        {activeTab === 'resultados' && (
+          <ResultadosScreen
+            view={resultadosView}
+            onChangeView={setResultadosView}
+            onNavigateToHoy={() => setActiveTab('hoy')}
+            onNavigateToEventos={() => setActiveTab('eventos')}
+          />
+        )}
       </main>
 
       <NavBar active={activeTab} onChange={setActiveTab} />

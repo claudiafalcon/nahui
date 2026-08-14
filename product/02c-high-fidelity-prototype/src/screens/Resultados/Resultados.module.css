@@ -1,0 +1,315 @@
+/*
+  Shared across every Resultados screen (main view, Session/Event/Venue
+  detail, Rendimiento por bazar, Tus clientes) — the same "one shared style
+  sheet per tab" convention `EventsList.module.css`/`EventDetail.module.css`
+  already establish for their own sibling screens, reused here rather than
+  hand-rolling a fifth near-identical copy. Every class below is either a
+  verbatim reuse of an existing Eventos-tab pattern (topbar/back, scroll,
+  sectionLabel, card/cardHeadline/cardSub) or a small, obviously-related
+  addition this tab genuinely needs (hero/headline/teaser/rankList) — no new
+  visual vocabulary invented (DESIGN-SYSTEM.md §8/§9).
+*/
+
+.topbar {
+  padding: var(--space-4) var(--space-4) var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--color-obsidian);
+}
+
+.back {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ---- Hero: "Total histórico" — a running, all-time aggregate, never a
+   single Product/transaction price, so it takes the plain-Fredoka treatment
+   DESIGN-SYSTEM.md §9 prescribes for this exact case, never .moneyTag. ---- */
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.heroLabel {
+  font: var(--text-body-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6B6259;
+}
+
+.heroValue {
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
+
+.heroValue strong {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 24px;
+  color: var(--color-tezontle-dark);
+  font-variant-numeric: tabular-nums;
+  margin-right: 2px;
+}
+
+/* ---- Headline paired-fact statements (§3.4's own explicit "same visual
+   priority as Total histórico" instruction). Neither statement is a money
+   figure, so DESIGN-SYSTEM.md §5's Fredoka-restraint rule doesn't apply to
+   them directly — but the spec's own instruction is explicit and specific,
+   and wins over that general restraint convention for this exact case
+   (Main's Decision Ownership classification, README's "Resultados pass" fix
+   round). Elevated via bold Inter heading-weight + the same accent color
+   `.heroValue strong` already uses for its own money figure — matching
+   `.hero`'s actual visual weight without reaching for Fredoka on a
+   full-sentence statement, which Fredoka was never meant to carry (see
+   DESIGN-SYSTEM.md §5's own added precedent note). ---- */
+.headline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.headlineLine {
+  font: var(--text-heading);
+  font-weight: 700;
+  color: var(--color-tezontle-dark);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sectionLabel {
+  font: var(--text-body-sm);
+  font-weight: 700;
+  color: #6B6259;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.emptyNote,
+.emptyBody {
+  font: var(--text-body);
+  color: #6B6259;
+}
+
+/* ---- "Top productos" / "Rendimiento por bazar" ranked lists — plain rank
+   numeral (1., 2., 3.), never a magnitude bar (Product Owner decision,
+   reports.md §3.9's own annotation). ---- */
+.rankList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rankRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font: var(--text-body-sm);
+  color: var(--color-obsidian);
+}
+
+.rankRow span:last-child {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Paid-tier teaser rows ("Rendimiento por bazar [Ver más ▸]" / "Tus
+   clientes [Ver más ▸]") — styled identically to each other, no visual
+   demotion of either (§3.6's own explicit instruction). ---- */
+.teaserRow {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.teaserRow:active {
+  transform: scale(0.98);
+}
+
+.teaserHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.teaserTitle {
+  font: var(--text-body);
+  font-weight: 700;
+  color: var(--color-obsidian);
+}
+
+.teaserLink {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-coral-aa);
+}
+
+.teaserBody {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+/* ---- Historial / En curso / Rendimiento por bazar / Tus clientes cards —
+   verbatim reuse of EventsList.module.css's own .card shape. ---- */
+.card {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.card:active {
+  transform: scale(0.98);
+}
+
+/* "En curso" Event card — the card itself isn't a tap target (only its
+   nested Día-row buttons are), so it's a plain div, not a <button>, and
+   never wants the .card default's pointer cursor. */
+.enCursoCard {
+  cursor: default;
+}
+
+.enCursoCard:active {
+  transform: none;
+}
+
+.cardHeadline {
+  font: var(--text-body);
+  font-weight: 700;
+  color: var(--color-obsidian);
+}
+
+.cardSub {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+/* ---- "En curso" Día rows nested inside their own Event card. Padding
+   brought closer to this codebase's own comfortable-row convention
+   (CatalogRow.module.css's .row, ~50px tall) — Eventos' own equivalent rows
+   are passive (no tap target), so there was no prior sizing precedent for
+   this tab to inherit; this establishes one instead of shipping a
+   noticeably smaller (~32px) tap target than the rest of the app. ---- */
+.dayRow {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: var(--space-3) var(--space-1);
+  cursor: pointer;
+  font: var(--text-body-sm);
+  color: var(--color-obsidian);
+}
+
+.dayRow:disabled {
+  color: #9C9186;
+  cursor: default;
+}
+
+.dayRows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ---- Free-tier passive informational note (§3.4/§3.5) — never a tappable
+   card, no "upgrade now" CTA (reports.md's own explicit non-goal). ---- */
+.noteCard {
+  background: var(--color-balanced);
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.noteCard p {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  margin: 0;
+}
+
+/* ---- Detail-screen header block (Session/Event/Venue detail) ---- */
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.title {
+  font: var(--text-heading);
+  color: var(--color-obsidian);
+}
+
+.subline {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.rollup {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+/* ---- "Por producto" breakdown rows (Session/Event detail) ---- */
+.breakdownRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font: var(--text-body-sm);
+  color: var(--color-obsidian);
+  margin: 0;
+  padding: 4px 0;
+}
+
+.breakdownRow span:last-child {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Cold start / defensive fallback (reuses Home's own centered-copy
+   shape via a direct import of ColdStart.module.css in those two files —
+   nothing new needed here). ---- */

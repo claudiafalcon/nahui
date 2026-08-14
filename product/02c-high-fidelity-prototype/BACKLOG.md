@@ -78,11 +78,32 @@ introduced. Full record, including one real bug found and fixed by this
 pass's own verification walkthrough (a landing-render bug in §2.4's pending-
 change acknowledgment): `README.md`'s "Configuración pass" section.
 
+## What's built (Slice 5, complete — Resultados, 2026-08-13)
+
+Journey 5 (Review) in full, read-only, per `product/02-ux/reports.md`
+(Approved). Cold start; free-tier main view (Total histórico, ticket
+promedio, the two headline paired-fact statements, "Top productos," En
+curso, Historial); paid-tier main view (adds "Rendimiento por bazar"/"Tus
+clientes" teasers); Session detail; Event detail (the exact day-by-day +
+Por-producto breakdown `events.md` §3.16/Q7 deliberately deferred to this
+tab); "Rendimiento por bazar" (populated + the Quick-Session-only empty
+state) and its venue drill-down; "Tus clientes" (§3.13's zero-Claims empty
+state, the only reachable branch — `Customer`/`Claim` don't exist anywhere
+in this domain layer, confirmed by the Gap Analysis); the defensive-fallback
+component (built, structurally unreachable — no real async load exists in
+this synchronous, localStorage-backed prototype). Also closes two real
+wiring gaps the Gap Analysis found: Home's "Ver detalle" (`home.md` §3.12)
+now lands directly on Resultados' Session detail; Eventos' "Ver resumen en
+Resultados" (`events.md` §3.16) now lands directly on Resultados' Event
+detail — both verified end-to-end via live Puppeteer walkthroughs, not just
+seeded-state jumps. Recompensas' populated flow (§3.15-§3.18, including the
+"Confirmar recompensa entregada" write) is out of scope for this slice —
+structurally unreachable, same as "Tus clientes"'s own populated branch.
+Full record, including every disclosed judgment call: `README.md`'s
+"Resultados pass" section.
+
 ## What's not built
 
-- **Resultados** (Journey 5: Review) — nav tab is a placeholder. No
-  Session/Event history view, no Free-tier counts/totals, no Paid-tier
-  segmentation. Approved spec exists (`product/02-ux/reports.md`).
 - **Asignar Tags (Inventario)** — NFCTag assignment isn't modeled at all;
   `nfc` mode is reachable end-to-end (`subscriptionTier=paid` via
   Configuración) but NFC Readiness always resolves Not Ready, since no

@@ -23,7 +23,7 @@ import type { Receipt } from '../../domain/store';
 type HomeUiState =
   | { kind: 'resolved' }
   | { kind: 'receipt'; receipt: Receipt }
-  | { kind: 'closed'; count: number; revenue: number; venueName?: string; dayNumber?: number }
+  | { kind: 'closed'; count: number; revenue: number; venueName?: string; dayNumber?: number; sessionId: string }
   | { kind: 'settings' }
   | { kind: 'assign-tags-placeholder' };
 
@@ -38,9 +38,15 @@ type HomeUiState =
 export function HomeScreen({
   onNavigateToRegister,
   onNavigateToEvent,
+  onNavigateToResultadosSession,
 }: {
   onNavigateToRegister: () => void;
   onNavigateToEvent: (eventId: string) => void;
+  /** reports.md §2 step 3 / `home.md` §3.12's "Ver detalle" hand-off
+   * (Resultados pass, D43, closing the exact wiring gap the Gap Analysis
+   * named) — lands directly on Resultados' Session detail for this
+   * Session, skipping the main list entirely. */
+  onNavigateToResultadosSession: (sessionId: string) => void;
 }) {
   const { state, startSession } = useStore();
   const [ui, setUi] = useState<HomeUiState>({ kind: 'resolved' });
@@ -71,6 +77,11 @@ export function HomeScreen({
         revenue={ui.revenue}
         venueName={ui.venueName}
         dayNumber={ui.dayNumber}
+        onViewDetail={() => {
+          const sessionId = ui.sessionId;
+          setUi({ kind: 'resolved' });
+          onNavigateToResultadosSession(sessionId);
+        }}
         onContinue={() => setUi({ kind: 'resolved' })}
       />
     );
@@ -91,7 +102,7 @@ export function HomeScreen({
     return (
       <Selling
         onSaleFinalized={(receipt) => setUi({ kind: 'receipt', receipt })}
-        onSessionClosed={(summary) => setUi({ kind: 'closed', ...summary, venueName, dayNumber })}
+        onSessionClosed={(summary, sessionId) => setUi({ kind: 'closed', ...summary, venueName, dayNumber, sessionId })}
         onOpenSettings={() => setUi({ kind: 'settings' })}
       />
     );

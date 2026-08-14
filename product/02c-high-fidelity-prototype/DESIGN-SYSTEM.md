@@ -111,6 +111,24 @@ button, every form field — is Inter. Before giving something Fredoka, ask
 "is this brand identity or money-that-matters-right-now?" — if not, it's
 Inter, full stop; this is a restraint rule, not a styling default.
 
+**Precedent — when an approved spec explicitly demands equal visual weight
+for a non-money statement.** `reports.md` §3.4/§3.5/§3.6 explicitly annotate
+two headline statements ("Tu producto estrella...", "Esta semana
+vendiste...") with "same visual priority as Total histórico." Neither is a
+money figure, so they don't qualify for Fredoka under the rule above — but
+the approved spec's explicit, specific instruction wins over this section's
+general restraint convention for that one case (a Decision Ownership call,
+not a silent resolution either way — see README's "Resultados pass" fix
+round). The resolution, and the reusable pattern for the next time this
+comes up: **don't reach for Fredoka just because a spec says "match this
+figure's weight"** — Fredoka is reserved for money/brand identity regardless
+of instructed emphasis. Instead, match the *actual* visual weight (size,
+boldness, accent color) using bold Inter at heading weight plus the same
+accent color the money figure itself uses (`ResultadosMain`'s
+`.headlineLine`, `Resultados.module.css`, is the reference implementation).
+This keeps the Fredoka-restraint rule intact while still honoring the
+spec's explicit emphasis instruction literally.
+
 ## 6. Motion principles
 
 - **`--ease-settle`** (a slight overshoot) is reserved for moments that

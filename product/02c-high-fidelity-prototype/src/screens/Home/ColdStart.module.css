@@ -109,3 +109,16 @@
   position: relative;
   z-index: 1;
 }
+
+/* CloseSummary's two-button variant ("Ver detalle" + "Entendido") — same
+   max-width/z-index treatment as .cta above, stacked with a gap instead of
+   a single button. */
+.ctaStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 280px;
+  position: relative;
+  z-index: 1;
+}

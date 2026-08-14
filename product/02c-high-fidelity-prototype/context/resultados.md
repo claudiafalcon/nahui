@@ -93,5 +93,32 @@ judgment-call disclosure list alongside this pass's other implementation-detail
 decisions. Fix: add one line to that disclosure section.
 
 ## Status
-Fix round not yet started. Next: dispatch `ui-designer` with this file's findings,
-then `ux-critic`/`reviewer` verification passes, then `merchant-user-tester`.
+Fix round complete (2026-08-13) — all six findings from "Review pipeline —
+findings requiring a fix round" above closed in one batch by `ui-designer`:
+1. "Sesión rápida" → "Venta rápida" applied in both new occurrences
+   (`SessionDetail.tsx`, `ResultadosMain.tsx`); README's existing disclosure
+   entry logged the substitution.
+2. `hasAnyEventGroupedClosedSession` deleted (dead code) rather than wired
+   in — `RendimientoPorBazar.tsx` already gates on
+   `venuePerformance(state).length === 0`, computed directly for its own
+   render.
+3. `ResultadosScreen.tsx`'s `rendimiento`/`venue-detail`/`tus-clientes`
+   branches now re-check `state.business?.subscriptionTier === 'paid'` on
+   every render, falling back to `{mode:'main'}` — the entitlement-gating
+   leak is closed.
+4. The two headline statements (`ResultadosMain.tsx`'s "Tu producto
+   estrella..."/"Esta semana vendiste...") are now visually elevated to
+   match "Total histórico"'s weight, per Main's Decision Ownership
+   classification — bold Inter heading-weight + `.heroValue strong`'s own
+   accent color, not Fredoka. The reusable precedent is now recorded in
+   `DESIGN-SYSTEM.md` §5.
+5. `.dayRow`'s tap target grew from `6px 0` to
+   `var(--space-3) var(--space-1)` padding, closer to `CatalogRow`'s own
+   ~50px comfortable-row convention.
+6. Historial's empty-list fallback copy is now named in README's own
+   judgment-call disclosure list for this pass.
+
+`tsc -b && vite build` both clean, zero errors, after all six fixes. Full
+fix-round record: README.md's "Resultados pass" section, "Fix round
+(2026-08-13)" subsection. Next: `ux-critic`/`reviewer` verification passes,
+then `merchant-user-tester`.

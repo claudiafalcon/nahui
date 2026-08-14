@@ -32,10 +32,14 @@ export function EventsScreen({
   view,
   onChangeView,
   onNavigateToHoy,
+  onNavigateToResultados,
 }: {
   view: EventsView;
   onChangeView: (view: EventsView) => void;
   onNavigateToHoy: () => void;
+  /** events.md §3.16 "Ver resumen en Resultados" (Resultados pass, D43) —
+   * see `EventDetail.tsx`'s own doc comment for the full reasoning. */
+  onNavigateToResultados: (eventId: string) => void;
 }) {
   const { state } = useStore();
   const [ambientMessage, setAmbientMessage] = useState<string | null>(null);
@@ -69,6 +73,7 @@ export function EventsScreen({
         eventId={view.eventId}
         onBack={() => go({ mode: 'list' })}
         onNavigateToHoy={onNavigateToHoy}
+        onNavigateToResultados={onNavigateToResultados}
         onCancelled={() => {
           setAmbientMessage('Evento cancelado');
           go({ mode: 'list' });

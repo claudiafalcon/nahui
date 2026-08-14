@@ -15,12 +15,11 @@ import { daysFromToday, formatDateRange, formatShortDate, todayKey } from '../..
 import { pesos, pluralize } from '../../domain/format';
 import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
-import { Placeholder } from '../../components/Placeholder/Placeholder';
 import { AdjustPrices } from './AdjustPrices';
 import { EVENT_TYPE_LABELS } from './eventTypeLabels';
 import styles from './EventDetail.module.css';
 
-type SubView = 'main' | 'cancel-confirm' | 'adjust-prices' | 'resultados-placeholder';
+type SubView = 'main' | 'cancel-confirm' | 'adjust-prices';
 
 /**
  * events.md §3.11/§3.12/§3.14/§3.15/§3.16/§3.17 — Event detail, across every
@@ -31,11 +30,18 @@ export function EventDetail({
   eventId,
   onBack,
   onNavigateToHoy,
+  onNavigateToResultados,
   onCancelled,
 }: {
   eventId: string;
   onBack: () => void;
   onNavigateToHoy: () => void;
+  /** events.md §3.16 "Ver resumen en Resultados" (Resultados pass, D43,
+   * closing the exact wiring gap the Gap Analysis named) — rewired from an
+   * internal Placeholder to real cross-tab navigation into Resultados'
+   * Event detail (`reports.md` §3.8) for this specific `eventId`, the same
+   * `onChangeView`-bubbling pattern `onNavigateToHoy` already uses. */
+  onNavigateToResultados: (eventId: string) => void;
   onCancelled: () => void;
 }) {
   const { state, startSession, cancelEvent } = useStore();
@@ -56,16 +62,6 @@ export function EventDetail({
 
   if (subView === 'adjust-prices') {
     return <AdjustPrices eventId={event.id} venueName={venueName} onBack={() => setSubView('main')} />;
-  }
-
-  if (subView === 'resultados-placeholder') {
-    return (
-      <Placeholder
-        title="Resultados"
-        onBack={() => setSubView('main')}
-        backLabel="← Volver al evento"
-      />
-    );
   }
 
   const costLine = event.bazaarCost > 0 ? `Costo: ${pesos(event.bazaarCost)}` : null;
@@ -109,7 +105,7 @@ export function EventDetail({
             status={status}
             today={today}
             onContinue={handleContinue}
-            onViewResultados={() => setSubView('resultados-placeholder')}
+            onViewResultados={() => onNavigateToResultados(event.id)}
           />
         )}
       </div>
