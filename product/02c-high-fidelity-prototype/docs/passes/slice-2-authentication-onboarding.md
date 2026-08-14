@@ -346,3 +346,36 @@ its branches (`AuthenticationFlow` / `OnboardingFlow` / `App`) identically —
 root wrapper, so no layout changes were needed beyond moving the wrapping
 div itself. `tsc -b && vite build` clean after the change.
 
+**Post-approval fix (2026-08-13), found by `merchant-user-tester` during a
+walkthrough of the Resultados slice, root-caused via an Explore
+investigation: a brand-new, never-before-verified phone number silently
+logged into whichever pre-existing Business happened to be in
+`localStorage`, instead of routing to fresh Onboarding for a new
+User/Business — directly contradicting `authentication.md` §2.2 case 1 and
+RFC 0007/D44's User/BusinessMembership model.** Root cause: `verifyOtp`
+(`store.tsx`) correctly mints a distinct `User` row keyed by phone (new
+phone → new `User.id`; existing verified phone → the same `User`), but
+`isOnboardingComplete` (`onboardingResolution.ts`) only ever checked
+whether `state.business` existed globally and had finished onboarding —
+never whether `state.currentUser` actually held an OWNER
+`BusinessMembership` on it. Any verified `User`, genuinely new or not, got
+routed past Onboarding straight into whichever Business happened to already
+be in `state.business`. `OnboardingFlow.tsx`'s own resume-step branch
+(`if (state.business)`) carried the identical bug, one layer in: even on
+the rare path where a fresh User *did* reach `OnboardingFlow`, it would
+have resumed her into a stale, different-owner Business's mid-flow screen
+(identity capture, Selling Groups, or even "Todo listo") rather than a
+fresh Welcome.
+
+Fixed by extracting the same membership-check logic `completeOnboarding`
+(`store.tsx`) already used for its own idempotency guard into a new shared
+`businessForCurrentUser(state)` helper (`onboardingResolution.ts`) —
+returns `state.business` only if an OWNER `BusinessMembership` actually
+joins it to `state.currentUser`, `null` otherwise. Both `isOnboardingComplete`
+and `OnboardingFlow.tsx`'s resume branch now resolve against this helper
+instead of `state.business` directly. The already-onboarded-returning-User
+case (`authentication.md` §2.2 case 2) is unaffected: `verifyOtp` resolves
+back to the *same* `User.id` for a re-verified phone, so that User's own
+OWNER membership still matches and she still resolves straight through to
+her own Business. `tsc -b && vite build` clean after the fix.
+

@@ -120,5 +120,26 @@ findings requiring a fix round" above closed in one batch by `ui-designer`:
 
 `tsc -b && vite build` both clean, zero errors, after all six fixes. Full
 fix-round record: README.md's "Resultados pass" section, "Fix round
-(2026-08-13)" subsection. Next: `ux-critic`/`reviewer` verification passes,
-then `merchant-user-tester`.
+(2026-08-13)" subsection.
+
+## Verification (2026-08-13) — clean, both agents
+
+`ux-critic` and `reviewer` independently re-verified all six fixes are
+genuinely applied as claimed (not just described) — zero discrepancies
+found by either. `reviewer`: zero Blockers, zero Important findings.
+`ux-critic`: zero Blockers, zero unresolved Majors.
+
+**Known limitation, logged not fixed (ux-critic Minor, new):** the
+entitlement-gating fallback in `ResultadosScreen.tsx` (re-checking
+`subscriptionTier === 'paid'` on every render for `rendimiento`/
+`venue-detail`/`tus-clientes`, falling back to `{mode:'main'}`) is silent —
+unlike `SettingsScreen.tsx`'s own "Tu plan cambió a Gratis el..." ack line
+for the same underlying reconciliation event. Realistic path: merchant deep
+in a paid subview → switches to Configuración (sees the ack) → switches
+back to Resultados → silently lands on Main instead of resuming. Softened
+by having already seen the ack in Configuración moments earlier — accepted
+as-is per this project's exit criteria (secondary-path Minor, not the core
+loop), not reopening the fix round for it. Candidate for a future
+`ux-designer`/`ui-designer` pass if it resurfaces.
+
+Next: `merchant-user-tester`.

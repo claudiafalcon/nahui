@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore, type OnboardingPath } from '../../domain/store';
-import { pathFromCapabilities } from '../../domain/onboardingResolution';
+import { businessForCurrentUser, pathFromCapabilities } from '../../domain/onboardingResolution';
 import { DEMO_BUSINESS_DESCRIPTION, DEMO_BUSINESS_NAME, DEMO_SEED_LINES } from '../../domain/demoSeed';
 import { Welcome } from './Welcome';
 import { ConfirmPaid } from './ConfirmPaid';
@@ -33,14 +33,21 @@ type PreWriteStep =
  *   low-cost simplification (README.md): per onboarding.md §2.1 case 5's
  *   own framing, "there's no typed data to preserve there, just a bare
  *   confirm tap not yet taken."
- * - **Once `state.business` exists** — every remaining step (identity,
- *   Selling Groups, the milestone) is resolved as a pure function of
- *   persisted `AppState`, exactly the pattern this pass's own design
- *   instruction calls for. This is what makes §2.1's resume guarantees
- *   (cases 2–4) come for free: a reload mid-identity-capture, mid-Selling-
- *   Groups, or with the milestone on screen all resume at the exact right
- *   step, because that step is recomputed from stored data, never a
- *   parallel tracker that could drift out of sync with it.
+ * - **Once `state.business` exists *and belongs to `state.currentUser`***
+ *   (`businessForCurrentUser` — an OWNER `BusinessMembership` actually joins
+ *   the two, RFC 0007/D44) — every remaining step (identity, Selling
+ *   Groups, the milestone) is resolved as a pure function of persisted
+ *   `AppState`, exactly the pattern this pass's own design instruction
+ *   calls for. This is what makes §2.1's resume guarantees (cases 2–4) come
+ *   for free: a reload mid-identity-capture, mid-Selling-Groups, or with
+ *   the milestone on screen all resume at the exact right step, because
+ *   that step is recomputed from stored data, never a parallel tracker
+ *   that could drift out of sync with it. The membership check specifically
+ *   is what keeps a brand-new phone (`authentication.md` §2.2 case 1) from
+ *   being silently resumed into a *different*, previously-onboarded
+ *   phone's stale `state.business` on the same device — this is the same
+ *   distinction `isOnboardingComplete` makes, and for the same reason (bug
+ *   found by `merchant-user-tester`, fixed here — see README.md).
  */
 export function OnboardingFlow() {
   const { state, completeOnboarding, setBusinessIdentity, createProducts, acknowledgeOnboarding, commitLot } =
@@ -67,8 +74,8 @@ export function OnboardingFlow() {
     // what actually controls when this effect re-runs, not those refs.
   }, [preWrite]);
 
-  if (state.business) {
-    const business = state.business;
+  const business = businessForCurrentUser(state);
+  if (business) {
     const path = pathFromCapabilities(business);
 
     if (business.name === '') {
