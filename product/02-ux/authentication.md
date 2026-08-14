@@ -2,6 +2,8 @@
 
 **Status:** New — first draft, pending `ux-critic`/`reviewer` review cycle. No prior Medium-Fidelity spec exists for this surface, so per `decision-log.md` D43 this enters the **New-Feature Workflow** (D42's full 7 stages), not the Migration Workflow — this document is that workflow's Product Definition/UX Flow Review stage.
 
+**Amended 2026-08-13 (cross-document consequence of `settings.md §2.5`, Product Owner decision — account-level sign-out added):** §2.2 case 2, §4's flow line for that case, and §8/§10/§11 are corrected — a case this document originally marked theoretically unreachable is now reachable, since `settings.md`'s new "Cerrar sesión" action is exactly the mechanism that creates the condition (a device's session cleared while its local Business record stays intact). Full reasoning lives in `settings.md`'s own status header and §2.5/§2.5a, to avoid duplicating it here.
+
 **Scope:** the phone+OTP verification gate that precedes everything else in the Merchant Application, including the already-Approved `onboarding.md`. Not a nav tab, not reachable again once a device holds a verified session (same "never shown twice" shape `onboarding.md` §2.1 already gives its own completion state). Implementation-independent — low-fidelity only, no visual design.
 
 **Naming note (deviating from the task's suggested `owner-access.md`, reasoned explicitly):** this document is named `authentication.md`, not `owner-access.md`. The screens it designs — phone entry, OTP entry, resend, error/lockout states — are not Owner-specific; they're the general verification mechanism every future user of this product will eventually pass through, including a Seller accepting a future invitation (`§11`). Owner-provisioning is only *one* outcome of a successful verification (the first-ever-verification branch, `§2.2`), and per the Product Owner's own scope constraint this document shows no Owner-specific UI at all — naming the file after that one outcome would overstate what's actually on screen. This also directly resolves what `onboarding.md` §0 already calls, by name, "Authentication" — treated there as "an implementation-level concern below this spec's abstraction level." Reusing that exact word keeps continuity with the one place the Foundation already gestured at this concern, without editing that document (see `§11`).
@@ -87,10 +89,19 @@ This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the re
 
 2. This phone was already verified on THIS device, with a Business
    already local to it (complete or in-progress)?
-     → Not reachable through this branch — §2.1's own device-session check
-       already intercepts this before Authentication shows anything at
-       all. Named here only for completeness: this document never
-       re-verifies a phone already verified on its own device.
+     → **Reachable as of `settings.md §2.5` (Product Owner decision,
+       2026-08-13)** — previously theoretical, since nothing ever cleared a
+       device's verified-session fact while its local Business record
+       stayed intact. A deliberate account-level sign-out (`settings.md
+       §2.5`) creates exactly that condition on purpose. Hands off to
+       `onboarding.md`'s own resolution logic (`onboarding.md §2.1`),
+       unchanged — the identical silent pass-through case 1 above already
+       describes for an unbroken session, reached this time via a fresh
+       OTP confirmation instead of a persisted flag. A complete local
+       Business resolves straight through to Home (`home.md §2`); one
+       still in-progress resumes exactly where Onboarding left off
+       (`onboarding.md §2.1` cases 2–4). See `settings.md §2.5a` for the
+       full reasoning.
 
 3. This phone verifies successfully on a device holding no local session,
    and it's already associated with an existing, already-onboarded
@@ -334,9 +345,12 @@ From §3.3, type a number:
               cited verbatim — Owner-ness produced structurally the
               moment onboarding.md §3.5's own Business-creation write
               next succeeds (§2.2, not designed here)
-            → success, already-verified-on-this-device (theoretical —
-              never actually reachable, §2.1 intercepts first) ──────→
-              n/a, see §2.2 case 2
+            → success, already-verified-on-this-device, Business local
+              and intact (reached via: account sign-out, `settings.md
+              §2.5`, then re-verification) ──────→ `onboarding.md §2.1`'s
+              own resolution — complete Business to Home (`home.md §2`),
+              in-progress Business resumes exactly where left off (§2.2
+              case 2)
             → success, phone already tied to an existing,
               already-onboarded Business, no local session on this
               device ──────────────────────────────────────────────→
@@ -392,7 +406,8 @@ None of the items below block this document's own completion. Both are named exp
 1. **Architect Question Q17 (`product/02-ux/architect-questions.md`) — Resolved.** Was: the User/Owner/Seller domain model this document's flow needs to actually be implementable. `domain-model.md` previously had no User/Account aggregate, no Role concept, no Business↔User relationship — Business was modeled as belonging to "an install" (`onboarding.md §2.1`'s own language), not to an authenticated identity — the concrete follow-up `company/business-decisions.md` Q14 already named as owed. **Resolved** via `product/99-rfc/0007-user-and-business-membership.md`, Accepted and promoted in full via `decision-log.md` D44 — `User` (global aggregate root, identified by `phone`) and `BusinessMembership` (`role: OWNER | SELLER`) are now part of `domain-model.md`/`ubiquitous-language.md`, with Business creation carrying the structural Owner-Membership invariant this document's §2.2 first-verification branch already assumed. No amendment to this document's own flow logic (§2.2/§4) was needed — it already describes exactly the behavior D44 makes implementable.
 2. **Product Decision (proposed Q18, `product/02-ux/product-decisions.md`) — §2.2 case 3 (a verified phone, on a session-less device, already tied to an existing already-onboarded Business).** Genuinely undecided: whether a Business belongs to a device or an identity, and whether this mock/local-data prototype can even represent "same Business, second device" today.
 3. **Provisional prototype defaults, not frozen domain invariants (Product Owner clarification, 2026-08-13):** the specific numbers chosen here by judgment call — 6-digit code, 30-second resend cooldown, 5-minute code validity, 5-attempt soft-invalidation bound — are product/prototype defaults, not settled Foundation rules. They should be revisited when a real authentication provider is integrated (Stage 7, Backend Integration) — a real SMS/OTP vendor may impose its own constraints (code length, delivery/expiry timing, rate limits) that supersede these values outright, and even absent that, they should be checked against a real or simulated first-run test before being treated as final, same evidence-driven caution `onboarding.md §8` items 1/5/6 already recommend for its own judgment calls. Nothing in this document's flow logic (§2, §4) depends on the exact values — only on their existence and the branches they gate.
-4. **`brand-guardian` consultation complete (2026-08-13)** — §3.7c's "too many attempts" copy revised per that consultation's finding (subject/causal-structure fix, same soft-invalidation design); flagged as `tone-of-voice.md`-Hypothesis-tagged, worth a real merchant-reaction check once shipped, not blocking now.
+4. **Resolved, kept for continuity.** `settings.md §2.5` (Product Owner decision, 2026-08-13) activates §2.2 case 2, previously named but marked unreachable. No amendment to this document's own domain/flow logic beyond the case-2 and §4 corrections above was needed — the case's destination was always well-defined once reachable; only its "not reachable" framing was stale.
+5. **`brand-guardian` consultation complete (2026-08-13)** — §3.7c's "too many attempts" copy revised per that consultation's finding (subject/causal-structure fix, same soft-invalidation design); flagged as `tone-of-voice.md`-Hypothesis-tagged, worth a real merchant-reaction check once shipped, not blocking now.
 
 ## 9. Principle justification
 
@@ -420,12 +435,12 @@ None of the items below block this document's own completion. Both are named exp
 - **+52-prefixed, 10-digit Mexican mobile number; 6-digit code; 30-second resend cooldown; 5-minute code validity; 5-attempt soft-invalidation bound** — five explicit judgment calls, none derived from the Foundation, all named plainly rather than silently assumed (§3.3, §3.6, §3.7b, §3.7c).
 - **§3.7c's "too many attempts" state is a soft, code-level invalidation, never a hard account/device lockout** — reasoned explicitly against `brand/brand-guide.md`'s tone, not defaulted to a generic security pattern. Copy itself revised per a completed `brand-guardian` consultation — see §3.7c, §8.
 - **§2.2 case 3 (returning phone, new device, already-onboarded Business) is explicitly marked "Not yet resolved"** rather than invented — routed to a new Product Decision (Q18) and a new Architect Question (Q17).
-- **No logout / account-session-management UI designed** — out of scope, named in §11, not silently omitted.
+- **Logout / account-session-management UI — resolved 2026-08-13.** `settings.md §2.5` ("Cerrar sesión," Product Owner decision) now designs exactly this, activating §2.2 case 2 above for the first time. This bullet is kept here, marked resolved, so the record of what was once a genuinely open gap stays visible rather than silently disappearing.
 
 ## 11. Future considerations
 
 - **Invitation flow / SELLER-role onboarding** — explicitly out of scope for this document, per the Product Owner's own instruction. Will very likely reuse this document's phone+OTP mechanism as its underlying verification step, but the invitation-acceptance screens themselves, and how a Seller's Role gets attached to an existing Business, are not designed here.
-- **Self-service logout / account-level session management** — no "cerrar sesión de cuenta" or device-management surface exists anywhere in `settings.md` today (its only "Cerrar sesión" concept is a Selling Session, a different thing entirely). Whether Ana ever needs to deliberately sign out of a device is not designed here — no evidence of need yet.
+- **Self-service logout / account-level session management — resolved 2026-08-13.** `settings.md §2.5` ("Cerrar sesión," Product Owner decision) now designs exactly this — this bullet is kept here, marked resolved, so the record of what was once a genuinely open gap stays visible rather than silently disappearing, the same continuity discipline `settings.md §8` item 5 already models for its own once-open `defaultSellingMode` gap.
 - **Multi-Business-per-phone** — not addressed. If an Owner ever runs two separate stalls under one phone number, that's a real future question, not evidenced today.
 - **`onboarding.md §0`'s own "Authentication... implementation-level concern below this spec's abstraction level" framing is now stale** now that this document exists as a real spec for exactly that concern. Flagged for whoever next amends `onboarding.md` — not resolved here, since `onboarding.md` is treated as frozen for this task.
 - **A persistent, read-only display of her own verified phone number somewhere in `settings.md`** — not designed here, no evidence of need yet.

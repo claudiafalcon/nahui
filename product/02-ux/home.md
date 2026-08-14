@@ -104,7 +104,7 @@ clean (no Blockers, no Important findings) — folded back into Approved.
 **Amended 2026-08-08 (`decision-log.md` D33, "Define lo que vendes" moved into Onboarding):** §2 step 3's cold-start test corrected from "Product ever registered" to "`available` InventoryUnit exists" — required once Onboarding could create Products with zero stock (`onboarding.md` §2.2a). Two remediation rounds — round 1's fix missed a stale copy of the old test in §4's own wiring section; round 2 corrected it. `ux-critic` verified clean (zero Blockers, zero unresolved Majors). `reviewer` clean (no Blockers, no findings against this document specifically) — folded back into Approved.
 **Amended 2026-08-08 (Product Owner decision, Business Identity captured at Onboarding):** §3.8f's receipt moment now shows the merchant's own captured identity (`Business.name`, and her own logo if she set one, per `onboarding.md` §2.2b) in place of "(marca Nahui)" — Nahui's own mark stepping back in favor of the merchant's, a deliberate brand-facing product decision, not an incidental side effect. Honest fallback: `Business.name` as plain text whenever no logo is set (the common case, treated as fully first-class, not a lesser rendering). No new screen, state, or tap — a content/asset-source change to an already-Approved state. Pending `ux-critic`/`reviewer` review before folding back into Approved.
 **Amended 2026-08-09 (`decision-log.md` D40 — `loyaltyEnabled` retired, Frequent Customers unified as a Paid-tier-only capability):** §3.8f's future-registration placeholder is now gated on `subscriptionTier=paid` — a Free-tier receipt no longer shows it at all, three elements only (confirmation, total, business identity). A Paid-tier receipt keeps the placeholder, copy unchanged — the capability already exists automatically the instant `subscriptionTier=paid` (D40); only this specific receipt-moment interaction (what exactly renders here, whether a live QR eventually replaces the placeholder) remains undesigned, tracked as `product/02-ux/product-decisions.md` Q15, not resolved by this amendment. §3.8f, §4, §5, §8, §10, §11 updated.
-**Amended 2026-08-09 (Product Owner decision — Configuración entry-point relocated from the header's "▾" to a top-right icon-based menu):** the small "▾" dropdown next to the "Nahui"/session header — flagged by the Product Owner as not reading as discoverable or natural — is replaced by a top-right "⋯" (three-dot/overflow) icon, opening the identical session-controls sheet already specified (§3.6c/§3.7a), with no change to which Home states show it, when "Cerrar sesión" appears, or what Configuración itself does once reached. The sheet's Configuración row now also carries a gear icon ("⚙"), specifically distinguishing it from "Cerrar sesión" and from any other entry the sheet may carry in the future, per the Product Owner's explicit request. **Why "⋯" rather than a hamburger ("☰"):** a hamburger conventionally signals a full secondary navigation drawer with many destinations, which would misrepresent — and visually compete with — what's actually behind this trigger (a one-or-two-row sheet, not a parallel navigation system), undercutting `decision-log.md` D13's own ruling that this affordance is a sequencing/reachability fact, not a fifth nav tab, alongside the persistent, already-primary bottom nav bar. `settings.md` receives the matching correction in the same pass — see that document's own status header and §2.1/§8 item 3. `ux-critic`/`reviewer` both clean. Folded into Approved.
+**Amended 2026-08-09 (Product Owner decision — Configuración entry-point relocated from the header's "▾" to a top-right icon-based menu):** the small "▾" dropdown next to the "Nahui"/session header — flagged by the Product Owner as not reading as discoverable or natural — is replaced by a top-right "⋯" (three-dot/overflow) icon, opening the identical session-controls sheet already specified (§3.6c/§3.7a), with no change to which Home states show it, when "Cerrar jornada de venta" appears, or what Configuración itself does once reached. The sheet's Configuración row now also carries a gear icon ("⚙"), specifically distinguishing it from "Cerrar jornada de venta" and from any other entry the sheet may carry in the future, per the Product Owner's explicit request. **Why "⋯" rather than a hamburger ("☰"):** a hamburger conventionally signals a full secondary navigation drawer with many destinations, which would misrepresent — and visually compete with — what's actually behind this trigger (a one-or-two-row sheet, not a parallel navigation system), undercutting `decision-log.md` D13's own ruling that this affordance is a sequencing/reachability fact, not a fifth nav tab, alongside the persistent, already-primary bottom nav bar. `settings.md` receives the matching correction in the same pass — see that document's own status header and §2.1/§8 item 3. `ux-critic`/`reviewer` both clean. Folded into Approved.
 **Amended 2026-08-09 (Product Owner decision, resolving `product/02-ux/product-decisions.md` Q15 — the Digital Receipt's Claim Token QR is now real, not a placeholder):** §3.8f's Paid-tier receipt now renders a genuine, tappable/scannable Claim Token QR (`decision-log.md` D22) in the row the earlier textual future-registration placeholder held — the entry point into the already-Approved `product/02-ux-loyalty/customer-loyalty-registration.md` flow (§3.1 onward), which this amendment specifies the bridge into without redesigning. Explicitly supersedes, rather than silently contradicts, this document's own two prior "no QR-shaped render" passages (§3.8f's identity-element bullet; the historical 2026-08-05 entry) — both correctly rejected a decorative, non-functional QR graphic for carrying an unhedgeable liveness claim with nothing behind it, an objection that doesn't hold against a genuinely functional element navigating to a real destination. The Free-tier receipt is unaffected — still three elements, no QR, no placeholder, exactly as the 2026-08-09 D40 amendment above already established. Resolves Q15 (`product-decisions.md`): purely ephemeral, nothing persisted; no dedicated "decline to offer" action exists separate from the receipt's own already-specified exit mechanism. Flags, without resolving, that this activates `company/backlog.md` #2's Stage 2 for this one element ahead of its own stated gating, by direct Product Owner instruction. §3.8f, §4, §5, §7, §8, §10, §11 updated. `ux-critic` round 1: 4 stale-reference findings (3 Major, 1 Minor) — fixed, verification clean. `reviewer` clean (2 Important findings, both documentation-tracking gaps — this `ux-critic-findings.md` entry and a stale status line, both closed separately). Folded into Approved.
 **Amended 2026-08-12 (Medium-Fidelity spec-gap escalation — SessionHeader title row during an active Quick Session):** closes an undocumented gap `ux-critic` flagged during Medium-Fidelity build, where an active Quick Session (no `eventId`) had no defined title-row content — a Medium-Fidelity build had defaulted to a blank title row, indistinguishable from a load failure, on Ana's own first-ever live selling screen. New §3.7b specifies the title row reads "Sesión rápida" wherever `Session.eventId` is null, applying to every active-Session wireframe in §3.7–§3.11a — the same term §3.4's "Iniciar Sesión Rápida" already established and `reports.md` §3.7 already assumed this document defined (it hadn't, until now). Small, bounded content addition — no new screen, flow, or navigation branch. §5 (item 9), §9 (architecture-principles.md #3), §10 updated.
 **Amended 2026-08-13 (Architect-caught wording-precision fix, ahead of the
@@ -195,6 +195,34 @@ already-enumerated states, same treatment as the 2026-08-08 Business
 Identity receipt amendment and this document's own preceding 2026-08-13
 entries. §3.7, §3.7a (cross-reference only), §3.11 (preview-line relabel
 only), §10 updated. Pending `ux-critic`/`reviewer` review before folding back
+into Approved.
+**Amended 2026-08-13 (Product Owner decision — Selling-Session-close action
+renamed from "Cerrar sesión" to "Cerrar jornada de venta"):** every
+wireframe, current-tense flow description, and section heading in this
+document naming Home's Selling-Session-close action is renamed to "Cerrar
+jornada de venta." This formalizes a rename already live in the built
+prototype, not a new product decision invented here — see
+`product/02c-high-fidelity-prototype/README.md`'s "Terminology Review pass
+(2026-08-13)" §1 ("'Cerrar sesión' → 'Cerrar jornada de venta.'"), which
+reasoned the rename against a concrete domain-model constraint (Session vs.
+Venta — five candidates evaluated; "Cerrar jornada de venta" adopted as the
+only phrasing colliding with neither "Finalizar Venta" nor "Venta actual")
+and disclosed it explicitly as prototype-only, pending this document's own
+correction. The Product Owner's further reasoning for formalizing it now:
+"sesión" is reserved exclusively for the authenticated User/device context
+RFC 0007 (`product/99-rfc/0007-user-and-business-membership.md`) introduced
+into this product's vocabulary — `authentication.md`'s own domain, not
+Selling's — so there is no longer a naming collision to guard against; the
+Selling-domain meaning of "sesión" (one working day of selling) is retired
+from merchant-facing vocabulary entirely. This is also why `settings.md`'s
+new account-level sign-out action (added this session, §2.5) simplifies to
+plain "Cerrar sesión" in the same pass — see that document's own status
+header. Historical-record mentions of the retired copy (the "▾ reveals
+Cerrar sesión / ver detalle de hoy" direct quotes at §3.7a's and §10's own
+amendment history) are left untouched, describing what an earlier draft
+said, not current terminology. Copy-only — no flow, state, gating, or
+interlock changes; the interlock itself (§2, §3.11a) is unaffected, only its
+trigger's name. Pending `ux-critic`/`reviewer` review before folding back
 into Approved.
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
@@ -375,7 +403,7 @@ never obstructed, and never gated by a confirmation.
 
 **Session-controls interlock (added — resolves HOME-M2):** session controls
 (the header's "⋯" icon → the sheet in §3.7a) are reachable at any time, but carry exactly one
-interlock: if "Venta actual" holds 1+ items, tapping "Cerrar sesión" from that
+interlock: if "Venta actual" holds 1+ items, tapping "Cerrar jornada de venta" from that
 sheet does not open the close-session confirmation (§3.11) — it opens a
 blocking notice instead (§3.11a) that routes her back to the open Sale so she
 can finish or explicitly cancel it first. This is the one control in the whole
@@ -385,7 +413,7 @@ control that can never be allowed to silently discard real, registered-but-
 unfinished work. This interlock is specific to *closing the Session* — it does
 not apply to navigating to another tab mid-Sale, which is always safe and
 always resumes exactly where she left off (§3.13, resolving HOME-B2 below).
-**This interlock is scoped to "Cerrar sesión" specifically — "Configuración,"
+**This interlock is scoped to "Cerrar jornada de venta" specifically — "Configuración,"
 the sheet's other entry per `settings.md` §2.1, is unaffected and reachable
 even with an open Sale, since it never touches Selling data.** Outside an
 open Session, the header's "⋯" icon opens a lighter, Configuración-only variant
@@ -457,7 +485,7 @@ the persistent nav bar on every state, current tab in brackets.
   (on-screen heading "Registro de mercancía," per HJR-INV-M1), not
   Inventario's own cold-start screen.)
 - **Header's "⋯" icon opens the session-controls sheet (§3.6c) — "Configuración"
-  only, no "Cerrar sesión," since no Session is open yet (applies
+  only, no "Cerrar jornada de venta," since no Session is open yet (applies
   `settings.md` §2.1's amendment; relocated from the header's "▾" per the
   Product Owner's 2026-08-09 decision — see status header).** Same affordance §3.7a already provides
   once a Session is active, extended here because the capabilities
@@ -566,7 +594,7 @@ Readiness disagreement note.
   only, same as §3.3–§3.5 (applies `settings.md` §2.1's amendment; icon
   relocated 2026-08-09 — see status header).**
   An active Event with no Session yet still has nothing to close — "Cerrar
-  sesión" doesn't apply until "Continuar Día 2" is actually tapped.
+  jornada de venta" doesn't apply until "Continuar Día 2" is actually tapped.
 
 **Same-day resume — a Session with finalized Sales already exists today
 under this `eventId` (new — closes `architect-questions.md` Q19,
@@ -903,11 +931,11 @@ via §3.5)
   happens to be selling that particular day. Gating them behind an open
   Session would misuse Session-start — a real business event that
   timestamps hours worked (§10) — for a non-selling errand.
-- Exactly one entry, "Configuración" — no "Cerrar sesión" row, since none of
+- Exactly one entry, "Configuración" — no "Cerrar jornada de venta" row, since none of
   these four states has an open Session to close. Contrast with §3.7a,
   reached the identical way once a Session is active, which carries both
   entries. The "Configuración" row carries a gear icon ("⚙"), the same
-  marker §3.7a's sheet uses, distinguishing it from "Cerrar sesión" and from
+  marker §3.7a's sheet uses, distinguishing it from "Cerrar jornada de venta" and from
   any entry the sheet may carry in the future (Product Owner decision,
   2026-08-09).
 - Tapping "Configuración" routes to `settings.md`'s resolve step (§3.1/§3.2)
@@ -1030,7 +1058,7 @@ via §3.5)
 │ Plaza Norte · Día 2         ⋯   │  dimmed, still visible underneath
 │ Hoy: $850 · 6 ventas             │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
-│  [       Cerrar sesión        ]  │
+│  [   Cerrar jornada de venta   ]  │
 │  [       Configuración        ]  │
 ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │
@@ -1057,16 +1085,16 @@ via §3.5)
   illustrative glyph is stale) — as the eventual reachability point
   for Settings. **That commitment is now realized:**
   per `settings.md` §2.1 (approved), the sheet carries two entries during an
-  active Session — "Cerrar sesión" (unchanged) and "Configuración" (new, now
-  marked with a gear icon "⚙" distinguishing it from "Cerrar sesión" and any
+  active Session — "Cerrar jornada de venta" (unchanged) and "Configuración" (new, now
+  marked with a gear icon "⚙" distinguishing it from "Cerrar jornada de venta" and any
   future entry).
-- "Cerrar sesión" and "Configuración" are independent actions. Tapping
-  "Cerrar sesión" proceeds to §3.11 (Venta actual empty) or §3.11a (Venta
+- "Cerrar jornada de venta" and "Configuración" are independent actions. Tapping
+  "Cerrar jornada de venta" proceeds to §3.11 (Venta actual empty) or §3.11a (Venta
   actual has 1+ items — blocked, resolves HOME-M2), per the interlock stated
   in §2. Tapping "Configuración" routes to `settings.md`'s resolve step
   (§3.1/§3.2) → vista principal (§3.3a), and returns to exactly this screen
   (§3.7, Session unaffected) via "← Hoy." Opening Configuración never touches
-  the open Session, "Venta actual," or the Cerrar-sesión interlock above —
+  the open Session, "Venta actual," or the "Cerrar jornada de venta" interlock above —
   Configuración writes only to Identity's Business Capabilities, never to
   Selling (*architecture-principles.md* #6).
 
@@ -1565,11 +1593,11 @@ Three elements only — confirmation, total, business identity. No future-regist
 - Selling screen stays visible, dimmed, behind the sheet rather than replaced:
   "Cancelar" returns instantly to exactly where she was.
 - **Reached only when "Venta actual" is empty** at the moment "Cerrar
-  sesión" is tapped from §3.7a's sheet — if 1+ items are still pending, she's
+  jornada de venta" is tapped from §3.7a's sheet — if 1+ items are still pending, she's
   routed to §3.11a instead, never here with unfinished work silently at risk
   (updated — resolves HOME-M2).
 
-### 3.11a Cerrar sesión blocked — Venta en curso (new — resolves HOME-M2)
+### 3.11a Cerrar jornada de venta blocked — Venta en curso (new — resolves HOME-M2)
 ```
 ┌───────────────────────────────┐
 │ Plaza Norte · Día 2         ⋯   │  dimmed, still visible underneath
@@ -1579,7 +1607,7 @@ Three elements only — confirmation, total, business identity. No future-regist
 │  │ Tienes una venta sin         │ │
 │  │ terminar (2 artículos).       │ │
 │  │ Termínala o cancélala antes    │ │
-│  │ de cerrar la sesión.           │ │
+│  │ de cerrar la jornada de venta. │ │
 │  │         [ Entendido ]          │ │
 │  └───────────────────────────┘ │
 ├───────────────────────────────┤
@@ -1593,7 +1621,7 @@ Three elements only — confirmation, total, business identity. No future-regist
 - Deliberately **not** a warn-and-proceed dialog: there's no "cerrar de
   todos modos" option here. "Entendido" routes her straight back to the
   selling screen (§3.8) with the tray completely untouched — Finalizar Venta
-  o Cancelar venta actual (§3.8b) are how she resolves it; Cerrar sesión is
+  o Cancelar venta actual (§3.8b) are how she resolves it; Cerrar jornada de venta is
   reachable again only once "Venta actual" is empty.
 - Consistent with §2's own stated priority order: an active, non-empty Sale
   outranks every other action, including ending the day.
@@ -1787,13 +1815,13 @@ Inside selling (3.7-3.10):
       → No → back to 3.8, items untouched
       → Sí, cancelar → tray clears → back to 3.7
   → [rare] ⋯ → session-controls sheet (3.7a) → two independent entries:
-      → Cerrar sesión
+      → Cerrar jornada de venta
           → Venta actual empty     → confirm (3.11)
               → Cancelar → back to §3.7, unchanged
               → Sí, cerrar → summary (3.12) → next Hoy open re-resolves per §2
           → Venta actual has 1+ items → blocked (3.11a) → Entendido → back to
             3.8, untouched — must finalize or cancel the open Sale before
-            Cerrar sesión is reachable again
+            Cerrar jornada de venta is reachable again
       → Configuración (new — applies settings.md §2.1's amendment)
           → resolve (settings.md §3.1/§3.2) → vista principal (settings.md
             §3.3a/§3.6) → "← Hoy" → back to 3.7-3.10, Session and any open
@@ -1829,7 +1857,7 @@ and back to Hoy):
    (header reads Venue.displayName · Día N when eventId is set, or "Sesión
    rápida" when it isn't — §3.7b; applies identically to items 10–21
    wherever they carry a header)
-10. Session controls sheet (⋯) — active Session — "Cerrar sesión" and
+10. Session controls sheet (⋯) — active Session — "Cerrar jornada de venta" and
     "Configuración" (the latter marked with a gear icon; second entry added
     per settings.md §2.1; icon relocated 2026-08-09, Product Owner decision)
 11. Session active, Sale in progress (1+ items in "Venta actual")
@@ -1851,7 +1879,7 @@ and back to Hoy):
 18. Session active, `Session.operatingMode = buttons` surface (scrollable, frequency-ordered, sold-out tiles dimmed)
 19. Session active, `Session.operatingMode = nfc` surface
 20. Close-session confirmation (reached only with an empty Sale)
-21. Cerrar sesión blocked — Venta en curso (non-empty-Sale interlock)
+21. Cerrar jornada de venta blocked — Venta en curso (non-empty-Sale interlock)
 22. Immediate post-close session summary
 23. Resuming a Session left open from an interruption/crash — empty-tray variant
 24. Resuming a Session left open from an interruption/crash — non-empty-tray variant
@@ -1883,7 +1911,7 @@ qualifying Session-start.
 | Recovery scenario | Taps | Why it can't be fewer |
 |---|---|---|
 | Cancelar venta actual (mid-sale) | 2 (Cancelar + Sí, cancelar) | A deliberate two-tap floor for a destructive action, mirroring the doc's own established confirmation cost for irreversible actions (§3.11/§10) — scaled down to an inline step rather than a full modal, given the mid-transaction, customer-present context (see §10). |
-| Cerrar sesión with a pending Sale | 1 (Entendido) to return to selling; 0 taps saved by the interlock itself | The interlock (§3.11a) doesn't add a tap to the happy path — it only appears when she was about to lose real work; "Entendido" is the one tap needed to get back to resolving the Sale. |
+| Cerrar jornada de venta with a pending Sale | 1 (Entendido) to return to selling; 0 taps saved by the interlock itself | The interlock (§3.11a) doesn't add a tap to the happy path — it only appears when she was about to lose real work; "Entendido" is the one tap needed to get back to resolving the Sale. |
 
 Overall floor: **1 tap once selling has begun, 2 taps to begin selling** — the
 2-tap floor is a deliberate data-integrity choice (protecting Session-history
@@ -2020,7 +2048,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
   gets stuck in. The persistent bottom nav is never hidden or disabled during
   selling.
 - *"Business language before technical language"* — every screen uses "Día 2,"
-  "Venta actual," "Cerrar sesión," never "Session," "Sale," or
+  "Venta actual," "Cerrar jornada de venta," never "Session," "Sale," or
   "InventoryUnit"; §3.6a's recommendation/mention lines use "tienen tag" and
   "botones," never "NFC Readiness," "threshold," or a raw count/percentage;
   the capability-revoked mention (§3.6a) stays equally plain — "no puedes
@@ -2032,7 +2060,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
   resolution-failure fallback (3.14) never dead-ends her out of selling; a
   failed tap-to-add or Finalizar Venta never drops her registered items
   (3.8a/3.8d, resolving HOME-B1); an interrupted Sale resumes exactly as it
-  was, never silently emptied (3.13, resolving HOME-B2); Cerrar sesión can
+  was, never silently emptied (3.13, resolving HOME-B2); Cerrar jornada de venta can
   never silently discard an open Sale (3.11a, resolving HOME-M2); Not Ready
   never blocks selling itself, only withholds the one operationally
   impossible mode (§3.6a); a revoked Selling Mode Capability likewise never
@@ -2139,7 +2167,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
   the Sale's true current state, not a client-only cache — an interruption
   can never fabricate an empty tray out of a real in-progress one. Resolves
   HOME-B2.
-- **Cerrar sesión now interlocks with a non-empty Sale** (§3.11a) — hard
+- **Cerrar jornada de venta now interlocks with a non-empty Sale** (§3.11a) — hard
   blocked, not a warn-and-proceed dialog, because closing is the one
   deliberately irreversible action in the flow and an unfinished Sale is real,
   already-registered work. Resolves HOME-M2.
@@ -2158,25 +2186,25 @@ her actual top sellers within the first screenful regardless of Catalog size.
   specifically because `information-architecture.md` already commits this
   affordance as the future reachability point for Settings
   (`decision-log.md` D13) — the extensibility commitment is now realized:
-  the sheet carries two entries today, "Cerrar sesión" and "Configuración"
+  the sheet carries two entries today, "Cerrar jornada de venta" and "Configuración"
   (see the next bullet for how the second entry landed). Resolves HOME-M4.
 - **Configuración is now reachable from Home, per `settings.md` §2.1.**
   `settings.md`'s own spec amends this document: a "Configuración" row is
-  added to the session-controls sheet (§3.7a) below "Cerrar sesión," and the
+  added to the session-controls sheet (§3.7a) below "Cerrar jornada de venta," and the
   sheet itself is now reachable from Home's four non-Session header states
   (Cold start, Idle-no-event, Idle-with-event, Event-active-no-Session) via
   the header's session-controls icon (originally "▾," relocated 2026-08-09
   to a top-right "⋯" — see the new bullet below) (§3.3–§3.6, including the
   §3.6a Session-start-moment variants shown on top of §3.4/§3.5/§3.6, and
   §3.6c) —
-  not only from an active Session. "Cerrar sesión" stays scoped to an active
+  not only from an active Session. "Cerrar jornada de venta" stays scoped to an active
   Session, exactly as before; "Configuración" is available in every state,
   since capability self-service (D25) has no dependency on whether a
   Session is open. The two sheet entries are independent actions, not a
   shared flow — this closes the gap `product/00-foundation`'s Architect
   readiness review flagged: without it, Configuración had no way to be
   reached from three of Home's four non-Session states.
-- **2026-08-09 (Product Owner decision): the entry-point trigger relocates from the header's "▾" to a top-right "⋯" icon; the sheet's "Configuración" row gains a gear icon ("⚙").** Raised because the Product Owner found the "▾" insufficiently discoverable/natural. Purely a trigger-level and sheet-row-marker change — no state gains or loses the entry point (the same four-state exclusion this document already establishes, §3.1/§3.2/§3.12/§3.14, is unchanged), "Cerrar sesión" stays scoped to an active Session exactly as before, and nothing about Configuración's own downstream behavior (settings.md §3.3a onward) is touched. **"⋯" chosen over a hamburger ("☰"):** a hamburger conventionally signals a full secondary navigation drawer with many destinations; adopting one here would misrepresent, and visually compete with, what's actually behind this trigger — a one-or-two-row sheet, not a parallel navigation system — undercutting decision-log.md D13's own ruling that this affordance is a sequencing/reachability fact, not a fifth nav tab, alongside the persistent, already-primary bottom nav bar. A three-dot overflow icon is the more standard, more honestly-scoped mobile convention for a small set of secondary actions attached to a screen, and directly answers the Product Owner's stated concern with a widely-recognized signifier the "▾" never was. The gear icon on "Configuración" specifically (not on "Cerrar sesión") answers the Product Owner's explicit request to distinguish it from any other entry the sheet may carry in the future. Every current-state wireframe and current-tense description of the trigger across this document (§2, §3.3–§3.7a, §3.8f, §4, §5) is updated to "⋯"; narrative describing the moment the "▾" affordance was first introduced (this bullet's own predecessor, and §3.7a's HOME-M4 history) is left as an accurate record of that point in time, not rewritten. settings.md receives the matching correction in the same pass — see that document's own status header and §2.1/§8 item 3.
+- **2026-08-09 (Product Owner decision): the entry-point trigger relocates from the header's "▾" to a top-right "⋯" icon; the sheet's "Configuración" row gains a gear icon ("⚙").** Raised because the Product Owner found the "▾" insufficiently discoverable/natural. Purely a trigger-level and sheet-row-marker change — no state gains or loses the entry point (the same four-state exclusion this document already establishes, §3.1/§3.2/§3.12/§3.14, is unchanged), "Cerrar jornada de venta" stays scoped to an active Session exactly as before, and nothing about Configuración's own downstream behavior (settings.md §3.3a onward) is touched. **"⋯" chosen over a hamburger ("☰"):** a hamburger conventionally signals a full secondary navigation drawer with many destinations; adopting one here would misrepresent, and visually compete with, what's actually behind this trigger — a one-or-two-row sheet, not a parallel navigation system — undercutting decision-log.md D13's own ruling that this affordance is a sequencing/reachability fact, not a fifth nav tab, alongside the persistent, already-primary bottom nav bar. A three-dot overflow icon is the more standard, more honestly-scoped mobile convention for a small set of secondary actions attached to a screen, and directly answers the Product Owner's stated concern with a widely-recognized signifier the "▾" never was. The gear icon on "Configuración" specifically (not on "Cerrar jornada de venta") answers the Product Owner's explicit request to distinguish it from any other entry the sheet may carry in the future. Every current-state wireframe and current-tense description of the trigger across this document (§2, §3.3–§3.7a, §3.8f, §4, §5) is updated to "⋯"; narrative describing the moment the "▾" affordance was first introduced (this bullet's own predecessor, and §3.7a's HOME-M4 history) is left as an accurate record of that point in time, not rewritten. settings.md receives the matching correction in the same pass — see that document's own status header and §2.1/§8 item 3.
 - **Framing: "selling becomes the default entry point," not "Home is the
   selling screen."** The persistent bottom nav stays reachable through every
   selling state; navigating away is never obstructed. Opening Hoy while
@@ -2516,6 +2544,25 @@ her actual top sellers within the first screenful regardless of Catalog size.
   the only place an ongoing running total renders; `events.md` §3.14's own
   Q19 row is already context-scoped and one-time, and §3.15's "Vendiendo
   ahora" hand-off carries no total of its own.
+- **2026-08-13 (Product Owner decision, formalizing a prototype-only
+  rename): the Selling-Session-close action is renamed from "Cerrar
+  sesión" to "Cerrar jornada de venta" everywhere in this document.** Not
+  a new UX decision — brings this spec into agreement with
+  `product/02c-high-fidelity-prototype/README.md`'s own "Terminology Review
+  pass (2026-08-13)" §1, which reasoned the rename directly against the
+  domain model (Session ≠ Venta; "Cerrar jornada de venta" is the only
+  evaluated candidate colliding with neither "Finalizar Venta" nor "Venta
+  actual") and explicitly deferred formalizing it here until now. Freed by
+  a further Product Owner clarification: "sesión" is reserved exclusively
+  for the authenticated User/device context RFC 0007 introduced
+  (`authentication.md`'s domain), so no collision remains to guard against
+  by keeping Selling's own close action unrenamed. Consequently,
+  `settings.md`'s new account-level sign-out action — named "Cerrar sesión
+  en este teléfono" specifically to avoid this exact collision — simplifies
+  to plain "Cerrar sesión" in the same pass (see that document's own status
+  header). Copy-only across every current-tense wireframe, flow branch, and
+  enumeration; the close interlock (§2, §3.11a) itself is unchanged, only
+  its trigger's label.
 
 ## 11. Future considerations
 

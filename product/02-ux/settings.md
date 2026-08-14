@@ -18,14 +18,19 @@ affected copy variants corrected; §10 updated.
 
 **Further amended 2026-08-09 (`decision-log.md` D40 — `loyaltyEnabled` retired, Frequent Customers unified as a single `subscriptionTier=paid`-gated capability). `ux-critic`: 1 Major (§2.1 still listed "clientes frecuentes" as something Configuración manages/checks-or-changes) — fixed; verification clean, plus one further stale "six actions"/§2.3 citation in §1 caught and fixed in the same pass. `reviewer` clean (1 Blocker in `ubiquitous-language.md`, unrelated to this document specifically — fixed, re-verified). Folded into Approved.** `loyaltyEnabled` is retired outright, not narrowed — there is no Business-level field, screen, or action anywhere in the product for turning Frequent Customers on or off. "Activar clientes frecuentes"/"Desactivar clientes frecuentes" (both directions of §3.4) are removed entirely, not merely re-copied — Frequent Customers becomes automatically available the instant `subscriptionTier` reads `paid` (via "Activar plan de pago"), and becomes automatically unavailable the instant it reads `free` again (via "Volver al plan gratis"); Ana never takes an action of her own to turn it on or off directly. Scope narrows from six actions to four (`subscriptionTier` × 2 directions, `defaultSellingMode` × 2 directions) — §1's "handful of real business decisions" framing, the Scope paragraph, §2.2's table, §3.3a/§3.6's wireframes, §3.4's "Activar plan de pago" copy, §3.5's "Volver al plan gratis" copy, §4, §5, §6, §7, §9, and §10 all corrected. `product/02-ux/reports.md` receives the matching correction on the read/visibility side in the same pass — see that document's own status header.
 
-**Further amended 2026-08-09 (Product Owner decision — Configuración entry-point relocated from the header's "▾" to a top-right icon-based menu):** the trigger `home.md` §3.7a specifies (and this document's §2.1 hangs Configuración off) is no longer the header's "▾" — it's a top-right "⋯" icon opening the identical sheet. The sheet's Configuración row now carries a gear icon ("⚙"), distinguishing it from "Cerrar sesión" and any future entry, per the Product Owner's explicit request. Purely an entry-point relocation: which Home states show it, when "Cerrar sesión" appears, and everything Configuración itself does once reached (§3.3a onward) are all unaffected — see `home.md`'s own status header and §10 for the full reasoning, including why "⋯" was chosen over a hamburger icon. §2.1, §3.3, §4, §6, §8 item 3, and §10 updated for the new glyph and gear marker. Ready for `ux-critic`/`reviewer`.
+**Further amended 2026-08-09 (Product Owner decision — Configuración entry-point relocated from the header's "▾" to a top-right icon-based menu):** the trigger `home.md` §3.7a specifies (and this document's §2.1 hangs Configuración off) is no longer the header's "▾" — it's a top-right "⋯" icon opening the identical sheet. The sheet's Configuración row now carries a gear icon ("⚙"), distinguishing it from "Cerrar jornada de venta" and any future entry, per the Product Owner's explicit request. Purely an entry-point relocation: which Home states show it, when "Cerrar jornada de venta" appears, and everything Configuración itself does once reached (§3.3a onward) are all unaffected — see `home.md`'s own status header and §10 for the full reasoning, including why "⋯" was chosen over a hamburger icon. §2.1, §3.3, §4, §6, §8 item 3, and §10 updated for the new glyph and gear marker. Ready for `ux-critic`/`reviewer`.
 
-Scope: `Configuración`, the merchant-facing surface for the Business Capabilities `decision-log.md` D25/D27/D40 leave merchant-self-service: `subscriptionTier` (Free ↔ Paid) — two actions (both directions), a reusable "pending change" indicator, and a way to cancel a pending change before it lands — plus `decision-log.md` D27's `defaultSellingMode` control (Botones ↔ Etiquetas NFC), constrained to whichever modes `subscriptionTier` currently makes available: **four actions total**, not six. Both `defaultSellingMode` directions use the same immediate-effect template `subscriptionTier`'s "activate" direction already uses (§2.3, §3.4) — the only real difference is that neither carries a pending-value/effective-date pair, since the field has no billing-cycle implication for D25's deferred-timing rationale to apply to, not a differently-shaped UI. `registrationMode`'s `nfc` entitlement is no longer an independently self-service-toggleable capability of its own (D27 superseded that part of D25) — it is a pure read-time derivation from `subscriptionTier = paid`, so it has no dedicated action or row here; it changes only as an automatic consequence of the `subscriptionTier` actions below. **`loyaltyEnabled` is retired outright, not merely absent from self-service scope** (`decision-log.md` D40) — there is no Business-level field left to toggle, self-service or otherwise; Frequent Customers as a whole is entitled purely by `subscriptionTier`, present in full on Paid and structurally absent on Free, with no action of Ana's own anywhere in this document or any other. **Not a fifth nav tab** — per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, Configuración hangs off the existing session-controls affordance already specified in `home.md` — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon opening the identical sheet (Product Owner decision; see status header above and `home.md`'s own status header/§10 for the full reasoning). This is the last of the five merchant-facing experiences to be designed (`product/02-ux/CLAUDE.md`). Implementation-independent — low-fidelity only, no visual design.
+**Further amended 2026-08-13 (Product Owner decision — account-level sign-out added, simplified to "Cerrar sesión" in the same pass once `home.md`'s own Selling-Session-close action was renamed):** a new, fifth action — "Cerrar sesión" (§2.5/§2.5a, a new "Tu cuenta" section appended to §3.3a's and §3.6's vista principal, new §3.8/§3.8a/§3.8b) — ends this device's verified session (`authentication.md §2.1`) without touching the Business or any of its data. Distinct in kind from the four Business Capability actions in §2.2. Initially named "Cerrar sesión en este teléfono" to avoid colliding with Home's own Selling-Session close, which was also called "Cerrar sesión" at the time (`home.md §3.7a`/§3.11) — once that action was renamed to "Cerrar jornada de venta" in the same pass (see `home.md`'s own status header), the collision no longer exists, so this action simplifies to plain "Cerrar sesión," the only account-level action in the product still using that name. Gets an explicit confirming step, never a bare toggle, per `onboarding.md §6`'s established "a real commitment from a stray tap" standard. Resolves into `authentication.md §3.3`, fresh (not that document's §3.8 resume state, reserved for an interrupted attempt). Activates a branch `authentication.md §2.2` already named but marked unreachable (case 2) — a corresponding correction to that document is recommended and applied alongside this amendment. Ready for `ux-critic`/`reviewer`.
+
+Scope: `Configuración`, the merchant-facing surface for the Business Capabilities `decision-log.md` D25/D27/D40 leave merchant-self-service: `subscriptionTier` (Free ↔ Paid) — two actions (both directions), a reusable "pending change" indicator, and a way to cancel a pending change before it lands — plus `decision-log.md` D27's `defaultSellingMode` control (Botones ↔ Etiquetas NFC), constrained to whichever modes `subscriptionTier` currently makes available: **four actions total**, not six. Both `defaultSellingMode` directions use the same immediate-effect template `subscriptionTier`'s "activate" direction already uses (§2.3, §3.4) — the only real difference is that neither carries a pending-value/effective-date pair, since the field has no billing-cycle implication for D25's deferred-timing rationale to apply to, not a differently-shaped UI. `registrationMode`'s `nfc` entitlement is no longer an independently self-service-toggleable capability of its own (D27 superseded that part of D25) — it is a pure read-time derivation from `subscriptionTier = paid`, so it has no dedicated action or row here; it changes only as an automatic consequence of the `subscriptionTier` actions below. **`loyaltyEnabled` is retired outright, not merely absent from self-service scope** (`decision-log.md` D40) — there is no Business-level field left to toggle, self-service or otherwise; Frequent Customers as a whole is entitled purely by `subscriptionTier`, present in full on Paid and structurally absent on Free, with no action of Ana's own anywhere in this document or any other. **Not a fifth nav tab** — per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, Configuración hangs off the existing session-controls affordance already specified in `home.md` — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon opening the identical sheet (Product Owner decision; see status header above and `home.md`'s own status header/§10 for the full reasoning). This is the last of the five merchant-facing experiences to be designed (`product/02-ux/CLAUDE.md`). Implementation-independent — low-fidelity only, no visual design. A fifth action, added 2026-08-13, sits outside this four-capability count entirely: "Cerrar sesión" (§2.5) is an Identity-context, `User`-level action (RFC 0007) — it has no Business Capability to represent, changes nothing about her plan or how she sells, and is never conditioned on `subscriptionTier` or any pending change. It's placed in its own "Tu cuenta" section, not counted among, or confused with, the four capability actions above.
 
 Out of scope by explicit instruction:
 - **No payment/checkout flow of any kind.** `company/CLAUDE.md`'s non-goals state "Payments/checkout — out of scope, do not build." Activating the paid plan here flips `subscriptionTier`, exactly as D25 resolves it — it never shows a price, a card field, or any payment-processing step. By what mechanism money actually changes hands, if any, is a distinct, unnamed question this document doesn't invent an answer to.
 - **No bazaar-recommendation logic, no multi-user features** (`company/backlog.md` #3).
 - **The specific per-transition timing rule (Q11) is not decided here.** Which of `subscriptionTier`'s two directions (immediate vs. deferred, since `decision-log.md` D27 already settled `defaultSellingMode` as immediate-only with no billing-cycle implication, and `decision-log.md` D40 retires `loyaltyEnabled` entirely, leaving no third capability for Q11 to apply to) is immediate vs. deferred, and the exact deferred rule, depends on a pricing/billing-cycle model that doesn't exist in the Foundation yet (`company/business-decisions.md` Q11, Open). This document specifies both UI shapes generically (§3.4/§3.5) with today's best-available illustrative assignment, not a final table.
+- **No multi-device session management.** No way to see other devices currently signed in, no remote sign-out, no "también estás conectada en..." list. This is a single-device action only — it reads and writes the same device-level session fact `authentication.md §2.1` already checks silently on every app open, nothing more.
+- **No real token/credential invalidation mechanism designed here.** Same infrastructure/domain split `authentication.md §0`/RFC 0007 §5 already draw for the sign-in side — this document specifies only the merchant-visible consequence (this device stops holding a valid session), never how that's actually implemented.
+- **No switching or remembering multiple accounts on one device.** RFC 0007 leaves open whether a single verified phone may ever found more than one Business (its own "Open items," item 1) — this document doesn't answer that, and offers no account-picker or "cambiar de cuenta" affordance of any kind.
 
 ## 1. Merchant goal
 
@@ -40,6 +45,8 @@ This document holds two things in tension, deliberately:
 
 Two of the four actions below carry a real, necessary fact beyond a toggle, and the design has to protect them even while every other action stays a clean single-tap-to-confirm.
 
+A fifth, differently-shaped concern joins these two as of 2026-08-13: whether *this phone, on this device* stays recognized by Nahui at all. It's not a business decision the way the four above are — it doesn't change her plan or how she sells — but it deserves the same honest, deliberate-beat treatment as turning something off, for the same reason: getting it wrong (reading as data loss) would break trust in exactly the way this document's whole second bullet above already exists to prevent.
+
 ## 2. Resolution / decision logic
 
 ### 2.1 Where the entry point lives — and where it deliberately doesn't (SET-M2 — corrected back to the verified-clean version; entry-point icon relocated 2026-08-09, Product Owner decision — see status header)
@@ -48,8 +55,8 @@ Configuración is not a nav tab. Per `decision-log.md` D13 and `information-arch
 
 Concretely, tapping the header's "⋯" icon:
 
-- **During an active Session** (`home.md` §3.7–§3.11a): opens the existing session-controls sheet (`home.md` §3.7a), now carrying **two** entries — "Cerrar sesión" (unchanged) and "Configuración" (new, marked with a gear icon — "⚙" — distinguishing it from "Cerrar sesión" and from any entry the sheet may carry in the future).
-- **During cold start, idle, or Event-active-no-Session** (`home.md` §3.3–§3.6, including its §3.6a variants): opens the same sheet shape, with its one available entry ("Configuración," same gear-icon marker — "Cerrar sesión" doesn't render, since there's no open Session to close).
+- **During an active Session** (`home.md` §3.7–§3.11a): opens the existing session-controls sheet (`home.md` §3.7a), now carrying **two** entries — "Cerrar jornada de venta" (unchanged) and "Configuración" (new, marked with a gear icon — "⚙" — distinguishing it from "Cerrar jornada de venta" and from any entry the sheet may carry in the future).
+- **During cold start, idle, or Event-active-no-Session** (`home.md` §3.3–§3.6, including its §3.6a variants): opens the same sheet shape, with its one available entry ("Configuración," same gear-icon marker — "Cerrar jornada de venta" doesn't render, since there's no open Session to close).
 
 **This is deliberately absent from four Home states — stated explicitly, not silently omitted:**
 
@@ -88,6 +95,28 @@ This is why both directions — Botones → Etiquetas NFC and Etiquetas NFC → 
 
 A silent flip with zero acknowledgment would mean Ana only discovers a real change to her own business by noticing a row's label is different than she remembered. Instead: the first time Configuración's main view (§3.3) is opened after a pending change's effective date has passed, that capability's row carries a one-time, dismissible acknowledgment line above it ("Tu plan cambió a Gratis el 14 de agosto"), styled the same low-ceremony way `home.md` §3.12's close-summary states a fact rather than asking a question. Shown exactly once — the next Configuración open after that renders the row as an ordinary current-state row. Whether this should also surface anywhere *outside* Configuración (a badge, a notification) stays open (§8, item 4) — this section only resolves the in-surface acknowledgment.
 
+### 2.5 Cerrar sesión — an account-level action, distinct from every capability above and from Home's own Selling-Session close (new — Product Owner decision, 2026-08-13)
+
+Every action in §2.2's table changes something about the Business — what she's charged, how she sells, what Resultados shows. This one doesn't touch the Business at all. It ends this device's verified-phone session (`authentication.md §2.1`) — the fact, established once at Authentication and checked silently on every app open since, that this phone is who's using this device right now. Turning it off doesn't unmake anything she's built: her Business, its Capabilities, its Catálogo, its historial de ventas all stay exactly where `product/99-rfc/0007-user-and-business-membership.md`/`decision-log.md` D44 already put them — independent of whether this device currently holds a valid session for it (`onboarding.md §2.1`'s own "for this install" language describes exactly the record this action never touches). `authentication.md §2.1` already draws this line for the opposite direction — a device either holds a valid session or it doesn't, entirely separate from whether a Business exists to resolve into; this is the first place in the product where Ana herself deliberately flips that fact, rather than it only ever being set once and read silently forever after.
+
+**Naming: plain "Cerrar sesión."** `home.md §3.7a`/§3.11 name a different concept — ending a Selling Session, a working day — but as of `home.md`'s own 2026-08-13 rename (see that document's own status header), that action is now named "Cerrar jornada de venta," not "Cerrar sesión." The Product Owner's own reasoning for that rename applies here too: "sesión" is now reserved exclusively for the authenticated User/device context RFC 0007 introduced, so there's no collision left to guard against by suffixing this action's name. This is now the one and only account-level action in the product named "Cerrar sesión," used bare, everywhere it appears — no device-scoping suffix needed to disambiguate it from anything else. (Whether this action *should* interlock with an open Selling Session is a separate, unrelated question, flagged not decided, in §8 below.)
+
+**Why it's not a fifth row in §2.2's table.** §2.2 is exhaustively about `subscriptionTier`/`defaultSellingMode` — capabilities that live on the `Business` (Identity context). This action has no Business Capability to represent; it reads and writes a fact about the device's own session, a `User`-level concern (RFC 0007), not a `Business`-level one. It gets its own clearly-separated place instead: a "Tu cuenta" section at the bottom of the vista principal (§3.3a, §3.6), below a visual divider, present identically regardless of `subscriptionTier` or whether a pending change exists — the one action in this document never conditioned on anything else in it.
+
+**A real commitment, not a bare tap.** Per `onboarding.md §6`'s established standard ("the extra tap protects a real commitment from a stray tap") and this document's own §1 framing, a stray tap here ends her ability to use this phone for Nahui until she re-verifies — a real, if fully reversible, interruption to her day. It gets the same explicit confirming step every other real commitment in this family already gets (§3.7's "Cancelar cambio pendiente," `home.md §3.11`'s own Selling-Session close) — never an instant action.
+
+**What it doesn't touch — the single most important fact here, stated plainly rather than left implicit.** Signing out does not delete, hide, reset, or otherwise touch the `Business`, its Capabilities, its Catálogo, its historial de ventas, or any Sale, Session, or Event record. The device-held session fact this action clears isn't part of the domain model at all — RFC 0007 §5 explicitly defers any real authentication/session mechanism as infrastructure, sitting above the aggregate graph per RFC 0007 §3's own layering argument — so there's no dependency between it and `Business`/`BusinessMembership` for this action to disturb in the first place. Getting this wrong would read as data loss, the same class of trust break `architect-questions.md` Q19 already cost real design effort to fix elsewhere in this project (Eventos) — the confirmation copy itself (§3.8) states this guarantee plainly, rather than leaving her to discover it only by re-verifying and hoping.
+
+**Where it resolves.** A successful sign-out hands off to `authentication.md §3.3` (Número celular — entry), fresh — never that document's §3.8 resume state, which exists for an *interrupted*, incomplete verification attempt, a different situation from a deliberate, completed sign-out.
+
+### 2.5a What happens when the same phone re-verifies afterward (cross-document consequence, not a new destination invented here)
+
+`authentication.md §2.2` already enumerates three cases for what a confirmed code does next. Signing out and re-verifying with the same phone, on the same device, is **case 2** — "This phone was already verified on THIS device, with a Business already local to it (complete or in-progress)" — a case that document already named, but marked "Not reachable through this branch... this document never re-verifies a phone already verified on its own device," because nothing, before this action existed, ever cleared a device's session fact while leaving its local Business record intact. This action is exactly the mechanism that makes that case real for the first time — not a fourth, undesigned case, and not case 3 (a genuinely *new* device or reinstalled app with no local Business record at all — still "Not yet resolved," `product-decisions.md` Q18, untouched by this addition, since §2.5 above guarantees the local record is never cleared by signing out).
+
+The local Business record stays fully intact through a sign-out, so a successful re-verification on the same device finds it waiting exactly as it was — and hands off to `onboarding.md`'s own resolution logic (`onboarding.md §2.1`), the identical silent pass-through `authentication.md §2.1` case 1 already describes for an unbroken session, reached this time via a fresh OTP confirmation instead of a persisted flag. **In practice this always resolves straight through to Home (`home.md §2`), not to a resumed Onboarding step** — "Cerrar sesión" is reachable only from Home's own persistent header (§2.1: "anywhere Home shows a persistent header"), and Home itself is reachable only once `onboarding.md §2.1`'s case 1 (a fully complete Business) has already resolved; there is no path into Configuración, or this row, during an in-progress Onboarding. `onboarding.md §2.1`'s in-progress cases (2–4) describe what the general handoff *would* do if this trigger were ever reachable mid-Onboarding — a state this specific mechanism cannot structurally produce, not a live branch of it. This document has nothing further to add once verification succeeds — the same as case 1's own handoff already states.
+
+`authentication.md §2.2` case 2's own text was stale — correctly unreachable when written, made reachable by this action. The matching correction is applied to that document in the same pass — see its own status header.
+
 ## 3. Low-fidelity wireframes
 
 Conventions inherited from `home.md`/`inventory.md`/`onboarding.md`: `[ ]` = tappable, plain text = passive/informational.
@@ -116,7 +145,7 @@ Conventions inherited from `home.md`/`inventory.md`/`onboarding.md`: `[ ]` = tap
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
 ```
-No "Cerrar sesión" row — there is no open Session to close.
+No "Cerrar jornada de venta" row — there is no open Session to close.
 
 ### 3.3a Configuración — vista principal (sin cambio pendiente)
 ```
@@ -128,9 +157,14 @@ No "Cerrar sesión" row — there is no open Session to close.
 │  Cómo vendes normalmente:         │
 │  Botones (vender con tags         │
 │  requiere el plan de pago)        │
+│ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
+│  Tu cuenta                        │
+│  [ Cerrar sesión ]                │
 └───────────────────────────────┘
 ```
 No `defaultSellingMode` control shown while `subscriptionTier=free` — nothing to choose between yet, since `nfc` isn't in her capability set (§2.3). The moment "Activar plan de pago" confirms, this row gains a real control (see the Paid-tier state below).
+
+**The "Tu cuenta" section is new (2026-08-13, §2.5) and appears identically in every vista-principal variant below** — the Paid-tier state, its `defaultSellingMode = nfc` mirror, and §3.6's pending-change state — regardless of `subscriptionTier` or pending-change status, the one part of this screen never conditioned on anything else in it. Shown in full on the Paid-tier state and §3.6 below; the `nfc`-mirror state gets the identical addition without a separate redraw, the same shared-state treatment that state already receives from its own base.
 
 **Paid-tier state (new — this document previously never drew this state explicitly):**
 ```
@@ -142,6 +176,9 @@ No `defaultSellingMode` control shown while `subscriptionTier=free` — nothing 
 │  Cómo vendes normalmente:         │
 │  Botones                          │
 │  [ Cambiar a vender con tags ]    │
+│ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
+│  Tu cuenta                        │
+│  [ Cerrar sesión ]                │
 └───────────────────────────────┘
 ```
 
@@ -155,6 +192,9 @@ No `defaultSellingMode` control shown while `subscriptionTier=free` — nothing 
 │  Cómo vendes normalmente:         │
 │  Con tags                         │
 │  [ Cambiar a vender con botones ] │
+│ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
+│  Tu cuenta                        │
+│  [ Cerrar sesión ]                │
 └───────────────────────────────┘
 ```
 Same shape as the Botones-current-mode state above, mirrored — the current
@@ -269,6 +309,9 @@ The date shown is illustrative — Q11 hasn't settled the exact deferred-timing 
 │  Cómo vendes normalmente:         │
 │  Botones                          │
 │  [ Cambiar a vender con tags ]    │
+│ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
+│  Tu cuenta                        │
+│  [ Cerrar sesión ]                │
 └───────────────────────────────┘
 ```
 
@@ -282,6 +325,42 @@ The date shown is illustrative — Q11 hasn't settled the exact deferred-timing 
 │      [ No ]   [ Sí, cancelar ]     │
 └───────────────────────────────┘
 ```
+
+### 3.8 Cerrar sesión — confirmar (new — Product Owner decision, 2026-08-13)
+```
+┌───────────────────────────────┐
+│ Configuración                   │  dimmed, still visible underneath
+│  ¿Cerrar tu sesión?                │
+│  La próxima vez que abras Nahui     │
+│  aquí, te vamos a pedir tu          │
+│  número otra vez. Tu negocio,       │
+│  tu inventario y tus ventas          │
+│  siguen exactamente como están —     │
+│  no se pierde nada.                  │
+│      [ Cancelar ]  [ Sí, cerrar      │
+│              sesión ]                 │
+└───────────────────────────────┘
+```
+Same shape as §3.7's cancel-pending-change sheet — a dimmed background, the current screen still visible underneath, a two-button choice — chosen deliberately over §3.4/§3.5's single-button "confirm" template, since this action isn't a Business Capability write with an "effect" to disclose; it's a real yes/no decision about whether this device keeps recognizing her. **Copy states the guarantee plainly, per §2.5** — "tu negocio, tu inventario y tus ventas siguen exactamente como están," the identical reassurance shape "Volver al plan gratis" (§3.5) already uses for its own "No perdemos tu historial" — never left implicit.
+
+### 3.8a Cerrando sesión — near-instant / slow
+```
+┌───────────────────────────────┐        ┌───────────────────────────────┐
+│        ▢▢▢▢▢▢▢▢▢▢▢▢            │        │      Cerrando sesión…          │
+└───────────────────────────────┘        └───────────────────────────────┘
+   near-instant: silent skeleton              slow (>~1.5s): one plain line
+```
+Own copy variant, distinct from §3.9's "Guardando…" — nothing is being saved here, a device's session fact is being cleared. Same near-instant/slow convention as every other write-like action in this family.
+
+### 3.8b Error al cerrar sesión
+```
+┌───────────────────────────────┐
+│  No pudimos cerrar tu sesión.     │
+│  Intenta de nuevo.                 │
+│      [   Reintentar   ]            │
+└───────────────────────────────┘
+```
+A retried attempt replays the same already-confirmed action, never re-asking her to re-confirm — same guarantee §3.10 gives its own retry. Nothing about her Business, Catálogo, or historial is ever at risk from this failing partway (§2.5) — the failure is purely local to whether this device's session fact cleared, not to anything the fact was pointing at.
 
 ### 3.9 Guardando cambio — near-instant / slow (shared by every action's actual write)
 ```
@@ -308,7 +387,7 @@ From any Home header state (home.md §3.3–§3.6, including its §3.6a variants
 idle/cold-start/Event-active-no-Session, and §3.7–§3.11a active-Session alike — see §2.1 for the four
 states where it's deliberately absent: §3.1/§3.2/§3.12/§3.14):
   tap the header's "⋯" icon → session-controls sheet
-    → sheet shows "Configuración" (§3.3), plus "Cerrar sesión" only if a
+    → sheet shows "Configuración" (§3.3), plus "Cerrar jornada de venta" only if a
       Session is open
     → tap Configuración → resolve (§3.1/§3.2) → vista principal (§3.3a, or
       §3.6 if 1+ pending change exists)
@@ -337,28 +416,47 @@ per home.md §2 (resumes an active Session if one exists; otherwise idle/cold
 start).
 ```
 
+From the main view's "Tu cuenta" section (§3.3a, §3.6 — present in every state):
+
+```
+Cerrar sesión
+  → confirmar (§3.8) → Cancelar → back to vista principal, untouched
+  → Sí, cerrar sesión
+      → cerrando (§3.8a) → error (§3.8b) → Reintentar
+      → success → authentication.md §3.3 (Número celular — entry), fresh
+        (reached via: account sign-out, settings.md §2.5 — not that
+        document's own §3.8 resume state, reserved for an interrupted
+        attempt). If the same phone re-verifies afterward, see settings.md
+        §2.5a — authentication.md §2.2 case 2, made reachable by this
+        action, hands off silently to onboarding.md §2.1's own resolution.
+```
+
 ## 5. Screen states (enumeration)
 
 1. Resolving (near-instant)
 2. Resolving — slow
 3. Entry — session-controls sheet, Home idle/cold-start/Event-active-no-Session states (new row)
-4. Configuración — vista principal, sin cambio pendiente
+4. Configuración — vista principal, sin cambio pendiente (now includes a "Tu cuenta" section, §2.5)
 5. Confirmación de efecto inmediato — generic template (three copy variants: Activar plan de pago — SET-M4/D34/D40-corrected — and the two `defaultSellingMode` variants; "Activar/Desactivar clientes frecuentes" retired entirely per `decision-log.md` D40)
 6. Confirmación de efecto diferido — generic template (Volver al plan gratis)
-7. Configuración — vista principal, con cambio pendiente
+7. Configuración — vista principal, con cambio pendiente (also includes "Tu cuenta," §2.5)
 8. Cancelar cambio pendiente — confirmar
 9. Guardando cambio — near-instant / slow (shared, every action)
 10. Error al guardar cambio
+11. Cerrar sesión — confirmar
+12. Cerrando sesión — near-instant / slow
+13. Error al cerrar sesión
 
 ## 6. Minimum step count
 
 | Scenario | Taps | Why it can't be fewer |
 |---|---|---|
-| Reach Configuración from anywhere in Home | 2 (⋯ → Configuración) | Single deliberate tap to open the sheet, same shape as reaching Cerrar sesión today, now available from every Home header state per §2.1. |
+| Reach Configuración from anywhere in Home | 2 (⋯ → Configuración) | Single deliberate tap to open the sheet, same shape as reaching Cerrar jornada de venta today, now available from every Home header state per §2.1. |
 | Activar plan de pago | 2 (Activar plan de pago → Confirmar y activar) | One tap to open the action, one to confirm the self-attestation — nothing beyond that to type once the payment itself has already happened elsewhere. |
 | Cambiar a vender con tags / Cambiar a vender con botones | 2 | Pure toggle — unlike the retired NFC-activation path, nothing left in this document requires typing anything. |
 | Volver al plan gratis | 2 | Deferred effect doesn't change the tap count — only when the write takes effect. |
 | Cancelar cambio pendiente | 2 | Mirrors `home.md`'s own destructive-action confirmation floor. |
+| Cerrar sesión | 2 (tap row → Sí, cerrar sesión) | Same two-tap floor as every other action here — a real, if fully reversible, commitment gets one real confirming tap, nothing more. |
 
 Every action in this table now shares an identical 2-tap floor. The one previous exception — Activar venta con tags's code-entry requirement — is gone along with the path itself (`decision-log.md` D27): `defaultSellingMode`'s two directions are pure toggles like every other immediate-effect action, with no real fact left to type. Configuración is now the one document in this family where every merchant-initiated action, without exception, costs exactly two taps — open the action, confirm it.
 
@@ -371,6 +469,7 @@ Every action in this table now shares an identical 2-tap floor. The one previous
 - Which `defaultSellingMode` direction is offered — computed automatically from `nfc ∈ registrationMode`, never something Ana has to unlock separately.
 - The one-time landing acknowledgment (§2.4) is shown automatically, never requiring her to remember she had a pending change.
 - Whether Frequent Customers is available at all — computed automatically from `subscriptionTier`, with no capability of Ana's own to set (`decision-log.md` D40).
+- Whether this device already holds a valid session — resolved silently by `authentication.md §2.1` on every app open; this document never asks that question itself, only ever offers the one deliberate action to flip it off.
 
 ## 8. Open questions
 
@@ -381,6 +480,9 @@ None of the items below block this document's completion.
 3. **Resolved, kept for continuity — the required `home.md` amendment landed.** §2.1 originally flagged that extending the entry-point affordance (then the header's "▾") to every Home header state except §3.1/§3.2/§3.12/§3.14 required a small, additive amendment to `home.md`'s own approved wireframes (same category as `decision-log.md` D23's amendment to `inventory.md`) — that amendment landed (`home.md`'s own status header, "Amended for `settings.md` §2.1"). **Further update, 2026-08-09:** the entry-point trigger itself relocated from the header's "▾" to a top-right "⋯" icon opening the identical sheet, with a gear icon ("⚙") added to the sheet's "Configuración" row specifically (Product Owner decision) — the matching `home.md`-side amendment for this relocation is performed in the same pass as this correction; see `home.md`'s own status header and §10 for the full reasoning, including why "⋯" was chosen over a hamburger icon.
 4. **Whether the pending-change-lands acknowledgment (§2.4) should ever surface anywhere outside Configuración itself** (a badge, a notification) — not designed here, no evidence yet the in-surface acknowledgment is insufficient.
 5. **Resolved, kept for continuity — a `defaultSellingMode` control is now designed here.** `decision-log.md` D27 extended self-service editability to this field: §2.2/§2.3/§3.4/§3.6 now specify it directly, as an immediate-effect action with no pending-change structure, constrained to whichever modes `subscriptionTier` currently makes available. The gap this item originally flagged (D25/Q5 resolving exactly three capabilities, none of which was `defaultSellingMode`) is closed — kept here, marked resolved, so the record of what was once genuinely out of scope stays visible rather than silently disappearing.
+6. **Whether signing out should interlock with an active, non-empty Sale or Session** — `home.md §3.11a` already blocks the Selling-Session close the moment "Venta actual" holds 1+ items, precisely because that action would otherwise silently put unfinished work at risk. §2.5 above states plainly that signing out never touches Selling data — the Session and its Venta actual stay exactly as they are, waiting for the same phone to re-verify (§2.5a) — so no *data* is at risk the way HOME-M2 was designed to prevent. Whether it's still worth warning her that a customer may be standing in front of her mid-Sale at the moment she chooses to sign out — a situational risk, not a data-loss one — isn't designed here. No evidence yet this is common enough to warrant its own interlock.
+7. **Resolved, kept for continuity.** `authentication.md §2.2` case 2 (and its §4 flow line, §8/§11 references) previously described re-verifying an already-verified-on-this-device phone as theoretically unreachable. This action (§2.5) makes it reachable for the first time (§2.5a). The matching correction to that document was applied in the same pass — see its own status header and §2.2/§4/§8/§11.
+8. **A persistent, read-only display of her own verified phone number in Configuración** — already named as a future consideration in `authentication.md §11`, unrelated to whether sign-out itself works; still not designed here, no evidence of need yet.
 
 ## 9. Principle justification
 
@@ -390,19 +492,21 @@ None of the items below block this document's completion.
 - *"Capture business truth once, reuse it forever"* — `nfc`'s availability is captured exactly once, as `subscriptionTier`, and never re-captured as a second, independent fact anywhere in this document (`decision-log.md` D27) — the earlier design's NFC activation code confirmed the same underlying truth a second time, in a second place; removing it is this principle applied more completely, not a new application of it.
 - *"The best interface stays out of the merchant's way"* — a failed capability save never drops an already-confirmed toggle, including a `defaultSellingMode` change (§3.10); cancelling a pending change is always reachable and never destructive to anything but the pending change itself (§3.7).
 - **The SET-M1 fix, stated as its own principle-level point:** every piece of copy describing what client-tracking reveals is worded as a count/category ("cuántas... son frecuentes y cuántas ocasionales"), never an identity claim ("cuáles"/"quiénes son") — the same correction `reports.md` already made once (RPT2-MAJ1), applied consistently across every instance in this document, including the one a prior remediation round briefly reintroduced while fixing SET-M4.
+- *"Capture business truth once, reuse it forever"* — extended to the new sign-out action: her Business, Catálogo, and historial de ventas are captured exactly once and never re-captured, reset, or discarded by signing out — the device-held session fact is the only thing this action ever touches (§2.5).
+- *"Never ask twice"* — a same-device re-verification after signing out never re-runs Onboarding or re-asks anything already on record; it resolves straight through to wherever her existing Business already stood (§2.5a).
 
 **architecture-principles.md:**
 - *#1 (capabilities resolved once, upstream, never asked mid-flow)* — Configuración is the one deliberate exception D25/D27 carve out for merchant-initiated, explicit self-service change; no other screen re-asks any of the capabilities or settings managed here.
 - *#4 (internal-only entities never leak into user-facing language)* — no capability is ever named by its technical field anywhere.
-- *#6 (one-way dependency direction)* — this document only writes to Identity's Business Capabilities; it never designs a Selling/Inventory/Intelligence screen of its own.
+- *#6 (one-way dependency direction)* — this document only writes to Identity's Business Capabilities; it never designs a Selling/Inventory/Intelligence screen of its own. "Cerrar sesión" writes only to this device's own session fact, not part of the domain model at all (RFC 0007 §5's explicit infrastructure deferral) — it never reads or writes Selling, Inventory, or Intelligence data, the identical discipline the rest of this document already holds itself to.
 
 **brand-guide.md:**
-- *Tone — "warm, direct, respects the vendor's intelligence"* — every deactivation confirmation states plainly what's lost without a warning-styled dialog; "Activar plan de pago"'s restored copy states plainly that this activates by confirming a payment arranged elsewhere, rather than omitting that fact.
+- *Tone — "warm, direct, respects the vendor's intelligence"* — every deactivation confirmation states plainly what's lost without a warning-styled dialog; "Activar plan de pago"'s restored copy states plainly that this activates by confirming a payment arranged elsewhere, rather than omitting that fact. §3.8's sign-out confirmation states the one fact that matters (nothing is lost) plainly and up front, mirroring the reassurance shape "Volver al plan gratis" (§3.5) already established, rather than an apology-first or warning-styled dialog.
 
 ## 10. Decisions made
 
 - Configuración hangs off Home's session-controls trigger — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon (Product Owner decision; see below and `home.md`'s own §10) — extended to every Home state that has a persistent header (cold start, idle, Event-active-no-Session, and every active-Session state), not only the active-Session one — required because what it manages matters on days she isn't actively selling too.
-- **2026-08-09 (Product Owner decision): the entry-point trigger relocates from the header's "▾" to a top-right "⋯" icon; the sheet's "Configuración" row gains a gear icon ("⚙"), distinguishing it from "Cerrar sesión" and from any entry the sheet may carry in the future.** Purely an entry-point relocation — nothing about which Home states show it (§2.1's existing four-state exclusion list), when "Cerrar sesión" renders, or Configuración's own downstream behavior (§3.3a onward) changes. Full reasoning, including why "⋯" was chosen over a hamburger icon, lives in `home.md`'s own status header and §10, to avoid duplicating it here — this document's own §2.1, §3.3, §4, §6, §8 item 3, and this section are updated to match.
+- **2026-08-09 (Product Owner decision): the entry-point trigger relocates from the header's "▾" to a top-right "⋯" icon; the sheet's "Configuración" row gains a gear icon ("⚙"), distinguishing it from "Cerrar jornada de venta" and from any entry the sheet may carry in the future.** Purely an entry-point relocation — nothing about which Home states show it (§2.1's existing four-state exclusion list), when "Cerrar jornada de venta" renders, or Configuración's own downstream behavior (§3.3a onward) changes. Full reasoning, including why "⋯" was chosen over a hamburger icon, lives in `home.md`'s own status header and §10, to avoid duplicating it here — this document's own §2.1, §3.3, §4, §6, §8 item 3, and this section are updated to match.
 - The entry point is explicitly absent from exactly four Home states (`home.md` §3.1/§3.2/§3.12/§3.14), each with its own one-line reason.
 - **The dedicated "Activar venta con tags" path (activation-code entry, reusing `onboarding.md` §3.4–§3.4b) is removed entirely, not merely restructured** (`decision-log.md` D27) — the physical-kit-confirmation mechanism it modeled never actually granted the capability; `nfc` is a pure derivation from `subscriptionTier`, so there is nothing left for a dedicated activation path to do.
 - **A new `defaultSellingMode` control (Botones ↔ Etiquetas NFC) is added** (`decision-log.md` D27), constrained to whichever modes `subscriptionTier` currently makes available — always `buttons`; `nfc` only while `subscriptionTier = paid`. This is the field's first-ever self-service edit surface; it was Onboarding-only before D27 (`decision-log.md` D19/D23).
@@ -429,6 +533,7 @@ None of the items below block this document's completion.
   erased when she turns collection off, consistent with D25's
   never-delete-historical-data invariant.
 - **`decision-log.md` D40 retires "Activar clientes frecuentes"/"Desactivar clientes frecuentes" (§3.4) entirely, superseding the D34 bullet above.** `loyaltyEnabled` no longer exists as a Business-level field; Frequent Customers is now a pure, automatic consequence of `subscriptionTier`, the identical shape D27 already established for `nfc`. Narrows Configuración from six actions to four (§2.2); "Activar plan de pago"'s and "Volver al plan gratis"'s copy now state the fuller consequence (Frequent Customers as a whole, not only Resultados visibility).
+- **A fifth, account-level action — "Cerrar sesión" — is added 2026-08-13 (Product Owner decision), outside the four-capability count.** Ends this device's verified session (`authentication.md §2.1`) without touching the Business or its data (§2.5). Initially named "Cerrar sesión en este teléfono" to avoid colliding with Home's own Selling-Session close, also called "Cerrar sesión" at the time — once that action was renamed to "Cerrar jornada de venta" in the same pass (`home.md`'s own status header/§10), the collision no longer existed, so this action simplifies to plain "Cerrar sesión," the only account-level action in the product still using that name. Placed in its own "Tu cuenta" section, present identically regardless of `subscriptionTier` or pending-change state. Gets an explicit confirming step (§3.8), never a bare toggle, per `onboarding.md §6`'s "real commitment from a stray tap" standard. Resolves into `authentication.md §3.3`, fresh; a same-device re-verification afterward activates `authentication.md §2.2`'s previously-unreachable case 2 (§2.5a) — a corresponding correction to that document was applied in the same pass.
 
 ## 11. Future considerations
 
@@ -436,3 +541,4 @@ None of the items below block this document's completion.
 - Whether the pending-change-lands acknowledgment needs an ambient signal beyond the in-surface one (§8, item 4).
 - The `home.md` amendment this document specifies but doesn't perform (§2.1, §8 item 3) needs its own small pass through `home.md` directly.
 - The actual payment-collection mechanism for the paid plan (§8, item 2) — a future Business Decision.
+- Whether "Cerrar sesión" should interlock with an active, non-empty Sale (§8, item 6) — not designed now, no evidence of need.
