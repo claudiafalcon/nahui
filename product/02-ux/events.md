@@ -41,6 +41,29 @@ Event-*planning* capability, reachable only while an Event is
 finding remains open, non-blocking (`ux-critic-findings.md`'s D33 entry:
 `EVT-D33-MIN-A`, a duplicate-bullet cleanup in §3.11). `reviewer` clean
 (no Blockers, no Important findings) — folded back into Approved.
+**Amended 2026-08-13 (Architect-resolvable content amendment, closing an
+`experience-review-2026-08-13-eventos.md` finding — see `architect-questions.md`
+Q19, cross-referencing Q7):** §3.14 (Event detail, active, no Session
+opened today) gains a conditional, ambient row — "Hoy (Día N) · $X · N
+ventas hasta ahora" — shown only when a Session under this `eventId`
+already has 1+ finalized Sales on today's calendar date; absent entirely
+in the common case (no Session opened yet today). Deliberately worded to
+signal in-progress, not closed — a different shape from this screen's own
+past-Día row format ("Día 1 · 12 jul · 5 ventas · $610," which names a
+finished, prior calendar date) — since this row describes today's still-
+open day, not a finished one; the tester finding this amendment closes was
+specifically about trust in the "close" action, so conflating the two row
+shapes would have reintroduced the same risk in a different form. Sourced
+from `SUM(SaleItem.pricePaid)`/`COUNT(Sale)` across the identical Session
+set already reused for "Día N" (§2/§7) — no new query. Classified by
+`architect` as Architect-resolvable directly from `architect-questions.md`
+Q7's existing ruling (this document may show "a thin, ambient, in-progress
+indicator" as part of its own navigation/status role) — no new Product
+Owner decision. No new §5 screen-state entry — a conditional content
+addition to §3.14, same treatment as EVT-M3's restored one-line summary
+above. `home.md` §3.4/§3.5/§3.6 receive the matching addition in the same
+pass, including for Quick Sessions (no `eventId`) — see that document's
+own status header.
 Scope: `Eventos`, the third of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers Journey 2 (Event
 scheduling) and Journey 4 (Event close) from `information-architecture.md`.
@@ -833,6 +856,47 @@ change:
   Resultados' job (`information-architecture.md`, "deeper analytics"), not
   Eventos'.
 
+**Same-day resume — a Session with finalized Sales already exists today
+under this `eventId` (new — closes `architect-questions.md` Q19,
+`experience-review-2026-08-13-eventos.md`):**
+```
+┌───────────────────────────────┐
+│ ← Eventos                        │
+│  Plaza Norte                      │
+│  Bazar · 13-14 de agosto           │
+│                                │
+│  Hoy (Día 1) · $750 · 2 ventas hasta ahora │
+│                                │
+│      [   Continuar Día 1     ]   │
+├───────────────────────────────┤
+│ Hoy  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+- **Condition:** identical to `home.md`'s matching amendment (§3.6) — shown
+  only when at least one Session under this `eventId` already has 1+
+  finalized Sales falling on today's calendar date, regardless of that
+  Session's own current status. Absent entirely otherwise; the base §3.14
+  wireframe renders unchanged.
+- **Data source:** identical query to `home.md`'s matching amendment —
+  `SUM(SaleItem.pricePaid)` and `COUNT(Sale)` across every Sale whose
+  Session shares this `eventId` and falls on today's calendar date.
+- **Deliberately worded to signal in-progress, not closed** — "Hoy (Día
+  N)" + "hasta ahora" ("so far") names today specifically and states the
+  total is still accumulating, a different row shape from this screen's own
+  past-Día rows ("Día 1 · 12 jul · 5 ventas · $610," a finished prior
+  date). This distinction matters precisely because of the tester finding
+  this amendment closes: conflating this row with a finished-day row risked
+  implying the earlier close had discarded her sales, which it never did.
+- **Composes with, doesn't replace, any existing past-Día rows.** When this
+  Event also has 1+ Sessions on calendar dates before today, those still
+  render exactly as already specified, one row per past date — this row is
+  a distinct, additional row for today specifically, always the last row
+  before the primary CTA.
+- **Same underlying fact as `home.md`'s matching amendment, surfaced a
+  second time — not a second computation.** Reuses the identical Session
+  set and SUM/COUNT query, the same reuse discipline this document's own
+  §2/§7 already establish for "Día N" itself.
+
 ### 3.15 Event detail — active, Session already open today elsewhere
 ```
 ┌───────────────────────────────┐
@@ -1375,6 +1439,21 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 
 ## 10. Decisions made
 
+- **§3.14 (active Event, no Session opened today) now surfaces an ambient
+  "Hoy (Día N) · $X · N ventas hasta ahora" row when today already has
+  finalized Sales under this `eventId`, closing the same trust gap
+  `home.md`'s matching amendment closes
+  (`product/02-ux/experience-review-2026-08-13-eventos.md`).** Deliberately
+  worded to read as in-progress, not closed — a different shape from this
+  screen's own past-Día row format ("Día 1 · 12 jul · 5 ventas · $610") —
+  since a same-day-resume row describes today's still-open day, not a
+  finished one; conflating the two would have reintroduced the exact trust
+  risk the tester found in the "close" action. Sourced from the identical
+  Session set already reused for "Día N" (§2/§7) — no new query. Classified
+  by `architect` as resolvable directly from `architect-questions.md` Q7's
+  existing ruling — logged as Q19, not a new Product Owner decision.
+  `home.md` §3.4/§3.5/§3.6 receive the matching addition, including for
+  Quick Sessions.
 - **Events list cards (§3.4/§3.5) now show Event type alongside
   `Venue.displayName` in the headline, joined by " · " —
   "Plaza Norte · Bazar."** Previously the list showed only the Venue's

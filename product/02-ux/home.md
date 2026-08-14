@@ -124,6 +124,32 @@ behavior `events.md` §1/D15 already specify is unchanged; only §2 step 2's
 literal wording is brought into agreement with them. Same category as this
 document's own EVT-Q1/EVT-Q2-style precision fixes (see `events.md`'s
 status header for that precedent).
+**Amended 2026-08-13 (Architect-resolvable content amendment, closing an
+`experience-review-2026-08-13-eventos.md` finding — see `architect-questions.md`
+Q19, cross-referencing Q7):** §3.4/§3.5 ("Iniciar Sesión Rápida," Quick
+Session) and §3.6/§3.6a ("Continuar Día N," Event-linked) each gain a
+conditional, ambient line — "Ya vendiste $X · N ventas hoy" — shown only
+when a Session under the relevant scope (this `eventId`, or `eventId = null`
+for Quick Sessions) already has 1+ finalized Sales on today's calendar
+date; absent entirely in the common case (first Session of the day), so
+the happy path stays pixel-identical to today's spec. Sourced from
+`SUM(SaleItem.pricePaid)`/`COUNT(Sale)` across the identical Session set
+`domain-model.md`'s "Día N" computation already scopes to today — no new
+query, no new fetch. Closes a tester-found trust gap: a same-day resume
+(e.g. after a lunch-break close) correctly reopens the same Día N per D15,
+but nothing previously told Ana a closed Session's sales already existed
+before she reopened selling, and she read the fresh $0 running total as
+data loss. Classified by `architect` as Architect-resolvable directly from
+`architect-questions.md`'s existing Q7 ruling (Eventos/Home may show "a
+thin, ambient, in-progress indicator" as part of their own status role) —
+no new Product Owner decision, same category as this document's own
+preceding 2026-08-13 entry. Coexists independently with §3.6a's NFC
+Readiness/capability lines — both can render at once, in a fixed stacking
+order (see §3.6/§3.4 above). No new §5 screen-state entry — a conditional
+content addition to already-enumerated states, same treatment as the
+2026-08-08 Business Identity receipt amendment above. `events.md` §3.14
+receives the matching addition in the same pass — see that document's own
+status header.
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -414,6 +440,34 @@ the persistent nav bar on every state, current tab in brackets.
   only, same as §3.3 (applies `settings.md` §2.1's amendment; icon relocated
   2026-08-09 — see status header).**
 
+**Same-day resume — a Session with `eventId = null` and finalized Sales
+already exists today (new — closes `architect-questions.md` Q19,
+`experience-review-2026-08-13-eventos.md`):**
+```
+┌───────────────────────────────┐
+│  Nahui                        ⋯ │
+│        ¿Vas a vender hoy?       │
+│   Ya vendiste $420 · 3 ventas hoy │
+│   [   Iniciar Sesión Rápida  ]  │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+- **Condition:** shown only when at least one Session with `eventId = null`
+  (any status — active or closed) already has 1+ finalized Sales falling on
+  today's calendar date. Absent entirely otherwise, including the common
+  case (first Quick Session of the day) — the screen above renders
+  pixel-identical to §3.4's base wireframe, zero added line, zero added tap.
+- **Data source:** `SUM(SaleItem.pricePaid)` and `COUNT(Sale)` across every
+  Sale whose Session has `eventId = null` and whose calendar date is today —
+  the Quick Session counterpart to §3.6's identical fix below, no Día N
+  framing since a Quick Session has none.
+- **Coexists with §3.6a's NFC Readiness/capability lines, independent
+  facts.** When both conditions hold, this line renders above the primary
+  CTA (as shown), §3.6a's recommendation/mention line renders beneath it,
+  exactly as §3.6a already specifies — neither suppresses or reflows the
+  other.
+
 ### 3.5 Idle — ready, with an upcoming (not-yet-active) Event
 ```
 ┌───────────────────────────────┐
@@ -439,6 +493,14 @@ the persistent nav bar on every state, current tab in brackets.
   The event card and the sheet are unrelated — opening Configuración never
   touches the upcoming Event.
 
+**Same-day resume — a Session with `eventId = null` and finalized Sales
+already exists today (new — closes `architect-questions.md` Q19,
+`experience-review-2026-08-13-eventos.md`):** identical condition and
+treatment as §3.4's matching addition above — the upcoming-Event card and
+this line are unrelated facts; both can render at once, the card unaffected
+either way, same independence this section already states for the NFC
+Readiness disagreement note.
+
 ### 3.6 Event active, no Session opened today
 ```
 ┌───────────────────────────────┐
@@ -459,6 +521,48 @@ the persistent nav bar on every state, current tab in brackets.
   relocated 2026-08-09 — see status header).**
   An active Event with no Session yet still has nothing to close — "Cerrar
   sesión" doesn't apply until "Continuar Día 2" is actually tapped.
+
+**Same-day resume — a Session with finalized Sales already exists today
+under this `eventId` (new — closes `architect-questions.md` Q19,
+`experience-review-2026-08-13-eventos.md`):**
+```
+┌───────────────────────────────┐
+│  Nahui                        ⋯ │
+│      Plaza Norte                │
+│      Hoy es tu Día 1             │
+│      Ya vendiste $750 · 2 ventas hoy │
+│      [   Continuar Día 1     ]  │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+- **Condition:** shown only when at least one Session (any status — active
+  or closed) under this `eventId` already has 1+ finalized Sales falling on
+  today's calendar date. Absent entirely otherwise, including the common
+  case (first Session of the day under this Event) — the base §3.6
+  wireframe renders pixel-identical, zero added line, zero added tap.
+- **Data source:** `SUM(SaleItem.pricePaid)` and `COUNT(Sale)` across every
+  Sale whose Session shares this `eventId` and whose calendar date is
+  today — the identical Session set `domain-model.md`'s "Día N" computation
+  already scopes to today's date, reused here rather than a second,
+  independently-defined query (`global-principles.md`, "capture business
+  truth once, reuse it forever").
+- **Why this is needed:** closes the gap
+  `product/02-ux/experience-review-2026-08-13-eventos.md` found — a
+  same-day resume (e.g. after closing a lunch-break Session) correctly
+  shows "Continuar Día 1" again per D15, but nothing told Ana a closed
+  Session with real sales already existed for today before she reopened
+  selling; she read the fresh $0 running total as her prior sales having
+  vanished. Classified Architect-resolvable directly from
+  `architect-questions.md` Q7's existing ruling — no new Product Owner
+  decision, a content amendment only (`architect-questions.md` Q19).
+- **Coexists with §3.6a's NFC Readiness/capability lines, independent
+  facts.** Both can appear at once — this line is about Sessions and money
+  already recorded today; §3.6a's lines are about which selling mode the
+  next Session will open in. When both hold, the order is: identity → Día N
+  → this same-day-sales line → primary CTA → §3.6a's recommendation/mention
+  line (if any) → §3.6a's own secondary action, if offered. Neither
+  suppresses or reflows the other.
 
 ### 3.6a Session-start moment — NFC Readiness disagreement (new — folds in `decision-log.md` D23)
 
@@ -1258,10 +1362,22 @@ Three elements only — confirmation, total, business identity. No future-regist
 - A sold-out Product (0 disponibles) stays visible in the grid rather than
   disappearing — Product persists independent of stock (`domain-model.md`
   D2), the same rule `inventory.md` §3.4 already applies to the Catalog list.
-  Its tile is dimmed and not tappable; the "0 disponibles" caption is the
-  only difference from a normal tile, and is the only signal needed — no
-  separate error message on tap, because there's no tap to respond to.
-  Resolves the sold-out half of HOME-M3.
+  Its tile is dimmed and does not add to the Sale on tap; the "0 disponibles"
+  caption is the primary signal. Resolves the sold-out half of HOME-M3.
+  **Amended 2026-08-13 (implementation-caught assumption correction, closing
+  `experience-review-2026-08-13-eventos.md`'s disabled-tile finding):** this
+  bullet previously read "not tappable... no separate error message on tap,
+  because there's no tap to respond to," assuming a genuinely inert native
+  control. A `merchant-user-tester` walk found that assumption doesn't hold
+  for a first-time merchant — a tile that visually invites a tap but gives
+  zero response reads as broken, not as "nothing to respond to." The tile
+  stays dimmed and never adds to the Sale; a brief, self-dismissing ambient
+  message ("Necesitas registrar stock de [Producto]") now confirms the tap
+  registered and names the reason, reusing this codebase's existing
+  ambient-confirmation pattern (`home.md` §3.8e's own "Venta finalizada ✓"),
+  not a new mechanism. The underlying non-add-to-sale behavior is unchanged
+  — this corrects only the "no message needed" assumption. Not RFC-worthy,
+  same category as this document's other 2026-08-13 wording-precision fixes.
 - **Each tile now carries a small, automatically-generated marker — the
   first letter of `Product.name`, uppercased and whitespace-trimmed** (e.g.
   "Bolsas" → "B," "Accesorios" → "A"). Closes a real gap on the
@@ -2253,6 +2369,22 @@ her actual top sellers within the first screenful regardless of Catalog size.
   prose did. Not RFC-worthy — no aggregate boundary, domain term, or IA
   change; a literal-text-only correction to an already-Approved spec, same
   category as `events.md`'s EVT-Q1/EVT-Q2 precedent.
+- **Same-day resume now surfaces an ambient "Ya vendiste $X · N ventas
+  hoy" line on §3.4/§3.5 (Quick Session) and §3.6 (Event-linked), closing
+  a tester-found trust gap in the "cerrar sesión" action
+  (`product/02-ux/experience-review-2026-08-13-eventos.md`).** Reopening
+  the same Día N after a same-day close (D15) previously showed a fresh $0
+  running total with no signal that a closed Session's sales still
+  existed; Ana read this as data loss. Sourced from the identical Session
+  set `domain-model.md`'s "Día N" computation already scopes to today
+  (`SUM(SaleItem.pricePaid)`, `COUNT(Sale)`) — no new query. Shown only
+  when the condition holds; the common case (first Session of the day) is
+  unaffected, pixel-identical to before. Classified by `architect` as
+  resolvable directly from `architect-questions.md` Q7's existing ruling —
+  logged as Q19, cross-referenced, not a new Product Owner decision.
+  Coexists independently with §3.6a's NFC/capability lines. `events.md`
+  §3.14 receives the matching addition, worded for an in-progress (not
+  closed) day per the same finding.
 
 ## 11. Future considerations
 

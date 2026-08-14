@@ -17,6 +17,14 @@ _(none currently)_
 
 ## Resolved
 
+### Q19 — Does a same-day "ya vendiste $X hoy" ambient signal (no ambient trust signal for already-recorded sales on a same-day resume) fall inside Q7's existing "thin, ambient, in-progress indicator" allowance?
+
+- **Raised by:** `merchant-user-tester`'s first-ever Eventos walk (`product/02-ux/experience-review-2026-08-13-eventos.md`), during a same-day close/reopen of "Bazar Santa."
+- **Question:** After closing "Día 1" (summary correctly showed "$750 · 2 ventas"), returning to Home offered "Continuar Día 1" again — correct per `decision-log.md` D15 (a same-day resume must not increment the day number). But nothing on Home, the Event card, or Event detail told Ana a closed Session with sales already existed for today before she reopened selling; the new Session's own running total legitimately starts at $0, and she read that blank total as her prior sales having vanished — read as a moment that "would make Ana stop trusting the 'close' action." Whether surfacing this fact falls inside `architect-questions.md` Q7's already-sanctioned "thin, ambient, in-progress indicator" allowance, or is new scope needing a fresh Product Owner decision, was routed to `architect` for classification rather than resolved during the tester walk itself.
+- **Resolution:** Already settled by Q7's existing ruling — not a new decision. Q7 resolved that Eventos (and, by the same reasoning, Home, since both read the identical Session/Sale data for the identical `eventId`) may show "a thin, ambient, in-progress indicator" as part of their own navigation/status role, distinct from the full day-by-day breakdown reserved for Resultados. A same-day "ya vendiste $X · N ventas hoy" line is exactly this: a single computed fact (`SUM(SaleItem.pricePaid)`, `COUNT(Sale)`) over a Session set both documents already compute for "Día N" (`domain-model.md`), rendered as one ambient line, never a breakdown, never a new fetch, never a new screen. Applies identically to Quick Sessions (`eventId = null`), which have the same same-day-resume blind spot and no Foundation basis for different treatment.
+- **Applied:** `product/02-ux/home.md` §3.4/§3.5 (Quick Session, "Iniciar Sesión Rápida") and §3.6/§3.6a (Event-linked, "Continuar Día N") — new conditional ambient line. `product/02-ux/events.md` §3.14 (Event detail, active, no Session opened today) — new conditional ambient row, worded to signal in-progress rather than closed, per the tester finding being specifically about trust in the "close" action.
+- **Status:** Resolved — applied to `product/02-ux/home.md` and `product/02-ux/events.md`.
+
 ### Q17 — What is the User/Owner/Seller domain model (and Business↔User relationship) needed to implement `authentication.md`'s phone+OTP access flow?
 
 - **Raised by:** `ux-designer`, designing `product/02-ux/authentication.md`.
