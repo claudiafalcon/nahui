@@ -22,6 +22,44 @@ affected copy variants corrected; §10 updated.
 
 **Further amended 2026-08-13 (Product Owner decision — account-level sign-out added, simplified to "Cerrar sesión" in the same pass once `home.md`'s own Selling-Session-close action was renamed):** a new, fifth action — "Cerrar sesión" (§2.5/§2.5a, a new "Tu cuenta" section appended to §3.3a's and §3.6's vista principal, new §3.8/§3.8a/§3.8b) — ends this device's verified session (`authentication.md §2.1`) without touching the Business or any of its data. Distinct in kind from the four Business Capability actions in §2.2. Initially named "Cerrar sesión en este teléfono" to avoid colliding with Home's own Selling-Session close, which was also called "Cerrar sesión" at the time (`home.md §3.7a`/§3.11) — once that action was renamed to "Cerrar jornada de venta" in the same pass (see `home.md`'s own status header), the collision no longer exists, so this action simplifies to plain "Cerrar sesión," the only account-level action in the product still using that name. Gets an explicit confirming step, never a bare toggle, per `onboarding.md §6`'s established "a real commitment from a stray tap" standard. Resolves into `authentication.md §3.3`, fresh (not that document's §3.8 resume state, reserved for an interrupted attempt). Activates a branch `authentication.md §2.2` already named but marked unreachable (case 2) — a corresponding correction to that document is recommended and applied alongside this amendment. Ready for `ux-critic`/`reviewer`.
 
+**Further amended 2026-08-14 (`decision-log.md` D46 — tag-assignment
+auto-entry gates on merchant intent, not mere capability):** new §2.6
+specifies "Cambiar a vender con tags" as a real, three-way transition, not a
+bare toggle — the same write now hands off directly into `inventory.md`
+§3.14 (Asignar Tags) if untagged inventory already exists anywhere in her
+Catalog, or into `inventory.md`'s own register-merchandise-first guidance
+(new `inventory.md` §3.3a) if zero InventoryUnits have ever been received
+for this Business, or returns to Configuración's own vista principal
+unchanged if she's already fully tagged. §2.2's table, §3.4's "Cambiar a
+vender con tags" copy, and §4's interaction flow are updated to match.
+Pending `ux-critic`/`reviewer` review before folding back into Approved.
+
+**Further corrected, same day (architect ruling — see `decision-log.md`
+D46's own Addendum):** the mechanism described in the paragraph above had
+"Cambiar a vender con tags" read Inventory-owned state
+(`InventoryUnit.status`/`tagId`) directly to decide its own routing —
+`architect` ruled this would close a dependency cycle, since Inventory
+already depends on Identity (`domain-model.md`'s Bounded Contexts table);
+a return edge (Identity → Inventory → Identity) would violate
+`architecture-principles.md` #6. Corrected: §2.6 now specifies this action
+as writing `defaultSellingMode` and handing off an entry marker only —
+"reached via Cambiar a vender con tags" — into `inventory.md` §2's own
+resolution, which gains a new, highest-priority trigger condition
+performing the identical check `inventory.md` already legitimately owns.
+No new dependency edge, no domain-model change. One real, small
+UX-surface delta from the first draft: an already-fully-tagged merchant
+now lands on `inventory.md`'s plain Catalog view (§3.4) rather than back
+on Configuración's own vista principal. §3.4's copy also now discloses
+the zero-inventory outcome, per `ux-critic`'s finding. §2.2's table note,
+§2.6 (full rewrite), §3.4, §4, §6, §7, and §10 all updated to match.
+`reviewer` clean (1 Suggestion, applied — a cross-reference precision
+gap in §2.6's third bullet). `ux-critic` found 1 Major (SET-INV-D46-MAJ1
+— the already-fully-tagged outcome silently landed her on a different nav
+tab with no acknowledgment, contradicting this document's own claim that
+the case "needs no disclosure") — fixed (new one-time banner at
+`inventory.md` §3.4, this document's own §3.4/§10 corrected to state the
+truth) and re-verified clean. Folded back into Approved.
+
 Scope: `Configuración`, the merchant-facing surface for the Business Capabilities `decision-log.md` D25/D27/D40 leave merchant-self-service: `subscriptionTier` (Free ↔ Paid) — two actions (both directions), a reusable "pending change" indicator, and a way to cancel a pending change before it lands — plus `decision-log.md` D27's `defaultSellingMode` control (Botones ↔ Etiquetas NFC), constrained to whichever modes `subscriptionTier` currently makes available: **four actions total**, not six. Both `defaultSellingMode` directions use the same immediate-effect template `subscriptionTier`'s "activate" direction already uses (§2.3, §3.4) — the only real difference is that neither carries a pending-value/effective-date pair, since the field has no billing-cycle implication for D25's deferred-timing rationale to apply to, not a differently-shaped UI. `registrationMode`'s `nfc` entitlement is no longer an independently self-service-toggleable capability of its own (D27 superseded that part of D25) — it is a pure read-time derivation from `subscriptionTier = paid`, so it has no dedicated action or row here; it changes only as an automatic consequence of the `subscriptionTier` actions below. **`loyaltyEnabled` is retired outright, not merely absent from self-service scope** (`decision-log.md` D40) — there is no Business-level field left to toggle, self-service or otherwise; Frequent Customers as a whole is entitled purely by `subscriptionTier`, present in full on Paid and structurally absent on Free, with no action of Ana's own anywhere in this document or any other. **Not a fifth nav tab** — per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, Configuración hangs off the existing session-controls affordance already specified in `home.md` — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon opening the identical sheet (Product Owner decision; see status header above and `home.md`'s own status header/§10 for the full reasoning). This is the last of the five merchant-facing experiences to be designed (`product/02-ux/CLAUDE.md`). Implementation-independent — low-fidelity only, no visual design. A fifth action, added 2026-08-13, sits outside this four-capability count entirely: "Cerrar sesión" (§2.5) is an Identity-context, `User`-level action (RFC 0007) — it has no Business Capability to represent, changes nothing about her plan or how she sells, and is never conditioned on `subscriptionTier` or any pending change. It's placed in its own "Tu cuenta" section, not counted among, or confused with, the four capability actions above.
 
 Out of scope by explicit instruction:
@@ -81,6 +119,16 @@ Concretely, tapping the header's "⋯" icon:
 
 Every action honors D25's two invariants identically: **never delete historical data**, and **business rules determine timing** (except `defaultSellingMode`, which carries no billing-cycle implication at all — see §2.3).
 
+**"Cambiar a vender con tags" carries one more consequence beyond flipping
+the stored field, added 2026-08-14 (`decision-log.md` D46, corrected the
+same day per D46's own Addendum) — see §2.6.** Unlike every other row
+above, this action's own success doesn't stop at "row updated, no pending
+state" (§4) — it also hands off, via a lightweight entry marker, into
+`inventory.md`'s own resolution (§2), which is what actually determines
+whether/how she's routed into tagging her existing Catalog. This action
+never reads or decides that itself (architect ruling,
+`architecture-principles.md` #6 — see §2.6 for the full reasoning).
+
 ### 2.3 Why `defaultSellingMode`'s two directions are both immediate, with no pending-change structure (`decision-log.md` D27)
 
 Unlike `subscriptionTier`, `defaultSellingMode` is not a commercial or billing capability — it's an operational fallback (`decision-log.md` D23) that Session-start already reads fresh, every time, alongside NFC Readiness. `decision-log.md` D25's deferred-timing rationale exists specifically to make a *commercial* change (one with billing-cycle implications, like a Paid→Free downgrade) honestly displayable before it lands; `defaultSellingMode` carries no such implication in either direction. Setting it to `nfc` or back to `buttons` changes nothing about what she's being charged, when, or under what plan — it only changes which mode Session-start resolves toward the next time she opens a Session, exactly the same way any other read of a Business-level fallback field already behaves.
@@ -116,6 +164,97 @@ Every action in §2.2's table changes something about the Business — what she'
 The local Business record stays fully intact through a sign-out, so a successful re-verification on the same device finds it waiting exactly as it was — and hands off to `onboarding.md`'s own resolution logic (`onboarding.md §2.1`), the identical silent pass-through `authentication.md §2.1` case 1 already describes for an unbroken session, reached this time via a fresh OTP confirmation instead of a persisted flag. **In practice this always resolves straight through to Home (`home.md §2`), not to a resumed Onboarding step** — "Cerrar sesión" is reachable only from Home's own persistent header (§2.1: "anywhere Home shows a persistent header"), and Home itself is reachable only once `onboarding.md §2.1`'s case 1 (a fully complete Business) has already resolved; there is no path into Configuración, or this row, during an in-progress Onboarding. `onboarding.md §2.1`'s in-progress cases (2–4) describe what the general handoff *would* do if this trigger were ever reachable mid-Onboarding — a state this specific mechanism cannot structurally produce, not a live branch of it. This document has nothing further to add once verification succeeds — the same as case 1's own handoff already states.
 
 `authentication.md §2.2` case 2's own text was stale — correctly unreachable when written, made reachable by this action. The matching correction is applied to that document in the same pass — see its own status header.
+
+### 2.6 What "Cambiar a vender con tags" does beyond flipping the field —
+hand off into tagging, or guide her to register first (corrected —
+architect ruling, `decision-log.md` D46 Addendum)
+
+`decision-log.md` D46 corrects a real, previously-unnoticed contradiction:
+`inventory.md`'s own auto-entry trigger into Asignar Tags read `nfc ∈
+registrationMode` (NFC *availability*) rather than `defaultSellingMode =
+'nfc'` (her actual, self-service-chosen *intent* — precisely the field this
+action writes). §2.3 above already explains why `defaultSellingMode`'s two
+directions are pure, immediate toggles with no billing-cycle implication;
+this section adds the one genuine consequence beyond the toggle itself —
+what happens to whatever's already sitting untagged in her Catalog the
+instant she makes this specific choice.
+
+**Corrected mechanism, same day as D46 (`architect` ruling — see
+`decision-log.md` D46's own Addendum).** The first drafted version of this
+section had this action read Inventory-owned state
+(`InventoryUnit.status`/`tagId`) directly to decide its own routing.
+`architect` ruled this would close a dependency cycle: `domain-model.md`'s
+Bounded Contexts table already has Inventory depend on Identity, so an
+Identity-context action reading Inventory state back to make its own
+routing decision would add a return edge (Identity → Inventory →
+Identity) — exactly what `architecture-principles.md` #6 forbids
+("dependency direction is one-way... new features extend the graph, they
+don't add a back-edge"). Resolved without losing the direct-auto-entry
+behavior D46 itself requires: this action now writes `defaultSellingMode`
+and nothing else — the routing decision moves entirely into
+`inventory.md`, which already legitimately owns the check that decides it.
+
+**The write and the handoff are one action, but the handoff carries no
+queried domain fact — only a lightweight entry marker.** The moment §3.4's
+"Cambiar ahora" confirms and `defaultSellingMode` is written as `nfc`
+(§3.9's guardando step), this same action unconditionally hands off
+navigation into `inventory.md` §2's own resolution, carrying nothing more
+than an entry marker — "reached via Cambiar a vender con tags" — the same
+lightweight "arrived-via" marker shape this document family already uses
+elsewhere (`inventory.md` §3.3's own text: "If she instead arrived via
+Home's cold-start CTA, she skips straight to §3.6"). This document never
+checks, branches on, or reads any `InventoryUnit`/Catalog fact to decide
+where she lands — that decision belongs entirely to `inventory.md` §2,
+which gains a new, highest-priority trigger condition performing exactly
+the check it already legitimately runs for its own, separate reason (its
+own pending-tag-work test, step 2).
+
+**What actually happens once the handoff lands** (fully specified in
+`inventory.md` §2 — summarized here only so this action's real
+consequence stays honestly disclosed before she confirms, §3.4):
+- **Untagged, `available` inventory exists anywhere in her Catalog** → she
+  lands directly in `inventory.md` §3.14 (Asignar Tags), seeded with every
+  untagged unit across her whole Catalog, not scoped to any single Lot.
+  She never sees Configuración's own vista principal again in between —
+  the same "auto-continue, no intermediate question" shape `inventory.md`
+  §2 step 3 already establishes for the Guardar mercancía trigger, applied
+  here to D46's second trigger.
+- **No untagged inventory, but she's received merchandise before** →
+  `inventory.md` §2's own resolution takes over from there and lands her
+  on the plain Catalog view (`inventory.md` §3.4, "Inventory Ready") —
+  **not** back on Configuración's own vista principal (a real, small
+  UX-surface delta from this section's original draft, reasoned in full in
+  §10 below). She's already fully tagged, ready to sell with tags next
+  Session.
+- **Zero InventoryUnit ever received for this Business** → `inventory.md`
+  §2's own cold-start branch takes over, landing on its one-time
+  acknowledgment (`inventory.md` §3.3a) — D46's explicit third rule: "an
+  empty tagging queue is never shown as the landing state." She's guided
+  to register merchandise first, using the exact "Registrar mercancía"
+  entry point Inventario already offers — no new capture mechanism
+  invented. (Two sub-renders depending on whether named Products already
+  exist with zero Lots received — see `inventory.md` §3.3a.)
+
+**Why this lives here, split the way it is.** This document owns *when*
+the transition fires and *what field it writes* — the moment
+`defaultSellingMode` changes to `nfc`. `inventory.md` owns *what she sees
+once it does*, using state it already legitimately reads for its own,
+independent reason — cross-referenced, not redescribed, per this folder's
+own §4 discipline. Keeping the destination logic entirely inside
+`inventory.md`, triggered by a bare marker rather than a fact this
+document queries, is what avoids the dependency back-edge structurally,
+not merely by convention.
+
+**"Cambiar a vender con botones" has no equivalent branch.** Switching back
+to `buttons` never routes anywhere beyond the ordinary immediate-effect
+return (§4) — any inventory she'd left untagged simply stays untagged, per
+`inventory.md` §3.5's corrected gate.
+
+**"Activar plan de pago" and "Volver al plan gratis" are unaffected.**
+Neither writes `defaultSellingMode`, so neither triggers this handoff —
+Free→Paid makes `nfc` *available*, but `defaultSellingMode` stays whatever
+it already was (`buttons`, for every real Onboarding path, `onboarding.md`
+§2.3) until she takes this specific action.
 
 ## 3. Low-fidelity wireframes
 
@@ -210,7 +349,7 @@ indifferent to how it got there.
 
 Once `subscriptionTier=paid`, the mode row becomes a real, tappable control — "Botones" or "Con tags," whichever `defaultSellingMode` currently is, with a button offering the other option (§2.2, §2.3, `decision-log.md` D27).
 
-### 3.4 Confirmación de efecto inmediato (generic template — shared by five actions)
+### 3.4 Confirmación de efecto inmediato (generic template — shared by three copy variants)
 ```
 ┌───────────────────────────────┐
 │ ← Configuración                 │
@@ -258,14 +397,37 @@ confirms, with nothing else for Ana to turn on afterward.
 
 **"Activar clientes frecuentes" and "Desactivar clientes frecuentes" — retired entirely, not corrected (`decision-log.md` D40).** Both actions no longer exist anywhere in this document. Kept here as a one-line record so the trail stays visible: D22 first introduced them as a real toggle; D34 corrected their copy to stop framing `loyaltyEnabled` as a Resultados-visibility precondition; D40 removes them altogether, since there is no longer a capability for either action to act on. Frequent Customers now turns on and off exactly when `subscriptionTier` does — see "Activar plan de pago" (above) and "Volver al plan gratis" (§3.5) for where that consequence is now disclosed.
 
-**Copy variant — Cambiar a vender con tags (new — `decision-log.md` D27):**
+**Copy variant — Cambiar a vender con tags (`decision-log.md` D27;
+handoff disclosure added `decision-log.md` D46; both outcomes disclosed
+per `ux-critic` finding):**
 ```
 Cambiar a vender con tags
 Desde tu próxima sesión, vas a empezar vendiendo con tags,
 siempre que tengas mercancía etiquetada lista. Si no tienes
 tags listos ese día, vendes con botones sin problema.
+Si tienes mercancía sin etiquetar, te llevamos a etiquetarla
+en cuanto confirmes. Si aún no has registrado mercancía,
+primero te pedimos que la registres.
 [ Cambiar ahora ]
 ```
+New last two lines disclose §2.6's handoff plainly before she confirms —
+both real outcomes (untagged inventory exists; no inventory exists yet),
+not only the first — the same "never leave her to discover a real
+consequence only after the fact" discipline this document already applies
+to "Activar plan de pago"'s `nfc` disclosure and "Volver al plan gratis"'s
+consequence disclosure. **The third outcome (already fully tagged) needs no
+pre-confirmation disclosure of its own here** — unlike the other two,
+nothing about what happens next depends on anything she'd need to know
+before tapping "Cambiar ahora." That doesn't make it silent afterward,
+though (corrected — `ux-critic` finding SET-INV-D46-MAJ1; the previous
+version of this sentence claimed "exactly like every other row in this
+table," which wasn't true): per §2.6, she still lands on a different
+screen than every other row returns her to — `inventory.md`'s plain
+Catalog view (§3.4), not back on Configuración's own vista principal —
+carrying its own brief, one-time acknowledgment there. That acknowledgment
+is specified once, at its actual destination (`inventory.md` §3.4), not
+redescribed here, per this folder's own §4 discipline of citing shared
+states instead of duplicating them.
 
 **Copy variant — Cambiar a vender con botones (new — `decision-log.md` D27):**
 ```
@@ -394,11 +556,27 @@ states where it's deliberately absent: §3.1/§3.2/§3.12/§3.14):
 
 From the main view, tap any action row:
 
-  Activar plan de pago / Cambiar a vender con tags /
-  Cambiar a vender con botones
+  Activar plan de pago / Cambiar a vender con botones
     → confirmación de efecto inmediato (§3.4) → {acción} ahora
         → guardando (§3.9) → error (§3.10) → Reintentar
         → success → back to vista principal, row updated, no pending state
+
+  Cambiar a vender con tags
+    → confirmación de efecto inmediato (§3.4) → Cambiar ahora
+        → guardando (§3.9) → error (§3.10) → Reintentar
+        → success → unconditional handoff into inventory.md §2's own
+          resolution, carrying only an entry marker ("reached via Cambiar
+          a vender con tags") — this document performs no check of its
+          own (`decision-log.md` D46 Addendum, architect ruling; see §2.6):
+            untagged InventoryUnit exists anywhere in her Catalog
+              → inventory.md §3.14 (Asignar Tags), auto-entered, per
+                inventory.md §2's new highest-priority trigger
+            no untagged unit, 1+ InventoryUnit ever received
+              → inventory.md §2's ordinary resolution → inventory.md §3.4
+                (Catalog view, "Inventory Ready") — not back to
+                Configuración's own vista principal (see §10)
+            zero InventoryUnit ever received
+              → inventory.md §2's ordinary resolution → inventory.md §3.3a
 
   Volver al plan gratis
     → confirmación de efecto diferido (§3.5) → Confirmar cambio
@@ -453,12 +631,13 @@ Cerrar sesión
 |---|---|---|
 | Reach Configuración from anywhere in Home | 2 (⋯ → Configuración) | Single deliberate tap to open the sheet, same shape as reaching Cerrar jornada de venta today, now available from every Home header state per §2.1. |
 | Activar plan de pago | 2 (Activar plan de pago → Confirmar y activar) | One tap to open the action, one to confirm the self-attestation — nothing beyond that to type once the payment itself has already happened elsewhere. |
-| Cambiar a vender con tags / Cambiar a vender con botones | 2 | Pure toggle — unlike the retired NFC-activation path, nothing left in this document requires typing anything. |
+| Cambiar a vender con botones | 2 | Pure toggle — unlike the retired NFC-activation path, nothing left in this document requires typing anything. |
+| Cambiar a vender con tags | 2, for this action itself (`decision-log.md` D46) | Pure toggle at this document's own layer — identical floor. This action always hands off into `inventory.md` §2's own resolution (§2.6); whether that lands her in Asignar Tags (`inventory.md` §3.14, incurring that document's own per-unit scan cost), the plain Catalog view, or the register-first cold start costs nothing further at this document's own boundary — not double-counted here, since Inventario's own resolution is a separate document's own action, not part of this Settings transition. |
 | Volver al plan gratis | 2 | Deferred effect doesn't change the tap count — only when the write takes effect. |
 | Cancelar cambio pendiente | 2 | Mirrors `home.md`'s own destructive-action confirmation floor. |
 | Cerrar sesión | 2 (tap row → Sí, cerrar sesión) | Same two-tap floor as every other action here — a real, if fully reversible, commitment gets one real confirming tap, nothing more. |
 
-Every action in this table now shares an identical 2-tap floor. The one previous exception — Activar venta con tags's code-entry requirement — is gone along with the path itself (`decision-log.md` D27): `defaultSellingMode`'s two directions are pure toggles like every other immediate-effect action, with no real fact left to type. Configuración is now the one document in this family where every merchant-initiated action, without exception, costs exactly two taps — open the action, confirm it.
+Every action in this table now shares an identical 2-tap floor, measured at this document's own boundary. The one previous exception — Activar venta con tags's code-entry requirement — is gone along with the path itself (`decision-log.md` D27): `defaultSellingMode`'s two directions are pure toggles like every other immediate-effect action, with no real fact left to type. Configuración is now the one document in this family where every merchant-initiated action, without exception, costs exactly two taps — open the action, confirm it.
 
 ## 7. Automation opportunities
 
@@ -470,6 +649,12 @@ Every action in this table now shares an identical 2-tap floor. The one previous
 - The one-time landing acknowledgment (§2.4) is shown automatically, never requiring her to remember she had a pending change.
 - Whether Frequent Customers is available at all — computed automatically from `subscriptionTier`, with no capability of Ana's own to set (`decision-log.md` D40).
 - Whether this device already holds a valid session — resolved silently by `authentication.md §2.1` on every app open; this document never asks that question itself, only ever offers the one deliberate action to flip it off.
+- Whether "Cambiar a vender con tags" hands off into tagging, the plain
+  Catalog view, or Inventario's own register-first guidance — computed
+  automatically, entirely inside `inventory.md`'s own resolution (§2),
+  reached via an unconditional handoff carrying only an entry marker; this
+  document never reads or computes any Inventory-owned fact itself
+  (`decision-log.md` D46 Addendum, architect ruling; §2.6).
 
 ## 8. Open questions
 
@@ -498,7 +683,7 @@ None of the items below block this document's completion.
 **architecture-principles.md:**
 - *#1 (capabilities resolved once, upstream, never asked mid-flow)* — Configuración is the one deliberate exception D25/D27 carve out for merchant-initiated, explicit self-service change; no other screen re-asks any of the capabilities or settings managed here.
 - *#4 (internal-only entities never leak into user-facing language)* — no capability is ever named by its technical field anywhere.
-- *#6 (one-way dependency direction)* — this document only writes to Identity's Business Capabilities; it never designs a Selling/Inventory/Intelligence screen of its own. "Cerrar sesión" writes only to this device's own session fact, not part of the domain model at all (RFC 0007 §5's explicit infrastructure deferral) — it never reads or writes Selling, Inventory, or Intelligence data, the identical discipline the rest of this document already holds itself to.
+- *#6 (one-way dependency direction)* — this document only writes to Identity's Business Capabilities; it never designs a Selling/Inventory/Intelligence screen of its own. "Cerrar sesión" writes only to this device's own session fact, not part of the domain model at all (RFC 0007 §5's explicit infrastructure deferral) — it never reads or writes Selling, Inventory, or Intelligence data, the identical discipline the rest of this document already holds itself to. **"Cambiar a vender con tags" (§2.6) observes this identically** — corrected specifically to hold this line, per `decision-log.md` D46's Addendum: it writes `defaultSellingMode` and hands off a bare entry marker, never reading or querying `InventoryUnit`/Catalog state itself; the one check that decides her routing lives entirely inside `inventory.md`, which already legitimately owns it.
 
 **brand-guide.md:**
 - *Tone — "warm, direct, respects the vendor's intelligence"* — every deactivation confirmation states plainly what's lost without a warning-styled dialog; "Activar plan de pago"'s restored copy states plainly that this activates by confirming a payment arranged elsewhere, rather than omitting that fact. §3.8's sign-out confirmation states the one fact that matters (nothing is lost) plainly and up front, mirroring the reassurance shape "Volver al plan gratis" (§3.5) already established, rather than an apology-first or warning-styled dialog.
@@ -534,6 +719,34 @@ None of the items below block this document's completion.
   never-delete-historical-data invariant.
 - **`decision-log.md` D40 retires "Activar clientes frecuentes"/"Desactivar clientes frecuentes" (§3.4) entirely, superseding the D34 bullet above.** `loyaltyEnabled` no longer exists as a Business-level field; Frequent Customers is now a pure, automatic consequence of `subscriptionTier`, the identical shape D27 already established for `nfc`. Narrows Configuración from six actions to four (§2.2); "Activar plan de pago"'s and "Volver al plan gratis"'s copy now state the fuller consequence (Frequent Customers as a whole, not only Resultados visibility).
 - **A fifth, account-level action — "Cerrar sesión" — is added 2026-08-13 (Product Owner decision), outside the four-capability count.** Ends this device's verified session (`authentication.md §2.1`) without touching the Business or its data (§2.5). Initially named "Cerrar sesión en este teléfono" to avoid colliding with Home's own Selling-Session close, also called "Cerrar sesión" at the time — once that action was renamed to "Cerrar jornada de venta" in the same pass (`home.md`'s own status header/§10), the collision no longer existed, so this action simplifies to plain "Cerrar sesión," the only account-level action in the product still using that name. Placed in its own "Tu cuenta" section, present identically regardless of `subscriptionTier` or pending-change state. Gets an explicit confirming step (§3.8), never a bare toggle, per `onboarding.md §6`'s "real commitment from a stray tap" standard. Resolves into `authentication.md §3.3`, fresh; a same-device re-verification afterward activates `authentication.md §2.2`'s previously-unreachable case 2 (§2.5a) — a corresponding correction to that document was applied in the same pass.
+- **A sixth consequence added 2026-08-14 (`decision-log.md` D46), corrected
+  the same day (architect ruling — see D46's own Addendum).** "Cambiar a
+  vender con tags" is no longer a bare field-flip. The first drafted
+  version had this action itself read Inventory-owned state
+  (`InventoryUnit.status`/`tagId`) to decide its own routing —
+  `architect` ruled this would close a dependency cycle, since Inventory
+  already depends on Identity (`domain-model.md`'s Bounded Contexts
+  table); a return edge would violate `architecture-principles.md` #6.
+  Corrected: this action now only writes `defaultSellingMode` and hands
+  off a lightweight entry marker; `inventory.md` §2 gains a new,
+  highest-priority trigger condition that performs the identical check
+  `inventory.md` already legitimately owns (§2.6). One real, small
+  UX-surface delta from the original draft, not mandated or contradicted
+  by D46's own text: an already-fully-tagged merchant now lands on
+  `inventory.md`'s plain Catalog view (§3.4, "Inventory Ready") instead of
+  back on Configuración's own vista principal — a more honest landing
+  state than returning to Configuración's vista principal would have been.
+  **Corrected (`ux-critic` finding SET-INV-D46-MAJ1):** this bullet
+  originally claimed the destination screen had "nothing further to tell
+  her" — untrue in practice, since landing on a different nav tab with no
+  explanation is itself a real, previously-undisclosed consequence.
+  `inventory.md` §3.4 now carries its own one-time ambient acknowledgment
+  for this exact entry marker, mirroring the banner treatment its sibling
+  "named Products, zero Lots" case already used. §3.4's "Cambiar a vender
+  con tags" copy also discloses the zero-inventory outcome, not only the
+  tagging-handoff one, per `ux-critic`'s earlier finding — all three real
+  consequences are now honestly disclosed, either before she confirms or
+  at the actual landing screen.
 
 ## 11. Future considerations
 

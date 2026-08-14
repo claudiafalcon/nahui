@@ -49,6 +49,48 @@ Blockers/unresolved Majors). Two Minor findings remain open, non-blocking
 propagation/bracket-convention gap). `reviewer` clean (no Blockers, no
 Important findings) — folded back into Approved.
 **Amended 2026-08-08 (`decision-log.md` D33, "Define lo que vendes" moved into Onboarding):** a zero-`disponibles` Catalog row now distinguishes "sin registrar" (never had a Lot received, reachable for the first time now that Onboarding can create Products with zero stock) from "0 disponibles" (previously stocked, sold out) — resolves a first-impression risk `ux-critic` found where a fresh merchant's own named Products would otherwise read as already sold out. Copy-only, no schema change, applied identically to §3.4/§3.5/§3.12/§3.13/§3.17. `ux-critic` verified clean (zero Blockers, zero unresolved Majors). `reviewer` clean (no Blockers; two Important findings fixed by Main — a missing `ux-critic-findings.md` entry, and two stale passages here claiming `defaultPrice` capture was unique to this document, now updated to acknowledge Onboarding's sibling entry point) — folded back into Approved.
+**Amended 2026-08-14 (`decision-log.md` D46 — tag-assignment auto-entry
+gates on merchant intent, not mere capability):** every auto-entry/pending-
+nudge trigger into Asignar Tags in this document — §2 steps 2–3, §3.5,
+§3.12, §3.13, §3.14, §3.17, §4, §7, §10 — is corrected from `nfc ∈
+registrationMode` (NFC *availability*, a pure `subscriptionTier = paid`-
+derived capability) to `Business.defaultSellingMode === 'nfc'` (her actual,
+self-service-chosen selling-mode intent, `settings.md` §2.2). A new entry
+point (new §3.3a) guides her to register merchandise first, reusing this
+document's own cold-start/Catalog-view resolution, when `settings.md`
+§2.6's "Cambiar a vender con tags" succeeds with zero InventoryUnits ever
+received for this Business — an empty tagging queue is never shown as a
+landing state. NFC availability itself, and its own separate gate on
+whether the Assign-Tags mechanism exists in Inventario at all, are
+unchanged. Pending `ux-critic`/`reviewer` review before folding back into
+Approved.
+
+**Further corrected, same day (architect ruling — see `decision-log.md`
+D46's own Addendum):** the paragraph above described `settings.md`'s
+"Cambiar a vender con tags" action itself reading Inventory-owned state to
+decide its own routing — `architect` ruled this would close a dependency
+cycle (Inventory already depends on Identity, `domain-model.md`'s Bounded
+Contexts table; a return edge would violate `architecture-principles.md`
+#6). Corrected: `settings.md`'s action now only writes `defaultSellingMode`
+and hands off a bare entry marker; this document's own §2 gains a new,
+highest-priority trigger condition (step 0) that performs the identical
+check this document already legitimately owns — the same whole-Catalog
+untagged-inventory test step 2 already runs, reused here rather than
+duplicated in `settings.md`. Traces correctly through all three cases:
+untagged inventory exists → auto-enter §3.14, seeded whole-Catalog; already
+fully tagged → falls through to steps 1-2 and lands on the plain Catalog
+view (§3.4, "Inventory Ready") — a real, small delta from the original
+draft's "returns to Configuración" landing, reasoned in full in
+`settings.md` §2.6/§10; zero InventoryUnit ever received → falls through
+to step 1 and lands on §3.3a exactly as before. §2 (new step 0), §3.3a,
+§3.14, §4, §6, §7, and §10 updated to match. `reviewer` clean (1
+Suggestion, applied). `ux-critic` found 1 Major (SET-INV-D46-MAJ1 — the
+already-fully-tagged outcome silently landed her on this document's
+Catalog view with no acknowledgment) — fixed (new one-time banner at §3.4,
+mirroring the existing "named Products, zero Lots" banner already on the
+same screen; §10 corrected to match) and re-verified clean. Folded back
+into Approved.
+
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -85,10 +127,14 @@ real contexts:
   reassuring herself she still has stock of something): a fast, honest glance
   at "what do I have and how much," nothing more.
 
-A distant third, only for `nfc ∈ registrationMode` merchants: physically
-walking through a stack of new garments attaching tags — a one-time-per-unit
-task that happens once, at receiving time, never again during selling
-(`vision.md`: "the merchant never switches between them while selling").
+A distant third, only for merchants whose `defaultSellingMode = 'nfc'`:
+physically walking through a stack of new garments attaching tags — a
+one-time-per-unit task that happens once, at receiving time, never again
+during selling (`vision.md`: "the merchant never switches between them
+while selling"). NFC *availability* (`nfc ∈ registrationMode`,
+`subscriptionTier = paid`) is a separate fact from this — a Paid merchant
+who keeps `defaultSellingMode = 'buttons'` never has this "distant third"
+task appear at all, by design (`decision-log.md` D46).
 
 Registration speed here is real but not the same bar as Home's. `company/backlog.md`
 #1 and `company/CLAUDE.md`'s core thesis are specifically about *sale*
@@ -103,7 +149,8 @@ app does.
 ## 2. Resolution / decision logic
 
 Before any of the following resolves, the tab itself must load its own state
-(Catalog membership, `nfc ∈ registrationMode`, pending tag counts) — this can
+(Catalog membership, `nfc ∈ registrationMode`, `defaultSellingMode`, pending
+tag counts) — this can
 fail or take longer than expected under real bazaar/car/between-stalls
 connectivity, same as every other tab. See §3.1/§3.2 for the near-instant/slow
 presentation of that load, and §3.18 for the defensive fallback if it doesn't
@@ -114,25 +161,39 @@ Evaluated automatically, every time Inventario is opened or a sub-flow
 completes:
 
 ```
+0. [Reached via Settings' "Cambiar a vender con tags" — an entry marker
+   only, never a fact `settings.md` itself computes or reads] Does at
+   least one InventoryUnit exist with status = available and no NFCTag
+   assigned, anywhere in the Catalog (the identical whole-Catalog check
+   step 2 already performs)?
+     → YES: auto-enter Asignar Tags (§3.14) directly, seeded with every
+       untagged unit across the whole Catalog — not scoped to one Lot,
+       unlike step 3's Lot-scoped seed — no intermediate landing on §3.5.
+     → NO: fall through to steps 1-2, exactly as already written below.
+
 1. Does the Catalog have at least one Product ever registered?
      → NO:  cold-start empty state (§3.3).
      → YES: Catalog view (§3.4 / §3.5).
 
-2. [Catalog view] Is `nfc ∈ registrationMode`, AND does at least one
-   InventoryUnit exist with status = available and no NFCTag assigned?
+2. [Catalog view] Is `Business.defaultSellingMode === 'nfc'`, AND does at
+   least one InventoryUnit exist with status = available and no NFCTag
+   assigned?
      → YES: pending-tag-work Catalog view (§3.5) — "Continuar etiquetando" is
        the primary action in this state (non-blocking, resumes Asignar Tags
        exactly where she left off); Registrar mercancía remains fully
        available as a secondary action, never gated.
-     → NO (buttons-only capability, or nfc-capable with nothing pending): plain
-       Catalog view (§3.4).
+     → NO (`defaultSellingMode = 'buttons'` — regardless of `nfc ∈
+       registrationMode` capability — or `defaultSellingMode = 'nfc'` with
+       nothing pending): plain Catalog view (§3.4).
 
 3. [Inside Registrar Mercancía, after "Guardar mercancía"] Is
-   `nfc ∈ registrationMode`?
+   `Business.defaultSellingMode === 'nfc'`?
      → YES: auto-enter Asignar Tags (§3.14) for this Lot's freshly generated
        InventoryUnits — no intermediate question asked.
-     → NO: return to Catalog view with an ambient confirmation (§3.12) — done,
-       Inventory Ready, nothing further required.
+     → NO (`defaultSellingMode = 'buttons'`, whether or not `nfc ∈
+       registrationMode`): return to Catalog view with an ambient
+       confirmation (§3.12) — done, Inventory Ready, nothing further
+       required.
 
 4. [Inside Asignar Tags] Does this Lot still have any InventoryUnit without a
    tag?
@@ -141,7 +202,51 @@ completes:
        (§3.13).
 ```
 
+**New, highest-priority trigger condition — step 0, added by architect's
+own corrected design (`decision-log.md` D46 Addendum).** This check
+belongs entirely to Inventario, not Settings: `settings.md` §2.6's "Cambiar
+a vender con tags" action writes `defaultSellingMode` and hands off an
+entry marker only — never a queried Inventory fact — precisely to avoid a
+dependency back-edge (Inventory already depends on Identity per
+`domain-model.md`'s Bounded Contexts table; `architecture-principles.md`
+#6 forbids the reverse edge that would result from Identity reading
+Inventory state to make its own routing decision). Step 0 reuses the
+identical whole-Catalog untagged-inventory test step 2 already runs, for
+its own separate reason (surfacing a pending-tag-work nudge on an ordinary
+Catalog-view open) — no new fact is invented, only a new, earlier moment
+to check the same one. It only ever evaluates when Inventario's resolution
+is entered carrying that specific entry marker; an ordinary tab open, or
+any other entry point, skips straight to step 1 as always. Traces
+correctly through all three real cases: untagged inventory exists →
+auto-enter §3.14 per the YES branch above; no untagged inventory but she's
+received merchandise before → falls through to step 1 (Product ever
+registered — YES, she's sold before) → step 2 reads NO (nothing pending,
+`defaultSellingMode` just became `nfc` but no untagged unit exists) →
+plain Catalog view (§3.4), "Inventory Ready" — not a return to
+Configuración's own vista principal (`settings.md` §2.6/§10); zero
+InventoryUnit ever received → falls through to step 1, which reads NO if
+zero Products have ever been registered either → cold start with this
+entry marker's own variant (§3.3a) — or, if named Products already exist
+with zero Lots ever received against them (`onboarding.md`'s "Define lo
+que vendes"), step 1 reads YES → Catalog view with the identical one-time
+banner (§3.3a's second bullet). All three cases resolve to an
+already-defined destination; none is invented here.
+
 **This is deliberately a different, shallower test than Home's own §2 step 3 check** (`decision-log.md` D33 / `onboarding.md`'s 2026-08-08 amendment). Home tests for at least one `available` InventoryUnit, since offering "Iniciar Sesión Rápida" is a promise that something is sellable right now — a promise a named-but-unstocked Catalog can't honestly make (`home.md` §2 step 3, §3.3). Inventario's own question is narrower and carries no such promise: whether there's a Catalog to *display and receive against* at all — a zero-`disponibles` row (§3.4) is never a dead end here the way an all-dimmed selling grid would be in Home, since every Catalog row stays honestly labeled and fully tappable into Registrar Mercancía regardless of stock. The two tabs deliberately read different facts now; before `onboarding.md`'s "Define lo que vendes" step existed, they happened to coincide, since a Product could never exist without an accompanying Lot — that coincidence no longer holds, and this test's own substance was re-checked against it rather than assumed still correct by inertia (see `onboarding.md` §2.2a).
+
+**Gate corrected, `decision-log.md` D46.** Steps 2 and 3 above previously
+gated on `nfc ∈ registrationMode` (NFC *availability*) — a Paid merchant who
+never intends to sell with tags was unconditionally routed into a tagging
+queue and shown a persistent tagging nudge, regardless of whether she'd ever
+choose `nfc` as her normal selling mode. Both steps now gate on
+`Business.defaultSellingMode === 'nfc'` — her actual, self-service-chosen
+intent (`settings.md` §2.2's "Cambiar a vender con tags") — never on
+capability alone. A Paid merchant who keeps `defaultSellingMode = 'buttons'`
+sees no pending-tag nudge (§3.5) and is never auto-routed into Asignar Tags
+after Guardar mercancía, exactly as D46 requires ("A Paid merchant who never
+switches to `nfc` mode is never auto-routed into tagging, at any point, for
+any reason"). This does not change whether the Assign-Tags step *exists* in
+Inventario at all — see below.
 
 `nfc ∈ registrationMode` gates whether an "Assign Tags" step exists **at all**
 in Inventario, per `information-architecture.md` ("`nfc ∉ registrationMode`
@@ -154,6 +259,14 @@ single Session's `Session.operatingMode` (*architecture-principles.md* #1,
 `decision-log.md` D23). Every condition in this section is a Business-level
 capability check, not a Session-level one — Inventario isn't a Selling-context
 screen and never reads or depends on any particular Session's resolved mode.
+This is a distinct fact from the auto-entry/pending-nudge gate corrected
+above: capability decides whether the Assign-Tags mechanism (§3.14 and its
+surrounding states) is reachable *at all* for this Business;
+`defaultSellingMode` decides whether Inventario proactively routes or nudges
+her into it. A Paid merchant with `defaultSellingMode = 'buttons'` still has
+Asignar Tags reachable in principle — she's simply never routed there
+automatically, and §3.5's pending nudge never fires for her, per the
+correction above.
 
 ## 3. Low-fidelity wireframes
 
@@ -213,6 +326,54 @@ current tab in brackets.
   Home shouldn't require tapping it again here. *global-principles.md*, "the
   fastest interaction is the one that never happens."
 - **Reachable in practice now only as a defensive/legacy fallback.** Every merchant completing the current Onboarding flow (`onboarding.md` §2.2a) already has ≥1 Product by the time she first opens Inventario, so a true "no Product ever registered" state doesn't arise for any real, freshly-onboarded merchant — this screen is kept as the correct baseline for that fallback case, the same way `home.md`'s own §3.3 fallback stays defined even for cases expected to be rare.
+
+### 3.3a Entry from Settings — "Cambiar a vender con tags," zero inventory to tag yet (new — `decision-log.md` D46)
+```
+┌───────────────────────────────┐
+│  Inventario                    │
+│  Cambiaste a vender con tags.    │
+│  Aquí vas a ver lo que tienes    │
+│  disponible en cuanto registres  │
+│  lo que traes.                   │
+│      [ Registrar mercancía ]    │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- Reached exactly once, immediately, when `settings.md` §2.6's "Cambiar a
+  vender con tags" action succeeds and hands off its entry marker into
+  this document's own §2 resolution, which finds — through its own new
+  step 0, then step 1, never a fact Settings itself computes — neither an
+  untagged InventoryUnit to route into Asignar Tags (§3.14) nor any
+  InventoryUnit ever received for this Business at all — `decision-log.md`
+  D46's third rule ("guided to register merchandise first... an empty
+  tagging queue is never shown as the landing state"). Reuses this
+  document's own §2 resolution and §3.3's cold-start structure verbatim —
+  the same landing state a fresh, never-received Catalog already
+  produces — with one added ambient line acknowledging why she landed here
+  instead of wherever she tapped from in Configuración. Same CTA, same
+  destination (§3.6, blank), same behavior as §3.3 in every other
+  respect — no new interaction pattern.
+- **Copy tightened (`ux-critic` Suggestion):** the acknowledgment line now
+  reads a plain "Cambiaste a vender con tags." rather than also restating
+  the registration ask ("registra tu primera mercancía para empezar a
+  etiquetar") the reused cold-start body immediately below it already
+  makes — both previously pointed at registering merchandise from
+  slightly different angles, back-to-back.
+- **If this Business already has one or more named Products (Onboarding's
+  "Define lo que vendes," `onboarding.md` §2.2a) but zero Lots ever received
+  against any of them,** §2 step 1 already resolves to the plain Catalog
+  view (§3.4), not this cold-start screen — the identical ambient line is
+  prepended there instead, above the Catalog list, with the exact same
+  wording and the exact same one-time, non-blocking treatment. Same "reuse
+  whichever state already correctly represents her situation" rule §2
+  already applies to every other entry into Inventario.
+- Shown exactly once — on this landing, not repeated on any later Inventario
+  open. Same shown-once discipline `home.md` §3.6a's once-ever variant and
+  `settings.md` §2.4's landing acknowledgment already establish elsewhere in
+  this document family.
+- Plain, factual register, matching §3.4's "sin registrar" precedent —
+  states what happened and what to do next, never a warning or an apology.
 
 ### 3.4 Catalog view — normal
 ```
@@ -303,6 +464,26 @@ current tab in brackets.
   §3.12/§3.13 (post-save confirmation views), and §3.17 (deferred-tagging
   view, = §3.5) — no separate specification needed for each; they all
   render the identical Catalog row.
+- **Also reached, with the same one-time ambient banner prepended, via
+  Settings' "Cambiar a vender con tags" handoff when this Business has named
+  Products but zero Lots ever received — see §3.3a.**
+- **Also reached, with a one-time ambient banner of its own prepended, via
+  the same Settings handoff when this Business is already fully tagged**
+  (`inventory.md` §2 step 0's NO branch, falling through steps 1–2 to land
+  here — `decision-log.md` D46 Addendum). A different real outcome from the
+  bullet above — she's arrived from Configuración having already finished
+  all her tagging, not being asked to register anything — so it carries its
+  own wording rather than reusing §3.3a's line verbatim:
+  ```
+  Cambiaste a vender con tags. Tu mercancía ya está toda
+  etiquetada — lista para la próxima sesión.
+  ```
+  Same shown-once discipline as §3.3a's own banner and this doc's other
+  landing acknowledgments (§2.4, §3.6a) — dismissed on this landing, never
+  repeated on a later Inventario open. Closes the gap `ux-critic` found
+  (SET-INV-D46-MAJ1): without it, this was the one outcome among D46's
+  three where she'd land on a different nav tab than the one she tapped
+  from, with nothing telling her why.
 - **Each row now also shows this Product's current `Product.defaultPrice`**
   (`decision-log.md` D33), e.g. "$350" — plain informational text within
   the row, except the price figure itself, which carries its own tap
@@ -364,7 +545,7 @@ current tab in brackets.
   override/haggling and promotions/discount pricing — this screen is not,
   and must never become, that mechanism.
 
-### 3.5 Catalog view — with pending tag work (nfc-capable Businesses only)
+### 3.5 Catalog view — with pending tag work (`defaultSellingMode = 'nfc'` Businesses only)
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
@@ -382,6 +563,13 @@ current tab in brackets.
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
+**Gate corrected, `decision-log.md` D46 — this state is now keyed to
+`defaultSellingMode`, not capability.** Previously gated on `nfc ∈
+registrationMode` alone; now requires `defaultSellingMode === 'nfc'` as
+well, per §2 step 2's corrected test above. A Paid-tier Business that keeps
+`defaultSellingMode = 'buttons'` never sees this state, even with untagged
+inventory sitting in her Catalog — not an oversight, see §2's cross-
+reference note above for why.
 - **Amended 2026-08-07 (Product-Owner-directed refinement — see §10):**
   "Continuar etiquetando" is now the primary action in this state — a plain
   status line ("Te faltan 7 artículos por etiquetar") directly under the
@@ -416,8 +604,9 @@ current tab in brackets.
   off — so treating Registrar mercancía as her obvious next move in this
   state was never fully accurate to begin with. And §3.13's "lista para
   vender" wording (vs. §3.12's plain "registrada") already establishes, in
-  the spec's own voice, that for an nfc-capable Business "done" specifically
-  means received *and* tagged — this refinement just makes the mid-process
+  the spec's own voice, that for a `defaultSellingMode = 'nfc'` Business
+  "done" specifically means received *and* tagged — this refinement just
+  makes the mid-process
   screen agree with what the finished-process screen already says.
 - Tapping "Continuar etiquetando" resumes Asignar Tags (§3.14) exactly where
   she left off — same destination, same non-blocking resume behavior as
@@ -773,7 +962,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   work she already did. *global-principles.md*, "the best interface stays out
   of the merchant's way."
 
-### 3.12 Post-save confirmation — buttons-only businesses (`nfc ∉ registrationMode`)
+### 3.12 Post-save confirmation — `defaultSellingMode ≠ 'nfc'` (selling with buttons, whether or not nfc-capable)
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
@@ -792,8 +981,15 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   wants to leave — this **is** Catalog view (§3.4), already updated, with a
   transient line. *global-principles.md*, "the fastest interaction is the one
   that never happens." Inventory Ready, per `vision.md`, with no further step.
+- **Reached whenever `Business.defaultSellingMode ≠ 'nfc'` at the moment
+  Guardar mercancía succeeds** (`decision-log.md` D46) — including a Paid,
+  nfc-capable Business that simply hasn't switched her normal selling mode
+  to tags. For her, "done" honestly does mean received, full stop: she has
+  no reason to tag anything she doesn't intend to scan. If she later
+  switches to `nfc` in Configuración, `settings.md` §2.6 handles routing her
+  back into tagging for whatever's still untagged at that point.
 
-### 3.13 Post-save confirmation — nfc-capable Business, tagging complete
+### 3.13 Post-save confirmation — `defaultSellingMode = 'nfc'` Business, tagging complete
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
@@ -808,11 +1004,13 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
-- "Lista para vender" (vs. plain "registrada" in §3.12) reflects that for an
-  nfc-capable Business, Inventory Ready genuinely means both received *and*
-  tagged — same screen shape, different, honest wording.
+- "Lista para vender" (vs. plain "registrada" in §3.12) reflects that for a
+  Business whose `defaultSellingMode = 'nfc'` (`decision-log.md` D46 —
+  corrected from the earlier, capability-only gate), Inventory Ready
+  genuinely means both received *and* tagged — same screen shape, different,
+  honest wording.
 
-### 3.14 Asignar tags — active queue (nfc-capable Business, auto-entered after Guardar)
+### 3.14 Asignar tags — active queue (`defaultSellingMode = 'nfc'` Business, auto-entered after Guardar mercancía or after switching to tags in Configuración)
 ```
 ┌───────────────────────────────┐
 │  Asignar tags                   │
@@ -842,6 +1040,17 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 - Each physical unit gets its own tag (`decision-log.md` D4) — this queue is
   necessarily per-unit, never per-Product-type; "Faltan 7 de 10" is exactly
   that granularity.
+- **Two entry points now reach this identical queue, both gated on
+  `Business.defaultSellingMode === 'nfc'` (`decision-log.md` D46):** (1)
+  immediately after "Guardar mercancía" succeeds, for the just-created Lot's
+  units (§2 step 3); (2) immediately after `settings.md` §2.6's "Cambiar a
+  vender con tags" action hands off its entry marker into this document's
+  own §2 step 0, for whatever untagged InventoryUnits already exist across
+  her whole Catalog at that moment, not scoped to a single Lot — the check
+  itself runs entirely here, in Inventario, never in Settings (architect
+  ruling, `decision-log.md` D46 Addendum). Both are the identical
+  non-blocking, scan-driven queue below — only which set of units seeded it
+  and which screen preceded it differ.
 
 ### 3.15 Asignar tags — error, tag already assigned
 ```
@@ -919,6 +1128,12 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   secondary "Registrar mercancía") — deferring tagging returns her to a
   Catalog view that already knows work is pending and already reads as such;
   no separate "you stopped early" messaging.
+- **Gated identically to §3.5, corrected the same way (`decision-log.md`
+  D46): `defaultSellingMode === 'nfc'`, not mere capability.** This state is
+  only ever reached from an already-active Asignar Tags queue (§3.14), which
+  itself now only ever opens for a `defaultSellingMode = 'nfc'` Business —
+  no separate gate to restate here, only to confirm it's inherited, not
+  independently checked.
 
 ### 3.18 Defensive fallback / load error
 ```
@@ -955,8 +1170,8 @@ Catalog view:
   tap a Product row's price figure → 3.4a (Editar precio)
       → Cancelar → back to Catalog view, unchanged
       → Guardar precio → back to Catalog view, that row's price updated
-  [nfc-capable + pending untagged units] tap "Continuar etiquetando"
-    (primary action in this state, §3.5) → 3.14 (resume)
+  [defaultSellingMode = nfc + pending untagged units] tap "Continuar
+    etiquetando" (primary action in this state, §3.5) → 3.14 (resume)
 
 Registrar mercancía (3.6/3.7):
   fill Producto (→ 3.8 if using the picker; matching is case-insensitive,
@@ -973,15 +1188,16 @@ Registrar mercancía (3.6/3.7):
       → saving (3.10)
       → error (3.11) → Reintentar → saving again
       → success:
-          nfc ∉ registrationMode → Catalog view + ambient confirmation (3.12) — DONE
-          nfc ∈ registrationMode → Asignar tags (3.14), auto-entered
+          defaultSellingMode = buttons (whether or not nfc ∈ registrationMode)
+            → Catalog view + ambient confirmation (3.12) — DONE
+          defaultSellingMode = nfc → Asignar tags (3.14), auto-entered
   → [any point] leave without saving → draft preserved silently, resumes
     later at §3.6/§3.7, whichever step was in progress
   → [≥1 line committed] tap "Descartar" → confirm (3.9)
       → Cancelar → back to the form (3.6/3.7, whichever was current), unchanged
       → Sí, descartar → draft cleared → blank Registrar Mercancía (3.6)
 
-Asignar tags (nfc-capable Business only, 3.14):
+Asignar tags (defaultSellingMode = nfc Business only, 3.14):
   scan tag → assign to next pending unit → counter decrements → repeat
   → tag already assigned → error (3.15) → scan a different tag
   → scan fails to read (out of range, foil, timeout) → error (3.16) →
@@ -989,6 +1205,26 @@ Asignar tags (nfc-capable Business only, 3.14):
   → tap "Terminar después" → Catalog view, "Continuar etiquetando" primary
     (3.17, = 3.5)
   → 0 pending → Catalog view + "lista para vender" confirmation (3.13) — DONE
+
+Entry from settings.md §2.6 ("Cambiar a vender con tags" succeeds, carrying
+only an entry marker — never a queried Inventory fact, `decision-log.md`
+D46 Addendum):
+  Inventario's own resolution (§2) evaluates its new step 0 first:
+    at least one InventoryUnit exists with status=available and no NFCTag
+    assigned, anywhere in the Catalog
+      → Asignar tags (3.14), auto-entered, seeded with every untagged unit
+        across the whole Catalog
+    no such unit → falls through to steps 1-2, exactly as any other
+      Inventario resolution:
+        Catalog has 1+ Product ever registered (already sold merchandise
+        before) → step 2 reads NO (nothing pending) → Catalog view (3.4),
+        "Inventory Ready" — not back to Configuración's own vista
+        principal (settings.md §2.6/§10)
+        zero Product ever registered → cold start with this entry marker's
+          one-time banner (3.3a)
+        1+ Product registered but zero Lots ever received against any of
+          them → Catalog view with the identical one-time banner (3.3a's
+          second bullet)
 ```
 
 ## 5. Screen states (enumeration)
@@ -996,9 +1232,10 @@ Asignar tags (nfc-capable Business only, 3.14):
 1. Resolving (near-instant)
 2. Resolving — slow
 3. Cold start — no Product ever registered
+3a. Entry from Settings' "Cambiar a vender con tags," zero inventory to tag yet (D46)
 4. Catalog view — normal
 4a. Editar precio — sheet, Catalog-row-level (D33)
-5. Catalog view — pending tag work (nfc-capable Businesses only)
+5. Catalog view — pending tag work (`defaultSellingMode = 'nfc'` Businesses only)
 6. Registrar mercancía — entry (blank or shortcut-prefilled)
 7. Registrar mercancía — with committed lines, editing the next
 8. Elegir producto — picker sheet
@@ -1006,8 +1243,8 @@ Asignar tags (nfc-capable Business only, 3.14):
 9. Descartar confirmation
 10. Guardar mercancía — saving (near-instant / slow)
 11. Guardar mercancía — error
-12. Post-save confirmation — buttons-only businesses
-13. Post-save confirmation — nfc-capable Business, tagging complete
+12. Post-save confirmation — `defaultSellingMode ≠ 'nfc'`
+13. Post-save confirmation — `defaultSellingMode = 'nfc'` Business, tagging complete
 14. Asignar tags — active queue
 15. Asignar tags — error, tag already assigned
 16. Asignar tags — error, scan failed
@@ -1023,7 +1260,7 @@ Asignar tags (nfc-capable Business only, 3.14):
 | Register 1 new Product line, quantity >1 (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto) + N−1 taps on `[+]` (or 1 typed entry) + 1 (Guardar) | Must still specify *how many* when it's not 1 — this is the information itself, not an artificial gate; typed entry stays the faster path for large counts. |
 | Register N Product lines (buttons-only) | 1 (open) + N×(1 elegir producto [+ adjustment taps if quantity ≠1]) + (N−1)×(agregar otro producto) + 1 (Guardar) | Each line is a distinct fact; the (N−1) "agregar otro" taps are the minimum structural cost of an arbitrary-length list, not padding. |
 | Restock an already-known, sold-out Product at quantity 1 (tap Catalog row) | 1 (row, prefills Producto + Cantidad defaults to 1) + 1 (Guardar) | Shortest possible — Product identity reused instead of re-searched, and the default removes the previously-required typed quantity for the common 1-unit-restock case. *global-principles.md*, "capture business truth once, reuse it forever." |
-| Same, nfc-capable Business, U total units in the Lot | + U scans, 1 per physical unit | Per-unit tagging is a domain requirement (`decision-log.md` D4), not a UX choice — one tag, one unit, no shortcut exists that preserves traceability. A failed read (§3.16) costs zero extra taps — she simply re-presents the same tag. |
+| Same, `defaultSellingMode = 'nfc'` Business, U total units in the Lot | + U scans, 1 per physical unit | Per-unit tagging is a domain requirement (`decision-log.md` D4), not a UX choice — one tag, one unit, no shortcut exists that preserves traceability. A failed read (§3.16) costs zero extra taps — she simply re-presents the same tag. |
 | Ajustar el precio de un Producto ya existente, fuera de Registrar mercancía (Editar precio, §3.4a) | 1 (tocar el precio en la fila del Catálogo) + 1 (Guardar precio) = 2 | Shortest possible — the price figure is its own tap target directly on the Catalog row (§3.4); no need to open Registrar mercancía at all for a pure price change (`decision-log.md` D33). |
 | Browse the Catalog only | 0 taps | Opening the tab is itself the answer; nothing to register. |
 
@@ -1044,9 +1281,21 @@ comparable hard speed requirement — the floor above is about not adding
 - `nfc ∈ registrationMode` gating whether Asignar Tags exists at all —
   resolved once upstream (*architecture-principles.md* #1), never a per-Lot
   toggle.
-- Auto-continuation from Guardar mercancía straight into Asignar Tags for
-  nfc-capable Businesses — no "¿quieres etiquetar ahora?" question; it's the
-  obvious next physical action given she's holding the merchandise.
+- Auto-continuation from Guardar mercancía straight into Asignar Tags, for
+  Businesses whose `defaultSellingMode = 'nfc'` (`decision-log.md` D46 —
+  corrected from the earlier, capability-only gate) — no "¿quieres etiquetar
+  ahora?" question; it's the obvious next physical action given she's
+  holding the merchandise, for the merchant who's actually chosen to sell
+  that way. A Paid, nfc-capable Business that hasn't made that choice is
+  never auto-routed here — see §2's cross-reference note.
+- The same automatic routing applies the moment she switches to `nfc` in
+  Configuración (`settings.md` §2.6) — whatever's already untagged is picked
+  up immediately, with no separate "go tag it now" step to remember, and
+  without ever surfacing an empty tagging queue if nothing needs tagging yet
+  (`decision-log.md` D46). Computed entirely inside this document's own
+  resolution (§2's new step 0), triggered by a bare entry marker
+  `settings.md`'s action hands off — never a fact Settings itself computes
+  or reads (architect ruling, D46's own Addendum).
 - Resuming an interrupted tagging queue (§3.5/§3.17) — automatic, discoverable
   as the primary action in that state, no re-prompt.
 - Draft preservation of an in-progress Registrar Mercancía form across any
@@ -1117,7 +1366,8 @@ comparable hard speed requirement — the floor above is about not adding
   cold-start CTA skips a redundant second empty screen (§3.3 annotation, §10);
   the post-save confirmation is ambient, not a screen requiring a dismiss tap
   (§3.12/§3.13); Asignar Tags auto-continues after Guardar with no
-  intermediate question (§3.14); the Catalog-row shortcut removes a redundant
+  intermediate question (§3.14, when `defaultSellingMode = nfc` —
+  `decision-log.md` D46); the Catalog-row shortcut removes a redundant
   Product search (§3.4, §6).
 - *"Never ask twice"* — an in-progress Registrar Mercancía draft survives any
   interruption without a discard-vs-keep prompt (§3.7); the pending-tags state
@@ -1171,7 +1421,15 @@ comparable hard speed requirement — the floor above is about not adding
   basis for excluding Supplier and cost from Registrar Mercancía (§3.6) despite
   the IA wording conflict flagged in §8, item 1 (since corrected).
 - *#6 (one-way dependency direction)* — Inventario never reads or writes
-  Selling/Session/Sale state; Asignar Tags only ever writes to InventoryUnit.
+  Selling/Session/Sale state; Asignar Tags only ever writes to
+  InventoryUnit. Reading `Business.defaultSellingMode` here (§2 steps
+  0/2/3) is the existing, allowed direction — Inventory already depends on
+  Identity (`domain-model.md`'s Bounded Contexts table); nothing in this
+  document ever reverses that edge. The corrected `settings.md` §2.6
+  handoff (`decision-log.md` D46 Addendum) is what keeps the other
+  direction clean: `settings.md` never reads Inventory-owned state back,
+  only hands off a bare entry marker for this document's own,
+  already-legitimate check to consume.
 
 ## 10. Decisions made
 
@@ -1378,6 +1636,51 @@ comparable hard speed requirement — the floor above is about not adding
   itself, same boundary `home.md`/`events.md` observe.
 - **Checked against `home.md`'s corrected §2 step 3 test (2026-08-08, `decision-log.md` D33) and found not to share its bug.** Inventario's Catalog view carries no "something is sellable right now" promise the way Home's "Iniciar Sesión Rápida" does — a zero-`disponibles` Catalog row is already honestly labeled and fully tappable (§3.4), never a disguised dead end. Left unchanged. The stale cross-reference claiming both tabs "read the same fact" is corrected in §2 to state the two tests now deliberately diverge, and why.
 - **A zero-`disponibles` Catalog row's caption now distinguishes "never registered" from "sold out" (§3.4, applying identically to §3.5, §3.12, §3.13, and §3.17 per that row shape's own "specified once, reused everywhere" convention) — resolves a first-impression risk `ux-critic` found in this document's D33/`onboarding.md` remediation.** Before `onboarding.md`'s 2026-08-08 "Define lo que vendes" amendment, a Product could never exist without an accompanying Lot, so a zero-`disponibles` row only ever meant "previously stocked, now sold out." That amendment makes a second, new meaning possible — "named in Onboarding, never stocked yet" — and both rendered identically, with zero distinguishing copy: a real risk for a merchant fresh out of Onboarding who taps the Inventario nav tab directly rather than "Registrar mercancía," lands on the ordinary Catalog view (§2 step 1's test is still satisfied), and sees every Product she just named marked as if already sold out. Fixed by giving a never-stocked zero-`disponibles` row its own caption, "sin registrar," derived automatically from whether any Lot/InventoryEntry has ever been received against that Product — no new stored field, no schema change. A previously-stocked, now-sold-out Product keeps the existing "0 disponibles" caption unchanged. Neither caption changes the row's dimming, tappability, or destination (§3.6, prefilled) — copy only, in this document's own plain, factual register (`events.md` §3.17's precedent).
+- **Corrected 2026-08-14 (`decision-log.md` D46 — tag-assignment auto-entry
+  gates on merchant intent, not mere capability).** The bullet above ("After
+  Guardar mercancía, nfc-capable Businesses are taken directly into Asignar
+  Tags...") is superseded, not deleted — kept for the historical trail. The
+  actual gate, everywhere in this document (§2 steps 2–3, §3.5, §3.12,
+  §3.13, §3.14, §3.17, §4, §7), is now `Business.defaultSellingMode ===
+  'nfc'` — never `nfc ∈ registrationMode` alone. D46's own reasoning:
+  `onboarding.md` §2.3 already reasons that `defaultSellingMode` stays
+  `buttons` at Onboarding precisely because "she may be subscribing purely
+  for the future segmentation value, with no intention of using tags yet" —
+  this document's old trigger silently ignored that exact distinction it was
+  written to respect. Two new transitions are added in the same pass, fully
+  specified: (1) `settings.md` §2.6's "Cambiar a vender con tags" hands off
+  directly into this document's Asignar Tags queue (§3.14) the instant it
+  succeeds, if untagged inventory already exists — not scoped to a single
+  Lot; (2) the same action guides her to register merchandise first (§3.3a)
+  if zero InventoryUnits have ever been received for this Business — an
+  empty Asignar Tags queue is never shown as a landing state. NFC
+  *availability* (`nfc ∈ registrationMode`) is unchanged and still gates
+  whether the Assign-Tags mechanism exists in Inventario at all — this
+  correction only narrows *when Inventario proactively routes or nudges her
+  into it*, never whether the mechanism is reachable in principle.
+- **Further corrected, same day (architect ruling — see D46's own
+  Addendum).** The two-bullet mechanism directly above originally had
+  `settings.md`'s action itself read Inventory-owned state
+  (`InventoryUnit.status`/`tagId`) to decide its own routing. `architect`
+  ruled this would close a dependency cycle: Inventory already depends on
+  Identity (`domain-model.md`'s Bounded Contexts table), so an Identity
+  action reading Inventory state back would add a return edge, violating
+  `architecture-principles.md` #6. Resolved without losing D46's own
+  direct-auto-entry behavior: `settings.md`'s action now only writes
+  `defaultSellingMode` and hands off a bare entry marker; this document's
+  §2 gains a new, highest-priority trigger condition (step 0) that performs
+  the identical whole-Catalog check this document already legitimately
+  runs for its own, separate reason (step 2). One real, small UX-surface
+  delta results, not mandated or contradicted by D46's own text: an
+  already-fully-tagged merchant reached via this entry point now lands on
+  this document's own plain Catalog view (§3.4, "Inventory Ready") instead
+  of back on Configuración's own vista principal. **Corrected (`ux-critic`
+  finding SET-INV-D46-MAJ1):** landing here silently, with no explanation
+  of why she'd left Configuración, was itself an undisclosed consequence —
+  §3.4 now carries its own one-time ambient acknowledgment for this exact
+  entry marker, mirroring the banner treatment already used for the
+  sibling "named Products, zero Lots" case on the same screen. §2 (new
+  step 0), §3.3a, §3.4 (new banner), §3.14, §4, §6, §7 updated to match.
 
 ## 11. Future considerations
 

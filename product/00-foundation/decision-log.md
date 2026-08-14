@@ -2,6 +2,45 @@
 
 Chronological. Each entry: the decision, why it was made, and what it superseded if anything. Don't edit past entries when a decision changes later — add a new entry that supersedes it, so the reasoning trail stays intact.
 
+## D46 — Tag-assignment auto-entry gates on merchant intent (`defaultSellingMode = 'nfc'`), not mere capability (`nfc ∈ registrationMode`)
+
+Raised by the Product Owner directly, testing the just-shipped Asignar Tags/NFC Selling slices: a Paid merchant who registers merchandise is unconditionally auto-routed into the Asignar Tags queue the moment `Guardar mercancía` succeeds, regardless of whether she has any intention of ever using `nfc` as her selling mode — `inventory.md`'s own auto-continuation trigger (§2 step 2, §3.14, §9) reads `nfc ∈ registrationMode` (Selling Mode Capability, i.e. `subscriptionTier = 'paid'`), not `defaultSellingMode = 'nfc'` (her actual chosen mode).
+
+**This is a genuine, previously-unnoticed contradiction between two already-Approved documents' own reasoning, not a new preference invented here.** `onboarding.md` §2.3 explicitly reasons that `defaultSellingMode` stays `buttons` at Onboarding precisely because *"she may be subscribing purely for the future segmentation value, with no intention of using tags yet."* `inventory.md`'s auto-tagging trigger ignores that exact distinction it was written to respect — capability (billing tier) and intent (selling-mode choice) are two different Business Capabilities (D23), and only D27's read-time derivation (`nfc ∈ registrationMode ⟺ subscriptionTier = 'paid'`) was ever meant to collapse into `subscriptionTier`; `defaultSellingMode` was never meant to collapse into it too.
+
+**Ruling: three genuinely distinct facts, kept distinct, exactly as D23 originally separated them — this decision restores that separation where `inventory.md`'s auto-entry trigger had silently blurred it:**
+- **NFC availability** (`nfc ∈ registrationMode`) — a pure Business Capability, `subscriptionTier = 'paid'`-derived (D27). Unchanged.
+- **Merchant intent to use NFC** (`Business.defaultSellingMode = 'nfc'`) — her own self-service choice (`settings.md`'s "Cambiar a vender con tags"). Unchanged as a field; **now the correct auto-tagging gate.**
+- **NFC Readiness** (tagged-vs-total sellable inventory, `home.md` §2/§3.6a) — a live, computed ratio. Unchanged.
+
+**New trigger rule, replacing the old capability-gated one:**
+1. After `Guardar mercancía` succeeds, auto-enter Asignar Tags **only if `defaultSellingMode === 'nfc'`** (not merely `nfc ∈ registrationMode`).
+2. Immediately after a merchant switches `defaultSellingMode` from `buttons` to `nfc` in Configuración, auto-enter Asignar Tags if untagged inventory already exists.
+3. If she switches to `nfc` with zero inventory registered yet, she is guided to register merchandise first — an empty tagging queue is never shown as the landing state.
+
+A Paid merchant who never switches to `nfc` mode is never auto-routed into tagging, at any point, for any reason.
+
+**Not RFC-worthy** — same class as D23/D27: a resolution-logic/trigger-condition correction reusing existing fields (`defaultSellingMode`, `registrationMode`, `InventoryUnit.tagId`), no new aggregate, bounded context, or ubiquitous-language term.
+
+**Applied:** `onboarding.md`, `inventory.md`, `settings.md`, `home.md` (wherever any of the three facts above or the old trigger condition is referenced) cascade through the standard Governance Rollout Cascade (`company/CLAUDE.md`) before this is considered adopted; the React implementation (`product/02c-high-fidelity-prototype/`) is re-cascaded to match once the specs are re-Approved.
+
+**Addendum, mechanism corrected during spec drafting (`architect` ruling,
+same day):** the first drafted version of rule 2 had `settings.md`'s
+"Cambiar a vender con tags" action itself read Inventory-owned state
+(`InventoryUnit.status`/`tagId`) to decide its own routing. `reviewer`
+caught this as a possible new Identity→Inventory dependency edge;
+`architect` ruled it worse than that — Inventory already depends on
+Identity (`domain-model.md`'s Bounded Contexts table), so the edge would
+have closed a cycle (Identity → Inventory → Identity), which
+`architecture-principles.md` #6 states as a rule, not a convention
+("dependency direction is one-way... new features extend the graph, they
+don't add a back-edge"). Resolved without any new edge and without losing
+rule 2's direct-auto-entry behavior: `settings.md`'s action now only writes
+`defaultSellingMode` and hands off an entry marker; `inventory.md` §2 gains
+one new, highest-priority trigger condition that performs the identical
+check `inventory.md` already legitimately owns. No `domain-model.md` change
+needed — the graph is unchanged.
+
 ## D45 — `authentication.md` fits `product/02-ux/`, per D13's precedent, not D38's
 
 Raised when `authentication.md`'s own author flagged, per `product/02-ux/CLAUDE.md`'s Rule, that a document outside the frozen four-nav-tab structure needs an Architect ruling before landing in that folder — the same gap D13 (Onboarding/Settings) and D38 (Loyalty-claim) each resolved for their own document.
