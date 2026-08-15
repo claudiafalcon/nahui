@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import styles from './QuantityStepper.module.css';
 
 /**
@@ -15,6 +16,23 @@ export function QuantityStepper({
   touched: boolean;
   onChange: (next: number, touched: boolean) => void;
 }) {
+  // Real-device testing found the floor-of-1 rule, when enforced on every
+  // keystroke against the committed `value` prop directly, made it
+  // impossible to ever clear the field: the instant she deleted the "1" to
+  // type a fresh number, the field read as empty for a moment, `onChange`
+  // below fell back to 1 (nothing else is a valid floor-respecting value
+  // for an empty string), and the "1" reappeared before her next keystroke
+  // landed — from her side, indistinguishable from the digit simply
+  // refusing to delete. Local `text` state lets the field sit empty
+  // mid-edit without that round-trip; the floor is enforced only once, on
+  // blur, when she's actually done typing.
+  const [text, setText] = useState(String(value));
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (!focused) setText(String(value));
+  }, [value, focused]);
+
   function set(next: number) {
     onChange(Math.max(1, next), true);
   }
@@ -35,11 +53,11 @@ export function QuantityStepper({
           // isn't an edge case, it's the documented, expected behavior).
           // `inputMode="numeric"` still gets her the numeric keypad on
           // mobile; `pattern` is a semantic hint only, enforcement happens
-          // in `onChange` below by stripping non-digits.
+          // in `onChange`/`onBlur` below by stripping non-digits.
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
-          value={value}
+          value={text}
           onFocus={(e) => {
             // Product Owner-reported bug: with no focus handling, tapping
             // into the field (which defaults to 1, per §3.6/INV-Q1) placed
@@ -55,12 +73,32 @@ export function QuantityStepper({
             // the marker "even if the value stays 1": a bare tap that opens
             // the keypad must dismiss it on its own, not only an actual edit.
             e.target.select();
+            setFocused(true);
             if (!touched) onChange(value, true);
           }}
           onChange={(e) => {
             const digitsOnly = e.target.value.replace(/[^0-9]/g, '');
-            const n = parseInt(digitsOnly, 10);
-            onChange(Number.isFinite(n) && n > 0 ? n : 1, true);
+            setText(digitsOnly);
+            // Only commit upward once she's typed an actual positive
+            // number — an empty/mid-edit field is a real, allowed local
+            // state, not immediately clamped back to the floor (see the
+            // comment above `text`'s own declaration for why).
+            if (digitsOnly !== '') {
+              const n = parseInt(digitsOnly, 10);
+              if (Number.isFinite(n) && n > 0) onChange(n, true);
+            }
+          }}
+          onBlur={() => {
+            setFocused(false);
+            // She's done editing — this is the one moment the floor of 1
+            // actually applies. If she leaves the field empty or at 0,
+            // fall back to the last valid committed value (never below 1).
+            const n = parseInt(text, 10);
+            if (!Number.isFinite(n) || n < 1) {
+              const fallback = Math.max(1, value);
+              setText(String(fallback));
+              onChange(fallback, true);
+            }
           }}
           aria-label="Cantidad"
         />
