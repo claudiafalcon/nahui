@@ -70,7 +70,10 @@ The block renders:
   mock URL. The destination (`customer-loyalty-registration.md`) is a
   separate, confirmed-unbuilt deploy target (D38); this will not resolve if
   actually scanned. Disclosed limitation, not a bug — matches the task's
-  own framing exactly.
+  own framing exactly. **Superseded later the same day — see this file's own
+  "Update — 2026-08-14... QR now resolves for real" section at the end: the
+  domain is now the real, live `loyalty.nahui.app`, and scanning it reaches
+  a working registration flow.**
 - The caption, copied verbatim from `home.md` line ~1304: "Escanéala si
   quieres que te recuerden la próxima vez que compres aquí." No "Claim,"
   "Claim Token," or "QR" wording appears anywhere in the rendered copy.
@@ -304,3 +307,21 @@ the clean `tsc`/`vite build`.
 **Files touched (this fix round):** `src/components/ReceiptTicket/
 ReceiptTicket.tsx`, `src/components/ReceiptTicket/ReceiptTicket.module.css`,
 this file.
+
+## Update — 2026-08-14 (later same day, separate pass): QR now resolves for real
+
+The mock URL described above (`loyalty.nahui.mx`) is superseded. A separate,
+later pass wired this QR to the real, deployed customer-registration
+prototype: `store.tsx`'s `Receipt.claimToken` assignment now writes the fixed
+string `'demo-nueva'` (Paid tier only) instead of calling `mintClaimToken`,
+and this component's QR URL was changed to
+`https://loyalty.nahui.app/c/<claimToken>` — the real, live domain, not the
+placeholder `.mx` one described earlier in this file. Scanning the QR now
+genuinely reaches a working registration flow. Disclosed limitation, not
+fixed: every Paid-tier sale in this demo build encodes the same fixed token,
+not a unique one per sale (`mintClaimToken` itself is untouched, kept as the
+real mechanism for whenever backend integration replaces this demo-sync
+trick). See `BACKLOG.md` item 10 / D.5 and `store.tsx`'s own comment at the
+assignment site for the full disclosure. Everything else in this file
+(domain layer shape, UI layer structure, QR-library choice, tap-behavior
+decision, the 2026-08-14 fix round above) is unaffected and still accurate.
