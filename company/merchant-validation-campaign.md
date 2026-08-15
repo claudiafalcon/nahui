@@ -21,7 +21,7 @@ The QR domain-mismatch risk flagged in the first draft (the receipt QR pointing 
 
 > Hola, somos Nahui 💛 Estamos platicando con vendedoras y vendedores de bazar para entender cómo llevan el control de sus ventas y sus clientes — no vendemos nada, solo estamos aprendiendo de tu experiencia real.
 >
-> Si vendes en bazares, nos ayudarías muchísimo si le echas un ojo a una versión de prueba de lo que estamos construyendo y respondes un cuestionario corto (10-15 min). Por completarlo, te mandamos una tarjeta de regalo de Amazon [monto a definir] — es segura para todas las personas que terminan la prueba, no es una rifa.
+> Si vendes en bazares, nos ayudarías muchísimo si le echas un ojo a una versión de prueba de lo que estamos construyendo y respondes un cuestionario corto (10-15 min). Por completarlo, te mandamos un agradecimiento [monto a definir] — es seguro para todas las personas que terminan la prueba, no es una rifa.
 >
 > Si además nos cuentas con detalle cómo llevas tu negocio, quedas entre las primeras en enterarte cuando abramos el piloto de Nahui — con acceso prioritario y entre las primeras en recibir los kits de tags NFC.
 >
@@ -36,7 +36,7 @@ The QR domain-mismatch risk flagged in the first draft (the receipt QR pointing 
 >
 > Te invitamos a probar una versión de prueba (unas pantallas, no la app completa) y a responder un cuestionario corto sobre cómo llevas tu negocio hoy — te toma entre 10 y 15 minutos.
 >
-> Como agradecimiento, le mandamos una tarjeta de regalo de Amazon [monto a definir] a cada persona que complete la prueba y el cuestionario — no es una rifa ni un sorteo, es segura para quien participe.
+> Como agradecimiento, le mandamos una recompensa [monto a definir] a cada persona que complete la prueba y el cuestionario — no es una rifa ni un sorteo, es segura para quien participe.
 >
 > Y si en tus respuestas vemos que conoces bien tu negocio y nos compartes el detalle real de cómo vendes, te dejamos entre las primeras candidatas para el piloto de Nahui cuando esté listo — con acceso prioritario y entre las primeras en recibir los kits de tags NFC para vender con etiquetas.
 >
@@ -45,7 +45,7 @@ The QR domain-mismatch risk flagged in the first draft (the receipt QR pointing 
 > [liga al cuestionario]
 > ¡Gracias por tu tiempo! 💛
 
-Both versions checked against `brand/tone-of-voice.md`: no manufactured urgency, no imperative framing, states facts before asking, never implies her current methods (notebook, memory) were wrong, never oversells what's built. No "sorteo"/"entra a ganar" language anywhere — the gift card is stated as guaranteed and unconditional on completion; the pilot/NFC-kit line is conditioned on engagement quality, never on chance.
+Both versions checked against `brand/tone-of-voice.md`: no manufactured urgency, no imperative framing, states facts before asking, never implies her current methods (notebook, memory) were wrong, never oversells what's built. No "sorteo"/"entra a ganar" language anywhere — the thank-you is stated as guaranteed and unconditional on completion, with no specific instrument named; the pilot/NFC-kit line is conditioned on engagement quality, never on chance.
 
 ### 1c. Suggested screenshots — honest, representative, not cherry-picked
 
@@ -149,7 +149,7 @@ Every question maps to a specific downstream decision or backlog action — no g
 **Closing text:**
 > Gracias por tu tiempo y por contarnos cómo llevas tu negocio — de verdad nos ayuda muchísimo.
 >
-> Como agradecimiento por completar el cuestionario, te vamos a mandar una tarjeta de regalo de Amazon [monto a definir]. Es para todas las personas que terminan la prueba y el cuestionario completo — no hay sorteo ni nada que adivinar.
+> Como agradecimiento por completar el cuestionario, te vamos a mandar un agradecimiento [monto a definir]. Es para todas las personas que terminan la prueba y el cuestionario completo — no hay sorteo ni nada que adivinar.
 >
 > Si al leer tus respuestas vemos que conoces bien tu negocio y nos compartiste el detalle real de cómo vendes, te vamos a tomar en cuenta con prioridad cuando abramos el piloto de Nahui — incluyendo entre las primeras en recibir los kits de tags NFC para vender con etiquetas.
 >
@@ -163,7 +163,7 @@ Deliberately excluded: no "¿qué tan satisfecha estás del 1 al 10?", no generi
 
 **No raffle, no chance-based mechanism.** The original idea (raffling "first Premium pilot access" + an NFC Starter Kit) is fully retired. Final structure:
 
-1. **Guaranteed thank-you.** Every participant who completes both the prototype walkthrough and the questionnaire receives an Amazon gift card ([monto a definir] — value set by the Product Owner against real budget). Unconditional on completion, decoupled from what she said — a participant who's honestly critical never has criticism cost her the reward.
+1. **Guaranteed thank-you.** Every participant who completes both the prototype walkthrough and the questionnaire receives a thank-you reward (instrument and [monto a definir] — both still to be set by the Product Owner against real budget). Unconditional on completion, decoupled from what she said — a participant who's honestly critical never has criticism cost her the reward.
 2. **Priority access.** Every participant who opts in (Q15) is added to a priority list for future Nahui pilot invitations.
 3. **Genuine-engagement path to pilot/NFC priority.** Participants who show real interest and give thoughtful, specific feedback — not just anyone who opts in — become the primary candidates for the first pilot and for receiving the initial NFC starter kits, delivered when the pilot actually begins, not immediately and not by drawing. This also resolves the earlier procurement concern (the kit isn't a sourced/available item yet) without weakening its value — a future pilot benefit, not a giveaway with a delivery deadline.
 
@@ -208,4 +208,4 @@ Hypothesis-tier updates go into `company/market-validation.md` §6 (H1-H6, upgra
 
 **Ready, pending explicit go-ahead to run:** all five deliverables above.
 
-**Still open:** the guaranteed thank-you's exact dollar amount (every "[monto a definir]" placeholder above needs a real number set against budget before this goes live).
+**Still open:** both the guaranteed thank-you's specific instrument (a gift card, a cash equivalent, or something else — not yet decided) and its exact value (every "[monto a definir]" placeholder above needs a real number set against budget) before this goes live.
