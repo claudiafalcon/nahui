@@ -168,6 +168,21 @@ no acknowledgment, contradicting this document's own claim that the case
 this document's own §3.4/§10 corrected to state the truth) and re-verified
 clean. Folded back into Approved.
 
+### status-2026-08-14-active-session-gear-direct-nav
+**Applies to:** `home.md`'s "Cerrar jornada de venta" discoverability fix (Product Owner-raised), matching correction.
+
+**Further amended 2026-08-14 (Product Owner-raised — `home.md`'s "Cerrar
+jornada de venta" discoverability fix, matching correction):** during an
+active Selling Session, the header's session-controls trigger is a gear
+icon ("⚙") that routes directly into Configuración's resolve step — no
+intermediate sheet; "Cerrar jornada de venta" no longer routes through
+this trigger at all (see `home.md` §3.7 for its own new direct header
+affordance). Outside an active Session, the entry point and sheet
+(§2.1/§3.3) are unchanged. §2.1's heading and first two paragraphs,
+Scope's closing clause, §3.3's added sentence, §4's split interaction-flow
+block, and §6's split table row all updated to match. Pending
+`ux-critic`/`reviewer` review before folding back into Approved.
+
 ---
 
 ## §10 "Decisions made" — full decision history
@@ -319,3 +334,22 @@ banner treatment its sibling "named Products, zero Lots" case already used.
 outcome, not only the tagging-handoff one, per `ux-critic`'s earlier finding
 — all three real consequences are now honestly disclosed, either before she
 confirms or at the actual landing screen.
+
+### decisions-2026-08-14-active-session-gear-direct-nav
+**Applies to:** `settings.md` §2.1 — the active-Session entry point, matching `home.md`'s own "Cerrar jornada de venta" discoverability amendment.
+
+2026-08-14 (Product Owner-raised, matching `home.md`'s own amendment):
+during an active Session, the entry-point icon becomes a gear ("⚙") that
+routes directly into Configuración, with no intermediate sheet. "Cerrar
+jornada de venta" no longer shares this trigger at all — it moved to its
+own direct header button, specified entirely in `home.md` §3.7. Outside an
+active Session, the "⋯" icon and its sheet (§3.3) are unchanged: what's
+managed there — her plan and how she sells — stays meaningful to check or
+change whether or not she happens to be selling that day, the same
+reasoning §2.1's own opening paragraphs already give for extending the
+affordance to every non-Session header state in the first place; only the
+active-Session case gains a second, faster shape because the sheet there
+would otherwise hold a single entry. §2.1's heading and first two
+paragraphs, Scope's closing clause, §3.3's added sentence, §4's split
+interaction-flow block, and §6's split table row all updated to match.
+Folded back into Approved.

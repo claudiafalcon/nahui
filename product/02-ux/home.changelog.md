@@ -390,6 +390,27 @@ current terminology. Copy-only — no flow, state, gating, or interlock changes;
 the interlock itself (§2, §3.11a) is unaffected, only its trigger's name.
 Pending `ux-critic`/`reviewer` review before folding back into Approved.
 
+### status-2026-08-14-cerrar-jornada-direct-affordance
+**Applies to:** `home.md` overall Approval, active-Session header (§3.7 and
+every wireframe through §3.11a), §3.7a (retired).
+
+Amended 2026-08-14 (Product Owner-raised — "Cerrar jornada de venta"
+discoverability): during an active Selling Session, "Cerrar jornada de
+venta" moves out of the session-controls sheet entirely and becomes a
+direct, always-visible header button (§3.7 and every active-Session
+wireframe through §3.11a); the header's "⋯" icon is replaced by a gear
+icon ("⚙") that now routes straight into Configuración with no
+intermediate sheet, since only one destination remained behind it. §3.7a
+(the sheet) is retired for this state. Outside an active Session
+(§3.3–§3.6/§3.6a/§3.6c), the "⋯" icon and its Configuración-only sheet are
+unchanged — see §2 and §3.6c for why this divergence is deliberate, not
+an inconsistency left unaddressed. `settings.md` receives the matching
+correction (§2.1, §3.3, §4, §6, §8). `ux-critic`/`reviewer` reviewed this
+amendment: `reviewer` found two documentation-persistence gaps (this
+anchor and its §10 sibling had never been created; §3.7's own
+shared-header cross-reference bullet still listed the now-retired §3.7a
+as live) — both closed in the same pass. Folded back into Approved.
+
 ---
 
 ## §10 "Decisions made" — full decision history
@@ -1039,6 +1060,23 @@ document's own status header). Copy-only across every current-tense
 wireframe, flow branch, and enumeration; the close interlock (§2, §3.11a)
 itself is unchanged, only its trigger's label.
 
+### decisions-2026-08-14-cerrar-jornada-direct-affordance
+**Applies to:** `home.md` §10 — the active-Session header's two entry
+points.
+
+2026-08-14 (Product Owner-raised — "Cerrar jornada de venta"
+discoverability): the active-Session header gains two direct,
+always-visible affordances, replacing the shared "⋯"-triggered sheet
+(§3.7a, now retired) for this state only. "Cerrar jornada de venta" is a
+labeled button (`[ Cerrar jornada de venta ]`, reusing this document's own
+existing tappable-button convention rather than a new icon vocabulary);
+the "⋯" icon is replaced by a gear icon ("⚙") that routes directly into
+Configuración with no intermediate sheet, since a single-destination menu
+no longer represents a real choice. Outside an active Session (§3.3–§3.6,
+§3.6c), the "⋯" icon and its Configuración-only sheet are unchanged — §2
+and §3.6c state the reasoning for the resulting divergence explicitly,
+rather than leaving it implicit. Folded back into Approved.
+
 ---
 
 ## Superseded section
@@ -1062,3 +1100,62 @@ than layering on top of it. See §3.8f for the current, correct behavior. This
 entry is kept, rather than deleted outright, so the document's own amendment
 history stays legible — the same convention this document already uses
 elsewhere (e.g. §3.7a's removal of "ver detalle de hoy").
+
+### section-3-7a-retired
+**From `home.md` §3.7a ("Session controls (⋯) — sheet," retired 2026-08-14,
+folded into §3.7 — see status header.)**
+
+```
+### 3.7a Session controls (⋯) — sheet (resolves HOME-M4; extended per `settings.md` §2.1; entry-point icon relocated 2026-08-09, Product Owner decision — see status header)
+┌───────────────────────────────┐
+│ Plaza Norte · Día 2         ⋯   │  dimmed, still visible underneath
+│ Hoy: $850 · 6 ventas             │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  [   Cerrar jornada de venta   ]  │
+│  [       Configuración        ]  │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+- Resolves HOME-M4. The earlier draft's "▾ reveals Cerrar sesión / ver detalle
+  de hoy" referenced a second feature — "ver detalle de hoy" — that had no
+  wireframe, no entry in §5, and no defined relationship to the ambient
+  header. It's removed here rather than left dangling. The ambient header
+  line ("Hoy: $850 · 6 ventas") already shows today's running total; anything
+  deeper than that belongs to Resultados once the day's Sessions actually
+  close — the same scope boundary `product/02-ux/events.md` §3.16/§10
+  established for Eventos after Q7's resolution (Eventos doesn't duplicate
+  Resultados' analytics; it hands off). Inventing a live, mid-day analytics
+  screen inside Home would both duplicate that scope and break
+  *architecture-principles.md* #6 (Home/Selling only ever reads Selling data;
+  it has no analytics surface of its own).
+- Shown as a small sheet rather than a single hardcoded action, because
+  `information-architecture.md` ("Onboarding and Settings") committed this
+  exact affordance — described in `decision-log.md` D13 at the time as "the
+  header's ▾," now realized as a top-right "⋯" icon (relocated 2026-08-09,
+  Product Owner decision — see status header; D13's own ruling, hangs off
+  session controls rather than a fifth nav tab, is unaffected, only its
+  illustrative glyph is stale) — as the eventual reachability point
+  for Settings. **That commitment is now realized:**
+  per `settings.md` §2.1 (approved), the sheet carries two entries during an
+  active Session — "Cerrar jornada de venta" (unchanged) and "Configuración" (new, now
+  marked with a gear icon "⚙" distinguishing it from "Cerrar jornada de venta" and any
+  future entry).
+- "Cerrar jornada de venta" and "Configuración" are independent actions. Tapping
+  "Cerrar jornada de venta" proceeds to §3.11 (Venta actual empty) or §3.11a (Venta
+  actual has 1+ items — blocked, resolves HOME-M2), per the interlock stated
+  in §2. Tapping "Configuración" routes to `settings.md`'s resolve step
+  (§3.1/§3.2) → vista principal (§3.3a), and returns to exactly this screen
+  (§3.7, Session unaffected) via "← Hoy." Opening Configuración never touches
+  the open Session, "Venta actual," or the "Cerrar jornada de venta" interlock above —
+  Configuración writes only to Identity's Business Capabilities, never to
+  Selling (*architecture-principles.md* #6).
+
+Retired because, once "Cerrar jornada de venta" moved to its own direct header
+button (§3.7), this sheet would have held exactly one entry
+("Configuración") — a one-item menu costs a tap without representing a
+real choice, so the gear icon now routes directly into Configuración
+instead. See `home.md`'s own status header (2026-08-14 entry) and §10 for
+the full reasoning, including why this diverges deliberately from §3.6c's
+own sheet (which never held a second entry, so the same reconsideration
+never applied there).

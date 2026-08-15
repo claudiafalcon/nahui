@@ -237,12 +237,14 @@ export function Selling({
     <div className={styles.wrap}>
       {/* Composition change from the earlier build: SessionHeader and
           VentaActualTray were two flat, disconnected rows directly on the
-          canvas. They're still the same two components, unchanged
-          behavior/content — session identity, running total, "⋯" controls,
-          always-visible Venta actual, Cancelar — but now compose as one
-          continuous paper-toned surface with its own torn lower edge,
-          reading as a single "this is where the live transaction lives"
-          zone, distinct from the catalog grid below it. */}
+          canvas. They're still the same two components — session identity,
+          running total, always-visible Venta actual, Cancelar — but now
+          compose as one continuous paper-toned surface with its own torn
+          lower edge, reading as a single "this is where the live
+          transaction lives" zone, distinct from the catalog grid below it.
+          (SessionHeader's own controls: as of the 2026-08-14 amendment,
+          "⚙" and "Cerrar jornada de venta" are two direct header buttons,
+          no longer a shared "⋯" → sheet — see SessionHeader.tsx.) */}
       <div
         className={`${styles.transactionPanel} grain tearBottom ${items.length > 0 ? styles.transactionPanelActive : ''}`}
       >

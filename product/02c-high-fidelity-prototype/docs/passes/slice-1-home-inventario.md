@@ -973,3 +973,156 @@ transaction, and `commitLot`'s signature changed from a flat
 quantity }[]` so it can resolve either kind of line — no other write path,
 FIFO logic, Session/Sale lifecycle, or selector changed.
 
+## Session-controls interlock amendment (2026-08-14) — Product Owner-raised,
+"Cerrar jornada de venta" discoverability; `ux-critic`/`reviewer` clean spec
+amendment folded back into Approved
+
+`home.md` §2/§3.7/§10 and `settings.md` §2.1 were amended: hidden behind a
+shared "⋯" → two-row sheet, "Cerrar jornada de venta" (the sole deliberately
+irreversible action in the whole flow, per §10) wasn't discoverable enough.
+For the active-Session state only, the sheet is retired in favor of two
+independent, always-visible, directly-tappable header affordances — a gear
+icon (⚙, title row) routing straight into Configuración with no intermediate
+sheet, and a labeled `Cerrar jornada de venta` button (stat row) routing to
+the existing close-session confirmation/interlock (§3.11/§3.11a — that
+interlock logic itself is completely unchanged, only its trigger moved). The
+four non-Session Home states (cold start, idle, idle-with-Event-card,
+Event-active-no-Session) keep the "⋯" → sheet shape unchanged, now holding
+only "Configuración" — a deliberate divergence the spec argues for
+explicitly (§2), not an inconsistency.
+
+**Built.** `SessionHeader.tsx` — its sole call site is `Selling.tsx`'s
+active-Session shell, so this is the only place the sheet needed retiring.
+`useState`/`Sheet` usage removed entirely from this component; `onOpenSettings`
+and `onCloseSession` (both already existed as props, already wired correctly
+by `Selling.tsx`) are now called directly from two real buttons instead of
+from sheet rows. Restructured the header's existing two rows so each row
+owns one of the two new affordances — title row: title text + gear button;
+stat row: "Hoy: $X · N ventas" + the close-session button — matching the
+approved wireframe's own layout exactly, with no third header line added.
+`ColdStart.tsx`/`Idle.tsx`/`EventResume.tsx` (the three non-Session states'
+own screens) were untouched — they already implement their own local sheet
+using `Sheet` directly and reuse only `SessionHeader.module.css`'s
+`.sheetRow` class, which stays in place; only `.sheetRow.destructive` (the
+old sheet-only "Cerrar jornada de venta" row styling) was removed as
+genuinely dead code once that row itself was retired.
+
+**High-Fidelity legibility check (`ux-critic`'s own flag on the spec
+amendment).** The button needed to read as clearly tappable, not visually
+subordinate to the ambient `Hoy: $X · N ventas` text, at realistic values
+(4-digit pesos, double-digit ventas) on real phone width — something the
+Low-Fidelity text description couldn't verify. Reused this same file's
+existing `--color-tezontle-dark` destructive convention (already how this
+exact action was colored in the old sheet row) as a bordered pill rather
+than a solid fill — a solid fill is this codebase's convention for one-off
+confirm actions (`Button`'s `destructive` variant), and this button is on
+screen continuously through the whole active Session, so a permanently loud
+fill would read as an alarm rather than a calm, always-available control.
+The stat row is `flex-wrap`, letting the button drop to its own line when
+the ambient text plus the button's own label don't both fit one visual line
+— verified via a scripted Puppeteer walkthrough seeding `localStorage` with
+an active Session at $10,000/24 ventas (4-digit pesos, double-digit ventas)
+and screenshotting at 375px and 390px width: the two elements never overlap
+or crowd, the button renders as a full-height (40px) bordered pill with its
+own dedicated line, clearly distinct from and more prominent than the
+ambient stat text above it — the opposite of "visually subordinate." Gear
+button kept at its pre-existing 38×38px size/position, unchanged from the
+old "⋯" trigger it replaces.
+
+**Verification.** `tsc -b` clean, zero errors. Only `SessionHeader.tsx`,
+`SessionHeader.module.css`, and a comment-only touch-up in `Selling.tsx`
+(the stale "⋯ controls" mention in its own composition-change comment)
+changed. No spec ambiguity hit — `home.md` §2/§3.7/§10 and `settings.md`
+§2.1 specify this amendment's scope, wiring, and interlock unchanged
+precisely enough that no gap needed flagging back.
+
+## Fix round (2026-08-14, same day) — two-line layout correction (`ux-critic`
+Major) + stale disclosure comment (`reviewer` Important)
+
+**Finding 1 (Major, `ux-critic`).** The "High-Fidelity legibility check"
+paragraph directly above this entry got its own conclusion wrong: it
+verified the ambient total and the "Cerrar jornada de venta" button "never
+overlap or crowd" at $10,000/24 ventas, but didn't register that the
+mechanism achieving that — `flex-wrap` letting the button "drop to its own
+dedicated line" — is exactly the third header line `home.md` §3.7 rules
+out verbatim ("the header stays exactly two lines, unchanged from before
+this amendment"). At $10,000+/double-digit ventas — a normal busy-day
+outcome, not an edge case — the row genuinely rendered three visible lines
+(title row / stat text / button), consuming the ~46-48px the spec wanted
+protected for the registration surface below.
+
+**Fix.** Not a wrap-avoidance trick — real density at the stat row:
+- `.statRow`: `flex-wrap: wrap` → `flex-wrap: nowrap`. The row can no
+  longer produce a third line under any content, full stop.
+- `.stat`: tightened from `--text-body-sm` (14px) to `--text-label`
+  (12px/500 weight) for the ambient "Hoy: " / " · N ventas" framing text
+  only; `.stat strong` (the peso figure itself) reduced from 22px to 18px
+  but stays the row's visually dominant element — bold, Fredoka, tezontle-
+  dark — so the number that actually matters to Ana doesn't lose
+  legibility to make room for the button. Added `flex-shrink: 1;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;` as a safety
+  net for values beyond what's realistic (verified it never actually
+  triggers at realistic-to-extreme content, see below).
+- `.closeSessionBtn`: font tightened to `--text-label` (12px) to match,
+  horizontal padding tightened 16px → 10px per side (vertical padding
+  unchanged at 9px, preserving the ~40px tap-target height at parity with
+  `.gearBtn`'s 38px — only the width was ever the problem, not the tap
+  target). Stays a bordered pill, stays the row's clearly-tappable
+  affordance — this was the entire point of the 2026-08-14 amendment, so
+  discoverability couldn't be traded away to fix the line count.
+
+**Verification method.** Not the low-volume demo-seed values ($850/6
+ventas) — those never exercised the bug. Built an isolated static-HTML
+harness (`<link>`-ing this component's real `tokens.css` and
+`SessionHeader.module.css` files directly by absolute path, reproducing
+the exact JSX markup as plain HTML, loading the same Google Fonts) and
+screenshotted it with `puppeteer-core` against a real Chrome install at a
+375px viewport — the same width `ux-critic`'s finding named. Four content
+cases: (A) minimal, $85/1 venta; (B) the realistic worst case named in the
+finding, $12,450/23 ventas; (C) an Event-linked title (`"Plaza Norte · Día
+12"`, the longer title-row case) at $99,999/99 ventas; (D) a deliberately
+implausible stress case, $999,999/512 ventas, to confirm the `.stat`
+ellipsis safety net degrades gracefully rather than breaking layout if
+this component is ever pushed past pilot-scale numbers. Measured each
+case's rendered `.header` height and each element's bounding box via
+`page.evaluate`, then visually confirmed via screenshot. Result: every
+case renders at the identical 102px header height (was 137px, a real
+extra ~35px line, on the pre-fix build's cases B/C) — genuinely two lines
+at every tested density, including well past what's realistic. Case D's
+$999,999/512 ventas still fit without the ellipsis triggering; the safety
+net is real but unexercised at any value this pilot will actually see.
+
+**Secondary Suggestion (same review), also resolved.** The old wrapped
+layout left `justify-content: space-between` visually left-aligning the
+now-single-item button on its own line. Moot now — with `nowrap`, both
+elements always share one row, and `space-between` correctly keeps the
+button right-aligned in every tested case (confirmed in the same
+screenshots).
+
+**Finding 2 (Important, `reviewer`).** `SessionHeader.tsx`'s top-of-file
+comment still asserted a live "Cerrar sesión" → "Cerrar jornada de venta"
+divergence between this build and the approved spec. That divergence
+closed 2026-08-13 — `home.md`'s own Product Owner decision that day
+renamed the spec's canonical copy to "Cerrar jornada de venta," so
+`home.md` §3.11/§3.11a/§3.12 now read the same words this build already
+rendered; this document's own account above already had this right
+("Copy-only — the interlock itself... is unaffected... Folded back into
+Approved"). Fixed: the comment now states the divergence as closed
+2026-08-13, matching this archive's account, rather than continuing to
+assert a live gap. A stale cross-reference in the same comment block ("See
+README 'Naming — Cerrar jornada de venta (2026-08-13)'" — a heading that
+no longer exists once the pass history moved into `docs/passes/`) was also
+corrected while already touching this block, since it was a trivial
+one-line fix, not a separate investigation.
+
+**Verification.** `tsc -b` clean, zero errors. Only `SessionHeader.tsx`
+(comment text) and `SessionHeader.module.css` (the CSS described above)
+changed — no JSX/markup/prop changes, no behavior change. Not re-verified
+against the live app's own React render in this round (the isolated-CSS
+harness above tests the identical selectors/markup this component
+actually renders, referenced by file path rather than duplicated by hand)
+— a follow-up scripted Puppeteer walkthrough against the running dev
+server, seeding `localStorage` with a real high-volume Session, remains
+the standing verification method for future passes touching this
+component and is not blocked by anything in this fix.
+

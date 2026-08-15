@@ -1,15 +1,39 @@
 .header {
   padding: var(--space-4) var(--space-4) 6px;
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Title row: session title/venue on the left, the gear icon (⚙) on the
+   right — routes straight into Configuración, no intermediate sheet
+   (2026-08-14 amendment, active-Session state only — see this component's
+   top-of-file comment). */
+.titleRow {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
 }
 
-.text {
+/* Stat row: the ambient "Hoy: $X · N ventas" fact on the left, the
+   "Cerrar jornada de venta" button on the right — the same row the approved
+   wireframe (home.md §3.7) packs both onto. No `flex-wrap` here on purpose:
+   home.md §3.7 states the header "stays exactly two lines... unchanged from
+   before this amendment," so wrapping the button to its own line is a real
+   third visible line, not a spec-compliant reflow, at realistic values
+   (4-digit pesos, double-digit ventas — a normal busy-day outcome, not an
+   edge case). The fix is density, not wrapping: `.stat`'s own type scale is
+   tightened at this row specifically (see its rule below) so both elements
+   reliably fit one line at 375px even at $12,450 · 23 ventas — verified
+   directly at that content in `docs/passes/slice-1-home-inventario.md`'s
+   2026-08-14 fix-round entry, not assumed from today's low demo values. */
+.statRow {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: nowrap;
 }
 
 .title {
@@ -20,21 +44,34 @@
   color: #8A7A6A;
 }
 
+/* Tightened from --text-body-sm (14px) at this one row specifically — the
+   surrounding "Hoy: " / " · N ventas" words are ambient framing, not the
+   fact itself, so they can afford to read smaller than they did in the
+   pre-2026-08-14 build (which had the full row to itself). The peso figure
+   stays the visually dominant element (see .stat strong below) — this is
+   the same distinction `home.md` §3.7's own review flagged: don't let the
+   number itself lose legibility to make room for the button. */
 .stat {
-  font: var(--text-body-sm);
+  font: var(--text-label);
+  font-weight: 500;
   color: #6B6259;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat strong {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 22px;
+  font-size: 18px;
   color: var(--color-tezontle-dark);
   font-variant-numeric: tabular-nums;
   margin: 0 1px;
 }
 
-.menuBtn {
+.gearBtn {
   appearance: none;
   border: 1.5px solid var(--color-hilo);
   background: var(--color-balanced);
@@ -47,15 +84,51 @@
   cursor: pointer;
   color: var(--color-obsidian);
   font-size: 20px;
-  letter-spacing: 2px;
   flex-shrink: 0;
   transition: transform var(--duration-fast) var(--ease-standard),
     background-color var(--duration-fast) var(--ease-standard);
 }
 
-.menuBtn:active {
+.gearBtn:active {
   background: var(--color-hilo);
   transform: scale(0.92);
+}
+
+/* "Cerrar jornada de venta" — a direct, always-visible header button as of
+   the 2026-08-14 amendment (formerly a sheet row, styled as plain
+   destructive-colored text since the sheet itself already read as
+   tappable). Standing alone in the header, it needs its own tappable
+   affordance — reuses this same file's existing --color-tezontle-dark
+   destructive treatment (already the app's convention for this exact
+   action, see `.sheetRow.destructive` in earlier builds / Button.module.css
+   `.destructive`) as a bordered pill rather than a solid fill: solid
+   tezontle-dark is reserved for one-off confirm actions (Button's
+   `destructive` variant), and this button is on screen continuously
+   through the whole active Session — a permanently loud fill would read as
+   an alarm, not a calm, always-available control. */
+.closeSessionBtn {
+  appearance: none;
+  cursor: pointer;
+  border: 1.5px solid var(--color-tezontle-dark);
+  background: var(--color-paper);
+  color: var(--color-tezontle-dark);
+  font: var(--text-label);
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  /* Vertical padding keeps the ~40px min tap-target height (9px*2 + 20px
+     line-height + border ≈ tap-target parity with .gearBtn's own 38px);
+     only the horizontal padding is tightened, since that's what a long
+     label needs least. */
+  padding: 9px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.closeSessionBtn:active {
+  background: var(--color-hilo);
+  transform: scale(0.96);
 }
 
 .sheetTitle {
@@ -86,7 +159,9 @@
   background-image: none;
 }
 
-.sheetRow.destructive {
-  color: var(--color-tezontle-dark);
-  font-weight: 600;
-}
+/* .sheetRow.destructive (the old "Cerrar jornada de venta" sheet-row
+   styling) is retired along with this component's own Sheet usage —
+   2026-08-14 amendment, see this file's top-of-file comment. `.sheetRow`
+   itself stays: `ColdStart.tsx`/`Idle.tsx`/`EventResume.tsx` still import
+   it for the non-Session states' own Configuración-only sheet (home.md
+   §3.6c), which is unaffected by this amendment. */
