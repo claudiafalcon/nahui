@@ -6,6 +6,7 @@ import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
 import { ActionConfirm } from './ActionConfirm';
 import { WritingState } from './WritingState';
+import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 import styles from './SettingsScreen.module.css';
 
 /** settings.md §2.2 — the four real capability actions, each reachable
@@ -178,28 +179,44 @@ export function SettingsScreen({
 
   // §3.8a/§3.8b — sign-out's own write/error states, distinct copy from
   // §3.9/§3.10, take over the full screen ahead of everything else below.
-  if (signOutStep === 'saving') return <WritingState label="Cerrando sesión…" />;
+  if (signOutStep === 'saving') {
+    return (
+      <ScreenTransition transitionKey="signout-saving">
+        <WritingState label="Cerrando sesión…" />
+      </ScreenTransition>
+    );
+  }
   if (signOutStep === 'error') {
     return (
-      <WritingState
-        error
-        errorLabel="No pudimos cerrar tu sesión. Intenta de nuevo."
-        onRetry={handleSignOutConfirm}
-      />
+      <ScreenTransition transitionKey="signout-error">
+        <WritingState
+          error
+          errorLabel="No pudimos cerrar tu sesión. Intenta de nuevo."
+          onRetry={handleSignOutConfirm}
+        />
+      </ScreenTransition>
     );
   }
 
   // §3.9/§3.10 — shared by every capability action's actual write
   // (§3.4/§3.5's confirms, and §3.7's "Sí, cancelar").
-  if (subView.kind === 'saving') return <WritingState label="Guardando…" />;
+  if (subView.kind === 'saving') {
+    return (
+      <ScreenTransition transitionKey="saving">
+        <WritingState label="Guardando…" />
+      </ScreenTransition>
+    );
+  }
   if (subView.kind === 'saving-error') {
     const action = subView.action;
     return (
-      <WritingState
-        error
-        errorLabel="No pudimos guardar tu cambio. Intenta de nuevo."
-        onRetry={() => runWrite(action)}
-      />
+      <ScreenTransition transitionKey="saving-error">
+        <WritingState
+          error
+          errorLabel="No pudimos guardar tu cambio. Intenta de nuevo."
+          onRetry={() => runWrite(action)}
+        />
+      </ScreenTransition>
     );
   }
 
@@ -207,37 +224,41 @@ export function SettingsScreen({
   if (subView.kind === 'confirm') {
     const copy = confirmCopy(subView.action);
     return (
-      <ActionConfirm
-        title={copy.title}
-        body={copy.body}
-        ctaLabel={copy.ctaLabel}
-        onConfirm={() => runWrite(subView.action)}
-        onBack={() => setSubView({ kind: 'main' })}
-      />
+      <ScreenTransition transitionKey={`confirm:${subView.action}`}>
+        <ActionConfirm
+          title={copy.title}
+          body={copy.body}
+          ctaLabel={copy.ctaLabel}
+          onConfirm={() => runWrite(subView.action)}
+          onBack={() => setSubView({ kind: 'main' })}
+        />
+      </ScreenTransition>
     );
   }
 
   // §3.3a/§3.6 — vista principal.
   return (
-    <SettingsMain
-      business={business}
-      landed={landed}
-      onBack={onBack}
-      onActivatePaidTap={() => setSubView({ kind: 'confirm', action: 'activate-paid' })}
-      onDowngradeTap={() => setSubView({ kind: 'confirm', action: 'downgrade' })}
-      onModeChangeTap={(nextAction) => setSubView({ kind: 'confirm', action: nextAction })}
-      cancelPendingOpen={cancelPendingOpen}
-      onCancelPendingTap={() => setCancelPendingOpen(true)}
-      onCancelPendingDismiss={() => setCancelPendingOpen(false)}
-      onCancelPendingConfirm={() => {
-        setCancelPendingOpen(false);
-        runWrite('cancel-pending');
-      }}
-      signOutConfirmOpen={signOutStep === 'confirm'}
-      onSignOutTap={() => setSignOutStep('confirm')}
-      onSignOutDismiss={() => setSignOutStep('closed')}
-      onSignOutConfirm={handleSignOutConfirm}
-    />
+    <ScreenTransition transitionKey="main">
+      <SettingsMain
+        business={business}
+        landed={landed}
+        onBack={onBack}
+        onActivatePaidTap={() => setSubView({ kind: 'confirm', action: 'activate-paid' })}
+        onDowngradeTap={() => setSubView({ kind: 'confirm', action: 'downgrade' })}
+        onModeChangeTap={(nextAction) => setSubView({ kind: 'confirm', action: nextAction })}
+        cancelPendingOpen={cancelPendingOpen}
+        onCancelPendingTap={() => setCancelPendingOpen(true)}
+        onCancelPendingDismiss={() => setCancelPendingOpen(false)}
+        onCancelPendingConfirm={() => {
+          setCancelPendingOpen(false);
+          runWrite('cancel-pending');
+        }}
+        signOutConfirmOpen={signOutStep === 'confirm'}
+        onSignOutTap={() => setSignOutStep('confirm')}
+        onSignOutDismiss={() => setSignOutStep('closed')}
+        onSignOutConfirm={handleSignOutConfirm}
+      />
+    </ScreenTransition>
   );
 }
 

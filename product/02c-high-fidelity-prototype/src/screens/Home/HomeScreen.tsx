@@ -17,6 +17,7 @@ import { Selling } from './Selling';
 import { ReceiptTicket } from '../../components/ReceiptTicket/ReceiptTicket';
 import { CloseSummary } from './CloseSummary';
 import { SettingsScreen } from '../Settings/SettingsScreen';
+import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 import type { Receipt } from '../../domain/store';
 
 type HomeUiState =
@@ -79,18 +80,20 @@ export function HomeScreen({
 
   if (ui.kind === 'closed') {
     return (
-      <CloseSummary
-        count={ui.count}
-        revenue={ui.revenue}
-        venueName={ui.venueName}
-        dayNumber={ui.dayNumber}
-        onViewDetail={() => {
-          const sessionId = ui.sessionId;
-          setUi({ kind: 'resolved' });
-          onNavigateToResultadosSession(sessionId);
-        }}
-        onContinue={() => setUi({ kind: 'resolved' })}
-      />
+      <ScreenTransition transitionKey="closed">
+        <CloseSummary
+          count={ui.count}
+          revenue={ui.revenue}
+          venueName={ui.venueName}
+          dayNumber={ui.dayNumber}
+          onViewDetail={() => {
+            const sessionId = ui.sessionId;
+            setUi({ kind: 'resolved' });
+            onNavigateToResultadosSession(sessionId);
+          }}
+          onContinue={() => setUi({ kind: 'resolved' })}
+        />
+      </ScreenTransition>
     );
   }
 
@@ -98,10 +101,12 @@ export function HomeScreen({
     // settings.md — the real Configuración flow (Migration Workflow, D43),
     // replacing this branch's earlier honest Placeholder.
     return (
-      <SettingsScreen
-        onBack={() => setUi({ kind: 'resolved' })}
-        onSwitchedToTags={onNavigateToInventarioViaSettingsTagsOn}
-      />
+      <ScreenTransition transitionKey="settings">
+        <SettingsScreen
+          onBack={() => setUi({ kind: 'resolved' })}
+          onSwitchedToTags={onNavigateToInventarioViaSettingsTagsOn}
+        />
+      </ScreenTransition>
     );
   }
 
@@ -112,12 +117,14 @@ export function HomeScreen({
       ? dayNumberForDate(state, eventForSession.id, todayKey())
       : undefined;
     return (
-      <Selling
-        onSaleFinalized={(receipt) => setUi({ kind: 'receipt', receipt })}
-        onSessionClosed={(summary, sessionId) => setUi({ kind: 'closed', ...summary, venueName, dayNumber, sessionId })}
-        onOpenSettings={() => setUi({ kind: 'settings' })}
-        onNavigateToAssignTags={onNavigateToAssignTags}
-      />
+      <ScreenTransition transitionKey="selling">
+        <Selling
+          onSaleFinalized={(receipt) => setUi({ kind: 'receipt', receipt })}
+          onSessionClosed={(summary, sessionId) => setUi({ kind: 'closed', ...summary, venueName, dayNumber, sessionId })}
+          onOpenSettings={() => setUi({ kind: 'settings' })}
+          onNavigateToAssignTags={onNavigateToAssignTags}
+        />
+      </ScreenTransition>
     );
   }
 
@@ -126,32 +133,40 @@ export function HomeScreen({
     const venueName = findVenue(state, activeEvent.venueId)?.displayName ?? '';
     const dayNumber = dayNumberForDate(state, activeEvent.id, todayKey());
     return (
-      <EventResume
-        venueName={venueName}
-        dayNumber={dayNumber}
-        todaySales={todaySalesSummary(state, activeEvent.id)}
-        onContinue={(overrideToNfc) => startSession(activeEvent.id, overrideToNfc)}
-        onOpenSettings={() => setUi({ kind: 'settings' })}
-        onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
-      />
+      <ScreenTransition transitionKey="event-resume">
+        <EventResume
+          venueName={venueName}
+          dayNumber={dayNumber}
+          todaySales={todaySalesSummary(state, activeEvent.id)}
+          onContinue={(overrideToNfc) => startSession(activeEvent.id, overrideToNfc)}
+          onOpenSettings={() => setUi({ kind: 'settings' })}
+          onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
+        />
+      </ScreenTransition>
     );
   }
 
   if (!hasAnyAvailableUnit(state)) {
-    return <ColdStart onRegister={onNavigateToRegister} onOpenSettings={() => setUi({ kind: 'settings' })} />;
+    return (
+      <ScreenTransition transitionKey="cold-start">
+        <ColdStart onRegister={onNavigateToRegister} onOpenSettings={() => setUi({ kind: 'settings' })} />
+      </ScreenTransition>
+    );
   }
 
   const upcomingEvent = upcomingEventForBusiness(state);
 
   return (
-    <Idle
-      upcomingEventVenueName={upcomingEvent ? findVenue(state, upcomingEvent.venueId)?.displayName : undefined}
-      upcomingEventStartDate={upcomingEvent?.startDate}
-      onTapUpcomingEvent={upcomingEvent ? () => onNavigateToEvent(upcomingEvent.id) : undefined}
-      todaySales={todaySalesSummary(state, null)}
-      onStartSession={(overrideToNfc) => startSession(undefined, overrideToNfc)}
-      onOpenSettings={() => setUi({ kind: 'settings' })}
-      onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
-    />
+    <ScreenTransition transitionKey="idle">
+      <Idle
+        upcomingEventVenueName={upcomingEvent ? findVenue(state, upcomingEvent.venueId)?.displayName : undefined}
+        upcomingEventStartDate={upcomingEvent?.startDate}
+        onTapUpcomingEvent={upcomingEvent ? () => onNavigateToEvent(upcomingEvent.id) : undefined}
+        todaySales={todaySalesSummary(state, null)}
+        onStartSession={(overrideToNfc) => startSession(undefined, overrideToNfc)}
+        onOpenSettings={() => setUi({ kind: 'settings' })}
+        onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
+      />
+    </ScreenTransition>
   );
 }

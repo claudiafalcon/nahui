@@ -150,6 +150,16 @@ spec's explicit emphasis instruction literally.
   either `animation: none` on the specific rule, or (for anything timing-
   critical, like the receipt's count-up total) a value that's already
   correct without the animation ever running.
+- **`ScreenTransition` (`src/components/ScreenTransition/`) is the standard
+  entrance for screen-branch changes** — fade + 8px upward settle,
+  `--duration-base`/`--ease-standard` (the quiet, standard register, not
+  `--ease-settle`'s overshoot, since this plays on every ordinary
+  navigation many times a selling day). Applied at nearly every screen's
+  own resolution branch (Home, Inventario, Eventos, Resultados, Settings,
+  Authentication, Onboarding). Deliberately excluded from `ReceiptTicket`
+  (which keeps its own one-of-a-kind `swingIn`) and from `Sheet`/modal
+  overlays (not screen-to-screen navigation). Respects
+  `prefers-reduced-motion` the same way every other animation here does.
 
 ## 7. Content / copy conventions
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PhoneStep } from './PhoneStep';
 import { CodeStep } from './CodeStep';
+import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 
 type AuthStep = { kind: 'phone'; prefill?: string } | { kind: 'code'; phone: string };
 
@@ -26,12 +27,18 @@ export function AuthenticationFlow() {
 
   if (step.kind === 'code') {
     return (
-      <CodeStep
-        phone={step.phone}
-        onBack={() => setStep({ kind: 'phone', prefill: step.phone })}
-      />
+      <ScreenTransition transitionKey="code">
+        <CodeStep
+          phone={step.phone}
+          onBack={() => setStep({ kind: 'phone', prefill: step.phone })}
+        />
+      </ScreenTransition>
     );
   }
 
-  return <PhoneStep initialValue={step.prefill} onCodeSent={(phone) => setStep({ kind: 'code', phone })} />;
+  return (
+    <ScreenTransition transitionKey="phone">
+      <PhoneStep initialValue={step.prefill} onCodeSent={(phone) => setStep({ kind: 'code', phone })} />
+    </ScreenTransition>
+  );
 }

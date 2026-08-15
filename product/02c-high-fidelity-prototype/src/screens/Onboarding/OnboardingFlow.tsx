@@ -9,6 +9,7 @@ import { WritingState } from './WritingState';
 import { BusinessIdentity } from './BusinessIdentity';
 import { SellingGroups } from './SellingGroups';
 import { TodoListo } from './TodoListo';
+import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 
 const CREATE_DELAY_MS = 260;
 
@@ -83,16 +84,28 @@ export function OnboardingFlow() {
       // §3.9/§3.9a/§3.10/§3.10a — real paths only; the demo path's seeded
       // identity is written atomically above and never leaves `name === ''`
       // on screen.
-      return <BusinessIdentity onSaved={(fields) => setBusinessIdentity(fields)} />;
+      return (
+        <ScreenTransition transitionKey="identity">
+          <BusinessIdentity onSaved={(fields) => setBusinessIdentity(fields)} />
+        </ScreenTransition>
+      );
     }
     if (state.products.length === 0) {
       // §3.5b–§3.5e — real paths only; the demo path's seed always writes
       // ≥1 Product in the same batch as its Business, so this is never
       // reached there.
-      return <SellingGroups onSaved={(lines) => createProducts(lines)} />;
+      return (
+        <ScreenTransition transitionKey="selling-groups">
+          <SellingGroups onSaved={(lines) => createProducts(lines)} />
+        </ScreenTransition>
+      );
     }
     if (!business.onboardingAcknowledged) {
-      return <TodoListo path={path} onEnter={acknowledgeOnboarding} />;
+      return (
+        <ScreenTransition transitionKey="todo-listo">
+          <TodoListo path={path} onEnter={acknowledgeOnboarding} />
+        </ScreenTransition>
+      );
     }
     // Fully complete — `AppRouter` will already be rendering `<App/>` by the
     // next tick; this branch only exists so the switch above is total.
@@ -102,41 +115,53 @@ export function OnboardingFlow() {
   switch (preWrite.kind) {
     case 'welcome':
       return (
-        <Welcome
-          onChooseFree={() => setPreWrite({ kind: 'creating', path: 'free' })}
-          onChoosePaid={() => setPreWrite({ kind: 'confirm-paid' })}
-          onChooseDemo={() => setPreWrite({ kind: 'confirm-demo' })}
-        />
+        <ScreenTransition transitionKey="welcome">
+          <Welcome
+            onChooseFree={() => setPreWrite({ kind: 'creating', path: 'free' })}
+            onChoosePaid={() => setPreWrite({ kind: 'confirm-paid' })}
+            onChooseDemo={() => setPreWrite({ kind: 'confirm-demo' })}
+          />
+        </ScreenTransition>
       );
     case 'confirm-paid':
       return (
-        <ConfirmPaid
-          onConfirm={() => setPreWrite({ kind: 'creating', path: 'paid' })}
-          onBack={() => setPreWrite({ kind: 'welcome' })}
-        />
+        <ScreenTransition transitionKey="confirm-paid">
+          <ConfirmPaid
+            onConfirm={() => setPreWrite({ kind: 'creating', path: 'paid' })}
+            onBack={() => setPreWrite({ kind: 'welcome' })}
+          />
+        </ScreenTransition>
       );
     case 'confirm-demo':
       return (
-        <ConfirmDemo
-          onConfirm={() => setPreWrite({ kind: 'creating', path: 'demo' })}
-          onBack={() => setPreWrite({ kind: 'welcome' })}
-        />
+        <ScreenTransition transitionKey="confirm-demo">
+          <ConfirmDemo
+            onConfirm={() => setPreWrite({ kind: 'creating', path: 'demo' })}
+            onBack={() => setPreWrite({ kind: 'welcome' })}
+          />
+        </ScreenTransition>
       );
     case 'creating':
       // §3.5 — shared by all three paths, including the demo's seed
       // generation (§3.5's own reasoning: no separate "building your
       // example" sequence).
-      return <WritingState label="Preparando todo…" />;
+      return (
+        <ScreenTransition transitionKey="creating">
+          <WritingState label="Preparando todo…" />
+        </ScreenTransition>
+      );
     case 'creating-error':
       // §3.5a — never actually reached in this build (this prototype's
       // local writes never fail), the same disclosed-not-wired convention
       // already established for this codebase's other sync-failure states.
       return (
-        <WritingState
-          error
-          errorLabel="No pudimos crear tu negocio. Intenta de nuevo."
-          onRetry={() => setPreWrite({ kind: 'creating', path: preWrite.path })}
-        />
+        <ScreenTransition transitionKey="creating-error">
+          <WritingState
+            error
+            errorLabel="No pudimos crear tu negocio. Intenta de nuevo."
+            onRetry={() => setPreWrite({ kind: 'creating', path: preWrite.path })}
+          />
+        </ScreenTransition>
       );
   }
 }

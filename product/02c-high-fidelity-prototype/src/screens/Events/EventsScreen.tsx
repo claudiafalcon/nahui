@@ -4,6 +4,7 @@ import { EventsColdStart } from './EventsColdStart';
 import { EventsList, hasAnyVisibleEvent } from './EventsList';
 import { NuevoEvento } from './NuevoEvento';
 import { EventDetail } from './EventDetail';
+import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 
 export type EventsView =
   | { mode: 'list' }
@@ -57,40 +58,50 @@ export function EventsScreen({
 
   if (view.mode === 'new-event') {
     return (
-      <NuevoEvento
-        onBack={() => go({ mode: 'list' })}
-        onSaved={() => {
-          setAmbientMessage('Evento agendado');
-          go({ mode: 'list' });
-        }}
-      />
+      <ScreenTransition transitionKey="new-event">
+        <NuevoEvento
+          onBack={() => go({ mode: 'list' })}
+          onSaved={() => {
+            setAmbientMessage('Evento agendado');
+            go({ mode: 'list' });
+          }}
+        />
+      </ScreenTransition>
     );
   }
 
   if (view.mode === 'detail') {
     return (
-      <EventDetail
-        eventId={view.eventId}
-        onBack={() => go({ mode: 'list' })}
-        onNavigateToHoy={onNavigateToHoy}
-        onNavigateToResultados={onNavigateToResultados}
-        onCancelled={() => {
-          setAmbientMessage('Evento cancelado');
-          go({ mode: 'list' });
-        }}
-      />
+      <ScreenTransition transitionKey={`detail:${view.eventId}`}>
+        <EventDetail
+          eventId={view.eventId}
+          onBack={() => go({ mode: 'list' })}
+          onNavigateToHoy={onNavigateToHoy}
+          onNavigateToResultados={onNavigateToResultados}
+          onCancelled={() => {
+            setAmbientMessage('Evento cancelado');
+            go({ mode: 'list' });
+          }}
+        />
+      </ScreenTransition>
     );
   }
 
   if (!hasAnyVisibleEvent(state)) {
-    return <EventsColdStart onAgendar={() => go({ mode: 'new-event' })} />;
+    return (
+      <ScreenTransition transitionKey="cold-start">
+        <EventsColdStart onAgendar={() => go({ mode: 'new-event' })} />
+      </ScreenTransition>
+    );
   }
 
   return (
-    <EventsList
-      onAgendar={() => go({ mode: 'new-event' })}
-      onTapEvent={(eventId) => go({ mode: 'detail', eventId })}
-      ambientMessage={ambientMessage}
-    />
+    <ScreenTransition transitionKey="list">
+      <EventsList
+        onAgendar={() => go({ mode: 'new-event' })}
+        onTapEvent={(eventId) => go({ mode: 'detail', eventId })}
+        ambientMessage={ambientMessage}
+      />
+    </ScreenTransition>
   );
 }

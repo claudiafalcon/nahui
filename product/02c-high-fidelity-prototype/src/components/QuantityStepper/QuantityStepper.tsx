@@ -31,6 +31,23 @@ export function QuantityStepper({
           inputMode="numeric"
           min={1}
           value={value}
+          onFocus={(e) => {
+            // Product Owner-reported bug: with no focus handling, tapping
+            // into the field (which defaults to 1, per §3.6/INV-Q1) placed
+            // the cursor *after* the existing value, so typing "20" produced
+            // "120" instead of replacing it. Selecting the full current
+            // value the instant the field is focused/tapped is the standard
+            // pattern for a numeric input carrying a default value — the
+            // first keystroke now replaces the whole thing, matching §3.6's
+            // "jumping straight to a larger count without repeated taps."
+            // Corrected (reviewer Blocker — §3.6/§10 explicitly list
+            // "tapping the number to open teclado numérico" as its own
+            // fourth trigger, alongside [-]/[+]/typed entry, that dismisses
+            // the marker "even if the value stays 1": a bare tap that opens
+            // the keypad must dismiss it on its own, not only an actual edit.
+            e.target.select();
+            if (!touched) onChange(value, true);
+          }}
           onChange={(e) => {
             const n = parseInt(e.target.value, 10);
             onChange(Number.isFinite(n) && n > 0 ? n : 1, true);

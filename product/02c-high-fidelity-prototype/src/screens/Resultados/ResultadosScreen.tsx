@@ -8,6 +8,7 @@ import { ResultadosEventDetail } from './ResultadosEventDetail';
 import { RendimientoPorBazar } from './RendimientoPorBazar';
 import { VenueDetail } from './VenueDetail';
 import { TusClientes } from './TusClientes';
+import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 
 /** reports.md §3.8's own "back navigation follows whatever path she
  * actually took to arrive" rule — Event detail's parent is either the main
@@ -89,72 +90,90 @@ export function ResultadosScreen({
     const backLabel =
       returnTo.mode === 'main' ? '← Resultados' : `← ${findVenue(state, findEvent(state, returnTo.eventId)?.venueId ?? '')?.displayName ?? 'Resultados'}`;
     return (
-      <SessionDetail
-        sessionId={view.sessionId}
-        backLabel={backLabel}
-        onBack={() =>
-          onChangeView(
-            returnTo.mode === 'main'
-              ? { mode: 'main' }
-              : { mode: 'event-detail', eventId: returnTo.eventId, returnTo: returnTo.returnTo },
-          )
-        }
-      />
+      <ScreenTransition transitionKey={`session-detail:${view.sessionId}`}>
+        <SessionDetail
+          sessionId={view.sessionId}
+          backLabel={backLabel}
+          onBack={() =>
+            onChangeView(
+              returnTo.mode === 'main'
+                ? { mode: 'main' }
+                : { mode: 'event-detail', eventId: returnTo.eventId, returnTo: returnTo.returnTo },
+            )
+          }
+        />
+      </ScreenTransition>
     );
   }
 
   if (view.mode === 'event-detail') {
     const { returnTo } = view;
     return (
-      <ResultadosEventDetail
-        eventId={view.eventId}
-        backLabel={returnTo.mode === 'main' ? '← Resultados' : '← Rendimiento por bazar'}
-        onBack={() =>
-          onChangeView(returnTo.mode === 'main' ? { mode: 'main' } : { mode: 'venue-detail', venueId: returnTo.venueId })
-        }
-        onTapDay={(sessionId) =>
-          onChangeView({ mode: 'session-detail', sessionId, returnTo: { mode: 'event-detail', eventId: view.eventId, returnTo } })
-        }
-      />
+      <ScreenTransition transitionKey={`event-detail:${view.eventId}`}>
+        <ResultadosEventDetail
+          eventId={view.eventId}
+          backLabel={returnTo.mode === 'main' ? '← Resultados' : '← Rendimiento por bazar'}
+          onBack={() =>
+            onChangeView(returnTo.mode === 'main' ? { mode: 'main' } : { mode: 'venue-detail', venueId: returnTo.venueId })
+          }
+          onTapDay={(sessionId) =>
+            onChangeView({ mode: 'session-detail', sessionId, returnTo: { mode: 'event-detail', eventId: view.eventId, returnTo } })
+          }
+        />
+      </ScreenTransition>
     );
   }
 
   if (view.mode === 'venue-detail') {
     return (
-      <VenueDetail
-        venueId={view.venueId}
-        onBack={() => onChangeView({ mode: 'rendimiento' })}
-        onTapEvent={(eventId) =>
-          onChangeView({ mode: 'event-detail', eventId, returnTo: { mode: 'venue-detail', venueId: view.venueId } })
-        }
-      />
+      <ScreenTransition transitionKey={`venue-detail:${view.venueId}`}>
+        <VenueDetail
+          venueId={view.venueId}
+          onBack={() => onChangeView({ mode: 'rendimiento' })}
+          onTapEvent={(eventId) =>
+            onChangeView({ mode: 'event-detail', eventId, returnTo: { mode: 'venue-detail', venueId: view.venueId } })
+          }
+        />
+      </ScreenTransition>
     );
   }
 
   if (view.mode === 'rendimiento') {
     return (
-      <RendimientoPorBazar
-        onBack={() => onChangeView({ mode: 'main' })}
-        onNavigateToEventos={onNavigateToEventos}
-        onTapVenue={(venueId) => onChangeView({ mode: 'venue-detail', venueId })}
-      />
+      <ScreenTransition transitionKey="rendimiento">
+        <RendimientoPorBazar
+          onBack={() => onChangeView({ mode: 'main' })}
+          onNavigateToEventos={onNavigateToEventos}
+          onTapVenue={(venueId) => onChangeView({ mode: 'venue-detail', venueId })}
+        />
+      </ScreenTransition>
     );
   }
 
   if (view.mode === 'tus-clientes') {
-    return <TusClientes onBack={() => onChangeView({ mode: 'main' })} />;
+    return (
+      <ScreenTransition transitionKey="tus-clientes">
+        <TusClientes onBack={() => onChangeView({ mode: 'main' })} />
+      </ScreenTransition>
+    );
   }
 
   if (!hasAnyClosedSession(state)) {
-    return <ResultadosColdStart onNavigateToHoy={onNavigateToHoy} />;
+    return (
+      <ScreenTransition transitionKey="cold-start">
+        <ResultadosColdStart onNavigateToHoy={onNavigateToHoy} />
+      </ScreenTransition>
+    );
   }
 
   return (
-    <ResultadosMain
-      onTapSession={(sessionId) => onChangeView({ mode: 'session-detail', sessionId, returnTo: { mode: 'main' } })}
-      onTapEvent={(eventId) => onChangeView({ mode: 'event-detail', eventId, returnTo: { mode: 'main' } })}
-      onOpenRendimiento={() => onChangeView({ mode: 'rendimiento' })}
-      onOpenTusClientes={() => onChangeView({ mode: 'tus-clientes' })}
-    />
+    <ScreenTransition transitionKey="main">
+      <ResultadosMain
+        onTapSession={(sessionId) => onChangeView({ mode: 'session-detail', sessionId, returnTo: { mode: 'main' } })}
+        onTapEvent={(eventId) => onChangeView({ mode: 'event-detail', eventId, returnTo: { mode: 'main' } })}
+        onOpenRendimiento={() => onChangeView({ mode: 'rendimiento' })}
+        onOpenTusClientes={() => onChangeView({ mode: 'tus-clientes' })}
+      />
+    </ScreenTransition>
   );
 }

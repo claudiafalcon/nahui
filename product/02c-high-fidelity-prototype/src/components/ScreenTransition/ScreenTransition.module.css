@@ -1,0 +1,47 @@
+/*
+  ScreenTransition — visual-polish pass (Product Owner + informal
+  user-testing feedback: navigation felt like a hard cut, no sense of
+  transition). Not a new interaction design — the approved
+  `product/02-ux/*.md` specs are implementation-independent about motion;
+  this is High-Fidelity's own visual-execution judgment call.
+
+  Deliberately a quieter, more constant register than ReceiptTicket's own
+  `swingIn` (see ReceiptTicket.module.css) — that one is a rare, one-of-a-
+  kind "tag dropped into place" moment (--duration-slow + --ease-settle's
+  full spring overshoot). This plays on *every* ordinary screen change, all
+  day, so it stays fast and understated instead: --duration-base (220ms),
+  --ease-standard (no overshoot), a small 8px rise, no rotation. Reuses the
+  exact token pair this codebase already uses for its own "quiet, standard"
+  motion elsewhere (Button, ProductTile, NavBar's tab-indicator slide)
+  rather than inventing a new duration/easing pair for this one purpose.
+*/
+
+.enter {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  animation: screenEnter var(--duration-base) var(--ease-standard) both;
+}
+
+@keyframes screenEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* tokens.css already zeroes --duration-base to 0ms globally under this same
+   media query — this extra `animation: none` matches the belt-and-suspenders
+   discipline ReceiptTicket.module.css already established (its own
+   `@media (prefers-reduced-motion: reduce) { .screen { animation: none; } }`
+   block), rather than relying on the token alone. */
+@media (prefers-reduced-motion: reduce) {
+  .enter {
+    animation: none;
+  }
+}

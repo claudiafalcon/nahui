@@ -40,6 +40,16 @@ export function AppRouter() {
   // always have (previously a real gap: those two flows rendered flat,
   // edge-to-edge, with no card/shadow on desktop widths — caught in review,
   // see docs/passes/slice-2-authentication-onboarding.md).
+  // No stage-level `ScreenTransition` wrap here (removed — ux-critic Minor
+  // finding, screen-transitions pass): each of the three stages below
+  // already wraps its own first-rendered screen in its own `ScreenTransition`
+  // (AuthenticationFlow's "phone" step, OnboardingFlow's "welcome" step,
+  // App's "hoy" tab) — an outer wrap at this level meant that exact first
+  // screen doubled up two nested, concurrently-running fade+rise animations
+  // (opacity compounding multiplicatively, translateY compounding through
+  // nested transforms) at the one moment nothing else in the app does this.
+  // Letting each stage own its own single entrance is the correct fix, not
+  // a second coarser-grained transition layered on top.
   return (
     <div className="app-shell">
       {!authenticated ? (

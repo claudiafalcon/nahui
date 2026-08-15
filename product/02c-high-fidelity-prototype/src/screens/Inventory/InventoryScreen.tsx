@@ -5,6 +5,7 @@ import { InventoryColdStart } from './InventoryColdStart';
 import { CatalogView } from './CatalogView';
 import { RegisterMerchandise } from './RegisterMerchandise';
 import { AssignTags, type AssignTagsEntryLine } from './AssignTags';
+import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 
 export type InventoryView =
   | { mode: 'catalog'; justSaved?: string | null; tagsComplete?: boolean; enteredViaSettingsTagsOn?: boolean }
@@ -144,43 +145,51 @@ export function InventoryScreen({
 
   if (view.mode === 'register') {
     return (
-      <RegisterMerchandise
-        key={view.prefillProductId ?? 'blank'}
-        initialProductId={view.prefillProductId}
-        onSaved={(lastProductId, entryBreakdown) => {
-          // inventory.md §2 step 3 (`decision-log.md` D46) — gates on her
-          // actual chosen selling mode (`defaultSellingMode === 'nfc'`),
-          // never on mere nfc capability (`subscriptionTier === 'paid'`): a
-          // Paid merchant who stays in `buttons` mode is never auto-routed
-          // into tagging, at any point, for any reason. Read from this
-          // render's own state (unaffected by the commit — `defaultSellingMode`
-          // never changes as a side effect of it), so no post-commit re-read
-          // is needed.
-          if (state.business?.defaultSellingMode === 'nfc') {
-            onOpenAssignTags(entryBreakdown);
-          } else {
-            onSaved(lastProductId);
-          }
-        }}
-        onBack={onBackToCatalog}
-      />
+      <ScreenTransition transitionKey="register">
+        <RegisterMerchandise
+          key={view.prefillProductId ?? 'blank'}
+          initialProductId={view.prefillProductId}
+          onSaved={(lastProductId, entryBreakdown) => {
+            // inventory.md §2 step 3 (`decision-log.md` D46) — gates on her
+            // actual chosen selling mode (`defaultSellingMode === 'nfc'`),
+            // never on mere nfc capability (`subscriptionTier === 'paid'`): a
+            // Paid merchant who stays in `buttons` mode is never auto-routed
+            // into tagging, at any point, for any reason. Read from this
+            // render's own state (unaffected by the commit — `defaultSellingMode`
+            // never changes as a side effect of it), so no post-commit re-read
+            // is needed.
+            if (state.business?.defaultSellingMode === 'nfc') {
+              onOpenAssignTags(entryBreakdown);
+            } else {
+              onSaved(lastProductId);
+            }
+          }}
+          onBack={onBackToCatalog}
+        />
+      </ScreenTransition>
     );
   }
 
   if (view.mode === 'assign-tags') {
     return (
-      <AssignTags
-        onDefer={onBackToCatalog}
-        onComplete={onTagsComplete}
-        entryBreakdown={assignTagsEntry}
-        segmentTotals={assignTagsSegmentTotals}
-        onSegmentTotalsChange={onAssignTagsSegmentTotalsChange}
-      />
+      <ScreenTransition transitionKey="assign-tags">
+        <AssignTags
+          onDefer={onBackToCatalog}
+          onComplete={onTagsComplete}
+          entryBreakdown={assignTagsEntry}
+          segmentTotals={assignTagsSegmentTotals}
+          onSegmentTotalsChange={onAssignTagsSegmentTotalsChange}
+        />
+      </ScreenTransition>
     );
   }
 
   if (rows.length === 0) {
-    return <InventoryColdStart onRegister={() => onOpenRegister()} bannerLine={settingsTagsBanner} />;
+    return (
+      <ScreenTransition transitionKey="cold-start">
+        <InventoryColdStart onRegister={() => onOpenRegister()} bannerLine={settingsTagsBanner} />
+      </ScreenTransition>
+    );
   }
 
   const savedName = view.justSaved ? findProduct(state, view.justSaved)?.name : null;
@@ -191,12 +200,14 @@ export function InventoryScreen({
       : null;
 
   return (
-    <CatalogView
-      onRegister={() => onOpenRegister()}
-      onRegisterProduct={(productId) => onOpenRegister(productId)}
-      onContinueTagging={onOpenAssignTags}
-      confirmationMessage={confirmationMessage}
-      settingsTagsBanner={settingsTagsBanner}
-    />
+    <ScreenTransition transitionKey="catalog">
+      <CatalogView
+        onRegister={() => onOpenRegister()}
+        onRegisterProduct={(productId) => onOpenRegister(productId)}
+        onContinueTagging={onOpenAssignTags}
+        confirmationMessage={confirmationMessage}
+        settingsTagsBanner={settingsTagsBanner}
+      />
+    </ScreenTransition>
   );
 }
