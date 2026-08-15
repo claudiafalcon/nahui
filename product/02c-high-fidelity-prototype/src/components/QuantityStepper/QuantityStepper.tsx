@@ -27,9 +27,18 @@ export function QuantityStepper({
       <div className={`${styles.valueWrap} ${!touched ? styles.reviewMarker : ''}`}>
         <input
           className={styles.input}
-          type="number"
+          // `type="text"` + `inputMode="numeric"`, not `type="number"` —
+          // real-device testing found `.select()` (below) silently no-ops
+          // on `type="number"` in some browsers (Safari in particular; the
+          // HTML spec never actually requires number/email/tel inputs to
+          // support the Selection API the way text inputs do, so this
+          // isn't an edge case, it's the documented, expected behavior).
+          // `inputMode="numeric"` still gets her the numeric keypad on
+          // mobile; `pattern` is a semantic hint only, enforcement happens
+          // in `onChange` below by stripping non-digits.
+          type="text"
           inputMode="numeric"
-          min={1}
+          pattern="[0-9]*"
           value={value}
           onFocus={(e) => {
             // Product Owner-reported bug: with no focus handling, tapping
@@ -49,7 +58,8 @@ export function QuantityStepper({
             if (!touched) onChange(value, true);
           }}
           onChange={(e) => {
-            const n = parseInt(e.target.value, 10);
+            const digitsOnly = e.target.value.replace(/[^0-9]/g, '');
+            const n = parseInt(digitsOnly, 10);
             onChange(Number.isFinite(n) && n > 0 ? n : 1, true);
           }}
           aria-label="Cantidad"
