@@ -62,12 +62,25 @@
 
 /* the punched hole + string loop — full-scale version of TagStub's own
    device, sitting just above the torn top edge so the ticket visibly
-   "hangs" the same way every small marker in the system does. */
+   "hangs" the same way every small marker in the system does.
+
+   design-audit-2026-08-15 #2: after `swingIn` (on `.screen`, the whole
+   ticket) settles, this element keeps swaying on its own for a few small,
+   decaying arcs — the actual "loop of string" reading as the one thing
+   still physically moving, the way a real tag on a string would keep
+   swinging a moment after the whole ticket stops. `transform-origin: top
+   center` so it pivots from its own mounting point (the top edge, where it
+   conceptually threads through the ticket) rather than its own center.
+   `animation-delay` is set to `--duration-slow` so the sway only starts
+   once `.screen`'s own `swingIn` has fully landed — a residual echo of that
+   motion, not a competing one. `both` keeps the pre-delay state pinned to
+   the same static rotate(-3deg) rest position .loop already had before this
+   pass (0% below matches it exactly), so there's no visual seam at the
+   handoff. */
 .loop {
   position: absolute;
   top: 6px;
   left: 50%;
-  transform: translateX(-50%) rotate(-3deg);
   width: 34px;
   height: 22px;
   border: 3px solid var(--color-tezontle-dark);
@@ -75,6 +88,17 @@
   border-radius: 50% 50% 0 0 / 100% 100% 0 0;
   opacity: 0.9;
   z-index: 1;
+  transform-origin: top center;
+  animation: loopSway 1.3s var(--ease-standard) var(--duration-slow) both;
+}
+
+@keyframes loopSway {
+  0% { transform: translateX(-50%) rotate(-3deg); }
+  20% { transform: translateX(-50%) rotate(7deg); }
+  40% { transform: translateX(-50%) rotate(-6deg); }
+  60% { transform: translateX(-50%) rotate(3deg); }
+  80% { transform: translateX(-50%) rotate(-1.5deg); }
+  100% { transform: translateX(-50%) rotate(-3deg); }
 }
 
 .hole {
@@ -99,6 +123,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .screen { animation: none; }
+  .loop { animation: none; transform: translateX(-50%) rotate(-3deg); }
 }
 
 .body {

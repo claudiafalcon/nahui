@@ -83,6 +83,43 @@
   .mark { animation: none; }
 }
 
+/* CloseSummary's revenue figure (design-audit-2026-08-15 #6) — a brief
+   landing settle once the shared .mark above has finished its own
+   entrance, same "ease-settle for something landing" motion role §6 of
+   DESIGN-SYSTEM.md already reserves (see e.g. ProductTile's badgePop).
+   `display: inline-block` only so `transform` has something to act on
+   inline; no other layout/typography change — this is the exact same text
+   node home.md §3.12 already specifies, just animated in. */
+.totalFigure {
+  display: inline-block;
+  animation: figureSettle var(--duration-base) var(--ease-settle) both;
+  animation-delay: var(--duration-slow);
+}
+
+@keyframes figureSettle {
+  from { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.06); opacity: 1; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Fix round (live-verification pass, docs/passes/slice-10... below):
+   this override must come *after* the unconditional `.totalFigure` rule
+   above — same-specificity CSS cascades on source order, so a reduced-
+   motion override placed *before* the rule it's meant to override (the
+   original shape, folded into the single early block above alongside
+   `.mark`) is silently dead code, beaten by the later unconditional rule.
+   Confirmed live: under `prefers-reduced-motion: reduce`, the figure's
+   `animation-name` stayed `figureSettle` instead of `none` — it only
+   *looked* correct because tokens.css separately zeroes `--duration-base`/
+   `--duration-slow` under the same media query, making the still-active
+   animation complete in 0ms. That's a coincidental safety net, not this
+   rule doing its own job — fixed by placement, matching the precedent
+   `ReceiptTicket.module.css`'s own `.loop` override already follows
+   correctly in this same design-audit pass. */
+@media (prefers-reduced-motion: reduce) {
+  .totalFigure { animation: none; }
+}
+
 .copy {
   display: flex;
   flex-direction: column;

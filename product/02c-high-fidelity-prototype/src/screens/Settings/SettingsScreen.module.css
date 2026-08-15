@@ -20,6 +20,40 @@
   padding: 4px;
 }
 
+/* Design-audit-2026-08-15 item #5 — read-only business identity strip.
+   Sits below `.topbar`, outside `.scroll`, so it stays visible regardless
+   of scroll position (it's context, not a list item); divided from the
+   heading below by the shared stitch-rule (patterns.css), the same device
+   `.accountSection` already uses above itself further down this screen. */
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.identityLogo {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 1.5px solid var(--color-hilo);
+  flex-shrink: 0;
+}
+
+/* Same Fredoka/500 family ReceiptTicket's own `.businessName` uses
+   (`home.md` §3.8f) — smaller here (17px vs. 20px) since this is a compact
+   header strip, not a full-viewport hero moment. */
+.identityName {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 17px;
+  color: var(--color-obsidian);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .scroll {
   flex: 1;
   overflow-y: auto;

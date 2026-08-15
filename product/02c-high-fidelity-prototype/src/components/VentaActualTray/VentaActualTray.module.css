@@ -92,8 +92,29 @@
   to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
+/* design-audit-2026-08-15 #3 — the "torn away" exit: same physical
+   language as chipSettle's entrance, reversed (lifts up and twists away
+   instead of dropping/settling in) and faster (`--duration-fast`, 120ms,
+   vs. the entrance's `--duration-base`, 220ms). `.chip.chipExit` (two
+   classes) naturally outranks the plain `.chip` animation rule above on
+   specificity, so no `!important`/reordering trick is needed. The
+   component only ever applies this class while it's still keeping the
+   chip mounted on purpose (see VentaActualTray.tsx's own doc comment) —
+   plain CSS can't animate an element already removed from the DOM. */
+.chip.chipExit {
+  animation: chipTear var(--duration-fast) var(--ease-standard) both;
+  animation-delay: var(--tearDelay, 0ms);
+}
+
+@keyframes chipTear {
+  from { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+  60% { transform: translateY(-3px) scale(1.03) rotate(-3deg); opacity: 1; }
+  to { transform: translateY(-14px) scale(0.82) rotate(-10deg); opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chip { animation: none; }
+  .chip.chipExit { animation: none; }
 }
 
 .chipName {

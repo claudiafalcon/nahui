@@ -323,6 +323,19 @@ function SettingsMain({
         </button>
       </div>
 
+      {/* Design-audit-2026-08-15 item #5 — read-only business identity
+          strip, confirming whose business this is before anything else on
+          the flattest, emptiest screen in the app. Non-interactive (no
+          onClick, no chevron, no gating logic) — pure display of
+          `Business.name`/`Business.logo`, the exact same fields/values
+          `ReceiptTicket` already renders (`home.md` §3.8f), not a new data
+          source. `settings.md` §3.3a's wireframe doesn't reserve this space
+          for anything else (`ux-designer` sign-off, design-audit doc). */}
+      <div className={`${styles.identity} stitchBottom`}>
+        {business.logo && <img className={styles.identityLogo} src={business.logo} alt="" />}
+        <span className={styles.identityName}>{business.name}</span>
+      </div>
+
       <div className={styles.scroll}>
         <h1 className={styles.heading}>Configuración</h1>
 

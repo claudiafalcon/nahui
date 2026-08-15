@@ -18,7 +18,12 @@
 /* A soft, concentric halo behind the glyph — the same "ringed" device
    ColdStart's own .mark already uses for its brand-mark watermark, reused
    here rather than inventing a second halo treatment (README's own "no new
-   visual language should need inventing" instruction). */
+   visual language should need inventing" instruction).
+
+   The glyph itself is now a TagStub silhouette (design-audit-2026-08-15
+   #1), not an SVG that reads `color` via currentColor — `color` stays set
+   here only because a future glyph swap could still want it; it has no
+   visual effect on the current TagStub child. */
 .ring {
   width: 88px;
   height: 88px;

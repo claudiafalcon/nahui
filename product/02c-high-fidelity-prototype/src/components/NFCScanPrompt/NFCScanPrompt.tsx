@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { TagStub } from '../TagStub/TagStub';
 import styles from './NFCScanPrompt.module.css';
 
 /**
@@ -20,6 +21,17 @@ import styles from './NFCScanPrompt.module.css';
  * Analysis's own instruction ("reusing `NFCScanPrompt` from the Asignar Tags
  * slice"). Default (no props passed) is unchanged, so `AssignTags.tsx`'s
  * existing call site needs no change.
+ *
+ * **Glyph (design-audit-2026-08-15 #1).** The pulsing ring used to hold a
+ * generic Wi-Fi/broadcast-wave SVG, disconnected from the system's own
+ * vocabulary. The NFC tag being scanned here *is*, physically, the same
+ * swing tag the whole visual system is built from — it stays with the
+ * customer as part of the loyalty journey (`company/CLAUDE.md`). Swapped
+ * for a larger `TagStub` silhouette (`showLetter={false}`, an explicit
+ * neutral `tone` override — see `TagStub`'s own doc comment for why a bare
+ * name-derived tone can't be used here) at the "Small" scale
+ * (`DESIGN-SYSTEM.md` §4) rather than inventing a sixth device. Pure glyph
+ * swap — no copy/behavior change.
  */
 export function NFCScanPrompt({
   onTap,
@@ -40,17 +52,12 @@ export function NFCScanPrompt({
       aria-label={ariaLabel ?? 'Acerca el tag a la prenda'}
     >
       <span className={styles.ring} aria-hidden="true">
-        <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-          <circle cx="17" cy="17" r="3.4" fill="currentColor" />
-          <path d="M11.8 11.8a7.4 7.4 0 0 1 10.4 0" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-          <path
-            d="M7.2 7.2a13.6 13.6 0 0 1 19.6 0"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            opacity="0.55"
-          />
-        </svg>
+        <TagStub
+          name=""
+          size={52}
+          showLetter={false}
+          tone={{ bg: 'var(--color-white)', ink: 'var(--color-white)' }}
+        />
       </span>
       <span className={styles.label}>
         {label ?? (

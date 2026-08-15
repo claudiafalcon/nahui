@@ -1,9 +1,22 @@
 import { Button } from '../../components/Button/Button';
+import { BrandMark } from '../../components/BrandMark/BrandMark';
 import { pesos } from '../../domain/format';
 import styles from './ColdStart.module.css';
 
 /**
  * home.md §3.12 — Close-summary, immediate. Two numbers only (free tier).
+ *
+ * **Entrance (design-audit-2026-08-15 #6).** Previously rendered with zero
+ * animation and, unlike every other "nothing/something happened" Home
+ * state, without even the shared `BrandMark` halo `ColdStart`/`Idle` both
+ * use — plain text dropped into an empty canvas the instant the Session
+ * closed. Now reuses `ColdStart.module.css`'s own `.mark`/`markSettle`
+ * device verbatim (same file already imported here, same class, no new
+ * animation invented) plus a small `figureSettle` landing on the revenue
+ * figure only. Motion/presence only — the two-line copy below is untouched
+ * character-for-character from §3.12's own "two numbers, no breakdown"
+ * free-tier restriction; nothing new is rendered, only *how* the existing
+ * total arrives on screen.
  *
  * `eventId`-aware variant (Eventos pass, D43): no explicit spec text exists
  * for this exact label — the approved doc's own §3.12 only ever illustrates
@@ -38,12 +51,15 @@ export function CloseSummary({
 }) {
   return (
     <div className={styles.wrap}>
+      <div className={styles.mark}>
+        <BrandMark />
+      </div>
       <div className={styles.copy}>
         <h1 className={styles.eyebrow}>{dayNumber != null ? `Día ${dayNumber} cerrado` : 'Día cerrado'}</h1>
         {venueName && <p className={styles.body}>{venueName}</p>}
         <p className={styles.body}>
           {count} {count === 1 ? 'venta registrada' : 'ventas registradas'}
-          <br />{pesos(revenue)} en total
+          <br /><span className={styles.totalFigure}>{pesos(revenue)}</span> en total
         </p>
       </div>
       <div className={styles.ctaStack}>
