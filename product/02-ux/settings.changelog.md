@@ -196,8 +196,8 @@ intermediate sheet. The non-Session sheet (§3.3) is retired — it was
 already single-item ("Configuración" only), the same condition that
 retired the active-Session sheet a day earlier. Configuración's entry
 point now has one uniform shape across every Home state with a persistent
-header. Pending `ux-critic`/`reviewer` review before folding back into
-Approved.
+header. `ux-critic` clean (no findings). `reviewer` clean (no Blockers,
+no Important findings). Folded back into Approved.
 
 ---
 
@@ -383,8 +383,9 @@ retired the active-Session sheet a day earlier. §2.1's earlier "kept
 deliberately, not an inconsistency" reasoning is corrected: it only ever
 addressed whether Configuración should stay reachable from these four
 states, never what shape the trigger reaching it should take. `home.md`
-receives the matching correction. Pending `ux-critic`/`reviewer` review
-before folding back into Approved.
+receives the matching correction. `ux-critic` clean (no findings).
+`reviewer` clean (no Blockers, no Important findings). Folded back into
+Approved.
 
 ### section-3-3-retired
 **From `settings.md` §3.3 ("Entry — session-controls sheet, Home

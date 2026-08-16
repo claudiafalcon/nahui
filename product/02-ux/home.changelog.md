@@ -429,8 +429,9 @@ non-Session sheet was already single-item (Configuración only, per
 active-Session sheet a day earlier. §3.6c is retired the same way §3.7a
 was — full original content preserved verbatim at
 `home.changelog.md#section-3-6c-retired`. `settings.md` receives the
-matching correction (§2.1, §3.3, §4, §5, §6, §8, §10). Pending
-`ux-critic`/`reviewer` review before folding back into Approved.
+matching correction (§2.1, §3.3, §4, §5, §6, §8, §10). `ux-critic` clean
+(no findings). `reviewer` clean (no Blockers, no Important findings).
+Folded back into Approved.
 
 ---
 
@@ -1113,8 +1114,9 @@ reasoning is corrected: it only ever addressed whether Configuración
 should stay reachable from the non-Session states (yes), never what shape
 the trigger reaching it should take — that question went unasked until
 the Product Owner compared the two live header states directly.
-`settings.md` receives the matching correction. Pending
-`ux-critic`/`reviewer` review before folding back into Approved.
+`settings.md` receives the matching correction. `ux-critic` clean (no
+findings). `reviewer` clean (no Blockers, no Important findings). Folded
+back into Approved.
 
 ---
 

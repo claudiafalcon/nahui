@@ -538,3 +538,27 @@ Status: Fixed. State 3 gained its own persistent (not transient) on-screen capti
 ### Verification
 
 `ux-critic` re-verification pass: clean — both findings confirmed resolved, including independently confirming the "Continuar sits below the fold" reasoning against §3.9's actual wireframe content rather than trusting the fix's own description. Caught and closed one further trivial Minor in the same pass (a stale "three text blocks" density count in the placement section's own density-acknowledgment paragraph, not updated to account for state 3's new fourth caption). `reviewer`'s Foundation-consistency pass: no Blockers, no Important findings against §3.9b's actual design content — every substantive cross-reference checked (`home.md` §3.8f/§3.11, `architecture-principles.md` #7, `decision-log.md` D33, `ReceiptTicket.tsx`'s real CSS) verified accurate against source. Four Important findings from this same dispatch were general documentation-hygiene gaps (a self-contradicting changelog sentence falsely claiming `reviewer` was already clean; stale "Pending `ux-critic`/`reviewer`" wording in two places despite `ux-critic`'s cycle already being complete; a duplicated/stale `product/02-ux/CLAUDE.md` tracking bullet; this findings-log entry itself being missing) — closed separately by Main, not specific to §3.9b's own substance. One Suggestion (a "this document family" citation imprecisely extended to prototype code rather than the `02-ux/*.md` spec corpus) — optional, not blocking.
+
+## Cerrar jornada de venta direct affordance, active Session (Product Owner-raised, 2026-08-14) — `home.md` §2/§3.7/§10, `settings.md` §2.1
+
+`home.md`/`settings.md` amended: during an active Selling Session, the shared "⋯"-triggered sheet (§3.7a, retired) is replaced by two direct, always-visible header affordances — a gear icon ("⚙") routing straight into Configuración with no intermediate sheet, and a labeled "Cerrar jornada de venta" button. Motivated by a Product Owner report that the close-session action was hard to discover behind the overflow menu.
+
+### Findings, closed
+
+`ux-critic` found 4 Minor findings and 1 Suggestion against the initial pass. **Retroactive entry — added 2026-08-15, closing a documentation gap `reviewer` flagged; the original per-finding text is not independently reproduced here to avoid inventing detail beyond what's actually verifiable.** The authoritative record of what was found and fixed is `home.md`'s own status header (2026-08-14 entry) and its cross-referenced `home.changelog.md#status-2026-08-14-cerrar-jornada-direct-affordance`/`settings.changelog.md#status-2026-08-14-active-session-gear-direct-nav` entries, which state the finding count and disposition directly. All 4 Minor + 1 Suggestion were fixed in the same pass; `ux-critic` re-verified clean.
+
+### Verification
+
+`ux-critic` re-verification pass: clean, per `home.md`/`settings.md`'s own status headers. `reviewer`'s Foundation-consistency pass: 2 findings, both fixed (a stale `§3.7a` cross-reference in `home.md` §3, a status-wording mismatch between the two documents) — see the two documents' own status headers for the full record. Folded back into Approved.
+
+## Cerrar jornada de venta direct affordance extended to every Home header state (Product Owner-raised, 2026-08-15) — `home.md` §2/§3.3–§3.6/§3.6a/§3.6c, `settings.md` §2.1/§3.3
+
+Extends the 2026-08-14 amendment above: the Product Owner compared two live screens and caught that the non-Session Home header still used the old "⋯"→sheet pattern, even though that sheet had always been single-item ("Configuración" only) — the identical condition that justified retiring the active-Session sheet a day earlier. `home.md` §3.6c and `settings.md` §3.3 (the two sibling non-Session sheet definitions) are both retired, following the same "supersede, preserve verbatim in changelog" convention already used for §3.7a. Every Home header now shows a direct gear icon, no sheet remaining anywhere in the document.
+
+### Findings
+
+None. `ux-critic`'s first-pass review found zero issues of any severity — confirmed the "already single-item" claim against the preserved original content (not just the amendment's own restatement of it), confirmed all four §3.6a variants render the gear icon consistently, confirmed no cross-document asymmetry between `home.md` and `settings.md`, and confirmed removing the "⋯" icon forecloses no genuine future need for a multi-item menu.
+
+### Verification
+
+`reviewer`'s Foundation-consistency pass: no Blockers, no Important findings. Verified changelog anchor integrity, confirmed both retired-section changelog entries preserve full verbatim content (not a paraphrase, corroborated against independently-written prior text), confirmed cross-document section citations are accurate, and confirmed this amendment correctly has no `decision-log.md` entry of its own (a pure navigation-affordance decision, same treatment as the 2026-08-09 icon relocation and 2026-08-13 rename, neither of which got one either). Folded back into Approved.

@@ -160,8 +160,9 @@ and the non-Session sheet was already single-item (Configuración only, per
 active-Session sheet a day earlier. §3.6c is retired the same way §3.7a
 was — full original content preserved verbatim in
 `home.changelog.md#section-3-6c-retired`. `settings.md` receives the
-matching correction (§2.1, §3.3, §4, §5, §6, §8, §10). Pending
-`ux-critic`/`reviewer` review before folding back into Approved. **[see
+matching correction (§2.1, §3.3, §4, §5, §6, §8, §10). `ux-critic` clean
+(no findings). `reviewer` clean (no Blockers, no Important findings).
+Folded back into Approved. **[see
 home.changelog.md#status-2026-08-15-non-session-gear-direct-affordance]**
 
 Scope: `Hoy`, the first of four top-level nav items per
