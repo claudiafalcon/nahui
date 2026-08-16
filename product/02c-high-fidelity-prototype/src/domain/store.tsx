@@ -169,7 +169,14 @@ export interface CommitLotLine {
   product: { kind: 'existing'; productId: ID } | { kind: 'new'; name: string; defaultPrice: number };
 }
 
-/** `onboarding.md` §2.2's three-way capability table. */
+/**
+ * `onboarding.md` §2.2's three-way capability table. Note: this `'demo'`
+ * value is the Onboarding "Ver un ejemplo" path — unrelated to the separate
+ * Demo Mode validation-campaign build gate in `src/screens/DemoMode/`
+ * (`DemoModeGate`/`DemoModeGateActive`), which reuses the same "demo" token
+ * for a different, build-time concept. No shared imports or storage keys;
+ * this comment exists only to disambiguate at a grep/read level.
+ */
 export type OnboardingPath = 'free' | 'paid' | 'demo';
 
 /**

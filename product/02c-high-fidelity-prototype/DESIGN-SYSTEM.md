@@ -156,7 +156,7 @@ spec's explicit emphasis instruction literally.
   `--ease-settle`'s overshoot, since this plays on every ordinary
   navigation many times a selling day). Applied at nearly every screen's
   own resolution branch (Home, Inventario, Eventos, Resultados, Settings,
-  Authentication, Onboarding). Deliberately excluded from `ReceiptTicket`
+  Authentication, Onboarding, Demo Mode's welcome/error gate). Deliberately excluded from `ReceiptTicket`
   (which keeps its own one-of-a-kind `swingIn`) and from `Sheet`/modal
   overlays (not screen-to-screen navigation). Respects
   `prefers-reduced-motion` the same way every other animation here does.

@@ -2,6 +2,11 @@ import { AppRouter } from '../../AppRouter';
 import { DemoModeGateActive } from './DemoModeGateActive';
 
 /**
+ * Note: "Demo Mode" here is unrelated to `OnboardingPath`'s `'demo'` value
+ * (`src/domain/store.tsx`) — that's the Onboarding "Ver un ejemplo" path, a
+ * separate, pre-existing domain concept. Both happen to use the "demo"
+ * token; no shared imports or storage keys connect them.
+ *
  * demo-mode.md — the top-level, compile-time build-detection gate
  * (Architecture Review §8 item 1). `import.meta.env.VITE_DEMO_MODE` is only
  * `'true'` when this build was produced via `vite build --mode

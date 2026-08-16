@@ -3,6 +3,7 @@ import { AppRouter } from '../../AppRouter';
 import { DemoWelcome } from './DemoWelcome';
 import { DemoLoadError } from './DemoLoadError';
 import { acknowledgeDemoMode, isDemoModeAcknowledged } from './demoModeStorage';
+import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 
 type GateState = 'pass-through' | 'welcome' | 'error';
 
@@ -49,28 +50,36 @@ export function DemoModeGateActive() {
   if (gate === 'error') {
     return (
       <div className="app-shell">
-        <DemoLoadError onRetry={() => setGate(resolveGateState())} />
+        <ScreenTransition transitionKey="demo-error">
+          <DemoLoadError onRetry={() => setGate(resolveGateState())} />
+        </ScreenTransition>
       </div>
     );
   }
 
   // §2.1 checks 2/3 collapse to this one 'welcome' branch — §3.3 (fresh) and
   // §3.4 (resumed) render pixel-identically, per the spec's own text.
+  // ScreenTransition-wrapped like every other screen-branch resolution in
+  // this codebase (DESIGN-SYSTEM.md §6) — this is the actual first screen a
+  // validation participant sees, one tap before AuthenticationFlow's own
+  // identically-wrapped "phone" step (AuthenticationFlow.tsx).
   return (
     <div className="app-shell">
-      <DemoWelcome
-        onStart={() => {
-          try {
-            acknowledgeDemoMode();
-          } catch {
-            // Best-effort local flag (§1/§9 — not a domain write): if the
-            // write itself fails, the worst case is this screen showing
-            // again next launch on this device. Nothing to roll back or
-            // retry — §2.2 defines no failure-handling for this write.
-          }
-          setGate('pass-through');
-        }}
-      />
+      <ScreenTransition transitionKey="demo-welcome">
+        <DemoWelcome
+          onStart={() => {
+            try {
+              acknowledgeDemoMode();
+            } catch {
+              // Best-effort local flag (§1/§9 — not a domain write): if the
+              // write itself fails, the worst case is this screen showing
+              // again next launch on this device. Nothing to roll back or
+              // retry — §2.2 defines no failure-handling for this write.
+            }
+            setGate('pass-through');
+          }}
+        />
+      </ScreenTransition>
     </div>
   );
 }

@@ -170,3 +170,45 @@ augmentation for `VITE_DEMO_MODE`), `package.json` (two new scripts),
    don't collide/overwrite each other on disk, which is what made the
    side-by-side bundle-content verification above possible in the first
    place.
+
+## Fix round (`ux-critic`/`reviewer` findings)
+
+1. **Major (`ux-critic`) — missing `ScreenTransition`.** `DemoModeGateActive.tsx`'s
+   `'welcome'` and `'error'` branches rendered `DemoWelcome`/`DemoLoadError`
+   raw, with no `<ScreenTransition>` wrap — the one structural shape applied
+   at nearly every other screen-branch resolution in this codebase
+   (`DESIGN-SYSTEM.md` §6), including `AuthenticationFlow.tsx`'s own "phone"
+   step, the very next screen a validation participant sees one tap later.
+   Fixed: both branches now wrap their screen in `<ScreenTransition
+   transitionKey="demo-welcome">` / `<ScreenTransition
+   transitionKey="demo-error">` respectively, inside the existing
+   `.app-shell` div, mirroring `AuthenticationFlow.tsx`'s exact pattern
+   (`app-shell` owned by the outer wrapper, `ScreenTransition` owned by the
+   flow around its own rendered child). `DESIGN-SYSTEM.md` §6's own
+   enumeration updated to list "Demo Mode's welcome/error gate" alongside
+   the other screens that already get this treatment.
+
+   **Live-verified the transition actually plays**, not just that the JSX
+   wrapping is present: ran `npm run dev:demo-campaign`, drove a headless
+   Chromium session against it (via Playwright, invoked through `npx` for
+   this one-off verification — not added as a project dependency), throttled
+   CSS animation playback 20x via the `Animation.setPlaybackRate` CDP
+   command so the 220ms entrance could be captured mid-flight, and
+   screenshotted `DemoWelcome` at three points: immediately on first paint
+   (faded, ~8px lower, muted button color — matches `screenEnter`'s `from`
+   keyframe), mid-animation (partially faded/positioned), and fully settled
+   (full opacity, final position, saturated button — matches `to`). Repeated
+   the identical throttled capture on `AuthenticationFlow`'s `PhoneStep`
+   (tap "Empezar demo" to get there) for a direct side-by-side: `PhoneStep`'s
+   own start/end frames are visually identical in kind to `DemoWelcome`'s —
+   same faded/lower start, same settled end — confirming `DemoWelcome` now
+   genuinely receives the same entrance treatment as the screen the finding
+   used as its sharpest evidence, not just superficially-similar JSX.
+   `npx tsc -b` clean after the change.
+
+2. **Suggestion (`reviewer`) — "Demo" naming collision.** Added a one-line
+   disambiguating comment on `OnboardingPath`'s `'demo'` value in
+   `src/domain/store.tsx` (Onboarding's "Ver un ejemplo" path, unrelated to
+   this feature) and a matching comment at the top of `DemoModeGate.tsx`
+   cross-referencing the same distinction — both discoverable via grep/read,
+   no rename, no behavior change.
