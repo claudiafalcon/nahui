@@ -1036,6 +1036,68 @@ changed. No spec ambiguity hit — `home.md` §2/§3.7/§10 and `settings.md`
 §2.1 specify this amendment's scope, wiring, and interlock unchanged
 precisely enough that no gap needed flagging back.
 
+## Non-Session gear-icon amendment (2026-08-15) — Product Owner-raised,
+extending the 2026-08-14 "Cerrar jornada de venta" discoverability fix to
+every Home header state; `ux-critic`/`reviewer` clean spec amendment folded
+back into Approved
+
+`home.md` §2/§3.3–§3.6/§3.6a/§3.6c and `settings.md` §2.1 were further
+amended the day after the amendment above: the "deliberate divergence"
+reasoning that kept the non-Session states' "⋯" → one-row sheet unchanged
+never actually justified the *sheet shape* itself — only that Configuración
+should stay reachable from those four states at all (still true). Once
+compared directly against the active-Session header's already-retired
+sheet, there was no principled basis left for the divergence: the
+non-Session sheet was already single-item ("⚙ Configuración" only, since
+none of §3.3–§3.6 has an open Session to close), the identical
+"single-item menu adds a tap without representing a real choice" condition
+that retired the active-Session sheet a day earlier. §3.6c (the sheet's own
+spec section) is retired the same way §3.7a was. The header's gear icon
+(⚙) on `ColdStart`/`Idle`/`EventResume` — including all four of §3.6a's
+Session-start-moment variants, which render on top of these same
+components — now routes directly into Configuración, no intermediate sheet,
+matching the shape `SessionHeader.tsx` already established the day before.
+
+**Built.** `ColdStart.tsx`, `Idle.tsx`, `EventResume.tsx` — each dropped its
+local `menuOpen` `useState`, its `Sheet` import, and its
+`SessionHeader.module.css`-borrowed `sheetRow` import; the header's button
+now calls `onOpenSettings` (already an existing prop on all three,
+already wired identically to `SessionHeader.tsx`'s own `onOpenSettings` by
+`HomeScreen.tsx`) directly, with the glyph changed from "⋯" to "⚙" and the
+`aria-label` changed from "Controles" to "Configuración" to match
+`SessionHeader.tsx`'s own button exactly. No new destination, no new prop —
+purely retiring the sheet indirection these three components already had in
+place. `Idle.module.css`/`ColdStart.module.css`'s existing `.menuBtn` class
+— already visually identical to `SessionHeader.module.css`'s `.gearBtn`
+(same border/size/radius/background/transition values) — was renamed to
+`.gearBtn` to match, rather than left as a stale name or duplicated as new
+CSS; no new styling was written. `SessionHeader.tsx`/`.module.css`'s own
+stale comments (which had described the non-Session states as "still
+importing `Sheet` directly," accurate as of the prior amendment) were
+corrected to reflect that no component in this codebase renders the retired
+"⋯" → sheet pattern any longer; `SessionHeader.module.css`'s now-fully-unused
+`.sheetRow`/`.sheetTitle` classes were left in place rather than deleted,
+since they document shared sheet-row visual language other sheets in this
+codebase (`CatalogView.tsx`, `VenuePicker.tsx`, `EventTypeSheet.tsx`,
+`ProductPicker.tsx`) independently reuse via their own local classes of the
+same name.
+
+**Verification.** `tsc -b` clean, zero errors. Live-verified via a scripted
+Puppeteer walkthrough (`puppeteer-core` driving the machine's own installed
+Chrome, `localStorage` seeded directly with a Business + one Product and
+zero InventoryUnits to reach `home.md` §3.3's cold-start state) against
+`npm run dev`: screenshot before the tap confirms the gear icon (⚙) renders
+in the header exactly where the old "⋯" sat; screenshot after the tap
+confirms it lands directly on Configuración's vista principal
+(`settings.md` §3.3a — "Tu plan," "Cómo vendes normalmente," "Tu cuenta")
+with no sheet ever appearing in between. `Idle.tsx`/`EventResume.tsx` share
+the identical topbar markup/props/`onOpenSettings` wiring pattern verified
+live on `ColdStart.tsx`, so this one live check covers the mechanism common
+to all three; not independently re-screenshotted per state. No spec
+ambiguity hit — `home.md`'s 2026-08-15 status-header entry and `settings.md`
+§2.1 specify this amendment's scope precisely enough that no gap needed
+flagging back.
+
 ## Fix round (2026-08-14, same day) — two-line layout correction (`ux-critic`
 Major) + stale disclosure comment (`reviewer` Important)
 

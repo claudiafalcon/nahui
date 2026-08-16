@@ -1,11 +1,8 @@
-import { useState } from 'react';
-import { Sheet } from '../../components/Sheet/Sheet';
 import { Button } from '../../components/Button/Button';
 import { pesos, pluralize } from '../../domain/format';
 import { useNfcSessionStart } from './useNfcSessionStart';
 import { NfcSessionStartNote } from './NfcSessionStartNote';
 import styles from './Idle.module.css';
-import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css';
 
 /**
  * home.md §2 step 2 / §3.6 — "Event active, no Session opened today."
@@ -37,6 +34,13 @@ import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css
  * identically wherever a new Session is about to open — §3.4... §3.5...
  * §3.6"). `overrideToNfc` is threaded through `onContinue` at the moment of
  * *this* tap, same as `Idle.tsx`'s own `onStartSession`.
+ *
+ * **Direct gear (⚙) entry point (settings.md §2.1; amended 2026-08-15 — see
+ * home.md's own status header/§2/§3.6c).** Previously a "⋯" icon opening a
+ * one-row Sheet ("⚙ Configuración" only) — that intermediate sheet is now
+ * retired here too (already retired for the active-Session header a day
+ * earlier, SessionHeader.tsx): the gear icon calls `onOpenSettings` directly,
+ * no `Sheet`, no `menuOpen` state.
  */
 export function EventResume({
   venueName,
@@ -60,15 +64,14 @@ export function EventResume({
    * not a cosmetic rename. */
   onOpenAssignTagsPlaceholder: () => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const { variant, overrideToNfc, toggleOverride } = useNfcSessionStart();
 
   return (
     <>
       <div className={styles.topbar}>
         <span className={styles.wordmark}>Nahui</span>
-        <button className={styles.menuBtn} onClick={() => setMenuOpen((open) => !open)} aria-label="Controles">
-          ⋯
+        <button className={styles.gearBtn} onClick={onOpenSettings} aria-label="Configuración">
+          ⚙
         </button>
       </div>
       <div className={styles.wrap}>
@@ -94,20 +97,6 @@ export function EventResume({
           />
         </div>
       </div>
-
-      {menuOpen && (
-        <Sheet onDismiss={() => setMenuOpen(false)}>
-          <button
-            className={`${sheetStyles.sheetRow} stitchBottom`}
-            onClick={() => {
-              setMenuOpen(false);
-              onOpenSettings();
-            }}
-          >
-            ⚙ Configuración
-          </button>
-        </Sheet>
-      )}
     </>
   );
 }

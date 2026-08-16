@@ -1,13 +1,10 @@
-import { useState } from 'react';
 import { Button } from '../../components/Button/Button';
-import { Sheet } from '../../components/Sheet/Sheet';
 import { BrandMark } from '../../components/BrandMark/BrandMark';
 import { daysFromToday } from '../../domain/dates';
 import { pesos, pluralize } from '../../domain/format';
 import { useNfcSessionStart } from './useNfcSessionStart';
 import { NfcSessionStartNote } from './NfcSessionStartNote';
 import styles from './Idle.module.css';
-import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css';
 
 /** home.md §3.4/§3.5 — idle, ready to sell, no Session open yet. Same
  * elements the approved spec calls for (greeting question, the primary CTA,
@@ -46,7 +43,16 @@ import sheetStyles from '../../components/SessionHeader/SessionHeader.module.css
  * passed down, never recomputed here. Renders only when non-null (1+
  * finalized Sales already exist today under a Quick Session), between the
  * greeting and the primary CTA, exactly the position both wireframes show —
- * pixel-identical to the base state otherwise. */
+ * pixel-identical to the base state otherwise.
+ *
+ * **Direct gear (⚙) entry point (settings.md §2.1; amended 2026-08-15 — see
+ * home.md's own status header/§2/§3.6c).** Previously a "⋯" icon opening a
+ * one-row Sheet ("⚙ Configuración" only) — that intermediate sheet is now
+ * retired here too (already retired for the active-Session header a day
+ * earlier, SessionHeader.tsx): the gear icon calls `onOpenSettings` directly,
+ * no `Sheet`, no `menuOpen` state. Same shape as §3.6a's own gear icon below
+ * (`NfcSessionStartNote`'s "Ir a Configuración" link is a separate,
+ * secondary affordance, unaffected by this change). */
 export function Idle({
   upcomingEventVenueName,
   upcomingEventStartDate,
@@ -67,7 +73,6 @@ export function Idle({
   onOpenSettings: () => void;
   onOpenAssignTagsPlaceholder: () => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const { variant, overrideToNfc, toggleOverride } = useNfcSessionStart();
   const showUpcomingCard = Boolean(upcomingEventVenueName && upcomingEventStartDate && onTapUpcomingEvent);
 
@@ -75,8 +80,8 @@ export function Idle({
     <>
       <div className={styles.topbar}>
         <span className={styles.wordmark}>Nahui</span>
-        <button className={styles.menuBtn} onClick={() => setMenuOpen((open) => !open)} aria-label="Controles">
-          ⋯
+        <button className={styles.gearBtn} onClick={onOpenSettings} aria-label="Configuración">
+          ⚙
         </button>
       </div>
       <div className={styles.wrap}>
@@ -114,20 +119,6 @@ export function Idle({
           />
         </div>
       </div>
-
-      {menuOpen && (
-        <Sheet onDismiss={() => setMenuOpen(false)}>
-          <button
-            className={`${sheetStyles.sheetRow} stitchBottom`}
-            onClick={() => {
-              setMenuOpen(false);
-              onOpenSettings();
-            }}
-          >
-            ⚙ Configuración
-          </button>
-        </Sheet>
-      )}
     </>
   );
 }

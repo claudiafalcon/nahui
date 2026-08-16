@@ -162,6 +162,10 @@
 /* .sheetRow.destructive (the old "Cerrar jornada de venta" sheet-row
    styling) is retired along with this component's own Sheet usage —
    2026-08-14 amendment, see this file's top-of-file comment. `.sheetRow`
-   itself stays: `ColdStart.tsx`/`Idle.tsx`/`EventResume.tsx` still import
-   it for the non-Session states' own Configuración-only sheet (home.md
-   §3.6c), which is unaffected by this amendment. */
+   itself is now unused: `ColdStart.tsx`/`Idle.tsx`/`EventResume.tsx`
+   retired their own Configuración-only sheet (home.md §3.6c) in the
+   2026-08-15 amendment that extended this component's direct-gear shape to
+   every remaining Home header state — see this file's top-of-file comment.
+   Kept here rather than deleted since `.sheetTitle`/`.sheetRow` document the
+   shared sheet-row visual language other sheets in this codebase may still
+   reuse. */

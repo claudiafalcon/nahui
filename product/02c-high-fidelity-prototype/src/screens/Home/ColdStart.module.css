@@ -1,7 +1,8 @@
-/* Same topbar/wordmark/menuBtn shape Idle.module.css already established for
-   the identical "⋯" entry-point affordance (settings.md §2.1) — reused
-   verbatim here rather than hand-rolled a second time, since this is the
-   same visual treatment, not a new one. */
+/* Same topbar/wordmark/gearBtn shape Idle.module.css already established for
+   the identical direct Configuración entry-point affordance (settings.md
+   §2.1; amended 2026-08-15 — see home.md's own status header/§2/§3.6c) —
+   reused verbatim here rather than hand-rolled a second time, since this is
+   the same visual treatment, not a new one. */
 .topbar {
   display: flex;
   align-items: center;
@@ -18,7 +19,7 @@
   color: var(--color-obsidian);
 }
 
-.menuBtn {
+.gearBtn {
   appearance: none;
   border: 1.5px solid var(--color-hilo);
   background: var(--color-white);
@@ -33,7 +34,7 @@
   font-size: 20px;
   transition: transform var(--duration-fast) var(--ease-standard);
 }
-.menuBtn:active {
+.gearBtn:active {
   transform: scale(0.92);
   background: var(--color-hilo);
 }

@@ -14,7 +14,11 @@
   color: var(--color-obsidian);
 }
 
-.menuBtn {
+/* Direct Configuración entry point (settings.md §2.1; amended 2026-08-15 —
+   see home.md's own status header/§2/§3.6c). Same shape SessionHeader.tsx's
+   own `.gearBtn` already established for the active-Session header — no
+   intermediate sheet behind it here either, as of this amendment. */
+.gearBtn {
   appearance: none;
   border: 1.5px solid var(--color-hilo);
   background: var(--color-white);
@@ -29,7 +33,7 @@
   font-size: 20px;
   transition: transform var(--duration-fast) var(--ease-standard);
 }
-.menuBtn:active {
+.gearBtn:active {
   transform: scale(0.92);
   background: var(--color-hilo);
 }

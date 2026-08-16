@@ -52,12 +52,18 @@ import styles from './SessionHeader.module.css';
  * only its trigger moved). No `Sheet`/menu-open state is needed here
  * anymore — this is the one Home-header shape that no longer represents a
  * choice between two destinations, so the "⋯"/sheet affordance doesn't
- * describe it. The non-Session Home states (`home.md` §3.3–§3.6/§3.6a/§3.6c)
- * keep the "⋯" → sheet shape unchanged (now holding only "Configuración")
- * — that's a different component (`ColdStart.tsx`/`Idle.tsx`/
- * `EventResume.tsx`, all still importing `Sheet` directly), not this one;
- * see `home.md` §2's "deliberate divergence" reasoning for why the two
- * states diverge.
+ * describe it.
+ *
+ * **Amended 2026-08-15 (Product Owner-raised — extending this same fix to
+ * every remaining Home header state; `home.md` §2/§3.6c, `settings.md`
+ * §2.1):** the non-Session Home states (`home.md` §3.3–§3.6/§3.6a — §3.6c
+ * itself is now retired) previously kept the "⋯" → one-row sheet shape,
+ * reasoned at the time as a deliberate divergence. That divergence is
+ * corrected here too: `ColdStart.tsx`/`Idle.tsx`/`EventResume.tsx` now each
+ * render a direct gear (⚙) button calling their own `onOpenSettings` prop,
+ * the identical shape this component already established — no `Sheet`, no
+ * `menuOpen` state in any of them either. No component in this codebase
+ * still renders the retired "⋯" → Configuración-only sheet pattern.
  */
 export function SessionHeader({
   revenue,
