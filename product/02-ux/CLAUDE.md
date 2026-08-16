@@ -87,7 +87,7 @@ This scope — defining every branch's destination exhaustively at this stage �
 
 All six designed experiences (Hoy, Inventario, Eventos, Resultados, Onboarding, Settings) are done and approved — the Low-Fidelity UX phase is complete.
 
-- `demo-mode.md` — **not one of the six Merchant Application experiences above; validation-campaign-only infrastructure, co-located here for pipeline/deploy convenience.** Product Owner-approved in concept and wireframe (2026-08-15); `brand-guardian` reviewed and fixed the welcome copy; `architect` ruled on its placement (`decision-log.md` D48 — fits neither D13/D45's class nor D38's, a third category: no code path in a real, shipped build, its own §1 explicitly disclaims Merchant Application capability status). Not yet through `ux-critic`/`reviewer` or Architecture Review.
+- `demo-mode.md` — **not one of the six Merchant Application experiences above; validation-campaign-only infrastructure, co-located here for pipeline/deploy convenience.** Product Owner-approved in concept and wireframe (2026-08-15); `brand-guardian` reviewed and fixed the welcome copy; `architect` ruled on its placement (`decision-log.md` D48 — fits neither D13/D45's class nor D38's, a third category: no code path in a real, shipped build, its own §1 explicitly disclaims Merchant Application capability status) and completed Architecture Review (compile-time Vite build-mode gating, a storage key structurally separate from `AppState`'s domain-mirroring blob, an outer-wrapper mounting shape around `AppRouter` — see §8). Ready for `ui-designer` to build; `ux-critic`/`reviewer` review happens after, per the New-Feature Workflow.
 
 ## UX Critic Findings
 
