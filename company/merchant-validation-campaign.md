@@ -23,7 +23,7 @@ The QR domain-mismatch risk flagged in the first draft (the receipt QR pointing 
 >
 > Si vendes en bazares, nos ayudarías muchísimo si le echas un ojo a una versión de prueba de lo que estamos construyendo y respondes un cuestionario corto — calcula entre 18 y 26 minutos en total, entre las dos cosas. Al terminar puedes decirnos si quieres que te tengamos en cuenta para el primer piloto de Nahui, y desde ahí mismo puedes unirte a nuestra comunidad de early adopters.
 >
-> Mientras más nos cuentes con detalle cómo llevas tu negocio, mejor podemos decidir a quién invitar primero al piloto — y a quién considerar entre las primeras en recibir los kits de tags NFC cuando estén listos. Eso se decide por el interés real y por la calidad de tus respuestas, no por orden de llegada.
+> Mientras más nos cuentes con detalle cómo llevas tu negocio, mejor podemos decidir a quién invitar primero al piloto — y a quién considerar entre las primeras en recibir los kits de tags cuando estén listos. Eso se decide por el interés real y por la calidad de tus respuestas, no por orden de llegada.
 >
 > [liga al cuestionario]
 > ¿Te late? Cualquier duda, aquí ando.
@@ -38,7 +38,7 @@ The QR domain-mismatch risk flagged in the first draft (the receipt QR pointing 
 >
 > Al completar la prueba y el cuestionario, puedes decirnos que quieres que te tengamos en cuenta para el piloto de Nahui — quedas en nuestra lista de acceso prioritario, y ahí mismo puedes unirte a la comunidad de early adopters, sin esperar a nada más.
 >
-> Si en tus respuestas vemos que conoces bien tu negocio y nos compartes el detalle real de cómo vendes, te consideramos entre las primeras candidatas para el piloto — y entre las primeras en recibir los kits de tags NFC cuando el piloto arranque. Eso lo decidimos por el interés real y la calidad de lo que nos cuentas, nunca al azar ni por quién llega primero.
+> Si en tus respuestas vemos que conoces bien tu negocio y nos compartes el detalle real de cómo vendes, te consideramos entre las primeras candidatas para el piloto — y entre las primeras en recibir los kits de tags cuando el piloto arranque. Eso lo decidimos por el interés real y la calidad de lo que nos cuentas, nunca al azar ni por quién llega primero.
 >
 > No es una venta, no te pedimos dinero, y no compartimos tu información con nadie fuera de Nahui.
 >
@@ -108,7 +108,7 @@ Verified, real channels — from `company/usability-testing-plan.md` §7.3.2 (a 
 
 | # | Task | Est. time | What it's testing |
 |---|---|---|---|
-| 6 | Activa el plan de pago en Configuración, registra un producto y sigue el flujo de "etiquetado" NFC (simulado). | 3-4 min | Comprehension/perceived value of the Paid tier |
+| 6 | Activa el plan de pago en Configuración, registra un producto y sigue el flujo de etiquetado de tags (simulado). | 3-4 min | Comprehension/perceived value of the Paid tier |
 | 7 | **Deliberate friction task:** con el plan de pago activo, intenta vender un producto registrado pero no etiquetado. | 1-2 min | Tests `product-decisions.md` Q2's resolved design (no manual fallback, forced into tagging mid-sale) against a real merchant's tolerance |
 | 8 | Termina la venta, mira el recibo, escanea el QR si aparece. | 1 min | Whether the Claim Token QR resolves — now unblocked, domain fixed |
 
@@ -180,7 +180,7 @@ The final-review pass found Q7's answer set wasn't jointly exhaustive: a respond
 - Tarea 3 — Empezar a registrar un producto, cambiar a Vender sin guardar, y volver a Inventario
 - Tarea 4 — Hacer 2-3 ventas seguidas, sin pausar
 - Tarea 5 — Ver el recibo digital después de una venta
-- Tarea 6 *(condicional — solo para quien hizo la rama opcional de pago/NFC)* — Activar el plan de pago, registrar un producto y completar el etiquetado NFC
+- Tarea 6 *(condicional — solo para quien hizo la rama opcional de pago/NFC)* — Activar el plan de pago, registrar un producto y completar el etiquetado de tags
 - Tarea 7 *(condicional)* — Intentar vender un producto registrado pero no etiquetado, con el plan de pago activo
 - Tarea 8 *(condicional)* — Terminar la venta, ver el recibo, escanear el QR
 
@@ -223,7 +223,7 @@ Q7's five substantive options now span three possible root causes and their over
 | # | Question | Type | Feeds |
 |---|---|---|---|
 | Q13 | Si Nahui existiera gratis mañana, ¿lo usarías? | Scale | Free-tier adoption-likelihood distribution (Deliverable 5, secondary adoption indicator) |
-| Q14 | Si cobrara por funciones extra, ¿preferirías cuota fija, porcentaje, o depende del precio? | Multiple choice + otro | H5 replication (`market-validation.md` H5); feeds `company/business-decisions.md` Q17 (pricing-model type) — **corrected sixth pass (Important finding): not Q11**, which is about billing-cycle *timing* for capability changes, an unrelated question the prior citation wrongly conflated with this one. See the Sixth-pass remediation record below for the entry's original recommended text. |
+| Q14 | Si cobrara por funciones extra, ¿preferirías cuota fija, porcentaje, o depende del precio? | Multiple choice + otro | H5 replication (`market-validation.md` H5); feeds `company/business-decisions.md` Q17 (pricing-model type) — **corrected sixth pass (Important finding): not Q11**, which is about billing-cycle *timing* for capability changes, an unrelated question the prior citation wrongly conflated with this one. See the Sixth-pass remediation record below for the entry's original recommended text.
 
 ### Section E — Para cerrar
 
@@ -253,7 +253,7 @@ This is a Google Forms section-break/description field, not a question — it in
 **Closing text — three variants, one per Q16 branch (previously one shared text blurring Sí and Tal vez; corrected here):**
 
 > **If Q16 = Sí:**
-> ¡Gracias por tu tiempo y por contarnos cómo llevas tu negocio! Quedas en nuestra lista de acceso prioritario para el piloto de Nahui, y ya formas parte de nuestra comunidad de early adopters. Si al leer tus respuestas vemos que conoces bien tu negocio y nos compartiste el detalle real de cómo vendes, te consideramos entre las primeras candidatas para el piloto — y entre las primeras en recibir los kits de tags NFC cuando arranque. Eso se decide por el interés real y la calidad de tus respuestas, nunca al azar.
+> ¡Gracias por tu tiempo y por contarnos cómo llevas tu negocio! Quedas en nuestra lista de acceso prioritario para el piloto de Nahui, y ya formas parte de nuestra comunidad de early adopters. Si al leer tus respuestas vemos que conoces bien tu negocio y nos compartiste el detalle real de cómo vendes, te consideramos entre las primeras candidatas para el piloto — y entre las primeras en recibir los kits de tags cuando arranque. Eso se decide por el interés real y la calidad de tus respuestas, nunca al azar.
 
 > **If Q16 = Tal vez, avísenme:**
 > ¡Gracias por tu tiempo y por contarnos cómo llevas tu negocio! Ya formas parte de nuestra comunidad de early adopters, y te vamos a mantener al tanto de las novedades de Nahui. Por ahora no te tenemos en la lista para el primer piloto — si más adelante quieres que te consideremos, nos puedes escribir cuando quieras.
