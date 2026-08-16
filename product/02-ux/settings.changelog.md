@@ -183,6 +183,22 @@ Scope's closing clause, §3.3's added sentence, §4's split interaction-flow
 block, and §6's split table row all updated to match. Pending
 `ux-critic`/`reviewer` review before folding back into Approved.
 
+### status-2026-08-15-non-session-gear-direct-nav
+**Applies to:** `settings.md` §2.1 — the non-Session entry point, matching
+`home.md`'s own extension of its "Cerrar jornada de venta" discoverability
+amendment.
+
+Further amended 2026-08-15 (Product Owner-raised — `home.md`'s "Cerrar
+jornada de venta" discoverability fix, extended to every Home header
+state): outside an active Session too, the entry point is now a gear icon
+("⚙") that routes directly into Configuración's resolve step — no
+intermediate sheet. The non-Session sheet (§3.3) is retired — it was
+already single-item ("Configuración" only), the same condition that
+retired the active-Session sheet a day earlier. Configuración's entry
+point now has one uniform shape across every Home state with a persistent
+header. Pending `ux-critic`/`reviewer` review before folding back into
+Approved.
+
 ---
 
 ## §10 "Decisions made" — full decision history
@@ -353,3 +369,44 @@ would otherwise hold a single entry. §2.1's heading and first two
 paragraphs, Scope's closing clause, §3.3's added sentence, §4's split
 interaction-flow block, and §6's split table row all updated to match.
 Folded back into Approved.
+
+### decisions-2026-08-15-non-session-gear-direct-nav
+**Applies to:** `settings.md` §2.1 — extending the active-Session gear
+icon to every remaining Home header state.
+
+2026-08-15 (Product Owner-raised — extending the 2026-08-14 fix to every
+Home header state): outside an active Session too, the entry-point icon
+is now a gear ("⚙") that routes directly into Configuración, with no
+intermediate sheet. The non-Session sheet (formerly §3.3) is retired — it
+was already single-item ("Configuración" only), the same condition that
+retired the active-Session sheet a day earlier. §2.1's earlier "kept
+deliberately, not an inconsistency" reasoning is corrected: it only ever
+addressed whether Configuración should stay reachable from these four
+states, never what shape the trigger reaching it should take. `home.md`
+receives the matching correction. Pending `ux-critic`/`reviewer` review
+before folding back into Approved.
+
+### section-3-3-retired
+**From `settings.md` §3.3 ("Entry — session-controls sheet, Home
+idle/cold-start/Event-active-no-Session states," retired 2026-08-15 — see
+status header.)**
+
+```
+### 3.3 Entry — session-controls sheet, Home idle/cold-start/Event-active-no-Session states (new row)
+┌───────────────────────────────┐
+│ Nahui                        ⋯ │  dimmed, still visible underneath
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  [     ⚙ Configuración      ] │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+No "Cerrar jornada de venta" row — there is no open Session to close.
+Unchanged by `home.md`'s 2026-08-14 active-Session amendment — this is
+now the only Home state family still using this sheet shape; see §2.1.
+
+Retired because this sheet was already single-item ("Configuración"
+only) — the identical condition that retired the active-Session sheet
+(§2.1's own former text) a day earlier. `home.md`'s §3.6c (this sheet's
+own Home-side wireframe) is retired in the same pass — see that
+document's own changelog entry, `home.changelog.md#section-3-6c-retired`.

@@ -43,8 +43,19 @@ affordance). Outside an active Session, the entry point and sheet
 all fixed). `reviewer` clean (2 findings, both fixed). Folded back into
 Approved. **[see
 settings.changelog.md#status-2026-08-14-active-session-gear-direct-nav]**
+**Further amended 2026-08-15 (Product Owner-raised — `home.md`'s "Cerrar
+jornada de venta" discoverability fix, extended to every Home header
+state):** outside an active Session too, the entry point is now a gear
+icon ("⚙") that routes directly into Configuración's resolve step — no
+intermediate sheet. The non-Session sheet (§3.3) is retired — it was
+already single-item ("Configuración" only), the same condition that
+retired the active-Session sheet a day earlier (see `home.md`'s own
+status header for the fuller reasoning). Configuración's entry point now
+has one uniform shape across every Home state with a persistent header.
+Pending `ux-critic`/`reviewer` review before folding back into Approved.
+**[see settings.changelog.md#status-2026-08-15-non-session-gear-direct-nav]**
 
-Scope: `Configuración`, the merchant-facing surface for the Business Capabilities `decision-log.md` D25/D27/D40 leave merchant-self-service: `subscriptionTier` (Free ↔ Paid) — two actions (both directions), a reusable "pending change" indicator, and a way to cancel a pending change before it lands — plus `decision-log.md` D27's `defaultSellingMode` control (Botones ↔ Etiquetas NFC), constrained to whichever modes `subscriptionTier` currently makes available: **four actions total**, not six. Both `defaultSellingMode` directions use the same immediate-effect template `subscriptionTier`'s "activate" direction already uses (§2.3, §3.4) — the only real difference is that neither carries a pending-value/effective-date pair, since the field has no billing-cycle implication for D25's deferred-timing rationale to apply to, not a differently-shaped UI. `registrationMode`'s `nfc` entitlement is no longer an independently self-service-toggleable capability of its own (D27 superseded that part of D25) — it is a pure read-time derivation from `subscriptionTier = paid`, so it has no dedicated action or row here; it changes only as an automatic consequence of the `subscriptionTier` actions below. **`loyaltyEnabled` is retired outright, not merely absent from self-service scope** (`decision-log.md` D40) — there is no Business-level field left to toggle, self-service or otherwise; Frequent Customers as a whole is entitled purely by `subscriptionTier`, present in full on Paid and structurally absent on Free, with no action of Ana's own anywhere in this document or any other. **Not a fifth nav tab** — per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, Configuración hangs off the existing session-controls affordance already specified in `home.md` — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon opening the identical sheet (Product Owner decision; see status header above and `home.md`'s own status header/§10 for the full reasoning) — since 2026-08-14, this description applies to the four non-Session Home states only; the active-Session state uses a different shape (§2.1). This is the last of the five merchant-facing experiences to be designed (`product/02-ux/CLAUDE.md`). Implementation-independent — low-fidelity only, no visual design. A fifth action, added 2026-08-13, sits outside this four-capability count entirely: "Cerrar sesión" (§2.5) is an Identity-context, `User`-level action (RFC 0007) — it has no Business Capability to represent, changes nothing about her plan or how she sells, and is never conditioned on `subscriptionTier` or any pending change. It's placed in its own "Tu cuenta" section, not counted among, or confused with, the four capability actions above.
+Scope: `Configuración`, the merchant-facing surface for the Business Capabilities `decision-log.md` D25/D27/D40 leave merchant-self-service: `subscriptionTier` (Free ↔ Paid) — two actions (both directions), a reusable "pending change" indicator, and a way to cancel a pending change before it lands — plus `decision-log.md` D27's `defaultSellingMode` control (Botones ↔ Etiquetas NFC), constrained to whichever modes `subscriptionTier` currently makes available: **four actions total**, not six. Both `defaultSellingMode` directions use the same immediate-effect template `subscriptionTier`'s "activate" direction already uses (§2.3, §3.4) — the only real difference is that neither carries a pending-value/effective-date pair, since the field has no billing-cycle implication for D25's deferred-timing rationale to apply to, not a differently-shaped UI. `registrationMode`'s `nfc` entitlement is no longer an independently self-service-toggleable capability of its own (D27 superseded that part of D25) — it is a pure read-time derivation from `subscriptionTier = paid`, so it has no dedicated action or row here; it changes only as an automatic consequence of the `subscriptionTier` actions below. **`loyaltyEnabled` is retired outright, not merely absent from self-service scope** (`decision-log.md` D40) — there is no Business-level field left to toggle, self-service or otherwise; Frequent Customers as a whole is entitled purely by `subscriptionTier`, present in full on Paid and structurally absent on Free, with no action of Ana's own anywhere in this document or any other. **Not a fifth nav tab** — per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, Configuración hangs off the existing session-controls affordance already specified in `home.md` — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon opening a sheet, then (2026-08-14, active Session; 2026-08-15, every other Home state) replaced by a direct gear icon ("⚙") with no intermediate sheet at all (Product Owner decisions; see status header above and `home.md`'s own status header/§10 for the full reasoning) — as of 2026-08-15, this single direct shape applies uniformly across every Home state with a persistent header (§2.1). This is the last of the five merchant-facing experiences to be designed (`product/02-ux/CLAUDE.md`). Implementation-independent — low-fidelity only, no visual design. A fifth action, added 2026-08-13, sits outside this four-capability count entirely: "Cerrar sesión" (§2.5) is an Identity-context, `User`-level action (RFC 0007) — it has no Business Capability to represent, changes nothing about her plan or how she sells, and is never conditioned on `subscriptionTier` or any pending change. It's placed in its own "Tu cuenta" section, not counted among, or confused with, the four capability actions above.
 
 Out of scope by explicit instruction:
 - **No payment/checkout flow of any kind.** `company/CLAUDE.md`'s non-goals state "Payments/checkout — out of scope, do not build." Activating the paid plan here flips `subscriptionTier`, exactly as D25 resolves it — it never shows a price, a card field, or any payment-processing step. By what mechanism money actually changes hands, if any, is a distinct, unnamed question this document doesn't invent an answer to.
@@ -71,14 +82,44 @@ A fifth, differently-shaped concern joins these two as of 2026-08-13: whether *t
 
 ## 2. Resolution / decision logic
 
-### 2.1 Where the entry point lives — and where it deliberately doesn't (SET-M2 — corrected back to the verified-clean version; entry-point icon relocated 2026-08-09, Product Owner decision; active-Session shape corrected 2026-08-14, matching `home.md`'s own amendment — see status header)
+### 2.1 Where the entry point lives (SET-M2 — corrected back to the verified-clean version; entry-point icon relocated 2026-08-09, Product Owner decision; direct-gear shape applied 2026-08-14 to the active-Session state, extended 2026-08-15 to every remaining Home state — see status header)
 
-Configuración is not a nav tab. Per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, it hangs off Home's own header — originally rendered at the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon (Product Owner decision, reasoned in full in `home.md`'s own status header and §10). **As of 2026-08-14, that entry point no longer has one uniform shape across every Home state — see the two bullets immediately below, and `home.md`'s own status header/§2/§10 for the full reasoning.** This document extends the affordance to render anywhere Home shows a persistent header at all — not only the ambient "`[Venue] · Día N`" header of an active Session (`home.md` §3.7–§3.11a), but also the plain "Nahui" heading shown during cold start, idle, and Event-active-no-Session states (`home.md` §3.3–§3.6, including the §3.6a Session-start-moment variants rendered on top of §3.4/§3.5/§3.6). This is deliberate, not an oversight: what's managed here — her plan and how she sells — is meaningful to check or change whether or not she happens to be selling that particular day — precisely the scenario `onboarding.md`'s "Out of scope" preamble names as "very likely the most common real-world path" (subscribing to the paid plan weeks after choosing "Empezar gratis," with no reason to have a Session open at that moment) — restated again, in different words, at `onboarding.md` §8 item 4. Gating Configuración behind "only reachable while a Session is open" would make it unreachable on the many days she doesn't sell at all, and would misuse a real business event (Session-start, which timestamps hours worked — `home.md` §10) for a non-selling errand.
+Configuración is not a nav tab. Per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, it hangs off Home's own header — originally rendered at the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon (Product Owner decision, reasoned in full in `home.md`'s own status header and §10), then replaced entirely — in two steps, a day apart — by a direct gear icon ("⚙") with no intermediate sheet: first for the active-Session state (2026-08-14), then for the remaining four non-Session states (2026-08-15). **As of 2026-08-15, that entry point has one uniform shape across every Home state with a persistent header — see below, and `home.md`'s own status header/§2/§10 for the full reasoning, including why the earlier one-day divergence between the two shapes is now corrected, not merely superseded.** This document extends the affordance to render anywhere Home shows a persistent header at all — not only the ambient "`[Venue] · Día N`" header of an active Session (`home.md` §3.7–§3.11a), but also the plain "Nahui" heading shown during cold start, idle, and Event-active-no-Session states (`home.md` §3.3–§3.6, including the §3.6a Session-start-moment variants rendered on top of §3.4/§3.5/§3.6). This is deliberate, not an oversight: what's managed here — her plan and how she sells — is meaningful to check or change whether or not she happens to be selling that particular day — precisely the scenario `onboarding.md`'s "Out of scope" preamble names as "very likely the most common real-world path" (subscribing to the paid plan weeks after choosing "Empezar gratis," with no reason to have a Session open at that moment) — restated again, in different words, at `onboarding.md` §8 item 4. Gating Configuración behind "only reachable while a Session is open" would make it unreachable on the many days she doesn't sell at all, and would misuse a real business event (Session-start, which timestamps hours worked — `home.md` §10) for a non-selling errand.
 
 Concretely:
 
-- **During an active Session** (`home.md` §3.7–§3.11a): the header's gear icon ("⚙") routes directly into this document's resolve step (§3.1/§3.2) → vista principal (§3.3a/§3.6) — **no intermediate sheet.** "Cerrar jornada de venta" no longer shares a trigger with Configuración at all — as of `home.md`'s 2026-08-14 amendment, it's a direct, always-visible header button of its own (`home.md` §3.7), reached and behaving exactly as before (§3.11/§3.11a's interlock, unchanged), just no longer behind a menu. The two-entry sheet that used to sit here (`home.md` §3.7a) is retired: once "Cerrar jornada de venta" moved out, it would have held exactly one item, and a single-item menu adds a tap without representing a real choice.
-- **During cold start, idle, or Event-active-no-Session** (`home.md` §3.3–§3.6, including its §3.6a variants): unchanged — the header's "⋯" icon opens the same sheet shape as before (§3.3), with its one available entry ("Configuración," gear-icon marker — "Cerrar jornada de venta" doesn't render, since there's no open Session to close). This remains a sheet, not a direct tap, even though it too resolves to a single destination — **kept deliberately, not an inconsistency left unaddressed:** the active-Session change above is specifically about pulling a second, meaningful action ("Cerrar jornada de venta") out from behind a shared trigger; these four states never had a second action sharing this trigger in the first place, so nothing here prompted the same reconsideration. Revisiting this sheet's own shape independently is a separate, unrequested question — flagged, not resolved, in §8 (item 9) below.
+- **Everywhere a persistent header exists — active Session or not**
+  (`home.md` §3.7–§3.11a for an active Session; §3.3–§3.6, including its
+  §3.6a variants, otherwise): the header's gear icon ("⚙") routes directly
+  into this document's resolve step (§3.1/§3.2) → vista principal
+  (§3.3a/§3.6) — **no intermediate sheet, in either case.** "Cerrar
+  jornada de venta" never shares a trigger with Configuración at all
+  during an active Session — it's a direct, always-visible header button
+  of its own (`home.md` §3.7), reached and behaving exactly as before
+  (§3.11/§3.11a's interlock, unchanged). Outside an active Session, there
+  is no second action for the gear icon to have ever shared a trigger
+  with — Configuración was always the only thing behind it.
+- **Both sheets that used to sit behind this trigger are retired, in two
+  steps a day apart.** During an active Session, the two-entry sheet
+  (`home.md` §3.7a) was retired 2026-08-14: once "Cerrar jornada de
+  venta" moved out to its own header button, it would have held exactly
+  one item, and a single-item menu adds a tap without representing a real
+  choice. **The non-Session sheet (`home.md` §3.6c) is retired 2026-08-15
+  by the identical reasoning, corrected from this document's own earlier
+  position:** it was already single-item — "Configuración" only, since
+  none of §3.3–§3.6 has an open Session's "Cerrar jornada de venta" to
+  sit beside it — the same condition that retired the active-Session
+  sheet a day earlier. The original 2026-08-14 amendment kept this sheet
+  on the reasoning that it was "a deliberate divergence, not an
+  inconsistency" — but that reasoning only ever established that
+  Configuración should stay reachable from these four states (a real,
+  still-correct point, argued in full above), never that the *sheet
+  shape specifically* should. It never separately asked whether the
+  sheet still represented a real choice once isolated to its own single
+  entry. It didn't, and once the Product Owner compared the two live
+  header states directly, there was no longer a principled basis for the
+  divergence to continue. No sheet remains anywhere in this document's
+  own entry point.
 
 **This is deliberately absent from four Home states — stated explicitly, not silently omitted:**
 
@@ -86,7 +127,7 @@ Concretely:
 - **`home.md` §3.12 (Close-summary).** A deliberately transient, self-clearing acknowledgment screen — `home.md` itself is explicit that this state carries "no 'what do you want to do now?' prompt." A Settings entry point competing for attention here would undo that restraint.
 - **`home.md` §3.14 (Resolution error / defensive fallback).** A recovery screen whose only job is getting her back to a working state. A Settings detour competing with her one recovery path would work against the reason that state exists.
 
-**Cross-document note (see §8, item 3):** the original required addition to `home.md`'s wireframes — a second sheet entry in §3.7a, and the entry-point trigger itself appearing in §3.3–§3.6's (and §3.6a's three Session-start-moment variants') currently-plain "Nahui" header — landed (`home.md`'s own status header, "Amended for `settings.md` §2.1"). **Further update, 2026-08-09:** that trigger relocated from the header's "▾" to a top-right "⋯" icon, with a gear icon added to the sheet's "Configuración" row; the matching `home.md`-side amendment for this relocation is performed in the same pass as this correction — see `home.md`'s own status header and §10 for the full reasoning, including why "⋯" was chosen over a hamburger icon.
+**Cross-document note (see §8, item 3):** the original required addition to `home.md`'s wireframes — a second sheet entry in §3.7a, and the entry-point trigger itself appearing in §3.3–§3.6's (and §3.6a's three Session-start-moment variants') currently-plain "Nahui" header — landed (`home.md`'s own status header, "Amended for `settings.md` §2.1"). **Further update, 2026-08-09:** that trigger relocated from the header's "▾" to a top-right "⋯" icon, with a gear icon added to the sheet's "Configuración" row; the matching `home.md`-side amendment for this relocation is performed in the same pass as this correction — see `home.md`'s own status header and §10 for the full reasoning, including why "⋯" was chosen over a hamburger icon. **Further update, 2026-08-15:** the "⋯" icon and its one-entry sheet are retired for these four states too — see this section's own bullets above, and `home.md`'s own status header/§2/§3.6c for the full reasoning.
 
 ### 2.2 The four actions, their templates, and today's illustrative immediate/deferred assignment
 
@@ -258,19 +299,20 @@ Conventions inherited from `home.md`/`inventory.md`/`onboarding.md`: `[ ]` = tap
 └───────────────────────────────┘
 ```
 
-### 3.3 Entry — session-controls sheet, Home idle/cold-start/Event-active-no-Session states (new row)
-```
-┌───────────────────────────────┐
-│ Nahui                        ⋯ │  dimmed, still visible underneath
-├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
-│  [     ⚙ Configuración      ] │
-├───────────────────────────────┤
-│ [Hoy]  Inventario Eventos Resultados │
-└───────────────────────────────┘
-```
-No "Cerrar jornada de venta" row — there is no open Session to close.
-Unchanged by `home.md`'s 2026-08-14 active-Session amendment — this is
-now the only Home state family still using this sheet shape; see §2.1.
+### 3.3 Entry — session-controls sheet, Home idle/cold-start/Event-active-no-Session states — retired (superseded 2026-08-15 — see status header)
+
+**Retired 2026-08-15 (Product Owner-raised, matching `home.md`'s own
+retirement of §3.6c).** This sheet was already single-item
+("Configuración" only, no "Cerrar jornada de venta" row, since none of
+these four Home states has an open Session to close) — the identical
+"single-item menu adds a tap without representing a real choice"
+condition that retired the active-Session sheet a day earlier. The
+header's gear icon (⚙) on these four Home states now routes directly into
+Configuración's resolve step (§3.1/§3.2), no intermediate sheet — see
+§2.1. No entry point anywhere in this document routes here any longer.
+Kept as a named, non-deleted entry — not silently dropped — so the
+historical record of this sheet's own shape stays legible; full prior
+content at `settings.changelog.md#section-3-3-retired`.
 
 ### 3.3a Configuración — vista principal (sin cambio pendiente)
 ```
@@ -531,20 +573,16 @@ A retried save replays the same already-confirmed toggle, never re-asking her to
 ## 4. Interaction flow (summary)
 
 ```
-From Home's four non-Session header states (home.md §3.3–§3.6, including
-its §3.6a variants — see §2.1 for the four states where it's deliberately
-absent: §3.1/§3.2/§3.12/§3.14):
-  tap the header's "⋯" icon → session-controls sheet (home.md §3.3 above)
-    → sheet shows "Configuración" only (no open Session to close)
-    → tap Configuración → resolve (§3.1/§3.2) → vista principal (§3.3a, or
-      §3.6 if 1+ pending change exists)
-
-From Home's active-Session header (home.md §3.7–§3.11a) — amended
-2026-08-14, matching home.md's own amendment (see status header):
-  tap the header's "⚙" icon → resolve (§3.1/§3.2) → vista principal (§3.3a,
-    or §3.6 if 1+ pending change exists) — no intermediate sheet; "Cerrar
-    jornada de venta" is reached separately, via its own direct header
-    button (home.md §3.7), not through this tap at all
+From any Home header state (home.md §3.3–§3.6 including its §3.6a
+variants, or the active-Session header §3.7–§3.11a) — see §2.1 for the
+four states where the entry point is deliberately absent entirely:
+§3.1/§3.2/§3.12/§3.14 — amended 2026-08-15, matching home.md's own
+amendment (see status header):
+  tap the header's "⚙" icon → resolve (§3.1/§3.2) → vista principal
+    (§3.3a, or §3.6 if 1+ pending change exists) — no intermediate sheet,
+    in any state. During an active Session, "Cerrar jornada de venta" is
+    reached separately, via its own direct header button (home.md §3.7),
+    never through this tap.
 
 From the main view, tap any action row:
 
@@ -605,7 +643,7 @@ Cerrar sesión
 
 1. Resolving (near-instant)
 2. Resolving — slow
-3. Entry — session-controls sheet, Home idle/cold-start/Event-active-no-Session states (new row)
+3. ~~Entry — session-controls sheet, Home idle/cold-start/Event-active-no-Session states~~ — **Retired 2026-08-15** (see status header): the header's gear icon (⚙) now routes directly into item 4 below for these states too, no sheet.
 4. Configuración — vista principal, sin cambio pendiente (now includes a "Tu cuenta" section, §2.5)
 5. Confirmación de efecto inmediato — generic template (three copy variants: Activar plan de pago — SET-M4/D34/D40-corrected — and the two `defaultSellingMode` variants; "Activar/Desactivar clientes frecuentes" retired entirely per `decision-log.md` D40)
 6. Confirmación de efecto diferido — generic template (Volver al plan gratis)
@@ -621,8 +659,7 @@ Cerrar sesión
 
 | Scenario | Taps | Why it can't be fewer |
 |---|---|---|
-| Reach Configuración from Home's four non-Session states | 2 (⋯ → Configuración) | Single deliberate tap to open the sheet, unchanged by the 2026-08-14 active-Session amendment. |
-| Reach Configuración during an active Session | **1** (⚙, direct) | Amended 2026-08-14 — the intermediate sheet is retired for this state once it would have held only one entry; see §2.1. |
+| Reach Configuración from any Home header state | **1** (⚙, direct) | Amended in two steps — active Session 2026-08-14, the remaining four non-Session states 2026-08-15 — the intermediate sheet is retired everywhere it once held only one entry; see §2.1. |
 | Activar plan de pago | 2 (Activar plan de pago → Confirmar y activar) | One tap to open the action, one to confirm the self-attestation — nothing beyond that to type once the payment itself has already happened elsewhere. |
 | Cambiar a vender con botones | 2 | Pure toggle — unlike the retired NFC-activation path, nothing left in this document requires typing anything. |
 | Cambiar a vender con tags | 2, for this action itself (`decision-log.md` D46) | Pure toggle at this document's own layer — identical floor. This action always hands off into `inventory.md` §2's own resolution (§2.6); whether that lands her in Asignar Tags (`inventory.md` §3.14, incurring that document's own per-unit scan cost), the plain Catalog view, or the register-first cold start costs nothing further at this document's own boundary — not double-counted here, since Inventario's own resolution is a separate document's own action, not part of this Settings transition. |
@@ -661,15 +698,18 @@ None of the items below block this document's completion.
 6. **Whether signing out should interlock with an active, non-empty Sale or Session** — `home.md §3.11a` already blocks the Selling-Session close the moment "Venta actual" holds 1+ items, precisely because that action would otherwise silently put unfinished work at risk. §2.5 above states plainly that signing out never touches Selling data — the Session and its Venta actual stay exactly as they are, waiting for the same phone to re-verify (§2.5a) — so no *data* is at risk the way HOME-M2 was designed to prevent. Whether it's still worth warning her that a customer may be standing in front of her mid-Sale at the moment she chooses to sign out — a situational risk, not a data-loss one — isn't designed here. No evidence yet this is common enough to warrant its own interlock.
 7. **Resolved, kept for continuity.** `authentication.md §2.2` case 2 (and its §4 flow line, §8/§11 references) previously described re-verifying an already-verified-on-this-device phone as theoretically unreachable. This action (§2.5) makes it reachable for the first time (§2.5a). The matching correction to that document was applied in the same pass — see its own status header and §2.2/§4/§8/§11.
 8. **A persistent, read-only display of her own verified phone number in Configuración** — already named as a future consideration in `authentication.md §11`, unrelated to whether sign-out itself works; still not designed here, no evidence of need yet.
-9. **Whether the idle/cold-start/Event-active-no-Session sheet (§3.3)
-   should also collapse to a direct gear tap, now that the active-Session
-   sheet has (2026-08-14)** — not requested, not resolved here; that
-   sheet already held exactly one entry before this change, so the
-   discoverability problem motivating the active-Session fix (a second,
-   meaningful action hidden inside a menu) never applied to it the same
-   way. Worth revisiting only if real usage shows the extra tap is itself
-   a friction point, not because the two are now visually inconsistent —
-   see `home.md` §2's own note on the same divergence.
+9. **Resolved 2026-08-15, kept for continuity.** This item asked whether
+   the idle/cold-start/Event-active-no-Session sheet (formerly §3.3)
+   should also collapse to a direct gear tap. It has: the Product Owner
+   raised this directly, comparing the two live header states, and the
+   answer corrects rather than confirms this item's original framing —
+   the "extra tap" wasn't merely a friction point worth deferred
+   observation, it was the identical single-item-menu condition that had
+   already justified retiring the active-Session sheet a day earlier;
+   this document's own earlier reasoning (§2.1) had separated *whether*
+   Configuración stays reachable from *what shape* the trigger takes
+   without noticing the second question was still open. See `home.md` §2
+   and §10 for the fuller correction.
 
 ## 9. Principle justification
 
@@ -692,7 +732,7 @@ None of the items below block this document's completion.
 
 ## 10. Decisions made
 
-- Configuración hangs off Home's session-controls trigger — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon — extended to every Home state that has a persistent header, not only the active-Session one. **[Further amended 2026-08-14 for the active-Session state specifically — see the new bullet below.]** **[see settings.changelog.md#decisions-configuracion-hangs-off-session-controls-trigger]**
+- Configuración hangs off Home's session-controls trigger — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon — extended to every Home state that has a persistent header, not only the active-Session one. **[Superseded in two steps: 2026-08-14 for the active-Session state, 2026-08-15 for the remaining non-Session states — see the two newest bullets below; the trigger is now a direct gear icon everywhere, no sheet remains.]** **[see settings.changelog.md#decisions-configuracion-hangs-off-session-controls-trigger]**
 - **2026-08-09 (Product Owner decision): the entry-point trigger relocates from the header's "▾" to a top-right "⋯" icon; the sheet's "Configuración" row gains a gear icon ("⚙").** Full reasoning lives in `home.md`'s own status header and §10. **[see settings.changelog.md#decisions-2026-08-09-trigger-relocated-ellipsis-gear-icon]**
 - The entry point is explicitly absent from exactly four Home states (`home.md` §3.1/§3.2/§3.12/§3.14), each with its own one-line reason.
 - **The dedicated "Activar venta con tags" path (activation-code entry) is removed entirely, not merely restructured** (`decision-log.md` D27) — `nfc` is a pure derivation from `subscriptionTier`. **[see settings.changelog.md#decisions-activar-venta-con-tags-path-removed]**
@@ -727,9 +767,23 @@ None of the items below block this document's completion.
   intermediate sheet.** "Cerrar jornada de venta" no longer shares this
   trigger at all — it moved to its own direct header button, specified
   entirely in `home.md` §3.7. Outside an active Session, the "⋯" icon and
-  its sheet (§3.3) are unchanged. `ux-critic`/`reviewer` clean, folded
-  back into Approved. **[see
+  its sheet (§3.3) were, at the time, deliberately left unchanged —
+  superseded the following day; see the new bullet below. `ux-critic`/
+  `reviewer` clean, folded back into Approved. **[see
   settings.changelog.md#decisions-2026-08-14-active-session-gear-direct-nav]**
+- **2026-08-15 (Product Owner-raised — extending the 2026-08-14 fix to
+  every Home header state): outside an active Session too, the
+  entry-point icon is now a gear ("⚙") that routes directly into
+  Configuración, with no intermediate sheet.** The non-Session sheet
+  (formerly §3.3) is retired — it was already single-item
+  ("Configuración" only), the same condition that retired the
+  active-Session sheet a day earlier. §2.1's earlier "kept deliberately,
+  not an inconsistency" reasoning is corrected: it only ever addressed
+  whether Configuración should stay reachable from these four states,
+  never what shape the trigger reaching it should take. `home.md`
+  receives the matching correction (status header, §2, §3.3–§3.6, §3.6a,
+  §3.6c retired, §4, §5, §10). **[see
+  settings.changelog.md#decisions-2026-08-15-non-session-gear-direct-nav]**
 
 ## 11. Future considerations
 

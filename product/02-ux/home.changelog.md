@@ -411,6 +411,27 @@ anchor and its §10 sibling had never been created; §3.7's own
 shared-header cross-reference bullet still listed the now-retired §3.7a
 as live) — both closed in the same pass. Folded back into Approved.
 
+### status-2026-08-15-non-session-gear-direct-affordance
+**Applies to:** `home.md` overall Approval, §2 (Session-controls
+interlock), §3.3–§3.6/§3.6a (every non-Session header state), §3.6c
+(retired).
+
+Amended 2026-08-15 (Product Owner-raised — extending the 2026-08-14
+"Cerrar jornada de venta" discoverability fix to every Home header
+state): the header's "⋯" icon and its Configuración-only sheet (§3.6c)
+are retired for the four non-Session states too — every Home header,
+Session open or not, now shows a direct gear icon ("⚙") routing straight
+into Configuración, no intermediate sheet. §2's "deliberate divergence"
+reasoning is corrected: it only ever justified continued *access* to
+Configuración from these states, never the sheet's *shape* — and the
+non-Session sheet was already single-item (Configuración only, per
+`settings.md` §2.1/§3.3), the identical condition that retired the
+active-Session sheet a day earlier. §3.6c is retired the same way §3.7a
+was — full original content preserved verbatim at
+`home.changelog.md#section-3-6c-retired`. `settings.md` receives the
+matching correction (§2.1, §3.3, §4, §5, §6, §8, §10). Pending
+`ux-critic`/`reviewer` review before folding back into Approved.
+
 ---
 
 ## §10 "Decisions made" — full decision history
@@ -1073,9 +1094,27 @@ existing tappable-button convention rather than a new icon vocabulary);
 the "⋯" icon is replaced by a gear icon ("⚙") that routes directly into
 Configuración with no intermediate sheet, since a single-destination menu
 no longer represents a real choice. Outside an active Session (§3.3–§3.6,
-§3.6c), the "⋯" icon and its Configuración-only sheet are unchanged — §2
-and §3.6c state the reasoning for the resulting divergence explicitly,
-rather than leaving it implicit. Folded back into Approved.
+§3.6c), the "⋯" icon and its Configuración-only sheet were, at the time,
+deliberately left unchanged — superseded the following day, see the next
+entry below. Folded back into Approved.
+
+### decisions-2026-08-15-non-session-gear-direct-affordance
+**Applies to:** `home.md` §10 — extending the active-Session gear icon to
+every remaining Home header state.
+
+2026-08-15 (Product Owner-raised — extending the 2026-08-14 fix to every
+Home header state): the header's gear icon (⚙), routing directly into
+Configuración with no intermediate sheet, now applies uniformly across
+every Home state with a persistent header, not only the active-Session
+one. §3.6c (the non-Session sheet) is retired the same way §3.7a was a
+day earlier — it was already single-item ("Configuración" only), the
+identical condition that retired §3.7a. §2's "deliberate divergence"
+reasoning is corrected: it only ever addressed whether Configuración
+should stay reachable from the non-Session states (yes), never what shape
+the trigger reaching it should take — that question went unasked until
+the Product Owner compared the two live header states directly.
+`settings.md` receives the matching correction. Pending
+`ux-critic`/`reviewer` review before folding back into Approved.
 
 ---
 
@@ -1158,4 +1197,83 @@ real choice, so the gear icon now routes directly into Configuración
 instead. See `home.md`'s own status header (2026-08-14 entry) and §10 for
 the full reasoning, including why this diverges deliberately from §3.6c's
 own sheet (which never held a second entry, so the same reconsideration
-never applied there).
+never applied there). **Correction, 2026-08-15: that last clause no longer
+holds — §3.6c's own sheet was retired the following day, by the identical
+reasoning, once the same single-item condition was recognized there too.
+See `section-3-6c-retired` immediately below.**
+
+### section-3-6c-retired
+**From `home.md` §3.6c ("Session-controls sheet — cold start / idle /
+Event-active-no-Session states," retired 2026-08-15 — see status header.)**
+
+```
+### 3.6c Session-controls sheet — cold start / idle / Event-active-no-Session states (new — applies `settings.md` §2.1's required amendment)
+┌───────────────────────────────┐
+│  Nahui                        ⋯ │  dimmed, still visible underneath
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  [       Configuración        ]  │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+- Reached by tapping the header's "⋯" icon (relocated from the header's "▾"
+  per the Product Owner's 2026-08-09 decision — see status header) from any
+  of §3.3 (cold start), §3.4/§3.5
+  (idle, with or without an upcoming Event card), or §3.6 (Event active, no
+  Session opened today) — the four Home states with a persistent header but
+  no open Session — including whichever of §3.4/§3.5/§3.6's §3.6a
+  Session-start-moment variants (Limited Ready, Not Ready, capability
+  revoked, or the Ready-but-`buttons`-default discoverability mention)
+  happens to be showing at the time, since those are the identical screens
+  with one extra line, not separate states requiring their own entry point.
+  Per `settings.md` §2.1, this is deliberate, not an oversight: the
+  things Configuración manages — her plan and now
+  (per `decision-log.md` D27) her `defaultSellingMode` (Botones ↔ Etiquetas
+  NFC) directly — are meaningful to check or change whether or not Ana
+  happens to be selling that particular day. Gating them behind an open
+  Session would misuse Session-start — a real business event that
+  timestamps hours worked (§10) — for a non-selling errand.
+- Exactly one entry, "Configuración" — no "Cerrar jornada de venta" row, since none of
+  these four states has an open Session to close. **Contrast with the
+  active-Session header (§3.7, amended 2026-08-14 — see status header):
+  once a Session is open, "Cerrar jornada de venta" is a direct,
+  always-visible header button, never a sheet row at all, and the same
+  gear icon here (⚙) instead routes straight into Configuración with no
+  intermediate sheet — §3.6c is now the only Home state family still
+  using the sheet shape.** The "Configuración" row carries a gear icon
+  ("⚙") here too, the same marker the active-Session header now uses
+  directly — kept for the reason it was originally added, distinguishing
+  it visually from any other entry this sheet may carry in the future
+  (Product Owner decision, 2026-08-09, extended 2026-08-14).
+- Tapping "Configuración" routes to `settings.md`'s resolve step (§3.1/§3.2)
+  → vista principal (§3.3a). Tapping outside the sheet, or a dismiss
+  gesture, closes it and returns to whichever of §3.3–§3.6 it was opened
+  from, unchanged — including, if it was opened from a §3.6a variant, that
+  same recommendation/mention line exactly as it was (opening Configuración
+  never re-evaluates NFC Readiness or the Selling Mode Capability check).
+- **Not shown** on §3.1/§3.2 (Resolving — nothing stable yet to hang a sheet
+  off), §3.12 (Close-summary — a deliberately transient, prompt-free
+  acknowledgment a Settings entry point would compete with), or §3.14
+  (Resolution error — a recovery screen whose one job is getting her back to
+  a working state). Same three exclusions `settings.md` §2.1 states
+  explicitly, for the same reasons.
+- Configuración's own content — the three capability toggles, their
+  confirmation templates, the pending-change indicator — is designed
+  entirely in `settings.md`, not here; this document only specifies the
+  entry point and routing. *architecture-principles.md* #6 (one-way
+  dependency direction) — Home never grows an Identity/Settings surface of
+  its own.
+- **Renumbered from §3.6b to §3.6c, and repositioned to follow §3.6a rather
+  than precede it** — cleaner read order given §3.6a's own three variants are
+  pixel-identical to §3.4/§3.5/§3.6 plus one extra line each, so this sheet (which those
+  same three states also open) reads more naturally right after them than
+  interleaved between §3.6 and §3.6a.
+
+Retired because, once the active-Session sheet (§3.7a) was retired
+2026-08-14, this sheet was recognized as sharing the identical
+single-item condition: "Configuración" was its only entry, so a
+single-item menu added a tap without representing a real choice. The
+header's gear icon on §3.3–§3.6 now routes directly into Configuración
+instead. See `home.md`'s own status header (2026-08-15 entry) and §10 for
+the full reasoning, including the correction to this document's own
+2026-08-14 "deliberate divergence" claim.
