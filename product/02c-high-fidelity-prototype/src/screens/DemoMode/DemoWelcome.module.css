@@ -1,0 +1,88 @@
+/* Same wrap/mark/copy/eyebrow/body/cta shape PhoneStep.module.css /
+   Welcome.module.css already establish for a first-screen-in-the-product
+   moment — reused verbatim rather than hand-rolled a second time, since
+   demo-mode.md §3.3 is that identical shape one step further upstream. */
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-6);
+  padding: var(--space-10, var(--space-8)) var(--space-6) var(--space-8);
+  overflow-y: auto;
+}
+
+.mark {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) 3px;
+  background: var(--color-blush);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4px 10px rgba(45, 45, 45, 0.14),
+    0 0 0 14px color-mix(in srgb, var(--color-blush) 14%, transparent),
+    0 0 0 32px color-mix(in srgb, var(--color-blush) 7%, transparent);
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--color-obsidian);
+}
+
+.body {
+  font: var(--text-body);
+  color: #6B6259;
+  max-width: 32ch;
+}
+
+/* §3.3's two operational bullets — the one new content shape this screen
+   introduces (no prior bullet-list precedent in this family). Left-aligned
+   with a hanging indent, deliberately distinct from the centered intro/
+   closing copy above and below it: a scannable list of discrete facts reads
+   naturally left-aligned (each line starts at the same point), the same
+   reasoning centered paragraphs never fight against elsewhere in this
+   system — this is ordinary Inter-body-copy layout, no new visual
+   vocabulary, tag treatment, or color introduced. */
+.list {
+  width: 100%;
+  max-width: 320px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.listItem {
+  display: flex;
+  gap: var(--space-2);
+  font: var(--text-body-sm);
+  color: var(--color-obsidian);
+}
+
+.bullet {
+  flex-shrink: 0;
+  color: var(--color-coral-aa);
+  font-weight: 700;
+}
+
+.closing {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  max-width: 32ch;
+}
+
+.cta {
+  max-width: 320px;
+}
