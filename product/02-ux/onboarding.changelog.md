@@ -8,6 +8,13 @@ here.
 
 Anchors are prefixed `status-` (from `onboarding.md`'s status header) or
 `decisions-` (from `onboarding.md` §10), to keep them unique within this file.
+**One documented exception:** when a §10 batch's full reasoning already
+lives inline in the spec itself rather than being extracted out to this
+file (e.g. `status-2026-08-15-live-identity-preview`, whose entire
+justification sits in `onboarding.md` §3.9b), those §10 bullets point back
+to the single shared `status-` anchor instead of each getting their own
+`decisions-` entry — there's nothing to elaborate here that isn't already
+said, in full, at the source.
 
 ---
 
@@ -105,6 +112,38 @@ merchandise first (none exists yet). All three locations corrected to state the
 true order. Copy/reasoning-only — no flow, state, or behavior changed beyond
 wording. The matching React copy (`TodoListo.tsx`'s `paid` entry) was corrected
 in the same pass. `ux-critic` re-verified clean — folded back into Approved.
+
+### status-2026-08-15-live-identity-preview
+**Applies to:** `onboarding.md` §3.9/§3.9a — new shared subsection §3.9b (live identity preview).
+
+2026-08-15 (`frontend-design` audit, proposal #4 — live identity preview
+added to "Tu negocio"): §3.9/§3.9a gain a new, non-interactive preview
+element — a small, explicitly-labeled card reflecting how her typed
+`Business.name` and/or selected `Business.logo` will actually render on the
+real Digital Receipt (`home.md` §3.8f), updating live as she types or
+selects a logo, positioned immediately above "Continuar" rather than
+competing with the active field. New shared subsection §3.9b defines its
+five screen states (empty, name-only, logo-only, clear/revert, failure
+fallback), its accessibility behavior (never an announced live region), and
+its visual differentiation from the real receipt (chrome/framing only, not
+the type treatment). Sourced from
+`product/02c-high-fidelity-prototype/docs/design-audit-2026-08-15.md`
+proposal #4; grounded via a `knowledge-mentor` consultation — no existing
+precedent in this document family for a live/as-you-type field-reflection
+pattern (the two closest matches, this screen's own post-selection logo
+thumbnail and `home.md` §3.11's pre-closing preview line, are both static,
+never per-keystroke). `ux-critic` found one Major (placement reasoning never established the
+preview would actually be seen in the dominant no-logo fast path) and one
+Minor (the logo→name-only substitution wasn't called out on screen) — both
+fixed same day: the placement section gained four new paragraphs closing
+the layout half of the gap and explicitly logging the remaining
+attention/noticing risk as new §8 item 8 (not fully closeable by layout
+reasoning alone); state 3 gained its own persistent on-screen caption
+("Tu nombre sigue guardado arriba. En tu recibo se muestra tu logo.").
+`ux-critic` re-verified clean (both findings resolved; one trivial new
+Minor surfaced by the fix itself — a stale "three text blocks" count not
+accounting for state 3's new fourth caption — fixed in the same pass).
+Pending `reviewer` before folding back into Approved.
 
 ---
 

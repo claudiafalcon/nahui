@@ -6,6 +6,7 @@ Scope: the first-run flow that precedes all four top-level nav items (`Hoy`, `In
 **Amended 2026-08-08 (`decision-log.md` D33, Product Owner decision — "Define lo que vendes" moved into Onboarding):** a new required step (§2.2a, §3.5b–§3.5e) captures the merchant's initial Selling Groups (name + `Product.defaultPrice`) on both real paths, reusing Inventory's own existing Product-creation write path rather than a second mechanism. **[see onboarding.changelog.md#status-2026-08-08-define-lo-que-vendes]**
 **Amended 2026-08-08 (Product Owner decision, Business Identity captured at Onboarding):** a new required step (§2.2b, §3.9–§3.10a) captures the merchant's own business identity — `Business.name` (required), and optional `Business.logo`/`Business.description` — on both real paths, positioned after §3.5's Business/capabilities write succeeds and before the existing "Define lo que vendes" step (§2.2a, §3.5b–§3.5e), never on the demo path. **[see onboarding.changelog.md#status-2026-08-08-business-identity]**
 **Amended 2026-08-14 (`decision-log.md` D46 — tag-assignment auto-entry gates on merchant intent, not mere capability):** §3.6 Variant B's milestone copy, §2.3's reasoning, and §7's automation-opportunities bullet all state the corrected causal order — there is no path to tagged merchandise while `defaultSellingMode` still reads `buttons`; switching to `nfc` in Configuración either hands her directly into tagging (untagged inventory already exists) or guides her to register merchandise first (none exists yet). **[see onboarding.changelog.md#status-2026-08-14-d46-tag-assignment-intent-correction]**
+**Amended 2026-08-15 (`frontend-design` audit, proposal #4 — live identity preview added to "Tu negocio"):** §3.9/§3.9a gain a new, non-interactive preview element — a small, explicitly-labeled card reflecting how her typed `Business.name` and/or selected `Business.logo` will actually render on the real Digital Receipt (`home.md` §3.8f), updating live as she types or selects a logo, positioned immediately above "Continuar" rather than competing with the active field. New shared subsection §3.9b defines its five screen states, its accessibility behavior, and its visual differentiation from the real receipt. Sourced from `product/02c-high-fidelity-prototype/docs/design-audit-2026-08-15.md` proposal #4; grounded via a `knowledge-mentor` consultation (no existing precedent in this document family for a live/as-you-type field-reflection pattern — the two closest matches, this screen's own post-selection logo thumbnail and `home.md` §3.11's pre-closing preview line, are both static, not live). `ux-critic` clean (one Major, one Minor, both fixed and re-verified — see the changelog). Pending `reviewer` review before folding back into Approved. **[see onboarding.changelog.md#status-2026-08-15-live-identity-preview]**
 
 Resolves, within this document's own design scope per D19: the exact number of Onboarding paths, their precise copy, and the flow's exact screen sequence — none of that was decided upstream; it's the actual design task here.
 
@@ -486,9 +487,21 @@ No new wireframe — reaching any screen in §3.3 through §3.10a a second time 
 │  tu recibo no la muestra          │
 │  todavía.                         │
 │                                │
+│  Así se va a ver en tu recibo:   │  new, only once Nombre holds ≥1
+│  ┌─────────────────────────┐    │  character — see §3.9b
+│  │       Luna Mercado         │    │
+│  └─────────────────────────┘    │
+│                                │
 │  [        Continuar        ]     │  disabled until Nombre holds a value
 └───────────────────────────────┘
 ```
+- **A live, non-interactive preview appears immediately above "Continuar"
+  once Nombre holds at least one character — added 2026-08-15,
+  `frontend-design` audit proposal #4.** Full behavior (its five states,
+  placement reasoning, accessibility approach, and visual differentiation
+  from the real receipt) is specified once, shared with §3.9a, at new
+  §3.9b — cross-referenced here rather than restated, per
+  `product/02-ux/CLAUDE.md` §4's shared-states convention.
 - Reached the instant §3.5's write succeeds, for "Empezar gratis" and
   "Activar plan de pago" only — never for "Ver un ejemplo" (§2.2b). Precedes
   §3.5b's "Define lo que vendes" step, per the Product Owner's own decided
@@ -582,9 +595,28 @@ No new wireframe — reaching any screen in §3.3 through §3.10a a second time 
 │  tu recibo no la muestra          │
 │  todavía.                         │
 │                                │
+│  Así se va a ver en tu recibo:   │  new — see §3.9b. Logo replaces
+│  ┌─────────────────────────┐    │  Nombre inside this box, matching
+│  │      [ logo del negocio ] │    │  home.md §3.8f's own rule that
+│  └─────────────────────────┘    │  name-as-text and logo never
+│  Tu nombre sigue guardado         │  render together on the real
+│  arriba. En tu recibo se           │  receipt — Nombre itself stays
+│  muestra tu logo.                  │  saved and visible in its own
+│                                │  field above; this line marks the
+│                                │  substitution as intentional
+│                                │  (§3.9b state 3)
+│                                │
 │  [        Continuar        ]     │
 └───────────────────────────────┘
 ```
+- **Preview behavior shared with §3.9, specified once at §3.9b.** Not to
+  be confused with the "IMG" thumbnail immediately above (`[ Cambiar ]`/
+  `[ Quitar ]`) — that thumbnail is a file-management affordance answering
+  "which file did I select"; the new preview is an illustrative one
+  answering "what will my customer actually see," and deliberately
+  carries no `Cambiar`/`Quitar` controls of its own — editing the logo
+  happens only through the thumbnail already specified here, never
+  through the preview.
 - Same screen as §3.9, once a logo has been selected — not a distinct
   destination, the identical relationship §3.5b/§3.5c already have to
   each other (one screen, a second rendering once she's added something).
@@ -609,6 +641,206 @@ No new wireframe — reaching any screen in §3.3 through §3.10a a second time 
 - Nombre and Descripción shown filled here purely as a plausible
   illustrative example, matching §3.5c's own convention of showing
   populated example values rather than an abstract placeholder.
+
+### 3.9b Live identity preview — shared behavior across 3.9/3.9a (added 2026-08-15, `frontend-design` audit proposal #4)
+
+Reflects §3.9's own promise — "tu nombre y tu logo son lo que tus clientes
+van a ver en tu recibo digital" — literally, instead of asking her to
+imagine it. Pure client-side echo of the Nombre/Logo values already sitting
+in the form; nothing is written to the platform by rendering it (the real
+write still happens only at §3.10, gated on "Continuar" — identical
+reasoning to why §3.9a's own "Cambiar"/"Quitar" need no confirmation step).
+Grounded via a `knowledge-mentor` consultation — no existing precedent in
+this document family for a live/as-you-type reflection pattern; the two
+closest matches (this screen's own post-selection logo thumbnail, §3.9a;
+`home.md` §3.11's pre-closing preview line) are both static, never
+per-keystroke.
+
+**Placement — below the fold, immediately above "Continuar," not pinned
+near the active field.** Three placements were weighed: (a) a full card
+staying visible above an open keyboard, (b) collapsing while a field has
+focus and reappearing on blur, (c) living below the fold, reached only once
+she scrolls toward "Continuar." (a) is rejected outright — an open mobile
+keyboard commonly occupies ~40–50% of the viewport, and a large card
+competing with that space for attention while she's mid-type is the
+riskiest of the three. (b) is rejected too: it would make the preview
+invisible during the one moment it's most literally "live," a real cost for
+no matching benefit here — there's no expensive operation to protect by
+debouncing, since this is a pure local echo. (c) is what's specified: the
+preview sits where `home.md` §3.11's own confirm-dialog preview line
+already sits in this document family — immediately before the action that
+commits what it's echoing, not fighting the active input for space while
+she's still typing. She sees the live reflection settle as she finishes
+Nombre/Logo and scrolls toward "Continuar," the same "last look before you
+save" beat that precedent already established, rather than an animation
+competing with her keyboard.
+
+**Confirmed: "Continuar" sits below the fold in the dominant no-logo path
+too — not only when Logo/Descripción are also filled in.** This has to be
+checked explicitly, not assumed, because it's exactly the case §2.2b names
+as the expected common one ("most merchants likely don't have a digital
+logo ready") and §6's own tap-floor table confirms as the fastest real path
+(Nombre + Continuar, nothing else touched). What settles it: every field's
+own affordance — the Logo upload control, the Descripción textarea and its
+caption — renders unconditionally on this screen regardless of what she's
+actually filled in (§3.9's own wireframe shows all three groups present
+from first render, before she's touched anything). Screen height is
+therefore governed by the screen's full field set, not by which fields she
+happens to use — the intro paragraph, three labeled field groups (one of
+them a multi-line caption), and now the preview, stacked above "Continuar,"
+comfortably exceed a single phone viewport before she's typed a single
+character. Leaving Logo/Descripción untouched shortens what she *interacts
+with*, not what's *rendered* — so the screen requires the same
+scroll-to-reach-"Continuar" gesture in the dominant path as in any other.
+This closes the specific gap `ux-critic` raised: the preview isn't at risk
+of sitting in a rendering short enough to keep "Continuar" on-screen
+without scrolling, in any real combination of filled/unfilled optional
+fields.
+
+**An alternative considered and rejected: repositioning the preview to
+render directly below the Nombre field itself,** since it's the one field
+guaranteed to be filled in every real path, independent of whether
+Logo/Descripción are ever touched. Weighed against the fix above, not
+skipped. Nombre sits near the top of the screen, directly above where a
+focused mobile keyboard typically forces the OS to auto-scroll the field to
+stay visible — the same "competing with an open keyboard" risk placement
+option (a) was already rejected for, reintroduced in a narrower form:
+whether a preview immediately beneath the actively-focused field lands
+above or below that auto-scroll boundary is implementation-dependent
+behavior this document's own abstraction level can't settle either way —
+one unproven risk substituted for another, not a stronger guarantee. The
+confirmed-below-the-fold reasoning above, by contrast, doesn't depend on
+any such implementation behavior — it holds from the screen's own content
+shape alone. Kept at its original position for that reason.
+
+**Residual risk, not fully closeable by placement reasoning alone: a
+merchant who scrolls in one continuous flick rather than pausing may not
+consciously register a passive, non-interactive box along the way** — the
+same class of risk any below-the-fold passive content carries, regardless
+of how confidently the layout reasoning above establishes that it's
+technically on-screen at some point during the gesture. No stronger design
+guarantee closes this without either interrupting her scroll (a worse cost
+than the risk it prevents — see (a)/(b)'s own rejection above) or making
+the preview interactive/attention-grabbing in a way this section's own "no
+confirmation styling, isn't tappable" posture deliberately avoids. Logged
+as open item 8 (§8) rather than asserted as solved — same non-blocking
+treatment already given items 1, 5, and 6 for this document's other
+unproven first-reaction risks.
+
+**Stacked explanatory-text density, flagged by `ux-critic` alongside the
+placement finding, not treated as a separate fix.** "Tu negocio" now
+carries three text blocks beyond field labels in states 1/2 (empty and
+name-only) — the intro paragraph, Descripción's own caption, and this
+preview's caption — and a fourth in state 3 specifically, once a logo is
+selected: the substitution caption added below to close `ux-critic`'s
+Minor finding ("Tu nombre sigue guardado arriba..."). Each is individually
+justified on its own terms (the intro states what customers actually see,
+per §3.9's own correction; Descripción's caption states its current
+not-yet-shown status, §2.2b; this preview's caption names what the box is,
+below; state 3's own caption marks an on-screen change as intentional).
+None is redundant with another, and none is copy this document would cut
+on its own terms — dropping any one reopens a different, already-fixed gap
+(e.g., dropping Descripción's caption reopens the false-promise risk
+§3.9's own 2026-08-08 correction closed). Worth keeping in mind precisely
+because it's part of *why* "does she notice the preview" — and, in state 3
+specifically, "does she notice the substitution caption" — is a live risk
+at all — a screen that reads as more text-heavy is a screen more prone to
+skimming — but that's context for whoever next revisits this screen's
+overall density, not a pending action of its own.
+
+**Five screen states, each grounded in this screen's own existing
+vocabulary:**
+
+1. **Empty / not yet rendered.** Nombre holds zero characters and no logo
+   is selected. The caption and box are entirely absent — not a blank
+   placeholder card. Same "no honest default" posture `Product.defaultPrice`
+   already gets (`decision-log.md` D33) and `Business.name` itself already
+   gets (§2.2b): there is nothing honest to preview about an unset required
+   field, so nothing renders.
+2. **Name-only, live-updating.** Nombre holds ≥1 character, no logo
+   selected. The box shows exactly the Nombre text, updating on every
+   keystroke — no debounce, since this is a pure local echo, not a network
+   call.
+3. **Logo-only (replaces "both").** The instant a logo is selected (§3.9a),
+   the box shows the logo, not the logo alongside the Nombre text —
+   deliberately *not* a fourth "both" state. This mirrors `home.md` §3.8f's
+   own explicit rule that name-as-text and logo never render together on
+   the real receipt ("the two never render together"); showing them both
+   here would teach her something the real receipt doesn't actually do.
+   Nombre remains fully saved and visible in its own field above
+   regardless — only the preview box's content changes. **The substitution
+   itself is called out, not left to read as her name silently dropping
+   out** — fixed here per `ux-critic`'s Minor finding: state 3 carries one
+   small, persistent caption directly beneath the box, distinct from the
+   shared "Así se va a ver en tu recibo:" caption above it — "Tu nombre
+   sigue guardado arriba. En tu recibo se muestra tu logo." — present for
+   as long as state 3 is showing, not a one-time flash. This is the only
+   state of the five that carries its own second caption; states 1/2/4/5
+   are unchanged.
+4. **Clear/revert.** Tapping "Quitar" (§3.9a) reverts the preview from
+   logo-only back to whatever state 1 or 2 already describes — name-only if
+   Nombre holds a value, absent entirely if it doesn't — the identical
+   reversible, no-confirmation-needed posture §3.9a's own "Quitar" already
+   has, extended to this new element rather than designed separately.
+5. **Failure fallback.** A file that fails §3.9's existing inline
+   logo-render check ("No pudimos mostrar ese archivo") never reaches state
+   3 — because that failure keeps the screen on §3.9's own no-logo
+   rendering rather than advancing to §3.9a, the preview simply stays (or
+   reverts to) whichever of states 1/2 already matches the Nombre field's
+   own current content. No new failure-specific preview treatment is
+   needed; the existing gate already prevents a broken logo from ever being
+   the preview's input.
+
+**Long Nombre values wrap naturally, never truncate.** Confirmed by direct
+inspection of the real receipt's own rendering (`ReceiptTicket.tsx`'s
+`businessName` element carries no character cap, no truncation, no
+single-line constraint) — the preview box grows taller and wraps onto
+additional lines exactly the way the real receipt already does, rather than
+inventing a new, stricter limit here. Example: a Nombre like "Guadalupe
+Accesorios y Regalos para toda la Familia" wraps onto two or more lines
+inside the box; "Continuar" is never pushed off-screen by this, since the
+preview sits above it in normal document flow, not as an overlay.
+
+**Not an announced live region.** The preview never triggers an unprompted
+spoken announcement of its own on every keystroke — a screen-reader user
+reaches it like any other on-screen content, on her own terms, and reads it
+once, not repeatedly re-interrupted as she types. This was the deliberate
+choice over the alternative (narrowly scoping an announcement to fire only
+once she stops typing or moves to the next field): the preview is a pure,
+redundant echo of two fields that are already properly labeled and already
+reachable in their own right — firing an announcement for the same content
+a second time, on a timer tied to typing pauses, is the same "avoid
+redundant AT noise" discipline this document family already applied to the
+real receipt's own Claim Token QR (`ReceiptTicket.tsx`'s wrapper/inner-SVG
+labeling fix), one class of noise removed here before it's ever built,
+rather than fixed after.
+
+**Visual differentiation from the real receipt — chrome and framing, not
+the type treatment.** The audit's own instruction is to reuse the exact
+prominence `home.md` §3.8f already gives `Business.name`/`Business.logo` on
+the real receipt — that stays. What differs is everything around it: a
+plain, small, thinly-bordered box, not the receipt's own torn-ticket
+silhouette; an explicit caption stating in plain language what it is ("Así
+se va a ver en tu recibo:" — matching the future-tense "van a ver" the
+intro copy above it already uses, `global-principles.md`'s "business
+language before technical language" rather than a technical label like
+"vista previa"); no checkmark, confirmation glyph, or success styling
+anywhere near it; it never auto-advances or leads anywhere on tap — it
+isn't tappable at all. Nothing about it should read as "this has already
+been sent to your customer" — it hasn't; only tapping "Continuar" and
+§3.10's write succeeding does that.
+
+**Scoped to §3.9/§3.9a only — not §3.10a's error summary.** §3.10a already
+lists Nombre/Logo/Descripción in a compact, already-reviewed summary
+format; duplicating the new preview there would repeat the same data a
+third way on one screen for no added clarity. If she needs to see the
+preview again after a failed save, "Reintentar" returns her to nothing new
+to design — §3.10a's own guarantee is unchanged.
+
+**Resuming an interrupted Onboarding (§3.7) needs no separate guarantee.**
+The preview has no state of its own to preserve — it's derived fresh, every
+render, from whatever Nombre/Logo values §3.7 already restores. Nothing new
+to persist, nothing new that can be lost.
 
 ### 3.10 Guardando tu negocio — near-instant / slow
 ```
@@ -686,7 +918,9 @@ From §3.3, tap a path:
 
   Empezar gratis
     → creando tu negocio (3.5) → error (3.5a) → Reintentar
-    → success → Tu negocio (3.9/3.9a) → Continuar
+    → success → Tu negocio (3.9/3.9a, now rendering a live, non-interactive
+        preview of Nombre/Logo per §3.9b — no new destination, nothing
+        tappable) → Continuar
         → guardando (3.10) → error (3.10a) → Reintentar
         → success → Define lo que vendes (3.5b/3.5c) → Continuar
             → guardando (3.5d) → error (3.5e) → Reintentar
@@ -699,7 +933,9 @@ From §3.3, tap a path:
     → confirmar antes de continuar (3.4)
         → "Mejor quiero empezar gratis" → back to 3.3, nothing written
         → tap "Confirmar y activar" → creando tu negocio (3.5) → error (3.5a) → Reintentar
-    → success → Tu negocio (3.9/3.9a) → Continuar
+    → success → Tu negocio (3.9/3.9a, now rendering a live, non-interactive
+        preview of Nombre/Logo per §3.9b — no new destination, nothing
+        tappable) → Continuar
         → guardando (3.10) → error (3.10a) → Reintentar
         → success → Define lo que vendes (3.5b/3.5c) → Continuar
             → guardando (3.5d) → error (3.5e) → Reintentar
@@ -738,8 +974,10 @@ backgrounding, force-close):
 5. Ver un ejemplo — confirmar antes de continuar
 6. Creando tu negocio (near-instant / slow) — shared by all three paths
 7. Creando tu negocio — error
-8. Tu negocio — identity capture, entry (real paths only)
-9. Tu negocio — con logo seleccionado
+8. Tu negocio — identity capture, entry (real paths only) — now includes
+   an inline live preview of Nombre once typed (§3.9b, added 2026-08-15)
+9. Tu negocio — con logo seleccionado — now includes the same live
+   preview, switched to logo-only rendering (§3.9b, added 2026-08-15)
 10. Guardando tu negocio (near-instant / slow)
 11. Guardando tu negocio — error
 12. Define lo que vendes — entry (real paths only)
@@ -787,6 +1025,8 @@ None of the items below block this document's completion or require inventing a 
 4. **Resolved, kept for continuity — the most likely real-world capability-change scenario is now designed, just not in this document:** a merchant who chooses "Empezar gratis" today and wants `nfc` selling later gets there by upgrading to the Paid plan in Configuración (`settings.md` §2.2, "Activar plan de pago") — `nfc` follows automatically as a derived consequence of `subscriptionTier = paid` (`decision-log.md` D27), never through a separately obtained physical kit or activation code. `company/business-decisions.md` Q5 is Resolved (`decision-log.md` D25), and D27 further corrected the mechanism this item originally anticipated (kit possession): the physical tag package she eventually receives is fulfillment logistics only, mailed automatically once she subscribes, and grants nothing by itself. This document still does not design that upgrade path itself — it lives entirely in `settings.md` — but the gap this item once flagged as open is now closed elsewhere, not silently assumed away.
 5. **Validation recommendation (not a Foundation ambiguity), added 2026-08-08 alongside §2.2a:** whether the flat, single-row "Producto + Precio" entry shape (§3.5b) reads clearly to a genuinely first-time merchant, versus `inventory.md`'s own two-step picker-then-price shape — the two are deliberately different for a reasoned cause (§3.5b's own annotation), but that reasoning hasn't been checked against a real merchant's first reaction. Same evidence-driven caution as item 1.
 6. **Validation recommendation (not a Foundation ambiguity), added 2026-08-08 alongside §2.2b:** whether "Tu negocio" reads clearly as an invitation to bring in something she already has, rather than as a request to build a brand identity from scratch — the copy and design are reasoned explicitly toward the former (§2.2b), but haven't been checked against a real merchant's first reaction. Same evidence-driven caution as items 1 and 5.
+7. **Validation recommendation (not a Foundation ambiguity), added 2026-08-15 alongside §3.9b:** whether the new live preview reads clearly as a preview of what's about to be saved, rather than as confirmation that it already has been — the placement (below the fold, before "Continuar") and framing (plain caption, no receipt-styled chrome, no confirmation iconography) are reasoned explicitly toward avoiding that misread, but haven't been checked against a real merchant's first reaction. Same evidence-driven caution as items 1, 5, and 6.
+8. **Validation recommendation (not a Foundation ambiguity), added 2026-08-15 alongside `ux-critic`'s Major finding on §3.9b's placement:** whether a merchant who scrolls through "Tu negocio" in one continuous, uninterrupted gesture actually registers the live preview along the way, versus scrolling straight past a passive, non-interactive box she wasn't looking for. §3.9b's own placement reasoning establishes that "Continuar" sits below the fold — and the preview is therefore genuinely on-screen at some point during any real scroll to reach it — in every real combination of filled/unfilled optional fields, including the dominant no-logo path; what it can't establish from layout reasoning alone is whether she consciously notices it during a fast flick rather than a paused, deliberate scroll. Same evidence-driven caution as items 1, 5, 6, and 7.
 
 ## 9. Principle justification
 
@@ -797,6 +1037,7 @@ None of the items below block this document's completion or require inventing a 
 - *"Selling is a state, not a navigation destination"* — Onboarding hands off into Home's own resolution logic rather than fabricating a fake pre-opened Session for any path, including the demo (§2.4); she always starts selling herself, the same way every merchant does.
 - *"Business language before technical language"* — every screen uses "gratis" and "ejemplo," never "registrationMode," "subscriptionTier," "defaultSellingMode," "nfc," or "capability," anywhere, including in the demo path's confirmation state (§3.4c); with "Activar kit NFC" removed, no screen in this document ever mentions a kit, a tag, or an activation code at all (`decision-log.md` D27).
 - *"Every repeated decision should become automation"* — every capability this document sets is set exactly once, at this single moment, and never re-asked anywhere downstream (§7).
+- *"Business language before technical language"* — the new live preview's own caption ("Así se va a ver en tu recibo:") states plainly, in the same future tense the screen's existing intro already uses, what the box is — never "vista previa" or any UI-jargon label (§3.9b, added 2026-08-15).
 - *"Capture business truth once, reuse it forever"* — her single first-run choice ("Empezar gratis," "Activar plan de pago," or "Ver un ejemplo") is captured exactly once and never re-asked on a retried creation failure (§3.5a); the demo path's confirmation (§3.4c) is likewise never re-asked on a retry. `nfc`'s own truth — whether it's available at all — is never captured here in the first place, deliberately: it's derived fresh from `subscriptionTier` wherever it's read (`decision-log.md` D27), so there is no second copy of that fact for this document, or any other, to keep in sync.
 - *"The best interface stays out of the merchant's way"* — a failed Business-creation write never drops an already-chosen path or an already-confirmed demo screen (§3.5a); "Mejor quiero registrar mi negocio real" is a real, always-available escape hatch, never a dead end (§3.4c).
 - *"Capture business truth once, reuse it forever"* — her business identity (`Business.name`, optional logo/description) is captured exactly once, here, at the one point in her relationship with the app where she has time to think about it rather than a customer standing in front of her, and is reused wherever each field is actually needed downstream (`Business.name`/`Business.logo` — `home.md` §3.8f's Digital Receipt; `Business.description` stored only, not yet consumed anywhere) without ever being asked again (§2.2b).
@@ -805,6 +1046,7 @@ None of the items below block this document's completion or require inventing a 
 - *#1 (capabilities resolved once, upstream, never asked mid-flow)* — Onboarding is the highest possible point this principle can apply to: `registrationMode`, `defaultSellingMode`, and `subscriptionTier` are all set once, before any tab, Session, or Sale exists, and never re-asked anywhere in `home.md`, `inventory.md`, `events.md`, or `reports.md` (§2.2, §2.3).
 - *#4 (internal-only entities never leak into user-facing language)* — no domain term (Business, Capability, Selling Mode Capability, Session Operating Mode) ever appears in merchant-facing copy, including error and confirmation states.
 - *#6 (one-way dependency direction)* — Onboarding never fabricates a live, already-open Session for any path, including the demo (§2.4) — the demo's seed generation writes historical Inventory/Selling data through those contexts' own paths, a distinct concern from inventing active selling state on Ana's behalf.
+- *#7 (idempotency for client-facing writes)* — doesn't engage for the new live preview: it triggers no write of any kind, only a local re-render of already-entered field values; the real write stays exactly where it already was, at §3.10, gated on "Continuar" (§3.9b, added 2026-08-15).
 
 **brand-guide.md:**
 - *Tone — "warm, direct, respects the vendor's intelligence"* — §3.4c states plainly, before any commitment, that the demo write is permanent and can't become her real business later; treating her as someone who can handle that fact upfront, rather than only letting her discover it after an irreversible tap, is what "respects the vendor's intelligence" means in practice here, not just as a slogan.
@@ -844,6 +1086,12 @@ None of the items below block this document's completion or require inventing a 
 - **§1's exclusion rationale for profile-style fields corrected, not merely restated, alongside this amendment** — see §1's own corrected reasoning. **[see onboarding.changelog.md#decisions-section-1-exclusion-rationale-corrected]**
 - **§2.1's resume-check state machine gains a new case (case 4), parallel to the existing "Define lo que vendes not yet complete" case (now case 3)** — every other case's "complete"/"already written" language is widened to include identity. **[see onboarding.changelog.md#decisions-resume-check-case-4-identity]**
 - **`home.md` §3.8f's receipt now shows the merchant's own identity instead of Nahui's own mark — designed jointly with this amendment, decided and reasoned in that document's own §10, not repeated here.** **[see onboarding.changelog.md#decisions-home-receipt-shows-merchant-identity-cross-reference]**
+- **Live identity preview added to "Tu negocio" (§3.9b), 2026-08-15 — `frontend-design` audit proposal #4.** A small, non-interactive card above "Continuar" reflects Nombre/Logo as she types/selects, reusing the exact prominence `home.md` §3.8f already gives them on the real receipt. **[see onboarding.changelog.md#status-2026-08-15-live-identity-preview]**
+- **Placed below the fold, immediately above "Continuar" — not pinned near the active field, not collapsing on focus.** Reasoned against the two keyboard-competition alternatives in §3.9b; matches `home.md` §3.11's own precedent for a preview immediately preceding a commit action. **[see onboarding.changelog.md#status-2026-08-15-live-identity-preview]**
+- **Logo-only replaces "name + logo together" as the fourth content state** — matches `home.md` §3.8f's existing rule that Business.name-as-text and Business.logo never render together on the real receipt; a genuine correction from the audit proposal's own looser "name + logo" framing, not a restatement of it. **[see onboarding.changelog.md#status-2026-08-15-live-identity-preview]**
+- **No character cap or truncation on the preview's Nombre text** — confirmed against `ReceiptTicket.tsx`'s own `businessName` treatment (no `max-width`/`text-overflow`/`white-space: nowrap`), reused as-is rather than inventing a stricter limit. **[see onboarding.changelog.md#status-2026-08-15-live-identity-preview]**
+- **The preview is never an announced live region** — reasoned explicitly in §3.9b as avoiding redundant, per-keystroke assistive-technology noise, the same discipline already applied to the real receipt's Claim Token QR. **[see onboarding.changelog.md#status-2026-08-15-live-identity-preview]**
+- **No `knowledge-mentor` re-consultation needed for the device-upload affordance itself, unaffected by this amendment** — this amendment only adds a read-only reflection of values that affordance already produces. Scope clarification, not a new decision — no changelog entry of its own.
 
 ## 11. Future considerations
 
