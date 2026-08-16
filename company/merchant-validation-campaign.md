@@ -1,8 +1,8 @@
 # Nahui — First Large-Scale Merchant Validation Campaign
 
-**Status: Drafted, incentive structure finalized by the Product Owner (2026-08-14/15). Recruitment copy and questionnaire revised to match. Not yet approved to run — nothing in this document has been posted, sent, or contacted. Requires explicit Product Owner sign-off before any piece goes live, per the standing Approval gate (`company/CLAUDE.md`).**
+**Status: Drafted, incentive structure revised by the Product Owner to a fully non-monetary structure (2026-08-15). Recruitment copy and questionnaire revised to match. Not yet approved to run — nothing in this document has been posted, sent, or contacted. Requires explicit Product Owner sign-off before any piece goes live, per the standing Approval gate (`company/CLAUDE.md`).**
 
-Prepared by `marketing`, two passes: initial full draft (2026-08-14), then a revision (2026-08-14/15) after the Product Owner rejected a raffle-based incentive in favor of a guaranteed reward. Grounded in `company/CLAUDE.md`, `company/backlog.md`, `company/brand/brand-guide.md`, `brand/character-bible.md`, `brand/tone-of-voice.md`, `product/00-foundation/global-principles.md`, `product/00-foundation/decision-log.md`, `product/02c-high-fidelity-prototype/README.md` + `BACKLOG.md`, `company/market-validation.md`, `company/jobs-to-be-done.md`, `company/business-decisions.md`, `product/02-ux/product-decisions.md`, `company/usability-testing-plan.md` §7.3.
+Prepared by `marketing`, three passes: initial full draft (2026-08-14); a revision (2026-08-14/15) after the Product Owner rejected a raffle-based incentive in favor of a guaranteed reward; and a third revision (2026-08-15) after the Product Owner removed the monetary component entirely — the guaranteed thank-you is now priority-list access to the first pilot and the option to join the early-adopter community, both open to anyone who opts in; actual pilot admission and NFC starter-kit distribution stay merit-based, decided by genuine interest and feedback quality, never by chance or order of arrival. Grounded in `company/CLAUDE.md`, `company/backlog.md`, `company/brand/brand-guide.md`, `brand/character-bible.md`, `brand/tone-of-voice.md`, `product/00-foundation/global-principles.md`, `product/00-foundation/decision-log.md`, `product/02c-high-fidelity-prototype/README.md` + `BACKLOG.md`, `company/market-validation.md`, `company/jobs-to-be-done.md`, `company/business-decisions.md`, `product/02-ux/product-decisions.md`, `company/usability-testing-plan.md` §7.3.
 
 **Objective, stated explicitly per the Product Owner's own framing:** validate, don't optimize for positive opinions. The goal of this campaign is discovering why merchants would *not* adopt Nahui, not collecting compliments. Success is not "people liked it."
 
@@ -21,9 +21,9 @@ The QR domain-mismatch risk flagged in the first draft (the receipt QR pointing 
 
 > Hola, somos Nahui 💛 Estamos platicando con vendedoras y vendedores de bazar para entender cómo llevan el control de sus ventas y sus clientes — no vendemos nada, solo estamos aprendiendo de tu experiencia real.
 >
-> Si vendes en bazares, nos ayudarías muchísimo si le echas un ojo a una versión de prueba de lo que estamos construyendo y respondes un cuestionario corto (10-15 min). Por completarlo, te mandamos un agradecimiento [monto a definir] — es seguro para todas las personas que terminan la prueba, no es una rifa.
+> Si vendes en bazares, nos ayudarías muchísimo si le echas un ojo a una versión de prueba de lo que estamos construyendo y respondes un cuestionario corto (10-15 min). Al terminar puedes decirnos si quieres que te tengamos en cuenta para el primer piloto de Nahui, y desde ahí mismo puedes unirte a nuestra comunidad de early adopters.
 >
-> Si además nos cuentas con detalle cómo llevas tu negocio, quedas entre las primeras en enterarte cuando abramos el piloto de Nahui — con acceso prioritario y entre las primeras en recibir los kits de tags NFC.
+> Mientras más nos cuentes con detalle cómo llevas tu negocio, mejor podemos decidir a quién invitar primero al piloto — y a quién considerar entre las primeras en recibir los kits de tags NFC cuando estén listos. Eso se decide por el interés real y por la calidad de tus respuestas, no por orden de llegada.
 >
 > [liga al cuestionario]
 > ¿Te late? Cualquier duda, aquí ando.
@@ -36,16 +36,16 @@ The QR domain-mismatch risk flagged in the first draft (the receipt QR pointing 
 >
 > Te invitamos a probar una versión de prueba (unas pantallas, no la app completa) y a responder un cuestionario corto sobre cómo llevas tu negocio hoy — te toma entre 10 y 15 minutos.
 >
-> Como agradecimiento, le mandamos una recompensa [monto a definir] a cada persona que complete la prueba y el cuestionario — no es una rifa ni un sorteo, es segura para quien participe.
+> Al completar la prueba y el cuestionario, puedes decirnos que quieres que te tengamos en cuenta para el piloto de Nahui — quedas en nuestra lista de acceso prioritario, y ahí mismo puedes unirte a la comunidad de early adopters, sin esperar a nada más.
 >
-> Y si en tus respuestas vemos que conoces bien tu negocio y nos compartes el detalle real de cómo vendes, te dejamos entre las primeras candidatas para el piloto de Nahui cuando esté listo — con acceso prioritario y entre las primeras en recibir los kits de tags NFC para vender con etiquetas.
+> Si en tus respuestas vemos que conoces bien tu negocio y nos compartes el detalle real de cómo vendes, te consideramos entre las primeras candidatas para el piloto — y entre las primeras en recibir los kits de tags NFC cuando el piloto arranque. Eso lo decidimos por el interés real y la calidad de lo que nos cuentas, nunca al azar ni por quién llega primero.
 >
 > No es una venta, no te pedimos dinero, y no compartimos tu información con nadie fuera de Nahui.
 >
 > [liga al cuestionario]
 > ¡Gracias por tu tiempo! 💛
 
-Both versions checked against `brand/tone-of-voice.md`: no manufactured urgency, no imperative framing, states facts before asking, never implies her current methods (notebook, memory) were wrong, never oversells what's built. No "sorteo"/"entra a ganar" language anywhere — the thank-you is stated as guaranteed and unconditional on completion, with no specific instrument named; the pilot/NFC-kit line is conditioned on engagement quality, never on chance.
+Both versions checked against `brand/tone-of-voice.md`: no manufactured urgency, no imperative framing, states facts before asking, never implies her current methods (notebook, memory) were wrong, never oversells what's built. No monetary language anywhere, no "sorteo"/"entra a ganar" framing — priority-list access and the community opt-in are stated as genuinely open to everyone who completes and opts in; pilot admission and NFC-kit consideration are stated plainly as conditioned on genuine interest and feedback quality, never on chance or order of arrival.
 
 ### 1c. Suggested screenshots — honest, representative, not cherry-picked
 
@@ -149,30 +149,30 @@ Every question maps to a specific downstream decision or backlog action — no g
 **Closing text:**
 > Gracias por tu tiempo y por contarnos cómo llevas tu negocio — de verdad nos ayuda muchísimo.
 >
-> Como agradecimiento por completar el cuestionario, te vamos a mandar un agradecimiento [monto a definir]. Es para todas las personas que terminan la prueba y el cuestionario completo — no hay sorteo ni nada que adivinar.
+> Si quieres que te tengamos en cuenta para el piloto de Nahui cuando esté listo, dinos que sí en la siguiente pregunta y déjanos un dato de contacto para poder buscarte — quedas en nuestra lista de acceso prioritario, y desde aquí mismo te puedes unir a nuestra comunidad de early adopters.
 >
-> Si al leer tus respuestas vemos que conoces bien tu negocio y nos compartiste el detalle real de cómo vendes, te vamos a tomar en cuenta con prioridad cuando abramos el piloto de Nahui — incluyendo entre las primeras en recibir los kits de tags NFC para vender con etiquetas.
->
-> Si quieres que te tengamos en la lista para el piloto, dinos que sí en la siguiente pregunta y déjanos un dato de contacto para poder buscarte.
+> Si al leer tus respuestas vemos que conoces bien tu negocio y nos compartiste el detalle real de cómo vendes, te consideramos entre las primeras candidatas para el piloto — y entre las primeras en recibir los kits de tags NFC cuando el piloto arranque. Eso se decide por el interés real y la calidad de tus respuestas, nunca al azar.
 
 Deliberately excluded: no "¿qué tan satisfecha estás del 1 al 10?", no generic NPS — every question maps to a specific downstream action, not a vibe check.
 
 ---
 
-## Deliverable 4 — Incentive Strategy (final, per Product Owner decision 2026-08-14/15)
+## Deliverable 4 — Incentive Strategy (revised, per Product Owner decision 2026-08-15 — fully non-monetary)
 
-**No raffle, no chance-based mechanism.** The original idea (raffling "first Premium pilot access" + an NFC Starter Kit) is fully retired. Final structure:
+**No monetary incentive, of any kind.** No cash, no gift card, no phone recharge, no voucher — nothing. This isn't an open budget question left to fill in later; it's a deliberate design choice. The objective of this campaign is attracting merchants genuinely interested in helping shape Nahui, not merchants motivated primarily by a payment. Removing money from the mechanism entirely is how that selection actually happens — it's the mechanism working as intended, not a compromise on what the campaign can offer.
 
-1. **Guaranteed thank-you.** Every participant who completes both the prototype walkthrough and the questionnaire receives a thank-you reward (instrument and [monto a definir] — both still to be set by the Product Owner against real budget). Unconditional on completion, decoupled from what she said — a participant who's honestly critical never has criticism cost her the reward.
-2. **Priority access.** Every participant who opts in (Q15) is added to a priority list for future Nahui pilot invitations.
-3. **Genuine-engagement path to pilot/NFC priority.** Participants who show real interest and give thoughtful, specific feedback — not just anyone who opts in — become the primary candidates for the first pilot and for receiving the initial NFC starter kits, delivered when the pilot actually begins, not immediately and not by drawing. This also resolves the earlier procurement concern (the kit isn't a sourced/available item yet) without weakening its value — a future pilot benefit, not a giveaway with a delivery deadline.
+The structure that replaces it, in full:
+
+1. **Priority-list access — guaranteed to everyone who opts in.** Any participant who completes the prototype walkthrough and questionnaire and answers "Sí" or "Tal vez, avísenme" to Q15 is added to a priority list for the first Nahui pilot. This part is genuinely unconditional: a place on the list, open to anyone who says yes — but a place on the list, not automatic admission to the pilot itself. That distinction is stated plainly everywhere this is communicated, never blurred.
+2. **Early-adopter community — same mechanism, no new question.** Q15's opt-in is also how she joins the early-adopter community. No separate step, no additional form field — Q16 collects the contact info both the priority list and the community run on.
+3. **Consideration for pilot admission and NFC starter kits — merit-based, not guaranteed.** Being on the priority list means being *considered*, not admitted. Actual selection for the first pilot cohort, and for one of the first NFC starter kits when the pilot begins, is based on genuine interest and the quality of the feedback given during the walkthrough and questionnaire — never random, never first-come. A participant who opts in but gives thin or generic answers stays on the list; a participant who opts in and clearly demonstrates she understands her own business and engaged seriously with the prototype is who actually gets selected first.
 
 **Why this serves "build a community of early adopters" over "maximize participation" (the Product Owner's own explicit objective):**
-- A guaranteed, completion-based reward removes any incentive to rush or game answers to qualify for a chance at a prize — everyone who genuinely finishes gets the same thank-you, no reward for volume over quality.
-- Conditioning pilot/NFC priority on demonstrated genuine interest — rather than a random draw among all entrants — self-selects for people who actually want an ongoing relationship with Nahui.
-- Sequencing the NFC kit to real pilot onboarding is a stronger signal to a serious respondent than an immediate giveaway would have been.
+- Removing any monetary instrument removes the one incentive that would otherwise attract people motivated by the reward rather than by the product — the entire mechanism, not just the merit-based half, now selects for genuine interest by design.
+- A guaranteed, real, zero-cost benefit (priority-list access, community membership) still gives every participant who opts in a reason to finish honestly, without creating any incentive to rush or embellish answers to compete for something scarce.
+- Conditioning pilot admission and NFC-kit consideration on demonstrated genuine interest — rather than a random draw or first-come order — self-selects for people who actually want an ongoing relationship with Nahui, which is what a pilot cohort and an early-adopter community both need to be worth building.
 
-**Tracking note for Deliverable 5:** since there's no raffle, there's nothing to track separately from Q15's own opt-in rate — Q15 opt-in is the single adoption-intent proxy this instrument produces, not one of two numbers to keep apart.
+**Tracking note for Deliverable 5:** since selection is never random and never first-come, there's nothing to track separately from Q15's own opt-in rate and the qualitative read of Q7/Q8/Q11/Q12 — Q15 opt-in remains the single quantitative adoption-intent proxy this instrument produces; who actually gets selected from the priority list is a qualitative judgment made after the fact, not a metric to report.
 
 ---
 
@@ -208,4 +208,4 @@ Hypothesis-tier updates go into `company/market-validation.md` §6 (H1-H6, upgra
 
 **Ready, pending explicit go-ahead to run:** all five deliverables above.
 
-**Still open:** both the guaranteed thank-you's specific instrument (a gift card, a cash equivalent, or something else — not yet decided) and its exact value (every "[monto a definir]" placeholder above needs a real number set against budget) before this goes live.
+**Still open:** how "consideration" for a limited number of NFC starter kits gets communicated so it reads honestly as *consideration* — never as an implied promise — given that only a small number of kits will exist when the first pilot begins. The current copy (1a, 1b, Deliverable 3's closing text) states this as conditioned on genuine interest and feedback quality, explicitly never guaranteed; worth a final Product Owner read specifically for whether that line lands as clearly as intended before this goes live, since it's the one piece of the incentive structure that could still be misread as a promise if a future edit loosens the wording.

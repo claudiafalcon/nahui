@@ -1,6 +1,6 @@
 # Demo Mode — Welcome Screen
 
-**Status: PROPOSED — drafted by `ux-designer` at explicit Product Owner request (2026-08-14), for confirmation before Architecture Review or any React work. Not yet passed through `ux-critic`/`reviewer`.** This document's §1 also serves as this feature's Product Definition, per this folder's own front-matter rule (no separate pre-UX artifact exists).
+**Status: PROPOSED — drafted by `ux-designer` at explicit Product Owner request (2026-08-14), Product Owner-approved in concept and wireframe (2026-08-15).** This document's §1 also serves as this feature's Product Definition, per this folder's own front-matter rule (no separate pre-UX artifact exists). **`brand-guardian` reviewed §3.3's copy (2026-08-15)** — one Major finding (the opening greeting read as generic, translated-from-English template copy rather than Nahui's established voice; `onboarding.md` §3.3 cited as the correct in-family precedent) — fixed, replacement text applied. Not yet passed through `ux-critic`/`reviewer` or a placement ruling.
 
 **Scope:** one expectation-setting screen shown before `authentication.md`'s flow begins, present **only** in validation-campaign builds where a real bazaar-vendor participant tests the live prototype. Not a production feature — has no code path at all in a real, shipped build. Implementation-independent, low-fidelity only.
 
@@ -115,11 +115,8 @@ Identical silent-skeleton convention every other tab's own §3.1 already uses. *
 │                                │
 │           Nahui                 │
 │                                │
-│  Bienvenida a la demo de         │
-│  Nahui                            │
-│                                │
-│  Gracias por ayudarnos a          │
-│  probarla.                        │
+│  Vas a probar un prototipo de    │
+│  Nahui — gracias por ayudarnos.  │
 │                                │
 │  •  Usa cualquier número de       │
 │     celular — no te va a llegar    │
@@ -130,10 +127,10 @@ Identical silent-skeleton convention every other tab's own §3.1 already uses. *
 │     también pueden ser             │
 │     inventados.                    │
 │                                │
-│  Es un prototipo, no la versión    │
-│  final. Cuéntanos qué se te        │
-│  hace confuso — nos sirve tanto    │
-│  como lo que te gusta.             │
+│  No es la versión final.           │
+│  Cuéntanos qué se te hace          │
+│  confuso — nos sirve tanto como    │
+│  lo que te gusta.                  │
 │                                │
 │  [       Empezar demo       ]      │
 │                                │
