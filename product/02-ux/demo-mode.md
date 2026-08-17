@@ -2,6 +2,8 @@
 
 **Status: Product Definition → UX Design → placement ruling → `brand-guardian` review → Architecture Review all complete (2026-08-14/15) — ready for `ui-designer` to build.** Drafted by `ux-designer` at explicit Product Owner request, Product Owner-approved in concept and wireframe. This document's §1 also serves as this feature's Product Definition, per this folder's own front-matter rule (no separate pre-UX artifact exists). `brand-guardian` reviewed §3.3's copy — one Major finding (the opening greeting read as generic, translated-from-English template copy rather than Nahui's established voice; `onboarding.md` §3.3 cited as the correct in-family precedent) — fixed, replacement text applied. `architect` ruled on placement (`decision-log.md` D48 — a third category, neither D13/D45's class nor D38's) and completed Architecture Review (§8 items 1-2, resolved with concrete build-mode/storage/mounting-shape guidance — see below). Not yet passed through `ux-critic`/`reviewer` (New-Feature Workflow's Review Pipeline stage, after the React build).
 
+**Amended 2026-08-16 (Product Owner-relayed, empirically confirmed defect — live campaign).** Real validation-campaign participants (Facebook Groups recruitment post, live at demo.nahui.app) got stuck at `authentication.md`'s OTP entry screen. §3.3's welcome copy correctly warned that no real SMS would arrive, but never stated what to type instead — and `authentication.md`'s own OTP screen is intentionally mock-delivery-agnostic (per that document's own §0 abstraction-level choice, it's the identical screen every real merchant sees, and never reveals that verification is mocked). Confirmed in code: `verifyOtp(phone, _code)` in `src/domain/store.tsx` accepts any 6-digit input, the `_code` parameter is intentionally unused. A participant told "no real code is coming" had nothing to reference and no way to know any 6 digits would work. **Fix, scoped entirely to this document's own §3.3:** a new third operational fact — any 6-digit code (e.g. `123456`) works — added to the welcome screen. `authentication.md` is not touched, per this document's own placement reasoning (`decision-log.md` D48) — that screen must stay general-purpose/mock-delivery-agnostic for every future real merchant, not leak Demo Mode's own concerns into it. Copy/clarity fix only — no flow, decision-logic, or architecture change; §2, §4-§8 below are unaffected. **Review pipeline complete, same day.** `ux-critic`: clean, no Blockers/Majors (one non-blocking Minor on overall screen density approaching the 15-second scan bar, one non-blocking Suggestion on bullet-list grammatical parallelism — both flagged for a later polish pass, not this fix). `reviewer`: clean, no Blockers/Important findings — independently confirmed `authentication.md` untouched, the D48 citation accurate, and the "any 6-digit code" claim correct against `verifyOtp` in `src/domain/store.tsx`. `brand-guardian`: pass, no changes — the concrete example ("123456") reads as the honest, companion-like choice, not a tonal drift. Folded back into Approved. Ready for `ui-designer` to build immediately, given the live-campaign urgency.
+
 **Scope:** one expectation-setting screen shown before `authentication.md`'s flow begins, present **only** in validation-campaign builds where a real bazaar-vendor participant tests the live prototype. Not a production feature — has no code path at all in a real, shipped build. Implementation-independent, low-fidelity only.
 
 **Deliberately not conflated with `onboarding.md`'s "Ver un ejemplo."** That is an in-app guided example business a merchant explores from *inside* the real product, reachable via a path choice on `onboarding.md §3.3`. This is a build-level gate shown *before* `authentication.md` even starts, regardless of which of `onboarding.md`'s three paths she later picks — including "Ver un ejemplo" itself. The two compose freely and never overlap. To keep them visibly distinct even in copy, this document uses "demo"/"prototipo," never "ejemplo" — that word stays reserved for `onboarding.md`'s own concept.
@@ -24,7 +26,7 @@
 
 *(This document's audience is a validation-campaign participant, not Ana-as-ongoing-merchant — noted explicitly since it changes the addressee, not the product's values.)*
 
-**Business objective:** make sure a real bazaar-vendor validation participant understands, before typing anything, that (a) this is an interactive prototype, not the finished product; (b) everything she enters — phone number, business name, products, customer info — should be fictitious; (c) no real SMS is sent; (d) the goal is evaluating the experience, not creating a real account; (e) honest feedback, including critical/confused reactions, is explicitly wanted. Directly supports the upcoming real-merchant validation campaign (`company/CLAUDE.md`'s Experience Validation section).
+**Business objective:** make sure a real bazaar-vendor validation participant understands, before typing anything, that (a) this is an interactive prototype, not the finished product; (b) everything she enters — phone number, business name, products, customer info — should be fictitious; (c) no real SMS is sent; (d) what to type instead when the app's code screen appears — any 6-digit sequence, e.g. `123456` — since no real code is coming; (e) the goal is evaluating the experience, not creating a real account; (f) honest feedback, including critical/confused reactions, is explicitly wanted. Directly supports the upcoming real-merchant validation campaign (`company/CLAUDE.md`'s Experience Validation section).
 
 **Acceptance criteria:**
 - Every fact above is conveyed in natural Spanish, scannable in well under 15 seconds.
@@ -122,6 +124,11 @@ Identical silent-skeleton convention every other tab's own §3.1 already uses. *
 │     celular — no te va a llegar    │
 │     ningún código real.            │
 │                                │
+│  •  Cuando te pida el código,      │
+│     escribe cualquier número de    │
+│     6 dígitos — por ejemplo,       │
+│     123456.                        │
+│                                │
 │  •  El nombre de tu negocio,       │
 │     tus productos y tus clientes   │
 │     también pueden ser             │
@@ -137,8 +144,9 @@ Identical silent-skeleton convention every other tab's own §3.1 already uses. *
 └───────────────────────────────┘
 ```
 - **No back arrow** — nowhere to return to, the same "first screen in the product" shape `authentication.md §3.3` already claims for itself, one step further upstream.
-- **Deliberately not auto-advanced.** The purpose of this screen is that she actually reads the two operational facts (fictitious data, no real SMS) before typing anything into `authentication.md`'s phone/OTP screens — the identical reasoning `onboarding.md §3.4c` already gives its own no-auto-continue confirmation screen.
+- **Deliberately not auto-advanced.** The purpose of this screen is that she actually reads the three operational facts (fictitious data, no real SMS, and what to type instead at the code screen) before typing anything into `authentication.md`'s phone/OTP screens — the identical reasoning `onboarding.md §3.4c` already gives its own no-auto-continue confirmation screen.
 - Single primary CTA, no secondary/escape action — nothing to decline here, this is informational, not a consent gate with two real outcomes.
+- **New bullet (added 2026-08-16, see status header):** placed immediately after the phone-number bullet, matching the actual chronological order she'll hit — enter a phone number, then reach `authentication.md`'s OTP screen next. States a concrete example (`123456`) rather than an abstract "any code," matching this screen's existing register (the phone-number bullet already gives a concrete instruction, not just a warning).
 - Copy never says "build," "environment," "QA," "staging," or "feature flag" — only "demo" and "prototipo." *global-principles.md*, "business language before technical language."
 
 ### 3.4 Retomar — interrupted before acknowledgment
@@ -218,7 +226,7 @@ From §3.3:
    - **Precision correction to §9's `architecture-principles.md` #7 citation:** the CTA tap does write (the acknowledgment flag) — #7 doesn't apply not because "no real write happens," but because that write is a boolean set, naturally idempotent by construction (setting `true` twice is a no-op), unlike a keyed domain write where a blind retry risks duplication. Same conclusion, more precisely grounded.
 3. **Operational, not a UX/domain question:** how a shared test device gets reset between different validation-campaign participants on the same day. Campaign-logistics concern, flagged for whoever plans the campaign, not escalated as a product gap.
 4. **Resolved.** `architect` ruled this document fits neither D13/D45's class nor D38's — a third, narrower category (validation-campaign infrastructure, co-located in `product/02-ux/` for pipeline/deploy convenience, explicitly not a Merchant Application experience document). See `decision-log.md` D48 and the status header above.
-5. **Resolved.** `brand-guardian` reviewed the welcome copy (§3.3) — one Major finding (the opening greeting read as generic, translated-from-English template copy rather than Nahui's established voice; `onboarding.md §3.3` cited as the correct in-family precedent) — fixed, replacement text applied. Everything else (the two operational bullets, the criticism-invitation line, the "Empezar demo" CTA) passed as-is.
+5. **Resolved.** `brand-guardian` reviewed the welcome copy (§3.3) — one Major finding (the opening greeting read as generic, translated-from-English template copy rather than Nahui's established voice; `onboarding.md §3.3` cited as the correct in-family precedent) — fixed, replacement text applied. Everything else (the two operational bullets, the criticism-invitation line, the "Empezar demo" CTA) passed as-is. **Note (2026-08-16):** the new third operational bullet (see status header) also passed `brand-guardian`'s review, no changes — the concrete example ("123456") was judged the more honest, companion-like choice, consistent with the character bible's "always gives her an honest way out" rule.
 
 **Architecture Review verdict (added, this pass): clean, no blockers — ready for `ui-designer`.** Items 1-2 above resolve the two mechanism questions this section originally deferred; nothing here is a redesign of this document's own decision logic or wireframes, and none of it required a `knowledge-mentor` consultation (build-mode/env-based conditional compilation and `localStorage`-keyed device state are both ordinary, already-precedented techniques in this exact codebase — Vite build modes are stock tooling, and `localStorage`-keyed device state is the pattern `store.tsx` already uses for the session this document explicitly analogizes to).
 
@@ -240,7 +248,7 @@ From §3.3:
 
 **brand-guide.md / tone-of-voice.md:**
 - Tone — "warm, direct, respects the vendor's intelligence" — states plainly what's fictitious and what won't happen (no real SMS) before she types anything, frames critical feedback as equally valuable to praise.
-- *tone-of-voice.md, "state facts before offering an opinion"* — the two operational bullets precede the feedback-framing sentence.
+- *tone-of-voice.md, "state facts before offering an opinion"* — the three operational bullets precede the feedback-framing sentence.
 - **Flagged, not asserted as settled:** this screen addresses a validation participant, a relationship this document family hasn't spoken to before. Recommending a `brand-guardian` consultation before this copy is final — see §8.5.
 
 ---
@@ -253,6 +261,7 @@ From §3.3:
 - **Shown exactly once per device (until reset), never on every app open.**
 - **No back arrow, no escape hatch** — nothing to escape from; a one-way, purely informational gate with a single CTA.
 - **No in-app "Demo Mode" indicator anywhere else in the product** — explicitly out of scope, flagged for a future document (§11).
+- **(Added 2026-08-16) §3.3 states a third operational fact — what to type at `authentication.md`'s OTP screen (any 6-digit code, e.g. `123456`) — never touching `authentication.md` itself.** See status header for the empirical trigger (live-campaign participants stuck) and full reasoning.
 
 ---
 

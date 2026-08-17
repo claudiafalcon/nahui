@@ -40,6 +40,15 @@ export function DemoWelcome({ onStart }: { onStart: () => void }) {
             •
           </span>
           <span>
+            Cuando te pida el código, escribe cualquier número de 6 dígitos — por ejemplo,
+            123456.
+          </span>
+        </li>
+        <li className={styles.listItem}>
+          <span className={styles.bullet} aria-hidden="true">
+            •
+          </span>
+          <span>
             El nombre de tu negocio, tus productos y tus clientes también pueden ser inventados.
           </span>
         </li>
