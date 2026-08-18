@@ -242,7 +242,7 @@ This is a Google Forms section-break/description field, not a question — it in
 |---|---|---|---|
 | Q15 | Si solo pudieras cambiar UNA cosa antes de que arranque el primer piloto de Nahui, ¿cuál sería? | Paragraph (short, open) | Forced cross-cutting prioritization signal — see rationale below, and the Decision Matrix for the concrete pattern threshold |
 | Q16 | ¿Te gustaría que te tengamos en cuenta para el piloto de Nahui cuando esté listo? | Sí / Tal vez, avísenme / No, gracias | Real adoption-intent filter, with a three-way branch — see Deliverable 4 |
-| Q17 | Déjanos un WhatsApp o correo donde podamos contactarte | Short answer, conditional — shown only if Q16 = Sí or Tal vez | Enables real follow-up — what she's contacted *for* differs by branch, see Deliverable 4 |
+| Q17 | Déjanos un WhatsApp o correo donde podamos contactarte | Short answer, conditional — shown only if Q16 = Sí o Tal vez | Enables real follow-up — what she's contacted *for* differs by branch, see Deliverable 4 |
 
 **Why Q15 sits here, before Q16/Q17, and not after — the Product Owner's own question, reasoned through:** forcing a real prioritization judgment takes genuine thought, and that's easiest to get while she's still in "helping build the product" mode — right after the substantive content questions, not after she's already made her opt-in decision and mentally shifted into "am I staying in touch with this company" mode. Placing it after Q16/Q17 risks two things: a rushed, low-effort answer from fatigue (she's already done the "real" work and is now filling in contact logistics), and an odd framing problem for a respondent who just answered "No" — asking her to imagine changing something "before the pilot" reads strangely once she's already signaled she isn't tracking the pilot. Q15 stays inside the section where she's still reflecting on the product itself, immediately before the mechanism that shifts her attention to whether she wants ongoing contact.
 
@@ -374,6 +374,8 @@ N3 is now closed. This was the last open item from the sixth-pass remediation ba
 
 ## What's ready vs. what still needs a Product Owner call
 
+**Paid-amplification companion plan, drafted separately.** A full Meta (Facebook/Instagram) Ads plan for a small, controlled paid pulse driving toward this same demo/questionnaire pair — objective, audience, geography, creative (reusing this document's own approved 1a/1b copy and 1c screenshots), budget, success metrics, a decision playbook that explicitly accounts for the OTP-bug confound described below, a learning agenda, and a full zero-experience Ads Manager implementation guide — lives at `company/merchant-validation-campaign-meta-ads.md`. Same status as everything else here: drafted, nothing executed, nothing spent, pending Product Owner review and sign-off.
+
 **Ready, pending explicit go-ahead to run:** all five deliverables above, plus the companion `company/merchant-validation-decision-matrix.md` — it introduces no new merchant-facing content, only the internal analysis-to-decision mapping for what's already listed here, so it carries the same readiness status as Deliverable 3/5.
 
 **Still open:**
@@ -382,4 +384,3 @@ N3 is now closed. This was the last open item from the sixth-pass remediation ba
 **Confirmed, not open — `company/business-decisions.md` Q17 already exists.** The recommended entry text in the Sixth-pass remediation record above was applied by Main and verified correct and content-accurate by `reviewer` directly; it's `business-decisions.md` Q17, not a pending creation. Q14's evidence has an accurate home to land in.
 
 **Next in the pipeline, per the Product Owner's own sequencing:** N3 is now closed (Seventh-pass remediation record above) — the last open item from the sixth-pass review batch. Next: `ux-critic`/`reviewer` spot-check of this final small remediation batch (the N3-sentence factual-error fix above, Deliverable 2's stale Format-line time estimate, the Status-line/revision-history Major-finding count, the Decision Matrix's Q5-row justification, and the `business-decisions.md` Q17 cross-references) — a focused verification of these five specific edits, not a full re-review.
-</content>
