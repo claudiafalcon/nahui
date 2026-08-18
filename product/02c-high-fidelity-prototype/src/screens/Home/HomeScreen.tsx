@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../../domain/store';
 import {
   hasAnyAvailableUnit,
@@ -18,6 +18,7 @@ import { ReceiptTicket } from '../../components/ReceiptTicket/ReceiptTicket';
 import { CloseSummary } from './CloseSummary';
 import { SettingsScreen } from '../Settings/SettingsScreen';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
+import { setReceiptScreenActive } from '../DemoMode/receiptScreenSignal';
 import type { Receipt } from '../../domain/store';
 
 type HomeUiState =
@@ -60,6 +61,18 @@ export function HomeScreen({
 }) {
   const { state, startSession } = useStore();
   const [ui, setUi] = useState<HomeUiState>({ kind: 'resolved' });
+
+  // demo-mode.md §2.3 check 2 / §8 item 7 — reports this screen's own
+  // `ui.kind === 'receipt'` fact to `receiptScreenSignal.ts`'s route-level
+  // signal, the one thing the demo-only reminder banner's mounting wrapper
+  // needs to suppress itself while `home.md §3.8f` is active. A no-op in a
+  // real production build (nothing ever reads this signal there). Called
+  // unconditionally, before any of this component's own early returns, to
+  // keep hook order stable.
+  useEffect(() => {
+    setReceiptScreenActive(ui.kind === 'receipt');
+    return () => setReceiptScreenActive(false);
+  }, [ui.kind]);
 
   const session = activeSession(state);
 

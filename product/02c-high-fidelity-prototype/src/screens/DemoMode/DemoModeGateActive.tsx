@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { AppRouter } from '../../AppRouter';
 import { DemoWelcome } from './DemoWelcome';
 import { DemoLoadError } from './DemoLoadError';
+import { ReminderBanner } from './ReminderBanner';
 import { acknowledgeDemoMode, isDemoModeAcknowledged } from './demoModeStorage';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 
@@ -43,8 +43,11 @@ export function DemoModeGateActive() {
   if (gate === 'pass-through') {
     // §2.1 check 2's silent pass-through (already acknowledged), and §2.2's
     // own hand-off once "Empezar demo" is tapped — both land here, on the
-    // real, unmodified AppRouter, identically.
-    return <AppRouter />;
+    // real, unmodified AppRouter, identically. `ReminderBanner` (§2.3/§3.6,
+    // added 2026-08-18) mounts as its own sibling here, per Architecture
+    // Review §8 item 2's outer-wrapper shape — `<AppRouter />` itself is
+    // rendered unchanged, from inside `ReminderBanner`, not modified here.
+    return <ReminderBanner />;
   }
 
   if (gate === 'error') {

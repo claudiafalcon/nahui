@@ -14,8 +14,13 @@ import styles from './DemoWelcome.module.css';
  * "first screen in the product, nowhere to return to" shape
  * `authentication.md §3.3`/`PhoneStep.tsx` already establish, one step
  * further upstream (this screen precedes even that one, validation-campaign
- * builds only). Copy is verbatim, already through `brand-guardian` review —
- * not altered here.
+ * builds only). Copy is verbatim per the Approved spec.
+ *
+ * Closing paragraph updated 2026-08-18 (`demo-mode.md` §3.3, same-day
+ * amendment): the two adjacent feedback-ask sentences (`ux-critic` DEMO-M2)
+ * are merged into one, and now plants the expectation that a way to give
+ * feedback is coming ("Más adelante te decimos cómo") — the persistent
+ * reminder banner introduced this same amendment (§3.6, `ReminderBanner.tsx`).
  */
 export function DemoWelcome({ onStart }: { onStart: () => void }) {
   return (
@@ -55,8 +60,8 @@ export function DemoWelcome({ onStart }: { onStart: () => void }) {
       </ul>
 
       <p className={styles.closing}>
-        No es la versión final. Cuéntanos qué se te hace confuso — nos sirve tanto como lo que te
-        gusta.
+        No es la versión final — cuéntanos qué se te hace confuso, nos sirve tanto como lo que te
+        gusta. Más adelante te decimos cómo.
       </p>
 
       <Button className={styles.cta} onClick={onStart}>

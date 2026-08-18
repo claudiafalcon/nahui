@@ -1,0 +1,60 @@
+/* demo-mode.md §3.6 — the persistent Form-reminder strip.
+
+   `.shell` renders no box of its own (`display: contents`) — it exists
+   only so this file can scope a `:global(.app-shell)` descendant rule to
+   Demo Mode builds specifically, without touching `global.css`'s own
+   `.app-shell` definition, which every build (including production)
+   shares. */
+.shell {
+  display: contents;
+  /* Scoped here (not `tokens.css`) since it exists only for this one
+     component — `display: contents` doesn't stop custom-property
+     inheritance, so both `.banner` and the `:global(.app-shell)` rule
+     below see the same value from their common DOM ancestor. */
+  --demo-banner-height: 40px;
+}
+
+/* Reserves exactly the banner's own height at the top of `.app-shell`'s
+   box, only while the banner itself is actually rendered (i.e. not on
+   `home.md §3.8f`, per `demo-mode.md §2.3` check 2). `.app-shell` keeps its
+   own `min-height: 100vh/100dvh` from `global.css`, completely unchanged
+   — this only shrinks the vertical space available to its flex children
+   (`App.module.css`'s `.main`, `NavBar`), the same way any of this
+   codebase's existing screens already reserve space for their own
+   fixed-size header/footer bands around an internal `flex: 1` scroll
+   region. The banner itself, `position: fixed` at the true viewport top,
+   exactly fills the reserved strip this rule opens up — so nothing
+   underneath is ever covered, and nothing needs scrolling to reach it. */
+.withBanner :global(.app-shell) {
+  padding-top: calc(var(--demo-banner-height) + env(safe-area-inset-top, 0px));
+}
+
+.banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  margin: 0 auto;
+  max-width: 430px;
+  min-height: var(--demo-banner-height);
+  padding: 0 var(--space-4);
+  padding-top: env(safe-area-inset-top, 0px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  background: var(--color-coral-aa);
+  color: var(--color-white);
+  font: var(--text-label);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.banner:active {
+  background: var(--color-tezontle);
+}
