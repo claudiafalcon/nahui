@@ -376,6 +376,8 @@ N3 is now closed. This was the last open item from the sixth-pass remediation ba
 
 **Paid-amplification companion plan, drafted separately.** A full Meta (Facebook/Instagram) Ads plan for a small, controlled paid pulse driving toward this same demo/questionnaire pair — objective, audience, geography, creative (reusing this document's own approved 1a/1b copy and 1c screenshots), budget, success metrics, a decision playbook that explicitly accounts for the OTP-bug confound described below, a learning agenda, and a full zero-experience Ads Manager implementation guide — lives at `company/merchant-validation-campaign-meta-ads.md`. Same status as everything else here: drafted, nothing executed, nothing spent, pending Product Owner review and sign-off.
 
+**Strategy v2, drafted 2026-08-18 after real campaign-1 results came in.** The single generic entry point/campaign this document describes is evolving into a small set of hypothesis-specific video campaigns, grounded directly in campaign 1's actual findings (an onboarding-comprehension stall, a large-catalog vendor's entry-effort complaint) — see `company/merchant-validation-strategy-v2.md`. This document's questionnaire instrument (Deliverable 3) and incentive structure (Deliverable 4) remain the shared core that strategy extends, not replaces.
+
 **Ready, pending explicit go-ahead to run:** all five deliverables above, plus the companion `company/merchant-validation-decision-matrix.md` — it introduces no new merchant-facing content, only the internal analysis-to-decision mapping for what's already listed here, so it carries the same readiness status as Deliverable 3/5.
 
 **Still open:**
