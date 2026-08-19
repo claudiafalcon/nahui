@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { track } from '@vercel/analytics';
 import { AppRouter } from '../../AppRouter';
 import { useReceiptScreenActive } from './receiptScreenSignal';
 import { Sheet } from '../../components/Sheet/Sheet';
@@ -86,7 +87,15 @@ export function ReminderBanner() {
           <button
             type="button"
             className={styles.row1}
-            onClick={() => window.open(QUESTIONNAIRE_URL, '_blank', 'noopener,noreferrer')}
+            onClick={() => {
+              // §13.5 fix — cheap, count-only click event on the existing
+              // banner's questionnaire row, so the 96-views→3-responses
+              // funnel can be split into "did she tap the CTA?" vs. "did
+              // she bounce off the Form itself?" No personal data, no free
+              // text, fired alongside (never blocking) the real navigation.
+              track('demo_questionnaire_cta_click');
+              window.open(QUESTIONNAIRE_URL, '_blank', 'noopener,noreferrer');
+            }}
           >
             Cuéntanos tu opinión — cuestionario
           </button>
