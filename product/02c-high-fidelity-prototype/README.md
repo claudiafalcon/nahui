@@ -51,6 +51,11 @@ state. Clear that key (or open in a private window) to see the true
 first-run experience again — Phone entry, not Home cold start, is the
 actual fresh-install screen.
 
+`@vercel/analytics` (`<Analytics />`, mounted unconditionally in
+`src/main.tsx`) provides Vercel Web Analytics for the Product Owner on both
+`demo.nahui.app` and `nahui.app` — no local dev-time effect, active only on
+Vercel-deployed builds.
+
 ## Pass history index
 
 Full record of every build/design/fix pass, in the order it actually
