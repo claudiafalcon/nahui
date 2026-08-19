@@ -6,6 +6,16 @@
 
 **Amended 2026-08-18 (Product Owner-relayed, confirmed by real Meta Ads campaign data — live campaign).** The live paid campaign is driving real clicks to `demo.nahui.app`, but the Google Form — the campaign's actual success metric (`company/merchant-validation-campaign-meta-ads.md` §7) — is getting almost no new responses. Root cause, confirmed against that document's own §5b: the Form link exists in exactly one place, as plain text inside the ad's Primary Text (not the ad's clickable button, which points to `demo.nahui.app`) — a named, accepted risk at the time ("a plain-text URL inside an ad's Primary Text is not guaranteed to render as tappable on every placement… Instagram Stories/Reels frequently do not"), now shown by real campaign data to be actually costing conversions. Compounding it: once a participant taps through into the demo, **nothing inside the product itself ever points her back toward the questionnaire** — `demo-mode.md §2.2`'s own hand-off ends the moment `authentication.md`'s flow begins; §5b of the Meta Ads plan named this exact gap explicitly as "a real, honest gap… not something to quietly work around" from Marketing's side, since a product change is out of Marketing's remit. **Fix, two reinforcing touchpoints, deliberately no third:** (1) a brief expectation-setting sentence added to the welcome screen itself (§3.3), before she starts exploring, so what follows doesn't feel like a surprise; (2) a persistent, session-wide reminder banner (new §2.3, §3.6), present on every screen from the moment `pass-through` begins until the app closes, giving her a one-tap path to the questionnaire from wherever she is, at any point, deliberately not tied to any "finish" moment this prototype has no defined trigger for. Product Owner's own reasoning for two touchpoints, not one: if a participant never reaches the questionnaire, that should be her own choice, never a consequence of our side giving her only one chance to notice it — and no third, milestone-triggered mechanism was added on top, since real-time exit/tab-close detection is both technically unreliable (browsers block redirect-on-unload) and would read as a dark pattern out of step with Nahui's honest voice; an explicit, always-available, user-initiated action was judged the better fit. `authentication.md`/`onboarding.md`/`home.md`/every other Merchant Application screen remains untouched, per this document's own D48 placement discipline — the banner mounts as a sibling to `<AppRouter />` inside the existing `pass-through` branch (`DemoModeGateActive.tsx`), never inside any individual screen. **Review pipeline: `brand-guardian` found one Major, fixed same day; `ux-critic`/`reviewer` still in progress.** `brand-guardian` flagged the banner's first draft — a first-person-declarative label ("Ya terminé — ir al cuestionario," letting her tap-to-declare herself done) — as making a claim that's often untrue at the moment of tapping: §2.3/§1 both specify the banner is designed for any-point, repeat access with no dismiss-forever mechanic, so a participant who just wants to check the questionnaire mid-session (not actually "done") would be tapping something that misdescribes her own intent — a real, if narrow, honesty tension per `character-bible.md`'s "tells the truth about what it does and doesn't know yet." Also found the "offers, not instructions" citation didn't actually support the construction — that rule targets narrative-suggestion copy, not standard button-label imperatives, so there was no real tension with existing in-family CTAs (`Empezar demo`, `Reintentar`) to begin with. Fixed by reverting to this document's own already-approved "Cuéntanos" offer register (§3.3) instead — **"Cuéntanos tu opinión — cuestionario"** — true regardless of when she taps it, and continuous with §3.3's own new closing sentence that promises this exact banner is coming. `brand-guardian` judged this a Major, not Blocker, and confirmed the fix needs no further review round given it's a minimal-diff swap back into a voice register already cleared on 2026-08-15/16. A lightweight Architecture Review confirmation (§8 item 6, non-blocking) was folded into `reviewer`'s own pass rather than a separate dispatch, given the addition is stateless and low-risk. `reviewer`: clean — confirmed no Merchant Application screen or its code was actually touched (verified directly: `DemoModeGateActive.tsx`'s `pass-through` branch is still bare `<AppRouter />`, nothing built yet), and independently judged the §8 item 6 Architecture Review flag low-risk enough to fold into its own pass rather than needing a separate `architect` dispatch (no new domain write, no new persistence key, the same outer-wrapper composition technique already established). Found 2 Important documentation-drift findings, both fixed same day: §1's Scope boundary paragraph was stale (still described only the original single screen); §9's #7 citation was stale (still said "no real write here," contradicting §8 item 2's own already-present precision correction that the CTA tap does write an idempotent boolean flag). One Suggestion applied (§2.3's illustrative screen list was incomplete). One Suggestion logged, no action needed (D48's placement test is unaffected by UI footprint, but the banner now visually composites onto every Merchant Application screen for the session, worth future readers of D48 knowing). `ux-critic`: found 3 Major, 2 Minor, 1 Suggestion, all closed same day. DEMO-M1 ("Ya terminé" being contextually false/too narrow) resolved as a side effect of the copy fix above. DEMO-M2 (§3.3's density measurably exceeded the "well under 15 seconds" bar) fixed by merging the two adjacent feedback-ask sentences into one — 91 words down to 75, the fact-bearing bullets left untouched since they're the retention-critical content a compression already proved risky once (2026-08-16). DEMO-M3 (the banner's screen-agnostic design would have rendered across `home.md §3.8f`, the digital-receipt screen deliberately built header-less for customer-facing privacy reasons, HOME-B3) fixed with one named, reasoned exception in §2.3 check 2 — every other screen, including `home.md §3.12`'s own unrelated header-less state, checked and confirmed not to share that rationale. DEMO-MIN1 addressed with a third composed illustration (§3.6, onto `home.md §3.7`, the busiest active-Session header state). DEMO-MIN2 was already fixed during `reviewer`'s own pass. **Given the Product Owner's explicit authorization to move on Main's own scope judgment (active ad spend, ongoing loss of campaign data/participant experience), the resulting new architecture item (§8 item 7 — the `§3.8f` exception needs a route-level screen-identity check) was confirmed directly by Main rather than a further dispatch, following the same low-risk reasoning `reviewer` already applied to item 6. Folded back into Approved. Ready for `ui-designer` to build immediately.**
 
+**Amended 2026-08-18 (Product Owner-relayed, two real findings from campaign response data — draft, pending review pipeline).** Two validated findings: (1) the welcome screen's closing line never actually established that trying the prototype and completing the questionnaire are one experience — only that feedback is wanted "later, somehow"; (2) at least one respondent explicitly said she couldn't find a way to start over after trying the prototype. **Fix, two pieces:**
+
+**(A) §3.3's closing framing, restructured, not just re-trimmed.** The old third bullet (fictitious business/products/customers) is folded into a new second intro sentence, which also now states the previously-missing fact that this is validation, not a sale — freeing the bullet list down to exactly the two retention-critical, causally-ordered phone→OTP facts (unchanged since 2026-08-16). The closing sentence is fully rewritten to state plainly that the questionnaire is part of the same activity, not a separate optional step, with a concrete (softened, Product-Owner-requested) reason: "tu opinión nos ayuda a decidir qué construimos después," not the stronger "decide," which overstated a single response's influence. Restart is deliberately *not* mentioned on this screen — the same "one early moment isn't reliably remembered" reasoning that produced the persistent banner applies here too; solved structurally (B, below), not with a sixth fact crammed onto an already-tight screen. Density: ~76 words, essentially flat against the previously-reviewed 75-word version despite two new required facts, because restructuring recovered a full bullet's worth of overhead.
+
+**(B) New "Reiniciar demo" control in the persistent banner (§2.4, new §3.7/§3.8), not on the welcome screen or in Settings.** A restart trigger literally cannot live on §3.3 — §2.1 check 2 skips that screen entirely, forever, once a device is acknowledged. Settings/Configuración is out of bounds under this document's own D48 placement discipline — it's a real Merchant Application screen (`settings.md`), and demo-only functionality has never been allowed to touch one. The reminder banner (§3.6) is the one existing precedent for a persistent, demo-only, cross-screen control that touches no Merchant Application screen's own content — restart's trigger lives there instead, as a second, secondary tap target. Its *destination* is still, correctly, the welcome screen — reached not by a new decision-logic branch, but by clearing the device-acknowledgment flag and forcing a reload, letting §2.1's completely unmodified resolution logic land fresh on §3.3, exactly as a brand-new device would. Mechanism: clear both `nahui-demo-mode-acknowledged` and `AppState`'s own storage key, then reload — a full reload, not an in-app state transition, confirmed necessary by direct inspection of `main.tsx` (`StoreProvider` mounts above `DemoModeGate`, so only a reload actually remounts it). A confirmation dialog (§3.7) precedes any clear, reusing this project's own established destructive-action pattern (`home.md §3.11`, `settings.md §3.8`) — no interlock like "Cerrar jornada de venta"'s Sale-in-progress block, since nothing a demo restart discards is ever real merchant data.
+
+**Banner label also gains the real questionnaire time estimate** ("Cuéntanos tu opinión — cuestionario (8-12 min)," `merchant-validation-campaign.md`'s own established figure for the questionnaire alone) — addressing the concern that the ask might read as smaller/more skippable than it is, without resorting to a sequence claim ("Último paso"/"Paso final") that was evaluated and rejected: it would carry the same context-blindness that sank the earlier "Ya terminé" draft (a static, unconditionally-shown label can't actually verify it's "the last step" from wherever she's standing), and would directly contradict §3.3's own new "no es un paso aparte" framing two touchpoints apart in the same document. The banner grows to two stacked full-width rows (questionnaire primary/top, restart secondary/bottom) since the longer label no longer leaves safe room for a side-by-side second tap target.
+
+**Status: draft, pending `ux-critic`/`reviewer`/`brand-guardian` review** (the banner's label change and the confirm-dialog copy both get `brand-guardian` scrutiny, given this exact banner's prior dispute) **before this folds back into Approved or reaches `ui-designer`.**
+
 **Scope:** two elements, both present **only** in validation-campaign builds where a real bazaar-vendor participant tests the live prototype: (1) one expectation-setting screen shown before `authentication.md`'s flow begins (§3.3), and (2) a persistent, session-wide reminder banner shown on every screen from that point until the app closes (added 2026-08-18, §2.3/§3.6). Not a production feature — neither has any code path at all in a real, shipped build. Implementation-independent, low-fidelity only.
 
 **Deliberately not conflated with `onboarding.md`'s "Ver un ejemplo."** That is an in-app guided example business a merchant explores from *inside* the real product, reachable via a path choice on `onboarding.md §3.3`. This is a build-level gate shown *before* `authentication.md` even starts, regardless of which of `onboarding.md`'s three paths she later picks — including "Ver un ejemplo" itself. The two compose freely and never overlap. To keep them visibly distinct even in copy, this document uses "demo"/"prototipo," never "ejemplo" — that word stays reserved for `onboarding.md`'s own concept.
@@ -28,7 +38,9 @@
 
 *(This document's audience is a validation-campaign participant, not Ana-as-ongoing-merchant — noted explicitly since it changes the addressee, not the product's values.)*
 
-**Business objective:** make sure a real bazaar-vendor validation participant understands, before typing anything, that (a) this is an interactive prototype, not the finished product; (b) everything she enters — phone number, business name, products, customer info — should be fictitious; (c) no real SMS is sent; (d) what to type instead when the app's code screen appears — any 6-digit sequence, e.g. `123456` — since no real code is coming; (e) the goal is evaluating the experience, not creating a real account; (f) honest feedback, including critical/confused reactions, is explicitly wanted. Directly supports the upcoming real-merchant validation campaign (`company/CLAUDE.md`'s Experience Validation section).
+**Business objective:** make sure a real bazaar-vendor validation participant understands, before typing anything, that (a) this is an interactive prototype, not the finished product; (b) everything she enters — phone number, business name, products, customer info — should be fictitious; (c) no real SMS is sent; (d) what to type instead when the app's code screen appears — any 6-digit sequence, e.g. `123456` — since no real code is coming; (e) the goal is evaluating the experience, not creating a real account; (f) honest feedback, including critical/confused reactions, is explicitly wanted; (g) this is a validation exercise, not a sales pitch — nothing is being sold to her; (h) trying the prototype and completing the short questionnaire afterward are one continuous experience, not two separate optional activities, and her feedback has a concrete, stated consequence — it helps decide what gets built next, never a vague "it helps us." Directly supports the upcoming real-merchant validation campaign (`company/CLAUDE.md`'s Experience Validation section).
+
+**Business objective — restart (added 2026-08-18, see status header).** A real validation-campaign respondent could not find a way to start over. Give any participant an easy, always-discoverable, in-session way to reset all demo progress and return to the initial welcome screen — without needing to know how to manually clear browser storage — from wherever she currently is in the app.
 
 **Business objective — persistent session reminder (added 2026-08-18, see status header).** Independent of what the welcome screen alone conveys before she starts, ensure that at *any* point during the rest of the session — not just the moment right after "Empezar demo" — a participant has an easy, unmissable way to find the questionnaire, without having to recall a link she may never have seen render tappable inside the ad's own text. This is deliberately session-wide, not a one-time prompt: the prototype has no defined "finish" moment to hook a single reminder to, and a participant might decide she's "done exploring" from literally any screen.
 
@@ -45,6 +57,12 @@
 - **One further, narrower exception within `pass-through` itself (added 2026-08-18): never on `home.md §3.8f`** (Finalizar Venta success — the full-viewport digital receipt), since that screen is independently defined, in `home.md`'s own already-Approved spec, as deliberately header-less/full-viewport for a privacy reason unrelated to this document (the device is held toward the customer at that exact moment) — see §2.3 check 2 for the full reasoning.
 - The reminder cannot detect whether she's already submitted the Form (same accepted limitation as `demo.nahui.app` having no analytics/pixel installed, `company/merchant-validation-campaign-meta-ads.md` §7) — it keeps showing regardless. Re-opening an already-completed public Form is harmless, not a defect.
 - Two reinforcing, honest touchpoints exist — §3.3's expectation-setting sentence (seen once, before she starts) and §3.6's persistent banner (seen throughout) — deliberately no third, milestone-triggered mechanism. Whether she ever reaches the questionnaire is her own choice, never a consequence of our side giving her only one chance to notice it.
+- **Restart acceptance criteria (added 2026-08-18):**
+  - A restart affordance is visible and tappable from every screen the persistent reminder banner (§3.6) already renders on — inheriting that banner's one existing named exception (`home.md §3.8f`) automatically, no new exception invented.
+  - Tapping it always shows an explicit confirmation dialog (§3.7) stating plainly that all demo progress will be lost before anything is cleared. No single tap ever destroys anything.
+  - Confirming clears both `nahui-demo-mode-acknowledged` and `AppState`'s own storage key (`nahui-hifi-prototype-v1`) and forces a full app reload; §2.1's existing, unmodified resolution logic then resolves fresh, landing on §3.3 exactly as a brand-new device would — no new decision-logic branch.
+  - No interlock blocks restart the way `home.md`'s "Cerrar jornada de venta" is blocked mid-Sale — nothing restart could discard is ever real, registered business data (this document's own §1 framing), so there is nothing analogous to protect.
+  - The clear operation is a write-only, content-blind clear of `AppState`'s storage key — it never reads, inspects, or interprets any Business/Session/Sale field, consistent with this document's standing "no domain read" posture.
 
 **Scope boundary:** validation/testing infrastructure, not a merchant-application capability. Doesn't decide *how* Demo Mode is technically detected (Architecture Review's job) and doesn't touch `authentication.md`'s, `onboarding.md`'s, or any other Merchant Application document's own flow logic — it only prepends one screen ahead of `authentication.md`'s existing entry point (§3.3), and composites a persistent reminder banner (§3.6, added 2026-08-18) above whatever screen is otherwise showing for the rest of the session, in specific builds.
 
@@ -164,6 +182,46 @@ Any interruption *after* this tap is entirely `authentication.md`'s own concern 
        times, in the same session.
 ```
 
+### 2.4 What happens when "Reiniciar demo" is tapped (added 2026-08-18)
+
+```
+1. Tap "Reiniciar demo" (reachable from the persistent banner, §3.6,
+   on every screen it renders on — the identical single named
+   exception as the banner itself, home.md §3.8f — no separate
+   exception invented for this control)
+     → Shows the confirmation dialog (§3.7) — the second place in
+       this document that deliberately asks rather than automates
+       (the first being §3.3's original one-way gate, which never
+       asks anything — this is the first genuine two-outcome
+       confirmation the feature has). Reuses home.md §3.11's and
+       settings.md §3.8's already-Approved confirm-dialog convention,
+       not a new pattern.
+
+2. Cancelar
+     → Dialog closes, returns to exactly whatever screen/state she was
+       on — untouched. Same guarantee home.md §3.11 already gives its
+       own Cancelar path.
+
+3. Sí, reiniciar
+     → Clears both `nahui-demo-mode-acknowledged` (demoModeStorage.ts)
+       and `nahui-hifi-prototype-v1` (store.tsx) — a write-only,
+       content-blind clear of the second key, never a read of it.
+     → Forces a full reload of the app.
+     → On that reload, §2.1's existing resolution logic runs
+       completely unchanged: check 1 (Demo Mode build) still passes,
+       check 2 (device already acknowledged) now reads NO, since the
+       flag was just cleared — resolving to a fresh §3.3, identical
+       to what a brand-new device sees. No new §2.1 condition, no new
+       gate state inside DemoModeGateActive — restart reuses the
+       existing resolution path in full, precisely because it clears
+       the exact fact that path already keys off of.
+
+4. The clear operation itself fails outright (e.g. storage access
+   throwing in a restrictive browsing context)?
+     → Defensive fallback (§3.8), Reintentar. No reload is attempted
+       against a partially-cleared or unknown storage state.
+```
+
 ---
 
 ## 3. Low-fidelity wireframes
@@ -195,6 +253,11 @@ Identical silent-skeleton convention every other tab's own §3.1 already uses. *
 │  Vas a probar un prototipo de    │
 │  Nahui — gracias por ayudarnos.  │
 │                                │
+│  Estamos validando ideas, no       │
+│  vendiéndote nada — tu negocio,    │
+│  tus productos y tus clientes      │
+│  pueden ser inventados.            │
+│                                │
 │  •  Usa cualquier número de       │
 │     celular — no te va a llegar    │
 │     ningún código real.            │
@@ -204,34 +267,32 @@ Identical silent-skeleton convention every other tab's own §3.1 already uses. *
 │     6 dígitos — por ejemplo,       │
 │     123456.                        │
 │                                │
-│  •  El nombre de tu negocio,       │
-│     tus productos y tus clientes   │
-│     también pueden ser             │
-│     inventados.                    │
-│                                │
-│  No es la versión final —          │
-│  cuéntanos qué se te hace          │
-│  confuso, nos sirve tanto como     │
-│  lo que te gusta. Más adelante     │
-│  te decimos cómo.                  │
+│  Al final hay un cuestionario      │
+│  breve — es parte de la misma      │
+│  prueba, no un paso aparte, y      │
+│  tu opinión nos ayuda a decidir    │
+│  qué construimos después.          │
 │                                │
 │  [       Empezar demo       ]      │
 │                                │
 └───────────────────────────────┘
 ```
 - **No back arrow** — nowhere to return to, the same "first screen in the product" shape `authentication.md §3.3` already claims for itself, one step further upstream.
-- **Deliberately not auto-advanced.** The purpose of this screen is that she actually reads the three operational facts (fictitious data, no real SMS, and what to type instead at the code screen) before typing anything into `authentication.md`'s phone/OTP screens — the identical reasoning `onboarding.md §3.4c` already gives its own no-auto-continue confirmation screen.
+- **Deliberately not auto-advanced.** The purpose of this screen is that she actually reads the operational facts (fictitious data, no real SMS, and what to type instead at the code screen) before typing anything into `authentication.md`'s phone/OTP screens — the identical reasoning `onboarding.md §3.4c` already gives its own no-auto-continue confirmation screen.
 - Single primary CTA, no secondary/escape action — nothing to decline here, this is informational, not a consent gate with two real outcomes.
 - **New bullet (added 2026-08-16, see status header):** placed immediately after the phone-number bullet, matching the actual chronological order she'll hit — enter a phone number, then reach `authentication.md`'s OTP screen next. States a concrete example (`123456`) rather than an abstract "any code," matching this screen's existing register (the phone-number bullet already gives a concrete instruction, not just a warning).
-- **Closing sentence merged into the existing feedback-invitation sentence (fixed 2026-08-18, `ux-critic` DEMO-M2).** The 2026-08-18 amendment originally added a *second*, separate closing sentence about the upcoming banner right next to the already-existing "Cuéntanos qué se te hace confuso" sentence — two adjacent feedback-asks that pushed this screen's body copy to 91 words (`ux-critic`'s count), measurably past §1's "well under 15 seconds" bar. Per `ux-critic`'s own DEMO-S1 suggestion — §3.6's banner already carries the ongoing "cuéntanos tu opinión" invitation for the rest of the session, so this screen's own closing sentence doesn't need to fully restate it — the two are now one: "No es la versión final — cuéntanos qué se te hace confuso, nos sirve tanto como lo que te gusta. Más adelante te decimos cómo." Still states fact (a) ("no es la versión final") and fact (f) (critical feedback wanted, worth as much as praise), and still plants the expectation that a way to give it is coming ("más adelante te decimos cómo") — without repeating the Form's URL, the word "cuestionario," or "cuando quieras" a second time, since §3.6's banner already owns that ongoing, any-point framing for the rest of the session.
-- **Density re-verified, this amendment (2026-08-18, `ux-critic` DEMO-M2).** Body copy drops from 91 words to 75 (intro 10 + three bullets 41, unchanged — the fact-bearing content that specifically needs retention, not skimming, per the 2026-08-16 live-campaign defect — + this merged closing sentence's 24). 75 words returns this screen to the same order of magnitude as the 70-word version `ux-critic` already reviewed and passed, with only a non-blocking Minor, on 2026-08-16 — the bullets themselves are left untouched deliberately, since they're the retention-critical content that compression already proved risky once. Not claimed as a pixel-verified scan-time measurement at this fidelity, same caveat this document's density notes have always carried, but a real, measured reduction back toward the bar, not an assumption.
+- **Closing sentence merged into the existing feedback-invitation sentence (fixed 2026-08-18, `ux-critic` DEMO-M2).** The 2026-08-18 amendment originally added a *second*, separate closing sentence about the upcoming banner right next to the already-existing "Cuéntanos qué se te hace confuso" sentence — two adjacent feedback-asks that pushed this screen's body copy to 91 words (`ux-critic`'s count), measurably past §1's "well under 15 seconds" bar. Per `ux-critic`'s own DEMO-S1 suggestion — §3.6's banner already carries the ongoing "cuéntanos tu opinión" invitation for the rest of the session, so this screen's own closing sentence doesn't need to fully restate it — the two were merged into one, then that merged sentence was itself fully rewritten in this same-day follow-up (below).
+- **Restructured, not just re-trimmed (same day, second pass, Product Owner-relayed findings).** Two new required facts (this is validation not a sale; prototype+questionnaire are one experience with a concrete reason for the ask) needed to land on an already-tight screen. Rather than append a fourth bullet and a longer closing sentence, the old third bullet (fictitious business/products/customers) was folded into a **new second intro sentence**, which now also carries the "validating ideas, not selling" fact — freeing the bullet list down to exactly the two retention-critical, causally-ordered phone→OTP facts, unchanged since 2026-08-16. The closing sentence is fully rewritten: states plainly the questionnaire is part of the same activity, not a separate optional step, with a concrete reason. **Reason clause deliberately softened, Product-Owner-requested:** "tu opinión nos ayuda a decidir qué construimos después," not "tu opinión decide qué construimos después" — the stronger verb implied a single response determines the roadmap; "nos ayuda a decidir" frames her opinion as input to a decision Nahui makes, not the decision itself, matching the vocabulary this document already uses elsewhere ("nos sirve tanto," "Cuéntanos"). Does not restate "no es la versión final" — "prototipo" in the opening sentence already establishes it.
+- **Restart deliberately not mentioned here.** The same "one early moment isn't reliably remembered" reasoning that produced the persistent banner (2026-08-18) applies — she needs "how do I restart" only well after this screen is out of memory, not at the very start. Solved structurally via the persistent banner's own new restart control (§3.6/§2.4), not a sixth fact crammed onto this screen.
+- **Density: ~76 words** (10 intro + 16 new second-intro-sentence + 27 bullets, content unchanged + 23 closing), essentially flat against the previously-reviewed 75-word version despite absorbing two brand-new required facts, because merging the old bullet 3 into prose recovered a full list item's worth of overhead. Not claimed as a pixel-verified scan-time measurement at this fidelity, same caveat this document's density notes have always carried — worth explicit `ux-critic` re-verification given the history here (two prior rounds already found this screen exceeding its own bar), not assumed fine by inertia.
 - Copy never says "build," "environment," "QA," "staging," or "feature flag" — only "demo" and "prototipo." *global-principles.md*, "business language before technical language."
 
 ### 3.6 Recordatorio del cuestionario (persistent — present on every screen once `pass-through` begins)
 
 ```
 ┌───────────────────────────────┐
-│ [ Cuéntanos tu opinión — cuestionario ] │
+│ [ Cuéntanos tu opinión — cuestionario (8-12 min) ] │
+│ [              Reiniciar demo              ]        │
 ├───────────────────────────────┤
 │   (whatever screen is currently active     │
 │    renders exactly as its own document      │
@@ -239,20 +300,24 @@ Identical silent-skeleton convention every other tab's own §3.1 already uses. *
 │    only adds one strip above it)              │
 └───────────────────────────────┘
 ```
-- **A single, full-width, always-tappable strip fixed at the very top of the screen** — it never overlaps or hides any part of any screen's own header, content, or bottom navigation bar (`home.md §3.1`'s persistent `[Hoy] Inventario Eventos Resultados` row included).
-- **The whole strip is the tap target** — no separate button inside it, following this family's own `[ ]` = tappable convention.
+- **Two stacked, full-width, independently-tappable rows (revised 2026-08-18 — was a single row until the restart control and the time estimate were both added same day).** Neither row overlaps or hides any part of any screen's own header, content, or bottom navigation bar (`home.md §3.1`'s persistent `[Hoy] Inventario Eventos Resultados` row included).
+- **Row 1 (questionnaire) stays primary and visually dominant** — the actual ask this whole feature exists to drive her toward. **Row 2 (restart) is a distinct, secondary, full-width strip below it** — a utility/reset action, deliberately not competing horizontally with row 1 for primacy. In-family precedent for "one header area, two independent affordances": `home.md §3.7`'s own header (gear icon + "Cerrar jornada de venta" in one row) — here expressed as two stacked rows instead of one, since the questionnaire label's own length (below) no longer leaves safe room for a side-by-side second target.
 - **Copy reuses this document's own already-approved "Cuéntanos" register (§3.3)** — an offer in Nahui's voice, true regardless of when she taps it. An earlier draft tried a first-person-declarative label ("Ya terminé — ir al cuestionario," her tap-to-declare-herself-done), but `brand-guardian` found it made a claim that's often untrue given this banner's own any-point, repeat-access design (§2.3/§1) — a participant checking the questionnaire mid-session, not actually "done," would be tapping words that misdescribe her own intent. Reverted to the offer construction instead (§10).
-- **Tapping it opens the Google Form (`https://forms.gle/ZZhtJEfee3viWY1h8`) in a new browser tab** — her current demo screen is untouched and stays exactly where she left it. She can tap it again later in the same session; re-opening an already-completed public Form is harmless.
-- **No dismiss control, ever** — see §10 for why that's deliberate, not an oversight.
-- **Identical on every screen it renders on, every time** — no progressive states, no "you already tapped this" acknowledgment, no post-tap visual change. Deliberately the simplest possible stateless design, given the urgency of shipping this fix.
-- **Exactly one named exception: does not render on `home.md §3.8f`** (Finalizar Venta success — the full-viewport digital receipt) — see §2.3 check 2 for the full reasoning. Renders identically, per every rule above, on every other screen, including every other header-less state (`home.md §3.12` included — its own header-less layout is for an unrelated, non-customer-facing reason and gets no exception).
+- **Real time estimate appended, same day (2026-08-18).** "(8-12 min)" is `merchant-validation-campaign.md`'s own established estimate for the questionnaire alone (not the demo+questionnaire combined figure) — addresses the concern that the ask might read as smaller/more skippable than it is, without a sequence claim. **"Último paso"/"Paso final" was evaluated and rejected**, not just skipped: it would carry the same context-blindness that sank the earlier "Ya terminé" draft — a static, unconditionally-shown label asserting a position in a sequence ("this is the last step") is sometimes false the same way a completion claim was (the very first screen after `Empezar demo` is not, from where she's standing, "the final step" of anything yet) — and would directly contradict §3.3's own new "no es un paso aparte" framing, two touchpoints apart in the same document. Flagged for `brand-guardian`'s specific review given this banner's prior dispute — not treated as a routine copy variation.
+- **Tapping row 1 opens the Google Form (`https://forms.gle/ZZhtJEfee3viWY1h8`) in a new browser tab** — her current demo screen is untouched and stays exactly where she left it. She can tap it again later in the same session; re-opening an already-completed public Form is harmless.
+- **Tapping row 2 ("Reiniciar demo") opens the confirmation dialog (§3.7)** — see §2.4 for the full resolution logic.
+- **No dismiss control on either row, ever** — see §10 for why that's deliberate, not an oversight.
+- **Identical on every screen it renders on, every time** — no progressive states, no "you already tapped this" acknowledgment, no post-tap visual change on row 1. Row 2's own tap always opens the same confirmation dialog, never a stateful variant.
+- **Exactly one named exception, both rows: does not render on `home.md §3.8f`** (Finalizar Venta success — the full-viewport digital receipt) — see §2.3 check 2 for the full reasoning. Renders identically, per every rule above, on every other screen, including every other header-less state (`home.md §3.12` included — its own header-less layout is for an unrelated, non-customer-facing reason and gets no exception).
+- **Flagged for `ui-designer`:** verify at High-Fidelity that "Reiniciar demo" reads as clearly secondary/smaller than the questionnaire row and never gets mistaken for a real in-app control, given how casually a fixed, always-visible affordance can get tapped — the same care already given to this banner's own no-dismiss-control decision.
 
 **Composed onto three different Merchant Application screens, purely to illustrate — the screens themselves are unmodified, cited by canonical ID, never redescribed here** (per this folder's own "shared states across diverging branches" convention):
 
 **Composed onto `authentication.md §3.1` (phone-number entry):**
 ```
 ┌───────────────────────────────┐
-│ [ Cuéntanos tu opinión — cuestionario ] │
+│ [ Cuéntanos tu opinión — cuestionario (8-12 min) ] │
+│ [              Reiniciar demo              ]        │
 ├───────────────────────────────┤
 │   (authentication.md §3.1's own screen,     │
 │    unmodified — phone-number entry)          │
@@ -262,7 +327,8 @@ Identical silent-skeleton convention every other tab's own §3.1 already uses. *
 **Composed onto `home.md §3.4` (Idle — no Event today, ready):**
 ```
 ┌───────────────────────────────┐
-│ [ Cuéntanos tu opinión — cuestionario ] │
+│ [ Cuéntanos tu opinión — cuestionario (8-12 min) ] │
+│ [              Reiniciar demo              ]        │
 ├───────────────────────────────┤
 │  Nahui                        ⚙ │
 │        ¿Vas a vender hoy?       │
@@ -275,7 +341,8 @@ Identical silent-skeleton convention every other tab's own §3.1 already uses. *
 **Composed onto `home.md §3.7` (Session active — ready, no Sale open; the busiest active-Session header state, two stacked rows, plus the bottom nav bar — added 2026-08-18 to verify vertical-chrome stacking against this state specifically, not just the lighter states above):**
 ```
 ┌───────────────────────────────┐
-│ [ Cuéntanos tu opinión — cuestionario ] │
+│ [ Cuéntanos tu opinión — cuestionario (8-12 min) ] │
+│ [              Reiniciar demo              ]        │
 ├───────────────────────────────┤
 │ Plaza Norte · Día 2         ⚙  │
 │ Hoy: $850 · 6 ventas  [ Cerrar jornada de venta ] │
@@ -287,7 +354,34 @@ Identical silent-skeleton convention every other tab's own §3.1 already uses. *
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
 ```
-Four horizontal bands stack in total (banner, two-row header, registration surface, bottom nav) — one more band than either lighter composed example shows, against the single densest header state this document family has (per `home.md`'s own 2026-08-14 discoverability amendment). Still no overlap: the banner adds exactly one strip above everything else; it doesn't compress, hide, or crowd the gear icon, "Cerrar jornada de venta," or the nav bar underneath. Confirms, rather than assumes, that the banner's chrome cost stays constant regardless of how dense the screen underneath it already is.
+Five horizontal bands stack in total now (two banner rows, two-row header, registration surface, bottom nav) — two more than the lightest composed example, against the single densest header state this document family has (per `home.md`'s own 2026-08-14 discoverability amendment). Still no overlap: the banner adds exactly two strips above everything else; it doesn't compress, hide, or crowd the gear icon, "Cerrar jornada de venta," or the nav bar underneath. **Flagged for `ux-critic`'s explicit re-verification, given the banner grew from one row to two in this same amendment** — not assumed still fine by inertia, the same discipline this document already applies to §3.3's own density.
+
+### 3.7 Reiniciar la demo — confirmar (added 2026-08-18)
+```
+┌───────────────────────────────┐
+│ (pantalla actual)               │  dimmed, still visible underneath
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  ┌───────────────────────────┐ │
+│  │ ¿Reiniciar la demo?          │ │
+│  │ Se borra todo lo que          │ │
+│  │ registraste — tu negocio,      │ │
+│  │ tus productos, tus ventas —     │ │
+│  │ y vuelves a la pantalla de      │ │
+│  │ bienvenida.                     │ │
+│  │  [ Cancelar ] [ Sí, reiniciar ] │ │
+│  └───────────────────────────┘ │
+└───────────────────────────────┘
+```
+Reuses `home.md §3.11`'s dimmed-sheet-over-current-screen convention. Copy direction is the mirror image of `settings.md §3.8`'s "Cerrar sesión" dialog — that one reassures nothing is lost; this one plainly states everything demo-related is lost, since it genuinely is. States the fact before the choice, per `tone-of-voice.md`'s "state facts before offering an opinion." **Deliberately no interlock** like `home.md`'s Sale-in-progress block on "Cerrar jornada de venta" — nothing this dialog discards is ever real, registered business data (§1's own framing), so there's nothing analogous to protect. **One accepted, low-probability edge case, not specially guarded against:** tapping "Reiniciar demo" while a Merchant-Application-owned confirm dialog (e.g. `home.md §3.11`'s own "¿Ya terminaste por hoy?") happens to already be open underneath would visually stack two dimmed sheets — the same posture this document already takes toward the banner's own inability to detect Form completion (§1): a named, accepted limitation, not a defect to design around.
+
+### 3.8 Reiniciando — falla defensiva (added 2026-08-18)
+```
+┌───────────────────────────────┐
+│  No pudimos reiniciar la demo.   │
+│      [   Reintentar   ]          │
+└───────────────────────────────┘
+```
+Identical shape to §3.5, applied to the write side instead of the read side — same class of failure (storage access throwing in a restrictive browsing context), same "Reintentar," no live-customer risk to justify anything heavier.
 
 ### 3.4 Retomar — interrupted before acknowledgment
 No new wireframe — reaching this screen a second time (app closed/backgrounded before the tap) renders it pixel-identical to §3.3. Trivially satisfied since nothing is typed and nothing needs preserving — same "never restart progress" posture `authentication.md §3.8` holds itself to, at zero extra design cost.
@@ -333,12 +427,21 @@ From pass-through onward (either branch above):
   The reminder banner (§3.6) renders on every screen simultaneously,
   mounted independently above whatever screen state is currently
   active — see §2.3 — with exactly one named exception: it does not
-  render while home.md §3.8f is active (§2.3 check 2). It has exactly
-  one interactive behavior:
-    Tap the banner → opens https://forms.gle/ZZhtJEfee3viWY1h8 in a
-      new browser tab. The demo's own current screen is untouched and
-      remains exactly where she left it.
-  No other branches exist for this element.
+  render while home.md §3.8f is active (§2.3 check 2). It now has two
+  independent interactive zones (added 2026-08-18):
+    Tap row 1 (questionnaire) → opens
+      https://forms.gle/ZZhtJEfee3viWY1h8 in a new browser tab. The
+      demo's own current screen is untouched and remains exactly
+      where she left it.
+    Tap row 2 ("Reiniciar demo") → confirm dialog (§3.7)
+        → Cancelar → back to exactly where she was, untouched
+        → Sí, reiniciar → clears both storage keys → forces a full
+            reload → clear succeeds → reload runs §2.1 fresh,
+              unchanged → resolves to §3.3 (Bienvenida a la demo),
+              identical to a brand-new device
+            → clear itself fails outright → defensive fallback
+              (§3.8), Reintentar, no reload attempted
+  No other branches exist for either zone.
 ```
 
 ---
@@ -350,6 +453,8 @@ From pass-through onward (either branch above):
 3. Bienvenida a la demo (fresh or resumed — identical)
 4. Falla defensiva — no se pudo determinar si ya se mostró
 5. Recordatorio del cuestionario (§3.6) — **not a mutually-exclusive state like 1-4 above; a persistent overlay coexisting with whichever of every other Approved document's screens is currently active, for the entire `pass-through` duration.**
+6. Reiniciar la demo — confirmar (§3.7)
+7. Reiniciando — falla defensiva (§3.8)
 
 ---
 
@@ -361,6 +466,7 @@ From pass-through onward (either branch above):
 | Already acknowledged on this device | **0** — never shown again | Direct consequence of §2.1 check 2's silent pass-through — "never ask twice," applied even to a non-domain fact. |
 | Not a Demo Mode build (production) | **0** — screen doesn't exist | No code path at all in production. |
 | Reaching the questionnaire from anywhere in the session | **1** (tap the reminder banner) | Previously required remembering a link she may never have seen render tappable inside the ad itself. Now always one tap away, from wherever she already is, no recall required. |
+| Restart demo, from anywhere in the session | **2** (Reiniciar demo → Sí, reiniciar) | Same 2-tap floor as every other real, deliberately-asked commitment in this project (`home.md`'s "Cerrar jornada de venta," `settings.md`'s "Cerrar sesión") — a genuinely destructive action gets one real confirming tap, nothing more. |
 
 ---
 
@@ -384,6 +490,8 @@ From pass-through onward (either branch above):
 5. **Resolved.** `brand-guardian` reviewed the welcome copy (§3.3) — one Major finding (the opening greeting read as generic, translated-from-English template copy rather than Nahui's established voice; `onboarding.md §3.3` cited as the correct in-family precedent) — fixed, replacement text applied. Everything else (the two operational bullets, the criticism-invitation line, the "Empezar demo" CTA) passed as-is. **Note (2026-08-16):** the new third operational bullet (see status header) also passed `brand-guardian`'s review, no changes — the concrete example ("123456") was judged the more honest, companion-like choice, consistent with the character bible's "always gives her an honest way out" rule.
 6. **Resolved — folded into `reviewer`'s own Foundation-consistency pass rather than a separate `architect` dispatch, given live-campaign urgency.** The `pass-through` branch previously rendered bare `<AppRouter />` with nothing else; this amendment adds a sibling element inside it for the first time. `reviewer` confirmed via direct code inspection (`DemoModeGate.tsx`'s compile-time check, `DemoModeGateActive.tsx`'s current bare `pass-through` branch) that the addition inherits "structurally absent from production" for free, introduces no new domain write/persistence key/read of Selling/Inventory/Identity data, and that item 2's existing outer-wrapper guidance already establishes the one load-bearing invariant it has to preserve (keep `AppRouter`'s own logic untouched at the code level) — judged low-risk enough to confirm directly rather than gate on a separate dispatch.
 7. **New, flagged for the same lightweight confirmation as item 6 — the §2.3 check 2 exception (`home.md §3.8f`, added 2026-08-18 alongside `ux-critic` DEMO-M3) narrows item 6's original "never reads or depends on anything inside `home.md`" claim.** Suppressing the banner on exactly one screen requires the mounting wrapper to know which screen is currently active — a route-level check, not a domain read (no new `AppState` field, no new `localStorage` key) — but it is a new coupling this design didn't have before this amendment. Main judged this the same low-risk shape as item 6 (route-awareness, not domain-awareness) and confirmed directly, per the Product Owner's explicit authorization to move on scope judgment given active ad spend and lost campaign data — not a silently skipped step, a stated call under real time pressure. `ui-designer` should still flag back explicitly if implementing this exception turns out to need anything beyond a simple current-screen-identity check.
+
+8. **New, flagged for Architecture Review — restart mechanism (added 2026-08-18).** Where the "clear both keys, then reload" function lives (a new small module, or an addition to `demoModeStorage.ts` despite that module's own established single-key responsibility) is an implementation-shape question, not resolved here. Confirmed by direct inspection of `main.tsx`: `<StoreProvider>` mounts **above** `<DemoModeGate>` in the component tree — an in-app `gate` state transition alone would not flush the already-hydrated domain store, only a genuine full reload does, which is why §2.4 specifies "clear storage, then reload," not an in-app transition. `ui-designer` should treat this as confirmed, not re-litigate it, but the exact module placement is still open for Architecture Review's own call.
 
 **Architecture Review verdict (added, this pass): clean, no blockers — ready for `ui-designer`.** Items 1-2 above resolve the two mechanism questions this section originally deferred; nothing here is a redesign of this document's own decision logic or wireframes, and none of it required a `knowledge-mentor` consultation (build-mode/env-based conditional compilation and `localStorage`-keyed device state are both ordinary, already-precedented techniques in this exact codebase — Vite build modes are stock tooling, and `localStorage`-keyed device state is the pattern `store.tsx` already uses for the session this document explicitly analogizes to).
 
@@ -410,6 +518,10 @@ From pass-through onward (either branch above):
 - **A deliberate, named exception to *"technology should disappear"*, added 2026-08-18.** That principle generally argues for minimal, receding UI — the opposite of an always-visible banner. The exception is grounded in this document's own §1 Scope framing: this is *validation-campaign infrastructure*, not a Merchant Application UI pattern, so the general minimalism bar this project holds real merchant-facing screens to doesn't govern it the same way. The banner exists because the alternative — a genuinely lost primary success metric on live ad spend — is a worse outcome than one unobtrusive, non-blocking strip for the campaign's short duration.
 - **Flagged, not asserted as settled:** this screen addresses a validation participant, a relationship this document family hasn't spoken to before. Recommending a `brand-guardian` consultation before this copy is final — see §8.5. The 2026-08-18 reminder banner (§3.6) was reviewed on this same basis — its first draft tried a first-person-declarative pattern new to this family, `brand-guardian` found it a Major (a truth claim often false given the banner's own repeat-tap design) and it was reverted to the already-approved "Cuéntanos" offer register instead.
 - **Cross-document consistency (added 2026-08-18).** The `home.md §3.8f` exception (§2.3 check 2) protects a privacy/trust reasoning `home.md` itself already justifies in full (HOME-B3) — this document doesn't re-derive that reasoning, only respects it by not compositing onto that one screen. Consistent with this document's own posture of citing sibling documents' precedent rather than inventing a parallel rule.
+- **(Added 2026-08-18, restart feature) "Never ask twice"** — restart is a second, deliberate exception, alongside `home.md`'s own close-session confirm, to a rule this project otherwise holds strictly.
+- **(Added 2026-08-18) architecture-principles.md #7** — the storage clear is idempotent by construction (clearing twice is a no-op), same reasoning §8 item 2 already applied to the acknowledgment flag.
+- **(Added 2026-08-18) brand/character-bible.md, "Gives her an honest way out of anything — no dead ends, no forced commitments"** — the direct rationale for restart existing at all. §3.3 deliberately has no back arrow because there's nothing to escape from at that point; once she's deep into the demo, "no dead ends" now applies to the whole session.
+- **(Added 2026-08-18) tone-of-voice.md, "state facts before offering an opinion"** — the restart confirm dialog (§3.7) states what will be lost before asking for confirmation.
 
 ---
 
@@ -429,6 +541,12 @@ From pass-through onward (either branch above):
 - **(Added 2026-08-18) Scoped strictly to `pass-through` (§2.3)** — never shown on this document's own §3.1/§3.2/§3.5 screens, which already resolve to their own clear, single next step.
 - **(Added 2026-08-18) Exactly two touchpoints, deliberately no third.** §3.3's new closing sentence plants the expectation early; §3.6's persistent banner delivers the real link throughout. Product Owner's explicit reasoning: if a participant never reaches the questionnaire, that should be her own choice — not a consequence of our side giving her only one chance to notice it. Stops at two by design, not by omission.
 - **(Added 2026-08-18, `ux-critic` DEMO-M3) Exactly one named exception to the banner's otherwise-universal rendering: never on `home.md §3.8f`.** Checked every other screen in the product for the same rationale — only `home.md §3.8f` has it; `home.md §3.12` is header-less too but for an unrelated, non-customer-facing reason and gets no exception.
+- **(Added 2026-08-18, onboarding restructuring) §3.3's reason clause softened from "tu opinión decide qué construimos después" to "tu opinión nos ayuda a decidir qué construimos después"** — Product Owner-requested, avoiding the implication that a single response determines the roadmap.
+- **(Added 2026-08-18) "Último paso"/"Paso final" evaluated and rejected for the banner label** — carries the same context-blindness that sank the earlier "Ya terminé" draft (a static, unconditionally-shown label can't verify it's actually the last step from wherever she's standing), and would contradict §3.3's own "no es un paso aparte" framing. A real time estimate ("8-12 min") was added instead, addressing the same underlying concern (the ask reading as skippable) without a false sequence claim.
+- **(Added 2026-08-18) Restart's trigger lives in the persistent banner (§3.6), not on §3.3 itself** — resolves the placement tension by separating "where she taps" from "where restart takes her." §3.3 can't host it (the screen never shows again once acknowledged); Settings can't host it (a real Merchant Application screen, out of bounds per D48).
+- **(Added 2026-08-18) Restart mechanism is "clear both storage keys, then force a full reload," not an in-app state transition** — the only version that's actually correct given `StoreProvider`'s mounting position above `DemoModeGate` in `main.tsx` (confirmed by direct inspection, §8 item 8).
+- **(Added 2026-08-18) No change to §2.1's decision logic for restart** — it reuses the existing, unmodified resolution path by clearing the exact fact that path already keys off of.
+- **(Added 2026-08-18) No interlock on restart** (contrast with `home.md`'s Sale-in-progress block on "Cerrar jornada de venta") — nothing restart discards is ever real merchant data, since everything in this document's own scope is fictitious by design (§1).
 
 ---
 
