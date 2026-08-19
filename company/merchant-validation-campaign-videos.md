@@ -1,0 +1,151 @@
+# Nahui — Merchant Validation Campaign Videos: Campaign A (Catálogos grandes) & Campaign B (Venta rápida)
+
+**Status: `brand-guardian` review complete and clean (2026-08-19) — awaiting Product Owner sign-off before any recording, filming, or publishing.** Prepared by `marketing` per `company/merchant-validation-strategy-v2.md` §10 item 3 (Wave 1's next actionable step). `brand-guardian` review (strategy-v2 §10 item 4) ran three rounds: found and closed one Blocker (the internal term "NFC" leaking into participant-facing copy in three separate spots — a video caption, a welcome-screen guidance sentence, and a questionnaire checkbox-grid row — fixed to "tag," matching the product's own actual on-screen vocabulary), and confirmed one live-verified fix (Main independently confirmed against the running prototype that the actual button reads "Iniciar Venta Rápida," not "Iniciar Sesión Rápida" as the Approved spec still states — a disclosed, pre-existing prototype-vs-spec drift, not a script error). Final pass: clean, no remaining findings. Next and last gate: Product Owner sign-off (strategy-v2 §10 item 6) before any recording, filming, or publishing happens. Nothing here is executed by writing this file — this is the shot-by-shot input to the Product Owner's own recording/editing work (strategy-v2 §9), not something `marketing` performs.
+
+**Grounding, not duplicated here:** `company/merchant-validation-strategy-v2.md` in full, specifically §2.1/§2.2 (each campaign's concept/hypothesis), §7 (entry strategy — guided instruction, not deep-linking, `architect`-ruled permanent as of 2026-08-19), §8 point 5 (campaign-specific questionnaire-module architecture) and §11.4 (why this doesn't apply §11's core/extended restructure), §9 (the video-production workflow this document is the input to), §0 (the two genuine independent respondent findings this whole wave is grounded in). Also grounded directly in the live prototype's own Approved specs: `product/02-ux/onboarding.md` (the three entry paths, §3.3/§3.4c/§3.5), `product/02-ux/inventory.md` (§3.14 Asignar tags), `product/02-ux/home.md` (§3.4, §3.9, §3.10, §3.8f), and `product/02c-high-fidelity-prototype/src/domain/demoSeed.ts` (the actual seeded catalog content).
+
+**A note on how to read this document:** every shot below cites a canonical screen ID from an Approved spec (`docname.md §x.y`), the same citation discipline `product/02-ux/CLAUDE.md` §4 already holds every Low-Fidelity document to — nothing here invents a screen, a button label, or a piece of copy that doesn't already exist in an Approved document. Where I had to make a judgment call not fully resolved by the source strategy document, it's named inline as a **Judgment call** callout, and summarized again at the end.
+
+---
+
+## Campaign A — Catálogos grandes
+
+### A.0 — A judgment call this whole campaign's shot list depends on, stated up front
+
+**Judgment call A1 — §2.1's literal flow ("existing seeded catalog → activar plan de pago (Configuración) → Asignar Tags queue") doesn't match how the seeded path actually behaves, per the Approved specs.** `onboarding.md`'s own path table (cited in `merchant-validation-campaign.md`) states "Ver un ejemplo" already writes `subscriptionTier = paid` (and, by derivation, `nfc` capability) at the moment the seed is generated — there is no separate, visible "activar plan de pago" tap for a participant who enters this way; that action only exists for the real "Activar plan de pago" onboarding path. I've written the shot list below to route through the actual mechanism the seeded path uses to reach Asignar tags — Inventario's own pending-tag nudge (`inventory.md` §3.5, "Continuar etiquetando") — instead of an "activar plan de pago" tap that doesn't correspond to anything on screen for this path. **This needs confirmation against the live running prototype before recording** (I have no browser-automation tool to verify it directly, only the Approved specs and the seed-data file) — specifically whether Asignar tags auto-opens the moment the seeded generation finishes, or requires the Inventario tap I've scripted below. If it auto-opens, shots 4-5 collapse into one and the "Continuar etiquetando" tap is cut.
+
+**Judgment call A2 — the seeded catalog is not visually "muchísimos productos."** `demoSeed.ts` seeds 4 distinct Products (Playeras, Blusas, Pantalones, Bolsas — 29 units total), not a 20+-SKU catalog. The hook line ("¿Vendes muchísimos productos?") is written to speak to the *viewer's own situation*, not to claim the on-screen catalog itself is huge — the video's actual payload is *how fast tagging works*, not *how big the demo catalog looks*. I did not write the script to linger on or claim catalog size. If a materially larger seed is wanted for a more visually convincing catalog, that's a seed-data change to `demoSeed.ts` — product/prototype code, out of `marketing`'s remit to author, flagged here rather than silently worked around with a script trick (e.g., a misleading pan/crop) that would drift into overclaiming.
+
+### A.1 Video script
+
+**Format:** vertical (9:16), target 25-30 seconds — the upper end of the shared 20-30s band (strategy-v2 §2's shared architecture), because this campaign's demonstration genuinely has more discrete steps than Campaign B's. Flagged for the Product Owner as a producer's call, not silently assumed to fit: if 30s reads as long once storyboarded, the two shortest options to cut are shot 3 (the "Un momento…" generating beat, which is already near-instant per `onboarding.md` §3.5) and shot 8 (a lingering hold on the fully-tagged queue before starting a session) — both are connective tissue, not payload.
+
+**Beat 1 — Hook (0:00–0:04)**
+- **On-screen text:** "¿Vendes muchísimos productos en bazares?"
+- **Voiceover:** "¿Vendes muchísimos productos en bazares?"
+- **Visual:** open directly on the phone screen — `onboarding.md` §3.3 (Bienvenida + Elegir cómo empezar), the three-path choice screen, held just long enough to read. No lifestyle/b-roll shot — only what's actually built, per Product Truth.
+
+**Beat 2 — Prototype demonstration (0:04–0:22)**
+
+| Shot | Screen (canonical ID) | Action shown | On-screen caption | Voiceover |
+|---|---|---|---|---|
+| 1 | `onboarding.md §3.3` | Tap `[ Ver un ejemplo ]` | "Entra con un catálogo de ejemplo" | "Entra con un catálogo ya armado…" |
+| 2 | `onboarding.md §3.4c` | Read the confirm screen, tap `[ Ver el ejemplo ]` | — | (silent, let the screen read) |
+| 3 | `onboarding.md §3.5` | Generating (near-instant/slow skeleton) | — | (silent, brief) |
+| 4 | `inventory.md §3.5` (pending-tag Catalog view) | Land on Inventario, see the "te faltan artículos por etiquetar" nudge, tap `[ Continuar etiquetando ]` | "Etiqueta tus productos con un tag" | "…y etiqueta lo que ya tienes con un tag." |
+| 5 | `inventory.md §3.14` (Asignar tags — active queue) | Show "Acerca el tag a la prenda," simulate 3-4 taps advancing "Faltan X de Y" down | (counter visibly decreasing) | — |
+| 6 | `inventory.md §3.14` → queue clears | Return to a fully-tagged Catalog | — | — |
+| 7 | `home.md §3.4` → tap `[ Iniciar Venta Rápida ]`† | Start a selling session | "Vende escaneando el tag" | "Cuando vendes, solo acercas el tag…" |
+| 8 | `home.md §3.10` (Session active, nfc surface) | "Acerca el tag del producto" — simulate a tap adding an item to Venta actual, tap Finalizar Venta | — | "…y listo." |
+| 9 | `home.md §3.8f` (digital receipt) | Hold on the receipt | "Recibo digital, al instante" | — |
+
+† **Note on this label:** confirmed via live verification against the running prototype (2026-08-19) — the actual on-screen button reads "Iniciar Venta Rápida." The Approved spec (`home.md §3.4`) still labels it "Iniciar Sesión Rápida"; this is a disclosed, standing prototype-vs-spec terminology drift (`company/CLAUDE.md`, "Terminology drift inside the living prototype" section), not an error in this shot list. Cited here as "Iniciar Venta Rápida" so the shot list matches what a real recording session would actually capture on screen.
+
+**Beat 3 — Hypothesis statement (0:22–0:26)**
+- **On-screen text (verbatim, strategy-v2 §2.1):** "Estamos explorando una forma más rápida de manejar catálogos grandes."
+- **Voiceover:** identical line, spoken plainly, no added claim.
+
+**Beat 4 — Honest disclosure (0:26–0:30, or slightly beyond if the Product Owner runs closer to 30s)**
+- **On-screen text (verbatim, strategy-v2 §2.1):** "Este es un prototipo interactivo. Queremos saber si esta forma de trabajar resolvería un problema real para tu negocio."
+- **Product Truth caption, held on screen for the full beat, not just flashed (strategy-v2 §2.1's own check — NFC taps are simulated, must stay disclosed, not glossed):** "Los tags NFC en este prototipo son simulados — todavía no es lectura real."
+- **CTA pairing (strategy-v2 §8 point 1), voiceover, immediately following the disclosure in the same breath:** "Pruébalo y cuéntanos qué te pareció — las dos cosas nos ayudan por igual."
+- **Incentive line (strategy-v2 §8 point 7), on-screen text, closing frame — phrasing reused verbatim from the already-Approved `merchant-validation-campaign.md` Deliverable 4 register, not invented fresh:** "Al terminar, puedes decirnos que quieres que te tengamos en cuenta para el piloto — quedas en la lista de acceso prioritario."
+
+### A.2 Welcome-screen guidance copy addition (flagged for `ux-designer`/`brand-guardian` review — not to be written into `demo-mode.md` directly)
+
+> "En este prototipo, elige 'Ver un ejemplo' para entrar con un catálogo ya cargado y prueba etiquetar tus productos con un tag — es lo que viste en el video."
+
+Reasoning: names the one thing the video showed (tagging a pre-loaded catalog) and points explicitly at "Ver un ejemplo," per strategy-v2 §7's own explicit instruction for this campaign ("an empty catalog can't demonstrate tag-assignment-at-scale"). Kept to a single sentence, in the same register as `demo-mode.md §3.3`'s existing copy ("Cuéntanos," concrete instruction over abstract warning).
+
+**Open item this addition surfaces, not resolved by strategy-v2 §7 or anywhere else I could find:** §7 states this is "copy-only, reusing an already-Approved mechanism, not a new screen or new code path," but doesn't specify *how* a build/session would know which campaign's sentence to render — `demo-mode.md`'s welcome screen today is a single, generic screen with no campaign-awareness at all. Some minimal signal (a URL query parameter read client-side at render time, most plausibly — a display-conditional read, not a domain write, so it shouldn't reopen the "no domain write" invariant `architect`'s §7 ruling protected) would be needed before this sentence could actually render differently per campaign. Flagging this as a genuine gap in the source strategy document for `architect`/`ux-designer` to resolve, not something I've resolved here — this document only supplies the sentence itself.
+
+### A.3 Questionnaire Section B module — task rows this campaign's respondents see
+
+Per strategy-v2 §8 point 5's architecture (a campaign-specific variant of the checkbox grid, one row per task the guided flow actually demonstrated) and `merchant-validation-decision-matrix.md`'s hypothesis → decision → threshold pattern. **These rows do not reuse `merchant-validation-campaign.md` Deliverable 2's existing numbering** — Campaign A's guided flow structurally diverges from that task list from the very first step (seeded entry, not Task 1's "crea tu negocio con el plan gratis"; no Task 2 product entry at all), so relabeling would misrepresent what actually happened. Default threshold convention throughout (3+ of the first 10 respondents), per `merchant-validation-decision-matrix.md` §0's own stated standard.
+
+| # | Task (checkbox-grid row wording) | Hypothesis being validated | Decision it influences | Routes to |
+|---|---|---|---|---|
+| A1 | Entrar con "Ver un ejemplo" y llegar al catálogo cargado | Whether the guided-instruction entry strategy itself (strategy-v2 §7) is discoverable from the welcome-screen sentence alone, without deep-linking | Whether §7's entry strategy needs a stronger nudge before Wave 2 reuses it for other campaigns | `product/02-ux/ux-critic-findings.md`, or a `marketing`-side welcome-screen copy revision, depending which side the recurring failure traces to |
+| A2 | Encontrar el catálogo pendiente de etiquetar en Inventario | Whether Inventario's pending-tag nudge ("Continuar etiquetando") is findable without help, once she's inside the app | Whether that nudge needs stronger visual priority | `product/02-ux/ux-critic-findings.md` |
+| A3 | Etiquetar los productos con tags hasta terminar la cola | **Core, H2-adjacent:** tag-based bulk selling is learnable/fast, independent of whether it's perceived as valuable | Whether the tag-assignment interaction itself is a usability blocker, distinct from the value question | `product/02-ux/ux-critic-findings.md` if usability; `product/02-ux/product-decisions.md` if paired with a Q7 workflow/mental-model-fit selection |
+| A4 | Iniciar una sesión de venta y registrar una venta escaneando un tag | **Core, H2 — the campaign's central question:** does tag-based selling feel fast enough, once tagging is done, to be worth the up-front investment | Whether the nfc-selling interaction model needs redesign, vs. is fine as built | `product/02-ux/product-decisions.md` if a recurring mental-model mismatch surfaces (cross-checked against Q7); `product/02-ux/ux-critic-findings.md` if pure usability friction |
+| A5 | Ver el recibo digital después de una venta con tag | Whether the receipt communicates the transaction clearly specifically after a tag-based sale (a narrower question than the generic post-sale receipt check every other campaign/organic respondent already covers) | Whether receipt content/copy needs an nfc-mode-specific adjustment | `product/02-ux/ux-critic-findings.md` |
+
+**Not included, and why:** no row for "activar plan de pago" — per Judgment call A1, this action doesn't happen on screen for this entry path. No row mirroring Deliverable 2's Task 7 (the deliberate friction task, selling an untagged item) — not part of what this campaign's guided flow shows her, so asking about completing it would ask about something she was never guided through, contrary to this document's own scoping instruction. Section A (screening), Section D (pricing), Section E (close/opt-in), and Q6-Q9's open-text questions stay in their existing shared, generic form — strategy-v2 §8 point 5 scopes campaign variation to the checkbox grid only.
+
+---
+
+## Campaign B — Venta rápida
+
+### B.0 — A judgment call this campaign's shot list depends on, stated up front
+
+**Judgment call B1 — §2.2's flow description starts at "Home (Idle)," which presumes she already has at least one sellable product; I added a brief preceding montage beat, not specified explicitly in §2.2.** A cold Home with zero inventory routes to Inventario, not to a sellable Idle state (`home.md`'s own cold-start resolution) — so reaching "Home (Idle) → Iniciar Sesión Rápida" requires Onboarding plus at least one registered Product first. Two ways to honor §2.2's literal flow: (a) silently skip past onboarding/product-entry as if it already happened, which risks implying a shortcut that doesn't exist and undercuts Product Truth; or (b) show it, fast, clearly marked as compressed. I chose (b) — a ~3-second, visibly sped-up montage of `onboarding.md §3.3` ("Empezar gratis") and a quick 2-product entry (`onboarding.md §3.5b`), captioned as a jump cut — so the video stays honest about what actually has to happen, while still spending most of its runtime on the actual payload (registration speed), matching §2.2's own evident intent to linger on the Quick Sale motion, not the setup. This also keeps Campaign B's guided flow genuinely comparable to `merchant-validation-campaign.md` Deliverable 2's existing core-path Tasks 1-2-4-5 (the same tasks the organic/static-ad cohort already completed), which strategy-v2 §2.2's own "Expected learning" explicitly wants read against.
+
+### B.1 Video script
+
+**Format:** vertical (9:16), target 20-25 seconds — toward the lower end of the shared band, since this campaign's payload is deliberately a small number of fast taps, and dwelling longer would undercut the hook's own point.
+
+**Beat 1 — Hook (0:00–0:04)**
+- **On-screen text:** "¿Se te va el cliente mientras intentas anotar la venta?"
+- **Voiceover:** "¿Se te va el cliente mientras intentas anotar la venta?"
+- **Visual:** open on `home.md §3.9` (Session active, buttons surface) mid-grid, before any tap — a merchant's own product grid, ready to sell.
+
+**Beat 2 — Prototype demonstration (0:04–0:17)**
+
+| Shot | Screen (canonical ID) | Action shown | On-screen caption | Voiceover |
+|---|---|---|---|---|
+| 1 | `onboarding.md §3.3` → `[ Empezar gratis ]` | Quick tap, clearly sped-up | "Ya armaste tu negocio…" | (silent under fast-cut) |
+| 2 | `onboarding.md §3.5b` (Define lo que vendes) | Fast entry of 2 products with real-looking prices, `[ Continuar ]` | (visibly fast-forwarded) | — |
+| 3 | `home.md §3.4` (Idle, ready) | Tap `[ Iniciar Venta Rápida ]`† | "Inicia sesión en un toque" | "Abres, y ya puedes vender." |
+| 4 | `home.md §3.9` (Session active, buttons surface) | Tap 2-3 product tiles, adding items to Venta actual, one after another, no pause | "2-3 toques, ya está" | "Registra la venta sin perder al cliente." |
+| 5 | Finalizar Venta → `home.md §3.8f` (digital receipt) | Hold on the receipt | "Recibo digital al instante" | — |
+
+† **Note on this label:** same standing drift as flagged in Campaign A's shot 7 — confirmed via live verification against the running prototype (2026-08-19) that the actual on-screen button reads "Iniciar Venta Rápida," while the Approved spec (`home.md §3.4`) still labels it "Iniciar Sesión Rápida" (`company/CLAUDE.md`, "Terminology drift inside the living prototype"). Cited here as "Iniciar Venta Rápida" to match what a real recording session would actually capture.
+
+**Beat 3 — Hypothesis statement (0:17–0:21)**
+- **On-screen text (verbatim, strategy-v2 §2.2):** "Estamos probando si registrar una venta puede ser tan rápido que no te haga perder al siguiente cliente."
+- **Voiceover:** identical line.
+
+**Beat 4 — Honest disclosure (0:21–0:25)**
+- **On-screen text, adapted per strategy-v2 §2.2's own instruction ("the same honest 'prototipo interactivo, queremos saber si esto resolvería algo real' framing, adapted to this hypothesis"):** "Este es un prototipo interactivo. Queremos saber si esta forma de registrar tus ventas resolvería un problema real para tu negocio."
+- **CTA pairing (strategy-v2 §8 point 1), voiceover, same breath:** "Pruébalo y cuéntanos qué te pareció — las dos cosas nos ayudan por igual."
+- **Incentive line (strategy-v2 §8 point 7), on-screen text, closing frame — same reused Deliverable 4 phrasing as Campaign A, for consistency across campaigns:** "Al terminar, puedes decirnos que quieres que te tengamos en cuenta para el piloto — quedas en la lista de acceso prioritario."
+
+No Campaign-B-specific Product Truth disclosure is needed beyond the standard one already handled by `demo-mode.md §3.3` itself (the "any 6-digit code" fact) — the video's own montage doesn't linger on the OTP screen long enough to need to restate it, and a real participant reaches that fact from the welcome screen immediately before she'd need it, not from the recruitment video.
+
+### B.2 Welcome-screen guidance copy addition (flagged for `ux-designer`/`brand-guardian` review — not to be written into `demo-mode.md` directly)
+
+> "En este prototipo, crea tu negocio, registra un par de productos y haz una venta rápida — es lo que viste en el video."
+
+Reasoning: deliberately doesn't name "Empezar gratis" specifically — Campaign B's target profile is "any bazaar vendor, small-to-medium catalog," not narrowed by tier (strategy-v2 §2.2), so either real onboarding path is a valid fit; over-specifying the button name here would imply a narrower test than the hypothesis actually calls for. Same open item as Campaign A's A.2 applies here too (how a build/session would know to render this sentence specifically) — not re-stated, see A.2.
+
+### B.3 Questionnaire Section B module — task rows this campaign's respondents see
+
+**Unlike Campaign A, this campaign's guided flow maps directly onto `merchant-validation-campaign.md` Deliverable 2's existing core-path tasks — so the campaign-specific module here is a subset of the already-existing generic Q5 grid, not a new set of rows.** Worth naming explicitly: a "campaign-specific module" per strategy-v2 §8 point 5 doesn't always mean inventing new rows — sometimes, as here, it means showing exactly the subset of the existing shared grid that this campaign's guided flow actually covers, and nothing else. This keeps Deliverable 2/Deliverable 3's already-seven-pass-remediated task numbering intact rather than duplicating it under new labels, the same anti-drift discipline `merchant-validation-campaign.md` itself already applies to Q5 ("using Deliverable 2's own task numbering... so the two artifacts can never quietly drift apart").
+
+| # | Task (identical wording and numbering to the existing generic Q5) | Hypothesis / decision / threshold |
+|---|---|---|
+| Tarea 1 | Crear tu negocio con el plan gratis | Inherits the existing generic Q5/row-1 mapping unchanged (`merchant-validation-decision-matrix.md` Section B) — onboarding comprehension |
+| Tarea 2 | Registrar 3-4 productos que tú realmente vendas, con precios reales | Inherits the existing generic mapping unchanged — whether her real catalog maps cleanly onto the product model |
+| Tarea 4 | Hacer 2-3 ventas seguidas, sin pausar | **Core, H1 — the campaign's central question**, inherits the existing generic mapping, **plus one addition specific to this campaign:** this row is the direct completion-rate comparison point against the existing organic/static-ad cohort's own Task 4 completion (strategy-v2 §2.2's own "Expected learning"). Read this comparison with strategy-v2 §6's confound already named — an audience-composition or hook-quality difference between the video-recruited and organically-recruited cohorts could explain a gap independent of anything about the flow itself; report any difference with that caveat attached, not as a clean flow-quality verdict |
+| Tarea 5 | Ver el recibo digital después de una venta | Inherits the existing generic mapping unchanged — perceived completeness of the receipt |
+
+**Deliberately excluded: Tarea 3** (the deliberate-interruption task — start registering a product, switch to Vender sin guardar, return to Inventario). Not because it doesn't matter — it's the exact scenario named as Campaign E's own candidate hypothesis (strategy-v2 §2.5) — but because Campaign B's guided video (§B.1 above) never routes her through it, and this document's own instructions scope each campaign's checklist to what its guided flow actually demonstrated. **Tareas 6-8 excluded** as inapplicable — Campaign B's target profile and guided flow never touch the Paid/nfc branch.
+
+---
+
+## Summary of judgment calls and open items, for the record
+
+1. **Campaign A's literal §2.1 flow ("...→ activar plan de pago (Configuración) → Asignar Tags...") doesn't match how "Ver un ejemplo" actually behaves per the Approved onboarding spec** — the seeded path already carries `subscriptionTier=paid`, so there's no visible activation tap. I rewrote the shot list to route through Inventario's real pending-tag nudge instead, but flagged this explicitly as needing verification against the live prototype before recording (I have no browser tool to confirm it directly).
+2. **The seeded "Ver un ejemplo" catalog (4 Products, `demoSeed.ts`) is not visually a large catalog**, even though Campaign A's hook targets large-catalog vendors. I wrote the hook to speak to the viewer's own situation rather than claim the on-screen catalog is large, to avoid a Product Truth problem — flagged that a materially larger seed is a product/prototype-code change outside my remit, if a more visually convincing catalog is wanted.
+3. **Neither §2.1 nor §2.2 specifies how a build/session would know which campaign's welcome-screen sentence to render** — §7 only confirms this is copy-only with no new screen, not how per-campaign selection actually works technically. Flagged as a genuine gap in the source strategy document, routed to `architect`/`ux-designer` rather than guessed at here.
+4. **Campaign B's guided flow (starting at "Home (Idle)" per §2.2) implicitly requires Onboarding + product entry to have already happened**, which §2.2 doesn't show. I added a brief, visibly-compressed montage beat rather than silently skipping past it, to keep the video honest about what actually has to happen while still keeping the payload (fast selling) the visual centerpiece.
+5. **Campaign B's checklist module turned out to be a subset of the existing generic Q5 grid, not new rows** — worth flagging as a finding in its own right: strategy-v2 §8 point 5's "campaign-specific module" concept doesn't always mean inventing a new task list; here it means showing exactly the already-defined rows a given guided flow actually covers.
+6. **Campaign A's checklist, by contrast, required genuinely new rows and new numbering** (not reusable against Deliverable 2's existing 1-8 list) — since the seeded entry path structurally diverges from Deliverable 2's Task 1/2 from the very first step.
+7. **Two participant-facing captions used the technical term "NFC" instead of the merchant's own vocabulary, "tag"** (Campaign A, Beat 2 Shot 4's on-screen caption, and Campaign A §A.2's welcome-screen guidance sentence) — flagged by `brand-guardian` review and corrected: `inventory.md`'s actual screen copy says "Acerca el tag a la prenda," and `home.md §3.6a` states the underlying mechanism stays invisible to the merchant, so her vocabulary is "tag," never "NFC." Beat 4's honest-disclosure caption, which names "NFC" explicitly, was reviewed separately by `brand-guardian` and kept as-is — a fourth-wall Product Truth disclosure is a different register with real precedent (`merchant-validation-campaign.md`'s own recruitment post already names "NFC" the same way).
+8. **Both campaigns' shots citing `home.md §3.4`'s button previously quoted the Approved spec's literal label, "Iniciar Sesión Rápida," verbatim** — live verification against the running prototype (Main, 2026-08-19) confirmed the actual on-screen button reads "Iniciar Venta Rápida." Corrected both shot-list citations (Campaign A Beat 2 Shot 7, Campaign B Beat 2 Shot 3) to match what a real recording session would actually capture, with an inline note at each preserving the fact that the Approved spec itself still reads "Sesión rápida" — a disclosed, standing prototype-vs-spec terminology drift (`company/CLAUDE.md`), not a citation error in this document, and not something this document resolves.
+9. **Row A3's checkbox-grid wording (participant-facing) still read "tags NFC" after finding 7's fix round, a sibling of the same NFC-leak defect** — caught by `brand-guardian`'s confirmation pass. Corrected to "Etiquetar los productos con tags hasta terminar la cola," matching A4/A5's register (both already said "tag" alone). Row A3's Hypothesis/Decision/Routes-to columns are internal reasoning, not participant-facing, and correctly keep "nfc" as the precise technical descriptor — untouched.
+
+## What this document does not do
+
+Doesn't write into `demo-mode.md`, `authentication.md`, `onboarding.md`, `inventory.md`, or `home.md` — no Approved spec is touched. Doesn't touch the live Google Form. Doesn't authorize filming, editing, or publishing anything — per the standing Approval gate, this is preparation only. Next step per `merchant-validation-strategy-v2.md` §10 is `brand-guardian` review of every copy artifact above (item 4), then Product Owner sign-off (item 6) before Video Production (item 5, the Product Owner's own scope per §9) begins.
