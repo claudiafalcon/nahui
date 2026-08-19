@@ -20,7 +20,13 @@ import type {
   Venue,
 } from './types';
 
-const STORAGE_KEY = 'nahui-hifi-prototype-v1';
+/**
+ * Exported (demo-mode.md §8 item 8) so `restartDemo.ts`'s own "clear both
+ * storage keys, then reload" mechanism reuses this constant directly instead
+ * of a second, independently-hardcoded copy of the same string literal that
+ * could silently drift from this one if it's ever renamed here.
+ */
+export const STORAGE_KEY = 'nahui-hifi-prototype-v1';
 
 /**
  * Genuine pre-Authentication state — no verified User, no Business, no

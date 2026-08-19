@@ -1,4 +1,6 @@
-/* demo-mode.md §3.6 — the persistent Form-reminder strip.
+/* demo-mode.md §3.6 — the persistent Form-reminder strip: one full-width
+   primary row plus a slim, asymmetric secondary line (revised 2026-08-18,
+   `ux-critic` M1/M2 — never a second full-width row).
 
    `.shell` renders no box of its own (`display: contents`) — it exists
    only so this file can scope a `:global(.app-shell)` descendant rule to
@@ -9,9 +11,14 @@
   display: contents;
   /* Scoped here (not `tokens.css`) since it exists only for this one
      component — `display: contents` doesn't stop custom-property
-     inheritance, so both `.banner` and the `:global(.app-shell)` rule
-     below see the same value from their common DOM ancestor. */
-  --demo-banner-height: 40px;
+     inheritance, so `.banner`, its two rows, and the `:global(.app-shell)`
+     rule below all see the same value from their common DOM ancestor.
+     Covers both rows' own natural height (row 1's 40px min-height + row
+     2's own 40px, driven by `.restartButton`'s enlarged tap-target padding,
+     `ux-critic` fix 2026-08-18 below) plus a small buffer — not
+     pixel-measured, same disclosed-estimate caveat this document's own
+     space-budget notes already carry (`demo-mode.md` §3.6). */
+  --demo-banner-height: 84px;
 }
 
 /* Reserves exactly the banner's own height at the top of `.app-shell`'s
@@ -29,6 +36,9 @@
   padding-top: calc(var(--demo-banner-height) + env(safe-area-inset-top, 0px));
 }
 
+/* Container for both rows — itself not tappable, no background of its own
+   (each row paints its own). Fixed at the true viewport top so the safe-
+   area inset is applied once, above both rows, not duplicated per row. */
 .banner {
   position: fixed;
   top: 0;
@@ -37,9 +47,19 @@
   z-index: 500;
   margin: 0 auto;
   max-width: 430px;
-  min-height: var(--demo-banner-height);
-  padding: 0 var(--space-4);
   padding-top: env(safe-area-inset-top, 0px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Row 1 — the single, full-width, dominant tap target this whole feature
+   exists to drive her toward. Unchanged in text/size/position from the
+   original single-row draft; only its container changed (no longer the
+   outermost fixed element itself — `.banner` now owns that). */
+.row1 {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--space-4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -55,6 +75,124 @@
   text-overflow: ellipsis;
 }
 
-.banner:active {
+.row1:active {
   background: var(--color-tezontle);
+}
+
+/* Row 2 — a slim, asymmetric secondary line, never a second full-width
+   `[ ]` row (the exact shape `ux-critic` M2 flagged as a real collision
+   risk with row 1, not a deferrable styling question). A visibly darker
+   fill than row 1 reinforces the same "clearly secondary" reading the
+   structure itself already establishes: smaller line, shared with passive
+   text, small corner-positioned control — this is additional, not the
+   differentiation itself.
+
+   No vertical padding of its own (`ux-critic` tap-target fix, 2026-08-18):
+   `.restartButton`'s own padding is what now sets this row's rendered
+   height (see below) — row 2 just lets its tallest child (the button)
+   dictate the row's height and centers both children within it via
+   `align-items: center`, rather than double-padding on top of the
+   button's own. Net height lands at ~40px, i.e. row 1 and row 2 read as
+   two visually consistent bands rather than a fat one and a thin one —
+   which also directly answers `ux-critic`'s Minor about breathing room
+   above this row: there's no longer a cramped gap to check, the row's own
+   height grew to match. */
+.row2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  background: var(--color-tezontle-dark);
+}
+
+/* Passive text — the honest time estimate, never itself tappable.
+   White-mix bumped 78% → 82% (`ux-critic` Minor, 2026-08-18): hand-computed
+   contrast against `--color-tezontle-dark` was ~4.8:1 at 78% — just over
+   WCAG AA's 4.5:1 floor, close enough to the boundary to want real margin
+   rather than resting on an estimate. 82% computes to ~5.1:1; visually
+   indistinguishable from 78% (both read as a very light warm-white), so
+   this buys safety margin at no legibility/weight cost. */
+.timeEstimate {
+  font: var(--text-meta);
+  color: color-mix(in srgb, var(--color-white) 82%, transparent);
+  white-space: nowrap;
+}
+
+/* A small, corner-positioned utility control — deliberately smaller/lighter
+   than row 1's own weight (`text-meta`, not `text-label`; underlined text
+   rather than a filled tap target) so it reads unmistakably as a minor
+   reset utility, never a second primary action (spec's own flag to
+   `ui-designer`, §3.6). That visual treatment is unchanged here — only the
+   tap target grew.
+
+   Padding raised to a ~40px effective tap-target height (`ux-critic`
+   Major, 2026-08-18): the previous 4px/4px vertical padding netted only
+   ~22px, roughly half the ~38-40px floor every other persistent/utility
+   control in this codebase already establishes (`SessionHeader.module.css`
+   `.gearBtn`'s 38×38px box, `.closeSessionBtn`'s explicit tap-target
+   parity with it, `Button.module.css` `.tertiary`'s ~40px via
+   `padding: 8px 4px` on `--text-body`) and under WCAG 2.5.8 (AA)'s 24×24
+   CSS-px minimum. Fixed the same way `.tertiary` does it: bigger padding,
+   same font/weight/decoration — never a bigger visible label. Because row 2
+   above has no vertical padding of its own anymore, this padding is what
+   now sets the row's whole rendered height (14px line-height + 13px top +
+   13px bottom = 40px) rather than needing a negative-margin trick to
+   "escape" a fixed-height container — this button's real box genuinely is
+   ~40px tall, not just visually appearing that size. Horizontal
+   padding/negative-margin (left forgiveness, right kept flush with row 2's
+   own edge) is unchanged from the original technique. */
+.restartButton {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 13px 4px 13px 8px;
+  margin: 0 -4px 0 0;
+  font: var(--text-meta);
+  color: color-mix(in srgb, var(--color-white) 92%, transparent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.restartButton:active {
+  color: var(--color-white);
+}
+
+/* Wraps the restart confirm dialog (`Sheet`) in its own stacking context
+   (`position: relative` + explicit `z-index`) so the whole dialog — its
+   `position: fixed` backdrop included — paints above `.banner`'s own
+   `z-index: 500`, even though both sit outside `AppRouter`'s own
+   `app-shell` device-frame containment (Sheet.module.css's usual desktop-
+   preview confinement doesn't apply here, deliberately: this dialog needs
+   to dim the banner too, not just the screen beneath it). */
+.confirmLayer {
+  position: relative;
+  z-index: 600;
+}
+
+/* Confirm-dialog copy — same values `Selling.module.css`'s/
+   `SettingsScreen.module.css`'s own `confirmTitle`/`confirmBody`/
+   `confirmRow` already use for every other `Sheet`-based confirm dialog in
+   this codebase, reused verbatim rather than hand-rolled a second time. */
+.confirmTitle {
+  font: var(--text-heading);
+  margin-bottom: var(--space-2);
+}
+
+.confirmBody {
+  font: var(--text-body);
+  color: #6B6259;
+  margin-bottom: var(--space-4);
+}
+
+.confirmRow {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.confirmRow > * {
+  flex: 1;
 }

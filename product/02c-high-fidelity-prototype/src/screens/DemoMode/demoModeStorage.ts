@@ -31,3 +31,16 @@ export function isDemoModeAcknowledged(): boolean {
 export function acknowledgeDemoMode(): void {
   localStorage.setItem(DEMO_ACK_KEY, 'true');
 }
+
+/**
+ * demo-mode.md §2.4 step 3 — the first half of the "Reiniciar demo" clear:
+ * removes this device's own acknowledgment flag, so §2.1 check 2 reads NO
+ * again on the next resolution and §2.1's completely unmodified logic lands
+ * fresh on §3.3, exactly as a brand-new device would. Write-only/content-
+ * blind by construction — `localStorage.removeItem` on a boolean flag has
+ * nothing to read or interpret. Called from `restartDemo.ts`, alongside a
+ * matching clear of `store.tsx`'s own `STORAGE_KEY`.
+ */
+export function clearDemoModeAcknowledgment(): void {
+  localStorage.removeItem(DEMO_ACK_KEY);
+}
