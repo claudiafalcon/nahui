@@ -13,11 +13,15 @@
      component — `display: contents` doesn't stop custom-property
      inheritance, so `.banner`, its two rows, and the `:global(.app-shell)`
      rule below all see the same value from their common DOM ancestor.
-     Covers both rows' own natural height (row 1's 40px min-height + row
-     2's own 40px, driven by `.restartButton`'s enlarged tap-target padding,
-     `ux-critic` fix 2026-08-18 below) plus a small buffer — not
-     pixel-measured, same disclosed-estimate caveat this document's own
-     space-budget notes already carry (`demo-mode.md` §3.6). */
+     Starting estimate only — covers both rows' natural, unwrapped height
+     (row 1's 40px min-height + row 2's own 40px, driven by
+     `.restartButton`'s enlarged tap-target padding, `ux-critic` fix
+     2026-08-18 below) plus a small buffer. `ReminderBanner.tsx`'s own
+     `ResizeObserver` (added 2026-08-19, alongside row 2's new wrap
+     behavior) overwrites this value with the banner's real measured height
+     on every render, including the taller, wrapped-row-2 state — this
+     constant only matters for the very first paint, before that effect
+     runs, and is never load-bearing once it does. */
   --demo-banner-height: 84px;
 }
 
@@ -87,36 +91,58 @@
    text, small corner-positioned control — this is additional, not the
    differentiation itself.
 
-   No vertical padding of its own (`ux-critic` tap-target fix, 2026-08-18):
-   `.restartButton`'s own padding is what now sets this row's rendered
-   height (see below) — row 2 just lets its tallest child (the button)
-   dictate the row's height and centers both children within it via
-   `align-items: center`, rather than double-padding on top of the
-   button's own. Net height lands at ~40px, i.e. row 1 and row 2 read as
-   two visually consistent bands rather than a fat one and a thin one —
-   which also directly answers `ux-critic`'s Minor about breathing room
-   above this row: there's no longer a cramped gap to check, the row's own
-   height grew to match. */
+   `align-items: flex-start` (changed 2026-08-19 from `center`, `demo-mode.md`
+   §3.6's own wrap-treatment requirement): the left-side text ("Modo demo ·
+   cuestionario: 8-12 min", `.demoStatus` below) now sometimes wraps onto a
+   second line — on narrow viewports, and occasionally on default/wide ones
+   too now that the fuller text is longer. `flex-start` keeps
+   `.restartButton` anchored at its existing top-right corner position
+   regardless of whether `.demoStatus` grows to two lines beneath it — the
+   spec's own explicit requirement — rather than `center`, which would
+   re-center the button against the row's *total* (now possibly taller)
+   height and visibly shift it down as the text wraps. `.restartButton`'s
+   own tap-target padding (13px/14px/13px = 40px, `ux-critic` fix,
+   2026-08-18) is unaffected and still sets row 2's height in the common,
+   unwrapped case. */
 .row2 {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-2);
   padding: 0 var(--space-4);
   background: var(--color-tezontle-dark);
 }
 
-/* Passive text — the honest time estimate, never itself tappable.
-   White-mix bumped 78% → 82% (`ux-critic` Minor, 2026-08-18): hand-computed
-   contrast against `--color-tezontle-dark` was ~4.8:1 at 78% — just over
-   WCAG AA's 4.5:1 floor, close enough to the boundary to want real margin
-   rather than resting on an estimate. 82% computes to ~5.1:1; visually
+/* Passive text — the "Modo demo" state label and the honest questionnaire
+   time estimate, one continuous static text node, never itself tappable
+   and never styled to set "Modo demo" apart from "cuestionario: 8-12 min"
+   beside it (`demo-mode.md` §3.6's explicit flag: plain inline text,
+   visually continuous with the rest of row 2's passive content, never a
+   bordered/pill-shaped element implying interactivity). White-mix bumped
+   78% → 82% (`ux-critic` Minor, 2026-08-18): hand-computed contrast against
+   `--color-tezontle-dark` was ~4.8:1 at 78% — just over WCAG AA's 4.5:1
+   floor, close enough to the boundary to want real margin rather than
+   resting on an estimate. 82% computes to ~5.1:1; visually
    indistinguishable from 78% (both read as a very light warm-white), so
-   this buys safety margin at no legibility/weight cost. */
-.timeEstimate {
+   this buys safety margin at no legibility/weight cost.
+
+   Wraps naturally, no longer `nowrap` (2026-08-19, `demo-mode.md` §3.6's
+   responsive-treatment requirement) — the text has grown enough ("Modo
+   demo · cuestionario: 8-12 min" vs. the prior "(8-12 min)") that it no
+   longer reliably fits on one line on narrow viewports, and occasionally
+   not on default/wide ones either. `min-width: 0` lets this flex item
+   actually shrink below its content's natural width so wrapping (not
+   horizontal overflow past `.restartButton`) is what happens. `padding-top:
+   13px` matches `.restartButton`'s own top padding so the first line of
+   this text sits at the same vertical position as the button's label,
+   preserving the original single-line visual alignment now that `.row2`
+   itself aligns both children to `flex-start` instead of centering them. */
+.demoStatus {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 13px;
   font: var(--text-meta);
   color: color-mix(in srgb, var(--color-white) 82%, transparent);
-  white-space: nowrap;
 }
 
 /* A small, corner-positioned utility control — deliberately smaller/lighter

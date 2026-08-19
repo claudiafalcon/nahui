@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { track } from '@vercel/analytics';
 import { AppRouter } from '../../AppRouter';
 import { useReceiptScreenActive } from './receiptScreenSignal';
@@ -17,12 +17,21 @@ type RestartState = 'idle' | 'confirming' | 'failed';
  * banner: one full-width, always-tappable, non-dismissible primary row
  * (unchanged since 2026-08-18's first pass) plus a new slim, asymmetric
  * secondary line beneath it (same-day revision, `ux-critic` M1/M2) — never
- * a second full-width row — carrying the real questionnaire time estimate
- * as passive text and the "Reiniciar demo" control (§2.4/§3.7/§3.8, added
- * 2026-08-18) as a small, corner-positioned tap target sharing that line.
- * Both rows composite above whichever Merchant Application screen the
- * *unmodified* `<AppRouter />` is currently resolving to, for the entire
- * `pass-through` duration.
+ * a second full-width row — carrying, on its left side, the passive "Modo
+ * demo" state label and the real questionnaire time estimate as one
+ * continuous run of static text ("Modo demo · cuestionario: 8-12 min",
+ * added 2026-08-19 — §2.3 check 4/§3.6) and, on its right, the "Reiniciar
+ * demo" control (§2.4/§3.7/§3.8, added 2026-08-18) as a small, corner-
+ * positioned tap target sharing that line. The label carries no styling of
+ * its own that would set it apart from the time estimate beside it — both
+ * are one static text node, never a separate bordered/pill-shaped element
+ * (§3.6's explicit flag to `ui-designer`). On narrow viewports (and
+ * occasionally default/wide ones too, now that the fuller text is longer),
+ * this left-side text wraps naturally onto a second line within row 2's own
+ * space — row 2 grows taller, never a new row — while "Reiniciar demo"
+ * stays anchored at its fixed corner position. Both rows composite above
+ * whichever Merchant Application screen the *unmodified* `<AppRouter />` is
+ * currently resolving to, for the entire `pass-through` duration.
  *
  * Mounted as this component from `DemoModeGateActive.tsx`'s `pass-through`
  * branch — a sibling to `<AppRouter />`, never a change inside it
@@ -55,6 +64,35 @@ type RestartState = 'idle' | 'confirming' | 'failed';
 export function ReminderBanner() {
   const receiptActive = useReceiptScreenActive();
   const [restartState, setRestartState] = useState<RestartState>('idle');
+  const shellRef = useRef<HTMLDivElement>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  // `.shell`'s own `--demo-banner-height` custom property (ReminderBanner
+  // .module.css) previously carried a single hand-estimated constant
+  // (84px). As of 2026-08-19, row 2's own left-side text ("Modo demo ·
+  // cuestionario: 8-12 min") can wrap onto a second line — on narrow
+  // viewports, and occasionally on default/wide ones too — which grows the
+  // banner's real rendered height beyond that fixed estimate. Since
+  // `.app-shell`'s reserved `padding-top` reads this same custom property
+  // (`.withBanner :global(.app-shell)`), a stale constant would leave the
+  // fixed-position banner overlapping the top of whatever screen is
+  // underneath exactly when row 2 wraps — the same risk `demo-mode.md`
+  // §3.6's own chrome-accounting paragraph flags for `ui-designer` to
+  // verify, not assume fine. Measuring the banner's actual rendered height
+  // and writing it back onto `.shell` keeps the reserved space correct in
+  // every state (unwrapped, wrapped on narrow, wrapped on default/wide),
+  // instead of hand-tuning a second constant for the wrapped case.
+  useLayoutEffect(() => {
+    const shellEl = shellRef.current;
+    const bannerEl = bannerRef.current;
+    if (!shellEl || !bannerEl) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const height = Math.ceil(entry.contentRect.height);
+      shellEl.style.setProperty('--demo-banner-height', `${height}px`);
+    });
+    observer.observe(bannerEl);
+    return () => observer.disconnect();
+  }, [receiptActive, restartState]);
 
   function attemptRestart() {
     try {
@@ -81,9 +119,9 @@ export function ReminderBanner() {
   }
 
   return (
-    <div className={`${styles.shell} ${receiptActive ? '' : styles.withBanner}`}>
+    <div ref={shellRef} className={`${styles.shell} ${receiptActive ? '' : styles.withBanner}`}>
       {!receiptActive && (
-        <div className={styles.banner}>
+        <div ref={bannerRef} className={styles.banner}>
           <button
             type="button"
             className={styles.row1}
@@ -100,7 +138,7 @@ export function ReminderBanner() {
             Cuéntanos tu opinión — cuestionario
           </button>
           <div className={styles.row2}>
-            <span className={styles.timeEstimate}>(8-12 min)</span>
+            <span className={styles.demoStatus}>Modo demo · cuestionario: 8-12 min</span>
             <button
               type="button"
               className={styles.restartButton}
