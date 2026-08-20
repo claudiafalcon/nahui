@@ -83,6 +83,35 @@ type RestartState = 'idle' | 'confirming' | 'failed';
  *   guard as above, plus its one payload property (`path`) derived through
  *   the existing `pathFromCapabilities` domain utility, never re-derived
  *   here.
+ *
+ * §2.5.3's two further events (added 2026-08-19, build-authorized) are
+ * observed here too — same mount point, same external-observer discipline:
+ * - `demo_sale_completed` is an external observer of `state.sales`, watching
+ *   for any `Sale.status` transitioning to `'finalized'` (`finalizeSale()`,
+ *   `store.tsx:887-945`). Unlike the four events above, this is not a
+ *   one-shot session latch — a participant may finalize several Sales in one
+ *   walkthrough, each a distinct engagement data point. A `Set` of already-
+ *   counted Sale IDs is seeded, during this component's first render (not
+ *   inside the effect, so the effect's own first run never double-counts
+ *   whatever was already `'finalized'` before this component mounted — the
+ *   same "not-already-true-at-mount" shape as the other four events, adapted
+ *   from a one-shot boolean to a per-ID Set since this event is legitimately
+ *   repeatable), with whatever Sale IDs are already `'finalized'` at that
+ *   moment. Every later render then fires once for each Sale ID newly
+ *   observed crossing into `'finalized'`.
+ * - `demo_paid_plan_activated_midsession` is an external observer of
+ *   `subscriptionTier`, resolved via `businessForCurrentUser` (the same
+ *   resolution `demo_onboarding_completed` already uses, not `state.business`
+ *   directly). The "saw non-paid" arming flag is deliberately never set on a
+ *   `null` Business (the pre-Onboarding state) — only on a *resolved,
+ *   non-null* Business whose `subscriptionTier !== 'paid'` — because
+ *   `completeOnboarding()` writes `subscriptionTier: 'paid'` directly, with
+ *   no intermediate free-tier Business, for both the Paid and "Ver un
+ *   ejemplo" onboarding paths; arming on `null` would false-fire this event
+ *   the instant either of those two routine paths completes Onboarding (a
+ *   real edge case `reviewer` caught during design, corrected before build).
+ *   Repeatable, same shape as `demo_sale_completed` — the arming flag resets
+ *   after each observed paid transition.
  */
 export function ReminderBanner() {
   const receiptActive = useReceiptScreenActive();
@@ -140,6 +169,60 @@ export function ReminderBanner() {
     if (onboardingFiredRef.current || !sawUnacknowledgedRef.current || !business) return;
     onboardingFiredRef.current = true;
     track('demo_onboarding_completed', { path: pathFromCapabilities(business) });
+  }, [state]);
+
+  // §2.5.3 `demo_sale_completed` — external observer of `state.sales`,
+  // watching for any Sale crossing into `'finalized'`. Repeatable, not a
+  // one-shot latch: a `Set` of already-counted Sale IDs, seeded once during
+  // this component's own first render (lazy ref init — a deliberate
+  // exception to "state only changes in effects," safe here because it's a
+  // pure, synchronous read of whatever is already in `state.sales`, and it
+  // runs identically under StrictMode's dev-only double-render since the
+  // guard is "only seed if still `undefined`"). Seeding here, not inside the
+  // effect below, is what keeps a mid-session reload from inflating the
+  // count with Sales that were already `'finalized'` before this observer
+  // ever mounted.
+  const countedSaleIdsRef = useRef<Set<string>>();
+  if (countedSaleIdsRef.current === undefined) {
+    countedSaleIdsRef.current = new Set(
+      state.sales.filter((sa) => sa.status === 'finalized').map((sa) => sa.id),
+    );
+  }
+  useEffect(() => {
+    const counted = countedSaleIdsRef.current!;
+    for (const sale of state.sales) {
+      if (sale.status === 'finalized' && !counted.has(sale.id)) {
+        counted.add(sale.id);
+        track('demo_sale_completed');
+      }
+    }
+  }, [state.sales]);
+
+  // §2.5.3 `demo_paid_plan_activated_midsession` — external observer of
+  // `subscriptionTier`, resolved via `businessForCurrentUser` (same
+  // resolution the onboarding observer above uses). The "saw free" arming
+  // flag is set only when a resolved, non-null Business exists whose
+  // `subscriptionTier !== 'paid'` — never on a `null` Business (pre-
+  // Onboarding), which is what would otherwise false-fire this event the
+  // instant either the Paid or "Ver un ejemplo" onboarding path completes
+  // (both write `subscriptionTier: 'paid'` directly, with no intermediate
+  // free-tier Business — the exact edge case `reviewer` caught in design).
+  // A Business already `'paid'` at mount never arms this flag either, so a
+  // resumed/reloaded already-paid session correctly never fires — the same
+  // not-already-true-at-mount guarantee the other events give via an
+  // explicit "already true" check. Repeatable: the flag resets after each
+  // observed free→paid transition, same shape as `demo_sale_completed`.
+  const sawFreeRef = useRef(false);
+  useEffect(() => {
+    const business = businessForCurrentUser(state);
+    if (business == null) return; // never arm on a null Business
+    if (business.subscriptionTier !== 'paid') {
+      sawFreeRef.current = true;
+      return;
+    }
+    if (!sawFreeRef.current) return; // no free→paid transition actually witnessed live
+    sawFreeRef.current = false;
+    track('demo_paid_plan_activated_midsession');
   }, [state]);
 
   // `.shell`'s own `--demo-banner-height` custom property (ReminderBanner
