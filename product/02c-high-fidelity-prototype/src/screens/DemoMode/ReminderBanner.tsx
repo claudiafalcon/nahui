@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { track } from '@vercel/analytics';
 import { AppRouter } from '../../AppRouter';
 import { useReceiptScreenActive } from './receiptScreenSignal';
@@ -6,6 +6,8 @@ import { Sheet } from '../../components/Sheet/Sheet';
 import { Button } from '../../components/Button/Button';
 import { RestartFailed } from './RestartFailed';
 import { restartDemo } from './restartDemo';
+import { useStore } from '../../domain/store';
+import { businessForCurrentUser, pathFromCapabilities } from '../../domain/onboardingResolution';
 import styles from './ReminderBanner.module.css';
 
 const QUESTIONNAIRE_URL = 'https://forms.gle/ZZhtJEfee3viWY1h8';
@@ -60,12 +62,85 @@ type RestartState = 'idle' | 'confirming' | 'failed';
  * (§10) — tapping only opens the questionnaire in a new tab; its own render
  * output never changes as a result. Row 2's restart control always opens the
  * identical confirmation dialog (§3.7, below), never a stateful variant.
+ *
+ * §2.5.2's three build-authorized funnel events are also observed from this
+ * component — the sole mount point, same "sibling, never inside" discipline
+ * as everything else here. None of them edit a Merchant Application
+ * component to add themselves:
+ * - `demo_pass_through_reached` fires once, on this component's own first
+ *   render — it covers both routes into `pass-through` (§2.1) without
+ *   distinguishing which reached it, since neither route does anything but
+ *   mount this same component.
+ * - `demo_otp_completed` is an external observer of `state.currentUser?.
+ *   phoneVerifiedAt` via `useStore()` — no edit to `CodeStep.tsx`/
+ *   `AuthenticationFlow.tsx`. Guarded so it only fires on an actual
+ *   null→set transition witnessed during this mount, never on a value
+ *   already set when this component first mounted (a resumed/reloaded
+ *   session that skips straight past OTP).
+ * - `demo_onboarding_completed` is an external observer of
+ *   `business.onboardingAcknowledged` via `useStore()` — no edit to
+ *   `OnboardingFlow.tsx`/`TodoListo.tsx`. Same not-already-true-at-mount
+ *   guard as above, plus its one payload property (`path`) derived through
+ *   the existing `pathFromCapabilities` domain utility, never re-derived
+ *   here.
  */
 export function ReminderBanner() {
   const receiptActive = useReceiptScreenActive();
   const [restartState, setRestartState] = useState<RestartState>('idle');
   const shellRef = useRef<HTMLDivElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
+  const { state } = useStore();
+
+  // §2.5.2 `demo_pass_through_reached` — fires once, on this component's own
+  // first render. The `useRef` guard (rather than a bare empty-deps
+  // `useEffect`) is what keeps this to exactly one call even under
+  // StrictMode's dev-only double-invoke of mount effects (main.tsx) — the
+  // ref survives that simulated remount because it's the same component
+  // instance, so the second invocation's guard correctly no-ops.
+  const passThroughFiredRef = useRef(false);
+  useEffect(() => {
+    if (passThroughFiredRef.current) return;
+    passThroughFiredRef.current = true;
+    track('demo_pass_through_reached');
+  }, []);
+
+  // §2.5.2 `demo_otp_completed` — external observer of `phoneVerifiedAt`,
+  // read fresh from the shared store on every render; never written here.
+  // `sawUnverifiedRef` only becomes true once this component has actually
+  // observed the unverified (null) state, so a device that resumes straight
+  // into an already-verified session never fires this — only a real
+  // null→set transition witnessed live does.
+  const sawUnverifiedRef = useRef(false);
+  const otpFiredRef = useRef(false);
+  useEffect(() => {
+    const verifiedAt = state.currentUser?.phoneVerifiedAt ?? null;
+    if (verifiedAt == null) {
+      sawUnverifiedRef.current = true;
+      return;
+    }
+    if (otpFiredRef.current || !sawUnverifiedRef.current) return;
+    otpFiredRef.current = true;
+    track('demo_otp_completed');
+  }, [state.currentUser?.phoneVerifiedAt]);
+
+  // §2.5.2 `demo_onboarding_completed` — external observer of
+  // `business.onboardingAcknowledged`, resolved the same way `OnboardingFlow`
+  // itself resolves "the" business (`businessForCurrentUser`, not
+  // `state.business` directly — see that function's own doc comment).
+  // Same not-already-true-at-mount guard as the OTP observer above.
+  const sawUnacknowledgedRef = useRef(false);
+  const onboardingFiredRef = useRef(false);
+  useEffect(() => {
+    const business = businessForCurrentUser(state);
+    const acknowledged = business?.onboardingAcknowledged ?? false;
+    if (!acknowledged) {
+      sawUnacknowledgedRef.current = true;
+      return;
+    }
+    if (onboardingFiredRef.current || !sawUnacknowledgedRef.current || !business) return;
+    onboardingFiredRef.current = true;
+    track('demo_onboarding_completed', { path: pathFromCapabilities(business) });
+  }, [state]);
 
   // `.shell`'s own `--demo-banner-height` custom property (ReminderBanner
   // .module.css) previously carried a single hand-estimated constant
