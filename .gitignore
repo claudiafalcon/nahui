@@ -1,0 +1,8 @@
+# Playwright MCP debug artifacts (console logs, page snapshots, downloaded media)
+.playwright-mcp/
+
+# Campaign production binary media — deliberately local-only, see company/CLAUDE.md
+company/campaign-assets/
+
+# OS
+.DS_Store
