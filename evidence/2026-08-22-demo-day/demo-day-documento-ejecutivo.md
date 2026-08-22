@@ -165,3 +165,19 @@ La solución fue separar lo que era juicio real de lo que era procedimiento repe
 Al principio, cada commit y cada push los aprobaba yo directamente, uno por uno. El 2026-08-08 di la instrucción de que Main puede hacer commit y push por su cuenta cuando un bloque de trabajo coherente ya está terminado y revisado, sin pedirme permiso cada vez. Esto se extendió después a que Main siga trabajando mientras yo duermo o no estoy disponible, siempre que no haya una decisión real de negocio, arquitectura o producto pendiente de mi parte.
 
 Esta autoridad tiene un límite explícito que nunca se cruza: cualquier operación destructiva (forzar un push, reescribir historial, borrar una rama) requiere mi aprobación directa, sin excepción. La autonomía cubre el trabajo rutinario ya revisado, nunca las decisiones que de verdad importan.
+
+---
+
+## Anexo B: evidencia visual de la arquitectura
+
+*(Anexo, no cuenta contra el límite de 7 páginas.)*
+
+Cada diagrama respalda algo dicho en el Anexo A. Es evidencia, no lectura adicional.
+
+![Roster de agentes especializados](images/anexo-1-agentes.png)
+
+![Cómo se relacionan los documentos que gobiernan el proyecto](images/anexo-2-documentos.png)
+
+![El ciclo de validación](images/anexo-3-ciclo.png)
+
+![Causa y efecto a lo largo del proyecto](images/anexo-4-timeline.png)
