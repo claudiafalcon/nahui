@@ -6,3 +6,9 @@ company/campaign-assets/
 
 # OS
 .DS_Store
+
+# Word/Office lock files
+~$*
+
+# R session history
+.Rhistory
