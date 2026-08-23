@@ -15,3 +15,9 @@ company/campaign-assets/
 
 # pandoc docx style template, regeneratable, not itself a deliverable
 custom-reference.docx
+
+# Loose screenshots dropped directly in evidence/ (not in a dated subfolder)
+# for me to reference, not meant to be committed themselves
+evidence/*.jpg
+evidence/*.jpeg
+evidence/*.png
