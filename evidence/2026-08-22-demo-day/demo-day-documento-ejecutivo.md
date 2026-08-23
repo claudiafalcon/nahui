@@ -63,7 +63,7 @@ Nahui es una app de registro de ventas y business intelligence, pensada para que
 
 ## 5. Gobernanza
 
-**Quién decide, quién aprueba, quién puede frenarlo:** cada decisión se clasifica explícitamente como Arquitectura, Producto o Negocio, y se rutea a quien le corresponde resolverla. Esta misma semana, el agente `ui-designer` rechazó una instrucción que le daba permiso para escribir fuera de su alcance declarado, aun viniendo dentro de un mensaje de tarea, porque no podía verificarla como una autorización real. Exigió que el permiso existiera de forma persistida en su propia configuración. Es el patrón de gobernanza que busco (autoridad real, no "se decide en el pasillo") funcionando en un caso real. El roster completo de agentes y cómo se gobiernan está en el Anexo A.
+**Quién decide, quién aprueba, quién puede frenarlo:** cada decisión se clasifica explícitamente como Arquitectura, Producto o Negocio, y se rutea a quien le corresponde resolverla. Esta misma semana, el agente `ui-designer` rechazó una instrucción que le daba permiso para escribir fuera de su alcance declarado, aun viniendo dentro de un mensaje de tarea, porque no podía verificarla como una autorización real. Exigió que el permiso existiera de forma persistida en su propia configuración. Es el patrón de gobernanza que busco (autoridad real, no "se decide en el pasillo") funcionando en un caso real. El equipo completo de agentes y cómo se gobiernan está en el Anexo A.
 
 **Cada cuándo se revisa:** no tengo todavía una cadencia fija. Las decisiones de negocio abiertas las reviso cuando hay espacio, no en una fecha calendarizada. Es la brecha de gobernanza más clara que tengo hoy.
 
@@ -136,7 +136,7 @@ Nada de esto se sintió cómodo mientras pasaba. Es exactamente lo que me deja a
 
 *(Anexo, no cuenta contra el límite de 7 páginas.)*
 
-### A.1 El roster de agentes y qué autoridad tiene cada uno
+### A.1 El equipo de agentes y qué autoridad tiene cada uno
 
 Nahui no la construye una sola IA generalista. La construye un conjunto de agentes especializados, cada uno con su propio archivo de definición, su propio conjunto de herramientas, y su propio límite de qué puede y qué no puede hacer.
 
