@@ -12,3 +12,6 @@ company/campaign-assets/
 
 # R session history
 .Rhistory
+
+# pandoc docx style template, regeneratable, not itself a deliverable
+custom-reference.docx
