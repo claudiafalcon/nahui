@@ -45,7 +45,7 @@ Nahui es una app de registro de ventas y business intelligence, pensada para que
 **Viabilidad técnica, las cuatro preguntas:**
 - **Datos:** el modelo de dominio ya está congelado (`Sale`, `SaleItem`, `Session`, `Event`, `Product`, `Business`). Nada nuevo que inventar, solo persistirlo en una base real.
 - **Infraestructura:** React + TypeScript (PWA) en Vercel. Backend en Supabase (Postgres + Auth + Storage + Edge Functions), paquete de un solo proveedor que elegí el 2026-08-12 sobre un stack por componente, priorizando menos proveedores a esta escala piloto.
-- **Integraciones:** autenticación por teléfono más código OTP vía Supabase Auth, ya decidido. Lectura NFC bajo investigación activa. Web NFC cubre Android/Chrome pero no iOS Safari, y el requisito real de negocio, que Ana nunca necesite comprar un lector aparte, todavía no tiene solución confirmada.
+- **Integraciones:** autenticación por teléfono más código OTP vía Supabase Auth, ya decidido. Lectura NFC, resuelta: en Android uso Web NFC dentro del mismo PWA, sin ningún cambio. Web NFC no funciona en iOS Safari, así que para iOS envuelvo el mismo código en un shell nativo delgado con un puente a Core NFC, solo para esa función específica, no una segunda app nativa completa. El requisito real de negocio, que Ana nunca necesite comprar un lector aparte, queda cubierto en ambos casos.
 - **Capacidades humanas:** una persona con dominio de React/TypeScript y del modelo de dominio para construir. Para operar a esta escala piloto, ningún operador de infraestructura adicional, la arquitectura es completamente gestionada.
 
 **Business Case:**
@@ -112,7 +112,7 @@ Nahui es una app de registro de ventas y business intelligence, pensada para que
 | Piloto Concierge/DM diseñado, brand-revisado, listo para lanzar | Ya logrado, 20-22 ago 2026 | Claudia Falcón, Fundadora |
 | Piloto Concierge/DM lanzado y cerrado, causa real de no-adopción diagnosticada | Próximas 2 semanas | Claudia Falcón, Fundadora |
 | Decisión de precio tomada (Business Decision, todavía abierta) | Antes de la siguiente ola de adquisición | Claudia Falcón, Fundadora |
-| Solución técnica NFC confirmada | En curso, sin fecha cerrada | Claudia Falcón, Fundadora, con apoyo del agente `architect` |
+| Solución técnica NFC confirmada (shell nativo con Core NFC para iOS, Web NFC para Android, distribución piloto por TestFlight) | Ya logrado, 12 ago 2026 | Claudia Falcón, Fundadora |
 | Cadencia fija de revisión de decisiones abiertas definida | Todavía sin definir, brecha real de gobernanza (ver Anexo A) | Claudia Falcón, Fundadora |
 
 ---
