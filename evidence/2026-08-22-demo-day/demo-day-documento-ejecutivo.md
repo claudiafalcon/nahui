@@ -155,7 +155,12 @@ Nahui no la construye una sola IA generalista. La construye un conjunto de agent
 
 ### A.2 Los documentos que gobiernan el sistema
 
-Cada área del proyecto (identidad y operación del equipo, modelo del negocio, especificaciones de diseño, identidad de marca) tiene su propio documento de reglas, separado de los demás, y ningún agente puede escribir fuera del área que le corresponde sin autorización explícita.
+Cada carpeta principal del proyecto tiene su propio archivo `CLAUDE.md` que define las reglas de esa área específica, y ningún agente puede escribir fuera del área que le corresponde sin autorización explícita:
+
+- `company/CLAUDE.md`: quiénes somos, cómo opera el equipo de agentes, quién decide qué.
+- `product/00-foundation/CLAUDE.md`: el modelo de dominio congelado y los principios que no cambian sin pasar por un proceso formal.
+- `product/02-ux/CLAUDE.md`: las reglas de cómo se escriben las especificaciones de Baja Fidelidad.
+- `brand/CLAUDE.md`: la identidad de marca de largo plazo.
 
 Esta separación no es solo organización de carpetas, es la forma concreta en la que "quién decide qué" deja de ser una frase bonita y se vuelve algo que un agente puede verificar antes de actuar.
 
