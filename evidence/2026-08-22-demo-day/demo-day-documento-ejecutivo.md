@@ -90,20 +90,30 @@ Nahui es una app de registro de ventas y business intelligence, pensada para que
 
 ## 6. Plan de despliegue
 
-**A quién le cambia el trabajo:** Nahui no se despliega dentro de una empresa con empleados existentes que puedan ver su puesto amenazado. El cambio real de trabajo es el mío, de operar sola a dirigir un equipo de agentes de IA especializados, cada uno con autoridad real y no solo instrucciones. Para Ana y futuras comerciantes piloto, el trabajo no se reemplaza, cambia en que el registro deja de competir con atender al cliente.
+**Mapa de impacto en personas.** Nahui no se despliega dentro de una empresa con empleados existentes cuyo puesto quede amenazado. Los tres roles reales a quienes les cambia el trabajo:
 
-**A quién podría ver esto como amenaza:** Ana ya me dijo, en otra conversación, que no quiere que la metan a plataformas tipo Amazon o Mercado Pago por las comisiones que cobran. Nahui explícitamente no cobra comisión por transacción, decisión de diseño ya tomada, justo para no replicar ese modelo de intermediario.
-
-**Capacitación:** una pantalla de bienvenida (ya construida, `demo-mode.md`) que le dice a la comerciante piloto qué es real y qué no antes de que toque nada. No un manual largo, una orientación de menos de 15 segundos.
-
-**Primeros hitos:**
-
-| Hito | Responsable | Fecha |
+| Rol | Qué gana | Qué teme |
 |---|---|---|
-| Piloto Concierge/DM, diagnosticar causa real de no adopción | Claudia Falcón, Fundadora / Product Owner | Próximas 2 semanas |
-| Decisión de precio (Business Decision) | Claudia Falcón, Fundadora / Product Owner | Antes de la siguiente ola de adquisición |
-| Resolución de la solución técnica NFC | Agente `architect` + `knowledge-mentor`, ya despachado | En curso |
-| Cadencia fija de revisión de decisiones abiertas | Claudia Falcón, Fundadora / Product Owner | Por definir |
+| Ana (comerciante piloto) | No pierde el registro de una venta aunque llegue el siguiente cliente sin avisar | Que la tecnología le falle o se complique justo en el momento de vender, cuando no tiene margen para resolver un problema técnico |
+| Yo (fundadora) | Dirijo un equipo completo de diseño, arquitectura, marketing y validación sin ser experta en cada área | Perder visibilidad de una decisión real si delego de más, o que un agente actúe fuera de su autoridad sin que yo me entere (esto es justo lo que la gobernanza del Anexo A existe para prevenir) |
+| Futuras comerciantes piloto | Acceso gratuito a inteligencia de negocio real, sin comisión por transacción (Ana ya me dijo, en otra conversación, que no quiere que la metan a plataformas tipo Amazon o Mercado Pago por las comisiones que cobran) | Que sus datos de venta o de sus clientes queden expuestos, o que la app no calce con su tipo específico de bazar o tianguis |
+
+**Capacitación y comunicación:**
+
+| Quién | Qué tiene que poder hacer, y en qué formato | Qué se le dice, y quién lo dice |
+|---|---|---|
+| Ana y futuras comerciantes piloto | Registrar una venta real en menos de 3 segundos, sin ayuda, la primera vez que abren la app · pantalla de bienvenida de menos de 15 segundos dentro de la propia app (`demo-mode.md`), no un manual aparte | Que esto es un prototipo real, que todo lo que registren es real, y que hay una forma directa de decirme si algo no funcionó. Se lo digo yo directamente, no un correo genérico |
+| Yo misma, operando el equipo de agentes | Saber qué tipo de decisión (Arquitectura, Producto o Negocio) le corresponde a cada agente, para no delegar de más ni de menos · el Anexo A de este mismo documento, mi propia referencia | Nadie más me lo dice todavía, es una disciplina que sostengo yo sola |
+
+**Hoja de ruta:**
+
+| Hito | Fecha | Responsable (nombre y cargo) |
+|---|---|---|
+| Piloto Concierge/DM diseñado, brand-revisado, listo para lanzar | Ya logrado, 20-22 ago 2026 | Claudia Falcón, Fundadora |
+| Piloto Concierge/DM lanzado y cerrado, causa real de no-adopción diagnosticada | Próximas 2 semanas | Claudia Falcón, Fundadora |
+| Decisión de precio tomada (Business Decision, todavía abierta) | Antes de la siguiente ola de adquisición | Claudia Falcón, Fundadora |
+| Solución técnica NFC confirmada | En curso, sin fecha cerrada | Claudia Falcón, Fundadora, con apoyo del agente `architect` |
+| Cadencia fija de revisión de decisiones abiertas definida | Todavía sin definir, brecha real de gobernanza (ver Anexo A) | Claudia Falcón, Fundadora |
 
 ---
 
