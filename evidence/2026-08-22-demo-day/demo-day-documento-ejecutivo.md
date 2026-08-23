@@ -18,7 +18,7 @@ El comercio informal en México no es un caso marginal, aportó **25.4% del PIB 
 
 Nahui es una app de registro de ventas y business intelligence, pensada para que la tecnología desaparezca justo en el momento donde antes fallaba. El flujo, desde donde lo vive Ana: llega el cliente, ella cierra la venta en su celular en segundos, sin perder de vista al siguiente cliente que puede llegar en cualquier momento.
 
-**Lo que puede hacer hoy que antes no podía:** registrar una venta real en el momento exacto en que ocurre, sin que el registro le cueste la siguiente venta. Es el job funcional que la libreta, la memoria, y las terminales de pago (que solo registran cuando hay tarjeta, no efectivo) no le resuelven hoy. Prototipo funcional real en `product/02c-high-fidelity-prototype/`.
+**Lo que puede hacer hoy que antes no podía:** registrar una venta real en el momento exacto en que ocurre, sin que el registro le cueste la siguiente venta. Es el job funcional que la libreta, la memoria, y las terminales de pago (que solo registran cuando hay tarjeta, no efectivo) no le resuelven hoy. Ya existe un prototipo funcional real, construido y probado con Ana.
 
 **Cómo se construyó, y por qué eso también es parte de "cómo funciona":** Nahui no la construí sola con ayuda de un asistente de IA. La construye un equipo real de agentes de IA especializados, cada uno con autoridad propia sobre su área (diseño de producto, revisión de marca, arquitectura, marketing, validación), coordinados bajo un marco explícito de quién decide qué. No es una metáfora de gestión de proyecto, es literalmente cómo se tomó cada decisión de este documento. El detalle completo de cómo funciona esa arquitectura está en el Anexo A.
 
@@ -26,7 +26,7 @@ Nahui es una app de registro de ventas y business intelligence, pensada para que
 
 ## 3. Validación
 
-**Qué esperaba, y el umbral fijado antes de probar:** el backlog del producto define desde el principio, antes de cualquier prueba con usuarios, la barra de éxito exacta: **90% o más de las ventas registradas, en menos de 3 segundos por registro** (`company/backlog.md` #1). No es un umbral inventado después del resultado, es la definición original del éxito del MVP.
+**Qué esperaba, y el umbral fijado antes de probar:** desde el principio, antes de cualquier prueba con usuarios, definí la barra de éxito exacta: **90% o más de las ventas registradas, en menos de 3 segundos por registro.** No es un umbral inventado después del resultado, es la definición original del éxito del MVP.
 
 **Qué pasó:** Ana usó el producto real y le encantó, evidencia cualitativa real, de primera mano, no una intuición mía. Una campaña de Meta que acabo de cerrar generó alcance real y barato ($530 MXN gastados, 19,268 personas de alcance, $0.81 MXN por clic, el costo de atraer atención no es el problema) pero prácticamente cero comerciantes reales, fuera de Ana y de mi propio equipo, llegaron a probar el demo. La causa exacta todavía no está confirmada.
 
@@ -57,7 +57,7 @@ Nahui es una app de registro de ventas y business intelligence, pensada para que
 | Operación mensual (Supabase + Vercel) | aprox. $830 MXN/mes | Proyectado, cotización de mercado agosto 2026 |
 | Costo por venta | aprox. $3.90 MXN por venta | Calculado, sobre un supuesto de volumen (3 comerciantes, 180 ventas/mes aprox.) que todavía no valido con datos reales |
 
-**Retorno esperado:** todavía no lo puedo calcular de forma defendible. No existe una cifra de precio decidida (`company/business-decisions.md`), solo principios (sin comisión por transacción, precio fijo o estacional).
+**Retorno esperado:** todavía no lo puedo calcular de forma defendible. No existe una cifra de precio decidida, solo principios (sin comisión por transacción, precio fijo o estacional).
 
 ---
 
@@ -102,7 +102,7 @@ Nahui es una app de registro de ventas y business intelligence, pensada para que
 
 | Quién | Qué tiene que poder hacer, y en qué formato | Qué se le dice, y quién lo dice |
 |---|---|---|
-| Ana y futuras comerciantes piloto | Registrar una venta real en menos de 3 segundos, sin ayuda, la primera vez que abren la app · pantalla de bienvenida de menos de 15 segundos dentro de la propia app (`demo-mode.md`), no un manual aparte | Que esto es un prototipo real, que todo lo que registren es real, y que hay una forma directa de decirme si algo no funcionó. Se lo digo yo directamente, no un correo genérico |
+| Ana y futuras comerciantes piloto | Registrar una venta real en menos de 3 segundos, sin ayuda, la primera vez que abren la app · pantalla de bienvenida de menos de 15 segundos dentro de la propia app, no un manual aparte | Que esto es un prototipo real, que todo lo que registren es real, y que hay una forma directa de decirme si algo no funcionó. Se lo digo yo directamente, no un correo genérico |
 | Yo misma, operando el equipo de agentes | Saber qué tipo de decisión (Arquitectura, Producto o Negocio) le corresponde a cada agente, para no delegar de más ni de menos · el Anexo A de este mismo documento, mi propia referencia | Nadie más me lo dice todavía, es una disciplina que sostengo yo sola |
 
 **Hoja de ruta:**
@@ -155,12 +155,7 @@ Nahui no la construye una sola IA generalista. La construye un conjunto de agent
 
 ### A.2 Los documentos que gobiernan el sistema
 
-Cada carpeta principal del proyecto tiene su propio archivo `CLAUDE.md` que define las reglas de esa área específica, y ningún agente puede escribir fuera del área que le corresponde sin autorización explícita:
-
-- `company/CLAUDE.md`: quiénes somos, cómo opera el equipo de agentes, quién decide qué.
-- `product/00-foundation/CLAUDE.md`: el modelo de dominio congelado y los principios que no cambian sin pasar por un proceso formal.
-- `product/02-ux/CLAUDE.md`: las reglas de cómo se escriben las especificaciones de Baja Fidelidad.
-- `brand/CLAUDE.md`: la identidad de marca de largo plazo.
+Cada área del proyecto (identidad y operación del equipo, modelo del negocio, especificaciones de diseño, identidad de marca) tiene su propio documento de reglas, separado de los demás, y ningún agente puede escribir fuera del área que le corresponde sin autorización explícita.
 
 Esta separación no es solo organización de carpetas, es la forma concreta en la que "quién decide qué" deja de ser una frase bonita y se vuelve algo que un agente puede verificar antes de actuar.
 
