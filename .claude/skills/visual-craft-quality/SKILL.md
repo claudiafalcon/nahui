@@ -1,6 +1,6 @@
 ---
 name: visual-craft-quality
-description: Reusable, artifact-agnostic criteria for evaluating and improving visual craft — hierarchy, density, typography, composition, motion, color/depth — across presentations, videos, product UI, diagrams, and marketing assets. Load when building or reviewing any visual artifact's craft quality, not just its content/spec compliance.
+description: Reusable, artifact-agnostic criteria for evaluating and improving visual craft — hierarchy, density, typography, composition, motion, color/depth, and whole-artifact visual rhythm — across presentations, videos, product UI, diagrams, and marketing assets. Load when building or reviewing any visual artifact's craft quality, not just its content/spec compliance.
 ---
 
 # Visual Craft Quality
@@ -85,6 +85,21 @@ Different artifact types call for different visual strategies. Before applying a
 - **Documentation** (diagrams, technical illustrations) — density tolerance is high and expected; the craft question is legibility and correct information hierarchy, not emotional impact.
 
 Applying a presentation deck's "generous negative space" instinct to a dense product-UI screen, or a product UI's information density to a social ad, is itself a finding — name the mismatch explicitly rather than silently judging every artifact by the same yardstick.
+
+## 9. Artifact-level visual rhythm — the sequence as a whole, not any single frame
+
+**This is a separate evaluation, not a rerun of §1-§7 at a larger scale.** §1-§7 judge individual frames/beats/slides; §4's repetition rule catches local adjacency (three-plus consecutive beats sharing one template). None of that guarantees the artifact reads well end-to-end — a sequence of individually-fine, non-locally-repetitive compositions can still feel monotonous across its full runtime, if the *relationship* between beats never varies. Two composition families strictly alternating every other beat never trips §4's "3+ in a row" rule, but can still read as entirely predictable across a full sequence. That's the gap this section exists to catch.
+
+**Run this as a second pass, after §1-§7 have been applied to every individual frame/beat/slide.** Step back and evaluate the artifact as one continuous visual experience:
+
+- Does it alternate between different composition families, or does it spend too long inside the same visual structure?
+- Does visual energy (density, motion, saturation, focal contrast) rise and fall across the sequence, or sit at one constant level throughout?
+- Are there intentional moments of surprise, compression, expansion, or pause — or does every beat carry roughly the same weight?
+- Does each major narrative transition (a new idea, a tonal shift, an emotional beat) get a corresponding visual transition, or does the composition stay identical while the content moves on underneath it?
+- Could a viewer predict the next layout before it appears, based on the pattern established so far?
+- Are emotionally important moments visually distinguished from purely informational ones, or do they share the same treatment?
+
+**The goal is not maximum variation.** Forcing needless novelty into every beat is its own failure mode, and a deliberate run of similar beats is sometimes exactly right (the same narrative job, told the same way, on purpose — see §4's deliberate-vs-accidental distinction, which this section inherits). The goal is avoiding monotony while preserving narrative clarity: an unbroken visual pattern with no relationship to what's actually changing in the story is the defect, not similarity on its own.
 
 ## How this Skill is used
 
