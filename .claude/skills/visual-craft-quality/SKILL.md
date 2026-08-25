@@ -17,11 +17,21 @@ This Skill improves visual **judgment**, not visual **style**. It doesn't define
 - The intended reading order is explicit — achieved through size, color, position, or motion, not left to chance.
 - Secondary elements (captions, labels, chrome) never visually outweigh the primary message they're supporting.
 
+**Beyond the binary test, rate how strong the hierarchy actually is.** "There is a focal point" and "the focal point is visually dominant enough" are different findings — a frame can pass the binary test above and still read as nearly flat. Once a focal point is confirmed to exist, name where it sits:
+
+- **Strong** — the focal point is unmistakably dominant; every secondary element is clearly, visibly subordinate.
+- **Moderate** — a focal point exists but a secondary element is close enough in weight to create some competition.
+- **Flat** — a focal point is technically identifiable, but nothing about its scale, contrast, saturation, isolation, or motion actually separates it from what's around it.
+
+Base the rating on relative differences in **scale, contrast, saturation, isolation, motion, and overall visual weight** — not a score, a named reason. State which of these (one or more) is doing the separating, or, for a Flat rating, which of these is missing. No numerical scoring — the level and its one-sentence reason is the finding.
+
 ## 2. Density and negative space
 
 - Negative space earns its place: it creates focus, separates unrelated groups, sets rhythm, or gives a pause before the next beat. "Because there was nothing else to put there" is not a reason.
 - Flag both failure directions — a crowded layout competing for attention, and empty space with no job to do (dead space that reads as unfinished or glitched, not as breathing room).
 - Never judge by an arbitrary whitespace percentage. Judge by whether the space is doing something.
+
+**The reviewable test: ask what specific job the empty space is performing, and name it in one short sentence.** Valid answers include directing attention, separating ideas, creating anticipation, providing breathing rhythm, emphasizing scale, supporting motion, and framing evidence. If you can't name the job in one sentence, the space is purposeless — that's the finding, stated as plainly as that. No numerical threshold of any kind (not even as a rough guide) — a small purposeless gap is still a finding, and a large purposeful one is still fine.
 
 ## 3. Typography
 
@@ -33,7 +43,7 @@ This Skill improves visual **judgment**, not visual **style**. It doesn't define
 
 - One core idea per slide or beat. If a slide is doing two jobs, that's a finding.
 - Screenshots are cropped and scaled around the specific evidence they exist to show, never just placed at their native size/crop because that was convenient.
-- Watch for repeated composition across an artifact — the same layout template used three-plus times in a row reads as "the same slide" even when the content differs, and is worth flagging on its own.
+- Watch for repeated composition across an artifact — the same layout template used three-plus times in a row reads as "the same slide" even when the content differs, and is worth flagging on its own. **Before raising this finding, name which kind of repetition it is** — deliberate narrative repetition (the same treatment reused on purpose because the content itself is repeating an action or idea — reinforces understanding, not a defect) versus accidental template repetition (the same layout reused across beats with no shared narrative reason — this is what actually weakens visual rhythm). State which one you're looking at before flagging; only the second kind is the finding.
 - Every visual element has to justify its presence — a decorative shape or icon with no hierarchy/rhythm/evidence job is a candidate for removal, not automatically acceptable because it looks nice. **Exception, not a judgment call for this Skill:** a brand-character or illustration-style element (a mascot, an illustration motif not yet covered by `brand/visual-language.md`) doesn't get flagged for removal on craft grounds alone — that decision routes through the existing `ui-designer`/`brand-guardian` consultation trigger, since it's a brand-identity call, not a composition one.
 
 ## 5. Motion
@@ -41,6 +51,11 @@ This Skill improves visual **judgment**, not visual **style**. It doesn't define
 - Motion earns its place by directing attention, explaining a state change, or reinforcing pacing — the same "justify its existence" bar as static elements.
 - No decorative movement — a bounce, pulse, or drift with no informational job is a finding, not a polish nice-to-have.
 - Social/ad video must remain understandable with sound off — this is a hard check, not a nice-to-have, since muted-by-default viewing is the realistic default. Nahui already has a real precedent for a related failure, a contrast-legibility Major (`.claimCaption` at 3.02:1 against the 4.5:1 floor, `product/02c-high-fidelity-prototype/docs/passes/slice-8-paid-receipt-qr.md`) — a different artifact than video, but the same underlying mistake this Skill's §7 perceptual checks exist to catch earlier. (The karaoke/word-highlight caption pattern itself, `company/merchant-validation-campaign-b-storyboard.md` SB2-9, is a deliberate *solution* to sound-off comprehension, not an example of the defect — don't confuse the two.)
+
+**Reviewing motion from still frames** (a realistic, common condition — most reviewers can't play the actual render) requires its own discipline:
+- Separate what the frame actually shows from what you're inferring about motion. State both, don't blend them into one claim.
+- Any finding that depends on duration, easing, or how long a state is held (a hold that reads as too static, a transition that might be too abrupt) is **provisional** until checked against the real rendered artifact — say so explicitly rather than reporting it as confirmed.
+- Don't treat a single mid-transition frame (a cross-fade caught at low opacity, a mid-animation value) as a confirmed defect on its own — it may simply be a normal instant inside a transition that reads fine in motion. Sample a few frames across the same window before concluding a transition itself is the problem, and still mark the conclusion provisional if you can't verify actual playback.
 
 ## 6. Color and depth
 
