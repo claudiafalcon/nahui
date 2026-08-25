@@ -93,7 +93,7 @@ Applying a presentation deck's "generous negative space" instinct to a dense pro
 **Run this as a second pass, after §1-§7 have been applied to every individual frame/beat/slide.** Step back and evaluate the artifact as one continuous visual experience:
 
 - Does it alternate between different composition families, or does it spend too long inside the same visual structure?
-- Does visual energy (density, motion, saturation, focal contrast) rise and fall across the sequence, or sit at one constant level throughout?
+- Does visual energy (density, motion, saturation, focal contrast) rise and fall across the sequence, or sit at one constant level throughout? Weight these four factors per artifact type, the same way §7 weights its own tests — motion only counts where the artifact actually has motion or a build/transition to infer it from (video, animated content); for a static deck or image sequence, read energy from density, saturation, and focal contrast alone.
 - Are there intentional moments of surprise, compression, expansion, or pause — or does every beat carry roughly the same weight?
 - Does each major narrative transition (a new idea, a tonal shift, an emotional beat) get a corresponding visual transition, or does the composition stay identical while the content moves on underneath it?
 - Could a viewer predict the next layout before it appears, based on the pattern established so far?
