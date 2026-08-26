@@ -21,3 +21,9 @@ custom-reference.docx
 evidence/*.jpg
 evidence/*.jpeg
 evidence/*.png
+
+# Slide-render exports used only to let review agents "see" a .pptx
+# (they can't open one directly) — regeneratable from the real .pptx,
+# not a deliverable itself.
+evidence/**/*slide-render*.jpg
+evidence/2026-08-22-demo-day/*.pdf
