@@ -5,6 +5,8 @@ description: Reusable, artifact-agnostic criteria for evaluating and improving v
 
 # Visual Craft Quality
 
+**Status: Frozen v1.1 (2026-08-25).** Validated in three rounds against a real produced video (Campaign B) and, for §9, also against a real presentation deck (Demo Day) — each round's gaps were closed and re-validated before the next was trusted. Evolve from real evidence found while using it on real work, not by pre-emptively polishing sections that haven't been exercised yet.
+
 This Skill improves visual **judgment**, not visual **style**. It doesn't define what Nahui should look like — `company/brand/brand-guide.md` and `brand/visual-language.md` already own that, and this Skill defers to them, never overrides them. What this Skill gives `ui-designer` (building) and `ux-critic` (reviewing) is a shared, checkable vocabulary for *why* a composition works or doesn't, so "this feels off" becomes a specific, addressable finding instead of a vague reaction.
 
 **Never force a fixed aesthetic.** A dense data dashboard and a one-line hero slide can both be excellent — judge each artifact against what it's trying to do, not against a single template.
