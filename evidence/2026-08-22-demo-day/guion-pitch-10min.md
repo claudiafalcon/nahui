@@ -34,7 +34,7 @@ Aquí está el estado inicial: venta rápida, con las categorías que ella misma
 
 Y así se registra una venta. Un toque por producto. El total se arma solo, en el momento exacto de la venta, sin que Ana tenga que hacer cuentas, sin que tenga que pausar para anotar nada en un cuaderno.
 
-Eso que parece un detalle pequeño es en realidad todo el punto del producto. No es una app con muchas funciones, es una app que resuelve exactamente la fricción que ya identificamos, y nada más que esa fricción, al menos por ahora.
+Eso que parece un detalle pequeño es la base de todo lo demás. No es una app con muchas funciones todavía, es una app que primero resuelve exactamente la fricción que ya identificamos, porque sin resolver esto, no hay datos que registrar, y sin datos, no hay inteligencia que construir después.
 
 ## 5. Y queda guardada — ~4:20
 
