@@ -1,6 +1,6 @@
 ---
 name: horizontal-journey-review
-description: ux-critic's distinct review mode for the seam between already-approved documents — the full concatenated screen sequence a merchant would actually walk end to end, not each document read independently. Load once every Low-Fidelity document for one of information-architecture.md's five canonical journeys (or the Onboarding/Settings supplementary surfaces) is Approved, before Medium-Fidelity build starts on that journey, and again against the built Figma sequence before that journey's Medium-Fidelity status can read "done."
+description: ux-critic's distinct review mode for the seam between already-approved documents — the full concatenated screen sequence a merchant would actually walk end to end, not each document read independently. Load once every Low-Fidelity document for one of information-architecture.md's five canonical journeys (or the Onboarding/Settings supplementary surfaces) is Approved, before High-Fidelity build starts on that journey, and again against the built React sequence before that journey's status can read "done."
 ---
 
 # Horizontal Journey Review

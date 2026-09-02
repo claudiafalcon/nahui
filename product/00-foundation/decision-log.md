@@ -2,6 +2,25 @@
 
 Chronological. Each entry: the decision, why it was made, and what it superseded if anything. Don't edit past entries when a decision changes later — add a new entry that supersedes it, so the reasoning trail stays intact.
 
+## D50 — Figma removed entirely from Nahui's toolset, superseding D42's "optional/legacy" allowance
+
+Product Owner decision, 2026-08-30. D42 (React-first workflow) already demoted Figma from a mandatory pipeline stage to an optional one, retained for brainstorming, concept exploration, marketing assets, illustrations, diagrams, and documentation support. This entry removes that remaining allowance entirely: no agent holds Figma/FigJam tool access as of this date, and no active governance document treats Figma as an available execution medium for any purpose.
+
+**Why now, not left as D42's optional case:** confirmed directly against repository history before deciding — the last real work against `product/02b-medium-fidelity/` (the Figma-built spec tier) predates D42's own adoption commit; every commit since has been against `product/02c-high-fidelity-prototype/` (React). The optional allowance had zero real usage in practice; removing it closes a gap between stated policy and actual behavior rather than changing behavior.
+
+**Applied:**
+- `.claude/agents/ui-designer.md` — Figma tool grants removed from frontmatter; "Working in Figma" execution-medium section removed; description and body updated to reflect React/TypeScript as the only medium, not the default among options.
+- `.claude/agents/ux-critic.md`, `.claude/agents/reviewer.md` — Figma read-only tool grants (`get_metadata`/`get_screenshot`/`get_design_context`/`whoami`) removed; Figma-specific inspection instructions replaced with the medium-agnostic equivalent (inspect the actual rendered artifact directly).
+- `.claude/skills/figma-clone-discipline/`, `.claude/skills/figma-review-methodology/` — retired outright (deleted), same precedent as the `planner` agent's own retirement (D-adjacent, `company/bitacora.md` 2026-08-12): no stub left behind, the reasoning lives here and in git history instead.
+- `.claude/skills/horizontal-journey-review/SKILL.md` — its one Figma-specific trigger clause ("against the built Figma sequence") corrected to reference the React sequence instead.
+- `company/CLAUDE.md` — Delegation section's Figma allowance removed; Horizontal Journey Review, wiring-dependent-findings, and merchant-user-tester sections' Figma-specific wording corrected to the medium-agnostic equivalent (rendered content, `chrome-devtools-mcp`, "the prototype's internal structure").
+- `product/02-ux/CLAUDE.md` — §4's navigation-definition rule corrected to point at the React build as the wiring layer, not Figma; `product/02b-medium-fidelity/` restated as dormant historical record only.
+- `company/active-artifacts.md` — status note added marking the table as a historical record, not an active lookup, as of this date; the Merchant Experience Kit's content-migration gap (it lived only as a FigJam board) flagged for the Product Owner, not silently resolved.
+
+**Not applied, deliberately:** historical entries in `company/bitacora.md`, this log's own past entries, and `company/business-decisions.md`'s closed items are left untouched, per this project's own non-rewrite-of-history discipline — they describe what was true when written, not what's true now. `company/usability-testing-plan.md` (a moderated-testing plan built around a Figma click-through prototype) is not rewritten here either — it's already superseded in practice by `merchant-user-tester`'s direct testing of the React prototype, but a full rewrite of that plan is a separate task, not bundled into this one.
+
+**Not RFC-worthy** — same class as D12/D13/D24/D31/D38/D41/D42: a tooling/pipeline-organization decision, touching no aggregate, bounded context, or ubiquitous-language term. `domain-model.md`, `architecture-principles.md`, and `information-architecture.md` are unaffected in substance.
+
 ## D49 — Nahui adopted as a standing AI-engineering laboratory alongside being a product; `architecture-principles.md` gains a scoped tiebreaker principle
 
 Product Owner directive, 2026-08-17, stated as a durable strategic objective, not a one-off task: **"Regardless of the commercial outcome, Nahui should become our AI laboratory. Every significant architectural decision should maximize learning of modern AI engineering practices while remaining appropriate for the product."** Named target areas (non-exhaustive): agentic AI, long-term memory architectures, multi-agent collaboration, RAG, knowledge management, semantic search, tool calling, AI orchestration, workflow automation, evaluation frameworks, AI observability, human-in-the-loop patterns, multimodal AI, reasoning models, MCP, AI security and governance. Her own text names the boundary explicitly: "The objective is not to force AI into features where it provides no customer value," triggered only "when there is a reasonable trade-off between two architectures with similar cost and complexity."

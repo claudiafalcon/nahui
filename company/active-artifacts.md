@@ -1,5 +1,7 @@
 # Active Artifacts
 
+**Status note, 2026-08-30:** Figma/FigJam is fully removed from this project's toolset (Product Owner decision — no agent holds Figma tool access as of this date, `ui-designer`'s standing execution medium is React/TypeScript only). Every row below is a historical record of artifacts that were live before that decision, kept for reference, not an active lookup table anymore. **One real open item this surfaces, not resolved here:** the Merchant Experience Kit (row below) lived only as a FigJam board's content — its actual persona information needs to be migrated to a plain document if it's still needed as reference material, since nothing currently reads it from FigJam going forward. Flagged for the Product Owner, not silently actioned.
+
 A lightweight lookup table of current canonical URLs for external artifacts
 (Figma/FigJam) — owned and kept current by Main. Exists so no agent ever
 hardcodes a URL that can go stale, and so any dispatch needing one (most
