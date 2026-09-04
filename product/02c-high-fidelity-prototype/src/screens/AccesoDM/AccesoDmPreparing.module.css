@@ -1,0 +1,36 @@
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+}
+
+/* §3.1's own wireframe — a silent skeleton block, no text. Purely a shape
+   cue that something is loading; never any label, matching the spec's own
+   "silent" framing (no "Cargando…"/"Preparando…" line during this phase —
+   that's reserved for the slow variant below). */
+.skeleton {
+  width: 70%;
+  max-width: 220px;
+  height: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--color-hilo);
+}
+
+.slowLine {
+  color: #6B6259;
+  font: var(--text-body);
+}
+
+.body {
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
+
+.cta {
+  max-width: 240px;
+}

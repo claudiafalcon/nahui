@@ -1,0 +1,35 @@
+/* acceso-dm.md §3.3 — mirrors `ReminderBanner.module.css`'s own `.shell`/
+   reservation technique exactly (same rationale: `display: contents` scopes
+   a `:global(.app-shell)` descendant rule to this one feature without
+   touching `global.css`'s own shared definition). */
+.shell {
+  display: contents;
+  --acceso-dm-nudge-height: 44px; /* starting estimate only — the ResizeObserver in ResultsGuidanceNudge.tsx overwrites this with the real measured height before it's ever load-bearing */
+}
+
+.withNudge :global(.app-shell) {
+  padding-top: calc(var(--acceso-dm-nudge-height) + env(safe-area-inset-top, 0px));
+}
+
+/* One slim, single-band strip — deliberately lighter-weight than
+   `ReminderBanner`'s own two-row banner (§3.3's own text: this nudge carries
+   no secondary controls, no restart, no time estimate, no state label) —
+   fixed at the true viewport top, same 430px-max-width/centered treatment
+   as `.app-shell` itself so it reads as part of the same screen rather than
+   a page-wide notice. Passive, non-tappable: plain text, no button
+   semantics, no cursor/hover treatment. */
+.strip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  margin: 0 auto;
+  max-width: 430px;
+  padding: var(--space-3) var(--space-4);
+  padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+  background: var(--color-tezontle-dark);
+  color: var(--color-white);
+  font: var(--text-body-sm);
+  text-align: center;
+}

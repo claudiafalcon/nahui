@@ -1,4 +1,4 @@
-import { AppRouter } from '../../AppRouter';
+import { AccesoDmGate } from '../AccesoDM/AccesoDmGate';
 import { DemoModeGateActive } from './DemoModeGateActive';
 
 /**
@@ -31,13 +31,22 @@ import { DemoModeGateActive } from './DemoModeGateActive';
  * shape the Architecture Review specified, not a branch injected inside
  * `AppRouter.tsx` itself, which is untouched.
  *
+ * The real (non-demo-campaign) branch below renders `<AccesoDmGate />`
+ * rather than a bare `<AppRouter />`, as of `acceso-dm.md` — that route
+ * deliberately must exist in the one real production build (unlike
+ * everything gated above, it is never build-stripped), so it's composed
+ * here rather than inside the demo-campaign branch's own
+ * `DemoModeGateActive`/`ReminderBanner` chain, which stays untouched.
+ * `AccesoDmGate` itself renders the unmodified `<AppRouter />` once its own
+ * resolution is done — see that file for the full mechanism.
+ *
  * Verified live: see README.md's pass history for this feature — `npm run
  * build`'s output bundle contains no "Empezar demo"/"prototipo de Nahui"
  * string; `npm run build:demo-campaign`'s does.
  */
 export function DemoModeGate() {
   if (import.meta.env.VITE_DEMO_MODE !== 'true') {
-    return <AppRouter />;
+    return <AccesoDmGate />;
   }
   return <DemoModeGateActive />;
 }

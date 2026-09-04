@@ -19,6 +19,7 @@ import { CloseSummary } from './CloseSummary';
 import { SettingsScreen } from '../Settings/SettingsScreen';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 import { setReceiptScreenActive } from '../DemoMode/receiptScreenSignal';
+import { setHomeScreenMounted } from '../AccesoDM/homeScreenMountedSignal';
 import type { Receipt } from '../../domain/store';
 
 type HomeUiState =
@@ -73,6 +74,18 @@ export function HomeScreen({
     setReceiptScreenActive(ui.kind === 'receipt');
     return () => setReceiptScreenActive(false);
   }, [ui.kind]);
+
+  // acceso-dm.md §2.3 check 4 — reports "HomeScreen is currently mounted"
+  // (i.e. the Hoy tab is active) to `homeScreenMountedSignal.ts`, the one
+  // fact `ResultsGuidanceNudge.tsx` needs to render on Home only, never on
+  // Inventario/Eventos/Resultados, without reaching into `App.tsx`'s own tab
+  // shell. Same mount/unmount-reporting shape as the receipt signal above —
+  // a no-op for every merchant not on the Acceso DM route, since nothing
+  // else in this codebase subscribes to it.
+  useEffect(() => {
+    setHomeScreenMounted(true);
+    return () => setHomeScreenMounted(false);
+  }, []);
 
   const session = activeSession(state);
 
