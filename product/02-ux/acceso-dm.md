@@ -10,6 +10,8 @@
 
 **Corrected 2026-09-04 (`decision-log.md` D52), one half of the paragraph above only.** Two reasons were given for avoiding both reserved terms: avoiding "demo"/"prototipo" (reserved for the build-level gate), and avoiding "ejemplo" (reserved for `onboarding.md`'s own path). The first half no longer holds now that this route is itself build-gated (§0's placement-note amendment, above) — calling it "Modo demo" would be an accurate description today, not a misleading one; the concern that half of the reasoning protected against (implying this route *is* the build-level gate when it structurally wasn't one) no longer applies, since it now genuinely is one. The second half — avoiding "ejemplo," because of the real programmatic coupling to `OnboardingPath='demo'`/"Ver un ejemplo" — is untouched by this move and still applies exactly as reasoned above; that coupling has nothing to do with which build ships the code. This document keeps its existing name, "Acceso DM," regardless — this corrects the stated reasoning only, not a request to rename the document or the route.
 
+**Amended 2026-09-04 — the exit invitation (§2.5/§3.5), a lightweight CTA offering the real product once the value loop is complete. Review complete, both passes clean after fixes.** Additive-only: builds on two of `acceso_dm_results_viewed`'s own signals plus one further gate (§2.4/§2.5), composites a strip above Resultados' own content (the same sibling-overlay discipline `ResultsGuidanceNudge.tsx`/`ReminderBanner.tsx` already establish), and links out, new-tab, to `https://nahui.app/` — no query params, no pre-fill, no demo-data migration, no conversion mechanism, reaffirming §6's existing Non-goals rather than reopening them. `brand-guardian`: clean, no Blocker/Major on the copy itself; one Minor (unbounded, un-dismissible persistence) — fixed, a lightweight "Ahora no" dismiss added. `ux-critic`: 2 Major (the same persistence issue, independently confirmed; a mistimed-condition claim about what `acceso_dm_results_viewed` actually fires on) + 2 Minor (a stray settings-gear wireframe error; an under-specified CSS reservation approach) + 1 Suggestion (visual differentiation from `ReminderBanner`, flagged for `ui-designer`) — all fixed except the Suggestion, left as a build-time flag (§8 item 8). Ready for `ui-designer` to build.
+
 ---
 
 ## 1. Merchant goal
@@ -216,6 +218,95 @@ Not a screen-resolution branch like §2.1-§2.3 above — no new screen state. F
 
 **Why no `decision-log.md` amendment:** purely additive instrumentation — no new domain field, no aggregate or ubiquitous-language term touched, no change to `reports.md`/`selectors.ts`. D51 already covers this route's placement and mechanism; this subsection is the complete record for the instrumentation layer, same precedent `demo-mode.md`'s own analytics amendments already set for itself.
 
+### 2.5 The exit invitation — offering the real product once the loop is complete
+
+**Why this is needed at all.** This route's whole design intentionally hands her a working, sellable, populated catalog with zero ceremony (§1) — but that catalog is seeded, disposable, and explicitly not meant to become her real account (§6, "Not a conversion mechanism"). Once she's completed the full value loop this route was built to demonstrate — sell → close jornada → see the sale reflected in Resultados — the natural next question is hers to ask, not this route's to answer for her: does she want to do this again, for real, with her own information? This subsection designs the one small, passive way Nahui offers her that door, without walking through it for her.
+
+**Correction (`ux-critic`, 2026-09-04):** this subsection's own earlier draft claimed `acceso_dm_results_viewed` already fires on all three of `nahui-acceso-dm-active` + `hasAnyClosedSession` + Resultados-mounted — not accurate. §2.4's own definition, and the shipped code (`ResultsGuidanceNudge.tsx`), gate that event on exactly two facts: `nahui-acceso-dm-active` set and the Resultados screen mounting. A merchant who opens Resultados out of curiosity before ever finalizing a sale or closing a jornada already fires that event — at a moment this CTA is correctly still absent. So the event's own timestamp marks "she opened Resultados," not "she saw this invitation."
+
+**What this CTA actually reuses, precisely stated.** It reuses two of the event's own building blocks (`nahui-acceso-dm-active`, Resultados-mounted — same reads, same signals, no second derivation) and adds one further condition on top, `hasAnyClosedSession`, that the event itself doesn't gate on. Not "the exact same condition" as originally claimed — a narrower one, layered on the same underlying facts. This keeps faith with the spirit of the discipline §2.3/§2.4 hold themselves to (reuse existing reads, never recompute a fact a second way) without overstating what's actually shared.
+
+```
+1. Is nahui-acceso-dm-active set for this device? [isAccesoDmActive(),
+   identical read §2.3 check 1 and §2.4's acceso_dm_results_viewed
+   already use]
+     → NO: this CTA never renders, for any merchant, on any screen,
+       ever — same universal exclusion §2.3 check 1 already states for
+       the nudge.
+     → YES: continue to check 2.
+
+2. hasAnyClosedSession(state)? [the existing selector, reused unchanged
+   — the identical check that already permanently hides the §2.3 nudge
+   and already gates acceso_dm_results_viewed]
+     → NO: not shown — she hasn't yet reached the moment this route's
+       value loop actually completes (a finalized Sale alone isn't
+       enough, per reports.md §2 step 1's own gate, cited already in
+       §2.3).
+     → YES: continue to check 3.
+
+3. Is the Resultados screen currently mounted? [identical mount signal
+   already wired for acceso_dm_results_viewed — resultadosScreenMounted
+   in resultadosScreenMountedSignal.ts, not redefined or narrowed to any
+   one Resultados sub-state here]
+     → NO: not shown — this CTA is Resultados-only, the mirror image of
+       the §2.3 nudge's Home-only scope. It never renders on Hoy,
+       Inventario, or Eventos.
+     → YES: show the CTA (§3.5).
+
+4. Does tapping the main CTA change whether it keeps showing?
+     → No. Tapping opens https://nahui.app/ in a new browser tab (§3.5)
+       — a plain outbound navigation, not a write of any kind, to
+       anything. Nothing in this route's own state (nahui-acceso-dm-
+       active, the Session, the Business) changes as a result. If she
+       closes that tab and returns to this one, checks 1-3 above still
+       hold exactly as before, so the CTA is still there — she may want
+       to look again later, or show someone else.
+
+5. **Corrected (`brand-guardian` Minor + `ux-critic` Major, 2026-09-04) — a
+   dismiss control is required, not optional.** An earlier draft of this
+   check reasoned, by direct analogy to §2.3 check 6's nudge, that no
+   dismiss was needed — but the analogy's premise doesn't transfer: the
+   nudge is self-limiting (hasAnyClosedSession permanently retires it the
+   moment she closes a jornada, so it can only ever appear once, in a
+   narrow window). This CTA's own trigger condition never flips false
+   again once true, so an identical, un-dismissible invitation would
+   repeat on every single future Resultados visit, indefinitely,
+   including a merchant who returns across many bazaar days just to
+   check her real numbers — in real tension with keeping this
+   lightweight and non-disruptive. A small, explicit dismiss control
+   (§3.5, "Ahora no") is added: tapping it sets a new, small, local-only
+   flag (nahui-acceso-dm-exit-cta-dismissed — same non-domain,
+   device-level-flag category as nahui-acceso-dm-active) and hides the
+   CTA permanently for that device, without touching anything checks 1-3
+   read. This is additive to check 4, not a replacement for it — tapping
+   the main CTA still never dismisses it (she may only be glancing, not
+   deciding), only the explicit "Ahora no" does.
+
+6. Is any part of it tappable?
+     → Yes, two independent zones — the same "more than one interactive
+       zone in one strip" shape demo-mode.md's own ReminderBanner already
+       establishes (its questionnaire link + "Reiniciar demo," two zones
+       in one banner), not a new pattern:
+       - The CTA's own text/body — the primary tap target, identical
+         "whole-row-is-the-button" shape ReminderBanner.tsx's own row 1
+         establishes ("Cuéntanos tu opinión — cuestionario"), not the
+         passive, non-tappable shape §2.3 check 5 gives the
+         results-guidance nudge. This is a deliberate divergence from
+         that nudge: it exists to explain an action already reachable
+         elsewhere on the same screen (§2.3 check 5's own reasoning);
+         this CTA has no such existing affordance to point at — it *is*
+         the affordance, since nahui.app is reachable no other way from
+         this device.
+       - A small, secondary "Ahora no" dismiss control (check 5, above)
+         — same secondary-zone treatment ReminderBanner's own
+         "Reiniciar demo" control already gets relative to its own
+         primary questionnaire link.
+```
+
+**What tapping it does — confirmed, not redesigned here.** A plain anchor to `https://nahui.app/`, opened in a new tab (§3.5) — no query parameters, no pre-fill, no data of any kind carried across. She lands on the real `authentication.md §3.3` phone-entry screen exactly as any brand-new merchant would, then her free choice of `onboarding.md`'s three existing paths. Nothing about her Acceso DM session — the seeded catalog, her demo sale, `nahui-acceso-dm-active` itself — is read, migrated, or referenced by this link in any way; this is the plain exit link the Product Owner specified, not a data handoff, and it requires no change to `authentication.md`, `onboarding.md`, or any production code on the `nahui.app` side (see §6's reaffirmation below). Acceso DM's own code stays entirely inside `demo.nahui.app` — this is an outbound `<a>` tag to a different domain, not a route this build composes.
+
+**Does this require any change to `reports.md`?** No — confirmed explicitly, the same way §6 already confirms this for `home.md`/`reports.md` generally. This CTA is a composited overlay, sibling to whatever Resultados screen state `reports.md` already renders (per its own Approved spec, unmodified) — it adds a strip above that content, the same non-invasive relationship `ResultsGuidanceNudge.tsx` already holds with `home.md`. `reports.md` needed no edit for the nudge and needs none for this CTA either.
+
 ---
 
 ## 3. Low-fidelity wireframes
@@ -270,6 +361,28 @@ Same class of failure, same "Reintentar," as every other storage-access-throwing
 
 No new wireframe — the digital receipt renders exactly as `home.md §3.8f` already specifies, full-viewport, header-less, nothing composited above it, for the identical reason `demo-mode.md §2.3` check 2 already gives.
 
+### 3.5 La invitación a probar Nahui — composed onto Resultados' own top strip
+
+```
+┌───────────────────────────────┐
+│[ ¿Quieres probar Nahui con tu   ]│
+│[  propio negocio?    [Ahora no] ]│
+├───────────────────────────────┤
+│ Resultados                     │
+├───────────────────────────────┤
+│   [ ... contenido de Resultados,│
+│       sin cambios — cita textual│
+│       de reports.md, no        │
+│       redescrito aquí ]         │
+├───────────────────────────────┤
+│ Hoy  Inventario Eventos [Resultados] │
+└───────────────────────────────┘
+```
+- One slim strip above Resultados' own header, two tap zones (§2.5 check 6) — same 430px-max-width/centered treatment and the same `--*-height`-reservation/`ResizeObserver` technique `ResultsGuidanceNudge.module.css`/`ReminderBanner.module.css` already establish, mirrored to a third stacked strip rather than a new mechanism. Stacks below `ReminderBanner`'s own demo-campaign banner when both are present (deterministic order: banner, then this CTA, then screen content) — the identical summed-height discipline D52 already fixed for the nudge/banner pair, extended to a third strip rather than reopened. **Implementation note, not resolved here (`ux-critic` Minor, 2026-09-04):** the two mutually-exclusive strips (§2.3's nudge is Home-only; this CTA is Resultados-only — never both mounted at once) can safely share one reserved-height custom property rather than needing a distinct third one, and `ResultsGuidanceNudge.tsx` already holds every signal this CTA needs (`resultadosScreenMounted`, `hasAnyClosedSession`, `isAccesoDmActive()`) — the path of least resistance is extending that existing component/file rather than creating a new one, `ui-designer`'s call to confirm at build time.
+- Copy: **"¿Quieres probar Nahui con tu propio negocio?"** — a direct refinement of the Product Owner's own suggestion ("¿Quieres probar Nahui con tu negocio?"), adding "propio" to disambiguate from the seeded catalog she just finished using — without it, "tu negocio" could plausibly still mean the one she's looking at right now. Phrased as a question, not an instruction (*tone-of-voice.md*'s "Suggestions read as offers, not instructions" — the same rule §3.3's own remediation already applied); carries no urgency language, no "finally" or "ya no tienes que" rescuing framing (*character-bible.md*, "never implies a merchant needed rescuing" — her demo experience wasn't a problem being solved), and no "demo"/"ejemplo" vocabulary anywhere, holding the same word-level bar §5's existing acceptance criteria already set for the rest of this route. **Reviewed by `brand-guardian`, 2026-09-04 — clean, no Blocker/Major.** "Propio" over an alternative like "de verdad"/"real" was confirmed the right call specifically because it frames the distinction as ownership, not validity — it doesn't retroactively imply the demo business was fake, avoiding a rescuing-adjacent framing `character-bible.md` warns against.
+- The CTA's own text is the primary tap target — a plain anchor to `https://nahui.app/`, `target="_blank" rel="noopener noreferrer"`, opened in a new tab. New tab, not same-tab: same-tab would strand her mid-Resultados if she only meant to glance at the real product and come back, and costs nothing extra to implement — the identical mechanism `ReminderBanner.tsx`'s own questionnaire link already uses for the same "tap this, leave the app, come back if you want" shape, minus that link's `onClick`/tracking wrapper, which exists there only to fire a click event first (not requested for this CTA — see §8 item 7 for the option, deliberately not decided here).
+- **"Ahora no" — the second tap zone, added 2026-09-04 (§2.5 check 5).** A small, secondary dismiss control, same visual weight/secondary-zone treatment as `ReminderBanner.tsx`'s own "Reiniciar demo" relative to its primary questionnaire link. Tapping it writes `nahui-acceso-dm-exit-cta-dismissed` (same non-domain, device-level flag category as `nahui-acceso-dm-active`) and hides this CTA permanently for the device — the only way it ever stops showing, since checks 1-3's own trigger condition never reverts to false on its own.
+
 ---
 
 ## 4. Interaction flow (summary)
@@ -301,6 +414,19 @@ on a device where nahui-acceso-dm-active is set:
     close-session flow → once the Session reaches status = closed,
     hasAnyClosedSession flips true → el aviso never renders again on
     this device
+
+Independently, on Resultados, whenever nahui-acceso-dm-active is set and
+hasAnyClosedSession is true, and she hasn't already dismissed it (§2.5):
+  → la invitación a probar Nahui (§3.5) renders as a strip above
+    Resultados' own content, every time that screen is reached
+  → tapping the CTA text opens https://nahui.app/ in a new tab — a
+    plain, parameter-free outbound link, not a route this build
+    composes; she resolves through the real production build's own
+    authentication.md/onboarding.md exactly as any brand-new merchant
+    would, with nothing about this Acceso DM session carried across in
+    any way — the CTA itself stays visible afterward, unaffected
+  → tapping "Ahora no" instead hides the CTA permanently for this
+    device — the only way it stops showing
 ```
 
 ---
@@ -314,6 +440,8 @@ on a device where nahui-acceso-dm-active is set:
 - The results-guidance nudge (§2.3/§3.3) shows only when all three of its own conditions hold (`nahui-acceso-dm-active` set, ≥1 finalized Sale, `!hasAnyClosedSession`), never for any other merchant, on any other route, ever.
 - The nudge never renders on `home.md §3.8f`, has no tap target, and cannot be dismissed independently of `hasAnyClosedSession` becoming true.
 - No screen, error state, or piece of copy anywhere in this document uses the words "demo" or "ejemplo."
+- Once `nahui-acceso-dm-active` is set and `hasAnyClosedSession(state)` is true, the exit invitation (§2.5/§3.5) renders every time the Resultados screen is reached — never before that condition holds, never on any other screen — until she taps "Ahora no," which hides it permanently for that device.
+- Tapping the exit invitation opens `https://nahui.app/` in a new tab, with no query parameters and no data of any kind passed — the destination resolves exactly as `authentication.md`'s real phone-entry screen would for any brand-new merchant.
 
 ---
 
@@ -326,6 +454,7 @@ on a device where nahui-acceso-dm-active is set:
 - **Not a conversion mechanism.** The Business this route creates is exactly as disposable as any "Ver un ejemplo" Business (`decision-log.md` D19) — it is not meant to become her real account later. No `Sale.origin`, no replay-at-conversion, no synthetic Session, and no "make it yours" transition of any kind are part of this design — that entire direction was explicitly ruled out by the Product Owner and does not reappear here.
 - **No change to `reports.md`, `selectors.ts`, or Session's close-gating logic anywhere.** The results-guidance nudge is copy/flow only, composited above Home, never touching the actual close-gating rule it explains.
 - **No in-app "Acceso DM" indicator anywhere in the real Merchant Application's own content** — the closing nudge is the one composited, validation-campaign-only surface that discloses anything at all, and only in its own copy, on Home, never on any Merchant Application screen's own header, content, or navigation.
+- **The exit invitation (§2.5/§3.5) is a plain outbound link, never a data handoff.** No `Sale.origin`, no synthetic Session, no pre-fill, no query parameter, no "make it yours" transition — the same prohibition the bullet above already states for this route's own Business, extended explicitly to this new surface so it isn't mistaken for a reopening of the already-superseded Q19-Q22 conversion direction (`product-decisions.md`). It requires no change to `reports.md`, `authentication.md`, or any of `onboarding.md`'s three paths — confirmed directly in §2.5, the same confirmation this section already gives for every other screen this route touches.
 
 ---
 
@@ -335,6 +464,7 @@ on a device where nahui-acceso-dm-active is set:
 - Named "Acceso DM," avoiding both "demo" and "ejemplo," reasoned in full above.
 - The results-guidance nudge is passive, non-tappable, Home-only, and inherits `demo-mode.md §2.3` check 2's `home.md §3.8f` exception unchanged rather than re-justifying a new one.
 - A new, small, explicitly non-domain local flag (`nahui-acceso-dm-active`) is the only new persisted state this document introduces, needed solely because this route intentionally produces domain-identical state to "Ver un ejemplo" and the domain layer therefore cannot answer "which route created this session" on its own.
+- The exit invitation (§2.5/§3.5) builds on two of `acceso_dm_results_viewed`'s own signals plus one further gate (`hasAnyClosedSession`) rather than inventing a fresh set, composites as a third stacked top strip using the same reservation technique the nudge/banner pair already establish, and links out via a plain, untracked anchor to `https://nahui.app/` in a new tab — the simplest mechanism that satisfies the requirement, deliberately not the `onClick`/`track()` pattern `ReminderBanner`'s own external link uses (see §8 item 7). Ships with a lightweight "Ahora no" dismiss (corrected 2026-09-04, `brand-guardian`/`ux-critic`) rather than persisting indefinitely with no way to reduce it.
 
 ---
 
@@ -345,4 +475,7 @@ on a device where nahui-acceso-dm-active is set:
 3. **Resolved, 2026-09-04 — both premises below are now stale (`reviewer` finding during the D52 relocation review).** Both parts of the original gap are closed: (a) `company/merchant-validation-concierge-pilot.md`'s Loop-2 handoff was wired to send this route's link (commit `ee1e845`), then corrected to `https://demo.nahui.app/?acceso=dm` once D52 moved this route into the demo-campaign build; (b) the "no instrumentation as designed" cost named below no longer applies either way — post-D52, this route automatically inherits `demo-mode.md §2.5`'s entire `demo_*` suite as a side effect of now compositing `ReminderBanner` (accepted, not chosen — see D52's own "known, accepted side effect" note; it conflates DM-pilot traffic with ordinary self-serve visitors in that specific event stream), in addition to this route's own dedicated `acceso_dm_*` suite (§2.4), which stays correctly DM-pilot-only. Kept below, unedited, as the original reasoning that was live when the pilot launch decision was actually made — not deleted per this project's non-deletion discipline.
    - *Original text, 2026-09-03:* Genuinely undecided — this route currently has no confirmed way to actually reach a real DM-qualified merchant (`ux-critic` finding). `company/merchant-validation-concierge-pilot.md`'s own Loop-2 DM handoff script (its line 242 as of this writing) still sends `demo.nahui.app` — the separate, build-gated `demo-mode.md` experience — not this route's `?acceso=dm` production URL. Two real options, not decided here: (a) update the pilot's handoff script to send the `?acceso=dm` link instead, or (b) keep the pilot on `demo.nahui.app` for now and treat this route as a capability not yet wired into the live pilot. Option (a) has a real cost worth naming, not just a copy change: `demo-mode.md §2.5`'s entire `demo_*` analytics-event suite is mounted only inside `DemoModeGate`'s own `pass-through` branch — this route, running in the real production build, has no instrumentation of any kind as designed. Switching the pilot's own DM handoff to this route without also deciding whether/how to instrument it would mean losing Loop 2's entire measurement mechanism, not just changing which link she receives. Left open deliberately — this is a pilot-mechanics tradeoff, not a UX or architecture question this document can settle.
 4. **Placement ruling — resolved, 2026-09-03 (`architect`, `decision-log.md` D51).** See §0's own updated placement note for the full ruling. No longer open.
-5. **The fixed bypass credential ships permanently in the real production JS bundle (`reviewer` Suggestion, 2026-09-03) — low-risk today, worth re-examining at Backend Integration.** Unlike everything in `demo-mode.md`'s family (which Architecture Review required to be structurally absent from production, `demo-mode.md §8` item 1), `ACCESO_DM_FIXED_PHONE`/`ACCESO_DM_FIXED_CODE` are real constants in the one production bundle every merchant loads. Low-risk today only because `verifyOtp` already accepts any 6-digit code for every merchant in this mock-backend prototype — this route adds no new exposure class, just a URL-triggerable shortcut into an already-open door. That stops being true once Stage 7 backend integration (`product/02c-high-fidelity-prototype/CLAUDE.md`) replaces the mock with real verification — a hardcoded bypass credential shipped to every browser becomes a materially different risk once real auth exists behind it. Not a blocker now; should be revisited explicitly when Backend Integration is scoped, not carried forward silently.
+5. **The fixed bypass credential ships permanently in the demo-campaign build's JS bundle (`reviewer` Suggestion, 2026-09-03) — low-risk today, worth re-examining at Backend Integration.** **Corrected 2026-09-04 (D52):** originally scoped to "the one production bundle every merchant loads," before this route moved into the demo-campaign build — now scoped to `demo.nahui.app`'s bundle instead, loaded by every visitor to that build, not just Acceso DM-arrived ones. `ACCESO_DM_FIXED_PHONE`/`ACCESO_DM_FIXED_CODE` are real constants there. Low-risk today only because `verifyOtp` already accepts any 6-digit code for every merchant in this mock-backend prototype — this route adds no new exposure class, just a URL-triggerable shortcut into an already-open door, and it's no longer in the *real* production bundle at all (that was the whole point of D52). That stops being true once Stage 7 backend integration (`product/02c-high-fidelity-prototype/CLAUDE.md`) replaces the mock with real verification — a hardcoded bypass credential shipped to every browser becomes a materially different risk once real auth exists behind it. Not a blocker now; should be revisited explicitly when Backend Integration is scoped, not carried forward silently.
+6. **Exit-invitation copy — reviewed, resolved, 2026-09-04 (`brand-guardian`).** No Blocker, no Major. "Propio" confirmed the right word choice over "de verdad"/"real" specifically because it frames the distinction as ownership, not validity, avoiding a rescuing-adjacent implication that the demo business was fake. No longer open.
+7. **Click-tracking on the exit invitation — deliberately not added, an open option only.** `ReminderBanner.tsx`'s own external questionnaire link fires a `demo_questionnaire_cta_click` event before opening its target; the same pattern could apply here (e.g. an `acceso_dm_exit_cta_click` event) to measure whether this CTA actually converts attention into a tap. Not part of this amendment — §2.4 states its four `acceso_dm_*` events as "the complete record for the instrumentation layer," and adding a fifth without being asked would overstate what was actually decided here. Left for the Product Owner to request explicitly if funnel data on this specific tap becomes worth having.
+8. **Visual differentiation between `ReminderBanner`'s own questionnaire strip and this CTA, on Resultados specifically (`ux-critic` Suggestion, 2026-09-04) — a `ui-designer` build-time task, not resolved here.** The two full-width tappable strips will sit directly adjacent on Resultados, doing very different things (leave feedback vs. leave the app to sign up for real) — worth deliberate visual distinction (weight, color, iconography) so they don't read as interchangeable. Doesn't block this Low-Fidelity spec.
