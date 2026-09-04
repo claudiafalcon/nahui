@@ -38,28 +38,31 @@ Everything in this document is built to answer that question honestly — includ
 
 ---
 
-## 0. Two-loop structure (added 2026-08-27, supersedes the single-loop CP1-CP5 design)
+## 0. Two-loop structure (added 2026-08-27, supersedes the single-loop CP1-CP5 design; Loop 2's own mechanism updated 2026-09-04, see §0.3)
 
-The DM conversation is no longer asked to explain anonymous demo abandonment. Instead it does what it's actually suited for — qualification and discovery — and hands off into a second, independent loop that reuses the *existing, unmodified* self-serve funnel and its instrumentation:
+The DM conversation is no longer asked to explain anonymous demo abandonment. Instead it does what it's actually suited for — qualification and discovery — and hands off into a second, independent loop with its own dedicated, minimally-instrumented entry point:
 
 ```
 Ad → DM conversation (§6, mostly unchanged, see §0.1)
    → short qualification (3-5 natural questions, already the shape of §6.3-6.5)
    → does Nahui appear to solve a real problem for this merchant? (H1 signal)
-   → if yes: "¿quieres probar un demo de 2 minutos?" → send the standard demo.nahui.app link
-   → she walks the existing, unmodified onboarding/selling flow
-   → demo_* instrumentation (already live) captures where she gets to
+   → if yes: "¿quieres probar un demo de 2 minutos?" → send the Acceso DM link
+     (https://nahui.app/?acceso=dm)
+   → she lands directly on a working, sellable sample catalog — no
+     phone/OTP screen, no path-choice screen (product/02-ux/acceso-dm.md)
+   → acceso_dm_* instrumentation (four count-only events: opened, sale
+     completed, session closed, Results viewed) captures where she gets to
    → optional follow-up: "¿llegaste a probarlo? ¿en qué parte te trabaste?"
 ```
 
 **Loop 1 — the conversation itself** tells us who the ICP really is, whether the problem resonates, how merchants describe it in their own words, what builds trust. This is what §6's discussion guide already collects; see §0.2 for the specific reframe.
 
-**Loop 2 — the demo, for an already-qualified population** tells us where genuinely interested merchants still struggle *inside the product*, a different and more useful signal than an anonymous bounce rate. Two things this loop deliberately does NOT do, decided explicitly rather than left ambiguous:
+**Loop 2 — the demo, for an already-qualified population** tells us where genuinely interested merchants still struggle *inside the product*, a different and more useful signal than an anonymous bounce rate. What this loop deliberately does NOT do, decided explicitly rather than left ambiguous:
 
-- **It does not modify the self-serve flow.** §1's original non-goal #2 (self-serve funnel stays fully intact, unmodified by this pilot) holds. No new onboarding path is built for this launch — see §0.3.
-- **It does not skip Authentication.** This matters beyond consistency: `ux-designer`'s review of a proposed value-first redesign (§0.3) flagged that skipping phone/OTP for this population would make it structurally impossible to ever learn whether phone-entry is a barrier for people who *do* have genuine interest — exactly the kind of evidence this project would want later. Keeping Authentication as-is preserves that option even though this pilot isn't coding CP1-CP5 right now.
+- **It does not modify the self-serve flow.** `demo.nahui.app`, its own Demo Mode welcome screen, and its own instrumentation stay fully intact and running, completely untouched by this pilot — anonymous/organic traffic still reaches exactly what it always has. Acceso DM is a separate, parallel entry point, reached only via a link the Product Owner sends directly in a qualified DM conversation, never discoverable any other way (`product/02-ux/acceso-dm.md`'s own placement ruling, `decision-log.md` D51).
+- **It now does skip Authentication — a deliberate, later correction to this section's original reasoning, not an oversight.** This section originally kept phone/OTP in Loop 2 specifically to preserve the option of learning whether phone-entry is a barrier for a genuinely-interested population. The Product Owner revisited that tradeoff directly (2026-09-03/04): that research question was secondary to the pilot's actual goal — a value-first first impression for a population that already built trust in conversation — and not worth damaging the experience to preserve, especially once the prior campaign's own funnel data (§2, `merchant-validation-funnel-diagnosis.md`) showed essentially no real downstream progression to begin with. PF5 (§7) is unaffected by this change — it's scored from Branch B of the DM conversation itself (§6.4.3, someone who already tried `demo.nahui.app` on her own, before this conversation), a population Acceso DM's own link never touches.
 
-**Attribution caveat, named honestly:** the `demo_*` events are anonymous/aggregate (confirmed via code audit, no per-visitor ID). There is no automatic way to link a specific instrumented demo session back to a specific DM conversation. The reliable mechanism is the optional follow-up question in the flow above (self-report) — treat anything from the dashboard itself (e.g., a UTM-tagged link, if added) as directional corroboration only, never as individual attribution.
+**Attribution caveat, named honestly:** `acceso_dm_*` events are anonymous/aggregate, same discipline as the retired `demo_*` suite — no per-visitor ID, no PII. There is no automatic way to link a specific instrumented demo session back to a specific DM conversation. The reliable mechanism is the optional follow-up question in the flow above (self-report) — treat anything from the dashboard itself as directional corroboration only, never as individual attribution. **Not carried forward from the prior campaign, deliberately:** the earlier Meta Ads campaign's own funnel data showed essentially no meaningful real-user progression past the first stage — the few downstream events observed were the Product Owner's own internal testing, not real prospects (`company/bitacora.md`, internal record only, never disclosed in external-facing material). This pilot's population and funnel are different enough that continuity with that prior instrumentation was judged not worth preserving as a constraint on this design.
 
 ### 0.1 Discussion guide status
 
@@ -69,7 +72,10 @@ Ad → DM conversation (§6, mostly unchanged, see §0.1)
 
 The original branch-check ("¿ya le entraste a la app... o el video fue lo único que has visto?") was designed to route into CP1-CP5 coding for people who already saw the demo unprompted. Under the two-loop design, that question no longer routes to a different question set — Branch A/B's downstream questions (§6.3/§6.4) still work fine as-is for H1 signal (problem-fit, comprehension, trust), since none of them actually depended on being able to explain funnel abandonment. Keep the question, drop its role as a CP1-CP5 gate.
 
-### 0.3 Value-first demo sequencing — evaluated, approved, building before pilot launch
+### 0.3 Value-first demo sequencing — evaluated, approved, shipped as Acceso DM (2026-09-04)
+
+**Status: shipped, not merely planned.** Everything below this line is the original evaluation, kept verbatim as the honest paper trail of how this design evolved (same non-deletion discipline as `market-validation.md`'s own retired §7 and this document's own §7.6). What actually got built diverged from what's described below in one real respect: **not a new, kept, ongoing fourth Onboarding path.** A later round of scoping (2026-09-03/04) found that requirement unnecessary — the demo/sample experience never needs to convert into her real Business/account at all — which allowed a much smaller design: a dedicated entry route (`product/02-ux/acceso-dm.md`, `decision-log.md` D51) that composes the existing, already-shipped "Ver un ejemplo" mechanism (`decision-log.md` D19) behind a fixed demo-only credential, skipping Authentication entirely rather than deferring it to a conversion moment. See `product/02-ux/product-decisions.md` Q19–Q22 (marked Superseded) for the full intermediate reasoning this shipped design replaced. §0's flow diagram and non-goal list above reflect what actually shipped, not this subsection's original plan.
+
 
 The Product Owner separately proposed restructuring the demo so a DM-qualified merchant's *first* meaningful interaction is a completed sale (a pre-loaded representative catalog), with business/product/inventory customization explained afterward — instead of today's sequence (auth → identity → catalog naming → still-zero-stock → inventory registration → first sale, verified precisely by `ux-designer` against the current Approved specs and code).
 
@@ -88,7 +94,7 @@ Logged as a Product Decision, not decided here — recorded as Q19 in `product/0
 
 ## 1. Non-goals — stated plainly, binding on this document and on how its findings get used
 
-1. **The phone/OTP step in the self-serve flow is not being removed, redesigned, or touched based on this pilot alone.** Any UX change to Authentication stays gated on confirmed evidence (§7's threshold convention) and is a separate Product Decision, routed through `product/02-ux/product-decisions.md` per the standard Decision Ownership policy — never resolved unilaterally from this pilot's own findings, however suggestive.
+1. **The phone/OTP step in the self-serve flow is not being removed, redesigned, or touched based on this pilot alone.** Any UX change to `authentication.md`'s real screens stays gated on confirmed evidence (§7's threshold convention) and is a separate Product Decision, routed through `product/02-ux/product-decisions.md` per the standard Decision Ownership policy — never resolved unilaterally from this pilot's own findings, however suggestive. **Distinct from Acceso DM's own credential bypass (§0.3):** that's a fixed demo-only fixture scoped entirely to this pilot's own dedicated entry route, never a change to the real Authentication screens or mechanism every other merchant still sees — see `product/02-ux/acceso-dm.md`'s own non-goals for the full boundary.
 2. **The self-serve funnel and its existing instrumentation stay fully intact and running, unmodified by this pilot.** `demo.nahui.app`, its Demo Mode welcome screen, the persistent Form-reminder banner, and the pending Stage 4-7 `track()` events (`merchant-validation-funnel-diagnosis.md`) continue exactly as already designed. This pilot's findings are meant to be read *alongside* that self-serve data once both exist, not in place of it.
 3. **This pilot is explicitly not a replacement acquisition channel, and not a pivot to concierge-style, human-mediated onboarding as Nahui's standing model.** It is a bounded, time-boxed diagnostic experiment. If it produces useful signal, the next step is a decision about what (if anything) to fix in the self-serve flow — not a decision to keep running DM campaigns instead of self-serve.
 4. **This pilot does not, on its own, confirm or reject H1, or any of the PF1-PF5 signal categories (§7).** At the sample size this design can realistically produce (§2), every finding is a candidate signal per the same confidence discipline this project already holds itself to everywhere else (`market-validation.md`, `merchant-validation-decision-matrix.md`) — never a resolved conclusion from n=10-20 DM conversations alone.
@@ -239,7 +245,7 @@ These two answers feed the same H1 screening criteria `market-validation.md` §2
 
 > Muchísimas gracias por platicar conmigo, de verdad ayuda un montón. Como te comenté, ya quedaste en la lista de acceso prioritario. Si te late, te mando el link para que pruebes la app tú misma cuando quieras — nada obligatorio. ¿Te gustaría?
 
-If yes, this is the Loop 2 handoff (§0): send the standard `demo.nahui.app` link, log it in §8's template. If she opts in but doesn't want the link right now, that's still a valid, complete close — don't push for it.
+If yes, this is the Loop 2 handoff (§0): send the Acceso DM link (`https://nahui.app/?acceso=dm`), log it in §8's template. If she opts in but doesn't want the link right now, that's still a valid, complete close — don't push for it.
 
 Log the opt-in for future contact (Sí/Tal vez/No) same as before, non-blended-rate convention `merchant-validation-decision-matrix.md` §E already applies to Q16/Q17 — and log the separate Loop 2 opt-in (demo link accepted or not) distinctly, per §8's template.
 
@@ -376,6 +382,6 @@ Keep raw logs — they're the primary source for whatever synthesis follows once
 - **It cannot cleanly separate a DM-qualified respondent's stated problem-fit from the self-selection built into being willing to DM a business at all** — §2.5's confound is real and unresolved by this design; state it every time PF1 findings are cited toward H1.
 - **It cannot be compared to Campaign B's own self-serve numbers as a controlled experiment** — different objective, different CTA, different audience draw at a different time (§2.5).
 - **It cannot, by itself, justify a UX change to Authentication, or justify building the value-first onboarding path described in §0.3** — both require confirmed evidence, gated separately, and §0.3's own decision explicitly defers that build until Loop 2's own instrumentation shows whether it's actually needed.
-- **Loop 2 cannot individually attribute a specific demo session to a specific DM conversation** — the existing `demo_*` instrumentation is anonymous/aggregate; only the optional self-report follow-up reliably closes that gap (§0).
+- **Loop 2 cannot individually attribute a specific demo session to a specific DM conversation** — the `acceso_dm_*` instrumentation is anonymous/aggregate, same as the retired `demo_*` suite; only the optional self-report follow-up reliably closes that gap (§0).
 
 What it *can* do — the actual point — is give the Product Owner, and this project, real, human, unscripted conversations that test H1 against a broader population than Ana alone, and, for whoever gets far enough to want to try it, a first read on whether a genuinely interested merchant still struggles inside the existing product — at a scale one person can genuinely absorb and act on.
