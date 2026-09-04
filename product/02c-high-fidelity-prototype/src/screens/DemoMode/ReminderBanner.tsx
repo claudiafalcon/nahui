@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { track } from '@vercel/analytics';
-import { AppRouter } from '../../AppRouter';
+import { ResultsGuidanceNudge } from '../AccesoDM/ResultsGuidanceNudge';
 import { useReceiptScreenActive } from './receiptScreenSignal';
 import { Sheet } from '../../components/Sheet/Sheet';
 import { Button } from '../../components/Button/Button';
@@ -83,6 +83,25 @@ type RestartState = 'idle' | 'confirming' | 'failed';
  *   guard as above, plus its one payload property (`path`) derived through
  *   the existing `pathFromCapabilities` domain utility, never re-derived
  *   here.
+ *
+ * **As of `decision-log.md` D52 (Acceso DM relocated into the demo-campaign
+ * build):** this component now renders `<ResultsGuidanceNudge />` in place
+ * of what used to be a direct `<AppRouter />` — `ResultsGuidanceNudge`
+ * itself still renders the real, unmodified `<AppRouter />` internally, so
+ * it renders exactly once either way. This is what lets an Acceso-DM-
+ * arrived merchant see both this banner and `acceso-dm.md`'s own results-
+ * guidance nudge composited together for the first time (Product Owner-
+ * confirmed intentional reuse, not a bug) — both self-gate independently
+ * (this banner on `pass-through` alone; the nudge on its own
+ * `nahui-acceso-dm-active` flag plus its own three domain conditions), so
+ * nesting them costs nothing when the nudge's own conditions don't hold.
+ * See that file's own doc comment, and `.module.css` below, for the
+ * combined-height/stacking fix this composition required (both strips
+ * independently reserved `.app-shell` `padding-top` and both used
+ * `position: fixed; top: 0` — a real collision once they could render
+ * simultaneously, fixed by summing both measured heights into one
+ * reservation and stacking the nudge below this banner, never both at the
+ * same `top`).
  *
  * §2.5.3's two further events (added 2026-08-19, build-authorized) are
  * observed here too — same mount point, same external-observer discipline:
@@ -243,9 +262,29 @@ export function ReminderBanner() {
   useLayoutEffect(() => {
     const shellEl = shellRef.current;
     const bannerEl = bannerRef.current;
-    if (!shellEl || !bannerEl) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const height = Math.ceil(entry.contentRect.height);
+    if (!shellEl) return;
+    if (!bannerEl) {
+      // Banner strip isn't currently rendered (receipt screen active, or the
+      // `restartState === 'failed'` branch replaced this component's whole
+      // output) — reserve zero, not a stale prior measurement. This is what
+      // makes `--acceso-dm-nudge-height`'s own combined-sum reservation
+      // below correct in every combination of "which strip is visible right
+      // now," not just the common "both visible" case (`decision-log.md`
+      // D52's CSS-collision fix).
+      shellEl.style.setProperty('--demo-banner-height', '0px');
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      // `getBoundingClientRect()`, not `entry.contentRect` (`decision-log.md`
+      // D52's live-verification fix, applied here too for the same reason):
+      // `.banner` carries its own `padding-top: env(safe-area-inset-top,
+      // 0px)`, which `contentRect` would exclude on a real notched device,
+      // undercounting the reserved height by exactly that inset. Harmless in
+      // a desktop dev environment (inset is 0), but a real bug on a phone
+      // with a notch/dynamic island. `getBoundingClientRect().height`
+      // reports the true border-box height, matching what actually needs
+      // reserving.
+      const height = Math.ceil(bannerEl.getBoundingClientRect().height);
       shellEl.style.setProperty('--demo-banner-height', `${height}px`);
     });
     observer.observe(bannerEl);
@@ -307,7 +346,7 @@ export function ReminderBanner() {
           </div>
         </div>
       )}
-      <AppRouter />
+      <ResultsGuidanceNudge />
 
       {restartState === 'confirming' && (
         // §3.7 — dimmed sheet over whatever screen (banner included) was

@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { track } from '@vercel/analytics';
 import { useStore } from '../../domain/store';
 import { businessForCurrentUser } from '../../domain/onboardingResolution';
 import { DEMO_BUSINESS_DESCRIPTION, DEMO_BUSINESS_NAME, DEMO_SEED_LINES } from '../../domain/demoSeed';
 import { markAccesoDmActive } from './accesoDmStorage';
+import { acknowledgeDemoMode } from '../DemoMode/demoModeStorage';
 import { AccesoDmPreparing } from './AccesoDmPreparing';
-import { ResultsGuidanceNudge } from './ResultsGuidanceNudge';
 
 /**
  * acceso-dm.md — illustrative, format-valid fixed credential (§2.1's own
@@ -22,11 +22,22 @@ const ACCESO_DM_FIXED_CODE = '000000';
 type Step = 'verify' | 'onboard' | 'seed' | null;
 
 /**
- * acceso-dm.md §2.1 — the runtime URL-detection entry route. Mounted by
- * `DemoModeGate.tsx` in place of the bare `<AppRouter />` it previously
- * rendered in a real (non-`VITE_DEMO_MODE`) build — deliberately not a reuse
- * of that file's own build-time gating pattern, since this route must exist
- * in the one real production build (§2.1's own framing, §7).
+ * acceso-dm.md §2.1 — the runtime URL-detection entry route. As of
+ * `decision-log.md` D52 (relocation), this is mounted only inside
+ * `DemoModeGate.tsx`'s demo-campaign (`VITE_DEMO_MODE === 'true'`) branch,
+ * wrapping `<DemoModeGateActive />` as `children` — never in the real-build
+ * branch, which is a bare `<AppRouter />` with no import path to anything
+ * under this folder at all (proven unreachable and stripped by Vite/
+ * Rollup's dead-code elimination, the same mechanism `DemoModeGate.tsx`'s
+ * own doc comment already describes for its other branch). This mirrors,
+ * rather than reuses, `DemoModeGate.tsx`'s own build-time gating pattern:
+ * the marker check below is still a genuinely new, second-stage runtime
+ * check, evaluated *inside* an already build-gated branch — it runs ahead
+ * of `DemoModeGateActive`'s own resolution (its own `children` prop), not
+ * nested inside that resolution's `pass-through` branch, so a fresh device
+ * with `?acceso=dm` never sees `DemoModeGateActive`'s Welcome screen
+ * (`resolveGateState()`'s own `isDemoModeAcknowledged()` check would
+ * otherwise say "no" for a fresh device and render Welcome first).
  *
  * Two checks, both evaluated exactly once, on this component's own initial
  * mount (lazy `useState` initializers, the same "no re-render before first
@@ -42,13 +53,15 @@ type Step = 'verify' | 'onboard' | 'seed' | null;
  *   idempotency mechanism" framing).
  *
  * `active` (marker present AND no pre-existing Business) is what everything
- * below gates on. When `false` — the overwhelmingly common case, always —
- * this component does nothing but render `<AppRouter />` (plus the nudge,
- * which self-gates on its own persisted flag, see `ResultsGuidanceNudge.tsx`)
- * and `authentication.md §2.1`/`onboarding.md §2.1` resolve exactly as they
- * already do today.
+ * below gates on. When `false` — either the marker is absent, or a Business
+ * already exists on this device (a returning Acceso DM merchant, or an
+ * unrelated real session) — this component renders `children`
+ * (`<DemoModeGateActive />`) unchanged, letting its own, completely
+ * unmodified resolution decide Welcome vs. pass-through. This is what makes
+ * §2.1 check 2's "marker never overrides an existing session" guarantee
+ * hold structurally, not just by convention.
  */
-export function AccesoDmGate() {
+export function AccesoDmGate({ children }: { children: ReactNode }) {
   const { state, verifyOtp, completeOnboarding, setBusinessIdentity, commitLot } = useStore();
 
   const [urlHasMarker] = useState(() => {
@@ -116,14 +129,22 @@ export function AccesoDmGate() {
     lastDispatchedStepRef.current = step;
 
     if (!flagWrittenRef.current) {
-      // §2.3 — written the moment the auto-sequence begins, i.e. right
-      // before its first real write. Best-effort, matching
-      // `demoModeStorage.ts`'s own device-flag convention: a failure here
-      // never blocks the domain sequence itself, it only means the
-      // results-guidance nudge never shows on this device.
+      // §2.3 — `nahui-acceso-dm-active` written the moment the auto-sequence
+      // begins, i.e. right before its first real write. Also acknowledges
+      // Demo Mode itself (`demoModeStorage.ts`'s `nahui-demo-mode-
+      // acknowledged`) in the same write — the architect-confirmed fix for a
+      // state combination this relocation newly makes reachable: "Business
+      // exists, but device never acknowledged Welcome." Without this, an
+      // Acceso-DM-created Business that later revisits this build with no
+      // marker (or a bookmark) would incorrectly resurface
+      // `DemoModeGateActive`'s Welcome screen, since `resolveGateState()`
+      // only ever consults this flag, never `businessForCurrentUser`. Both
+      // are best-effort, matching `demoModeStorage.ts`'s own device-flag
+      // convention: a failure here never blocks the domain sequence itself.
       flagWrittenRef.current = true;
       try {
         markAccesoDmActive();
+        acknowledgeDemoMode();
       } catch {
         // best-effort — see comment above
       }
@@ -180,16 +201,20 @@ export function AccesoDmGate() {
     }
     // §2.2 — falls through below, identical to the `!active` branch: once
     // the sequence is done, this component's own responsibility ends and
-    // `<AppRouter />`'s completely unmodified resolution takes over,
-    // landing on `onboarding.md §3.6` Variant C with zero taps of her own.
+    // `children` (`<DemoModeGateActive />`) takes over. Because
+    // `acknowledgeDemoMode()` was already written above,
+    // `DemoModeGateActive`'s own `resolveGateState()` now reads
+    // `'pass-through'` and renders `ReminderBanner` directly — landing on
+    // `onboarding.md §3.6` Variant C (via the unmodified `<AppRouter />`
+    // `ReminderBanner` composes) with zero taps of her own, never Welcome.
   }
 
-  // acceso-dm.md §2.3 — `ResultsGuidanceNudge` self-gates on its own
-  // persisted flag/domain reads and renders `<AppRouter />` internally as
-  // its own sibling-wrapped child (mirroring `ReminderBanner.tsx`'s own
-  // shape one folder over); mounting it unconditionally here, on both the
-  // `active` and `!active` paths, is what lets a second visit — after a
-  // Business already exists, marker inert — still show the nudge once its
+  // acceso-dm.md §2.3 — `ResultsGuidanceNudge` (composed inside
+  // `ReminderBanner.tsx`, not here — see that file) self-gates on its own
+  // persisted flag/domain reads. Rendering `children` unconditionally here,
+  // on both the `active` and `!active` paths, is what lets a second visit —
+  // after a Business already exists, marker inert — still resolve through
+  // `DemoModeGateActive`'s pass-through branch and show the nudge once its
   // own three conditions hold.
-  return <ResultsGuidanceNudge />;
+  return <>{children}</>;
 }

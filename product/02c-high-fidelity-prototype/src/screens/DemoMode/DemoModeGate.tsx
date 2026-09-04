@@ -1,3 +1,4 @@
+import { AppRouter } from '../../AppRouter';
 import { AccesoDmGate } from '../AccesoDM/AccesoDmGate';
 import { DemoModeGateActive } from './DemoModeGateActive';
 
@@ -31,22 +32,42 @@ import { DemoModeGateActive } from './DemoModeGateActive';
  * shape the Architecture Review specified, not a branch injected inside
  * `AppRouter.tsx` itself, which is untouched.
  *
- * The real (non-demo-campaign) branch below renders `<AccesoDmGate />`
- * rather than a bare `<AppRouter />`, as of `acceso-dm.md` — that route
- * deliberately must exist in the one real production build (unlike
- * everything gated above, it is never build-stripped), so it's composed
- * here rather than inside the demo-campaign branch's own
- * `DemoModeGateActive`/`ReminderBanner` chain, which stays untouched.
- * `AccesoDmGate` itself renders the unmodified `<AppRouter />` once its own
- * resolution is done — see that file for the full mechanism.
+ * **As of `decision-log.md` D52 (Acceso DM relocated into the demo-campaign
+ * build), the real branch below is a bare `<AppRouter />` again** — no
+ * import path to anything under `src/screens/AccesoDM/` is reachable from
+ * that branch at all, so the same dead-code-elimination mechanism described
+ * above for the demo-campaign-only screens now also proves `AccesoDmGate`
+ * and everything it reaches (`AccesoDmPreparing`, `accesoDmStorage.ts`,
+ * `ResultsGuidanceNudge`, `acceso_dm_*` event strings) unreachable from a
+ * real production build, and strips it. (The two mount-signal modules
+ * `AccesoDM/homeScreenMountedSignal.ts`/`resultadosScreenMountedSignal.ts`
+ * remain a narrow, expected exception — `HomeScreen.tsx`/
+ * `ResultadosScreen.tsx`, real always-shipped screens, import from them
+ * unconditionally, the same precedent `receiptScreenSignal.ts` already
+ * sets. Harmless: no participant-facing content, no domain read.)
+ *
+ * The demo-campaign branch below wraps `<DemoModeGateActive />` in
+ * `<AccesoDmGate>` rather than rendering it bare — `AccesoDmGate`'s own
+ * `?acceso=dm` marker check runs first, ahead of `DemoModeGateActive`'s own
+ * resolution, and (when active) runs the Acceso DM auto-sequence directly,
+ * skipping Welcome/Authentication entirely; only when inert does control
+ * fall through to `DemoModeGateActive`'s completely unmodified resolution
+ * (rendered here as `AccesoDmGate`'s own `children`) — see `AccesoDmGate.tsx`
+ * for the full mechanism, and `ReminderBanner.tsx` for where the results-
+ * guidance nudge composes back in once `pass-through` is reached.
  *
  * Verified live: see README.md's pass history for this feature — `npm run
  * build`'s output bundle contains no "Empezar demo"/"prototipo de Nahui"
- * string; `npm run build:demo-campaign`'s does.
+ * string (nor any `acceso_dm_*`/`AccesoDmGate` string, per D52); `npm run
+ * build:demo-campaign`'s contains both.
  */
 export function DemoModeGate() {
   if (import.meta.env.VITE_DEMO_MODE !== 'true') {
-    return <AccesoDmGate />;
+    return <AppRouter />;
   }
-  return <DemoModeGateActive />;
+  return (
+    <AccesoDmGate>
+      <DemoModeGateActive />
+    </AccesoDmGate>
+  );
 }

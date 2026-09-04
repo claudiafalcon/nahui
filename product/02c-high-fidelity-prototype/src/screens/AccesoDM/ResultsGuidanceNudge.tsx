@@ -19,6 +19,17 @@ import styles from './ResultsGuidanceNudge.module.css';
  * wrap depending on viewport width, exactly the same risk that file's own
  * comment already documents for its row 2).
  *
+ * **As of `decision-log.md` D52 (Acceso DM relocated into the demo-campaign
+ * build):** this component is now mounted only from inside
+ * `ReminderBanner.tsx` (nested where that component used to render
+ * `<AppRouter />` directly) rather than standalone — real DOM nesting, not
+ * a sibling, which is what lets `--acceso-dm-nudge-height` (set below)
+ * inherit down to `.app-shell` alongside `ReminderBanner`'s own
+ * `--demo-banner-height`, and lets this component's own `--demo-banner-
+ * height` read (see `.strip`'s `top` offset in the `.module.css`) resolve
+ * to that ancestor's real, measured value. See `ReminderBanner.module.css`
+ * for the combined-height/stacking fix this composition required.
+ *
  * All three visibility conditions (§2.3 checks 1-3) are read fresh on every
  * render, no cached/derived local state:
  * - check 1: `isAccesoDmActive()` — this device's own persisted flag
@@ -138,10 +149,31 @@ export function ResultsGuidanceNudge() {
   // is long enough to wrap there.
   useLayoutEffect(() => {
     const shellEl = shellRef.current;
+    if (!shellEl) return;
     const stripEl = stripRef.current;
-    if (!shellEl || !stripEl || !visible) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const height = Math.ceil(entry.contentRect.height);
+    if (!visible || !stripEl) {
+      // Strip isn't currently rendered — reserve zero, not a stale prior
+      // measurement. `ReminderBanner.module.css`'s combined padding-top
+      // formula reads this variable unconditionally whenever the banner
+      // itself renders, so a stale nonzero value here would phantom-inflate
+      // that reservation even while this nudge is genuinely hidden
+      // (`decision-log.md` D52's CSS-collision fix).
+      shellEl.style.setProperty('--acceso-dm-nudge-height', '0px');
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      // `getBoundingClientRect()`, not `entry.contentRect` — `.strip` carries
+      // its own vertical `padding` (`ResultsGuidanceNudge.module.css`), and
+      // `contentRect` deliberately excludes an element's own padding/border
+      // (it reports the content box only). Reserving `contentRect.height`
+      // here undercounted the real rendered strip by exactly that padding,
+      // leaving a genuine, measured overlap between the strip's true bottom
+      // edge and `.app-shell`'s reserved padding-top — found and fixed
+      // during `decision-log.md` D52's live verification (a real bug, not
+      // hypothetical: the wrapped, two-line copy reproduces it every time).
+      // `getBoundingClientRect().height` reports the true border-box height,
+      // matching what actually needs reserving.
+      const height = Math.ceil(stripEl.getBoundingClientRect().height);
       shellEl.style.setProperty('--acceso-dm-nudge-height', `${height}px`);
     });
     observer.observe(stripEl);
@@ -149,7 +181,7 @@ export function ResultsGuidanceNudge() {
   }, [visible]);
 
   return (
-    <div ref={shellRef} className={`${styles.shell} ${visible ? styles.withNudge : ''}`}>
+    <div ref={shellRef} className={styles.shell}>
       {visible && (
         <p ref={stripRef} className={styles.strip}>
           Esta venta se verá en Resultados cuando cierres tu jornada de venta.

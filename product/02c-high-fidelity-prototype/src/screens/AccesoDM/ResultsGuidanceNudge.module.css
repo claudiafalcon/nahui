@@ -1,33 +1,58 @@
-/* acceso-dm.md §3.3 — mirrors `ReminderBanner.module.css`'s own `.shell`/
-   reservation technique exactly (same rationale: `display: contents` scopes
-   a `:global(.app-shell)` descendant rule to this one feature without
-   touching `global.css`'s own shared definition). */
+/* acceso-dm.md §3.3 — mirrors `ReminderBanner.module.css`'s own `.shell`
+   technique (`display: contents` lets this custom property inherit down to
+   `.app-shell`, a descendant, without touching `global.css`'s own shared
+   definition).
+
+   `decision-log.md` D52's CSS-collision fix: this file no longer owns any
+   `.app-shell` `padding-top` rule of its own — `ReminderBanner.module.css`'s
+   `.withBanner :global(.app-shell)` rule is now the ONE place that reserves
+   `.app-shell`'s `padding-top`, summing this variable together with its own
+   `--demo-banner-height` (this component is mounted nested inside
+   `ReminderBanner`, so ordinary DOM ancestry carries this custom property up
+   to where that combined rule reads it — see that file for the full
+   reasoning). Two independent rules targeting the same property on the same
+   element, gated on unrelated toggles, is exactly the collision that
+   previously let a mid-cascade change silently discard one strip's reserved
+   space; owning it in exactly one place removes that failure mode
+   structurally, not just by convention. */
 .shell {
   display: contents;
-  --acceso-dm-nudge-height: 44px; /* starting estimate only — the ResizeObserver in ResultsGuidanceNudge.tsx overwrites this with the real measured height before it's ever load-bearing */
-}
-
-.withNudge :global(.app-shell) {
-  padding-top: calc(var(--acceso-dm-nudge-height) + env(safe-area-inset-top, 0px));
+  --acceso-dm-nudge-height: 0px; /* starting estimate only — ResultsGuidanceNudge.tsx's own layout effect overwrites this, synchronously before first paint, with either the real measured height (visible) or an explicit 0px (hidden) */
 }
 
 /* One slim, single-band strip — deliberately lighter-weight than
    `ReminderBanner`'s own two-row banner (§3.3's own text: this nudge carries
    no secondary controls, no restart, no time estimate, no state label) —
-   fixed at the true viewport top, same 430px-max-width/centered treatment
-   as `.app-shell` itself so it reads as part of the same screen rather than
-   a page-wide notice. Passive, non-tappable: plain text, no button
-   semantics, no cursor/hover treatment. */
+   same 430px-max-width/centered treatment as `.app-shell` itself so it
+   reads as part of the same screen rather than a page-wide notice. Passive,
+   non-tappable: plain text, no button semantics, no cursor/hover treatment.
+
+   `top: var(--demo-banner-height, 0px)` (changed from a bare `top: 0`,
+   `decision-log.md` D52): stacks this strip immediately below
+   `ReminderBanner`'s own strip — a fixed, deterministic order (banner, then
+   nudge) — rather than both `position: fixed` elements pinning to the same
+   viewport-top position and visually overlapping, the second half of D52's
+   CSS-collision fix. `--demo-banner-height` is `ReminderBanner`'s own
+   variable, inherited here via the same DOM-ancestry relationship described
+   above; the `0px` fallback covers the (never actually reached, since this
+   component only ever mounts nested inside `ReminderBanner`) case where
+   that variable isn't defined at all.
+
+   No `env(safe-area-inset-top, ...)` of its own (unlike `ReminderBanner`'s
+   `.banner`) — that inset is already spent by `ReminderBanner`'s own strip,
+   which this one now always renders directly beneath (D52: this component
+   is only ever mounted nested inside `ReminderBanner`, never standalone at
+   the true viewport top); adding it again here would double the reserved
+   notch/dynamic-island gap. */
 .strip {
   position: fixed;
-  top: 0;
+  top: var(--demo-banner-height, 0px);
   left: 0;
   right: 0;
   z-index: 500;
   margin: 0 auto;
   max-width: 430px;
   padding: var(--space-3) var(--space-4);
-  padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
   background: var(--color-tezontle-dark);
   color: var(--color-white);
   font: var(--text-body-sm);

@@ -25,19 +25,47 @@
   --demo-banner-height: 84px;
 }
 
-/* Reserves exactly the banner's own height at the top of `.app-shell`'s
-   box, only while the banner itself is actually rendered (i.e. not on
-   `home.md §3.8f`, per `demo-mode.md §2.3` check 2). `.app-shell` keeps its
-   own `min-height: 100vh/100dvh` from `global.css`, completely unchanged
-   — this only shrinks the vertical space available to its flex children
-   (`App.module.css`'s `.main`, `NavBar`), the same way any of this
-   codebase's existing screens already reserve space for their own
-   fixed-size header/footer bands around an internal `flex: 1` scroll
-   region. The banner itself, `position: fixed` at the true viewport top,
-   exactly fills the reserved strip this rule opens up — so nothing
-   underneath is ever covered, and nothing needs scrolling to reach it. */
+/* Reserves the COMBINED height of both this banner and `acceso-dm.md`'s own
+   results-guidance nudge (`ResultsGuidanceNudge.module.css`,
+   `--acceso-dm-nudge-height`) at the top of `.app-shell`'s box, only while
+   this banner itself is actually rendered (i.e. not on `home.md §3.8f`, per
+   `demo-mode.md §2.3` check 2 — the nudge shares that same exception, so
+   whenever the nudge could legitimately be visible, this banner already is
+   too; see `ResultsGuidanceNudge.tsx`'s own doc comment).
+   `.app-shell` keeps its own `min-height: 100vh/100dvh` from `global.css`,
+   completely unchanged — this only shrinks the vertical space available to
+   its flex children (`App.module.css`'s `.main`, `NavBar`), the same way any
+   of this codebase's existing screens already reserve space for their own
+   fixed-size header/footer bands around an internal `flex: 1` scroll region.
+
+   `decision-log.md` D52's CSS-collision fix: both this rule and the nudge's
+   own `.strip` previously wrote independent, competing `padding-top`
+   declarations onto the same `.app-shell` element (whichever CSS module's
+   JS chunk happened to load/inject last silently won, discarding the
+   other's reserved space) — a real bug once the two could render
+   simultaneously for the first time (an Acceso-DM-arrived merchant who's
+   made a sale and hasn't yet closed her jornada). Fixed by making this the
+   ONE place that owns `.app-shell`'s `padding-top`, summing both strips'
+   independently-measured heights (`ResultsGuidanceNudge.tsx`'s own
+   `--acceso-dm-nudge-height` is inherited here via ordinary DOM ancestry,
+   since `ResultsGuidanceNudge` now renders nested inside this component,
+   not as a sibling) — `var(--acceso-dm-nudge-height, 0px)`'s fallback
+   covers the (never actually reached, since the nudge is always mounted as
+   this banner's own child) case where that variable isn't defined at all.
+   Both `--demo-banner-height` and `--acceso-dm-nudge-height` are explicitly
+   reset to `0px`, not left stale, by their own component's layout effect
+   whenever that strip isn't currently rendered (`ReminderBanner.tsx`/
+   `ResultsGuidanceNudge.tsx`) — what makes this sum correct in every
+   combination of "which strip is visible right now," not just the common
+   "both visible" case. The nudge's own strip stacks visually below this
+   banner (`ResultsGuidanceNudge.module.css`'s `.strip`, `top: var(--demo-
+   banner-height, 0px)`) rather than at the same fixed `top: 0` both
+   previously used unconditionally — a fixed, deterministic order (banner,
+   then nudge), never two `position: fixed` elements overlapping. */
 .withBanner :global(.app-shell) {
-  padding-top: calc(var(--demo-banner-height) + env(safe-area-inset-top, 0px));
+  padding-top: calc(
+    var(--demo-banner-height) + var(--acceso-dm-nudge-height, 0px) + env(safe-area-inset-top, 0px)
+  );
 }
 
 /* Container for both rows — itself not tappable, no background of its own
