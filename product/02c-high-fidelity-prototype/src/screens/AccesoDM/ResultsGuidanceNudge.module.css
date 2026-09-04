@@ -58,3 +58,90 @@
   font: var(--text-body-sm);
   text-align: center;
 }
+
+/* acceso-dm.md §3.5 — the exit invitation, composited on Resultados only.
+   Structurally mutually exclusive with `.strip` above (see this component's
+   own doc comment), so it reuses the same `top: var(--demo-banner-height,
+   0px)` stacking position — never both rendered, never overlapping.
+
+   Deliberate visual differentiation from `ReminderBanner`'s own two-row
+   banner (`ux-critic` Suggestion, acceso-dm.md §8 item 8 — a `ui-designer`
+   build-time call, not prescribed in the spec): that banner's whole family
+   (row 1's `--color-coral-aa` fill, row 2's `--color-tezontle-dark` fill,
+   `.strip` above reusing that same `--color-tezontle-dark`) all live in the
+   warm coral/tezontle red family. This strip instead uses `--color-
+   obsidian` — a different hue family entirely, not a shade of the same red —
+   so the two strips read as two distinct kinds of message (an internal
+   feedback nudge vs. an invitation to leave for the real product) even when
+   stacked directly adjacent, rather than as one undifferentiated red band.
+   The "↗" glyph on the primary link is the same plain-unicode-glyph-as-icon
+   convention this codebase already uses elsewhere (SessionHeader's "⚙"), not
+   a new icon system — it marks "this leaves the app," reinforcing the color
+   distinction rather than replacing it. Weight is differentiated too: one
+   unified strip (no two-row split), and the two tap zones are laid out
+   `flex-end`-aligned so "Ahora no" sits tucked at the trailing edge of the
+   (possibly wrapped) primary text, matching §3.5's own wireframe shape
+   rather than `ReminderBanner`'s own separate full-width row. */
+.exitCtaStrip {
+  position: fixed;
+  top: var(--demo-banner-height, 0px);
+  left: 0;
+  right: 0;
+  z-index: 500;
+  margin: 0 auto;
+  max-width: 430px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-obsidian);
+  color: var(--color-white);
+}
+
+/* The primary tap zone — the CTA's own text/body, per §2.5 check 6. Plain
+   anchor, "whole-row-is-the-button" shape (no separate wrapping button
+   element) so the entire wrapped text is one continuous tap target. */
+.exitCtaLink {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  color: var(--color-white);
+  text-decoration: none;
+  font: var(--text-body-sm);
+  font-weight: 600;
+}
+
+.exitCtaLink:active {
+  color: color-mix(in srgb, var(--color-white) 80%, transparent);
+}
+
+.exitCtaIcon {
+  color: var(--color-blush);
+  font-weight: 600;
+}
+
+/* The secondary "Ahora no" dismiss (§2.5 check 5) — same lighter/smaller
+   secondary-zone treatment `ReminderBanner.module.css`'s own `.restartButton`
+   already establishes relative to its primary link (`text-meta`, not
+   `text-label`; underlined rather than filled), a ~40px effective vertical
+   tap-target via padding, never a bigger visible label. */
+.exitCtaDismiss {
+  flex-shrink: 0;
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 13px 0 13px 8px;
+  font: var(--text-meta);
+  color: color-mix(in srgb, var(--color-white) 82%, transparent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.exitCtaDismiss:active {
+  color: var(--color-white);
+}

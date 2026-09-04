@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { track } from '@vercel/analytics';
 import { AppRouter } from '../../AppRouter';
 import { useStore } from '../../domain/store';
@@ -6,7 +6,7 @@ import { hasAnyClosedSession } from '../../domain/selectors';
 import { useHomeScreenMounted } from './homeScreenMountedSignal';
 import { useResultadosScreenMounted } from './resultadosScreenMountedSignal';
 import { useReceiptScreenActive } from '../DemoMode/receiptScreenSignal';
-import { isAccesoDmActive } from './accesoDmStorage';
+import { isAccesoDmActive, isExitCtaDismissed, markExitCtaDismissed } from './accesoDmStorage';
 import styles from './ResultsGuidanceNudge.module.css';
 
 /**
@@ -75,6 +75,33 @@ import styles from './ResultsGuidanceNudge.module.css';
  * All three are gated on `isAccesoDmActive()`, the same scoping this nudge's
  * own visibility already uses — never fired for any other merchant, on any
  * other route.
+ *
+ * **acceso-dm.md §2.5/§3.5 — the exit invitation, added here rather than as a
+ * new file.** Per §3.5's own implementation note, this file already holds
+ * every signal the invitation needs (`resultadosScreenMounted`,
+ * `hasAnyClosedSession`, `isAccesoDmActive()`) — extending it is the path of
+ * least resistance over a new component. It composites as a second,
+ * independent strip, Resultados-only, mutually exclusive with the nudge
+ * above (the nudge only ever shows while `homeScreenMounted`; the invitation
+ * only ever shows while `resultadosScreenMounted` — Home and Resultados are
+ * never both the mounted screen at once, so the two strips structurally
+ * never render simultaneously). Because of that mutual exclusivity, both
+ * strips share the single `--acceso-dm-nudge-height` reservation variable
+ * below rather than each owning a distinct one — a deliberate simplification
+ * over adding a third custom property, `ui-designer`'s own call per §3.5's
+ * explicit invitation to make it, named here rather than left implicit.
+ *
+ * Visibility (§2.5 checks 1-3): `isAccesoDmActive()` AND
+ * `hasAnyClosedSession(state)` (the same computed value the nudge above
+ * already reads, not recomputed a second way) AND `resultadosScreenMounted`
+ * AND not already dismissed (`isExitCtaDismissed()`, a new device-level flag,
+ * `accesoDmStorage.ts`). Tapping the CTA's own text/body (check 4) opens
+ * `https://nahui.app/` in a new tab and does NOT dismiss the strip — she may
+ * only be glancing. Tapping "Ahora no" (check 5) writes the dismissal flag
+ * and hides the strip immediately and permanently for this device — the only
+ * way it ever stops showing, since checks 1-3's own trigger condition never
+ * reverts to false on its own. No click-tracking on either zone (§8 item 7 —
+ * deliberately left as an open option, not decided here).
  */
 export function ResultsGuidanceNudge() {
   const { state } = useStore();
@@ -84,7 +111,16 @@ export function ResultsGuidanceNudge() {
 
   const hasFinalizedSale = state.sales.some((sa) => sa.status === 'finalized');
   const sessionClosed = hasAnyClosedSession(state);
-  const visible = isAccesoDmActive() && homeScreenMounted && !receiptActive && hasFinalizedSale && !sessionClosed;
+  const nudgeVisible = isAccesoDmActive() && homeScreenMounted && !receiptActive && hasFinalizedSale && !sessionClosed;
+
+  // acceso-dm.md §2.5 checks 1-3 — the exit invitation's own visibility.
+  // `isExitCtaDismissed()` is read into local state (not called fresh on
+  // every render like the other three localStorage-backed checks above) so
+  // tapping "Ahora no" can hide the strip immediately, in the same tick, via
+  // a state update — a plain `localStorage` write alone wouldn't itself
+  // trigger a re-render.
+  const [exitCtaDismissed, setExitCtaDismissed] = useState(() => isExitCtaDismissed());
+  const exitCtaVisible = isAccesoDmActive() && resultadosScreenMounted && sessionClosed && !exitCtaDismissed;
 
   // `acceso_dm_sale_completed` — fires once per session, the first time a
   // Sale transitions to `status: 'finalized'` while `nahui-acceso-dm-active`
@@ -138,54 +174,92 @@ export function ResultsGuidanceNudge() {
 
   const shellRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLParagraphElement>(null);
+  const exitCtaStripRef = useRef<HTMLDivElement>(null);
 
   // Same technique as `ReminderBanner.module.css`'s own `--demo-banner-
-  // height` reservation: this strip's fixed-position placement takes it out
-  // of normal flow, so `.app-shell` (rendered inside `<AppRouter />`, a
-  // descendant of `.shell` below) needs its own `padding-top` reserved by an
-  // exact measurement of the strip's real rendered height — including the
-  // wrapped-onto-two-lines case on narrower viewports, since this copy
-  // ("Esta venta se verá en Resultados cuando cierres tu jornada de venta.")
-  // is long enough to wrap there.
+  // height` reservation: whichever of the two strips below is currently
+  // rendered takes it out of normal flow (`position: fixed`), so
+  // `.app-shell` (rendered inside `<AppRouter />`, a descendant of `.shell`
+  // below) needs its own `padding-top` reserved by an exact measurement of
+  // that strip's real rendered height — including the wrapped-onto-two-lines
+  // case on narrower viewports, since both strips' copy is long enough to
+  // wrap there. The nudge and the exit invitation are structurally mutually
+  // exclusive (see this component's own doc comment above) — never both
+  // rendered at once — so measuring "whichever one is currently visible"
+  // into the single `--acceso-dm-nudge-height` variable is correct in every
+  // reachable state, not an approximation.
   useLayoutEffect(() => {
     const shellEl = shellRef.current;
     if (!shellEl) return;
-    const stripEl = stripRef.current;
-    if (!visible || !stripEl) {
-      // Strip isn't currently rendered — reserve zero, not a stale prior
-      // measurement. `ReminderBanner.module.css`'s combined padding-top
+    const activeStripEl = nudgeVisible ? stripRef.current : exitCtaVisible ? exitCtaStripRef.current : null;
+    if (!activeStripEl) {
+      // Neither strip is currently rendered — reserve zero, not a stale
+      // prior measurement. `ReminderBanner.module.css`'s combined padding-top
       // formula reads this variable unconditionally whenever the banner
       // itself renders, so a stale nonzero value here would phantom-inflate
-      // that reservation even while this nudge is genuinely hidden
+      // that reservation even while both strips are genuinely hidden
       // (`decision-log.md` D52's CSS-collision fix).
       shellEl.style.setProperty('--acceso-dm-nudge-height', '0px');
       return;
     }
     const observer = new ResizeObserver(() => {
-      // `getBoundingClientRect()`, not `entry.contentRect` — `.strip` carries
-      // its own vertical `padding` (`ResultsGuidanceNudge.module.css`), and
-      // `contentRect` deliberately excludes an element's own padding/border
-      // (it reports the content box only). Reserving `contentRect.height`
-      // here undercounted the real rendered strip by exactly that padding,
-      // leaving a genuine, measured overlap between the strip's true bottom
-      // edge and `.app-shell`'s reserved padding-top — found and fixed
-      // during `decision-log.md` D52's live verification (a real bug, not
-      // hypothetical: the wrapped, two-line copy reproduces it every time).
-      // `getBoundingClientRect().height` reports the true border-box height,
-      // matching what actually needs reserving.
-      const height = Math.ceil(stripEl.getBoundingClientRect().height);
+      // `getBoundingClientRect()`, not `entry.contentRect` — both strips
+      // carry their own vertical `padding` (`ResultsGuidanceNudge.module.css`),
+      // and `contentRect` deliberately excludes an element's own padding/
+      // border (it reports the content box only). Reserving
+      // `contentRect.height` here undercounted the real rendered strip by
+      // exactly that padding, leaving a genuine, measured overlap between the
+      // strip's true bottom edge and `.app-shell`'s reserved padding-top —
+      // found and fixed during `decision-log.md` D52's live verification (a
+      // real bug, not hypothetical: the wrapped, two-line copy reproduces it
+      // every time). `getBoundingClientRect().height` reports the true
+      // border-box height, matching what actually needs reserving.
+      const height = Math.ceil(activeStripEl.getBoundingClientRect().height);
       shellEl.style.setProperty('--acceso-dm-nudge-height', `${height}px`);
     });
-    observer.observe(stripEl);
+    observer.observe(activeStripEl);
     return () => observer.disconnect();
-  }, [visible]);
+  }, [nudgeVisible, exitCtaVisible]);
 
   return (
     <div ref={shellRef} className={styles.shell}>
-      {visible && (
+      {nudgeVisible && (
         <p ref={stripRef} className={styles.strip}>
           Esta venta se verá en Resultados cuando cierres tu jornada de venta.
         </p>
+      )}
+      {exitCtaVisible && (
+        <div ref={exitCtaStripRef} className={styles.exitCtaStrip}>
+          <a
+            href="https://nahui.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.exitCtaLink}
+          >
+            <span className={styles.exitCtaIcon} aria-hidden="true">
+              ↗
+            </span>
+            ¿Quieres probar Nahui con tu propio negocio?
+          </a>
+          <button
+            type="button"
+            className={styles.exitCtaDismiss}
+            onClick={() => {
+              try {
+                markExitCtaDismissed();
+              } catch {
+                // best-effort — same defensive-write posture as
+                // `accesoDmStorage.ts`'s own `markAccesoDmActive`: a storage
+                // write failing here still hides the strip for this render
+                // via the state update below, it just won't persist across a
+                // reload on a device in a restrictive browsing context.
+              }
+              setExitCtaDismissed(true);
+            }}
+          >
+            Ahora no
+          </button>
+        </div>
       )}
       <AppRouter />
     </div>

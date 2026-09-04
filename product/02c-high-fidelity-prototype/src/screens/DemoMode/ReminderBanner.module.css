@@ -25,13 +25,17 @@
   --demo-banner-height: 84px;
 }
 
-/* Reserves the COMBINED height of both this banner and `acceso-dm.md`'s own
-   results-guidance nudge (`ResultsGuidanceNudge.module.css`,
-   `--acceso-dm-nudge-height`) at the top of `.app-shell`'s box, only while
-   this banner itself is actually rendered (i.e. not on `home.md §3.8f`, per
-   `demo-mode.md §2.3` check 2 — the nudge shares that same exception, so
-   whenever the nudge could legitimately be visible, this banner already is
-   too; see `ResultsGuidanceNudge.tsx`'s own doc comment).
+/* Reserves the COMBINED height of both this banner and whichever of
+   `acceso-dm.md`'s own two strips (`ResultsGuidanceNudge.module.css`,
+   `--acceso-dm-nudge-height` — the §2.3 results-guidance nudge, Home-only,
+   or the §2.5 exit invitation, Resultados-only; the two are structurally
+   mutually exclusive and share this one variable, see that file's own doc
+   comment) is currently rendered, at the top of `.app-shell`'s box, only
+   while this banner itself is actually rendered (i.e. not on `home.md
+   §3.8f`, per `demo-mode.md §2.3` check 2 — the nudge shares that same
+   exception, so whenever the nudge could legitimately be visible, this
+   banner already is too; the exit invitation, being Resultados-only, is
+   unaffected by that one exception either way).
    `.app-shell` keeps its own `min-height: 100vh/100dvh` from `global.css`,
    completely unchanged — this only shrinks the vertical space available to
    its flex children (`App.module.css`'s `.main`, `NavBar`), the same way any

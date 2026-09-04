@@ -1,4 +1,5 @@
 const ACCESO_DM_ACTIVE_KEY = 'nahui-acceso-dm-active';
+const ACCESO_DM_EXIT_CTA_DISMISSED_KEY = 'nahui-acceso-dm-exit-cta-dismissed';
 
 /**
  * acceso-dm.md §2.3 — "did *this* route create this session," a fact the
@@ -36,6 +37,30 @@ export function isAccesoDmActive(): boolean {
     // posture as `demoModeStorage.ts`'s own `isDemoModeAcknowledged`, which
     // this mirrors, minus the throwing case since that one is invoked from
     // inside a try/catch at its own call site instead).
+    return false;
+  }
+}
+
+/**
+ * acceso-dm.md §2.5 check 5 — the exit invitation's own "Ahora no" dismiss.
+ * Same non-domain, device-level-flag category as `nahui-acceso-dm-active`
+ * above, colocated in this same module rather than a second small file since
+ * both flags share one owner (the exit invitation reads both this flag and
+ * `isAccesoDmActive()` together — see `ResultsGuidanceNudge.tsx`) and one
+ * abstraction level. Unlike `nahui-acceso-dm-active`, this flag is written
+ * only on an explicit merchant tap, never automatically.
+ */
+export function markExitCtaDismissed(): void {
+  localStorage.setItem(ACCESO_DM_EXIT_CTA_DISMISSED_KEY, 'true');
+}
+
+export function isExitCtaDismissed(): boolean {
+  try {
+    return localStorage.getItem(ACCESO_DM_EXIT_CTA_DISMISSED_KEY) === 'true';
+  } catch {
+    // Best-effort, read side — same defensive posture as `isAccesoDmActive`
+    // above: a storage read failing here just means the CTA still shows on
+    // this device (fails open to "not dismissed"), not a crash.
     return false;
   }
 }
