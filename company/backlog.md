@@ -22,3 +22,21 @@
 - Apartado/reservation status — not started.
 - Distributor/kg-based purchasing — not started.
 - Frequent-customer pre-orders — not started.
+
+## Product Discovery — unscoped, not prioritized, not designed
+
+Raw findings worth preserving for a future design pass. Distinct from "Later" above: these aren't yet decided features, just real signal that needs its own product-discovery pass before any design work starts. Not part of any current build's scope unless explicitly pulled in by the Product Owner.
+
+### Event-scoped inventory allocation (multi-seller concurrent selling)
+
+- **Source: unsolicited real-merchant feedback (2026-09-03).** A prospective merchant contacted the Product Owner directly after trying Nahui — found it useful, but wants concurrent/parallel selling by multiple sellers at the same Event (e.g., 3 salespeople working one table simultaneously, each needing their own access).
+- **Explicitly out of scope for the current pilot.** Not folded into the active Q19/Q20/Q21 value-first-onboarding work, and does not expand that pilot's scope. No design or implementation started.
+- **The finding, beyond "let multiple people sell at once":** it exposes an inventory-allocation requirement more fundamental than concurrency alone. Inventory should be allocatable *to an Event*, not owned by whichever seller happens to be working it. Example given by the Product Owner: a merchant owns 30 units of a Product, takes 20 to Event A and 10 to Event B. Event A may have 3 sellers working simultaneously, but all 3 sell against the same shared pool of 20 units allocated to Event A — no seller has their own separate slice. Event B sells independently against its own, separately allocated 10 units.
+- **Implication, not yet designed:** Event preparation/setup would eventually need to include not just event-specific pricing (already a concept) but selecting *which* Products and *how much* inventory are being taken to that Event.
+- **Relationship to the existing, still-open "multiple people per Event" question:** related but not the same question. `product/99-rfc/0007-user-and-business-membership.md` (Accepted, `decision-log.md` D44) already introduced `BusinessMembership.role: OWNER | SELLER` at the identity layer — a SELLER role exists — but the *selling-session* mechanics for multiple people working one Event concurrently (multiple simultaneous active Sessions under one Event, how they'd share vs. partition inventory) were never designed. This new feedback doesn't resolve that gap; it adds a second, load-bearing requirement (Event-scoped inventory allocation) that any future design of concurrent selling needs to account for from the start, not bolt on afterward.
+- **Deliberately preserved as open, not resolved — do not let a future pass silently pick one answer without revisiting these:**
+  - What concurrency model, exactly, does "multiple sellers at one Event" require (shared live state, per-seller devices reading/writing one Event's pool, conflict handling)?
+  - How does inventory allocation/reconciliation actually work — is "taking stock to an Event" a real write (a reservation/transfer) or a soft filter, and what enforces that a seller can't oversell an Event's allocated pool?
+  - What happens to unsold Event stock afterward — does it return to general availability automatically, stay "at the Event" until explicitly returned, something else?
+  - How this composes with the still-open concurrent-selling/multiple-people-per-Event question above — one coherent design, not two independently-solved halves.
+- **Not yet classified** as Architect/Product/Business Decision — that classification, and any RFC-trigger evaluation, waits for an actual design pass, not this discovery entry.
