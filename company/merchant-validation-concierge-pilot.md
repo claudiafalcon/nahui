@@ -1,6 +1,6 @@
 # Nahui — Concierge/DM Validation Pilot: Qualification & Discovery (2026-08-20, reframed 2026-08-27)
 
-**Status: design/proposal only. Nothing here is authorized to launch — no ad published, no Instagram automation configured, no message sent.** Prepared by `marketing` at the Product Owner's direct request, following the Product Owner's review of this agent's earlier DM-feasibility analysis and a parallel `knowledge-mentor` consultation on Concierge MVP methodology. Requires explicit, per-item Product Owner sign-off before any piece is built or published, per the standing Approval gate (`company/CLAUDE.md`, `company/marketing-operating-environment.md`).
+**Status: Approved by the Product Owner, 2026-09-03 — content and caps signed off in full.** Not yet live: the Beat 4b video variant (§4) still needs to be built, and Instagram Business Suite's Instant Reply/automation tooling still needs to be confirmed against the real account (§3 item 5) before anything is actually published. No ad published, no Instagram automation configured, no message sent as of this status line. Prepared by `marketing` at the Product Owner's direct request, following the Product Owner's review of this agent's earlier DM-feasibility analysis and a parallel `knowledge-mentor` consultation on Concierge MVP methodology.
 
 ---
 
@@ -69,7 +69,7 @@ Ad → DM conversation (§6, mostly unchanged, see §0.1)
 
 The original branch-check ("¿ya le entraste a la app... o el video fue lo único que has visto?") was designed to route into CP1-CP5 coding for people who already saw the demo unprompted. Under the two-loop design, that question no longer routes to a different question set — Branch A/B's downstream questions (§6.3/§6.4) still work fine as-is for H1 signal (problem-fit, comprehension, trust), since none of them actually depended on being able to explain funnel abandonment. Keep the question, drop its role as a CP1-CP5 gate.
 
-### 0.3 Value-first demo sequencing — evaluated, deferred, logged as an open Product Decision
+### 0.3 Value-first demo sequencing — evaluated, approved, building before pilot launch
 
 The Product Owner separately proposed restructuring the demo so a DM-qualified merchant's *first* meaningful interaction is a completed sale (a pre-loaded representative catalog), with business/product/inventory customization explained afterward — instead of today's sequence (auth → identity → catalog naming → still-zero-stock → inventory registration → first sale, verified precisely by `ux-designer` against the current Approved specs and code).
 
@@ -80,7 +80,7 @@ The Product Owner separately proposed restructuring the demo so a DM-qualified m
 - A pre-filled, not-her-own catalog demonstrates the *mechanic* feels fast — it doesn't, on its own, validate that *her* actual catalog/inventory friction (the project's core thesis, `company/CLAUDE.md`) is solved, unless the "make it yours" transition afterward is real and immediate, not an afterthought.
 - Authentication must stay in this flow too, for the same reason as §0's Loop 2 — deferring it would foreclose ever learning about phone-entry friction from a population that would otherwise be worth asking.
 
-**Decision: not built for this launch.** Building a new, real, convertible Onboarding path is a genuine architecture + spec investment, and this pilot itself is still an unconfirmed diagnostic (§1's own non-goal #3 — not a pivot to concierge-style onboarding as Nahui's standing model). The stronger sequencing is to launch the two-loop pilot above using the *existing* onboarding flow first, and let Loop 2's own instrumentation answer the actual open question — do DM-qualified, genuinely-interested merchants also stall in onboarding, or does that population complete it fine — before investing in a new path speculatively. If Loop 2 shows real stalling even among qualified merchants, that's confirmed, evidence-backed justification to build exactly what's specified above, fast, without re-litigating any of this reasoning.
+**Decision, updated 2026-08-27: build before this pilot launches.** Originally deferred pending Loop 2's own evidence, on the reasoning that a new Onboarding path was a speculative investment. The Product Owner corrected the framing: this isn't a pilot-driven optimization to validate before spending engineering effort — the setup-before-value sequence (identity → catalog → inventory, all before a first sale) is a structural gap in Onboarding itself, independent of whether the DM pilot ever runs. The pilot's own measurement integrity is unaffected either way, confirmed: the `demo_*` instrumentation watches state transitions (auth completed, onboarding completed, a sale finalized), not which path reached them, so building this first loses no evidence Loop 2 would otherwise have collected. See `product/02-ux/product-decisions.md` Q19 (resolved) and Q20 (a complementary structural change — merging initial inventory capture into product creation — bundled into the same amendment, pending an `architect` check). Next: `ux-designer` drafts the combined `onboarding.md` amendment once Q20 clears.
 
 Logged as a Product Decision, not decided here — recorded as Q19 in `product/02-ux/product-decisions.md`, cross-referenced from `onboarding.md`'s own "Future considerations" section (§11).
 
@@ -151,12 +151,12 @@ A dollar budget alone doesn't guarantee "answerable by one person" — a cheap, 
 
 Per `company/marketing-operating-environment.md` §14's existing workflow, applied item by item, not as a blanket go-ahead:
 
-- [ ] Ad Set configuration (§2.1) — objective, conversion location, performance goal, CTA, budget, schedule
-- [ ] Creative — swapped closing-card copy for the DM ask (§5), routed to `ui-designer` to build against the existing video, then to `brand-guardian` for a voice-consistency pass before publishing (flagged below, not performed by this agent)
-- [ ] Instant Reply copy and quick-reply questions (§6.1)
-- [ ] Discussion guide (§6.2) — the actual message content the Product Owner will send
-- [ ] Confirmation of Instagram Business account setup and Instant Reply/automation tooling availability (Meta Business Suite Automations) before anything is built against an assumed capability
-- [ ] The MXN $200 budget, 2-day window, and 20-conversation stop-early trigger (§2.2) as the governing caps
+- [x] Ad Set configuration (§2.1) — objective, conversion location, performance goal, CTA, budget, schedule — **Approved 2026-09-03**
+- [x] Creative — copy for the DM ask (§4/§5) — **Approved 2026-09-03.** The actual Beat 4b video variant still needs to be built by `ui-designer` before this is publishable — approval here covers the copy, not a finished asset.
+- [x] Instant Reply copy and quick-reply questions (§5) — **Approved 2026-09-03**
+- [x] Discussion guide (§6) — **Approved 2026-09-03**, including the 2026-08-27 §6.1/§6.6 rewrite, brand-reviewed 2026-09-03 (one Major fixed — see §6.1's own text)
+- [ ] Confirmation of Instagram Business account setup and Instant Reply/automation tooling availability (Meta Business Suite Automations) — **still needs to happen against the real account, only the Product Owner can do this**
+- [x] The MXN $200 budget, 2-day window, and 20-conversation stop-early trigger (§2.2) as the governing caps — **Approved 2026-09-03**
 
 **Recommended, not yet done:** route the ad primary text, Instant Reply copy, and discussion-guide's actual spoken lines through `brand-guardian` for a voice-consistency review before Product Owner sign-off — these are new external-facing copy in a register (1:1 conversational DM) Nahui hasn't used before, which is exactly the kind of "new emotional/tonal territory" `brand/CLAUDE.md` names as a consultation trigger, not just an ordinary-copy check against `tone-of-voice.md` directly. This agent has checked the copy below against `tone-of-voice.md`'s concrete rules directly (§6.3), but a dedicated review is worth routing through Main before publishing.
 
@@ -209,7 +209,7 @@ These two answers feed the same H1 screening criteria `market-validation.md` §2
 
 ### 6.1 Opening (human, first message)
 
-> Hola [nombre], soy [Product Owner], de Nahui — gracias de verdad por escribirnos. Antes que nada: esto no es una venta, no te vamos a pedir dinero. Nada más quiero entender cómo vendes en tus bazares, y si lo que viste en el video tiene sentido para ti o no — no hay respuestas correctas, y platicamos lo que tú quieras, tú decides cuándo parar. Y ya que estás aquí: solo por platicar conmigo quedas en la lista de acceso prioritario para cuando la app esté lista, sin compromiso de nada más. ¿Tienes un ratito ahora, o prefieres que sigamos más tarde? Contesta cuando puedas, no hay ninguna prisa.
+> Hola [nombre], soy [Product Owner], de Nahui — gracias de verdad por escribirnos. Antes que nada: esto no es una venta, no te vamos a pedir dinero. Nada más quiero entender cómo vendes en tus bazares, y si lo que viste en el video tiene sentido para ti o no — no hay respuestas correctas, y platicamos lo que tú quieras, tú decides cuándo parar. Y algo más: nada más por platicar conmigo, ya quedas en la lista de acceso prioritario para cuando la app esté lista — no tienes que hacer nada extra. ¿Tienes un ratito ahora, o prefieres que sigamos más tarde? Contesta cuando puedas, no hay ninguna prisa.
 
 ### 6.2 Branch check — did she reach the demo at all
 
