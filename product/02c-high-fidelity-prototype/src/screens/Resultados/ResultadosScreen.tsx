@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useStore } from '../../domain/store';
 import { findEvent, findVenue, hasAnyClosedSession } from '../../domain/selectors';
 import type { ID } from '../../domain/types';
@@ -9,6 +10,7 @@ import { RendimientoPorBazar } from './RendimientoPorBazar';
 import { VenueDetail } from './VenueDetail';
 import { TusClientes } from './TusClientes';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
+import { setResultadosScreenMounted } from '../AccesoDM/resultadosScreenMountedSignal';
 
 /** reports.md §3.8's own "back navigation follows whatever path she
  * actually took to arrive" rule — Event detail's parent is either the main
@@ -62,6 +64,18 @@ export function ResultadosScreen({
   onNavigateToEventos: () => void;
 }) {
   const { state } = useStore();
+
+  // acceso-dm.md instrumentation — reports "ResultadosScreen is currently
+  // mounted" to `resultadosScreenMountedSignal.ts`, the one fact
+  // `ResultsGuidanceNudge.tsx` needs to fire `acceso_dm_results_viewed` the
+  // first time she reaches Resultados. Same mount/unmount-reporting shape as
+  // `HomeScreen.tsx`'s own signal report one folder over — a no-op for every
+  // merchant not on the Acceso DM route, since nothing else in this codebase
+  // subscribes to it.
+  useEffect(() => {
+    setResultadosScreenMounted(true);
+    return () => setResultadosScreenMounted(false);
+  }, []);
 
   // §2 step 4 / §3.6 — "rendimiento"/"venue-detail"/"tus-clientes" are
   // Paid-tier-only subviews. `ResultadosMain`'s own teaser buttons already

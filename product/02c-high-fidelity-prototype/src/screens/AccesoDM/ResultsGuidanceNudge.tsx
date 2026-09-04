@@ -1,8 +1,10 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import { track } from '@vercel/analytics';
 import { AppRouter } from '../../AppRouter';
 import { useStore } from '../../domain/store';
 import { hasAnyClosedSession } from '../../domain/selectors';
 import { useHomeScreenMounted } from './homeScreenMountedSignal';
+import { useResultadosScreenMounted } from './resultadosScreenMountedSignal';
 import { useReceiptScreenActive } from '../DemoMode/receiptScreenSignal';
 import { isAccesoDmActive } from './accesoDmStorage';
 import styles from './ResultsGuidanceNudge.module.css';
@@ -40,15 +42,88 @@ import styles from './ResultsGuidanceNudge.module.css';
  * Purely passive text (§2.3 check 5) — no `<button>`, no `onClick`, no
  * dismiss control of any kind (check 6): the only way this stops rendering
  * is `hasAnyClosedSession` becoming true, permanently, for this device.
+ *
+ * Analytics instrumentation (Product Owner-authorized, count-only, reusing
+ * `ReminderBanner.tsx`'s exact event pattern one folder over — external
+ * observer of `state` via `useStore()`, not-already-true-at-mount guard,
+ * one-shot per session): this component is the sole mount point for three of
+ * the four `acceso_dm_*` events (`acceso_dm_opened` fires separately, in
+ * `AccesoDmGate.tsx`, the moment the URL marker is detected).
+ * - `acceso_dm_sale_completed` extends this component's own existing
+ *   `hasFinalizedSale` observation rather than adding a second one.
+ * - `acceso_dm_session_closed` fires at the same `hasAnyClosedSession`
+ *   transition that already permanently hides this nudge (§2.3 check 3) —
+ *   not recomputed a second way.
+ * - `acceso_dm_results_viewed` observes `resultadosScreenMountedSignal.ts`
+ *   (mirroring `homeScreenMountedSignal.ts` exactly, reported by
+ *   `ResultadosScreen.tsx`'s own one-line mount/unmount effect).
+ * All three are one-shot per session (the `demo_otp_completed`/
+ * `demo_onboarding_completed` shape, not `demo_sale_completed`'s repeatable
+ * per-Sale-ID shape) — these four events measure funnel progression, not
+ * engagement depth, so a single latch per session is correct and simpler.
+ * All three are gated on `isAccesoDmActive()`, the same scoping this nudge's
+ * own visibility already uses — never fired for any other merchant, on any
+ * other route.
  */
 export function ResultsGuidanceNudge() {
   const { state } = useStore();
   const homeScreenMounted = useHomeScreenMounted();
+  const resultadosScreenMounted = useResultadosScreenMounted();
   const receiptActive = useReceiptScreenActive();
 
   const hasFinalizedSale = state.sales.some((sa) => sa.status === 'finalized');
-  const visible =
-    isAccesoDmActive() && homeScreenMounted && !receiptActive && hasFinalizedSale && !hasAnyClosedSession(state);
+  const sessionClosed = hasAnyClosedSession(state);
+  const visible = isAccesoDmActive() && homeScreenMounted && !receiptActive && hasFinalizedSale && !sessionClosed;
+
+  // `acceso_dm_sale_completed` — fires once per session, the first time a
+  // Sale transitions to `status: 'finalized'` while `nahui-acceso-dm-active`
+  // is set. Same not-already-true-at-mount guard shape as
+  // `demo_otp_completed`: a device that resumes into an
+  // already-has-a-finalized-Sale state never fires this again, since the
+  // live transition was already witnessed (and already fired) the first
+  // time it actually happened.
+  const sawNoFinalizedSaleRef = useRef(false);
+  const saleCompletedFiredRef = useRef(false);
+  useEffect(() => {
+    if (!isAccesoDmActive()) return;
+    if (!hasFinalizedSale) {
+      sawNoFinalizedSaleRef.current = true;
+      return;
+    }
+    if (saleCompletedFiredRef.current || !sawNoFinalizedSaleRef.current) return;
+    saleCompletedFiredRef.current = true;
+    track('acceso_dm_sale_completed');
+  }, [hasFinalizedSale]);
+
+  // `acceso_dm_session_closed` — fires once per session, the first time
+  // `hasAnyClosedSession(state)` flips true while `nahui-acceso-dm-active`
+  // is set. `sessionClosed` above is the exact same value that permanently
+  // hides this nudge (§2.3 check 3) — fired at that transition, not a second
+  // computation of the same fact.
+  const sawNotClosedRef = useRef(false);
+  const sessionClosedFiredRef = useRef(false);
+  useEffect(() => {
+    if (!isAccesoDmActive()) return;
+    if (!sessionClosed) {
+      sawNotClosedRef.current = true;
+      return;
+    }
+    if (sessionClosedFiredRef.current || !sawNotClosedRef.current) return;
+    sessionClosedFiredRef.current = true;
+    track('acceso_dm_session_closed');
+  }, [sessionClosed]);
+
+  // `acceso_dm_results_viewed` — fires once per session, the first time the
+  // Resultados screen mounts while `nahui-acceso-dm-active` is set.
+  // `resultadosScreenMounted` starts `false` every page load (module-level,
+  // not persisted), so no "already true at mount" case exists to guard
+  // against here — a plain one-shot ref is enough.
+  const resultsViewedFiredRef = useRef(false);
+  useEffect(() => {
+    if (!isAccesoDmActive() || !resultadosScreenMounted || resultsViewedFiredRef.current) return;
+    resultsViewedFiredRef.current = true;
+    track('acceso_dm_results_viewed');
+  }, [resultadosScreenMounted]);
 
   const shellRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLParagraphElement>(null);

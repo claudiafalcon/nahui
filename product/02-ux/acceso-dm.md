@@ -193,6 +193,25 @@ Identical to "Ver un ejemplo," by design, with zero divergence: the milestone sc
        to solve.
 ```
 
+### 2.4 Analytics instrumentation (added 2026-09-04, `reviewer`-flagged documentation gap, same shape as `demo-mode.md §2.5`)
+
+Not a screen-resolution branch like §2.1-§2.3 above — no new screen state. Four count-only events, added post-build at the Product Owner's explicit request (minimal funnel-progression signal only, no analytics-continuity constraint with the retired `demo-mode.md §2.5` suite — see `company/merchant-validation-concierge-pilot.md §0`'s own amendment for why). All four: `@vercel/analytics` `track()`, external observer of shared `AppState` via `useStore()`, bare event name, no payload, zero PII, zero session identifier — identical payload discipline to every `demo_*` event this replaces functionally.
+
+**`acceso_dm_opened`**
+- Fires once, in `AccesoDmGate.tsx`, the moment `?acceso=dm` is detected in the URL (`urlHasMarker`) — regardless of whether the auto-sequence (§2.1 step 3) actually runs or is skipped because a Business already exists (§2.1 check 2). A returning visit still counts as "opened."
+- Gated on `urlHasMarker` directly, not `nahui-acceso-dm-active` — correct, since this event's whole job is marking that the marker was ever seen, before the flag that depends on the auto-sequence having run even exists.
+
+**`acceso_dm_sale_completed`**
+- Fires once per session, the first time a Sale transitions to `status: 'finalized'` while `nahui-acceso-dm-active` is set (`ResultsGuidanceNudge.tsx`, reusing that component's own existing `hasFinalizedSale` observation from §2.3 check 2 — not a second, independent observer).
+
+**`acceso_dm_session_closed`**
+- Fires once per session, the first time `hasAnyClosedSession(state)` flips to true while `nahui-acceso-dm-active` is set (`ResultsGuidanceNudge.tsx`, the identical transition that already hides the nudge per §2.3 check 3 — same computed value, not recomputed a second way).
+
+**`acceso_dm_results_viewed`**
+- Fires once per session, the first time the Resultados screen mounts while `nahui-acceso-dm-active` is set. Required one small new signal (`resultadosScreenMountedSignal.ts`), an exact mirror of the existing `homeScreenMountedSignal.ts`/`HomeScreen.tsx` pattern this document's own §2.3 already established for the nudge — applied to `ResultadosScreen.tsx` via the identical one-line mount/unmount effect shape. No `reports.md`-owned aggregation or content logic touched — a mount signal only.
+
+**Why no `decision-log.md` amendment:** purely additive instrumentation — no new domain field, no aggregate or ubiquitous-language term touched, no change to `reports.md`/`selectors.ts`. D51 already covers this route's placement and mechanism; this subsection is the complete record for the instrumentation layer, same precedent `demo-mode.md`'s own analytics amendments already set for itself.
+
 ---
 
 ## 3. Low-fidelity wireframes

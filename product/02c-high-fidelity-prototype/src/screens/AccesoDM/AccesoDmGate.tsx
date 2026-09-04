@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { track } from '@vercel/analytics';
 import { useStore } from '../../domain/store';
 import { businessForCurrentUser } from '../../domain/onboardingResolution';
 import { DEMO_BUSINESS_DESCRIPTION, DEMO_BUSINESS_NAME, DEMO_SEED_LINES } from '../../domain/demoSeed';
@@ -59,6 +60,22 @@ export function AccesoDmGate() {
   });
   const [businessExistedAtMount] = useState(() => businessForCurrentUser(state) != null);
   const active = urlHasMarker && !businessExistedAtMount;
+
+  // Analytics instrumentation (Product Owner-authorized, count-only,
+  // reusing `ReminderBanner.tsx`'s exact `demo_*` event pattern one folder
+  // over) — `acceso_dm_opened` fires once, at the moment the `?acceso=dm`
+  // marker is detected, regardless of whether the auto-sequence actually
+  // runs (`active`) or is skipped because a Business already exists on this
+  // device (§2.1 check 2) — a returning visit still counts as "opened."
+  // Same one-shot mount-guard shape as `demo_pass_through_reached`'s own
+  // `passThroughFiredRef` — a plain `useRef` guard survives StrictMode's
+  // dev-only double-invoke of mount effects (main.tsx) without double-firing.
+  const openedFiredRef = useRef(false);
+  useEffect(() => {
+    if (!urlHasMarker || openedFiredRef.current) return;
+    openedFiredRef.current = true;
+    track('acceso_dm_opened');
+  }, [urlHasMarker]);
 
   const [failed, setFailed] = useState(false);
 
