@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { track } from '@vercel/analytics';
 import { ResultsGuidanceNudge } from '../AccesoDM/ResultsGuidanceNudge';
 import { useReceiptScreenActive } from './receiptScreenSignal';
@@ -8,11 +8,90 @@ import { RestartFailed } from './RestartFailed';
 import { restartDemo } from './restartDemo';
 import { useStore } from '../../domain/store';
 import { businessForCurrentUser, pathFromCapabilities } from '../../domain/onboardingResolution';
+import { isAccesoDmActive } from '../AccesoDM/accesoDmStorage';
 import styles from './ReminderBanner.module.css';
 
 const QUESTIONNAIRE_URL = 'https://forms.gle/ZZhtJEfee3viWY1h8';
 
 type RestartState = 'idle' | 'confirming' | 'failed';
+
+/**
+ * Corrected 2026-09-04 (Product Owner direction, `decision-log.md` D52) —
+ * full suppression, not composition, for Acceso DM sessions. `demo-mode.md
+ * §2.3`'s Form-reminder banner ("Cuéntanos tu opinión — cuestionario," a
+ * link to the self-serve Meta campaign's own Google Form) and its "Modo
+ * demo · cuestionario: 8-12 min · Reiniciar demo" secondary row are correct
+ * for an ordinary self-serve `demo.nahui.app` visitor but a real content
+ * mismatch for an Acceso-DM-arrived merchant — this pilot's feedback
+ * mechanism is a conversational DM follow-up, not that Form, so pointing
+ * her at it is wrong content, not just extra visual density.
+ *
+ * This gate is a structural, component-level split, not a conditional
+ * inside `DemoReminderBanner`'s own render or effects: `isAccesoDmActive()`
+ * is read once, here, before either branch's hooks are ever registered, so
+ * an Acceso DM session never mounts `DemoReminderBanner` at all — none of
+ * its `demo_*` analytics effects (`demo_pass_through_reached`,
+ * `demo_otp_completed`, `demo_onboarding_completed`, `demo_sale_completed`,
+ * `demo_paid_plan_activated_midsession`) ever register, let alone fire.
+ * This resolves D52's own "known, accepted side effect" note (the
+ * `demo_*`/`acceso_dm_*` event conflation it flagged but didn't fix) rather
+ * than merely continuing to tolerate it — an Acceso DM session now produces
+ * only the `acceso_dm_*` event stream (`ResultsGuidanceNudge.tsx`).
+ *
+ * Safe to branch on `isAccesoDmActive()` directly in this component's own
+ * render, with no `useState`/`useRef` capture: the flag is written once, at
+ * the start of the Acceso DM auto-sequence (`accesoDmStorage.ts`), and is
+ * never cleared during a session — the only way it could change during this
+ * component's own mounted lifetime is `restartDemo()`'s full page reload,
+ * which remounts the whole React tree from scratch anyway. It genuinely
+ * cannot flip under this component while mounted.
+ *
+ * An ordinary self-serve `demo.nahui.app` visitor (no `?acceso=dm` marker,
+ * `isAccesoDmActive()` false) is unaffected by this gate — she reaches
+ * `DemoReminderBanner` exactly as before this correction, same content,
+ * same events, same behavior.
+ */
+export function ReminderBanner() {
+  if (isAccesoDmActive()) {
+    return <AccesoDmPassThrough />;
+  }
+  return <DemoReminderBanner />;
+}
+
+/**
+ * The Acceso DM branch of the gate above: a transparent pass-through that
+ * renders only `<ResultsGuidanceNudge />` (which renders the real,
+ * unmodified `<AppRouter />` internally) — no banner markup, no banner
+ * analytics, no restart control. Deliberately has none of
+ * `DemoReminderBanner`'s hooks; its own single hook
+ * (`useReceiptScreenActive`) mirrors that component's `receiptActive`
+ * exception for `home.md §3.8f`'s full-viewport digital receipt (never
+ * composite any chrome there) without importing any of the analytics or
+ * restart-state machinery that exception lives alongside in that component.
+ *
+ * `--demo-banner-height` is forced to `0px` via inline style, overriding
+ * `.shell`'s own `84px` starting-estimate custom property (`.module.css`)
+ * — no banner element exists here to ever run the `ResizeObserver` that
+ * would otherwise correct that estimate down, and no banner exists to
+ * reserve space for in the first place. `.withBanner :global(.app-shell)`
+ * still applies (when `!receiptActive`), so `ResultsGuidanceNudge`'s own
+ * `--acceso-dm-nudge-height` — inherited here via ordinary DOM ancestry,
+ * same as it always was — still gets summed into `.app-shell`'s
+ * `padding-top` correctly: `0px` (banner) + the nudge's own measured height
+ * + the safe-area inset, with no leftover banner-shaped gap and no
+ * collision from a banner that no longer renders.
+ */
+function AccesoDmPassThrough() {
+  const receiptActive = useReceiptScreenActive();
+  return (
+    <div
+      className={`${styles.shell} ${receiptActive ? '' : styles.withBanner}`}
+      style={{ '--demo-banner-height': '0px' } as CSSProperties}
+    >
+      <ResultsGuidanceNudge />
+    </div>
+  );
+}
 
 /**
  * demo-mode.md §2.3/§3.6 — the persistent, session-wide Form-reminder
@@ -35,14 +114,15 @@ type RestartState = 'idle' | 'confirming' | 'failed';
  * whichever Merchant Application screen the *unmodified* `<AppRouter />` is
  * currently resolving to, for the entire `pass-through` duration.
  *
- * Mounted as this component from `DemoModeGateActive.tsx`'s `pass-through`
- * branch — a sibling to `<AppRouter />`, never a change inside it
- * (Architecture Review §8 item 2's outer-wrapper shape, the same pattern
- * `DemoModeGateActive` itself already uses one layer up). This is the only
- * place in the whole feature that composes the banner with the real app;
- * `AppRouter.tsx` and every screen inside it stay untouched, save for the
- * one route-level signal call `HomeScreen.tsx` reports on its own already-
- * known `ui.kind` (`receiptScreenSignal.ts`, §8 item 7).
+ * Reached from `DemoModeGateActive.tsx`'s `pass-through` branch via the
+ * exported `ReminderBanner()` gate above (which mounts this component only
+ * for non-Acceso-DM sessions) — a sibling to `<AppRouter />`, never a change
+ * inside it (Architecture Review §8 item 2's outer-wrapper shape, the same
+ * pattern `DemoModeGateActive` itself already uses one layer up). This is
+ * the only place in the whole feature that composes the banner with the
+ * real app; `AppRouter.tsx` and every screen inside it stay untouched, save
+ * for the one route-level signal call `HomeScreen.tsx` reports on its own
+ * already-known `ui.kind` (`receiptScreenSignal.ts`, §8 item 7).
  *
  * §2.3 check 1 (only ever mounted once `pass-through` begins, never on
  * this document's own §3.1-§3.5 screens) is satisfied structurally: nothing
@@ -85,23 +165,33 @@ type RestartState = 'idle' | 'confirming' | 'failed';
  *   here.
  *
  * **As of `decision-log.md` D52 (Acceso DM relocated into the demo-campaign
- * build):** this component now renders `<ResultsGuidanceNudge />` in place
- * of what used to be a direct `<AppRouter />` — `ResultsGuidanceNudge`
- * itself still renders the real, unmodified `<AppRouter />` internally, so
- * it renders exactly once either way. This is what lets an Acceso-DM-
- * arrived merchant see both this banner and `acceso-dm.md`'s own results-
- * guidance nudge composited together for the first time (Product Owner-
- * confirmed intentional reuse, not a bug) — both self-gate independently
- * (this banner on `pass-through` alone; the nudge on its own
- * `nahui-acceso-dm-active` flag plus its own three domain conditions), so
- * nesting them costs nothing when the nudge's own conditions don't hold.
- * See that file's own doc comment, and `.module.css` below, for the
- * combined-height/stacking fix this composition required (both strips
- * independently reserved `.app-shell` `padding-top` and both used
- * `position: fixed; top: 0` — a real collision once they could render
- * simultaneously, fixed by summing both measured heights into one
- * reservation and stacking the nudge below this banner, never both at the
- * same `top`).
+ * build):** this component renders `<ResultsGuidanceNudge />` in place of
+ * what used to be a direct `<AppRouter />` — `ResultsGuidanceNudge` itself
+ * still renders the real, unmodified `<AppRouter />` internally, so it
+ * renders exactly once either way. D52's original text composited this
+ * banner and `acceso-dm.md`'s own results-guidance nudge together for an
+ * Acceso-DM-arrived merchant, and separately flagged the resulting
+ * `demo_*`/`acceso_dm_*` event conflation as an accepted, not-resolved,
+ * tradeoff.
+ *
+ * **Corrected 2026-09-04 (Product Owner direction):** that compositing and
+ * that conflation are both resolved, not merely accepted, as of this date.
+ * `DemoReminderBanner` — the component below carrying this whole doc
+ * comment, every `demo_*` analytics effect, and the two-row banner markup
+ * — never mounts at all for an Acceso DM session. The exported
+ * `ReminderBanner()` gate above it renders a separate, lean pass-through
+ * (`AccesoDmPassThrough`, above) for that case instead: only
+ * `<ResultsGuidanceNudge />`, none of this component's hooks, none of its
+ * `demo_*` events. An Acceso DM session now produces only `acceso_dm_*`
+ * events — see `ReminderBanner()`'s own doc comment for the gate itself,
+ * and `.module.css`'s `.withBanner :global(.app-shell)` rule for how the
+ * combined-height reservation (previously fixed here for the "both strips
+ * render together" case D52 introduced) still holds correctly now that the
+ * banner's own contribution is always `0px` for Acceso DM sessions.
+ * Everything else in this doc comment — the height-measurement mechanics,
+ * the `demo_*` event descriptions below — remains accurate for the case
+ * this component still handles: ordinary self-serve `demo.nahui.app`
+ * visitors, unchanged by this correction.
  *
  * §2.5.3's two further events (added 2026-08-19, build-authorized) are
  * observed here too — same mount point, same external-observer discipline:
@@ -132,7 +222,7 @@ type RestartState = 'idle' | 'confirming' | 'failed';
  *   Repeatable, same shape as `demo_sale_completed` — the arming flag resets
  *   after each observed paid transition.
  */
-export function ReminderBanner() {
+function DemoReminderBanner() {
   const receiptActive = useReceiptScreenActive();
   const [restartState, setRestartState] = useState<RestartState>('idle');
   const shellRef = useRef<HTMLDivElement>(null);
