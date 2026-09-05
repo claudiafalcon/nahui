@@ -158,10 +158,10 @@ A dollar budget alone doesn't guarantee "answerable by one person" — a cheap, 
 Per `company/marketing-operating-environment.md` §14's existing workflow, applied item by item, not as a blanket go-ahead:
 
 - [x] Ad Set configuration (§2.1) — objective, conversion location, performance goal, CTA, budget, schedule — **Approved 2026-09-03**
-- [x] Creative — copy for the DM ask (§4/§5) — **Approved 2026-09-03.** The actual Beat 4b video variant still needs to be built by `ui-designer` before this is publishable — approval here covers the copy, not a finished asset.
+- [x] Creative — copy for the DM ask (§4/§5) — **Approved 2026-09-03.** The Beat 4b video variant is built (`campaign-b-dm-pilot-variant-v1.mp4`), generated with a substitute TTS voice (`es-MX-DaliaNeural`), not the real Marina/Azure account. **Product Owner decision, 2026-09-05: accepted as-is for this launch, not a blocker** — the real-voice re-record can happen later without holding up the pilot.
 - [x] Instant Reply copy and quick-reply questions (§5) — **Approved 2026-09-03**
 - [x] Discussion guide (§6) — **Approved 2026-09-03**, including the 2026-08-27 §6.1/§6.6 rewrite, brand-reviewed 2026-09-03 (one Major fixed — see §6.1's own text)
-- [ ] Confirmation of Instagram Business account setup and Instant Reply/automation tooling availability (Meta Business Suite Automations) — **still needs to happen against the real account, only the Product Owner can do this**
+- [x] Confirmation of Instagram Business account setup and Instant Reply/automation tooling availability (Meta Business Suite Automations) — **Confirmed 2026-09-05, Product Owner, directly against the real account.**
 - [x] The MXN $200 budget, 2-day window, and 20-conversation stop-early trigger (§2.2) as the governing caps — **Approved 2026-09-03**
 
 **Recommended, not yet done:** route the ad primary text, Instant Reply copy, and discussion-guide's actual spoken lines through `brand-guardian` for a voice-consistency review before Product Owner sign-off — these are new external-facing copy in a register (1:1 conversational DM) Nahui hasn't used before, which is exactly the kind of "new emotional/tonal territory" `brand/CLAUDE.md` names as a consultation trigger, not just an ordinary-copy check against `tone-of-voice.md` directly. This agent has checked the copy below against `tone-of-voice.md`'s concrete rules directly (§6.3), but a dedicated review is worth routing through Main before publishing.
