@@ -1279,3 +1279,18 @@ header's gear icon on §3.3–§3.6 now routes directly into Configuración
 instead. See `home.md`'s own status header (2026-08-15 entry) and §10 for
 the full reasoning, including the correction to this document's own
 2026-08-14 "deliberate divergence" claim.
+
+### status-2026-09-04-q20-cold-start-narrowed
+**`product/02-ux/product-decisions.md` Q20 (persisted 2026-09-04) narrowed
+§2 step 3's cold-start branch.** Its own parenthetical previously named
+`onboarding.md`'s "Define lo que vendes" step as an example of a real path
+that reaches this branch immediately after Onboarding, since that step used
+to create named Products with zero stock. As of Q20, that step now captures
+initial quantity in the same interaction, so neither real Onboarding path
+can reach this branch immediately after completing anymore — both hand off
+into the idle state instead (`onboarding.md` §2.4). The step-3 test itself
+("at least one `available` InventoryUnit exists?") is unchanged and remains
+correct; only the illustrative parenthetical was stale. Reachable now only
+as a legacy-data case (a Business onboarded before Q20 shipped, or any
+merchant who has genuinely sold through all her stock) — same narrowing
+`inventory.md` applies to its own "sin registrar" caption.

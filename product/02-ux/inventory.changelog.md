@@ -435,6 +435,33 @@ caption unchanged. Neither caption changes the row's dimming, tappability,
 or destination (§3.6, prefilled) — copy only, in this document's own plain,
 factual register (`events.md` §3.17's precedent).
 
+**Narrowed to a legacy-data-only case, 2026-09-04** — see
+`#status-2026-09-04-q20-legacy-sin-registrar` below. The mechanism and
+caption above are unchanged; what changes is which real merchants can still
+reach the "sin registrar" state at all.
+
+### status-2026-09-04-q20-legacy-sin-registrar
+**`product/02-ux/product-decisions.md` Q20 (persisted 2026-09-04) removed
+the only real write path that could still produce a never-stocked Product.**
+Before this amendment, `onboarding.md`'s "Define lo que vendes" step wrote
+a Product only, with zero stock — the scenario the entry above exists to
+handle. As of Q20, that step now captures initial quantity in the same
+interaction and writes through the same `commitLot()`-shaped write this
+document's own Registrar Mercancía (§3.10) already uses — every Product
+Onboarding creates now arrives with at least one `available` InventoryUnit.
+This document's own Registrar Mercancía was already incapable of producing
+a zero-stock Product on its own (§3.6's Cantidad field has never accepted 0
+or blank). So, as of this amendment, no remaining real (non-legacy) write
+path anywhere in this product can create a zero-stock Product. "Sin
+registrar" is not retired — `decision-log.md` D25's "never delete historical
+data" precedent means a Business onboarded before Q20 shipped may still
+carry a named-but-never-stocked Product, and that row still needs its
+honest caption. What changes is reachability: "sin registrar" is no longer
+an outcome any current, real path can produce going forward — it survives
+only as the correct caption for pre-existing (legacy) data. Touched: the
+status header, §3.3a (bracketed clause), §3.4 (full replacement of the
+"sin registrar" reasoning block), and this changelog entry.
+
 ### decisions-2026-08-14-d46-corrected-defaultsellingmode-gate
 **Corrected 2026-08-14 (`decision-log.md` D46 — tag-assignment auto-entry
 gates on merchant intent, not mere capability).** The bullet above ("After

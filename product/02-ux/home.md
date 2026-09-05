@@ -214,12 +214,16 @@ Evaluated in this order, automatically, on every Home open:
 
 3. Does at least one `available` InventoryUnit exist?
      → NO:  cold-start empty state → route to Inventario. Reached whenever
-       nothing is currently sellable — before any Lot has ever been
-       received (including immediately after `onboarding.md`'s new
-       "Define lo que vendes" step, which creates named Products with a
-       `defaultPrice` but zero Lots/stock, `onboarding.md` §2.2a /
-       `decision-log.md` D33), or if every previously received unit has
-       since sold with nothing new received since.
+       nothing is currently sellable — every previously received unit has
+       since sold with nothing new received since. **Corrected 2026-09-04
+       (`product-decisions.md` Q20):** no longer reached immediately after
+       Onboarding for a real, freshly-onboarded merchant — `onboarding.md`'s
+       "Define lo que vendes" step (§2.2a) now captures initial quantity in
+       the same interaction, so both real paths hand off with real stock
+       already on hand (`onboarding.md` §2.4), landing on the idle state
+       below instead. Reachable only as a legacy-data case for a Business
+       onboarded before Q20 shipped, the same narrowing `inventory.md` §3.4
+       applies to its own "sin registrar" caption. **[see home.changelog.md#status-2026-09-04-q20-cold-start-narrowed]**
      → YES: idle state → "Iniciar Sesión Rápida" is always the primary
        action. If an Event is scheduled but not yet active, show it as a
        small, non-blocking informational card — it never gates or adds a

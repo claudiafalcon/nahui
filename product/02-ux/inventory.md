@@ -42,6 +42,8 @@ model):** `Product.defaultPrice` capture added at Product creation (new
 
 **Amended 2026-08-08 (`decision-log.md` D33, "Define lo que vendes" moved into Onboarding):** a zero-`disponibles` Catalog row now distinguishes "sin registrar" (never had a Lot received) from "0 disponibles" (previously stocked, sold out). Copy-only, no schema change, applied identically to §3.4/§3.5/§3.12/§3.13/§3.17. **[see inventory.changelog.md#status-2026-08-08-define-lo-que-vendes]**
 
+**Amended 2026-09-04 (`product/02-ux/product-decisions.md` Q20 — initial inventory quantity now captured at Onboarding itself):** the "sin registrar" caption introduced by the amendment above is narrowed to a legacy-data-only case — `onboarding.md`'s "Define lo que vendes" step no longer produces a named-but-unstocked Product for any real, freshly-onboarded merchant, since it now writes real stock in the same interaction (`onboarding.md` §2.2a). Copy-only, no schema change, applied identically to §3.3a/§3.4 (the only two sections whose reasoning depended on the pre-Q20 assumption; §3.5/§3.12/§3.13/§3.17 inherit the correction automatically, since they only ever reference §3.4's own row definition, never restate it). **[see inventory.changelog.md#status-2026-09-04-q20-legacy-sin-registrar]**
+
 **Amended 2026-08-14 (`decision-log.md` D46 — tag-assignment auto-entry
 gates on merchant intent, not mere capability):** every auto-entry/pending-
 nudge trigger into Asignar Tags in this document is corrected from `nfc ∈
@@ -338,10 +340,15 @@ current tab in brackets.
   etiquetar") the reused cold-start body immediately below it already
   makes — both previously pointed at registering merchandise from
   slightly different angles, back-to-back.
-- **If this Business already has one or more named Products (Onboarding's
-  "Define lo que vendes," `onboarding.md` §2.2a) but zero Lots ever received
-  against any of them,** §2 step 1 already resolves to the plain Catalog
-  view (§3.4), not this cold-start screen — the identical ambient line is
+- **If this Business already has one or more named Products but zero Lots
+  ever received against any of them** — reachable now only as a legacy-data
+  case, per §3.4's own 2026-09-04 correction: any Business onboarded before
+  `product-decisions.md` Q20 shipped may still carry Products written
+  through Onboarding's old, Product-only "Define lo que vendes" write; a
+  Business onboarded after cannot reach this state, since that step now
+  writes real stock in the same interaction (`onboarding.md` §2.2a) —
+  **§2 step 1 still resolves to the plain Catalog view (§3.4), not this
+  cold-start screen, whenever it does occur**, the identical ambient line
   prepended there instead, above the Catalog list, with the exact same
   wording and the exact same one-time, non-blocking treatment. Same "reuse
   whichever state already correctly represents her situation" rule §2
@@ -414,34 +421,60 @@ current tab in brackets.
   out — precisely the "first impression that reads as intimidating or
   broken" risk `onboarding.md` §1 names as this whole document family's
   highest-stakes concern.
-  - **Fix:** a zero-`disponibles` row's caption now reads "sin registrar"
-    instead of "0 disponibles" when the Product has never had any
-    Lot/InventoryEntry received against it at all (Delantales, above) — a
-    plain, factual read of whether any receiving event has ever happened
-    for this Product, derived automatically the same way this doc already
-    derives "existing vs. new Product" at the picker (§3.8) — no new
-    stored field, no schema change, purely a read-side check. A Product
-    that was previously stocked and has since sold out in full
-    (Playeras, above) keeps the existing "0 disponibles" caption,
-    unchanged — that framing was accurate and was never the problem.
+  - **Fix (unchanged by the correction below):** a zero-`disponibles` row's
+    caption reads "sin registrar" instead of "0 disponibles" when the
+    Product has never had any Lot/InventoryEntry received against it at
+    all — a plain, factual read of whether any receiving event has ever
+    happened for this Product, derived automatically the same way this doc
+    already derives "existing vs. new Product" at the picker (§3.8) — no
+    new stored field, no schema change, purely a read-side check. A Product
+    that was previously stocked and has since sold out in full keeps the
+    existing "0 disponibles" caption, unchanged.
   - Both captions keep every other rule of the existing dimming treatment
     identical: dimmed, fully tappable, routes to §3.6 prefilled with that
     Product — "sin registrar" is not a new state, a disabled affordance,
     or an extra tap; it's the identical row and destination, only the
-    caption text differs, so it stays honest about which zero it's
-    describing.
+    caption text differs.
   - Copy stays in this document's own established plain, factual,
-    non-judgmental register for a zero-data state (matching `events.md`
-    §3.17's precedent) — "sin registrar" states a fact, not a shortfall;
-    it never reads as "todavía no has vendido nada" or any other framing
-    that could land as a judgment on how little she's done since
-    finishing Onboarding.
-- **The marker, the zero-stock dimming rule, and the new "sin registrar" /
+    non-judgmental register for a zero-data state — "sin registrar" states
+    a fact, not a shortfall.
+- **Corrected 2026-09-04 (`product/02-ux/product-decisions.md` Q20) — the
+  scenario that made "sin registrar" a real, expected outcome no longer
+  exists for any freshly-onboarded merchant.** `onboarding.md`'s "Define lo
+  que vendes" step (§2.2a) now captures each Selling Group's initial
+  quantity in the same interaction and writes it through the same
+  `commitLot()`-shaped write this document's own §3.10 uses — every
+  Product Onboarding creates now arrives with at least one `available`
+  InventoryUnit already on hand, the identical floor-of-1 Cantidad
+  guarantee this document's own §3.6 already enforces for Registrar
+  Mercancía. **`inventory.md`'s own "Registrar mercancía" flow was already
+  incapable of producing a zero-stock Product on its own** — §3.6's
+  Cantidad field has never accepted 0 or a blank value ("typing `0` or
+  clearing the field reverts to 1 rather than being accepted, since '0
+  units received' isn't a real receiving event") — so, as of this
+  amendment, there is no remaining real (non-legacy) write path anywhere
+  in this product that can create a Product with zero stock. **"Sin
+  registrar" is not retired outright**: the caption, its derivation, and
+  its dimmed-but-tappable treatment all stay exactly as specified above,
+  unchanged, because `decision-log.md` D25's "never delete historical
+  data" precedent means a Business that completed Onboarding before this
+  amendment shipped — under the old, Product-only `createProducts()`
+  write — may still be carrying a named-but-never-stocked Product today,
+  and that Product's row still needs an honest, non-alarming caption. What
+  changes is the *reachability* claim this bullet made before: "sin
+  registrar" is no longer an outcome any current, real Onboarding or
+  Inventario path can produce going forward — it survives only as the
+  correct caption for pre-existing (legacy) data, the same narrowing this
+  document's own §3.3 already applies to its "no Product ever registered"
+  cold-start state ("reachable in practice now only as a defensive/legacy
+  fallback").
+- **The marker, the zero-stock dimming rule, and the "sin registrar" /
   "0 disponibles" caption distinction above all apply identically wherever
   this same row shape reappears** — §3.5 (pending-tag-work variant),
   §3.12/§3.13 (post-save confirmation views), and §3.17 (deferred-tagging
-  view, = §3.5) — no separate specification needed for each; they all
-  render the identical Catalog row.
+  view, = §3.5) — unaffected by this amendment; no separate correction
+  needed for each, since none of them restates the derivation logic this
+  bullet owns.
 - **Also reached, with the same one-time ambient banner prepended, via
   Settings' "Cambiar a vender con tags" handoff when this Business has named
   Products but zero Lots ever received — see §3.3a.**
@@ -1504,7 +1537,7 @@ comparable hard speed requirement — the floor above is about not adding
   **[see
   inventory.changelog.md#decisions-d33-defaultprice-capture-and-price-edit]**
 - **Checked against `home.md`'s corrected §2 step 3 test (2026-08-08, `decision-log.md` D33) and found not to share its bug.** Inventario's Catalog view carries no "something is sellable right now" promise the way Home's "Iniciar Sesión Rápida" does — left unchanged. **[see inventory.changelog.md#decisions-checked-against-home-q2-step3-test-no-shared-bug]**
-- **A zero-`disponibles` Catalog row's caption now distinguishes "never registered" from "sold out" (§3.4, applying identically to §3.5, §3.12, §3.13, and §3.17) — resolves a first-impression risk `ux-critic` found.** A never-stocked row reads "sin registrar," derived automatically from whether any Lot/InventoryEntry has ever been received against that Product — no new stored field. A previously-stocked, now-sold-out Product keeps the existing "0 disponibles" caption. Neither caption changes the row's dimming, tappability, or destination. **[see inventory.changelog.md#decisions-zero-disponibles-sin-registrar-vs-sold-out]**
+- **A zero-`disponibles` Catalog row's caption distinguishes "never registered" from "sold out" (§3.4, applying identically to §3.5, §3.12, §3.13, and §3.17) — resolves a first-impression risk `ux-critic` found.** A never-stocked row reads "sin registrar," derived automatically from whether any Lot/InventoryEntry has ever been received against that Product — no new stored field. A previously-stocked, now-sold-out Product keeps the existing "0 disponibles" caption. Neither caption changes the row's dimming, tappability, or destination. **Narrowed to a legacy-data-only case, 2026-09-04 (`product-decisions.md` Q20)** — see §3.4's own correction; the mechanism above is unchanged, only which real merchants can still reach it. **[see inventory.changelog.md#decisions-zero-disponibles-sin-registrar-vs-sold-out]**
 - **Corrected 2026-08-14 (`decision-log.md` D46 — tag-assignment auto-entry
   gates on merchant intent, not mere capability).** The bullet above ("After
   Guardar mercancía, nfc-capable Businesses are taken directly into Asignar

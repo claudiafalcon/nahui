@@ -434,3 +434,36 @@ of Nahui's own mark — designed jointly with this amendment, decided and
 reasoned in that document's own §10, not repeated here.** Named explicitly
 in both documents as a real product/brand decision, not an incidental
 consequence of a new form field existing.
+
+### status-2026-09-04-q20-initial-quantity
+**`product/02-ux/product-decisions.md` Q20 (Product Owner decision, resolved
+2026-08-27, persisted 2026-09-04): initial inventory quantity now captured
+at the same moment a Product is created in Onboarding, for both real paths,
+universally.** §2.2a's "Define lo que vendes" step gains a third field
+(Cantidad, reusing `inventory.md` §3.6's own field-level treatment
+verbatim) and the underlying write is upgraded from a bare `createProducts()`
+Product-only write to the same `commitLot()`-shaped atomic write (Product +
+Lot + InventoryEntry + InventoryUnit) `inventory.md`'s Registrar Mercancía
+already performs — composing cleanly onto an existing mechanism per the
+architect finding already on record at `product-decisions.md` Q20, not a
+new write pattern. Both real paths' Home handoff (§2.4) changes from Home's
+cold start to Home's idle state, since a newly onboarded Business now
+starts with real, available stock rather than a named-but-empty Catalog.
+`inventory.md`'s "sin registrar" distinction is narrowed to a legacy-data-
+only case as a direct consequence (see that document's own changelog).
+Touched: §1 (one corrected sentence), §2.2a, §2.4, §3.5b–§3.5e, §3.6 Variant
+A, §4, §6, §7, §8 item 5, §10. `ux-critic`/`brand-guardian` both clean, no
+findings against this document.
+
+### decisions-q20-batch-2026-09-04
+**Four decisions recorded together as part of the Q20 amendment above, not
+independently:** (1) Cantidad added to "Define lo que vendes," reusing
+`inventory.md` §3.6's field treatment verbatim; (2) the underlying write
+upgraded to `commitLot()`'s shape, per the architect finding at
+`product-decisions.md` Q20 — `createProducts()` becomes unused by any real
+(non-legacy) flow, an implementation cleanup question for `builder`/
+`ui-designer` at build time, not decided here; (3) both real paths' Home
+handoff changes from cold start to idle state, a mechanical consequence of
+(2), not an independent redesign of `home.md`'s own resolution logic; (4)
+`inventory.md`'s "sin registrar" distinction is narrowed to a legacy-data-
+only case, cross-referenced rather than restated here.
