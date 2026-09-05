@@ -159,7 +159,7 @@ Per `company/marketing-operating-environment.md` §14's existing workflow, appli
 
 - [x] Ad Set configuration (§2.1) — objective, conversion location, performance goal, CTA, budget, schedule — **Approved 2026-09-03**
 - [x] Creative — copy for the DM ask (§4/§5) — **Approved 2026-09-03.** The Beat 4b video variant is built (`campaign-b-dm-pilot-variant-v1.mp4`), generated with a substitute TTS voice (`es-MX-DaliaNeural`), not the real Marina/Azure account. **Product Owner decision, 2026-09-05: accepted as-is for this launch, not a blocker** — the real-voice re-record can happen later without holding up the pilot.
-- [x] Instant Reply copy and quick-reply questions (§5) — **Approved 2026-09-03, redesigned and re-approved 2026-09-05** (Meta's real "Conversaciones" tool required a branching design, not the originally-assumed flat quick-reply questions — see §5's own dated amendment; brand-reviewed twice, once for the branching tree, once for the resulting §6.1b/§6.1c human openers)
+- [x] Instant Reply copy and quick-reply questions (§5) — **Approved 2026-09-03, redesigned and re-approved 2026-09-05** (Meta's real "Conversaciones" tool required a branching design, not the originally-assumed flat quick-reply questions, then a second correction once it was confirmed Meta only exposes two terminal message slots — Cierre and Descalificación — not one per branch; see §5's own dated amendments. Brand-reviewed three times: the branching tree, the §6.1b/§6.1c human openers, and the consolidated Descalificación message)
 - [x] Discussion guide (§6) — **Approved 2026-09-03**, including the 2026-08-27 §6.1/§6.6 rewrite, brand-reviewed 2026-09-03 (one Major fixed — see §6.1's own text)
 - [x] Confirmation of Instagram Business account setup and Instant Reply/automation tooling availability (Meta Business Suite Automations) — **Confirmed 2026-09-05, Product Owner, directly against the real account.**
 - [x] The MXN $200 budget, 2-day window, and 20-conversation stop-early trigger (§2.2) as the governing caps — **Approved 2026-09-03**
@@ -218,30 +218,30 @@ Never actually drafted until now, despite §3's approval checklist referencing a
 
 ("Unas," not "dos" — the question count now varies by branch, 1 to 3, so a fixed number would overclaim.)
 
-**Question tree, confirm live against Meta's actual branching mechanics before finalizing** (same "confirm live" discipline `merchant-validation-campaign-meta-ads.md` §1 already applies to its own objective picker — this design assumes up to 3 question nodes total, the only hard constraint confirmed as of this writing; if the tool supports fewer chained levels, drop Q3 first, geography outranks bazaar-type for triage value given the campaign is already geo-targeted to CDMX/Edomex; if the tool doesn't support true chained branching at all, fall back to the flat two-question design this replaces):
+**Question tree, confirm live against Meta's actual branching mechanics before finalizing** (same "confirm live" discipline `merchant-validation-campaign-meta-ads.md` §1 already applies to its own objective picker — this design assumes up to 3 question nodes total, the only hard constraint confirmed as of this writing; if the tool supports fewer chained levels, drop Q3 first, geography outranks bazaar-type for triage value given the campaign is already geo-targeted to CDMX/Edomex; if the tool doesn't support true chained branching at all, fall back to the flat two-question design this replaces).
+
+**Corrected 2026-09-05, second pass — Meta's tool has exactly two terminal message slots, not three or per-branch:** a single **Cierre** (qualifying) and a single **Descalificación** (disqualifying), not a distinct automated message per branch. Q1's B and C answers both now route to the same Descalificación text below. §6.1b/§6.1c (the human openers) are unaffected and stay distinct — the Product Owner confirmed she can see each respondent's exact tapped answer directly in the Meta chat thread, so she still picks the correct human opener manually even though the automated reply they both receive is identical.
 
 **Q1 (shown to everyone):** "¿Vendes en bazares o eventos como el que viste en el video?"
-- A. "Sí, vendo en bazares/tianguis" → Q2
-- B. "Vendo, pero no en bazares" → Cierre B
-- C. "No vendo, tengo curiosidad" → Cierre C
+- A. "Sí, vendo en bazares/tianguis" → Q2 (qualifies)
+- B. "Vendo, pero no en bazares" → Descalificación (disqualifies)
+- C. "No vendo, tengo curiosidad" → Descalificación (disqualifies)
 
 **Q2 (Branch A only):** "¿Dónde vendes más seguido?" → *Ciudad de México* / *Estado de México* / *Otro lugar* → Q3
 
-**Q3 (Branch A only):** "¿Qué tipo de bazares?" → *Bazares privados* / *Tianguis* / *Los dos* → Cierre A
+**Q3 (Branch A only):** "¿Qué tipo de bazares?" → *Bazares privados* / *Tianguis* / *Los dos* → Cierre
 
 These two feed the same H1 screening criteria `market-validation.md` §2b already uses (geography, private-bazaar vs. tianguis) — light context for the human follow-up, never a substitute for the actual qualitative conversation. Neither this nor Q1 collects PF1-PF5 signal (§7) — that stays §6's job, done by a human.
 
-**Cierre A** (confirmed bazaar vendor, geo + type known — hands off to §6.1's existing human opener):
+**Cierre** (confirmed bazaar vendor, geo + type known — hands off to §6.1's existing human opener):
 
 > Perfecto, gracias por contarme. Ya con esto, en un rato te escribe alguien de nuestro equipo para platicar con calma.
 
-**Cierre B** (sells, but not at bazares — hands off to §6.1b):
+**Descalificación** (shared by Branch B and Branch C — hands off to §6.1b or §6.1c, chosen manually based on her actual tapped answer, visible in the chat thread):
 
-> Gracias por contarme. Nahui está pensado sobre todo para quien vende en bazares o tianguis — igual alguien de nuestro equipo te escribe, por si aplica o si conoces a alguien a quien le pueda servir.
+> Gracias por contarme. Nahui es para vendedoras y vendedores de bazar o tianguis — si conoces a alguien que sí venda en ese tipo de lugares, nos ayudaría muchísimo que le compartas esto, así como tú nos escribiste a nosotros.
 
-**Cierre C** (not currently a vendor / curious — hands off to §6.1c):
-
-> Gracias por contarme. Nahui es para vendedoras y vendedores de bazar — si tú no vendes pero conoces a alguien que sí, nos ayudaría mucho que le compartas. Si te late seguir platicando, aquí seguimos — sin ningún compromiso.
+Deliberately doesn't repeat "alguien de nuestro equipo te escribe" — the Saludo already promises every respondent a human follow-up before Q1 is even asked; repeating it here would be the same cross-touchpoint redundancy `brand-guardian` already flagged and fixed once in §4a, this time only seconds apart in the same thread rather than across separate touchpoints.
 
 **Mensaje de seguimiento (Meta's separate automated re-engagement field): leave OFF.** §2.3/§6.7 already assign the 24-hour no-pressure follow-up after a stalled conversation to a real human speaking as herself ("soy [Product Owner]") — an automated version firing into the same thread risks double-messaging a respondent or reading as if the Product Owner personally sent a line she didn't write in the moment, against `character-bible.md`'s "never claims to be someone it isn't." If this is ever revisited, it needs both a mechanism decision (who owns this moment, human or automation, never both) and, only if automation is kept, copy that self-discloses as automated the way the Saludo does.
 
@@ -261,13 +261,13 @@ These two feed the same H1 screening criteria `market-validation.md` §2b alread
 
 ### 6.1b Branch B opener — "Vendo, pero no en bazares" (added 2026-09-05, following §5's redesign)
 
-*Only reached via §5's Cierre B. §6.2 onward (the discussion guide proper) doesn't apply to this branch — this opener, and whatever brief exchange follows from it, is the entire human interaction for her.*
+*Reached when Q1's answer was B ("Vendo, pero no en bazares") — visible in the chat thread even though the automated Descalificación reply is shared with Branch C (§5). §6.2 onward (the discussion guide proper) doesn't apply to this branch — this opener, and whatever brief exchange follows from it, is the entire human interaction for her.*
 
 > Hola [nombre], soy [Product Owner], de Nahui — gracias de verdad por escribirnos. Vi que nos contaste que sí vendes, aunque no en un bazar. Lo que estamos armando es justo para quien vende en bazares o tianguis, así que no te voy a pedir que pruebes nada ni te voy a hacer un cuestionario. Nomás tengo curiosidad genuina: cuéntame, ¿qué vendes? Lo que te nazca contarme está bien, y si prefieres no contestar nada más, también está bien, en serio. Contesta cuando puedas, no hay ninguna prisa.
 
 ### 6.1c Branch C opener — "No vendo, tengo curiosidad" (added 2026-09-05, following §5's redesign)
 
-*Only reached via §5's Cierre C. Same scope note as §6.1b — this is the entire human interaction, not an entry into the discussion guide.*
+*Reached when Q1's answer was C ("No vendo, tengo curiosidad") — visible in the chat thread even though the automated Descalificación reply is shared with Branch B (§5). Same scope note as §6.1b — this is the entire human interaction, not an entry into the discussion guide.*
 
 > Hola [nombre], soy [Product Owner], de Nahui — gracias de verdad por escribirnos, aunque no vendas en un bazar. Como ya te comentamos, si conoces a alguien que sí venda en bazares o tianguis, nos ayudaría muchísimo que le compartas esto — así como tú nos escribiste a nosotros. No hace falta que me contestes si no se te ocurre nadie, de verdad. Gracias otra vez por tu tiempo.
 
