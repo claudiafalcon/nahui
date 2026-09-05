@@ -52,8 +52,7 @@ type PreWriteStep =
  *   docs/passes/slice-2-authentication-onboarding.md's fix disclosure).
  */
 export function OnboardingFlow() {
-  const { state, completeOnboarding, setBusinessIdentity, createProducts, acknowledgeOnboarding, commitLot } =
-    useStore();
+  const { state, completeOnboarding, setBusinessIdentity, acknowledgeOnboarding, commitLot } = useStore();
   const [preWrite, setPreWrite] = useState<PreWriteStep>({ kind: 'welcome' });
 
   useEffect(() => {
@@ -94,9 +93,27 @@ export function OnboardingFlow() {
       // §3.5b–§3.5e — real paths only; the demo path's seed always writes
       // ≥1 Product in the same batch as its Business, so this is never
       // reached there.
+      //
+      // As of `product-decisions.md` Q20: every committed Selling Group is
+      // unconditionally a to-be-minted Product (a first-run Catalog is
+      // guaranteed empty, §3.5b) — so each line maps straight to a
+      // `CommitLotLine` with `product.kind: 'new'`, and the whole batch
+      // writes through `commitLot`, the identical atomic Product+Lot+
+      // InventoryEntry+InventoryUnit mechanism `inventory.md`'s own
+      // "Registrar mercancía" uses — never the old, Product-only
+      // `createProducts` write, retired by this amendment.
       return (
         <ScreenTransition transitionKey="selling-groups">
-          <SellingGroups onSaved={(lines) => createProducts(lines)} />
+          <SellingGroups
+            onSaved={(lines) =>
+              commitLot(
+                lines.map((l) => ({
+                  quantity: l.quantity,
+                  product: { kind: 'new' as const, name: l.name, defaultPrice: l.defaultPrice },
+                })),
+              )
+            }
+          />
         </ScreenTransition>
       );
     }

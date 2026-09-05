@@ -52,6 +52,23 @@
   color: var(--color-obsidian);
 }
 
+/* Persisted "revisa antes de guardar" marker (`product-decisions.md` Q20) —
+   same treatment `RegisterMerchandise.module.css`'s own `.reviewFlag` gives
+   its committed lines under INV-Q1, reused verbatim. */
+.reviewFlag {
+  color: var(--color-warning);
+  font: var(--text-meta);
+}
+
+/* Committed line's Cantidad — a unit-suffixed meta figure ("10 pzas.") so
+   it reads as distinct from the price tag at a glance, `product-decisions.md`
+   Q20 (`ux-critic` M1 — the Product Owner's own confirmed treatment). */
+.qtyMeta {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  flex-shrink: 0;
+}
+
 /* the price tag — money that belongs to this specific Product, so it sits
    inside the shared .moneyTag primitive (patterns.css) rather than merged
    into the plain name string. Same treatment as CatalogRow's own .price

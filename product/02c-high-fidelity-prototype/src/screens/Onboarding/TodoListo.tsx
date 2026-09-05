@@ -6,8 +6,15 @@ import styles from './TodoListo.module.css';
 
 const AUTO_CONTINUE_MS = 2600;
 
+// Variant A's copy corrected `product-decisions.md` Q20 (2026-09-04): the
+// earlier copy ("Ya puedes registrar lo que traes y empezar a vender") told
+// her to go register merchandise she'd already just registered, moments
+// earlier, in this same flow — accurate before Q20 (when the Selling-Group
+// step wrote a Product only, with nothing yet in stock), false once
+// Cantidad is captured in the same step. Variant B and Variant C are
+// unaffected (onboarding.md §3.6).
 const COPY: Record<OnboardingPath, string> = {
-  free: 'Ya puedes registrar lo que traes y empezar a vender.',
+  free: 'Ya puedes empezar a vender. Lo que agregaste ya está listo en tu Inventario.',
   paid: 'Ya puedes vender con botones. Si quieres vender con tags, cámbialo en Configuración: de ahí te llevamos a etiquetar tu mercancía, o a registrarla primero si aún no tienes.',
   demo: 'Esto es un ejemplo de cómo se ve tu negocio en Nahui. Explora lo que quieras — no es información real.',
 };

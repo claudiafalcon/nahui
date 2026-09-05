@@ -229,16 +229,19 @@ interface StoreValue {
    * `completeOnboarding`'s own capabilities write, per that section's own
    * reasoning (own idempotency key, own retry surface). */
   setBusinessIdentity: (fields: { name: string; logo?: string; description?: string }) => void;
-  /** onboarding.md §2.2a/§3.5d "Guardando lo que vendes" — writes bare
-   * Product rows only (no Lot/InventoryEntry/InventoryUnit), reusing the
-   * same Product-minting logic `commitLot` already uses for a genuinely new
-   * Product identity. Returns the resolved ids, same order as input. */
-  createProducts: (lines: { name: string; defaultPrice: number }[]) => ID[];
   /** onboarding.md §3.6 "Todo listo" — marks the milestone dismissed
    * (tapped "Entrar," or auto-continued). See `Business.onboardingAcknowledged`. */
   acknowledgeOnboarding: () => void;
-  /** Returns the resolved productId for each line, same order as input —
-   * a freshly-minted id for `new` lines, the given id for `existing` ones. */
+  /** inventory.md §3.8a/§3.9 "Guardar mercancía," and — as of
+   * `product-decisions.md` Q20 — onboarding.md §2.2a/§3.5b–§3.5e "Guardando
+   * lo que vendes" as well: the one atomic write that mints any genuinely
+   * new Product identities and their Lot/InventoryEntry/InventoryUnit set
+   * together. Onboarding's "Define lo que vendes" step used to call a
+   * separate, Product-only `createProducts` write (no stock); Q20 retired
+   * that mechanism in favor of this one, since a first-run Catalog's lines
+   * are always to-be-minted Products, never an `existing` match. Returns
+   * the resolved productId for each line, same order as input — a
+   * freshly-minted id for `new` lines, the given id for `existing` ones. */
   commitLot: (lines: CommitLotLine[]) => ID[];
   editPrice: (productId: ID, newPrice: number) => void;
   /** inventory.md §3.14 — Asignar Tags' own write, one scan at a time
@@ -395,13 +398,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   /**
-   * Shared new-Product minting/resolution logic — extracted so both
-   * `commitLot` (inventory.md §3.8a/§3.9, a new Product atomic with its
-   * Lot) and `createProducts` (onboarding.md §2.2a, a new Product with no
-   * Lot at all) resolve a not-yet-real `{name, defaultPrice}` identity into
-   * a real, ID-bearing `Product` through exactly one mechanism — never two
-   * independently-built creation paths (onboarding.md §2.2a's own explicit
-   * instruction to `builder`/`ui-designer`).
+   * Shared new-Product minting/resolution logic — extracted so `commitLot`
+   * (inventory.md §3.8a/§3.9, and — as of `product-decisions.md` Q20 —
+   * onboarding.md §2.2a's "Define lo que vendes" as well) resolves a
+   * not-yet-real `{name, defaultPrice}` identity into a real, ID-bearing
+   * `Product` through exactly one mechanism — never two independently-built
+   * creation paths (onboarding.md §2.2a's own explicit instruction to
+   * `builder`/`ui-designer`).
    */
   function mintProduct(name: string, defaultPrice: number, createdAt: number): Product {
     return { id: makeId('prod'), name: name.trim(), defaultPrice, createdAt };
@@ -437,6 +440,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * may write a Product into the store — see `RegisterMerchandise.tsx`,
    * which holds pending new-Product identities in its own local draft/
    * committed state until it calls this.
+   *
+   * As of `product-decisions.md` Q20, `onboarding.md` §2.2a/§3.5b–§3.5e's
+   * "Define lo que vendes" step calls this same function at "Continuar" —
+   * every line it supplies is a `{kind: 'new', ...}` line (a first-run
+   * Catalog is guaranteed empty, so there's never an `existing`-Product
+   * match to make there), composing onto this one write mechanism rather
+   * than a second, parallel one.
    */
   function commitLot(lines: CommitLotLine[]): ID[] {
     if (lines.length === 0) return [];
@@ -572,16 +582,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         },
       };
     });
-  }
-
-  /** onboarding.md §2.2a/§3.5d "Guardando lo que vendes" — Product rows
-   * only, through the same minting logic `commitLot` uses, per that
-   * section's own instruction not to build a second creation mechanism. */
-  function createProducts(lines: { name: string; defaultPrice: number }[]): ID[] {
-    const now = Date.now();
-    const newProducts = lines.map((l) => mintProduct(l.name, l.defaultPrice, now));
-    setState((s) => ({ ...s, products: [...s.products, ...newProducts] }));
-    return newProducts.map((p) => p.id);
   }
 
   /** onboarding.md §3.6 — "Entrar" tapped, or auto-continued. */
@@ -1100,7 +1100,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     verifyOtp,
     completeOnboarding,
     setBusinessIdentity,
-    createProducts,
     acknowledgeOnboarding,
     commitLot,
     editPrice,

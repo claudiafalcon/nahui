@@ -3,6 +3,7 @@ import { makeId } from '../../domain/id';
 import { pesos } from '../../domain/format';
 import { Button } from '../../components/Button/Button';
 import { TagStub } from '../../components/TagStub/TagStub';
+import { QuantityStepper } from '../../components/QuantityStepper/QuantityStepper';
 import { WritingState } from './WritingState';
 import styles from './SellingGroups.module.css';
 
@@ -10,14 +11,33 @@ interface CommittedLine {
   key: string;
   name: string;
   price: number;
+  /** `product-decisions.md` Q20 — this step's own initial on-hand count for
+   * the Selling Group, carried through to the `commitLot()` write at
+   * "Continuar." */
+  quantity: number;
+  /** Mirrors `RegisterMerchandise.tsx`'s own `Line.touched` — whether
+   * Cantidad was ever interacted with (stepper, typed entry, or a bare tap
+   * that opened the numeric keyboard) before this line was committed. Carried
+   * into the "Ya agregaste" list so the "· revisa" marker persists there too
+   * (§3.5c), the identical guarantee `inventory.md` §3.7 gives its own
+   * committed lines. */
+  touched: boolean;
 }
 
 /**
  * onboarding.md §2.2a/§3.5b–§3.5e — Define lo que vendes, real paths only.
- * Flat Producto+Precio row (§3.5b's own reasoning: a first-run Catalog is
- * guaranteed empty, so the existing-vs-new ambiguity `inventory.md`'s own
- * two-step picker exists to resolve can never arise here). No back arrow,
- * no nav bar, no "Descartar" equivalent (§3.5c's own reasoning).
+ * Flat Producto+Precio+Cantidad row (§3.5b's own reasoning: a first-run
+ * Catalog is guaranteed empty, so the existing-vs-new ambiguity
+ * `inventory.md`'s own two-step picker exists to resolve can never arise
+ * here). No back arrow, no nav bar, no "Descartar" equivalent (§3.5c's own
+ * reasoning).
+ *
+ * **Cantidad, added `product-decisions.md` Q20 (2026-09-04):** reuses
+ * `inventory.md` §3.6's own `QuantityStepper` verbatim, not a second,
+ * independently-built field — same default of 1, same floor of 1, same
+ * "· revisa antes de guardar" marker until touched. Cantidad never gates
+ * "Continuar" (unchanged from before this amendment — only Producto+Precio
+ * do); it's always valid at its own default the instant a row exists.
  *
  * §3.5e's save error/retry is wired (`WritingState`'s `error`/`errorLabel`/
  * `onRetry`, identical shape to §3.5a in `OnboardingFlow.tsx`) — a real,
@@ -28,17 +48,30 @@ interface CommittedLine {
  * plus active-row draft from unchanged component state — nothing typed is
  * ever lost or re-asked-for. Previously a genuine regression (`BACKLOG.md`
  * migration inventory §B) — closed. The error preview itself (`previewLines`)
- * is a separate, purpose-built passive rendering — plain "Nombre — $Precio"
- * lines per §3.5e's own wireframe, never the normal state's interactive
- * `committedList` — and always includes the still-uncommitted active row
- * when it's save-ready, not only already-committed lines, so the preview is
- * never blank for a merchant who typed one product and tapped "Continuar"
- * directly (`ux-critic` Findings A/B — both closed).
+ * is a separate, purpose-built passive rendering — plain "Nombre — $Precio ·
+ * Cantidad" lines per §3.5e's own wireframe, never the normal state's
+ * interactive `committedList` — and always includes the still-uncommitted
+ * active row when it's save-ready, not only already-committed lines, so the
+ * preview is never blank for a merchant who typed one product and tapped
+ * "Continuar" directly (`ux-critic` Findings A/B — both closed).
+ *
+ * `onSaved` now hands back each line's Cantidad alongside Nombre/Precio —
+ * `OnboardingFlow.tsx` maps every line straight into a `CommitLotLine` with
+ * `product.kind: 'new'` and calls `commitLot()`, the same atomic
+ * Product+Lot+InventoryEntry+InventoryUnit write `inventory.md`'s own
+ * "Registrar mercancía" already uses, replacing the old Product-only
+ * `createProducts()` write this step used before Q20.
  */
-export function SellingGroups({ onSaved }: { onSaved: (lines: { name: string; defaultPrice: number }[]) => void }) {
+export function SellingGroups({
+  onSaved,
+}: {
+  onSaved: (lines: { name: string; defaultPrice: number; quantity: number }[]) => void;
+}) {
   const [committed, setCommitted] = useState<CommittedLine[]>([]);
   const [draftName, setDraftName] = useState('');
   const [draftPrice, setDraftPrice] = useState('');
+  const [draftQuantity, setDraftQuantity] = useState(1);
+  const [draftTouched, setDraftTouched] = useState(false);
   const [dupError, setDupError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
 
@@ -56,12 +89,23 @@ export function SellingGroups({ onSaved }: { onSaved: (lines: { name: string; de
   function commitDraft(): boolean {
     if (!draftValid) return false;
     if (isDuplicate(draftName)) {
-      setDupError(`Ya agregaste "${draftName.trim()}" — bórrala con [✕] si quieres cambiar el precio`);
+      setDupError(`Ya agregaste '${draftName.trim()}' — bórrala con [✕] si quieres cambiar el precio`);
       return false;
     }
-    setCommitted((c) => [...c, { key: makeId('sg'), name: draftName.trim(), price: draftPriceValue }]);
+    setCommitted((c) => [
+      ...c,
+      {
+        key: makeId('sg'),
+        name: draftName.trim(),
+        price: draftPriceValue,
+        quantity: draftQuantity,
+        touched: draftTouched,
+      },
+    ]);
     setDraftName('');
     setDraftPrice('');
+    setDraftQuantity(1);
+    setDraftTouched(false);
     setDupError(null);
     return true;
   }
@@ -80,23 +124,23 @@ export function SellingGroups({ onSaved }: { onSaved: (lines: { name: string; de
   // §3.5c's own gating rule allows — saw a blank error preview on a failed
   // save even though her row was never lost (`ux-critic` Finding A).
   const previewLines = useMemo(() => {
-    const lines = committed.map((c) => ({ name: c.name, price: c.price }));
+    const lines = committed.map((c) => ({ name: c.name, price: c.price, quantity: c.quantity }));
     if (draftValid && !isDuplicate(draftName)) {
-      lines.push({ name: draftName.trim(), price: draftPriceValue });
+      lines.push({ name: draftName.trim(), price: draftPriceValue, quantity: draftQuantity });
     }
     return lines;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [committed, draftValid, draftName, draftPriceValue]);
+  }, [committed, draftValid, draftName, draftPriceValue, draftQuantity]);
 
   function handleContinue() {
     if (draftValid && isDuplicate(draftName)) {
-      setDupError(`Ya agregaste "${draftName.trim()}" — bórrala con [✕] si quieres cambiar el precio`);
+      setDupError(`Ya agregaste '${draftName.trim()}' — bórrala con [✕] si quieres cambiar el precio`);
       return;
     }
     if (!draftValid && !draftEmpty) {
       return; // guard — Continuar is disabled in this state, see canContinue
     }
-    const lines = previewLines.map((l) => ({ name: l.name, defaultPrice: l.price }));
+    const lines = previewLines.map((l) => ({ name: l.name, defaultPrice: l.price, quantity: l.quantity }));
     if (lines.length === 0) return;
     setSaveState('saving');
     window.setTimeout(() => onSaved(lines), 260);
@@ -121,7 +165,11 @@ export function SellingGroups({ onSaved }: { onSaved: (lines: { name: string; de
       {committed.map((line) => (
         <div key={line.key} className={`${styles.committedRow} stitchBottom`}>
           <TagStub name={line.name} size={28} />
-          <span className={styles.committedName}>{line.name}</span>
+          <span className={styles.committedName}>
+            {line.name}
+            {!line.touched && <span className={styles.reviewFlag}> · revisa</span>}
+          </span>
+          <span className={styles.qtyMeta}>{line.quantity} pzas.</span>
           <span className={`${styles.priceTag} moneyTag`}>{pesos(line.price)}</span>
           <button
             className={styles.removeBtn}
@@ -163,7 +211,7 @@ export function SellingGroups({ onSaved }: { onSaved: (lines: { name: string; de
           <div className={styles.errorPreview}>
             {previewLines.map((line, i) => (
               <p key={`${line.name}-${i}`} className={styles.errorPreviewLine}>
-                {line.name} — {pesos(line.price)}
+                {line.name} — {pesos(line.price)} · {line.quantity}
               </p>
             ))}
           </div>
@@ -177,8 +225,8 @@ export function SellingGroups({ onSaved }: { onSaved: (lines: { name: string; de
       <h1 className={styles.heading}>¿Qué vendes?</h1>
       {committed.length === 0 && (
         <p className={styles.body}>
-          Agrega lo que vendes y a cuánto — puedes agregar o cambiar esto después, cuando quieras, en
-          Inventario.
+          Agrega lo que vendes, a cuánto lo vendes, y cuánto tienes — puedes agregar o cambiar esto
+          después, cuando quieras, en Inventario.
         </p>
       )}
 
@@ -213,6 +261,17 @@ export function SellingGroups({ onSaved }: { onSaved: (lines: { name: string; de
               }}
             />
           </div>
+        </div>
+        <div className={styles.field}>
+          <span className={styles.label}>Cantidad</span>
+          <QuantityStepper
+            value={draftQuantity}
+            touched={draftTouched}
+            onChange={(next, touched) => {
+              setDraftQuantity(next);
+              setDraftTouched(touched);
+            }}
+          />
         </div>
         {dupError && <p className={styles.error}>{dupError}</p>}
 

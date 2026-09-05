@@ -270,6 +270,25 @@ instance (`ResultadosLoadError.tsx`, already disclosed). Owner: Stage 7
 slice should attempt these individually — build them together once a real
 backend makes the failure modes genuine.
 
+### F. `commitLot()` has no idempotency guard of its own — flagged 2026-09-04 (`reviewer`, Q20 build)
+
+`decision-log.md` D30 / `architecture-principles.md` #7 require every
+client-retriable write to carry a stable, retry-safe key — Lot/InventoryEntry
+receiving is named directly. `commitLot()` (`src/domain/store.tsx`) has never
+carried one, a pre-existing gap that predates Q20 (`product-decisions.md`):
+it was already true when Inventario's own "Registrar mercancía" was its only
+caller. `product-decisions.md` Q20 widens the blast radius, not the gap
+itself — both real Onboarding paths now also depend on this same
+under-guarded function for a real, non-mocked-forever write, alongside
+Inventario and the Acceso DM entry route. Dormant today only because this
+prototype's local writes never fail, the same disclosed convention every
+other entry in this section relies on. **Owner: Stage 7 (Backend
+Integration)** — add a real idempotency key to `commitLot()`'s write at that
+point, matching the guarantee `completeOnboarding()` already has via its
+existing-Membership short-circuit. Not a current functional bug; a stated
+Foundation guarantee (`onboarding.md` §3.5c, `inventory.md` §3.10) that the
+implementation doesn't yet actually satisfy.
+
 ### B. Genuine regressions — fixed (2026-08-14)
 
 Unlike (A), these were built in Medium-Fidelity, are structurally reachable
