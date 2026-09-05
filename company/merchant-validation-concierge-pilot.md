@@ -60,7 +60,7 @@ Ad → DM conversation (§6, mostly unchanged, see §0.1)
 **Loop 2 — the demo, for an already-qualified population** tells us where genuinely interested merchants still struggle *inside the product*, a different and more useful signal than an anonymous bounce rate. What this loop deliberately does NOT do, decided explicitly rather than left ambiguous:
 
 - **It does not modify the self-serve flow, and anonymous/organic traffic still reaches exactly what it always has.** **Corrected 2026-09-04 (`decision-log.md` D52):** Acceso DM now lives inside the same `demo.nahui.app` build (moved there from an earlier, since-superseded design that shipped it in the real production bundle instead) — not a separate domain, but still a separate, marker-gated (`?acceso=dm`) entry point with zero effect on any visitor whose URL doesn't carry that marker. `demo-mode.md`'s own Welcome screen, Authentication pass-through, and `ReminderBanner` are otherwise completely unmodified. One real, accepted side effect worth knowing when reading the dashboard: because `ReminderBanner` (and its `demo_*` event suite) now also composites for Acceso-DM-arrived merchants, those events no longer distinguish DM-pilot traffic from ordinary self-serve visitors — the separate, dedicated `acceso_dm_*` events (`product/02-ux/acceso-dm.md §2.4`) remain the reliable, DM-pilot-only signal. Acceso DM is reached only via a link the Product Owner sends directly in a qualified DM conversation, never discoverable any other way (`product/02-ux/acceso-dm.md`'s own placement ruling, `decision-log.md` D51/D52).
-- **It now does skip Authentication — a deliberate, later correction to this section's original reasoning, not an oversight.** This section originally kept phone/OTP in Loop 2 specifically to preserve the option of learning whether phone-entry is a barrier for a genuinely-interested population. The Product Owner revisited that tradeoff directly (2026-09-03/04): that research question was secondary to the pilot's actual goal — a value-first first impression for a population that already built trust in conversation — and not worth damaging the experience to preserve, especially once the prior campaign's own funnel data (§2, `merchant-validation-funnel-diagnosis.md`) showed essentially no real downstream progression to begin with. PF5 (§7) is unaffected by this change — it's scored from Branch B of the DM conversation itself (§6.4.3, someone who already tried `demo.nahui.app` on her own, before this conversation), a population Acceso DM's own link never touches.
+- **It now does skip Authentication — a deliberate, later correction to this section's original reasoning, not an oversight.** This section originally kept phone/OTP in Loop 2 specifically to preserve the option of learning whether phone-entry is a barrier for a genuinely-interested population. The Product Owner revisited that tradeoff directly (2026-09-03/04): that research question was secondary to the pilot's actual goal — a value-first first impression for a population that already built trust in conversation — and not worth damaging the experience to preserve, especially once the prior campaign's own funnel data (§2, `merchant-validation-funnel-diagnosis.md`) showed essentially no real downstream progression to begin with. PF5 (§7) is unaffected by this change — it's scored from Track 2 of the DM conversation itself (§6.4.3, someone who already tried `demo.nahui.app` on her own, before this conversation), a population Acceso DM's own link never touches.
 
 **Attribution caveat, named honestly:** `acceso_dm_*` events are anonymous/aggregate, same discipline as the retired `demo_*` suite — no per-visitor ID, no PII. There is no automatic way to link a specific instrumented demo session back to a specific DM conversation. The reliable mechanism is the optional follow-up question in the flow above (self-report) — treat anything from the dashboard itself as directional corroboration only, never as individual attribution. **Not carried forward from the prior campaign, deliberately:** the earlier Meta Ads campaign's own funnel data showed essentially no meaningful real-user progression past the first stage — the few downstream events observed were the Product Owner's own internal testing, not real prospects (`company/bitacora.md`, internal record only, never disclosed in external-facing material). This pilot's population and funnel are different enough that continuity with that prior instrumentation was judged not worth preserving as a constraint on this design.
 
@@ -70,7 +70,7 @@ Ad → DM conversation (§6, mostly unchanged, see §0.1)
 
 ### 0.2 §6.2's branch-check, reframed
 
-The original branch-check ("¿ya le entraste a la app... o el video fue lo único que has visto?") was designed to route into CP1-CP5 coding for people who already saw the demo unprompted. Under the two-loop design, that question no longer routes to a different question set — Branch A/B's downstream questions (§6.3/§6.4) still work fine as-is for H1 signal (problem-fit, comprehension, trust), since none of them actually depended on being able to explain funnel abandonment. Keep the question, drop its role as a CP1-CP5 gate.
+The original branch-check ("¿ya le entraste a la app... o el video fue lo único que has visto?") was designed to route into CP1-CP5 coding for people who already saw the demo unprompted. Under the two-loop design, that question no longer routes to a different question set — Track 1/2's downstream questions (§6.3/§6.4) still work fine as-is for H1 signal (problem-fit, comprehension, trust), since none of them actually depended on being able to explain funnel abandonment. Keep the question, drop its role as a CP1-CP5 gate.
 
 ### 0.3 Value-first demo sequencing — evaluated, approved, shipped as Acceso DM (2026-09-04)
 
@@ -159,7 +159,7 @@ Per `company/marketing-operating-environment.md` §14's existing workflow, appli
 
 - [x] Ad Set configuration (§2.1) — objective, conversion location, performance goal, CTA, budget, schedule — **Approved 2026-09-03**
 - [x] Creative — copy for the DM ask (§4/§5) — **Approved 2026-09-03.** The Beat 4b video variant is built (`campaign-b-dm-pilot-variant-v1.mp4`), generated with a substitute TTS voice (`es-MX-DaliaNeural`), not the real Marina/Azure account. **Product Owner decision, 2026-09-05: accepted as-is for this launch, not a blocker** — the real-voice re-record can happen later without holding up the pilot.
-- [x] Instant Reply copy and quick-reply questions (§5) — **Approved 2026-09-03**
+- [x] Instant Reply copy and quick-reply questions (§5) — **Approved 2026-09-03, redesigned and re-approved 2026-09-05** (Meta's real "Conversaciones" tool required a branching design, not the originally-assumed flat quick-reply questions — see §5's own dated amendment; brand-reviewed twice, once for the branching tree, once for the resulting §6.1b/§6.1c human openers)
 - [x] Discussion guide (§6) — **Approved 2026-09-03**, including the 2026-08-27 §6.1/§6.6 rewrite, brand-reviewed 2026-09-03 (one Major fixed — see §6.1's own text)
 - [x] Confirmation of Instagram Business account setup and Instant Reply/automation tooling availability (Meta Business Suite Automations) — **Confirmed 2026-09-05, Product Owner, directly against the real account.**
 - [x] The MXN $200 budget, 2-day window, and 20-conversation stop-early trigger (§2.2) as the governing caps — **Approved 2026-09-03**
@@ -208,18 +208,42 @@ Never actually drafted until now, despite §3's approval checklist referencing a
 
 **Design principle, stated once:** the Instant Reply must never pretend to be a human, and must set the expectation that a real human is coming — both because pretending otherwise breaks trust the moment she realizes it, and because `character-bible.md`'s "never claims certainty it doesn't have" extends naturally to "never claims to be someone it isn't."
 
-**Recommended copy:**
+**Redesigned 2026-09-05 (dated amendment, per this section's own non-silent-edit discipline) — the mechanic below replaced the original design.** The original version of this section assumed Meta's Instant Reply tooling offered simple button-based quick replies (two fixed questions, no branching). Building the real ad in Ads Manager showed the actual tool ("Conversaciones," at the ad level) works differently: a single Saludo, up to 3 custom question nodes that can branch on the tapped answer, and an optional automated follow-up message. The original two questions (zona, tipo de bazar) are preserved below, now correctly scoped to only the branch where they're coherent to ask — nested behind a new first question that screens for vendor status at all, which the old flat design had no way to do. Went through the same `marketing` draft → `brand-guardian` review cycle as §4a, twice (once for the branching tree, once for the two human openers it made necessary — see §6.1b/§6.1c below).
+
+**Saludo (opening line, before the question tree):**
 
 > ¡Hola! Gracias por escribirnos. Somos Nahui — un equipo que está construyendo una app para vendedoras y vendedores de bazar. Una persona de nuestro equipo (no un bot) te va a contestar en las próximas horas — queremos platicar contigo, no venderte nada.
 >
-> Mientras tanto, dos preguntas rápidas para conocerte mejor:
+> Mientras tanto, unas preguntas rápidas para conocerte mejor:
 
-**Quick-reply questions (if Meta's Instant Reply tooling supports button-based quick replies at the point of building this — confirm live, same discipline `merchant-validation-campaign-meta-ads.md` §1 already applies to its own objective picker; fall back to a single combined plain-text question if it doesn't):**
+("Unas," not "dos" — the question count now varies by branch, 1 to 3, so a fixed number would overclaim.)
 
-1. "¿Dónde vendes más seguido?" → *Ciudad de México* / *Estado de México* / *Otro lugar*
-2. "¿Qué tipo de bazares?" → *Bazares privados* / *Tianguis* / *Los dos*
+**Question tree, confirm live against Meta's actual branching mechanics before finalizing** (same "confirm live" discipline `merchant-validation-campaign-meta-ads.md` §1 already applies to its own objective picker — this design assumes up to 3 question nodes total, the only hard constraint confirmed as of this writing; if the tool supports fewer chained levels, drop Q3 first, geography outranks bazaar-type for triage value given the campaign is already geo-targeted to CDMX/Edomex; if the tool doesn't support true chained branching at all, fall back to the flat two-question design this replaces):
 
-These two answers feed the same H1 screening criteria `market-validation.md` §2b already uses (geography, private-bazaar vs. tianguis) — light context for the human follow-up, never a substitute for the actual qualitative conversation.
+**Q1 (shown to everyone):** "¿Vendes en bazares o eventos como el que viste en el video?"
+- A. "Sí, vendo en bazares/tianguis" → Q2
+- B. "Vendo, pero no en bazares" → Cierre B
+- C. "No vendo, tengo curiosidad" → Cierre C
+
+**Q2 (Branch A only):** "¿Dónde vendes más seguido?" → *Ciudad de México* / *Estado de México* / *Otro lugar* → Q3
+
+**Q3 (Branch A only):** "¿Qué tipo de bazares?" → *Bazares privados* / *Tianguis* / *Los dos* → Cierre A
+
+These two feed the same H1 screening criteria `market-validation.md` §2b already uses (geography, private-bazaar vs. tianguis) — light context for the human follow-up, never a substitute for the actual qualitative conversation. Neither this nor Q1 collects PF1-PF5 signal (§7) — that stays §6's job, done by a human.
+
+**Cierre A** (confirmed bazaar vendor, geo + type known — hands off to §6.1's existing human opener):
+
+> Perfecto, gracias por contarme. Ya con esto, en un rato te escribe alguien de nuestro equipo para platicar con calma.
+
+**Cierre B** (sells, but not at bazares — hands off to §6.1b):
+
+> Gracias por contarme. Nahui está pensado sobre todo para quien vende en bazares o tianguis — igual alguien de nuestro equipo te escribe, por si aplica o si conoces a alguien a quien le pueda servir.
+
+**Cierre C** (not currently a vendor / curious — hands off to §6.1c):
+
+> Gracias por contarme. Nahui es para vendedoras y vendedores de bazar — si tú no vendes pero conoces a alguien que sí, nos ayudaría mucho que le compartas. Si te late seguir platicando, aquí seguimos — sin ningún compromiso.
+
+**Mensaje de seguimiento (Meta's separate automated re-engagement field): leave OFF.** §2.3/§6.7 already assign the 24-hour no-pressure follow-up after a stalled conversation to a real human speaking as herself ("soy [Product Owner]") — an automated version firing into the same thread risks double-messaging a respondent or reading as if the Product Owner personally sent a line she didn't write in the moment, against `character-bible.md`'s "never claims to be someone it isn't." If this is ever revisited, it needs both a mechanism decision (who owns this moment, human or automation, never both) and, only if automation is kept, copy that self-discloses as automated the way the Saludo does.
 
 ---
 
@@ -235,19 +259,33 @@ These two answers feed the same H1 screening criteria `market-validation.md` §2
 
 > Hola [nombre], soy [Product Owner], de Nahui — gracias de verdad por escribirnos. Antes que nada: esto no es una venta, no te vamos a pedir dinero. Nada más quiero entender cómo vendes en tus bazares, y si lo que viste en el video tiene sentido para ti o no — no hay respuestas correctas, y platicamos lo que tú quieras, tú decides cuándo parar. Y algo más: nada más por platicar conmigo, ya quedas en la lista de acceso prioritario para cuando la app esté lista — no tienes que hacer nada extra. ¿Tienes un ratito ahora, o prefieres que sigamos más tarde? Contesta cuando puedas, no hay ninguna prisa.
 
+### 6.1b Branch B opener — "Vendo, pero no en bazares" (added 2026-09-05, following §5's redesign)
+
+*Only reached via §5's Cierre B. §6.2 onward (the discussion guide proper) doesn't apply to this branch — this opener, and whatever brief exchange follows from it, is the entire human interaction for her.*
+
+> Hola [nombre], soy [Product Owner], de Nahui — gracias de verdad por escribirnos. Vi que nos contaste que sí vendes, aunque no en un bazar. Lo que estamos armando es justo para quien vende en bazares o tianguis, así que no te voy a pedir que pruebes nada ni te voy a hacer un cuestionario. Nomás tengo curiosidad genuina: cuéntame, ¿qué vendes? Lo que te nazca contarme está bien, y si prefieres no contestar nada más, también está bien, en serio. Contesta cuando puedas, no hay ninguna prisa.
+
+### 6.1c Branch C opener — "No vendo, tengo curiosidad" (added 2026-09-05, following §5's redesign)
+
+*Only reached via §5's Cierre C. Same scope note as §6.1b — this is the entire human interaction, not an entry into the discussion guide.*
+
+> Hola [nombre], soy [Product Owner], de Nahui — gracias de verdad por escribirnos, aunque no vendas en un bazar. Como ya te comentamos, si conoces a alguien que sí venda en bazares o tianguis, nos ayudaría muchísimo que le compartas esto — así como tú nos escribiste a nosotros. No hace falta que me contestes si no se te ocurre nadie, de verdad. Gracias otra vez por tu tiempo.
+
 ### 6.2 Branch check — did she reach the demo at all
+
+*From here to §6.7, applies to Branch A only (confirmed bazaar/tianguis vendors, per §5's Q1).*
 
 > Para empezar — ¿ya le entraste a la app que se ve en el video (demo.nahui.app), o el video fue lo único que has visto hasta ahora?
 
-**→ Branch A if no. → Branch B if yes.**
+**→ Track 1 if no. → Track 2 if yes.** (Renamed from "Branch A/B" 2026-09-05 to avoid collision with §5's new vendor-status Branches A/B/C — this is an unrelated, nested branch that only ever applies within vendor-Branch A.)
 
-### 6.3 Branch A — never opened the demo
+### 6.3 Track 1 — never opened the demo
 
 1. **Open, no options offered:** "¿Qué te detuvo, o qué te hizo dudar?" — wait for her actual answer before saying anything else. Log it verbatim; code it per §7 as **spontaneous**.
 2. **Only if her answer is vague/non-specific** (e.g., "no he tenido tiempo," "se me pasó," "ahorita ando ocupada"): "Te entiendo, a todas nos pasa. Si te animas a intentarlo en algún momento, ¿qué esperarías que te pidiera la app al abrirla? ¿Habría algo que te hiciera dudar en meter tu información — como tu número de teléfono — o es más que no ha llegado el momento?" — a gentle, still-open nudge, offered only as a probe, never a leading confirmation. Log her answer here as **prompted**, distinct from a spontaneous mention, per §7's evidence-weighting rule.
 3. "¿Qué entendiste que hace la app, nada más viendo el video?" — probes value-prop clarity independent of whether she ever tried it. **Equivalence skip:** if she already gave an equivalent answer earlier in the conversation (this overlaps with §6.5.1), don't ask it again — code her existing answer against both, note it in the log rather than re-asking.
 
-### 6.4 Branch B — opened the demo
+### 6.4 Track 2 — opened the demo
 
 1. "Ok, cuéntame: ¿hasta dónde llegaste — alcanzaste a hacer una venta de prueba, o te quedaste en algún paso antes?"
 2. **Open:** "¿Hubo algún momento en el que dudaste si seguir, o que te costó más trabajo del que esperabas?"
@@ -280,7 +318,7 @@ Log the opt-in for future contact (Sí/Tal vez/No) same as before, non-blended-r
 - States facts before framing ("esto no es una venta... nada más queremos entender") — matches the "state facts before opinion" rule.
 - No urgency anywhere in the script — no deadline, no scarcity language.
 - Every question reads as an invitation, never an instruction ("¿tienes un ratito?", never "cuéntanos ahora").
-- Never implies she needed rescuing or did anything wrong by not finishing the demo — 6.3's opener to Branch A is deliberately warm, not corrective.
+- Never implies she needed rescuing or did anything wrong by not finishing the demo — 6.3's opener to Track 1 is deliberately warm, not corrective.
 - No technical/domain terms anywhere in the script (no "onboarding," "OTP," "conversion," "funnel") — every question is phrased in her own vocabulary about her own bazaar business.
 - No performed excitement disproportionate to what actually happened (`character-bible.md`) — 6.4.1's opener stays flat/warm rather than exclamatory, since opening a demo isn't yet an accomplishment; real warmth-escalation is reserved for later in the exchange if she describes an actual completed sale or milestone.
 
@@ -298,14 +336,14 @@ Log the opt-in for future contact (Sí/Tal vez/No) same as before, non-blended-r
 - **PF2 — Value-prop clarity.** Can she restate what Nahui does, accurately, in her own words (§6.5.1) — independent of whether she ever opened the demo? A gap here is evidence about messaging/creative, not about whether the underlying problem is real.
 - **PF3 — Perceived effort/cost.** Does she describe an assumed setup/time cost as a reason for hesitation — distinct from PF1 (is the problem real) and PF2 (does she understand the product)?
 - **PF4 — Trust/unfamiliarity.** General hesitancy toward Nahui as an unknown company/app, named spontaneously or in response to §6.5.3's direct question.
-- **PF5 — Phone-entry experience (Branch B only, §6.4.3).** Kept as a direct, in-context question for anyone who actually reached that step. Not evidence about anonymous funnel abandonment (that population is unreachable by this instrument, per the supersession note) — real evidence about how a genuinely-interested, already-engaged person experiences that specific step, useful context whenever the separate anonymous-bounce investigation needs a comparison point.
+- **PF5 — Phone-entry experience (Track 2 only, §6.4.3).** Kept as a direct, in-context question for anyone who actually reached that step. Not evidence about anonymous funnel abandonment (that population is unreachable by this instrument, per the supersession note) — real evidence about how a genuinely-interested, already-engaged person experiences that specific step, useful context whenever the separate anonymous-bounce investigation needs a comparison point.
 - **Other, named verbatim, no pre-set code.** Any reason a respondent gives that doesn't fit PF1-PF5 is logged in her own words, not forced into one of the five — stays open by design.
 
 ### 7.2 Evidence weighting — spontaneous vs. prompted, stated once, applied to every hypothesis below
 
 A reason she names **unprompted**, in response to an open question (§6.3.1, §6.4.2, §6.5.3), is strong evidence. A reason she confirms only after being **prompted** with a specific candidate (§6.3.2's nudge, or §6.4.3's direct phone-entry question, which is inherently a prompted context since it names the topic) is weaker evidence — real, but logged and counted separately, never blended into the same tally as a spontaneous mention. This mirrors the anti-leading discipline `merchant-validation-decision-matrix.md` already applies to Q15 (the `knowledge-mentor`-confirmed Availability Bias correction) and to Q7/Q8's spontaneous-classification design — reused here, not reinvented.
 
-**Only spontaneous mentions, plus Branch B's direct §6.4.3 answer (asked after she actually experienced the step, not a hypothetical prompt), count toward the primary 3-of-10 threshold below.** Branch A's §6.3.2 prompted nudge answers are logged as a secondary, softer signal — reported alongside the primary count, never merged into it.
+**Only spontaneous mentions, plus Track 2's direct §6.4.3 answer (asked after she actually experienced the step, not a hypothetical prompt), count toward the primary 3-of-10 threshold below.** Track 1's §6.3.2 prompted nudge answers are logged as a secondary, softer signal — reported alongside the primary count, never merged into it.
 
 ### 7.3 Threshold, adapted from `merchant-validation-decision-matrix.md`'s default convention
 
@@ -323,7 +361,7 @@ A reason she names **unprompted**, in response to an open question (§6.3.1, §6
 | **PF2 — Value-prop clarity** | She can't restate what Nahui does in §6.5.1, or restates it inaccurately/vaguely; spontaneous language like "no entendí bien para qué es," "no supe qué hacía diferente." | She restates the value proposition accurately and specifically (e.g., names the speed/registration angle unprompted) in §6.5.1, whether or not she ever opened the demo. |
 | **PF3 — Perceived effort/cost** | Spontaneous mentions coding to assumed setup burden, catalog entry, or general "esto me va a quitar tiempo" reasoning — said *before* or *instead of* trying. | She says she assumed it would be quick/easy, or that time cost wasn't part of her hesitation at all. |
 | **PF4 — Trust/unfamiliarity** | Spontaneous mentions of not recognizing Nahui, general scam/legitimacy worry, or an explicit "no" answer to §6.5.3's direct trust question. | She names Nahui as familiar/credible (e.g., via a referral, having heard of it before), or explicitly says trust wasn't a factor when asked directly at §6.5.3. |
-| **PF5 — Phone-entry experience (Branch B only)** | Branch B's direct §6.4.3 answer describing real hesitation or genuine confusion at that step, from someone who actually experienced it. | She says the phone step felt normal/expected, comparable to other apps she already uses. |
+| **PF5 — Phone-entry experience (Track 2 only)** | Track 2's direct §6.4.3 answer describing real hesitation or genuine confusion at that step, from someone who actually experienced it. | She says the phone step felt normal/expected, comparable to other apps she already uses. |
 | **Other (unclassified)** | Logged verbatim, no threshold applied at n=10-20 — if the same *unclassified* reason recurs across 3+ respondents in a later batch, it becomes a candidate for a sixth named signal in a future amendment to this document, not silently folded into one of PF1-PF5. | N/A — this bucket exists to stay open, not to be falsified. |
 
 ### 7.5 What this feeds — and, explicitly, what it doesn't
@@ -366,8 +404,9 @@ The Product Owner named four; this document adds a fifth as the honest null hypo
 CONCIERGE PILOT — CONVERSATION LOG
 
 Respondent ID: __________          Date first contacted: __________
-Instant Reply answers (zona / tipo de bazar): __________ / __________
-Branch: [ ] A — never opened demo   [ ] B — opened demo
+Instant Reply — vendor status (§5 Q1): [ ] A - bazar/tianguis  [ ] B - vende, no bazar  [ ] C - no vende
+Instant Reply answers (zona / tipo de bazar, vendor-Branch A only): __________ / __________
+Demo track (vendor-Branch A only, §6.2): [ ] Track 1 — never opened demo   [ ] Track 2 — opened demo
 Codeable: [ ] Yes   [ ] No (Instant Reply only, no human-follow-up reply — excluded from n)
 
 Reasons named (code each, mark spontaneous [S] or prompted [P]):
@@ -375,7 +414,7 @@ Reasons named (code each, mark spontaneous [S] or prompted [P]):
   [ ] PF2 unclear value       [S/P]   Quote: "________________________"
   [ ] PF3 perceived effort    [S/P]   Quote: "________________________"
   [ ] PF4 trust/unfamiliar    [S/P]   Quote: "________________________"
-  [ ] PF5 phone-entry (Branch B only) [S/P]   Quote: "________________________"
+  [ ] PF5 phone-entry (Track 2 only) [S/P]   Quote: "________________________"
   [ ] Other (verbatim): ___________________________________________
 
 Loop 2 — demo invited: [ ] Yes  [ ] No     If yes, link sent: __________
