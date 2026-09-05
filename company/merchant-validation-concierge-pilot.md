@@ -164,7 +164,7 @@ Per `company/marketing-operating-environment.md` §14's existing workflow, appli
 - [x] Confirmation of Instagram Business account setup and Instant Reply/automation tooling availability (Meta Business Suite Automations) — **Confirmed 2026-09-05, Product Owner, directly against the real account.**
 - [x] The MXN $200 budget, 2-day window, and 20-conversation stop-early trigger (§2.2) as the governing caps — **Approved 2026-09-03**
 
-**Recommended, not yet done:** route the ad primary text, Instant Reply copy, and discussion-guide's actual spoken lines through `brand-guardian` for a voice-consistency review before Product Owner sign-off — these are new external-facing copy in a register (1:1 conversational DM) Nahui hasn't used before, which is exactly the kind of "new emotional/tonal territory" `brand/CLAUDE.md` names as a consultation trigger, not just an ordinary-copy check against `tone-of-voice.md` directly. This agent has checked the copy below against `tone-of-voice.md`'s concrete rules directly (§6.3), but a dedicated review is worth routing through Main before publishing.
+**Resolved, 2026-09-05:** the ad primary text (drafted late — see new §4a) and Instant Reply copy both went through `brand-guardian` review before this pilot's sign-off, per the reasoning below (1:1 conversational DM being new emotional/tonal territory for Nahui). Discussion-guide spoken lines were checked directly against `tone-of-voice.md`'s concrete rules (§6.3/§6.8) and covered by the 2026-08-20 review below.
 
 **Brand-guardian review, 2026-08-20:** clean overall (no Blocker, no Major); three small fixes applied directly below — §5's Instant Reply copy (emoji dropped), §6.4.1's opening line (flattened to match the register `character-bible.md` requires for a neutral, not-yet-eventful action), and §6's moderator guidance (explicit acknowledge-before-next-question and menu-not-sequence instruction added). **This review does not cover §6.1/§6.6's 2026-08-27 rewrite** (front-loaded incentive, respondent-led exit) — that copy is new since this pass and needs its own `brand-guardian` check before Approval sign-off, not yet done.
 
@@ -183,6 +183,24 @@ Per `company/marketing-operating-environment.md` §14's existing workflow, appli
 Reasoning for this specific line, stated for `ui-designer`/`brand-guardian` to weigh, not decided unilaterally here: it keeps the existing "both things help us equally" framing from the original CTA (`merchant-validation-campaign-videos.md`'s `[CHANGED]` line) — a real continuity worth preserving — but swaps the verb from "pruébalo" (try it) to "escríbenos" (write to us), matching the actual ask this campaign's CTA button makes. It avoids implying she's replacing the demo with a chat (still says "cómo llevas tus ventas hoy," an open invitation to talk about her business, not a sales pitch) and keeps the incentive line's wording identical to the one already brand-reviewed in the storyboard, rather than introducing new incentive language that would need its own review pass.
 
 **What stays entirely `ui-designer`'s call, not specified here:** whether Beat 4b needs a visual change (e.g., an Instagram DM icon) beyond the copy swap, and how the swap gets built (a second export of the same video, or a platform-level creative variant if Ads Manager supports serving the same video with different end-cards to different campaigns). This document states the ask's wording only, per its own remit.
+
+---
+
+## 4a. Ad Primary Text and Headline — the gap this document's own §3 checklist flagged (line 167), closed 2026-09-05
+
+Never actually drafted until now, despite §3's approval checklist referencing an "ad primary text" as something to route through `brand-guardian`. Closed via `marketing` draft → `brand-guardian` review (1 Major: cross-touchpoint redundancy with §5/§6.1, fixed) → `marketing` trim → `brand-guardian` confirmation (clean).
+
+**Primary Text:**
+
+> Hola, somos Nahui 💛 Este es un prototipo interactivo: así se ve registrar una venta en el bazar sin perder al cliente que tienes enfrente.
+>
+> Escríbenos y cuéntanos cómo llevas tus ventas hoy — nos ayuda tanto como que lo pruebes tú misma.
+
+**Headline:** ¿Cómo llevas tus ventas hoy?
+
+**Why the disclosure and incentive lines an earlier draft included are deliberately absent here:** a first draft reused Campaign B's own carried-forward "No es una venta, no te pedimos dinero..." disclosure and this document's own §4 incentive line ("Al platicar con nosotros, quedas en la lista de acceso prioritario...") — both individually already-cleared lines, but stitching them into the ad meant a merchant would read the same two reassurances here, then again in §5's Instant Reply ("no venderte nada"), then again in §6.1's human opener ("esto no es una venta"/"ya quedas en la lista de acceso prioritario"), within minutes. `brand-guardian` traced this as undercutting §0's own 2026-08-27 design intent — the incentive is meant to land as a personal reveal from the actual human in §6.1, not a repeat of something she already skimmed in an ad caption. Trimmed to just the opener (Beat 4a's own already-cleared line) and the plain invitation to message (Beat 4b's own CTA voiceover, verbatim) — the disclosure and incentive now land exactly once each, spoken by a human, where §0/§5/§6.1 already designed them to.
+
+**The Headline/body echo ("cómo llevas tus ventas hoy," appearing in both fields) was checked and kept deliberately** — `brand-guardian` confirmed this is a different case from the cross-touchpoint redundancy above: one ad unit, one glance, reinforcing a single question, not a reassurance restated across separate moments in time. No change needed.
 
 ---
 
