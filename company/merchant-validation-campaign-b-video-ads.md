@@ -10,7 +10,7 @@
 - `company/merchant-validation-campaign-meta-ads.md` §9 / `company/merchant-validation-funnel-diagnosis.md` — the real evidence this campaign has to account for: 423 Meta landing-page views (285 by Vercel's independent count) against 3 questionnaire responses (2 genuine), a ~0.71–1.05% conversion rate, ~MXN $139.88 cost per response, and — the load-bearing finding for this document — an 11-stage breakdown showing the largest unexplained loss sits in Stages 4-7 (prototype start through reaching the reminder banner), a region Campaign 1 had **zero visibility into**. Hypothesis E ("H5" — whether Demo Mode's own fixes reduced validation-environment confusion) remains untested, needing ≥10 new Demo-Mode-era respondents.
 - `company/merchant-validation-campaign-b-storyboard.md` and `company/merchant-validation-campaign-videos.md` — the actual creative/script this video realizes (Campaign B, "Venta rápida," §B.1). Every messaging field below (Primary Text, Headline, CTA) is built by reusing this already-brand-reviewed language, not inventing new claims.
 - `company/merchant-validation-concierge-pilot.md` — a separate, not-yet-launched pilot; its relationship to this campaign is named explicitly in §0 below, not silently assumed.
-- `product/02-ux/demo-mode.md` §2.5 — the six client-side analytics events this campaign's success metrics (§7) are actually built on: `demo_questionnaire_cta_click` (§2.5.1, confirmed live in production), `demo_pass_through_reached` / `demo_otp_completed` / `demo_onboarding_completed` (§2.5.2, built and reviewed, delivery to the production dashboard not yet independently confirmed), `demo_sale_completed` / `demo_paid_plan_activated_midsession` (§2.5.3, built and live-verified in a dev build, delivery to the production dashboard not yet independently confirmed either).
+- `product/02-ux/demo-mode.md` §2.5 — the six client-side analytics events this campaign's success metrics (§7) are actually built on. **All six confirmed live and counting real events on the production Vercel Analytics dashboard as of 2026-09-05** (`company/bitacora.md`) — `demo_questionnaire_cta_click` (§2.5.1), `demo_pass_through_reached` / `demo_otp_completed` / `demo_onboarding_completed` (§2.5.2), `demo_sale_completed` / `demo_paid_plan_activated_midsession` (§2.5.3, the last of the six to be confirmed, via a deliberate Product Owner test on the live site).
 
 ---
 
@@ -85,23 +85,23 @@ This creative already carries its own captions, composited directly into the vid
 
 ### 5d. Primary Text, Headline, Description, CTA button
 
-Built by reusing the already `brand-guardian`-cleared lines from the video's own script (`merchant-validation-campaign-videos.md` B.1) wherever possible, rather than inventing new claims — the same discipline Campaign 1 §5a applied when adapting from the organic recruitment copy. **The connective sentences below (not already-approved verbatim lines) are new copy and, per this project's standing discipline for every other new line in this campaign family, should go through a `brand-guardian` delta review before this ad is actually published — flagged explicitly, not glossed over.**
+Built by reusing the already `brand-guardian`-cleared lines from the video's own script (`merchant-validation-campaign-videos.md` B.1) wherever possible, rather than inventing new claims — the same discipline Campaign 1 §5a applied when adapting from the organic recruitment copy. **The connective sentences below went through their own `brand-guardian` delta review on 2026-09-04 — clean, 0 Blockers/Majors, two optional Suggestions not required for launch.**
 
-**Primary Text (Spanish, ready to paste — connective lines flagged `[NEW, unreviewed]`; reused lines cited):**
+**Primary Text (Spanish, ready to paste — all lines now review-confirmed):**
 
-> Hola, somos Nahui 💛 Este es un prototipo interactivo: así se ve registrar una venta en el bazar sin perder al cliente que tienes enfrente. *[NEW, unreviewed]*
+> Hola, somos Nahui 💛 Este es un prototipo interactivo: así se ve registrar una venta en el bazar sin perder al cliente que tienes enfrente. *(reviewed and cleared, `brand-guardian`, 2026-09-04 — a close structural cousin of Campaign 1's own already-run opener)*
 >
 > Pruébalo y cuéntanos si esto te serviría — las dos cosas nos ayudan por igual. *(verbatim, Beat 4b CTA, `merchant-validation-campaign-videos.md` B.1)*
 >
-> ¿Ya lo probaste, o prefieres empezar por el cuestionario? Aquí está la liga: forms.gle/ZZhtJEfee3viWY1h8 *[NEW, unreviewed]*
+> ¿Ya lo probaste, o prefieres empezar por el cuestionario? Aquí está la liga: forms.gle/ZZhtJEfee3viWY1h8 *(reviewed and cleared, `brand-guardian`, 2026-09-04 — near-identical to Campaign 1's own already-run questionnaire line, `merchant-validation-campaign-meta-ads.md` line 94, which ran with real merchants with no negative signal traced to it)*
 >
 > Al terminar, puedes decirnos que quieres que te tengamos en cuenta para el piloto — quedas en la lista de acceso prioritario. *(verbatim, Beat 4b incentive line)*
 >
 > No es una venta, no te pedimos dinero, y no compartimos tu información con nadie fuera de Nahui. *(carried forward, Campaign 1 §5a, unchanged fact)*
 
-**Headline — two options, stated explicitly rather than picking silently:**
-- **Option A (recommended for immediate launch, zero new-copy risk): `Prueba el prototipo de Nahui`** — Campaign 1's own already-reviewed headline, reused as-is. Safe, factual, no overclaim, no new `brand-guardian` gate to clear before launch.
-- **Option B (stronger, echoes the video's own hook, requires a delta review first): `¿Se te va el cliente en el bazar?`** — a compressed echo of Beat 1's already-approved hook line, not a verbatim reuse (verbatim is too long for a headline field). Flagged as new/adapted copy needing its own brand-guardian pass before use, not launched under Option A's clean-review status.
+**Headline — decided 2026-09-04, Product Owner chose Option B, reviewed and cleared:**
+- **Option A (not chosen): `Prueba el prototipo de Nahui`** — Campaign 1's own already-reviewed headline. Kept on record as the safe fallback, not used.
+- **Option B (chosen, 2026-09-04): `¿Se te va el cliente en el bazar?`** — a compressed echo of Beat 1's already-approved hook line. `brand-guardian` reviewed it 2026-09-04: 0 Blockers, 0 Majors — reads as a genuine, answerable-either-way question, not a "needs rescuing" framing; consistent register with the rest of this ad's copy. One optional Suggestion, not required: a version naming the registration mechanism more precisely (`¿Se te va el cliente al registrar la venta?`) would tighten the causal link slightly, but Option B as written violates no stated rule. **This is the version actually used in the ad.**
 
 **Description (link description, shown on some placements only):** `Para vendedoras y vendedores de bazar` — unchanged from Campaign 1, reused as-is.
 
@@ -123,11 +123,11 @@ Built by reusing the already `brand-guardian`-cleared lines from the video's own
 
 ## 6. Budget
 
-**Primary recommendation: MXN $750, Lifetime Budget, explicit 4-day Start/End window**, plus an Account Spending Limit of MXN $750 as a hard backstop (same discipline as Campaign 1 §6/§10 — never rely on Daily Budget's pacing alone).
+**Decided 2026-09-04, Product Owner: MXN $500, Lifetime Budget, explicit 3-day Start/End window** — the closest-comparability alternative below, not the primary recommendation. Set an Account Spending Limit of MXN $500 as a hard backstop (same discipline as Campaign 1 §6/§10 — never rely on Daily Budget's pacing alone).
 
 **Why larger than Campaign 1's MXN $500/3 days, stated as reasoning, not a default bump:** two things changed since that budget was set. First, this campaign carries a materially higher already-sunk production cost (a fully produced, reviewed video vs. one screenshot) that deserves a fair reach test, not a token pulse. Second, and more load-bearing: **this campaign converts a materially larger share of its own spend into usable data than Campaign 1 could, even without a single Form completion**, because the six analytics events (§7) fire on in-app behavior alone. Campaign 1's marginal peso bought, in practice, only a Landing Page View and a very thin chance at a Form response; this campaign's marginal peso also buys a real chance at a `demo_pass_through_reached`, `demo_otp_completed`, or `demo_onboarding_completed` count — stage-level evidence Campaign 1 could never produce at any spend level. A somewhat larger budget is a more defensible bet given that shift, while still staying well inside this project's own "small, cheap, learning-first" discipline — not a full launch budget.
 
-**Alternative, if closest before/after comparability against Campaign 1 is preferred instead:** keep the exact MXN $500/3-day parameters unchanged. This produces a cleaner CPV/spend comparison against Campaign 1's own real numbers ($0.99 CPV, MXN $419.64 actually spent), at the cost of less volume flowing into the new stage-level instrumentation. **Stated as a genuine, PO-decidable tradeoff — not defaulted past.**
+**Rejected alternative, for the record: MXN $750/4 days.** The reasoning for a larger budget (this campaign converts more spend into stage-level data via the six analytics events) was real, but the Product Owner chose the exact MXN $500/3-day parameters instead, for cleaner CPV/spend comparability against Campaign 1's own real numbers ($0.99 CPV, MXN $419.64 actually spent) — a deliberate choice, not a default.
 
 **One ad set, one ad — unchanged.** Same reasoning as Campaign 1 §6: fragmenting an already-modest budget across ad sets or creative variants is one of the most reliable ways to end a small campaign with too little data at any single point to say anything useful. **A video-vs-static-image A/B test was considered and explicitly rejected for this round** — genuinely interesting (does video outperform the original static image on CTR/CPV), but it would split this campaign's own already-limited volume across two arms right when the new instrumentation most needs a single, undiluted stream to reach a usable stage-level sample. A legitimate idea for a later, larger-budget round once this round's own instrumentation is confirmed reliable — not now.
 
@@ -155,16 +155,16 @@ Each event below is count-only or count-plus-one-closed-enum, zero PII, fired cl
 
 | Event | Funnel stage(s) it feeds | What it tells us | Production delivery status |
 |---|---|---|---|
-| `demo_pass_through_reached` | Stage 4 / Stage 7 (same instant, per `demo-mode.md` §2.5.2's own correction — fires the moment "Empezar demo" is tapped, covering both "started the flow" and "the banner is now visible") | Whether people who land actually proceed past the welcome screen at all | **Not yet independently confirmed delivering to the production dashboard.** Built and `reviewer`-verified against spec; not dashboard-confirmed the way §2.5.1 was. |
-| `demo_otp_completed` | Stage 5 (Authentication/OTP) | Whether Authentication specifically is where people stall, now measurable for the first time | Same status — built, not yet dashboard-confirmed. |
-| `demo_onboarding_completed` `{path: 'free'\|'paid'\|'demo'}` | Stage 6 (Onboarding completion, by path) | Whether Onboarding is a separate bottleneck from Authentication, and which of the three paths respondents actually choose | Same status — built, not yet dashboard-confirmed. |
-| `demo_questionnaire_cta_click` | Stage 8 (banner CTA tap) | Whether people who make it that far actually tap toward the questionnaire | **CONFIRMED live in production** (Product Owner verified 2/2 real events in the Vercel Events panel, 2026-08-19). The one event in this table with real, dashboard-verified delivery. |
-| `demo_sale_completed` | Within-session engagement depth — **the single most direct behavioral proxy for H1 available anywhere in this project.** Repeatable per session (fires once per finalized Sale). | Whether she actually completed a fast sale in the demo — independent of whether she ever opens or finishes the Form at all. This is new: Campaign 1 had no way to measure task completion except a self-reported Form answer from the tiny handful who completed it. | Built and live-verified in a dev build (2026-08-20); **not yet independently confirmed delivering to the production dashboard.** |
-| `demo_paid_plan_activated_midsession` | Secondary engagement-depth signal | Whether a participant explores Configuración deeply enough to self-activate the paid plan | Same status as `demo_sale_completed` — built, dev-verified, not production-dashboard-confirmed. Lower relevance to H1 specifically; free to observe alongside the others. |
+| `demo_pass_through_reached` | Stage 4 / Stage 7 (same instant, per `demo-mode.md` §2.5.2's own correction — fires the moment "Empezar demo" is tapped, covering both "started the flow" and "the banner is now visible") | Whether people who land actually proceed past the welcome screen at all | **CONFIRMED live in production** (27 real events, Vercel dashboard, 2026-09-05). |
+| `demo_otp_completed` | Stage 5 (Authentication/OTP) | Whether Authentication specifically is where people stall, now measurable for the first time | **CONFIRMED live in production** (12 real events, 2026-09-05). |
+| `demo_onboarding_completed` `{path: 'free'\|'paid'\|'demo'}` | Stage 6 (Onboarding completion, by path) | Whether Onboarding is a separate bottleneck from Authentication, and which of the three paths respondents actually choose | **CONFIRMED live in production** (12 real events, 2026-09-05). |
+| `demo_questionnaire_cta_click` | Stage 8 (banner CTA tap) | Whether people who make it that far actually tap toward the questionnaire | **CONFIRMED live in production** (Product Owner verified 2/2 real events in the Vercel Events panel, 2026-08-19). |
+| `demo_sale_completed` | Within-session engagement depth — **the single most direct behavioral proxy for H1 available anywhere in this project.** Repeatable per session (fires once per finalized Sale). | Whether she actually completed a fast sale in the demo — independent of whether she ever opens or finishes the Form at all. This is new: Campaign 1 had no way to measure task completion except a self-reported Form answer from the tiny handful who completed it. | **CONFIRMED live in production** (15 real events, 2026-09-05). |
+| `demo_paid_plan_activated_midsession` | Secondary engagement-depth signal | Whether a participant explores Configuración deeply enough to self-activate the paid plan | **CONFIRMED live in production** (2026-09-05) — the Product Owner deliberately triggered it herself, mid-session, on the live site, to close out the last unconfirmed event. Lower relevance to H1 specifically; free to observe alongside the others. |
 
 **Two structural limitations, stated honestly rather than glossed over:**
 1. **No session-correlation ID exists across these events.** Each is a bare count with no participant identifier — this campaign can read aggregate stage-to-stage *ratios* (how many `demo_pass_through_reached` vs. `demo_otp_completed` vs. `demo_onboarding_completed` vs. `demo_sale_completed` counts accumulated over the window) as an approximate funnel, but it cannot say "this exact person reached OTP, then Onboarding, then a sale" — the same limitation `merchant-validation-funnel-diagnosis.md` Stage 8 already carries for its own single event, now extended honestly to all six.
-2. **Only `demo_questionnaire_cta_click` has confirmed production delivery as of this writing.** The other five are built, code-reviewed, and (for the two newest) verified firing correctly in a dev build — but none of that is the same as confirmed, counted data on the live `demo.nahui.app` dashboard. **This is Step 0 of §8's Decision Playbook below, not an afterthought:** confirm all six events are actually visible and counting in the Vercel Analytics dashboard *before* spending a single peso — the same discipline Campaign 1's own Decision Playbook applied to reconfirming the OTP fix was actually live before that campaign spent anything.
+2. **Resolved, 2026-09-05: all six events now have confirmed production delivery.** Step 0 of §8's Decision Playbook below is satisfied — every event is visible and counting real data on the live `demo.nahui.app` Vercel Analytics dashboard. This gate held real value: five of the six were confirmed only via a direct dashboard check prompted by launch preparation, not assumed clean because the code had been reviewed.
 
 ### 7c. Tier C — Google Form (unchanged mechanism from Campaign 1)
 
@@ -269,7 +269,7 @@ Confirm no automatic-caption toggle is enabled on top of this video's own burned
 
 ### Step 12 — Ad creative fields
 
-Paste in the Primary Text, Headline (Option A recommended for immediate launch, per §5d), Description, and CTA button from §5d exactly as drafted. Set the **Website URL** to `https://demo.nahui.app`.
+Paste in the Primary Text, Headline (Option B, chosen and reviewed — per §5d), Description, and CTA button from §5d exactly as drafted. Set the **Website URL** to `https://demo.nahui.app`.
 
 ### Step 13 — URL parameters (tracking)
 
@@ -303,7 +303,7 @@ All nine of Campaign 1's own named mistakes (§10 there — no End Date, wrong c
 11. **Accepting Meta's auto-selected video thumbnail without checking it** — a real risk on this hard-cut-heavy edit; a mid-transition frame reads as broken or incoherent. Always manually select (Step 10).
 12. **Leaving Meta's automatic captions on** — duplicates and risks colliding with this video's own carefully positioned burned-in captions (Step 11).
 13. **Not checking the Preview panel for upper-third text cropping in Feed's vertical-video handling** — this creative has content placed specifically to avoid this on native 9:16 surfaces; Feed's own crop behavior is the one placement genuinely worth a dedicated look (Step 14).
-14. **Treating any of the five newly-built analytics events as reliable data before confirming production dashboard delivery** — five of six events in §7b are built and reviewed but not yet dashboard-confirmed; spending real budget before Step 16 risks a campaign's worth of "evidence" that turns out to be an unconfirmed instrumentation gap, not a real behavioral finding.
+14. **Resolved, 2026-09-05** — all six events in §7b are now confirmed delivering real, counted data to the production dashboard (§7b table). This risk no longer applies; kept here as a record of what was checked, not an open item.
 
 ---
 
