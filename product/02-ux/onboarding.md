@@ -431,12 +431,12 @@ The demo path's one deliberate pause point, mirroring the pause the NFC path alr
 │  No pudimos guardar lo que        │
 │  vendes. Sigue aquí, intenta       │
 │  de nuevo.                       │
-│  Bolsas — $350 · 10               │
+│  Bolsas · foto — $350 · 10        │
 │  Accesorios — $180 · 5           │
 │      [   Reintentar   ]          │
 └───────────────────────────────┘
 ```
-- Nothing typed is lost by a failed save — retrying replays the same already-committed Selling Groups (name, price, **and, as of `product-decisions.md` Q20, quantity**) and active row, never asks her to retype anything. Same guarantee `inventory.md` §3.11 makes for a failed Guardar mercancía.
+- Nothing typed or selected is lost by a failed save — retrying replays the same already-committed Selling Groups (name, price, quantity per `product-decisions.md` Q20, **and photo per `product-decisions.md` Q23**) and active row, never asks her to retype or reselect anything. Same guarantee `inventory.md` §3.11 makes for a failed Guardar mercancía, which as of Q23 explicitly names the photo too.
 - **Wireframe updated 2026-09-04 to show each committed line's quantity alongside its price** (`Bolsas — $350 · 10`), matching `inventory.md` §3.11's own convention of listing every committed fact, not a subset — a mockup-completeness fix mirroring the identical correction §3.10a already made for Descripción (2026-08-08).
 
 ### 3.6 Todo listo — milestone / handoff (three copy variants)

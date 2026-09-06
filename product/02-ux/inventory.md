@@ -640,9 +640,9 @@ current tab in brackets.
 │  etiquetar                       │
 │   [  Continuar etiquetando  ]   │  primary action in this state
 │  ┌───────────────────────────┐ │
-│  │(B) Bolsas          10 disponibles│ │
-│  │(A) Accesorios     5 disponibles│ │
-│  │(P) Playeras       20 disponibles│ │
+│  │[B] Bolsas          10 disponibles│ │
+│  │[A] Accesorios     5 disponibles│ │
+│  │[P] Playeras       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]     │  secondary — always available, not
 │                                │  the current task here
@@ -1070,9 +1070,9 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  Inventario                    │
 │  Mercancía registrada ✓          │  ambient, fades — not a separate screen
 │  ┌───────────────────────────┐ │  requiring a tap to dismiss
-│  │(B) Bolsas          10 disponibles│ │
-│  │(A) Accesorios     5 disponibles│ │
-│  │(P) Playeras       20 disponibles│ │
+│  │[B] Bolsas          10 disponibles│ │
+│  │[A] Accesorios     5 disponibles│ │
+│  │[P] Playeras       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
@@ -1097,9 +1097,9 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  Inventario                    │
 │  Mercancía lista para vender ✓   │
 │  ┌───────────────────────────┐ │
-│  │(B) Bolsas          10 disponibles│ │
-│  │(A) Accesorios     5 disponibles│ │
-│  │(P) Playeras       20 disponibles│ │
+│  │[B] Bolsas          10 disponibles│ │
+│  │[A] Accesorios     5 disponibles│ │
+│  │[P] Playeras       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
@@ -1216,9 +1216,9 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  etiquetar                       │
 │   [  Continuar etiquetando  ]   │  primary action in this state
 │  ┌───────────────────────────┐ │
-│  │(B) Bolsas          10 disponibles│ │
-│  │(A) Accesorios     5 disponibles│ │
-│  │(P) Playeras       20 disponibles│ │
+│  │[B] Bolsas          10 disponibles│ │
+│  │[A] Accesorios     5 disponibles│ │
+│  │[P] Playeras       20 disponibles│ │
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]     │  secondary — always available, not
 │                                │  the current task here
