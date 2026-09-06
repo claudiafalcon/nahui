@@ -8,6 +8,14 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
+### Q13 — Should multi-staff/SELLER accounts be a paid-tier-gated capability?
+
+- **Raised by:** `product/02-ux/product-decisions.md` Q24/Q25 (concurrent multi-seller selling + Event-scoped inventory allocation), architect's readiness review, 2026-09-06 — a real gap the requirement set didn't originally name.
+- **Question:** should a Business be able to invite/add SELLER accounts (`BusinessMembership`) regardless of `subscriptionTier`, or only once `subscriptionTier=paid`?
+- **Resolution (Product Owner, 2026-09-06):** **Paid-tier only** — same gating class as Frequent Customers/Customer Segmentation (`decision-log.md` D34).
+- **Not yet applied:** the actual gate check (an `Invitation` can only be created while `Business.subscriptionTier=paid`) needs to be folded into the RFC covering `Invitation`/concurrent selling, not designed here. Cross-referenced from `product/02-ux/product-decisions.md` Q24/Q25.
+- **Status:** Resolved — pending write-path implementation in the same RFC.
+
 ### Q11 — What is the specific per-transition timing rule for self-service Business Capability changes (immediate vs. deferred), and what does "deferred" concretely mean?
 
 - **Raised by:** Q5's resolution (below) — the general mechanism (self-service, bidirectional, business-rule-governed timing) is now decided; the specific rule per transition is not.
