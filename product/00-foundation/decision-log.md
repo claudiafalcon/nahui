@@ -2,6 +2,16 @@
 
 Chronological. Each entry: the decision, why it was made, and what it superseded if anything. Don't edit past entries when a decision changes later — add a new entry that supersedes it, so the reasoning trail stays intact.
 
+## D54 — `Product.photo`: new optional stored field on the existing Product aggregate
+
+**Additive, plain entry — same class of change as D33/D36** (an optional scalar field on an already-existing aggregate root). Caught by `reviewer` as a documentation gap during the Foundation-consistency pass on `product-decisions.md` Q23's three-document UX amendment (`onboarding.md`/`inventory.md`/`home.md`): `architect`'s own Q23 finding had already correctly ruled out an RFC (no new aggregate, no bounded-context edge, no ubiquitous-language redefinition — "same class as D33/D36"), but as with D36's own origin story, that finding needs its own plain decision-log entry to actually apply, per `domain-model.md`'s stated rule that additive change is still a Foundation change, not a silent no-op.
+
+**The field.** `Product.photo` (optional) — a plain mutable current scalar, no version history, the same shape as `Product.defaultPrice`/`Business.logo`. Real DM-pilot merchant signal (2 of the earliest respondents independently asking for a photo per catalog item, 2026-09-05) triggered this — `home.md`'s own ProductTile discussion had already flagged the possibility (2026-08-04) and deferred it pending exactly this kind of evidence.
+
+**Purpose.** Lets a merchant attach a photo to a Product she sells, captured optionally at Product creation (`onboarding.md`'s "Define lo que vendes," or `inventory.md`'s "Registrar mercancía") and manageable afterward via a Catalog-row-level sheet (`inventory.md` §3.4b). Consumed today by two downstream surfaces: `inventory.md`'s own Catalog-row marker (renders the photo in place of the initial-letter marker when set) and `home.md` §3.9's Venta rápida selling tile (identical substitution, display-only — no upload/edit/remove/enlarge interaction there, by explicit Product Owner instruction). Deliberately not consumed by `home.md` §3.8f's Digital Receipt, per the Product Owner's own Q23 direction — one optional photo per Product, no gallery, for now.
+
+**Applied:** `domain-model.md`'s Product aggregate entry gains this field. `ubiquitous-language.md`'s Product entry updated to match.
+
 ## D53 — D17 superseded: simultaneous multi-Event operation now supported, following the multi-staff/concurrent-selling design (Q24/Q25)
 
 Product Owner confirmation, 2026-09-06, during the Q24/Q25 design pass (`product/02-ux/product-decisions.md` — concurrent multi-seller selling + Event-scoped inventory allocation): Nahui requires true simultaneous multi-Event operation — e.g., two Seller Memberships selling at two different bazaars the same weekend, not merely stock split across sequential Events.

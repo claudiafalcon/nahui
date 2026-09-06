@@ -71,7 +71,7 @@ view (§3.4, "Inventory Ready"); zero InventoryUnit ever received → falls
 through to step 1 and lands on §3.3a. **[see
 inventory.changelog.md#status-2026-08-14-d46-addendum-dependency-cycle-fix]**
 
-**Amended 2026-09-06 (`product/02-ux/product-decisions.md` Q23, Product Owner decision — optional `Product.photo`):** a new optional Foto field added to "nuevo producto" (§3.8a); a new Catalog-row-level "Editar foto" sheet (§3.4b) lets her add, change, remove, or inspect an existing Product's photo at a larger size; the Catalog row's per-Product marker (§3.4) now renders a photo thumbnail in place of the initial letter whenever one is set, and the row's three tap zones (marker, body, price) are now explicitly disambiguated. `ux-critic` found 2 Major (this document's own tap-zone ambiguity; no fallback for a photo failing to render later) + 5 Minor, all remediated in one round — see `inventory.changelog.md#status-2026-09-06-q23-product-photo`; verification pending.
+**Amended 2026-09-06 (`product/02-ux/product-decisions.md` Q23, Product Owner decision — optional `Product.photo`):** a new optional Foto field added to "nuevo producto" (§3.8a); a new Catalog-row-level "Editar foto" sheet (§3.4b) lets her add, change, remove, or inspect an existing Product's photo at a larger size; the Catalog row's per-Product marker (§3.4) now renders a photo thumbnail in place of the initial letter whenever one is set, and the row's three tap zones (marker, body, price) are now explicitly disambiguated. `ux-critic` found 2 Major (this document's own tap-zone ambiguity; no fallback for a photo failing to render later) + 5 Minor, all remediated in one round; verification pass found 2 further trivial Minor (unbracketed markers in §3.5/§3.12/§3.13/§3.17, closed directly by Main) — `ux-critic` clean. `reviewer` found 1 Important (missing `decision-log.md` D54 entry for `Product.photo`, closed). Folded back into Approved — see `inventory.changelog.md#status-2026-09-06-q23-product-photo`.
 
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
@@ -1535,6 +1535,8 @@ comparable hard speed requirement — the floor above is about not adding
 
 ## 10. Decisions made
 
+- **`Product.photo` (optional) added, 2026-09-06, resolving `product/02-ux/product-decisions.md` Q23** — capturable at Product creation (§3.8a) and manageable/inspectable afterward via a new Catalog-row-level sheet (§3.4b). Zero required taps anywhere. `decision-log.md` D54, `domain-model.md`/`ubiquitous-language.md` updated to match. **[see inventory.changelog.md#decisions-q23-product-photo]**
+- **The Catalog row's per-Product marker (§3.4) now renders a photo thumbnail in place of the initial letter whenever one is set** — reuses `home.md` §3.9's own corrected marker rule verbatim. **No separate read-only "zoom" screen was designed** — inspection is folded into the same management sheet (§3.4b), a deliberate choice.
 - **Cantidad now defaults to 1 the instant Producto is chosen, with an added
   `[−]`/`[+]` stepper alongside the existing typed/`teclado numérico` entry
   (§3.6, §3.7).** Floor: Cantidad can never go below 1 by either input

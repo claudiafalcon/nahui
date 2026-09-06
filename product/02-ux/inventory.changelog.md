@@ -547,5 +547,10 @@ inference. One Suggestion addressed: §3.8a's density (Precio + Foto beneath
 an already-resolved Producto name) judged a modest addition, not warranting
 a second screen.
 
-Verification pending — not yet re-reviewed by `ux-critic` since this
-remediation was applied.
+**Verification complete.** `ux-critic` re-reviewed and confirmed all 2 Major + 5 Minor fixes genuinely closed, surfacing 2 further trivial Minor in the process: the marker-bracket-notation fix (`(B)` → `[B]`) was only applied to §3.4's own wireframe, not to the identical row shape's illustration in §3.5/§3.12/§3.13/§3.17 — closed directly by Main (bracketed all four). `reviewer` then found 1 Important Foundation-consistency gap — no `decision-log.md`/`domain-model.md`/`ubiquitous-language.md` entry existed for `Product.photo`, despite Q23's own architect finding classing it as the same additive-field category as D33/D36, both of which got one — closed via `decision-log.md` D54, `domain-model.md`/`ubiquitous-language.md` updated to match. Folded back into Approved.
+
+### decisions-q23-product-photo
+**Applies to:** `inventory.md` §10.
+
+Full reasoning lives inline at `status-2026-09-06-q23-product-photo`
+above — this decision was recorded there in full, not restated here.

@@ -20,7 +20,7 @@ Each term is tagged with the bounded context that owns it (see `domain-model.md`
 ## Inventory context
 
 - **Catalog** — the set of Products a Business has ever sold. Persists independent of stock.
-- **Product** — a sellable thing (e.g., "Pijama"). Exists independently of any Lot; stays in the Catalog even when sold out. Carries `defaultPrice` — the normal price Ana charges for this selling-group, set once at Product creation, editable later; a plain mutable current scalar, no version history. See `decision-log.md` D33.
+- **Product** — a sellable thing (e.g., "Pijama"). Exists independently of any Lot; stays in the Catalog even when sold out. Carries `defaultPrice` — the normal price Ana charges for this selling-group, set once at Product creation, editable later; a plain mutable current scalar, no version history. See `decision-log.md` D33. Also carries `photo` (optional) — a merchant-uploaded photo for this selling-group, capturable at creation or later, editable/removable anytime; one per Product, no gallery. See `decision-log.md` D54.
 - **Supplier** — who merchandise was bought from. Present in the schema from v1, not yet exposed in any workflow.
 - **Lot** — a merchandise receiving event (date, Supplier, the line items received that day). Owns its InventoryEntries and InventoryUnits.
 - **InventoryEntry** — what the merchant actually types when registering a Lot: a Product + quantity + cost. Internal to Lot; never shown to the merchant as its own concept.

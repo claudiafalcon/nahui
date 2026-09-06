@@ -1322,5 +1322,10 @@ the most consequential place for it to fail — a customer standing in front
 of her. §11's forward-reference item is marked Resolved, not deleted, per
 this document's own non-deletion discipline.
 
-Verification pending — not yet re-reviewed by `ux-critic` since this
-remediation was applied.
+**Verification complete.** `ux-critic` re-reviewed and confirmed clean — both prior Majors and all Minors held, and this document contributed no new findings on re-check. `reviewer` then found 1 Important Foundation-consistency gap, not scoped to this document specifically — no `decision-log.md`/`domain-model.md`/`ubiquitous-language.md` entry existed for `Product.photo` at all, despite Q23's own architect finding classing it the same additive-field category as D33/D36, both of which got one — closed via `decision-log.md` D54, this document's own §11 forward-reference confirmed already correctly resolved in place. Folded back into Approved.
+
+### decisions-q23-product-photo
+**Applies to:** `home.md` §10.
+
+Full reasoning lives inline at `status-2026-09-06-q23-product-photo`
+above — this decision was recorded there in full, not restated here.

@@ -2039,6 +2039,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
 
 ## 10. Decisions made
 
+- **A tile's marker renders `Product.photo` in place of the initial letter whenever one is set, resolving `product/02-ux/product-decisions.md` Q23 (2026-09-06)** — `decision-log.md` D54, `domain-model.md`/`ubiquitous-language.md` updated to match. Display-only on this screen, by explicit Product Owner instruction — no upload/edit/remove/enlarge interaction exists here; that capability lives entirely in `onboarding.md`/`inventory.md`. §3.8f (Digital Receipt) is explicitly and deliberately unaffected. **[see home.changelog.md#decisions-q23-product-photo]**
 - **Session-active header title row has explicit content for a Quick
   Session (§3.7b).** Reads "Sesión rápida" wherever `Session.eventId` is
   null; applies to §3.7–§3.11a, excluding §3.8f. **[see

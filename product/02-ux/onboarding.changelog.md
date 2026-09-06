@@ -469,7 +469,7 @@ handoff changes from cold start to idle state, a mechanical consequence of
 only case, cross-referenced rather than restated here.
 
 ### status-2026-09-06-q23-product-photo
-**Applies to:** `onboarding.md` §1, §2.2a, §3.5b, §3.5c, §3.7, §2.1.
+**Applies to:** `onboarding.md` §1, §2.1, §2.2a, §3.5b, §3.5c, §3.5e, §3.7.
 
 Real DM-pilot merchant signal (2 of the earliest respondents independently
 asking for a product photo) triggered `product-decisions.md` Q23. Architect
@@ -492,4 +492,23 @@ reuses, the wording is adapted ("otra foto"); (3) a Suggestion — whether a
 committed Selling-Group row (§3.5c) shows any indication a photo was
 attached — addressed with a new inline "· foto" marker, the same positional
 convention as the existing "· revisa antes de guardar" marker. All fixed in
-one remediation round; verification pending.
+one remediation round.
+
+**Verification complete.** `ux-critic` found one further trivial Minor on
+re-check — §3.5e's failed-save guarantee cited `inventory.md` §3.11 as
+identical, but §3.11 had since grown to explicitly name Foto while §3.5e's
+own enumeration ("name, price,... quantity") hadn't — closed directly by
+Main. `ux-critic` clean. `reviewer` found 1 Important Foundation-consistency
+gap (not scoped to this document alone): no `decision-log.md` entry existed
+for `Product.photo` at all, despite Q23's own architect finding classing it
+the same additive-field category as D33/D36, both of which got one —
+closed via `decision-log.md` D54, `domain-model.md`/`ubiquitous-language.md`
+updated to match. One Suggestion: this document's §1 optional-fields
+enumeration didn't name Foto alongside `Business.logo`/`description` —
+addressed. Folded back into Approved.
+
+### decisions-q23-product-photo
+**Applies to:** `onboarding.md` §10.
+
+Full reasoning lives inline at `status-2026-09-06-q23-product-photo`
+above — this decision was recorded there in full, not restated here.
