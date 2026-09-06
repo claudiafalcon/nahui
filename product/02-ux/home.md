@@ -165,6 +165,8 @@ matching correction (§2.1, §3.3, §4, §5, §6, §8, §10). `ux-critic` clean
 Folded back into Approved. **[see
 home.changelog.md#status-2026-08-15-non-session-gear-direct-affordance]**
 
+**Amended 2026-09-06 (`product/02-ux/product-decisions.md` Q23, Product Owner decision — optional `Product.photo`):** §3.9's ProductTile renders a photo in place of its initial-letter marker whenever `Product.photo` is set — display-only, no upload/edit/remove/enlarge interaction on this screen. §3.8f (Digital Receipt) is unchanged. §11's previously-flagged "true, custom per-Product icon... would require a Product Decision, likely an RFC" item is now resolved, not merely superseded. `ux-critic` found 2 Major, neither scoped to this document (both live in `inventory.md`) — this document's own contribution was the marker-substitution, dimming, footprint, and render-failure-fallback rules, all applied in the same remediation round. **[see home.changelog.md#status-2026-09-06-q23-product-photo]**
+
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -1448,20 +1450,17 @@ Three elements only — confirmation, total, business identity. No future-regist
   Letter collisions between two Products sharing an initial (e.g.
   "Blusa"/"Bolsa") are acceptable — the full label stays the primary
   identifier; this marker is a fast-scan aid, not a guarantee of uniqueness.
-- **This is not custom per-product iconography, and isn't meant to be
-  mistaken for it.** A merchant-chosen or uploaded icon per Product (a
-  clothing-type glyph, a photo swatch, etc.) would require a genuinely new
-  attribute on the Product aggregate — a change to the frozen
-  `domain-model.md`, a Product Decision, and likely an RFC
-  (`product/99-rfc/README.md`). Not designed here; flagged only as a deeper
-  option worth revisiting if a bare initial letter proves insufficient at
-  real catalog scale (see §11).
+- **Resolved 2026-09-06 (`product-decisions.md` Q23) — no longer open.** A merchant-uploaded photo per Product is now designed, in the bullets immediately below; the RFC this note once anticipated turned out not to be required (architect finding, Q23: clean additive field, same class as D33/D36's own precedent). What remains genuinely open for the future: whether a photo-less Product's letter marker should ever gain something richer than a bare initial (a clothing-type glyph, etc.) — not designed now, no evidence of need (see §11).
+- **Amended 2026-09-06, resolving `product/02-ux/product-decisions.md` Q23 — a tile's marker renders `Product.photo` instead of the initial letter whenever one is set.** Preserves this section's own tile footprint by construction rather than by careful sizing: the photo fills the same corner the letter marker already occupied, extending into blank space the tile's own layout already reserved (below the marker, above the label) — no tile grows to fit it. A Product with no photo keeps the existing letter-marker rendering, completely unchanged. **This is a pure rendering substitution, not a new interaction** — the tile's tap behavior (adds one unit to "Venta actual") is completely unchanged whether the marker shows a letter or a photo. No cropping, no aspect-ratio enforcement, no multi-photo affordance — **a behavioral commitment, not a visual-styling choice left to `ui-designer` to improvise: a photo always renders within the tile's existing footprint, cropped or scaled to fit, never distorted or overflowing**, however the crop/scale technique is ultimately rendered at Medium-Fidelity.
+- **Display-only — no upload, edit, remove, or enlarge interaction exists on this tile, by explicit Product Owner instruction (`product-decisions.md` Q23).** Adding, changing, or removing a photo happens entirely in `onboarding.md` §3.5b/§3.5c (at Product creation) or `inventory.md` §3.4b (afterward) — never here. Selling stays fast and unambiguous: a tap on this tile does exactly one thing regardless of whether it shows a letter or a photo.
 - **The marker renders on a sold-out tile too, muted along with the rest of
   the tile — never a separate case.** It reuses this section's own existing
   sold-out dimming rule (the bullet above) rather than adding new visual
   logic: the same dim that already covers the label and the "0 disponibles"
-  caption also covers the marker, so a sold-out tile's marker never reads as
-  more current or prominent than a sellable one's.
+  caption also covers the marker — **or the photo, when one exists, replacing it, named explicitly here rather than left to inheritance** (Q23) — so a sold-out tile's marker never reads as more current or prominent than a sellable one's.
+- **A photo that fails to render at read time falls back silently to the initial-letter marker — never a broken-image glyph, never a blank tile (`product-decisions.md` Q23).** This prototype is local-storage-only — corruption/eviction of an already-stored value is real, not hypothetical, and most consequential exactly here, where a customer is standing in front of her. No error message, no retry — the tile behaves as if no photo had ever been set, silently and immediately, never interrupting a Sale in progress. See `inventory.md` §3.4b for the fuller reasoning, cross-referenced rather than restated.
+- **`Product.photo` is read here through the identical, already-allowed dependency edge Home already exercises for `Product.name`/`defaultPrice`/stock counts** (*architecture-principles.md* #6, Selling reads Inventory) — no new bounded-context edge, only a new field read across an edge that already existed.
+- **No product grid exists in `Session.operatingMode = nfc` mode at all (§3.10)** — this amendment has nothing to render there and doesn't touch that surface.
 - **"Otro" tile removed.** The earlier draft's fixed 2×2 mockup included a
   generic "Otro" tile with undefined behavior (HOME-M3). Now that the grid
   shows the full Catalog and scrolls rather than capping at 3–4 tiles, every
@@ -2212,11 +2211,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
   number) — left as a UI-polish/tunable decision for Medium-Fidelity or
   Build, consistent with how this document already treats other timing
   thresholds (e.g. §3.2's "&gt;~1.5s").
-- A true, custom per-Product icon (merchant-chosen or uploaded, beyond the
-  automatic first-letter marker in §3.9) — would require a new Product
-  attribute, a schema change to the frozen Domain Model, and a Product
-  Decision (likely an RFC). Not designed now; the automatic marker is the
-  deliberately low-cost interim signal.
+- **Resolved, 2026-09-06 (`product/02-ux/product-decisions.md` Q23) — no longer open.** A merchant-uploaded photo per Product is now designed, at §3.9; the RFC this item once anticipated turned out not to be required (architect finding, Q23: clean additive field, same class as D33/D36). What remains genuinely open for the future: whether a photo-less Product's letter marker should ever gain something richer than a bare initial (a clothing-type glyph, etc.) — not designed now, no evidence of need.
 - An "deshacer" (undo) toast for a few seconds after Finalizar Venta — a
   reasonable safety net, complementary to (not a replacement for) the new
   Finalizar Venta error state (§3.8d) — a Selling-flow detail, not core to

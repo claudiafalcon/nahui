@@ -509,3 +509,43 @@ now carries its own one-time ambient acknowledgment for this exact entry
 marker, mirroring the banner treatment already used for the sibling "named
 Products, zero Lots" case on the same screen. §2 (new step 0), §3.3a, §3.4
 (new banner), §3.14, §4, §6, §7 updated to match.
+
+### status-2026-09-06-q23-product-photo
+**Applies to:** `inventory.md` §3.4, new §3.4b, §3.7, §3.8a, §3.11.
+
+Real DM-pilot merchant signal drove `product-decisions.md` Q23 — see
+`onboarding.changelog.md#status-2026-09-06-q23-product-photo` for the full
+origin story, shared across all three amended documents. `ux-designer`'s
+first design pass added an optional Foto field at Product creation (§3.8a)
+and a new Catalog-row-level "Editar foto" sheet (§3.4b) doubling as the
+"inspect at a larger size" affordance.
+
+`ux-critic` found 2 Major, both scoped to this document: (1) the Catalog
+row already carried two tap zones (row body → §3.6, price → §3.4a); adding
+the marker/photo as a third destination (→ §3.4b) needed to be explicitly
+disambiguated as its own non-overlapping zone, following §3.4a's own
+precedent — fixed, all three zones now stated explicitly, bracketed
+`[ ]` per this document's own tappability convention; (2) no fallback was
+defined for a previously-saved photo failing to render later (this
+prototype is local-storage-only; corruption/eviction is real) — fixed,
+falls back silently to the initial-letter marker everywhere the photo can
+render (this document's marker, `home.md`'s selling tile, this sheet
+itself), no error message, no retry.
+
+Five Minor findings, all fixed in the same round: (1) §3.4b's "no
+confirmation needed" for Cambiar/Quitar can't cite `onboarding.md` §3.9a's
+own reasoning unchanged, since that reasoning's stated precondition
+("nothing written yet") doesn't hold for an already-persisted Product photo
+— reasoned through explicitly instead, same conclusion via the sheet's own
+stage-then-commit shape, matching §3.4a's "Editar precio" sheet immediately
+above it; (2) the inline failure copy can't claim to reuse onboarding's
+"verbatim" — the noun ("logo") doesn't transfer, adapted to "otra foto";
+(3)/(4) covered by the sold-out-dimming and footprint bullets folded into
+§3.4/§3.4b directly; (5) §3.7/§3.11's draft-preservation and failed-save
+guarantees now name the photo field explicitly rather than leaving it to
+inference. One Suggestion addressed: §3.8a's density (Precio + Foto beneath
+an already-resolved Producto name) judged a modest addition, not warranting
+a second screen.
+
+Verification pending — not yet re-reviewed by `ux-critic` since this
+remediation was applied.

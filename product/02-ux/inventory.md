@@ -71,6 +71,8 @@ view (§3.4, "Inventory Ready"); zero InventoryUnit ever received → falls
 through to step 1 and lands on §3.3a. **[see
 inventory.changelog.md#status-2026-08-14-d46-addendum-dependency-cycle-fix]**
 
+**Amended 2026-09-06 (`product/02-ux/product-decisions.md` Q23, Product Owner decision — optional `Product.photo`):** a new optional Foto field added to "nuevo producto" (§3.8a); a new Catalog-row-level "Editar foto" sheet (§3.4b) lets her add, change, remove, or inspect an existing Product's photo at a larger size; the Catalog row's per-Product marker (§3.4) now renders a photo thumbnail in place of the initial letter whenever one is set, and the row's three tap zones (marker, body, price) are now explicitly disambiguated. `ux-critic` found 2 Major (this document's own tap-zone ambiguity; no fallback for a photo failing to render later) + 5 Minor, all remediated in one round — see `inventory.changelog.md#status-2026-09-06-q23-product-photo`; verification pending.
+
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -365,11 +367,11 @@ current tab in brackets.
 ┌───────────────────────────────┐
 │  Inventario                    │
 │  ┌───────────────────────────┐ │
-│  │(B) Bolsas    $350   12 disponibles│ │  row → §3.6, prefilled;
-│  │(A) Accesorios $180 3 disponibles│ │  price [ $XXX ] → §3.4a
-│  │(P) Playeras $280   0 disponibles│ │  sold out — dimmed, tappable
-│  │(D) Delantales $90      sin registrar│ │  never registered — dimmed, tappable
-│  └───────────────────────────┘ │  both → §3.6, prefilled (see below)
+│  │[B] Bolsas    $350   12 disponibles│ │  marker → §3.4b; row → §3.6,
+│  │[A] Accesorios $180 3 disponibles│ │  prefilled; price [ $XXX ] → §3.4a
+│  │[P] Playeras $280   0 disponibles│ │  sold out — dimmed, tappable
+│  │[D] Delantales $90      sin registrar│ │  never registered — dimmed, tappable
+│  └───────────────────────────┘ │
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
@@ -388,7 +390,35 @@ current tab in brackets.
   derivation, same source fact (`Product.name`), same rule; Inventario
   doesn't invent its own logic for this. Gives the Catalog list the same
   at-a-glance differentiation the selling grid now has, on the two screens
-  where Ana actually scans a list of what she sells.
+  where Ana actually scans a list of what she sells. **Amended 2026-09-06
+  (`product-decisions.md` Q23) — the marker renders `Product.photo` in place
+  of the initial letter whenever one is set**, identical substitution rule to
+  `home.md` §3.9's own corrected marker (cross-referenced, not re-derived
+  here either). A photo that fails to render at read time falls back
+  silently to the plain initial-letter marker — see §3.4b for the fuller
+  reasoning, cross-referenced from here rather than restated.
+- **Amended 2026-09-06 (`product-decisions.md` Q23, remediating a Major
+  `ux-critic` found in the original design) — three independent,
+  non-overlapping tap zones exist on every Catalog row, now that the
+  marker/photo icon is a real destination, not just a passive glyph.**
+  Stated explicitly, following §3.4a's own established sub-row-tap-target
+  precedent, rather than left implicit:
+  1. **Marker/photo icon (leftmost, now bracketed `[ ]` per this document's
+     own tappability convention, §3 intro)** — opens §3.4b, "Editar foto."
+  2. **Row body** — the Product's name and its disponibles/sin-registrar
+     caption, everything between the marker and the price — unchanged:
+     opens §3.6, prefilled with that Product.
+  3. **Price figure `[ $XXX ]` (rightmost)** — unchanged: opens §3.4a.
+
+  A merchant reaching for "restock," "edit photo," or "open detail" lands in
+  a correctly-sized, non-ambiguous target for each — no tap resolves between
+  two of these three destinations. This three-zone disambiguation applies
+  identically on a dimmed ("sin registrar"/"0 disponibles") row — dimming
+  signals a restocking need here, not reduced functionality; all three zones
+  stay independently tappable regardless of stock level. Applies identically
+  wherever this row shape reappears — §3.5, §3.12, §3.13, §3.17 — the same
+  "specified once, reused everywhere" rule this document's own marker/
+  dimming treatment already established; no separate rewrite needed at each.
 - **A zero-`disponibles` row (Playeras, 0 disponibles) now renders
   dimmed** — the same visual dimming signal `home.md` §3.9 already applies
   to a sold-out ProductTile, reused here rather than inventing a second
@@ -555,6 +585,52 @@ current tab in brackets.
   `decision-log.md` D33 explicitly rules out point-of-sale price
   override/haggling and promotions/discount pricing — this screen is not,
   and must never become, that mechanism.
+
+### 3.4b Editar foto — sheet (`product-decisions.md` Q23)
+```
+┌───────────────────────────────┐
+│ ← Inventario                     │  dimmed, visible underneath
+│  Bolsas                          │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Foto (opcional)                 │
+│  ┌────┐                          │
+│  │IMG │   [ Cambiar ]  [ Quitar ]│
+│  └────┘                          │
+│  [ Cancelar ]  [ Guardar foto ]  │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+
+**Sin foto todavía (mismo sheet):**
+```
+┌───────────────────────────────┐
+│ ← Inventario                     │
+│  Delantales                      │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Foto (opcional)                 │
+│  [ Agregar foto ]                │
+│  Agrega una foto clara del        │
+│  producto.                        │
+│  [ Cancelar ]  [ Guardar foto ]  │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+
+- **Catalog-row-level management affordance for `Product.photo`** (`product-decisions.md` Q23), opened by a bare tap on the marker/photo icon on any Catalog row (§3.4, and identically §3.5/§3.12/§3.13/§3.17) — mirroring §3.4a's own unlabeled price-figure tap target, not a separately-labeled button. This sheet's own on-screen heading is the Product's name ("Bolsas"), never the string "Editar foto" — the same relationship §3.4a already has between its section title and its actual on-screen heading, deliberately avoiding the CTA/heading-collision defect class this project has already found and fixed twice (`ux-critic-findings.md` HJR-INV-M1, HJR-EVT-M1). Reuses the exact dimmed-backdrop sheet shape already established by "Elegir producto" (§3.8), "Descartar confirmation" (§3.9), and "Editar precio" (§3.4a) — no new sheet/modal pattern.
+- Reuses `Business.logo`'s device-upload mechanism (`onboarding.md` §3.9/§3.9a, D36) adapted to a per-Product photo — the device's own photo/file picker, no cropping, no editing, no color/branding tooling, per Q23's own "bring what you already have" framing.
+- **Why "Cambiar"/"Quitar" need no confirmation here, reasoned for this context, not by citing `onboarding.md` §3.9a's own conclusion.** §3.9a's "no confirmation needed" rests on its own stated precondition — "nothing has been written to the platform yet" — which doesn't hold here: a Product's photo reached through this sheet is already persisted, and may already be rendering live on an active Session's selling tile (`home.md` §3.9) at this exact moment. That precondition failing doesn't automatically mean confirmation is now warranted — it resolves the same way, for a different reason: like §3.4a's own "Editar precio" sheet immediately above, this sheet stages "Cambiar"/"Quitar" as local, uncommitted changes — `Product.photo` is untouched until "Guardar foto" is explicitly tapped, and "Cancelar" discards the staged change, returning to the Catalog view (and any tile already rendering it) exactly as it was. Staging plus an explicit Cancelar/Guardar pair already gives her the protection a confirmation dialog would, the same structural reason §3.4a's own Precio field needs none. No confirmation dialog is added.
+- Tapping the "IMG" thumbnail (once a photo exists) opens a simple full-viewport, non-editable large view — dismissed by tapping again or the back arrow, no Cambiar/Quitar controls inside it — satisfying Q23's "can... inspect it at a larger size" without adding a second editing surface. **A photo always renders within this preview at a legible size, cropped or scaled to fit — never distorted.**
+- A file that can't be shown at selection time gets this inline failure line (mechanism/shape reused from `onboarding.md` §3.9's logo-failure state, the noun adapted since the original names "logo" literally, not reused verbatim):
+  ```
+  No pudimos mostrar ese archivo.
+  Intenta con otra foto, si quieres.
+  ```
+  The sheet reverts to whichever state it held before the failed selection.
+- **A previously-saved photo that fails to render later — a distinct case from the selection-time failure above — falls back silently to the initial-letter marker, never a broken-image glyph, never a blank tile.** This prototype is local-storage-only (`product-decisions.md` Q23's own architect finding) — corruption/eviction of an already-stored value is real, not hypothetical. This is a passive rendering fallback, not a merchant-facing error state: no message, no retry affordance. Applies wherever a Product's photo can render — the Catalog-row marker (§3.4), the Venta rápida selling tile (`home.md` §3.9, most consequential there, since a customer is standing in front of her), and this sheet itself (reverts to its own "Agregar foto" no-photo-yet state, never "Cambiar"/"Quitar" against a thumbnail she can't see).
+- "Cambiar" opens the device picker to replace the current selection; "Quitar" clears it within the sheet's own pending state. "Guardar foto" commits whichever state the sheet currently shows as one write to `Product.photo` and closes back to the Catalog view, updated (that row's marker now showing the photo, or reverting to the initial letter if removed). "Cancelar" discards any in-sheet change and returns unchanged. Follows the same near-instant/slow/error save convention as every other write in this document (§3.10/§3.11) — a failed "Guardar foto" leaves the sheet open with the attempted change intact, and per `architecture-principles.md` #7, this write carries its own stable idempotency key, generated once per attempt.
+- **Not a discount, haggling, or point-of-sale mechanism — n/a here, named only for parallel structure with §3.4a**: this sheet only ever changes what a Product looks like in the app, never anything sold or priced.
 
 ### 3.5 Catalog view — with pending tag work (`defaultSellingMode = 'nfc'` Businesses only)
 ```
@@ -814,7 +890,10 @@ typed/adjusted.)*
   before that) — see §3.9 for what it opens.
 - Leaving this screen any other way (back arrow, switching nav tabs, phone
   locking) silently preserves this in-progress draft — no confirmation, no
-  "keep or discard" prompt. Returning to Registrar Mercancía resumes exactly
+  "keep or discard" prompt — **including a Foto already selected for any new
+  Product on this draft (§3.8a, `product-decisions.md` Q23), never silently
+  dropped by an interruption any more than Producto/Cantidad/Precio already
+  are.** Returning to Registrar Mercancía resumes exactly
   here. *global-principles.md*, "never ask twice," same treatment Home gives an
   interrupted Session (`home.md` §3.13).
 
@@ -882,10 +961,19 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │  Nuevo producto: Chalecos          │
 │  Precio                          │
 │   [ $ ___ ]                      │
-│  [   Agregar "Chalecos"    ]      │  disabled until Precio has a value
+│  Foto (opcional)                 │
+│   [ Agregar foto ]               │
+│  [   Agregar "Chalecos"    ]      │  disabled until Precio has a value —
+│                                │  Foto never gates this button
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
+```
+
+**Con foto seleccionada:**
+```
+│  Foto (opcional)                 │
+│   [IMG]  [ Cambiar ]  [ Quitar ] │
 ```
 - Reached from §3.8 by tapping "+ Agregar 'Chalecos' como producto nuevo"
   — the sheet expands in place rather than closing, asking exactly one
@@ -899,18 +987,19 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   a placeholder number would risk silently misrepresenting what she
   actually charges, not just save her a tap. "Agregar 'Chalecos'" stays
   disabled until Precio holds a value.
+- **Foto (opcional), added 2026-09-06 (`product-decisions.md` Q23) — captured optionally, the first time a Product is created here, whether or not she's also going through Onboarding's own "Define lo que vendes" step.** Reuses §3.4b's device-upload mechanism, adapted to a compact sheet field rather than a full management screen. Never gates "Agregar 'Chalecos'" — only Precio does. A file that can't be shown gets the identical inline failure line as §3.4b: "No pudimos mostrar ese archivo. Intenta con otra foto, si quieres." — the field reverts to its no-photo state, Precio untouched. **Density check (`ux-critic`, addressed):** this sheet now carries Precio (required) and Foto (optional) beneath the already-resolved Producto name — a modest addition, not a meaningful density increase; Foto costs zero required taps and adds one line to an already-short sheet, not warranting a second screen.
 - No separate save/error state of its own: like the rest of the draft
-  (Producto, Cantidad, committed lines, §3.7), this value is held in the
+  (Producto, Cantidad, Foto, committed lines, §3.7), this value is held in the
   in-progress form and only actually written, atomically with the new
   Product and the rest of the Lot, at "Guardar mercancía" (§3.10/§3.11) —
-  a save failure there already preserves everything typed, including a
-  not-yet-created Product's name and price (§3.11's existing guarantee,
-  extended to this one field).
+  a save failure there already preserves everything typed or selected, including a
+  not-yet-created Product's name, price, and photo (§3.11's existing guarantee,
+  extended to this field).
 - Plain numeric peso entry — no currency picker, no decimal/whole-number
   toggle invented here.
 - On "Agregar 'Chalecos'," returns to §3.6/§3.7 with Producto selected as
-  "Chalecos" and Cantidad defaulting to 1, exactly as the existing-Product
-  path already behaves.
+  "Chalecos," Cantidad defaulting to 1, and Foto (if selected) carried into
+  the draft, exactly as the existing-Product path already behaves.
 
 ### 3.9 Descartar confirmation
 ```
@@ -968,10 +1057,12 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
-- Her typed data is never dropped by a failed save — same principle as Home's
-  resolution-fallback (`home.md` §3.14): a failure state must never cost her
-  work she already did. *global-principles.md*, "the best interface stays out
-  of the merchant's way."
+- Her typed data is never dropped by a failed save — **including any Foto
+  selected for a new Product on this batch (§3.8a, `product-decisions.md`
+  Q23)**, the same guarantee already covering Producto/Cantidad/Precio —
+  same principle as Home's resolution-fallback (`home.md` §3.14): a failure
+  state must never cost her work she already did. *global-principles.md*,
+  "the best interface stays out of the merchant's way."
 
 ### 3.12 Post-save confirmation — `defaultSellingMode ≠ 'nfc'` (selling with buttons, whether or not nfc-capable)
 ```

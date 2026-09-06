@@ -1294,3 +1294,33 @@ correct; only the illustrative parenthetical was stale. Reachable now only
 as a legacy-data case (a Business onboarded before Q20 shipped, or any
 merchant who has genuinely sold through all her stock) — same narrowing
 `inventory.md` applies to its own "sin registrar" caption.
+
+### status-2026-09-06-q23-product-photo
+**Applies to:** `home.md` §3.9, §11.
+
+Real DM-pilot merchant signal drove `product-decisions.md` Q23 — see
+`onboarding.changelog.md#status-2026-09-06-q23-product-photo` for the full
+origin story, shared across all three amended documents. This document's
+§3.9 (the "true, custom per-Product icon... would require... an RFC" note,
+first flagged 2026-08-04 alongside the original initial-letter marker) is
+the exact future-considerations item Q23 closes: the RFC anticipated there
+turned out unnecessary — Q23's own architect finding classed `Product.photo`
+as a clean additive field, same low-risk class as `Product.defaultPrice`
+(D33)/`Business.logo` (D36).
+
+`ux-critic`'s review found 2 Major and several Minor findings against the
+overall Q23 design, none scoped to this document specifically — both
+Majors (Catalog-row tap-target ambiguity, no render-failure fallback) live
+entirely in `inventory.md`. This document's own contribution to the
+remediation: the marker-substitution rule stated as a pure rendering swap
+with no new interaction; the sold-out-dimming inheritance named explicitly
+rather than left implicit; a behavioral (not visual-styling) commitment
+that a photo always renders within the tile's existing footprint; and the
+render-time-failure fallback (silent revert to the initial-letter marker,
+never a broken-image glyph) stated for this screen specifically, since it's
+the most consequential place for it to fail — a customer standing in front
+of her. §11's forward-reference item is marked Resolved, not deleted, per
+this document's own non-deletion discipline.
+
+Verification pending — not yet re-reviewed by `ux-critic` since this
+remediation was applied.

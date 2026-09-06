@@ -467,3 +467,29 @@ handoff changes from cold start to idle state, a mechanical consequence of
 (2), not an independent redesign of `home.md`'s own resolution logic; (4)
 `inventory.md`'s "sin registrar" distinction is narrowed to a legacy-data-
 only case, cross-referenced rather than restated here.
+
+### status-2026-09-06-q23-product-photo
+**Applies to:** `onboarding.md` §1, §2.2a, §3.5b, §3.5c, §3.7, §2.1.
+
+Real DM-pilot merchant signal (2 of the earliest respondents independently
+asking for a product photo) triggered `product-decisions.md` Q23. Architect
+readiness: clean additive field on `Product`, no RFC, reuses `Business.logo`'s
+existing device-upload/Cambiar/Quitar/inline-failure composition. Product
+Owner's final direction: optional everywhere, no receipt display, display-only
+on Venta rápida, one photo per Product, lightweight guidance copy
+("Agrega una foto clara del producto.").
+
+`ux-designer` produced a coordinated three-document amendment (`onboarding.md`/
+`inventory.md`/`home.md`). `ux-critic`'s first pass found 2 Major + 5 Minor +
+2 Suggestions, none scoped to this document specifically (both Majors —
+Catalog-row tap-target disambiguation, no fallback for a photo failing to
+render later — live in `inventory.md`/`home.md`) but three Minors did touch
+this document: (1) this document's §2.1/§3.7 resume/interruption guarantees
+didn't name the photo field by name, now corrected; (2) a claim elsewhere
+that failure copy was reused "verbatim" from this document's own §3.9 logo
+copy was wrong — the noun ("logo") doesn't transfer; the mechanism/shape
+reuses, the wording is adapted ("otra foto"); (3) a Suggestion — whether a
+committed Selling-Group row (§3.5c) shows any indication a photo was
+attached — addressed with a new inline "· foto" marker, the same positional
+convention as the existing "· revisa antes de guardar" marker. All fixed in
+one remediation round; verification pending.

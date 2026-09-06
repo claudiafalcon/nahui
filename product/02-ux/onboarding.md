@@ -10,6 +10,8 @@ Scope: the first-run flow that precedes all four top-level nav items (`Hoy`, `In
 
 **Amended 2026-09-04 (`product/02-ux/product-decisions.md` Q20, Product Owner decision — initial inventory quantity captured at Onboarding):** §2.2a's "Define lo que vendes" step now captures each Selling Group's initial on-hand quantity (`Cantidad`) alongside its name and price, in the same interaction, for both real paths — universally, not scoped to any one entry channel (Q20's own resolution). The underlying write is upgraded from a bare `createProducts()` Product-only write to the same `commitLot()`-shaped atomic write (Product + Lot + InventoryEntry + InventoryUnit) `inventory.md`'s "Registrar mercancía" already performs — composing cleanly onto an existing mechanism, confirmed by the architect finding already on record at `product-decisions.md` Q20, not a new write pattern. A newly onboarded Business now starts with real, available stock rather than a named-but-empty Catalog, changing §2.4's own Home-handoff destination for both real paths (Home's idle state, not cold start — see §2.4's own corrected reasoning) and retiring `inventory.md`'s "sin registrar" distinction to a legacy-data-only case (see that document's own corrected §3.4). **[see onboarding.changelog.md#status-2026-09-04-q20-initial-quantity]**
 
+**Amended 2026-09-06 (`product/02-ux/product-decisions.md` Q23, Product Owner decision — optional `Product.photo`):** §2.2a's "Define lo que vendes" step gains a fourth, fully optional field per Selling-Group row — a photo, captured or skipped with zero required taps, reusing `Business.logo`'s own device-upload/inline-failure composition (§2.2b/§3.9). `ux-critic` found 2 Major (Catalog-row tap-target disambiguation, a missing render-time-failure fallback — both scoped to `inventory.md`/`home.md`, not this document) + 5 Minor, all remediated in one round; verification pending. **[see onboarding.changelog.md#status-2026-09-06-q23-product-photo]**
+
 Resolves, within this document's own design scope per D19: the exact number of Onboarding paths, their precise copy, and the flow's exact screen sequence — none of that was decided upstream; it's the actual design task here.
 
 **Out of scope, by explicit instruction — flagged rather than designed around:**
@@ -72,8 +74,10 @@ Evaluated automatically, on every app open, before anything else:
    Groups, had committed some but hadn't tapped "Continuar," or a
    "Continuar" attempt failed, §3.5e)?
      → YES: resume exactly at that step, with whatever Selling Groups she'd
-       already committed (and whatever she'd typed into the still-active
-       row) intact — never re-run §3.5's or §3.10's writes, and never ask
+       already committed (and whatever she'd typed or selected into the
+       still-active row — Producto, Precio, Cantidad, and Foto if she'd
+       already chosen one, per `product-decisions.md` Q23) intact — never
+       re-run §3.5's or §3.10's writes, and never ask
        her to redo a Selling Group she already committed. Same discipline
        `inventory.md` §3.7 already applies to its own in-progress
        Registrar Mercancía draft. Does not apply to "Ver un ejemplo,"
@@ -345,19 +349,30 @@ The demo path's one deliberate pause point, mirroring the pause the NFC path alr
 │ Cantidad                        │
 │  [ − ]  [ 1 · revisa antes de guardar ]  [ + ]│
 │  (o escribe la cantidad)         │
+│ Foto (opcional)                  │
+│  [ Agregar foto ]                │
+│  Agrega una foto clara del        │
+│  producto.                        │
 │                                │
 │  [ + Agregar otro producto ]     │
 │                                │
 │  [        Continuar        ]     │  disabled until Producto + Precio
 │                                │  hold values on this row or ≥1
-│                                │  already agregado — Cantidad is
-│                                │  always valid (defaults to 1),
-│                                │  never gates this button
+│                                │  already agregado — Cantidad and
+│                                │  Foto are always valid, never gate
+│                                │  this button
 └───────────────────────────────┘
+```
+
+**Con foto seleccionada (mismo renglón, una vez que un archivo se muestra correctamente):**
+```
+│ Foto (opcional)                  │
+│  [IMG]  [ Cambiar ]  [ Quitar ]  │
 ```
 - Reached the instant §3.10's identity write succeeds, for "Empezar gratis" and "Activar plan de pago" only — never for "Ver un ejemplo" (§2.2a/§2.2b). No nav bar, same §3-preamble reasoning as every other Onboarding screen.
 - No back arrow, for the identical reason §3.6 has none: by this point the Business and its capabilities already exist (§3.5's write already succeeded) — nothing upstream to return to or undo.
 - **Amended 2026-09-04 (`product-decisions.md` Q20):** intro copy now names all three facts this screen asks for ("a cuánto lo vendes, y cuánto tienes") instead of only the first two — a corrected, not merely extended, promise, since the screen itself now asks a genuine third question.
+- **Foto (opcional), added 2026-09-06 (`product-decisions.md` Q23) — a fourth, fully optional field, reusing `inventory.md` §3.4b's own device-upload composition (originally modeled on `Business.logo`'s, §3.9/§3.9a), collapsed to fit this row rather than a full field group.** Zero required taps, never gates "Continuar" on the active row or any committed line — the same treatment Cantidad already gets, for a different reason: Cantidad is automated away via an honest default (1); Foto has no honest default at all (there's nothing to guess about what a product looks like), so it isn't defaulted, it's simply optional. A file that can't be shown gets the identical inline failure line as `inventory.md` §3.4b: "No pudimos mostrar ese archivo. Intenta con otra foto, si quieres." — the row reverts to its no-photo rendering, Producto/Precio/Cantidad untouched.
 - **Producto, Precio, and — as of this amendment — Cantidad share one flat entry row, unlike Inventario's own two-step "Elegir producto → nuevo producto, precio inicial" shape** (`inventory.md` §3.8/§3.8a). Deliberate simplification, not an inconsistency: Inventario's two-step shape exists to resolve the ambiguity between "restock something I already sell" and "this is new" — a distinction that cannot arise here, since a first-run Business's Catalog is guaranteed empty (§2.2a). Every entry on this screen is unconditionally new, so there's no picker/search step to route through, and Cantidad joins the same flat row rather than opening a fourth screen for a fact Inventario itself only ever asks on its own single Registrar Mercancía screen (`inventory.md` §3.6), never inside its picker.
 - **Cantidad reuses `inventory.md` §3.6's own field-level treatment verbatim, added 2026-09-04 (`product-decisions.md` Q20) — not redesigned here.** Same default (1, never blank, never 0), same "· revisa antes de guardar" marker until touched, same `[−]`/`[+]` stepper plus tap-to-open-`teclado numérico` for a larger count, same bracketed tappable-value affordance requirement. See §2.2a for why this field was added and why it costs zero required taps.
 - Same required-no-default treatment `inventory.md` §3.8a already established for Precio: no honest guessable default exists for a price. "Continuar" is enabled once at least one Selling Group is ready to save — either ≥1 already-committed line exists, or the active row itself holds both Producto and Precio. **Cantidad never gates "Continuar"** — it is always valid, at minimum its own default of 1, the moment a row exists. If the active row is partially filled (Producto or Precio present, but not both) while ≥1 line is already committed, "Continuar" stays disabled until that row is either completed or cleared back to empty — the same "never silently drop what she's mid-typing" guarantee `inventory.md` §3.11 makes for a failed save, applied here to avoid an ambiguous partial row silently vanishing on tap.
@@ -369,8 +384,8 @@ The demo path's one deliberate pause point, mirroring the pause the NFC path alr
 │  ¿Qué vendes?                    │
 │                                │
 │ Ya agregaste:                    │
-│  Bolsas · 10 pzas.        $350 [✕] │
-│  Accesorios · 5 pzas.     $180 [✕] │
+│  Bolsas · 10 pzas. · foto  $350 [✕] │
+│  Accesorios · 5 pzas.     $180 [✕] │  sin foto — nada extra
 │  Playeras · 1 pza. · revisa $280[✕]│  committed without touching
 │                                │  Cantidad — marker carries through
 │ Producto                        │
@@ -380,16 +395,18 @@ The demo path's one deliberate pause point, mirroring the pause the NFC path alr
 │ Cantidad                        │
 │  [ − ]  [ 1 · revisa antes de guardar ]  [ + ]│
 │  (o escribe la cantidad)         │
+│ Foto (opcional)                  │
+│  [ Agregar foto ]                │
 │                                │
 │  [ + Agregar otro producto ]     │
 │                                │
 │  [        Continuar        ]     │
 └───────────────────────────────┘
 ```
-*(The "Playeras" line illustrates the "revisa antes de guardar" marker carrying through into the committed list, the identical treatment `inventory.md` §3.7 already gives its own committed lines under INV-Q1 — "Bolsas" and "Accesorios" render plain because their Cantidad was deliberately typed/adjusted before being committed.)*
+*(The "Playeras" line illustrates the "revisa antes de guardar" marker carrying through into the committed list, the identical treatment `inventory.md` §3.7 already gives its own committed lines under INV-Q1 — "Bolsas" and "Accesorios" render plain because their Cantidad was deliberately typed/adjusted before being committed. "Bolsas" also illustrates the "· foto" inline marker, added 2026-09-06, `product-decisions.md` Q23 — shown whenever a photo was attached to that line, the same positional convention already used for "· revisa antes de guardar"; a row with no photo shows nothing extra. This gives a fast-scan confirmation only — it is not itself tappable, and there is no per-line "edit photo" affordance once committed, the identical "removing and re-adding is the only path to fix it" posture this screen already holds for Producto/Precio below. Full-size inspection of an already-committed photo happens later, in Inventario, §3.4b — per Q23's own capture-location split.)*
 
 **Unit suffix added 2026-09-04 (`ux-critic` Minor finding on the built code, Product Owner-confirmed treatment, folded back here per this project's terminology-drift discipline — `product/02c-high-fidelity-prototype/CLAUDE.md`).** The committed-lines list originally rendered Cantidad as a bare numeral next to the price ("Bolsas — $350 · 10"), which `ux-critic` found insufficiently distinguishable from the price at a glance once actually built. Fixed with a unit suffix — "10 pzas." — confirmed by the Product Owner as the exact treatment, over an alternative dash-anchored style. Applies to this screen's committed list only; `inventory.md` §3.7's own identical row shape is unaffected by this note and should be evaluated separately for the same consistency question, not silently assumed to need the identical fix.
-- "+ Agregar otro producto" commits the current row (Producto + Precio, both required; Cantidad always valid via its own default) and opens a fresh blank one — identical gating shape to `inventory.md` §3.6/§3.7's Producto+Cantidad gate.
+- "+ Agregar otro producto" commits the current row (Producto + Precio, both required; Cantidad always valid via its own default; Foto always valid by being genuinely optional) and opens a fresh blank one — identical gating shape to `inventory.md` §3.6/§3.7's Producto+Cantidad gate.
 - `[✕]` on a committed row removes it before saving — the only correction mechanism this screen offers, unaffected by this amendment. There is no separate "edit price" or "edit cantidad" affordance on an already-committed line (unlike `inventory.md` §3.4a's later Catalog-row price edit, which only exists once a Product is real) — removing and re-adding is the only path to fix a typo here, an acceptable cost given this list is typically short.
 - **Added 2026-09-04 (`product-decisions.md` Q20): the same "· revisa antes de guardar" marker `inventory.md` §3.6/§3.7 already carries into its own committed-lines list now applies identically here** — a line committed without ever touching Cantidad stays visibly flagged in the "Ya agregaste" list, not just on the still-active row, the identical guarantee `inventory.md` §3.7 already gives its own multi-line batch entry. Reused, not redesigned.
 - **No "Descartar" equivalent, unlike `inventory.md` §3.9 — deliberate, not an oversight.** A Lot's Descartar exists because discarding an entire in-progress receiving batch is a real, sometimes-desired action under the time/count pressure Inventario's own context creates (`inventory.md` §1); this step carries no equivalent pressure (Onboarding, by this document's own §1, is never time-critical), and a single mistaken line is already fully covered by `[✕]` — a bulk-discard shortcut would solve a problem this context doesn't have. Unaffected by this amendment.
@@ -481,7 +498,7 @@ The demo path's one deliberate pause point, mirroring the pause the NFC path alr
 
 ### 3.7 Retomar onboarding interrumpido
 
-No new wireframe — reaching any screen in §3.3 through §3.10a a second time (after the app was closed, backgrounded, or crashed mid-flow) renders it **pixel-identical** to the state described above, with whatever she'd already entered still present (the "Activar plan de pago" confirmation screen, §3.4, re-shows itself identically if she was interrupted there before tapping "Confirmar y activar" — there's no typed data to preserve, just a bare confirm tap not yet taken; the demo path's confirmation screen, §3.4c, re-shows itself identically if she was interrupted there before choosing either option; a path already tapped but not yet confirmed by a completed write is re-resumed at that exact step); the "Tu negocio" identity-capture step (§3.9/§3.9a, real paths only) re-shows itself identically, with whatever Nombre/Descripción she'd already typed and whatever logo she'd already selected intact; the "Define lo que vendes" step (§3.5b/§3.5c, real paths only) re-shows itself identically, with every already-committed Selling Group and whatever she'd typed into the still-active row intact — the identical draft-preservation guarantee `inventory.md` §3.7 already makes for its own in-progress Registrar Mercancía form. Same guarantee `home.md` §3.13 and `inventory.md` §3.7 already make for their own in-progress work — *global-principles.md*, "never ask twice." She is never asked "were you still setting up?" and never restarted from §3.3 once she's made real progress past it.
+No new wireframe — reaching any screen in §3.3 through §3.10a a second time (after the app was closed, backgrounded, or crashed mid-flow) renders it **pixel-identical** to the state described above, with whatever she'd already entered still present (the "Activar plan de pago" confirmation screen, §3.4, re-shows itself identically if she was interrupted there before tapping "Confirmar y activar" — there's no typed data to preserve, just a bare confirm tap not yet taken; the demo path's confirmation screen, §3.4c, re-shows itself identically if she was interrupted there before choosing either option; a path already tapped but not yet confirmed by a completed write is re-resumed at that exact step); the "Tu negocio" identity-capture step (§3.9/§3.9a, real paths only) re-shows itself identically, with whatever Nombre/Descripción she'd already typed and whatever logo she'd already selected intact; the "Define lo que vendes" step (§3.5b/§3.5c, real paths only) re-shows itself identically, with every already-committed Selling Group (including any Foto attached to it, `product-decisions.md` Q23) and whatever she'd typed or selected into the still-active row — Producto, Precio, Cantidad, and Foto alike — intact — the identical draft-preservation guarantee `inventory.md` §3.7 already makes for its own in-progress Registrar Mercancía form. Same guarantee `home.md` §3.13 and `inventory.md` §3.7 already make for their own in-progress work — *global-principles.md*, "never ask twice." She is never asked "were you still setting up?" and never restarted from §3.3 once she's made real progress past it.
 
 **This same guarantee extends past §3.5, through §3.6 — deliberately, not by oversight (see §2.1, case 2).** Onboarding's capabilities being written (§3.5's write succeeding) is necessary but not sufficient for "complete" to mean "never shown again." If she's interrupted while a "Todo listo" variant (§3.6) is on screen — a phone call, backgrounding, an OS kill, all routine events, not edge cases — the next app open resumes at that exact same variant (recomputed from her already-stored path/capabilities, never re-triggering §3.5's write a second time) rather than silently marking Onboarding complete and skipping straight to Home. This is the one narrowing of D13's "complete" in the whole document, and it exists for a specific reason: §3.6 is this document's own argument for why one deliberate beat of ceremony is warranted at all — an interruption shouldn't be allowed to silently cost her the one screen this document treats as worth having.
 
