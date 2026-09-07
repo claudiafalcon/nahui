@@ -31,29 +31,31 @@ import { OnboardingFlow } from './screens/Onboarding/OnboardingFlow';
  * rather than the exact mid-typing step. See
  * docs/passes/slice-2-authentication-onboarding.md for the full disclosure.
  *
- * **Slice 12 addition — `authentication.md` §2.2 case 0 / §2.2a
- * (`product-decisions.md` Q24/Q25): a fourth stage, `InvitationFlow`,
- * mounted between Authentication and Onboarding.** The spec's own literal
- * gate is "has this phone never been verified before, anywhere" — a fact
- * only known transiently, at the exact moment `verifyOtp` resolves, and
- * therefore not honestly re-derivable from persisted `AppState` alone on a
- * later render/reload the way every other check on this page already is.
- * **Disclosed, reasoned approximation, not the literal spec text:** this
- * build instead shows the offer to any authenticated User who holds *no*
- * Membership anywhere and has not (yet) created her own Business, exactly
- * as long as a pending Invitation for her phone exists. Functionally
- * identical to the spec's own condition for every case that matters at
- * pilot scale; the one theoretical divergence — a phone that verified once
- * long ago, never finished Onboarding, and is invited only *afterward* —
- * would, per the literal spec text, skip this offer (case 2, an
- * in-progress Onboarding resume); this build shows the offer instead,
- * which this pass judges a better outcome for her, not a worse one, given
- * nothing in the Foundation tracks "already resolved this exact offer."
+ * **Slice 12 addition — `authentication.md` §2.1 / §2.2 case 0 / §2.2a
+ * (`product-decisions.md` Q24/Q25, amended 2026-09-07): a fourth stage,
+ * `InvitationFlow`, mounted between Authentication and Onboarding.** The
+ * spec's own gate, as amended, is "does this User hold zero
+ * `BusinessMembership` anywhere AND zero Business (complete or in-progress)
+ * anywhere for them" — a fact that, unlike the original ("has this phone
+ * never been verified before, anywhere") wording it replaced, is honestly
+ * re-derivable from persisted `AppState` alone on every render, including a
+ * later reload with no fresh OTP confirm involved at all. That's exactly
+ * why the amendment exists: §2.1 now runs the identical check at ordinary
+ * session-resume, not only at a fresh `verifyOtp` (§2.2 case 0), so a phone
+ * that verified once, never finished Onboarding, and is invited only
+ * afterward is still reached. `derivedPendingInvitation` below implements
+ * that corrected condition directly — `hasAnyMembership` /
+ * `hasOwnBusiness` together are the "zero Membership anywhere AND zero
+ * Business anywhere" test, checked on every render regardless of which
+ * entry point (a fresh confirm or a resumed session) reached this
+ * component, matching §2.2a's own framing of this as "two entry points
+ * into one identical resolution." No approximation or divergence from the
+ * spec remains — this is the literal, Approved text.
  * "Ahora no" (declining) touches no persisted fact on the `Invitation`
  * record itself (§2.2a step 4 — "does not touch the Invitation at all"),
- * but §2.2a step 4 / §10 makes a stronger, explicit promise than this file's
- * general "pre-write UI state resets on reload" posture covers: "declining
- * never re-surfaces the same offer on the next open" — a completed
+ * but §2.2a step 6 (new, 2026-09-07) makes an explicit, durable promise:
+ * declining is remembered locally, per device, per specific Invitation, so
+ * the identical offer is never re-shown on a later app open — a completed
  * decision, not in-progress typing, and one a realistic phone-lock/
  * backgrounding interruption would otherwise violate outright (ux-critic
  * fix round, Slice 12). `derivedPendingInvitation` below therefore checks
