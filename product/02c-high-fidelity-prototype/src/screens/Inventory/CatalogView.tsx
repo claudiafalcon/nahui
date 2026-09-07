@@ -55,6 +55,13 @@ export function CatalogView({
   // any tile already rendering it) exactly as it was.
   const [editingPhotoId, setEditingPhotoId] = useState<string | null>(null);
   const [stagedPhoto, setStagedPhoto] = useState<string | undefined>(undefined);
+  // The product's photo value at the exact moment the sheet opened —
+  // captured once in `openPhotoSheet` and never updated while the sheet is
+  // open. `handleGuardarFoto` diffs `stagedPhoto` against this (not against
+  // anything post-write) to tell a real edit apart from a no-op "Guardar
+  // foto" tap (sheet opened, nothing changed, tapped Guardar out of habit
+  // instead of Cancelar) — only a real edit gets the "Foto guardada" toast.
+  const openedPhotoRef = useRef<string | undefined>(undefined);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [photoPreviewOpen, setPhotoPreviewOpen] = useState(false);
   const photoFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -98,6 +105,7 @@ export function CatalogView({
     const product = rows.find((r) => r.product.id === productId)?.product;
     setEditingPhotoId(productId);
     setStagedPhoto(product?.photo);
+    openedPhotoRef.current = product?.photo;
     setPhotoError(null);
     setPhotoPreviewOpen(false);
   }
@@ -127,14 +135,27 @@ export function CatalogView({
   }
 
   function handleGuardarFoto() {
+    // A real write only happened if `stagedPhoto` actually differs from the
+    // photo the sheet opened with — covers both a new/changed photo and a
+    // removal (`Quitar` → `Guardar foto` on a product that had a photo).
+    // Comparing against the post-write result would always read as
+    // "changed" for a fresh photo but say nothing about a genuine no-op
+    // save, which is exactly the case this fix targets — so the diff is
+    // taken here, against `openedPhotoRef`, before the write.
+    const photoChanged = stagedPhoto !== openedPhotoRef.current;
     if (editingPhotoId) setProductPhoto(editingPhotoId, stagedPhoto);
     closePhotoSheet();
+    if (!photoChanged) return;
     // Same ambient near-instant confirmation convention as every other write
     // in this file ("Mercancía registrada", "Mercancía lista para vender") —
     // inventory.md §3.4b explicitly follows §3.10/§3.11's save convention.
     // Fires whether "Guardar foto" committed a photo or committed its
     // removal ("Quitar" → "Guardar foto" is a valid save too, §3.4b) — the
-    // toast confirms the write, not any particular resulting content.
+    // toast confirms the write, not any particular resulting content. A
+    // no-op "Guardar foto" (nothing staged differently from what the sheet
+    // opened with) still closes the sheet but never fires this toast —
+    // telling the merchant something changed when it didn't is worse than
+    // staying silent (merchant-user-tester finding).
     setToast('Foto guardada');
     window.setTimeout(() => setToast(null), 2400);
   }
