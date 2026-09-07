@@ -426,3 +426,18 @@ Original text, before this amendment:
 > 8. **A persistent, read-only display of her own verified phone number in Configuración** — already named as a future consideration in `authentication.md §11`, unrelated to whether sign-out itself works; still not designed here, no evidence of need yet.
 
 Marked Resolved by this amendment — see the current §8 item 8, §2.5, and §3.3a/§3.6 for the live text and wireframes.
+
+---
+
+## 2026-09-07 — §3.14's "Entendido" mechanism corrected: acknowledgment, not an app-close claim
+
+**Root decision:** a `merchant-user-tester` (Ana) walk of Slice 12 found that `AccesoRevocado.tsx`'s "Entendido" tap relied solely on `window.close()`, which silently no-ops in a real browser tab a merchant opened herself — a real browser security restriction, producing zero visible feedback and reading as a broken button. §3.14's own text had described the mechanism as "clos[ing]/exit[ing] the app... letting her end the moment on her own terms" — a guarantee no web/PWA mechanism can actually make in that context. Corrected the same day, paired with a matching code fix (the button now always visibly acknowledges — disables/relabels "Entendido ✓," shows an honest "Ya puedes cerrar esta pestaña." line — regardless of whether `window.close()` succeeds).
+
+### §3.14, the "Entendido" bullet
+*(cite as `settings.changelog.md#2026-09-07-entendido-acknowledgment-not-close`)*
+
+Original text, before this correction:
+
+> - **"Entendido" is the one tap this screen offers — not a navigation, a close (`brand-guardian` finding, remediated 2026-09-07).** The original draft rendered this screen with zero tappable affordance at all, leaving her no way to signal she'd seen the message — a real violation of `character-bible.md`'s "Things Nahui always does": "gives her an honest way out of anything — no dead ends, no forced commitments." The fix stays inside this screen's own, already-correct restraint about navigation: every ordinary destination (nav bar, header, back arrow) is still correctly withheld, since every one of them reads Business-scoped data this Membership has no standing reason to browse. "Entendido" doesn't reach any of them — it closes/exits the app instead, letting her end the moment on her own terms rather than being stuck staring at an unacknowledgeable message. If she reopens Nahui afterward, Home's resolution (`home.md` §2 step 0) shows this identical screen again, unchanged — a stable, repeatable terminal state, now with an honest way to step away from it each time it's reached.
+
+Corrected to describe the mechanism as an acknowledgment (visible confirmation + an honest "close this tab yourself" instruction) rather than a claimed app-close — see the current §3.14 text and §5 item 17a for the live version.
