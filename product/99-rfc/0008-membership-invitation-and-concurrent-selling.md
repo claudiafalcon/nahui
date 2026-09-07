@@ -1,6 +1,6 @@
 # 0008 — Membership invitation and concurrent selling: `Invitation` as a new aggregate root, the accept-creation invariant, and the authorization/attribution consequences of D55
 
-Status: Proposed
+Status: Accepted. Promoted to `product/00-foundation/decision-log.md` D56.
 
 ## The idea
 

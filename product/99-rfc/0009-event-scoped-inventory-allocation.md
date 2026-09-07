@@ -1,6 +1,6 @@
 # 0009 — Event-scoped inventory allocation: `EventAllocation` and `AllocationMovement` in the Selling context
 
-Status: Proposed
+Status: Accepted. Promoted to `product/00-foundation/decision-log.md` D57.
 
 ## The idea
 
