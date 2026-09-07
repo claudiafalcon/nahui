@@ -14,12 +14,11 @@ events.changelog.md#status-d20-venue-aggregate-root]**
 **Amended (UX fix, no Foundation change):** §3.6's Empieza field now defaults
 to hoy (today's date) instead of opening blank. Termina's existing
 auto-fill-from-Empieza behavior is unchanged and simply inherits the new
-default. Guardar evento's required-field gate narrows to Lugar + Tipo. The
-D17 overlap check (§3.6) is computed at form-open time, since Empieza is
-pre-resolved from the start — but the warning itself only becomes visible
-once she engages with the form for the first time, not on raw open.
+default. Guardar evento's required-field gate narrows to Lugar + Tipo.
 **[Amended 2026-08-14 — see
 events.changelog.md#status-evt-q1-empieza-hoy-default]**
+
+**Further amended 2026-09-06 (`decision-log.md` D53 — D17 superseded, simultaneous multi-Event operation now supported):** the entire D17 overlap-validation mechanism (inline warning, disabled Guardar evento) is removed outright — D53 retired the single-active-Event rule it existed to enforce. Guardar evento's gate reverts to Lugar + Tipo alone, unconditionally. **[see events.changelog.md#status-2026-09-06-d53-overlap-validation-retired]**
 
 **Amended 2026-08-04 (icon/comprehension audit):** §3.4/§3.5's Events list
 cards now show Event type alongside `Venue.displayName` ("Plaza Norte ·
@@ -391,142 +390,7 @@ real current date, same as any other date field in this doc.)
   must actively choose. No Supplier/cost-style hidden fields apply here —
   Eventos has nothing analogous to Inventario's deliberate-exception fields.
 
-**Overlap-validation variant (D17) — inline, client-side, no separate screen**
-
-Empieza (and its auto-filled Termina) now resolve to a real date range from
-the moment Agendar evento opens — Empieza defaults to hoy — rather than only
-once she taps in and picks a date. An automatic check runs immediately
-against her own already-loaded Events for this Business (the same list this
-tab already fetched to render §3.4/§3.5 — no new network call), and re-runs
-on every subsequent date edit. **The check itself is computed the instant
-the form opens, but the warning only becomes visible once she's actually
-engaged with the form for the first time** — returned from Elegir lugar or
-Elegir tipo having made a selection, or edited a date field, whichever
-happens first (EVT-Q1). A raw, untouched Agendar evento screen never shows
-it, even though hoy's default already technically conflicts — surfacing a
-warning about a date she hasn't looked at yet, the instant the screen
-renders, read as an unprompted error rather than validation feedback. If the
-range overlaps an already-scheduled-or-active Event (`decision-log.md` D17),
-the form shows this — instead of a silently re-enabled Guardar — the moment
-that first engagement completes, most commonly right after she picks Lugar,
-since it's the form's first field:
-
-```
-┌───────────────────────────────┐
-│ ← Eventos                        │
-│  Agendar evento                   │
-│                                │
-│ Lugar                           │
-│  [ Plaza Toluca ▾ ]               │  she just picked this — first
-│                                │  engagement with the form
-│ Tipo                            │
-│  [ Elegir tipo ▾ ]                │
-│ Empieza                         │
-│  [ 04 / 08 / 2026 ]               │  still hoy — she hasn't touched it
-│ Termina                         │
-│  [ 04 / 08 / 2026 ]               │  prefilled = Empieza
-│                                │
-│  Si agendas para hoy, esas        │  becomes visible now that she's
-│  fechas se cruzan con Plaza       │  engaged with the form — not
-│  Norte (04-06 ago). Ajusta las    │  shown before any interaction
-│  fechas para continuar.           │  at all
-│                                │
-│  [      Guardar evento       ]   │  disabled — Tipo still unset,
-├───────────────────────────────┤   plus overlap unresolved
-│ Hoy  Inventario [Eventos] Resultados │
-└───────────────────────────────┘
-```
-
-The example below (Plaza Metepec / Bazar / 13–15 jul) stays valid for the
-case where she picks Lugar/Tipo first, then edits dates into a conflict —
-this scenario was already action-triggered before EVT-Q1 and needs no
-change:
-
-```
-┌───────────────────────────────┐
-│ ← Eventos                        │
-│  Agendar evento                   │
-│                                │
-│ Lugar                           │
-│  [ Plaza Metepec ▾ ]              │
-│ Tipo                            │
-│  [ Bazar ▾ ]                     │
-│ Empieza                         │
-│  [ 13 / 07 / 2026 ]               │
-│ Termina                         │
-│  [ 15 / 07 / 2026 ]               │
-│                                │
-│  Esas fechas se cruzan con        │  plain text, not Error-styled — a
-│  Plaza Norte (12-14 jul).          │  normal scheduling catch, not a
-│  Ajusta las fechas para           │  system failure
-│  continuar.                      │
-│                                │
-│  [      Guardar evento       ]   │  disabled — same gate as the base state,
-├───────────────────────────────┤   overlap is a third silent condition
-│ Hoy  Inventario [Eventos] Resultados │
-└───────────────────────────────┘
-```
-
-- **Computed the instant the form opens; shown the instant she first
-  engages with it — closes EVT-Q1.** Empieza's hoy default (and Termina,
-  auto-filled to match) means a real date range is known immediately when
-  Agendar evento renders, so the check itself runs with no manual date pick
-  required — but the *warning* waits for her first real interaction with the
-  form (picking Lugar or Tipo, or editing a date), so it never appears as an
-  unprompted error about a date she hasn't looked at or touched. In the
-  common case (Lugar is the form's first field), she still finds out right
-  after picking Lugar — before spending a tap on Tipo — preserving nearly
-  all of the original tap-efficiency benefit while making the warning read
-  as validation following something she just did, the same pattern
-  established everywhere else in this doc, rather than a surprise on open.
-  *global-principles.md*, "the fastest interaction is the one that never
-  happens": a doomed save is still never attempted.
-- **When the conflicting date is still the untouched hoy default (as in the
-  Lugar-first example above), the message says so explicitly — "Si agendas
-  para hoy, esas fechas se cruzan con..." — rather than asserting a flat
-  conflict as if she'd deliberately chosen that date.** This is the copy
-  half of the EVT-Q1 fix: even shown after an engagement (Lugar picked), the
-  date itself may still be one she hasn't actively set, so the copy names
-  that condition instead of reading as a claim about a decision she made.
-  Once she actually edits Empieza/Termina herself (the Plaza Metepec example
-  below), the message drops the "si agendas para hoy" framing — that
-  phrasing is used only while Empieza still holds its unedited default
-  value.
-- **Reuses already-loaded data, not a new fetch.** The Events list this
-  check compares against is the same one Eventos already resolved to render
-  §3.4/§3.5 — the identical "sub-screen navigation assumed to use
-  already-fetched data" scoping this doc's §3 intro already establishes for
-  Elegir lugar/Elegir tipo. *global-principles.md*, "capture business truth
-  once, reuse it forever."
-- **Names the conflicting Event, not a bare "fechas inválidas."** Shows the
-  conflicting Event's `Venue.displayName` + date range (the same identity
-  fact used everywhere else in this doc, D20) so she can recognize which
-  commitment conflicts and, if needed, check her own calendar — without
-  leaving the form. A generic error would leave her guessing.
-- **Tone is plain and informational, not alarming.** A merchant scheduling
-  two overlapping bazares is a routine data-entry catch, not a destructive
-  action or a system failure — nothing she typed is lost or at risk, so this
-  doesn't warrant the Error-red treatment brand-guide.md reserves for
-  "failures with real merchant-facing consequence — a write/save that failed,
-  or entered data at risk" (e.g. this doc's own §3.9 "No se pudo guardar").
-- **No §3.9 near-instant/slow/error treatment.** That three-state pattern
-  exists specifically to cover write-time latency and failure. This is a
-  pure client-side comparison of two already-known date ranges against
-  already-loaded data — there is no network round-trip for a state to be
-  slow or fail on.
-- **Clears itself reactively, no dismiss tap.** The instant she edits
-  Empieza/Termina into a non-overlapping range, the message disappears and
-  Guardar evento re-enables (once Lugar/Tipo are also filled) — same
-  no-extra-tap posture as this doc's ambient post-save/post-cancel
-  confirmations (§3.10/§3.13).
-- **Guardar evento's disabled condition is extended, not replaced.** The
-  base state already disables Guardar until Lugar + Tipo are filled
-  (Empieza/Termina are always valid by default from the moment the form
-  opens, per §3.6's Empieza-default amendment above) — overlap detection is
-  a third, equally silent gate alongside them, not a fourth; in the normal
-  (non-overlapping) flow, nothing changes and she never sees this variant at
-  all. (EVT-Q2 correction — this bullet previously described the
-  pre-amendment four-gate behavior.)
+**Overlap-validation variant (D17) — retired 2026-09-06 (`decision-log.md` D53).** D17's restriction ("at most one Event may be scheduled/active with an overlapping date range at a time") is superseded — Nahui now supports simultaneous multi-Event operation. The inline warning, its two illustrative examples, and every bullet describing its mechanics (computed-on-open/shown-on-engagement timing, the "si agendas para hoy" copy variant, reuse of already-loaded data, naming the conflicting Event, tone/severity treatment, the no-dismiss-tap clearing behavior, the extended Guardar-evento gate) are removed outright — there is no longer a rule for any of it to enforce. **Guardar evento's gate is Lugar + Tipo alone** — Empieza/Termina are always valid by default from the moment the form opens (per §3.6's Empieza-default amendment above); there is no third gate. Full removed text preserved at `events.changelog.md#status-2026-09-06-d53-overlap-validation-retired`, per this document's own non-deletion discipline.
 
 ### 3.7 Elegir lugar — picker sheet
 ```
@@ -1148,22 +1012,10 @@ Events list:
 
 Nuevo Evento (3.6):
   fill Lugar (→ picker 3.7, create-or-select a Venue) + Tipo (→ picker 3.8) +
-    Empieza (Termina auto-fills)
-      → the instant Empieza (and its auto-filled Termina) resolve, an
-        automatic client-side overlap check computes against her own
-        already-loaded Events (no network round-trip, D17) — but the
-        warning itself only becomes visible once she's first engaged with
-        the form (picked Lugar or Tipo, or edited a date), not on raw open
-        (EVT-Q1) — see §3.6's overlap-validation variant
-      → overlap detected (and visible) → inline message names the
-        conflicting Event, and if Empieza still holds its untouched hoy
-        default, says so explicitly ("si agendas para hoy…") → Guardar
-        evento stays disabled → she edits Empieza/Termina → message clears
-        the instant the range no longer overlaps, re-checked on every edit
-      → no overlap → nothing shown, form behaves exactly as before
-  → tap "Guardar evento" (only reachable once Lugar + Tipo are filled and no
-    overlap is detected — Empieza/Termina are already valid by default from
-    the moment the form opens, EVT-Q2)
+    Empieza (Termina auto-fills, always valid by default from the moment
+    the form opens)
+  → tap "Guardar evento" (reachable once Lugar + Tipo are filled — no
+    overlap check, `decision-log.md` D53 retired it)
       → saving (3.9) → error → Reintentar → saving again
       → success → Events list, ambient "Evento agendado ✓" (3.10), card
         placed in Activo o Próximos purely by date — never a manual choice
@@ -1194,8 +1046,7 @@ Elsewhere:
 4. Events list — normal (Activo + Próximos + Pasados all present, Pasados
    includes both the normal summary card and the zero-Session card shape)
 5. Events list — no Activo Event (Próximos + Pasados only)
-6. Nuevo Evento — entry form, including its inline overlap-validation
-   variant (D17; client-side, no separate screen or navigation — §3.6)
+6. Nuevo Evento — entry form (D17's overlap-validation variant retired, `decision-log.md` D53 — §3.6)
 7. Elegir lugar — picker sheet (create-or-select a Venue)
 8. Elegir tipo — picker sheet
 9. Guardar evento — saving (near-instant/slow) and error
@@ -1269,10 +1120,6 @@ floor above is about not adding unnecessary steps, the same posture
   resolution).
 - Cancelled Events disappearing from the list entirely, with no separate
   "archive" step required to hide them (§3.13).
-- **Overlap validation against her own already-scheduled-or-active Events**
-  (`decision-log.md` D17) — checked automatically, client-side, the instant
-  both dates are known; never something she has to cross-reference against
-  her own memory or a separate calendar (§3.6).
 
 ## 8. Open questions
 
@@ -1302,24 +1149,7 @@ floor above is about not adding unnecessary steps, the same posture
   adding a new Venue, since that question is already settled for Venue by
   D20.
 
-- **Q3 — Resolved via `decision-log.md` D17, not reopened here.** The
-  original question (a tie-break rule for two simultaneously active Events)
-  no longer applies: D17 resolved it by removing the ambiguous state
-  entirely rather than adding tie-break logic — a Business may not create
-  or activate an Event whose date range overlaps an already-scheduled-or-
-  active Event. This makes `home.md` §2's single-active-Event assumption
-  correct by construction; no change to `home.md` was needed.
-  **What D17 left genuinely undesigned is now designed.** "Nuevo Evento"
-  (§3.6) now has an inline, client-side overlap-validation state: the
-  instant both dates are known, an automatic check against her own
-  already-loaded Events blocks Guardar evento and names the conflicting
-  Event, before any save is ever attempted. This was named explicitly in
-  D17's own text as "a UX design task, not designed as part of this
-  decision," and surfaced again, still undesigned, during an Architect
-  build-readiness review ahead of `product/03-build` — that gap is now
-  closed; D17's rule and its enforcing screen are both fully specified.
-  Nothing here reopens D17 itself or Q3's original tie-break question, both
-  settled. No open item remains for this gap.
+- **Q3 — was Resolved via `decision-log.md` D17; superseded 2026-09-06 (`decision-log.md` D53).** The original question (a tie-break rule for two simultaneously active Events) was closed by D17 removing the ambiguous state entirely — a Business could not create or activate an Event whose date range overlapped an already-scheduled-or-active Event, and the inline overlap-validation screen (formerly §3.6) enforced it. **D53 retires D17 outright**, not merely relaxes it: Nahui now supports true simultaneous multi-Event operation (a real prospective merchant's multi-seller use case, `product-decisions.md` Q24/Q25), so there is no longer a rule for Q3's original tie-break question to be moot against — D53's own text confirms this was never a business-capacity rule, only a now-obsolete single-actor `home.md` resolution safeguard. Kept here as historical record per this document's non-deletion discipline, not reopened as a live question — `home.md`'s own multi-Event resolution logic (routed to `ux-designer` per D53) is where the real successor design work lives now, not here.
 
 No other new domain ambiguities surfaced during this design — the
 `scheduled`/`active`/`closed`/`cancelled` transitions, cancellation being
@@ -1339,10 +1169,7 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   auto-fills from Empieza (§3.6); post-save/post-cancel confirmations are
   ambient, not screens requiring a dismiss tap (§3.10/§3.13); empty list
   sections simply don't render (§3.4); an Event's status/section placement is
-  never a step she performs; the overlap-validation check itself (§3.6,
-  D17) runs instantly against already-loaded data the moment both dates are
-  known, so a doomed save is never attempted and never costs her a
-  round-trip to discover it.
+  never a step she performs.
 - *"Never ask twice"* — closing/activating an Event is never confirmed or
   re-asked, it's computed (§2); "Continuar Día N"/"Vendiendo ahora" reuse
   Home's already-computed state rather than re-deriving or re-confirming it
@@ -1432,13 +1259,7 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   Empieza remains a required domain field; Termina still inherits whatever
   value Empieza holds. **[Amended 2026-08-14 — see
   events.changelog.md#decisions-empieza-hoy-default]**
-- **The overlap check (D17) now runs the instant Agendar evento opens, not
-  only after she picks a date** — enforced inline, client-side, against her
-  already-loaded Events list, re-checked on every date edit. The message
-  names the specific conflicting Event rather than a generic "fechas
-  inválidas." Guardar evento's disabled condition is Lugar + Tipo +
-  no-overlap. **[Amended 2026-08-14 — see
-  events.changelog.md#decisions-overlap-check-runs-on-open]**
+- **Retired 2026-09-06 (`decision-log.md` D53) — no longer a live decision.** This bullet previously described the D17 overlap-validation check's on-open timing; the entire mechanism is removed (§3.6). Guardar evento's disabled condition is Lugar + Tipo alone. **[see events.changelog.md#decisions-overlap-check-runs-on-open]**
 - **Event status transitions are automatic/date-driven except cancellation**,
   which is the sole manual transition and reachable only from `scheduled`
   (§2, §3.12). **[Amended 2026-08-14 — see
@@ -1527,13 +1348,7 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 
 ## 11. Future considerations
 
-- Defense-in-depth server-side re-validation of the D17 overlap rule at
-  actual save time, for the rare case where her locally-loaded Events list
-  goes stale between opening Nuevo Evento and tapping Guardar. Not designed
-  here — genuinely rare for a single-operator business today; if it ever
-  surfaces, the natural home for that rejection is the same inline overlap
-  message (§3.6), re-shown, not a new §3.9-style error state — the rule is
-  identical either way, only the trigger differs.
+- **Retired 2026-09-06 (`decision-log.md` D53) — no longer applicable.** This item previously named a future defense-in-depth concern for the D17 overlap rule; the rule itself no longer exists.
 - Editing an already-scheduled Event (fixing which Venue is selected, its
   Tipo, or its dates before it goes active) — not designed; today's flow
   only lets her view or cancel (§3.11). A real gap if real usage shows
@@ -1566,7 +1381,7 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 - A reminder/notification ahead of an upcoming Event ("mañana empieza en
   Plaza Norte") — a reasonable idea, but a notifications-infrastructure
   question outside this doc's scope.
-- Q1 (D15) and Q3 (D17) are both now Resolved. Whether the "Día N de M" row
+- Q1 (D15) is Resolved. Q3 (D17) was Resolved, now superseded by D53 (see §8) — simultaneous active Events are the supported case now, not an excluded one. Whether the "Día N de M" row
   (§3.4) needs the small additive change this bullet originally anticipated
   is worth a final confirmation at build time rather than assumed either
   way — this doc only ever reuses the shared read-side computation, never
