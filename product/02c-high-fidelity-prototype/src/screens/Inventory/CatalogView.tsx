@@ -129,6 +129,14 @@ export function CatalogView({
   function handleGuardarFoto() {
     if (editingPhotoId) setProductPhoto(editingPhotoId, stagedPhoto);
     closePhotoSheet();
+    // Same ambient near-instant confirmation convention as every other write
+    // in this file ("Mercancía registrada", "Mercancía lista para vender") —
+    // inventory.md §3.4b explicitly follows §3.10/§3.11's save convention.
+    // Fires whether "Guardar foto" committed a photo or committed its
+    // removal ("Quitar" → "Guardar foto" is a valid save too, §3.4b) — the
+    // toast confirms the write, not any particular resulting content.
+    setToast('Foto guardada');
+    window.setTimeout(() => setToast(null), 2400);
   }
 
   // §2 step 2 / §3.5 — a live check, recomputed every render (never
