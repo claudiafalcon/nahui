@@ -323,6 +323,53 @@ Approved** — this same document's own "Two real bugs found and fixed via
 live verification" section is the concrete reason code-level tracing alone
 isn't being treated as sufficient here.
 
+## Fix round — `AccesoRevocado`'s dead "Entendido" tap (2026-09-07)
+
+A `merchant-user-tester` walk of this slice found the "Entendido" button on
+`AccesoRevocado.tsx` (§3.14) produced zero visible feedback when tapped in a
+real browser context — confirmed independently via direct browser
+interaction (two clicks, one Enter press, no change to the screen at all).
+The previous build's own doc comment already disclosed the root technical
+cause honestly: `window.close()` only ever succeeds for a window/tab the
+script itself opened — a real merchant's own tab (one *she* opened, the only
+context that matters for a web/PWA product) gets a silent browser no-op, per
+the platform's own security model, not a bug in this build. But the doc
+comment's reasoning that "either way she lands back on this exact same calm,
+resting screen" didn't actually hold: a silent no-op is zero visible change,
+not a legible return to a known-same screen — from her side, indistinguishable
+from a broken, unresponsive button. Exactly the "zero tappable affordance"
+dead-end `brand-guardian`'s original `settings.md §3.14` finding already
+existed to close.
+
+**Fix:** the tap still best-effort attempts `window.close()` (harmless, and
+still the cleanest outcome on the rare device/context where it does
+succeed), but the visible feedback no longer depends on that succeeding.
+Every tap, unconditionally: the button disables and relabels ("Entendido" →
+"Entendido ✓"), and an honest inline acknowledgment appears — "Ya puedes
+cerrar esta pestaña." — telling her plainly what to do next instead of
+implying the app closed itself. Reuses the same disabled-button-plus-inline-
+confirmation shape `CatalogView.tsx`'s existing `.confirmation` toast already
+established, rather than inventing a new pattern.
+
+**Spec gap flagged to Main (not fixed here — this build holds no Write
+access to `product/02-ux/`):** `settings.md §3.14`'s own bullet describes
+"Entendido" as "clos[ing]/exit[ing] the app" and "letting her end the moment
+on her own terms," phrasing that reads as a literal close guarantee no
+web/PWA mechanism can make for a tab she opened herself. The felt
+requirement underneath that language — an honest way to end the moment,
+never a mid-air non-response — still holds and is exactly what this fix
+delivers; only the specific mechanism-implying wording needs correcting.
+Amendment text drafted and handed to Main to apply.
+
+**Verification:** `tsc -b` and `npm run build` both clean. Live-verified via
+a scripted Playwright walkthrough against `npm run dev` (no interactive
+browser tool available this dispatch, so state was seeded directly into
+`localStorage` in the app's own persisted shape — a revoked `SELLER`
+`BusinessMembership` — rather than replayed through the full invite/accept/
+revoke UI flow): confirmed the "Entendido" button visibly disables, relabels
+to "Entendido ✓," and the new acknowledgment line renders, on every tap —
+screenshots taken before/after confirming the visual change.
+
 ## Files touched
 
 `src/domain/types.ts`, `src/domain/store.tsx`, `src/domain/selectors.ts`,
@@ -335,7 +382,8 @@ InvitationFlow.tsx`/`.module.css` (new), `AuthenticationFlow.tsx`,
 `PhoneMismatchConfirm.tsx`/`.module.css` (new, Slice 12 defect-fix round),
 `src/screens/Settings/
 SettingsScreen.tsx`, `TeamScreen.tsx`/`.module.css` (new),
-`AccesoRevocado.tsx`/`.module.css` (new), `src/screens/Home/HomeScreen.tsx`,
+`AccesoRevocado.tsx`/`.module.css` (new, further amended in this file's own
+"dead Entendido tap" fix round above), `src/screens/Home/HomeScreen.tsx`,
 `ColdStart.tsx`, `Idle.tsx`, `EventResume.tsx`, `NfcSessionStartNote.tsx`,
 `CloseSummary.tsx`, `Selling.tsx`, `ElegirEvento.tsx`/`.module.css` (new),
 `MiActividadDeHoy.tsx`/`.module.css` (new), `SellerAccountScreen.tsx`/

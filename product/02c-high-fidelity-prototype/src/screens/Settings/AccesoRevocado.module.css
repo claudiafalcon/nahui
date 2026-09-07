@@ -35,3 +35,13 @@
   max-width: 320px;
   width: 100%;
 }
+
+/* Mirrors CatalogView.module.css's `.confirmation` — the one existing
+   "acted-on, here's the honest result" toast convention this build already
+   uses, reused here so a tap's felt feedback isn't a one-off pattern. */
+.note {
+  margin: 0;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-success);
+}

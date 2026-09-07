@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '../../components/Button/Button';
 import styles from './AccesoRevocado.module.css';
 
@@ -11,18 +12,38 @@ import styles from './AccesoRevocado.module.css';
  * reasoning (every other destination reads Business-scoped data this
  * Membership has no standing reason to browse).
  *
- * "Entendido" closes/exits rather than navigating (`brand-guardian`
- * finding, remediated in the approved spec — the original draft had zero
- * tappable affordance, a true dead end). This build's own closest honest
- * translation of "closes/exits the app" for a web/PWA context: a
- * best-effort `window.close()` (only ever succeeds for a window/tab this
- * script itself opened — most real browsers will silently no-op it, per
- * the platform's own security model, not a bug in this build). Either way
- * she lands back on this exact same calm, resting screen — never an error,
- * never a different state — matching the spec's own "a stable, repeatable
- * terminal state" framing.
+ * "Entendido" (`brand-guardian` finding, remediated in the approved spec —
+ * the original draft had zero tappable affordance, a true dead end).
+ *
+ * **Fixed 2026-09-07 (Slice 12 `merchant-user-tester` defect + Main's own
+ * direct browser confirmation):** the previous build's tap handler called
+ * only a best-effort `window.close()` and nothing else. On a real merchant's
+ * own tab (one she opened herself, not one this script opened), browsers
+ * silently no-op that call — the doc comment this replaced was honest about
+ * *why*, but the actual felt result was zero visible change on tap, which a
+ * real merchant experiences identically to a broken, unresponsive button —
+ * exactly the "zero tappable affordance" dead-end this Button was already
+ * built to fix. `settings.md` §3.14 itself needs a small amendment (flagged
+ * back to Main, not performed here — this file holds no Write access to
+ * `product/02-ux/`) correcting its "closes/exits the app" framing, which
+ * read as a literal guarantee; the felt requirement underneath it — an
+ * honest way to end the moment, never a mid-air non-response — still holds
+ * and is what this fix actually delivers.
+ *
+ * The tap still best-effort attempts `window.close()` (harmless, and the
+ * rare case where it *does* succeed — e.g. a tab this install itself
+ * opened — is still the cleanest outcome). But the visible feedback never
+ * depends on that succeeding: on every tap, unconditionally, the button
+ * disables and relabels to confirm the tap registered, and an honest
+ * acknowledgment line appears telling her plainly what to do next — the
+ * same disabled-button-plus-inline-confirmation shape already established
+ * for a one-time acknowledgment elsewhere in this build (see
+ * `src/screens/Inventory/CatalogView.tsx`'s `.confirmation` toast). If
+ * `window.close()` does succeed, this state is simply never seen.
  */
 export function AccesoRevocado() {
+  const [acknowledged, setAcknowledged] = useState(false);
+
   return (
     <div className={styles.wrap}>
       <div className={styles.copy}>
@@ -32,16 +53,23 @@ export function AccesoRevocado() {
       </div>
       <Button
         className={styles.cta}
+        disabled={acknowledged}
         onClick={() => {
           try {
             window.close();
           } catch {
-            // best-effort, see this component's own doc comment
+            // best-effort — see this component's own doc comment
           }
+          setAcknowledged(true);
         }}
       >
-        Entendido
+        {acknowledged ? 'Entendido ✓' : 'Entendido'}
       </Button>
+      {acknowledged && (
+        <p className={styles.note} role="status">
+          Ya puedes cerrar esta pestaña.
+        </p>
+      )}
     </div>
   );
 }
