@@ -169,7 +169,7 @@ home.changelog.md#status-2026-08-15-non-session-gear-direct-affordance]**
 
 **Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25, `decision-log.md` D53 — concurrent multi-seller selling, simultaneous multi-Event operation):** §2 gains step 0 (revoked-Membership defensive gate, cross-referenced to `settings.md` §3.14) and step 2 is split into 2a (exactly one qualifying Event, unchanged) / 2b (2+ qualifying Events, new §3.6b "Elegir evento"). Closes the D53 remediation item flagged in `product-decisions.md`'s Q24/Q25 entry. Pending `ux-critic`/`reviewer` review before folding back into Approved.
 
-**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — the SELLER role's own stripped-down experience):** new role-resolution logic in §2; role-scoped nav bar (§3.16); a non-gear SELLER header icon routing to a new minimal "Tu cuenta" surface (§3.15a) hosted here as a stand-in pending a future `settings.md` amendment (see §11); SELLER-specific cold-start and §3.6a copy variants; a new "Mi actividad de hoy" own-activity view (§3.7c); a new "Acceso no disponible" defensive state (§3.17); an Event-scoped remaining-stock signal on the buttons-mode grid (§3.9); a new terminal "lost the race" concurrent-selling conflict state (§3.8a extended, plus new §3.8d-i). `knowledge-mentor` consultation flagged (§8) on the lost-race pattern specifically, not yet performed. Pending `ux-critic`/`reviewer` review before folding back into Approved.
+**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — the SELLER role's own stripped-down experience):** new role-resolution logic in §2; role-scoped nav bar (§3.16); a non-gear SELLER header icon routing to a new minimal "Tu cuenta" surface (§3.15a) hosted here as a stand-in pending a future `settings.md` amendment (see §11); SELLER-specific cold-start and §3.6a copy variants; a new "Mi actividad de hoy" own-activity view (§3.7c); a new "Acceso no disponible" defensive state (§3.17); an Event-scoped remaining-stock signal on the buttons-mode grid (§3.9); a new terminal "lost the race" concurrent-selling conflict state (§3.8a extended, plus new §3.8d-i). `knowledge-mentor` consultation on the lost-race pattern complete (§8) — pattern confirmed well-grounded, one copy correction applied (§3.8a). Pending `ux-critic`/`reviewer` review before folding back into Approved.
 
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
@@ -1316,9 +1316,10 @@ shown inline, never a full-screen interruption
   §3.8d for what happens if it still can't be confirmed.
 
 **Lost-race conflict — terminal, not retriable (new, `product-decisions.md`
-Q24/Q25 — a genuinely new interaction pattern in this document; flagged
-for a `knowledge-mentor` consultation, §8, not yet performed; best-effort
-design below in the meantime).** Applies only to a Product with an open
+Q24/Q25 — a genuinely new interaction pattern in this document;
+`knowledge-mentor` consultation complete, §8 — pattern confirmed
+well-grounded, one copy correction applied below).** Applies only to a
+Product with an open
 `EventAllocation` for the current Session's Event (§3.9's own new
 Event-scoped tile line) — a Product with no `EventAllocation` still
 resolves from the plain Business-wide pool exactly as today, unaffected.
@@ -1340,8 +1341,7 @@ message, §3.9):
 tapping the flagged item →
 ┌───────────────────────────────┐
 │  Playeras ya no está disponible. │
-│  Otro vendedor la vendió antes    │
-│  que tú.                          │
+│  Otro vendedor la vendió.         │
 │      [  Quitar de la venta  ]    │
 └───────────────────────────────┘
 ```
@@ -1369,6 +1369,21 @@ tapping the flagged item →
   final save itself (§3.8d-i, below). She's never forced to stop and deal
   with it the instant it appears, matching this document's existing "she
   keeps tapping/selling uninterrupted" discipline for background retries.
+- **Copy softened from "antes que tú" to a neutral fact-only close, per
+  `knowledge-mentor` consultation (2026-09-07).** Checked against
+  `Knowledge/UX-UI/`'s error-message checklist ("contextual, humano,
+  preciso, que no culpe excesivamente a quien lo recibe, que permita
+  recuperarse") and general write-conflict UX practice, the consultation
+  found the overall lost-race pattern well-grounded and correctly reasoned
+  against `architecture-principles.md` #7's own retry-carve-out. One
+  nuance, not Blocker-shaped: "antes que tú" framed the loss as personally
+  hers — reads closer to "you were too slow" than a plain system fact.
+  "Otro vendedor la vendió" keeps the real, useful context (there's a
+  knowable, ordinary reason the item's gone, not an unexplained glitch —
+  satisfying the checklist's own "contextual" criterion) while dropping
+  the part that spotlights her as the one who lost the race. A deliberate
+  judgment-call edit, not a Blocker-driven one — the consultation itself
+  was explicit this finding doesn't rise to that bar.
 - **NFC-mode note, scoped deliberately narrow:** the settled architecture
   treats a same-tag double-scan as structurally rare (each physical tag
   is already a discrete, fixed unit — the genuine last-unit race is a
@@ -2356,7 +2371,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
   on this item's own still-open question of reward/gift framing.
 - **Multi-device, same-Membership Session resolution** (`product-decisions.md` Q24/Q25) — §2 step 2b's "does this device already have a signal today" check is a local, device-scoped read, sufficient for the current no-backend prototype. A future backend-synced case (the same Membership acting from two devices) isn't resolved here — Q24/Q25 item 3 already names this gap; this amendment doesn't close it, only avoids pretending it's solved.
 - **A Business with 3+ simultaneously active Events** — §3.6b's list scales to any count without a new mechanism, but no evidence yet of real need beyond two; not a design gap, just unvalidated.
-- **`knowledge-mentor` consultation needed, not yet performed** — flagged explicitly, per this folder's own consultation-trigger discipline. §3.8a's new "lost the race" pattern (an already-added item visibly walked back mid-transaction, after a background sync discovers a conflict) has no existing precedent anywhere in this document family. **Specific question for the consultation:** does established point-of-sale/inventory UX practice for exactly this pattern suggest a different correction shape than the one designed here (ambient notice + persistent terminal marker + one-tap manual removal, rather than e.g. automatic silent removal, or a blocking modal at the moment of discovery)? Best-effort design is already written above (§3.8a, §3.8d-i) so nothing ships unwritten in the meantime; not treated as final until this consultation runs.
+- **`knowledge-mentor` consultation complete (2026-09-07).** §3.8a's "lost the race" pattern (an already-added item visibly walked back mid-transaction, after a background sync discovers a conflict) had no existing precedent anywhere in this document family. **Finding:** checked against `Knowledge/UX-UI/`'s error-message checklist and general write-conflict UX practice, the overall correction shape (ambient notice + persistent terminal marker + one-tap manual removal, no retry offered) is well-grounded and correctly reasoned against `architecture-principles.md` #7's own retry-carve-out. One nuance, not Blocker-shaped: the detail-sheet copy's "antes que tú" framed the loss as personally hers, leaning less toward the checklist's "que no culpe excesivamente" criterion than a neutral, fact-only close would. Softened to "Otro vendedor la vendió." — see §3.8a's own wireframe and reasoning for the applied fix.
 - **The SELLER "Tu cuenta" surface (§3.15a) is hosted in this document as a stand-in, not its permanent home.** The larger gap — `settings.md` needing its own genuinely role-gated vista principal — is `settings.md §8` item 14's own already-named territory. Recommend a small future `settings.md` amendment that formally relocates this content there and retires the stand-in here, once that document is next in scope for amendment (§11).
 - **NFC-mode lost-race conflict** — the identical terminal pattern applies if a same-tag double-scan is ever actually hit, but this wasn't independently redesigned for that surface (§3.8a's own closing note) — the settled architecture treats it as structurally rare, not a case with real evidence behind it yet.
 - **Whether "Mi actividad de hoy" should ever surface anything beyond a flat chronological list (a per-Product breakdown, e.g.)** — not designed now, no evidence of need; would risk this becoming "a cut-down Resultados variant," exactly what `product-decisions.md` Q24/Q25 explicitly warned against building.
@@ -2623,7 +2638,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **Every OWNER-only next-step link in §3.6a is either replaced by a passive note (Not Ready, capability revoked) or fully suppressed (Ready-but-buttons-default discoverability nudge) for a SELLER** — the informational line stays where it's operationally true; only unreachable links are removed.
 - **"Mi actividad de hoy" is a new, small own-activity view, deliberately not a cut-down Resultados variant** — available to both roles, scoped to `performedByMembershipId` across the Session's own context, rendered as a full push-in specifically to avoid two simultaneously-visible "N ventas" figures reading as a discrepancy.
 - **An Event-scoped remaining-stock signal is added to buttons-mode tiles wherever an `EventAllocation` applies** — a pre-emptive, not guaranteed, reduction of concurrent-selling conflicts.
-- **A genuinely new terminal correction pattern ("lost the race") is designed for an already-added item invalidated by a background conflict** — flagged for a `knowledge-mentor` consultation not yet performed (§8); best-effort design shipped in the meantime rather than left unwritten.
+- **A genuinely new terminal correction pattern ("lost the race") is designed for an already-added item invalidated by a background conflict** — `knowledge-mentor` consultation complete (§8): overall pattern confirmed well-grounded; one copy correction applied (detail-sheet text softened from "antes que tú" to a neutral, fact-only close, §3.8a).
 - **"Acceso no disponible" (§3.17) is a new defensive state, deliberately distinct from `settings.md §3.14`'s "Acceso revocado"** — a still-active SELLER hitting a structurally unreachable destination is not the same situation as a revoked one, and the two states say so plainly.
 
 ## 11. Future considerations

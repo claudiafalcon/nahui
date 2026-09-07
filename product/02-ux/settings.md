@@ -9,7 +9,7 @@ visibility gate corrected):** Resultados' "Tus clientes" section gates on
 2026-08-14 — see
 settings.changelog.md#status-2026-08-08-d34-customer-segmentation-gate-corrected]**
 
-**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — concurrent multi-seller selling): new §2.7 "Tu equipo" — invite a SELLER (Paid-tier gated, `company/business-decisions.md`), view team status, and revoke an accepted SELLER's access (`BusinessMembership.status: active | revoked`, never deleted). New §3.11–§3.14. A new defensive state (§3.14, "Acceso revocado") is cross-referenced from `home.md` §2's new step 0. Pending `ux-critic`/`reviewer` review before folding back into Approved.**
+**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — concurrent multi-seller selling): new §2.7 "Tu equipo" — invite a SELLER (Paid-tier gated, `company/business-decisions.md`), view team status, and revoke an accepted SELLER's access (`BusinessMembership.status: active | revoked`, never deleted). New §3.11–§3.14. A new defensive state (§3.14, "Acceso revocado") is cross-referenced from `home.md` §2's new step 0. Remediated same pass (`brand-guardian` finding, pre-`ux-critic`): §3.14 gains a single "Entendido" acknowledgment tap — the screen previously had zero tappable affordance, violating `character-bible.md`'s "no dead ends" rule. Still pending `ux-critic`/`reviewer` review before folding back into Approved.**
 
 **Further amended 2026-08-09 (`decision-log.md` D40 — `loyaltyEnabled` retired):** Frequent Customers becomes automatically available the instant `subscriptionTier` reads `paid`, and unavailable when it reads `free` again — no Business-level field, screen, or action of Ana's own turns it on or off directly. Configuración narrows from six actions to four. **[Amended 2026-08-14 — see settings.changelog.md#status-2026-08-09-d40-loyalty-enabled-retired]**
 
@@ -699,11 +699,13 @@ Reached only from `home.md`'s own resolution (§2, new step 0) — never navigat
 │  vender en este negocio.            │
 │  Si crees que esto es un error,      │
 │  habla con quien te invitó.           │
+│      [   Entendido   ]                │
 └───────────────────────────────┘
 ```
 
 - **No header gear icon, no bottom nav, no back arrow** — the one state in the whole product where offering navigation elsewhere is correctly withheld: every other nav destination reads Business-scoped data this Membership has no standing reason to browse, and none of it helps her.
 - **States the fact, never a diagnosis** — "ya no tienes acceso," never "fuiste despedida" or anything implying data loss or personal judgment. Same non-diagnostic discipline `home.md` §3.6a's capability-revoked mention already established.
+- **"Entendido" is the one tap this screen offers — not a navigation, a close (`brand-guardian` finding, remediated 2026-09-07).** The original draft rendered this screen with zero tappable affordance at all, leaving her no way to signal she'd seen the message — a real violation of `character-bible.md`'s "Things Nahui always does": "gives her an honest way out of anything — no dead ends, no forced commitments." The fix stays inside this screen's own, already-correct restraint about navigation: every ordinary destination (nav bar, header, back arrow) is still correctly withheld, since every one of them reads Business-scoped data this Membership has no standing reason to browse. "Entendido" doesn't reach any of them — it closes/exits the app instead, letting her end the moment on her own terms rather than being stuck staring at an unacknowledgeable message. If she reopens Nahui afterward, Home's resolution (`home.md` §2 step 0) shows this identical screen again, unchanged — a stable, repeatable terminal state, now with an honest way to step away from it each time it's reached.
 - **Does not touch her device's own phone session** (`authentication.md §2.1`) — this is about her Membership in *this* Business only. If she also holds a Membership in a different Business (`product-decisions.md` Q24/Q25, multi-Business membership), that Membership is completely unaffected — a real case neither this document nor `home.md` resolves into yet (no Business-switching surface exists), flagged in §8/§11, not designed here.
 - **An already-open Session isn't forcibly interrupted.** Q24/Q25's settled architecture makes no change to `Session` itself; this document doesn't invent one. She reaches this screen the next time Home resolution runs fresh — an app reopen, or her next attempt to start a new Session — never mid-Sale.
 - No "Reintentar" — this isn't a failed write, it's an accurate read of her current status; the only real next step (a conversation outside the app) is stated plainly rather than implying a button fixes it.
@@ -973,7 +975,7 @@ None of the items below block this document's completion.
 - **`BusinessMembership` revocation is a status flip (`active → revoked`), never a delete** (`product-decisions.md` Q24/Q25).
 - **No reactivation path designed** — explicitly deferred, matching the settled architecture's own deferral.
 - **No role picker on Invitar a alguien** — role is always `SELLER`.
-- **New §3.14 "Acceso revocado" defensive state**, cross-referenced from `home.md` §2's new step 0.
+- **New §3.14 "Acceso revocado" defensive state**, cross-referenced from `home.md` §2's new step 0. **Remediated same pass — a single "Entendido" acknowledgment tap added (`brand-guardian` finding): the original draft had zero tappable affordance, violating `character-bible.md`'s "no dead ends" rule; the fix stays a close/exit, not a navigation, since every other destination is correctly withheld from this Membership.**
 
 ## 11. Future considerations
 
