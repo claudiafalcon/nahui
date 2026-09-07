@@ -167,6 +167,8 @@ home.changelog.md#status-2026-08-15-non-session-gear-direct-affordance]**
 
 **Amended 2026-09-06 (`product/02-ux/product-decisions.md` Q23, Product Owner decision — optional `Product.photo`):** §3.9's ProductTile renders a photo in place of its initial-letter marker whenever `Product.photo` is set — display-only, no upload/edit/remove/enlarge interaction on this screen. §3.8f (Digital Receipt) is unchanged. §11's previously-flagged "true, custom per-Product icon... would require a Product Decision, likely an RFC" item is now resolved, not merely superseded. `ux-critic` found 2 Major, neither scoped to this document (both live in `inventory.md`) — this document's own contribution was the marker-substitution, dimming, footprint, and render-failure-fallback rules, all applied in the same remediation round. **[see home.changelog.md#status-2026-09-06-q23-product-photo]**
 
+**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25, `decision-log.md` D53 — concurrent multi-seller selling, simultaneous multi-Event operation):** §2 gains step 0 (revoked-Membership defensive gate, cross-referenced to `settings.md` §3.14) and step 2 is split into 2a (exactly one qualifying Event, unchanged) / 2b (2+ qualifying Events, new §3.6b "Elegir evento"). Closes the D53 remediation item flagged in `product-decisions.md`'s Q24/Q25 entry. Pending `ux-critic`/`reviewer` review before folding back into Approved.
+
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -194,6 +196,14 @@ today, is a session open, buttons-or-NFC).
 Evaluated in this order, automatically, on every Home open:
 
 ```
+0. Is this device's own acting Membership status = revoked
+   (`BusinessMembership.status`, `product-decisions.md` Q24/Q25)?
+     → YES: settings.md §3.14 ("Acceso revocado") — the one Home
+       resolution branch that never resolves into any ordinary Hoy state,
+       Session or otherwise. Stop here.
+     → NO (status = active — the only case before this capability
+       existed, and still the default): continue to step 1, unchanged.
+
 1. Is there a Session with status = active (any eventId, including null)?
      → YES: selling becomes Home's default entry point. Stop here — highest
        priority, nothing else matters if she's mid-selling. Its
@@ -202,17 +212,48 @@ Evaluated in this order, automatically, on every Home open:
        step never re-runs NFC Readiness or re-resolves the mode; see the
        folded-in sub-step below for where that resolution actually happens.
 
-2. Is there an Event with status = active, and no Session is currently
-   active (the direct complement of step 1 — dropping the earlier "opened
-   yet today" qualifier, so a same-day resume, e.g. after a lunch break,
-   still lands here rather than falling through to step 3; matches
-   `decision-log.md` D15's own worked example)?
-     → YES: show "Continuar Día N" (N = the number of distinct calendar
-       dates before today with at least one Session under this eventId,
-       plus one for today — `decision-log.md` D15, `domain-model.md`'s "Día
-       N" computation — never a raw count of Session rows, and unchanged by
-       a same-day resume). Tapping it is the moment a new Session actually
-       opens — see the folded-in sub-step below.
+2. Is there at least one Event with status = active, and no Session
+   currently active for this device's own acting Membership (the direct
+   complement of step 1 — dropping the earlier "opened yet today"
+   qualifier, so a same-day resume still lands here rather than falling
+   through to step 3; matches `decision-log.md` D15's own worked example)?
+   **Corrected 2026-09-06 (`product-decisions.md` Q24/Q25, `decision-log.md`
+   D53): "an Event" is no longer assumed singular** — D53 retired D17's
+   single-active-Event restriction; simultaneous multi-Event operation is
+   now a real, supported case.
+
+     2a. Exactly one Event qualifies → unchanged: show "Continuar Día N"
+         (N = the number of distinct calendar dates before today with at
+         least one Session under this eventId, plus one for today —
+         `decision-log.md` D15, `domain-model.md`'s "Día N" computation)
+         directly — zero added taps, the common case stays exactly as
+         fast as before. Tapping it is the moment a new Session actually
+         opens — see the folded-in sub-step below.
+
+     2b. More than one Event qualifies → **new (§3.6b, "Elegir evento").**
+         First check whether this device already has a signal for today:
+         does 1+ Session (any status) opened from this device already
+         exist today, under exactly one of the qualifying eventIds?
+         (A local read against this device's own Session history — the
+         prototype is confirmed local-storage-based, `product-decisions.md`
+         Q19; Q24/Q25's settled architecture makes no change to `Session`
+         itself, so no stored Membership-to-Session field is needed to
+         answer this at prototype scale. A future backend-synced
+         same-Membership, multiple-devices case is a real, separate gap,
+         not resolved here — see §8.)
+           → YES, exactly one eventId signaled (most recent Session's
+             eventId, if more than one already qualifies) → skip the
+             picker, resolve straight to that Event's own "Continuar Día
+             N" (§3.6) — never re-ask a choice the day's own activity
+             already answered (`global-principles.md`, "never ask
+             twice").
+           → NO signal (first Session-relevant action of the day for this
+             device, 2+ Events genuinely tied) → §3.6b, "Elegir evento" —
+             reached identically whether the acting Membership is OWNER
+             or SELLER, no separate mechanism per role
+             (`product-decisions.md` Q24/Q25: "session-based selection
+             confirmed sufficient, no OWNER pre-assignment concept
+             added").
 
 3. Does at least one `available` InventoryUnit exist?
      → NO:  cold-start empty state → route to Inventario. Reached whenever
@@ -884,6 +925,32 @@ via §3.5)
   never has a reason to show again (the condition it detects — `nfc`
   available and unused — no longer holds). If she doesn't act on it, it
   still never repeats — one honest heads-up, not a recurring nag.
+
+### 3.6b Elegir evento — idle Membership, more than one Event currently active (new — closes the `product-decisions.md` Q24/Q25 D53 remediation item)
+
+Reached only via §2 step 2b. Not reached at all while at most one Event qualifies — §3.6 alone still covers that case, pixel-identical, zero added tap.
+
+```
+┌───────────────────────────────┐
+│  Nahui                        ⚙ │
+│  ¿Dónde vas a vender hoy?        │
+│                                   │
+│  [ Plaza Norte · Día 2         ] │
+│                                   │
+│  [ Mercado de Toluca · Día 1   ] │
+│                                   │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+
+- One row per qualifying Event (`status = active`), each showing `Venue.displayName` and that Event's own Día N — the identical computation §3.6 already uses (`decision-log.md` D15), reused rather than a second, independently defined figure (`global-principles.md`, "capture business truth once, reuse it forever").
+- **Row order:** by `Event.startDate` ascending — a plain, deterministic tiebreak, never merchant-sorted (`global-principles.md`, "every repeated decision should become automation").
+- **Tapping a row is the entire interaction — no separate confirm screen.** It hands off directly into that Event's own §3.6, which already states the Venue name and Día N before the actual Session-start tap — this *is* the lightweight "vas a vender en [Event]" acknowledgment worth considering (`product-decisions.md` Q24/Q25), realized by reusing §3.6's own already-approved heading rather than inventing a second confirmation screen. A dedicated interstitial dialog was considered and rejected: the row names the destination once, §3.6's card repeats it a second time before anything commits — two honest opportunities to notice a wrong tap, at zero added screens (`global-principles.md`, "the fastest interaction is the one that never happens").
+- Selecting a row never opens a Session itself — exactly like every other §3.4/§3.5/§3.6 primary action, the Session only opens, and `Session.eventId`/`Session.operatingMode` only commit, at that Event's own "Continuar Día N" tap (§2's NFC Readiness sub-step, unchanged, evaluated Business-wide, not per-Event).
+- **`Session.eventId` is immutable for that Session's lifecycle once opened** (unchanged, pre-existing rule) — this screen's only job is the initial pick, never revisited mid-Session.
+- No back arrow, no dismiss — a top-level Home resolution state, same category as §3.3–§3.6. Header's gear icon (⚙) routes directly into Configuración, no intermediate sheet, identically to §3.3–§3.6 (§2.1).
+- **Not reached by a Quick Session** — `eventId = null` has no Event to disambiguate; "Iniciar Sesión Rápida" stays reachable and unaffected regardless of how many Events are active (`architecture-principles.md` #3).
 
 ### 3.6c Session-controls sheet — retired (superseded 2026-08-15 — see status header)
 
@@ -1663,11 +1730,22 @@ items, same count, nothing silently dropped.
 
 ```
 Open app
+  [new, step 0] This device's own Membership is revoked → settings.md §3.14
+    ("Acceso revocado") — terminal, no path back into any Home state below.
   → resolve (§2, automatic)
       → active Session exists ─────────────→ selling default (3.7-3.10)
-      → Event active, no Session today ────→ "Continuar Día N" (3.6) → tap
-          (NFC Readiness resolves Session.operatingMode — silent, or §3.6a
-          if it disagrees with defaultSellingMode) → selling
+      → Event(s) active, no Session today for this device ─→ resolve which
+          Event (§2 step 2, corrected 2026-09-06 — product-decisions.md
+          Q24/Q25, decision-log.md D53):
+            exactly one qualifying Event → "Continuar Día N" (3.6) → tap
+              (NFC Readiness resolves Session.operatingMode — silent, or
+              §3.6a if it disagrees with defaultSellingMode) → selling
+            2+ qualifying Events, no same-day signal for this device →
+              "Elegir evento" (3.6b) → tap a row → that Event's own
+              "Continuar Día N" (3.6) → tap → selling, same as above
+            2+ qualifying Events, but this device already has 1+ Session
+              today under exactly one of them → skip 3.6b, straight to
+              that Event's own "Continuar Día N" (3.6) → tap → selling
           [§3.6a, when it disagrees, also offers up to one inline secondary
           action beneath the Session-start CTA, before it's tapped — none of
           which open a Session on their own:]
@@ -1821,6 +1899,8 @@ and back to Hoy):
 23. Resuming a Session left open from an interruption/crash — empty-tray variant
 24. Resuming a Session left open from an interruption/crash — non-empty-tray variant
 25. Resolution error / defensive fallback
+26. Elegir evento — idle Membership, 2+ Events currently active (§3.6b)
+27. Acceso revocado — revoked Membership (reached via §2 step 0, defined in settings.md §3.14)
 
 ## 6. Minimum step count
 
@@ -1952,6 +2032,8 @@ her actual top sellers within the first screenful regardless of Catalog size.
   non-engagement with the QR on a given Sale should be persisted) — Q15
   is now Resolved (purely ephemeral, nothing persisted) and doesn't bear
   on this item's own still-open question of reward/gift framing.
+- **Multi-device, same-Membership Session resolution** (`product-decisions.md` Q24/Q25) — §2 step 2b's "does this device already have a signal today" check is a local, device-scoped read, sufficient for the current no-backend prototype. A future backend-synced case (the same Membership acting from two devices) isn't resolved here — Q24/Q25 item 3 already names this gap; this amendment doesn't close it, only avoids pretending it's solved.
+- **A Business with 3+ simultaneously active Events** — §3.6b's list scales to any count without a new mechanism, but no evidence yet of real need beyond two; not a design gap, just unvalidated.
 
 ## 9. Principle justification
 
@@ -2036,6 +2118,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
   mid-session analytics screen. Also why NFC Readiness (§3.6a) needed no new
   bounded-context dependency edge — it reads only Inventory data Selling
   already reads (`decision-log.md` D23).
+- *"Never ask twice"* — §2 step 2b's same-day-signal check exists specifically so a device that already sold at one Event today is never re-asked which Event it's at.
 
 ## 10. Decisions made
 
@@ -2199,6 +2282,8 @@ her actual top sellers within the first screenful regardless of Catalog size.
   compared the two live header states directly. `settings.md` receives
   the matching correction (§2.1, §3.3, §4, §5, §6, §8, §10). **[see
   home.changelog.md#decisions-2026-08-15-non-session-gear-direct-affordance]**
+- **New §3.6b "Elegir evento" added** — an idle Membership with 2+ simultaneously active Events picks one, folding into the existing §3.6/§3.6a machinery rather than inventing a parallel Session-start mechanism (`product-decisions.md` Q24/Q25, `decision-log.md` D53).
+- **New §2 step 0** — a revoked Membership resolves to `settings.md` §3.14 before any other Home state, cross-document per this folder's own §4 discipline.
 
 ## 11. Future considerations
 
