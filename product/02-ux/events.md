@@ -20,7 +20,7 @@ events.changelog.md#status-evt-q1-empieza-hoy-default]**
 
 **Further amended 2026-09-06 (`decision-log.md` D53 — D17 superseded, simultaneous multi-Event operation now supported):** the entire D17 overlap-validation mechanism (inline warning, disabled Guardar evento) is removed outright — D53 retired the single-active-Event rule it existed to enforce. Guardar evento's gate reverts to Lugar + Tipo alone, unconditionally. **[see events.changelog.md#status-2026-09-06-d53-overlap-validation-retired]**
 
-**Further amended 2026-09-06 (`product-decisions.md` Q24/Q25 — Event-scoped inventory allocation, settled architecture, RFCs not yet authored):** new §3.21–§3.25 design the full allocation lifecycle — initial allocation, replenish, reallocate between simultaneous Events, and explicit reconciliation at Event close — reachable via a new "Llevar mercancía" action on scheduled-Event detail (§3.11) and "Ver mercancía de este evento" on active-Event detail (§3.14/§3.15), both landing on the identical shared screen (§3.21), unlike "Ajustar precios" which stays strictly `scheduled`-only (see §3.21's own annotation for why this is a deliberate divergence, not an inconsistency). Gated OWNER-only per `product-decisions.md` Q24/Q25's settled permission table — the SELLER-role experience of these screens is not designed in this pass (§8). Grounded entirely in Q24/Q25's settled design (`EventAllocation`/`AllocationMovement`, the physical-location-exclusivity invariant, the single-local-transaction reallocation mechanism) — the two RFCs formalizing this into `domain-model.md` are not yet authored; this UX design does not wait on that authorship. Pending `ux-critic`/`reviewer`.
+**Further amended 2026-09-06 (`product-decisions.md` Q24/Q25 — Event-scoped inventory allocation, settled architecture, RFCs not yet authored):** new §3.21–§3.25 design the full allocation lifecycle — initial allocation, replenish, reallocate between simultaneous Events, and explicit reconciliation at Event close — reachable via a new "Llevar mercancía" action on scheduled-Event detail (§3.11) and "Ver mercancía de este evento" on active-Event detail (§3.14/§3.15), both landing on the identical shared screen (§3.21), unlike "Ajustar precios" which stays strictly `scheduled`-only (see §3.21's own annotation for why this is a deliberate divergence, not an inconsistency). Gated OWNER-only per `product-decisions.md` Q24/Q25's settled permission table — the SELLER-role experience of these screens is not designed in this pass (§8). Grounded entirely in Q24/Q25's settled design (`EventAllocation`/`AllocationMovement`, the physical-location-exclusivity invariant, the single-local-transaction reallocation mechanism) — the two RFCs formalizing this into `domain-model.md` are not yet authored; this UX design does not wait on that authorship. **Further amended 2026-09-07 (`ux-critic` finding):** §3.21's own claim of matching Registrar Mercancía's "multi-line-entry-then-single-commit shape" was checked against `inventory.md` §3.6/§3.7 directly and found inaccurate — that shape is a sequential-add mechanic Registrar Mercancía uses, not what §3.21 actually rendered (every row expanded simultaneously, no collapse). Corrected: §3.21 now genuinely adopts a collapse-to-summary/one-row-expanded-at-a-time shape, adapted (not copied verbatim, and stated honestly as such) from Registrar Mercancía's row-collapsing precedent. Re-verification pending. Pending `ux-critic`/`reviewer`.
 
 **Amended 2026-08-04 (icon/comprehension audit):** §3.4/§3.5's Events list
 cards now show Event type alongside `Venue.displayName` ("Plaza Norte ·
@@ -1035,6 +1035,7 @@ registered no Products at all yet in Inventario:
 
 ### 3.21 Mercancía para este evento — lista por producto (new, shared: "Llevar mercancía" / "Ver mercancía de este evento" — `product-decisions.md` Q24/Q25)
 
+**Default (all-collapsed) state:**
 ```
 ┌───────────────────────────────┐
 │ ← Plaza Norte                    │
@@ -1044,7 +1045,24 @@ registered no Products at all yet in Inventario:
 │  queda disponible para tus otros    │
 │  eventos.                        │
 │  ┌───────────────────────────┐ │
-│  │ Bolsas — Para este evento: 7  │ │
+│  │ Bolsas — 7 para este evento  ▾│ │  collapsed — tap to expand
+│  ├───────────────────────────┤ │
+│  │ Accesorios — nada para este  ▾│ │  collapsed, nothing allocated yet
+│  │ evento todavía                │ │
+│  └───────────────────────────┘ │
+│      [    Guardar cambios    ]   │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+**Expanded state (Bolsas tapped — every other row stays collapsed):**
+```
+┌───────────────────────────────┐
+│ ← Plaza Norte                    │
+│  Mercancía para este evento        │
+│  ┌───────────────────────────┐ │
+│  │ Bolsas — 7 para este evento  ▴│ │  expanded — tap to collapse
 │  │ Disponible en general: 8       │ │
 │  │ sin tag · 4 con tag            │ │
 │  │                             │ │
@@ -1057,10 +1075,8 @@ registered no Products at all yet in Inventario:
 │  │                             │ │
 │  │ [ Mover a otro evento ]        │ │
 │  ├───────────────────────────┤ │
-│  │ Accesorios — Para este evento: 0│ │
-│  │ Disponible en general: 12      │ │
-│  │  [ − ]  [ 0 ]  [ + ]           │ │
-│  │  (o escribe la cantidad)       │ │
+│  │ Accesorios — nada para este  ▾│ │  collapsed, unaffected
+│  │ evento todavía                │ │
 │  └───────────────────────────┘ │
 │      [    Guardar cambios    ]   │
 ├───────────────────────────────┤
@@ -1089,7 +1105,9 @@ registered no Products at all yet in Inventario:
 - **Manual and NFC-scan input compose on the same row rather than forcing a choice** (`product-decisions.md` Q24/Q25: "a Product can have both simultaneously... the same mixed state NFC Readiness already models elsewhere"). This reuses the same disambiguation principle `inventory.md` §3.4's Catalog row already established for its own three independent, non-overlapping tap zones (marker/body/price) — two independently-operable affordances on one row here, each targeting its own distinct pool (manual → untagged units, scan → tagged units), never resolving ambiguously between them.
 - **Manual quantity stepper — reuses `inventory.md` §3.6's Cantidad stepper shape (`[−]`/`[+]`/typed entry via `teclado numérico`) with one deliberate difference: floor is 0, not 1.** Cantidad's floor-of-1 exists because "0 units received" isn't a real receiving event; here, "0 units allocated to this Event" *is* a real, valid decision (she may simply choose not to bring a Product at all) — the two fields share a shape, not an identical business meaning. Ceiling = the row's own "Disponible en general" figure; `[+]` goes inert at the ceiling (symmetric to Cantidad's own inert-at-floor `[−]` behavior), and typing past it clamps to the ceiling with a one-line inline message ("Solo tienes N disponibles.") rather than a rejected/blocked keystroke.
 - **A successful scan is a live, immediate write — reserves that specific unit to this Event's allocation the instant it's read, exactly like `inventory.md` §3.14's Asignar Tags convention ("no per-unit confirmation tap").** It is *not* staged behind "Guardar cambios." "Para este evento" and the "con tag" figure update immediately on each successful scan; "Disponible en general" decrements live in step, keeping the manual stepper's ceiling honest without her computing anything.
-- **"Guardar cambios" commits only the manual (staged) quantities** — matches Registrar Mercancía's own multi-line-entry-then-single-commit shape (`inventory.md` §3.6/§3.7), reused rather than inventing a new batch pattern. Leaving this screen before tapping it discards only the unsaved manual edits (already-scanned units stay committed) — a deliberate choice for internal consistency with this document's own precedent (§10: "Nuevo Evento's draft is not auto-preserved across interruption"), not imported from Inventario's different draft-preservation posture.
+- **Every row starts collapsed to a one-line summary ("Producto — N para este evento," or "nada para este evento todavía" at zero); tapping a row's summary expands it in place to the full control set, collapsing whichever other row was previously expanded — only one row expanded at a time.** Adapted from, not identical to, Registrar Mercancía's own collapsed-row shape (`inventory.md` §3.7's "Bolsas — 10 [✕]" committed lines) — reused for the same reason (this screen shows up to one row per Catalog Product, unbounded, on a screen reached repeatedly per Event, so showing every row's full ~8 facts/controls simultaneously doesn't scale). **The underlying mechanic differs, stated honestly rather than asserted as identical (correcting the previous version of this bullet, which claimed an exact match that wasn't there):** Registrar Mercancía is a *sequential-add* flow — she picks a Product from a picker and commits each new line one at a time via "+ Agregar otro producto." This screen has no add step at all — every Catalog Product already has a row, always, whether or not she's allocated anything to it. Collapsing/expanding a row here is a pure display toggle, never a commit: a staged manual quantity persists in memory whether its row is shown expanded or collapsed, and "Guardar cambios" commits every row's staged manual quantity across the whole screen regardless of which single row happens to be expanded at the moment she taps it — unlike Registrar Mercancía, where committing one line is what makes room to start the next.
+- **The collapsed summary line reflects the current live total** — already-committed scans plus any staged-but-unsaved manual edit — never hidden from her just because the row is collapsed; the "sin tag · con tag" breakdown is shown only once expanded, a legitimate simplification for the summary line, not a different figure.
+- **"Guardar cambios" commits only the manual (staged) quantities.** Leaving this screen before tapping it discards only the unsaved manual edits (already-scanned units stay committed) — a deliberate choice for internal consistency with this document's own precedent (§10: "Nuevo Evento's draft is not auto-preserved across interruption"), not imported from Inventario's different draft-preservation posture.
 - **Whichever of `initial_allocation` / `replenish` / `adjustment` movement type actually applies is resolved entirely from current state, invisibly** (`product-decisions.md` Q24/Q25's `AllocationMovement` enum) — she only ever sees "Para este evento" go up or down; she never picks or is told which underlying movement type wrote.
 - **"Mover a otro evento" only appears on a row once "Para este evento" > 0** (nothing to move otherwise) — opens §3.24, live variant, scoped to that one Product.
 - Same near-instant/slow/error save convention as every other write in this doc (§3.9), detailed in new §3.23.
@@ -1784,6 +1802,15 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   no SELLER-facing variant designed in this pass (§8).
   **[Amended 2026-09-06 — see
   events.changelog.md#decisions-q24-q25-allocation-ux]**
+- **§3.21 corrected: every Catalog-Product row now collapses to a
+  one-line summary by default, with only one row expanded at a time**
+  (`ux-critic` finding) — the previous version rendered every row's full
+  control set simultaneously and falsely claimed this matched Registrar
+  Mercancía's shape; it didn't. The corrected shape is an honest,
+  adapted reuse of Registrar Mercancía's row-collapsing precedent
+  (`inventory.md` §3.7), not its sequential-add/commit-per-line mechanic
+  — collapse/expand here is a pure display toggle, never a commit.
+  **[see events.changelog.md#decisions-3-21-collapse-correction]**
 
 ## 11. Future considerations
 

@@ -169,7 +169,7 @@ home.changelog.md#status-2026-08-15-non-session-gear-direct-affordance]**
 
 **Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25, `decision-log.md` D53 — concurrent multi-seller selling, simultaneous multi-Event operation):** §2 gains step 0 (revoked-Membership defensive gate, cross-referenced to `settings.md` §3.14) and step 2 is split into 2a (exactly one qualifying Event, unchanged) / 2b (2+ qualifying Events, new §3.6b "Elegir evento"). Closes the D53 remediation item flagged in `product-decisions.md`'s Q24/Q25 entry. Pending `ux-critic`/`reviewer` review before folding back into Approved.
 
-**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — the SELLER role's own stripped-down experience):** new role-resolution logic in §2; role-scoped nav bar (§3.16); a non-gear SELLER header icon routing to a new minimal "Tu cuenta" surface (§3.15a) hosted here as a stand-in pending a future `settings.md` amendment (see §11); SELLER-specific cold-start and §3.6a copy variants; a new "Mi actividad de hoy" own-activity view (§3.7c); a new "Acceso no disponible" defensive state (§3.17); an Event-scoped remaining-stock signal on the buttons-mode grid (§3.9); a new terminal "lost the race" concurrent-selling conflict state (§3.8a extended, plus new §3.8d-i). `knowledge-mentor` consultation on the lost-race pattern complete (§8) — pattern confirmed well-grounded, one copy correction applied (§3.8a). Pending `ux-critic`/`reviewer` review before folding back into Approved.
+**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — the SELLER role's own stripped-down experience):** new role-resolution logic in §2; role-scoped nav bar (§3.16); a non-gear SELLER header icon routing to a new minimal "Tu cuenta" surface (§3.15a) hosted here as a stand-in pending a future `settings.md` amendment (see §11); SELLER-specific cold-start and §3.6a copy variants; a new "Mi actividad de hoy" own-activity view (§3.7c); a new "Acceso no disponible" defensive state (§3.17); an Event-scoped remaining-stock signal on the buttons-mode grid (§3.9); a new terminal "lost the race" concurrent-selling conflict state (§3.8a extended, plus new §3.8d-i). `knowledge-mentor` consultation on the lost-race pattern complete (§8) — pattern confirmed well-grounded, one copy correction applied (§3.8a). **Further amended 2026-09-07 (`ux-critic` round 1, Q24/Q25 batch):** found 4 Major + 4 Minor across settings.md/home.md/events.md, 0 Blockers. Scoped to this document: new §3.8d-ii defines the previously-undefined outcome for a lost-race conflict discovered by Finalizar Venta's own write (Major) — reuses §3.8a's existing terminal ⊗/no-Reintentar pattern and its already-established compare-and-swap distinguishability, no Architect consultation needed; §3.17's wireframe corrected to match its own stated header-icon rule (Major); §3.8a's "Quitar de la venta" now states the empty-tray transition explicitly (Minor); §3.7's and §3.9's existing `ui-designer` legibility flags extended to cover §3.7c's three-row header and §3.9's new tile line respectively (2 Minor). Re-verification pending. Pending `ux-critic`/`reviewer` review before folding back into Approved.
 
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
@@ -1068,7 +1068,10 @@ full prior content at `home.changelog.md#section-3-6c-retired`.
   visually subordinate to the ambient text on an actual phone screen when
   building this in `product/02c-high-fidelity-prototype/`, rather than
   treating the Low-Fidelity text description alone as proof the
-  discoverability goal was met.
+  discoverability goal was met. The identical verification requirement
+  extends to §3.7c's own three-row combination — this same two-row header
+  with §3.7c's "[ Ver mi actividad de hoy ]" line stacked beneath it — not
+  a separate flag, the same one, extended to cover the added row.
 - "Venta actual: (vacía)" shown even with nothing pending: ambient visibility
   so a stale/leftover sale is never invisible.
 - Registration surface is the single biggest area on screen, always exactly
@@ -1364,6 +1367,13 @@ tapping the flagged item →
 - **Removes only the flagged item — every other item in "Venta actual"
   stays exactly as it was**, untouched, unrecalculated (no live subtotal
   exists to recalculate anyway, per this section's own existing design).
+  If the flagged item was the only item left in "Venta actual," removing
+  it returns the tray to §3.7's empty ready state — the same
+  terminal-empty transition "Sí, cancelar" (§3.8b) already produces,
+  reached here by resolving the conflict instead of by an explicit
+  cancel. The identical rule applies wherever this same "Quitar de la
+  venta" mechanic is reached — §3.8d-i and §3.8d-ii both resolve through
+  it unchanged.
 - **She can keep adding other items, or attempt Finalizar Venta, while
   the marker sits unresolved** — it doesn't block anything except the
   final save itself (§3.8d-i, below). She's never forced to stop and deal
@@ -1487,6 +1497,37 @@ tapping the flagged item →
 └───────────────────────────────┘
 ```
 Distinct from §3.8d's genuine save-failure state — this isn't a failure of the Finalizar Venta write itself, it's a precondition that hasn't been met yet. Reached only if she attempts to finalize while a §3.8a lost-race marker is still present; tapping "Quitar de la venta" resolves it in place and Finalizar Venta can proceed immediately after, no re-tap of Finalizar Venta needed if nothing else is pending.
+
+### 3.8d-ii Finalizar Venta — lost-race conflict discovered by the write itself (new — resolves `ux-critic` finding, `product-decisions.md` Q24/Q25 remediation)
+
+```
+┌───────────────────────────────┐
+│ Plaza Norte · Día 2         ⚙  │
+│ Hoy: $850 · 6 ventas  [ Cerrar jornada de venta ] │
+├───────────────────────────────┤
+│ Venta actual: 3 artículos          │
+│ Bolsas · Playeras ⊗ · Accesorios   │  ⊗ — the same terminal marker as
+├───────────────────────────────┤      §3.8a, never Reintentar
+│   [   zona de registro       ]   │
+│   [      Finalizar Venta     ]   │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+tapping the flagged item →
+┌───────────────────────────────┐
+│  Playeras ya no está disponible. │
+│  Otro vendedor la vendió.         │
+│      [  Quitar de la venta  ]    │
+└───────────────────────────────┘
+```
+
+Distinct from both neighboring states, stated plainly so the branch this finding raised has exactly one named destination: unlike §3.8a's own ambient discovery (a background sync flags the item while she's still shopping, before she's attempted to close the sale) and unlike §3.8d-i (an *already*-flagged item blocking an attempt that hasn't started), this is Finalizar Venta's own write discovering the conflict for the first time — plausible whenever the most-recently-added item's background sync (§3.8a) hasn't finished confirming before she taps Finalizar Venta.
+
+**Resolves identically to §3.8a's own terminal ⊗ pattern, reached at a different moment, never §3.8d's generic error/Reintentar.** §3.8a already establishes *why* this write can tell the two failure classes apart: a lost-race conflict is discovered "because the write already failed a genuine compare-and-swap on the server" — a distinguishable signal, not a generic failure — and that same per-item compare-and-swap is exactly what Finalizar Venta's own write performs for every item it commits. This section applies that already-established mechanism at a second trigger point; it doesn't invent a new one, so no further Architect grounding is needed at this fidelity. The item is marked ⊗, "Quitar de la venta" is the one tap offered, and — per §3.8a's own reasoning — never Reintentar, since the stock is verifiably gone and retrying the same write would fail again for the identical reason.
+
+She lands back in the ordinary in-progress tray (§3.8) once "Quitar de la venta" resolves it, exactly as §3.8a's own tap-through does — every other item in "Venta actual" untouched (§3.8a's own empty-tray note applies identically here) — and taps Finalizar Venta again herself to complete the sale with the remaining items. This is a fresh attempt, not an automatic continuation: unlike §3.8d-i (where the block happens *before* any write is attempted, so nothing was ever submitted), the write that discovered this conflict did not itself commit anything, so there is no half-finished attempt to resume.
+
+If Finalizar Venta's write fails for a genuinely different reason (network loss, server error — nothing to do with stock), that's still §3.8d's generic error state, Reintentar included, unchanged.
 
 ### 3.8e Finalizar Venta — success (superseded — folded into §3.8f)
 
@@ -1711,6 +1752,12 @@ Three elements only — confirmation, total, business identity. No future-regist
   │3 en este evento│
   └─────────┘
   ```
+  **Flagged for High-Fidelity attention, not resolved here** — the same
+  verification §3.7's own header-row packing already requires (§3.7):
+  `ui-designer` must confirm this second line renders legibly alongside
+  the tile's existing marker/label/price within the tile's unchanged
+  footprint on an actual phone screen, not just in this Low-Fidelity text
+  description.
   Reads `EventAllocation.quantityRemaining` (manual mode) or the count of
   currently-`open` `allocatedUnitIds` still `available` (NFC mode) — never
   the plain, Business-wide "disponibles" figure, which stays exactly as
@@ -2011,7 +2058,7 @@ Reached only via a stale link, a browser-back artifact, or any other path that l
 
 ```
 ┌───────────────────────────────┐
-│  Nahui                          │
+│  Nahui                        ⊚ │
 │  Esto no está disponible para     │
 │  tu cuenta.                        │
 │      [   Volver a Hoy   ]          │
@@ -2108,7 +2155,15 @@ Inside selling (3.7-3.10):
         (§3.7-§3.10) was current, Session and any open Sale untouched
   → Finalizar Venta
       → saving (3.8c)
-      → error (3.8d) → Reintentar, o resolve via Cancelar venta actual (3.8b)
+      → [the write itself discovers a lost-race conflict — the affected
+        item's background sync (3.8a) hadn't confirmed before this
+        attempt] → 3.8d-ii (lost-race conflict discovered at save time)
+        → Quitar de la venta → item marked ⊗ removed, rest of the tray
+        untouched → back to 3.8 (in-progress tray) → she taps Finalizar
+        Venta again, a fresh attempt
+      → [any other failure — network loss, server error, nothing to do
+        with stock] → error (3.8d) → Reintentar, o resolve via Cancelar
+        venta actual (3.8b)
       → success → tray clears → full-viewport receipt (3.8f: "Venta
           finalizada ✓" + this sale's total + business identity, plus —
           Paid tier only, `decision-log.md` D40 — a real, tappable/scannable
@@ -2227,6 +2282,7 @@ and back to Hoy):
 34. Session active, Sale in progress — lost-race conflict, terminal (§3.8a extended): ambient notice, ⊗ marker, detail sheet, "Quitar de la venta"
 35. Finalizar Venta blocked — lost-race item unresolved (§3.8d-i)
 36. Acceso no disponible — SELLER reaches an OWNER-only destination (§3.17)
+37. Finalizar Venta — lost-race conflict discovered by the write itself, terminal, no Reintentar (§3.8d-ii)
 
 ## 6. Minimum step count
 
@@ -2640,6 +2696,10 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **An Event-scoped remaining-stock signal is added to buttons-mode tiles wherever an `EventAllocation` applies** — a pre-emptive, not guaranteed, reduction of concurrent-selling conflicts.
 - **A genuinely new terminal correction pattern ("lost the race") is designed for an already-added item invalidated by a background conflict** — `knowledge-mentor` consultation complete (§8): overall pattern confirmed well-grounded; one copy correction applied (detail-sheet text softened from "antes que tú" to a neutral, fact-only close, §3.8a).
 - **"Acceso no disponible" (§3.17) is a new defensive state, deliberately distinct from `settings.md §3.14`'s "Acceso revocado"** — a still-active SELLER hitting a structurally unreachable destination is not the same situation as a revoked one, and the two states say so plainly.
+- **New §3.8d-ii closes a previously-undefined branch: a lost-race conflict discovered by Finalizar Venta's own write, not pre-flagged by background sync.** Resolves through the identical terminal ⊗/no-Reintentar pattern §3.8a already establishes, reached at a second trigger point; she re-attempts Finalizar Venta herself afterward, since the failed write committed nothing. **[see home.changelog.md#decisions-3-8d-ii-finalize-write-conflict]**
+- **"Quitar de la venta" (§3.8a, and by extension §3.8d-i/§3.8d-ii) now states explicitly that removing the last remaining item returns the tray to §3.7's empty state**, the same transition §3.8b's "Sí, cancelar" already produces. **[see home.changelog.md#decisions-quitar-last-item-empty-state]**
+- **§3.17's wireframe corrected to render the SELLER header icon (⊚)**, matching its own prose claim that the header icon stays present. **[see home.changelog.md#decisions-3-17-header-icon-fix]**
+- **§3.7's `ui-designer` legibility-verification flag extended to cover §3.7c's three-row header combination; §3.9 gains an equivalent flag for its new "N en este evento" tile line.** Neither resolved here, both correctly deferred to Medium/High-Fidelity per this document's own existing convention. **[see home.changelog.md#decisions-legibility-flags-extended]**
 
 ## 11. Future considerations
 

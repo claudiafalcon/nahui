@@ -9,7 +9,7 @@ visibility gate corrected):** Resultados' "Tus clientes" section gates on
 2026-08-14 — see
 settings.changelog.md#status-2026-08-08-d34-customer-segmentation-gate-corrected]**
 
-**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — concurrent multi-seller selling): new §2.7 "Tu equipo" — invite a SELLER (Paid-tier gated, `company/business-decisions.md`), view team status, and revoke an accepted SELLER's access (`BusinessMembership.status: active | revoked`, never deleted). New §3.11–§3.14. A new defensive state (§3.14, "Acceso revocado") is cross-referenced from `home.md` §2's new step 0. Remediated same pass (`brand-guardian` finding, pre-`ux-critic`): §3.14 gains a single "Entendido" acknowledgment tap — the screen previously had zero tappable affordance, violating `character-bible.md`'s "no dead ends" rule. Still pending `ux-critic`/`reviewer` review before folding back into Approved.**
+**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — concurrent multi-seller selling): new §2.7 "Tu equipo" — invite a SELLER (Paid-tier gated, `company/business-decisions.md`), view team status, and revoke an accepted SELLER's access (`BusinessMembership.status: active | revoked`, never deleted). New §3.11–§3.14. A new defensive state (§3.14, "Acceso revocado") is cross-referenced from `home.md` §2's new step 0. Remediated same pass (`brand-guardian` finding, pre-`ux-critic`): §3.14 gains a single "Entendido" acknowledgment tap — the screen previously had zero tappable affordance, violating `character-bible.md`'s "no dead ends" rule. **`ux-critic` round 1 (2026-09-07) found, across the Q24/Q25 settings.md/home.md/events.md batch: 4 Major + 4 Minor, 0 Blockers.** Scoped to this document: §3.12's CTA/heading collision (Major — see §10) and §3.11's missing near-instant/slow resolving pair (Minor — see §10), both fixed. Re-verification pending.
 
 **Further amended 2026-08-09 (`decision-log.md` D40 — `loyaltyEnabled` retired):** Frequent Customers becomes automatically available the instant `subscriptionTier` reads `paid`, and unavailable when it reads `free` again — no Business-level field, screen, or action of Ana's own turns it on or off directly. Configuración narrows from six actions to four. **[Amended 2026-08-14 — see settings.changelog.md#status-2026-08-09-d40-loyalty-enabled-retired]**
 
@@ -601,6 +601,17 @@ A retried save replays the same already-confirmed toggle, never re-asking her to
 ### 3.11 Tu equipo — vista principal
 
 ```
+Resolving (near-instant / slow) — same convention as every other read in
+this document (§3.1/§3.2):
+┌───────────────────────────────┐        ┌───────────────────────────────┐
+│ ← Configuración                 │        │ ← Configuración                 │
+│  Tu equipo                       │        │  Tu equipo                       │
+│  ▢▢▢▢▢▢▢▢▢▢▢▢                      │        │  Un momento…                     │
+└───────────────────────────────┘        └───────────────────────────────┘
+   near-instant: silent skeleton              slow (>~1.5s): one plain line
+```
+
+```
 ┌───────────────────────────────┐
 │ ← Configuración                 │
 │  Tu equipo                       │
@@ -639,7 +650,7 @@ A retried save replays the same already-confirmed toggle, never re-asking her to
 ```
 ┌───────────────────────────────┐
 │ ← Tu equipo                     │
-│  Invitar a alguien               │
+│  Nueva invitación                │
 │  Esta persona va a poder abrir    │
 │  sus propias sesiones de venta     │
 │  y registrar ventas desde su        │
@@ -814,7 +825,8 @@ From home.md §2's new step 0 (this device's own Membership is revoked):
 11. Cerrar sesión — confirmar
 12. Cerrando sesión — near-instant / slow
 13. Error al cerrar sesión
-14. Tu equipo — vista principal (empty, or with pending/active/revoked rows)
+14. Tu equipo — vista principal (empty, or with pending/active/revoked
+    rows), plus its own near-instant/slow resolving pair
 15. Invitar a alguien — phone entry, with inline duplicate/already-member validation
 16. Quitar a alguien — confirmar
 17. Acceso revocado (reached only via home.md §2 step 0)
@@ -976,6 +988,15 @@ None of the items below block this document's completion.
 - **No reactivation path designed** — explicitly deferred, matching the settled architecture's own deferral.
 - **No role picker on Invitar a alguien** — role is always `SELLER`.
 - **New §3.14 "Acceso revocado" defensive state**, cross-referenced from `home.md` §2's new step 0. **Remediated same pass — a single "Entendido" acknowledgment tap added (`brand-guardian` finding): the original draft had zero tappable affordance, violating `character-bible.md`'s "no dead ends" rule; the fix stays a close/exit, not a navigation, since every other destination is correctly withheld from this Membership.**
+- **§3.12's on-screen heading changed from "Invitar a alguien" to "Nueva
+  invitación," differentiating it from §3.11's identically-worded CTA**
+  (`ux-critic` finding) — same fix shape as HJR-INV-M1 (`inventory.md`
+  §3.6/§3.7, "Registrar mercancía" → "Registro de mercancía"): the CTA is
+  unchanged, the destination's passive title moves to a noun form so "go
+  do this" and "you're now doing this" read as visibly different moments.
+- **"Tu equipo" (§3.11) now has its own explicit near-instant/slow
+  resolving pair**, closing a gap where it was the one read in this
+  document without one (`ux-critic` finding).
 
 ## 11. Future considerations
 
