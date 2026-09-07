@@ -35,11 +35,15 @@ import styles from './AccesoRevocado.module.css';
  * opened — is still the cleanest outcome). But the visible feedback never
  * depends on that succeeding: on every tap, unconditionally, the button
  * disables and relabels to confirm the tap registered, and an honest
- * acknowledgment line appears telling her plainly what to do next — the
- * same disabled-button-plus-inline-confirmation shape already established
- * for a one-time acknowledgment elsewhere in this build (see
- * `src/screens/Inventory/CatalogView.tsx`'s `.confirmation` toast). If
- * `window.close()` does succeed, this state is simply never seen.
+ * acknowledgment line appears telling her plainly what to do next. This is
+ * deliberately *not* the same mechanic as
+ * `src/screens/Inventory/CatalogView.tsx`'s `.confirmation` toast — that one
+ * is a self-dismissing (~2.4s) ambient banner, unrelated to any button-
+ * disable state. This screen is a true terminal, one-time state with no
+ * navigation elsewhere to return to, so a permanent, non-dismissing
+ * acknowledgment is the right call here — an auto-dismiss would remove the
+ * message before she can act on it. If `window.close()` does succeed, this
+ * state is simply never seen.
  */
 export function AccesoRevocado() {
   const [acknowledged, setAcknowledged] = useState(false);
@@ -53,8 +57,17 @@ export function AccesoRevocado() {
       </div>
       <Button
         className={styles.cta}
-        disabled={acknowledged}
+        aria-disabled={acknowledged}
         onClick={() => {
+          // Guarded no-op once acknowledged, in place of the native
+          // `disabled` attribute — `ux-critic` MIN-1 (2026-09-07): setting
+          // `disabled` on the just-tapped button blurs it the instant state
+          // updates (focus falls back to `document.body`) in most browsers,
+          // a real regression on a screen with exactly one interactive
+          // element and no other navigation to receive focus instead.
+          // `aria-disabled` plus this guard keeps the button focusable and
+          // announced as disabled, without ever dropping focus off it.
+          if (acknowledged) return;
           try {
             window.close();
           } catch {

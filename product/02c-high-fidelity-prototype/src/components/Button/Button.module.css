@@ -16,7 +16,7 @@
     opacity var(--duration-fast) var(--ease-standard);
 }
 
-.btn:active:not(:disabled) {
+.btn:active:not(:disabled):not([aria-disabled='true']) {
   transform: scale(0.98);
 }
 
@@ -24,7 +24,7 @@
   background: var(--color-coral-aa);
   color: var(--color-white);
 }
-.primary:hover:not(:disabled) {
+.primary:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-tezontle);
 }
 
@@ -33,7 +33,7 @@
   color: var(--color-obsidian);
   border: 1.5px solid var(--color-hilo);
 }
-.secondary:hover:not(:disabled) {
+.secondary:hover:not(:disabled):not([aria-disabled='true']) {
   border-color: var(--color-coral-aa);
 }
 
@@ -49,10 +49,21 @@
   color: var(--color-white);
 }
 
-.btn:disabled {
+.btn:disabled,
+.btn[aria-disabled='true'] {
   background: var(--color-hilo);
   color: #9C9186;
   cursor: not-allowed;
+}
+
+/* `aria-disabled` (unlike the native `disabled` attribute) keeps the button
+   focusable and clickable by default — `ux-critic` MIN-1 fix
+   (`AccesoRevocado.tsx`), used precisely so a just-tapped button doesn't
+   lose focus. Pointer clicks are blocked here in CSS; the component's own
+   guarded no-op handler blocks keyboard activation (Enter/Space), which
+   `pointer-events` alone cannot reach. */
+.btn[aria-disabled='true'] {
+  pointer-events: none;
 }
 
 .size-inline {

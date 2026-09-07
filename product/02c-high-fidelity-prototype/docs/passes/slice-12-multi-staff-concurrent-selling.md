@@ -347,9 +347,14 @@ succeed), but the visible feedback no longer depends on that succeeding.
 Every tap, unconditionally: the button disables and relabels ("Entendido" →
 "Entendido ✓"), and an honest inline acknowledgment appears — "Ya puedes
 cerrar esta pestaña." — telling her plainly what to do next instead of
-implying the app closed itself. Reuses the same disabled-button-plus-inline-
-confirmation shape `CatalogView.tsx`'s existing `.confirmation` toast already
-established, rather than inventing a new pattern.
+implying the app closed itself. This is *not* the same mechanic as
+`CatalogView.tsx`'s existing `.confirmation` toast — that one is a self-
+dismissing (~2.4s) ambient banner, unrelated to any button-disable state.
+The permanent, non-dismissing acknowledgment built here is the right call
+for this screen's own terminal, one-time state (auto-dismissing would
+remove the message before she can act on it), just not literally
+precedented by that toast the way an earlier version of this comment
+implied.
 
 **Spec gap flagged to Main (not fixed here — this build holds no Write
 access to `product/02-ux/`):** `settings.md §3.14`'s own bullet describes
@@ -390,3 +395,43 @@ SettingsScreen.tsx`, `TeamScreen.tsx`/`.module.css` (new),
 `.module.css` (new), `AccesoNoDisponible.tsx` (new), `src/screens/Events/
 NuevoEvento.tsx`, `EventDetail.tsx`, `MercanciaParaEsteEvento.tsx`/
 `.module.css` (new), `README.md` (pass-history index entry), this file.
+
+## `ux-critic` verification-pass fix round (2026-09-07) — 2 Minor + 2 Suggestions, 0 Blockers/Major
+
+`ux-critic`'s final verification pass on this slice found no Blockers or
+unresolved Major findings, but 2 Minor + 2 Suggestions, all fixed:
+
+- **Minor — `AccesoRevocado.tsx`'s "Entendido" button dropped keyboard focus
+  on tap.** Setting the native `disabled` attribute on a just-clicked button
+  blurs it in most browsers the instant state updates (focus falls back to
+  `document.body`) — a real accessibility regression on a screen with
+  exactly one interactive element and no other navigation. Fixed: `aria-
+  disabled="true"` plus a guarded no-op in the click handler, instead of the
+  native `disabled` attribute, so the button stays focusable after the tap.
+  `Button.module.css`'s disabled-state selectors extended to key off
+  `[aria-disabled='true']` alongside `:disabled` (visual styling, hover, and
+  the `:active` press-scale all updated); `pointer-events: none` blocks
+  further pointer clicks, the JS guard blocks keyboard (Enter/Space)
+  activation. `AccesoRevocado.tsx`, `Button.module.css`.
+- **Minor — `context/q24-q25-first-slice.md` had zero mention of this "Entendido"
+  dead-tap fix round**, despite it having a complete record in this file.
+  Fixed: an equivalent summary appended to that file's own Status section.
+- **Suggestion — a doc comment overclaimed precedent.** Both `AccesoRevocado.tsx`'s
+  own comment and this file's earlier fix-round entry (above) described the
+  permanent, non-dismissing "Entendido" acknowledgment as reusing "the same
+  disabled-button-plus-inline-confirmation shape already established... in
+  `CatalogView.tsx`'s `.confirmation` toast." On inspection, that toast is
+  actually a self-dismissing (~2.4s) *ambient* confirmation, unrelated to any
+  button-disable state — a different mechanic. The permanent version built
+  here remains the right call for this terminal, one-time screen (auto-
+  dismissing would remove the message before she can act on it) — only the
+  claim of literal precedent was inaccurate. Reworded in both places; no
+  behavior change. `AccesoRevocado.tsx`, `AccesoRevocado.module.css`, this
+  file (above).
+- **Suggestion — `settings.md §5`'s screen-state enumeration didn't give the
+  post-tap "Entendido" acknowledged state its own numbered entry**, unlike
+  every other multi-rendering screen in that document. Content is present in
+  §3.14's prose, just not separately enumerated. **Flagged back to Main, not
+  performed here — this build holds no Write access to `product/02-ux/`.**
+
+`tsc -b` and `npm run build` both clean after this fix round.

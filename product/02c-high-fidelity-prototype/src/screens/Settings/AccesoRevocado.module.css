@@ -36,9 +36,11 @@
   width: 100%;
 }
 
-/* Mirrors CatalogView.module.css's `.confirmation` — the one existing
-   "acted-on, here's the honest result" toast convention this build already
-   uses, reused here so a tap's felt feedback isn't a one-off pattern. */
+/* Not a mirror of CatalogView.module.css's `.confirmation` — that toast is
+   self-dismissing (~2.4s) and ambient, unrelated to any button-disable
+   state. This is a permanent, non-dismissing acknowledgment, the correct
+   shape for this screen's own terminal one-time state (an auto-dismiss
+   would remove the message before she can act on it). */
 .note {
   margin: 0;
   font: var(--text-body-sm);

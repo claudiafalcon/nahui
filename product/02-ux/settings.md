@@ -836,6 +836,7 @@ From home.md §2's new step 0 (this device's own Membership is revoked):
 15. Invitar a alguien — phone entry, with inline duplicate/already-member validation
 16. Quitar a alguien — confirmar
 17. Acceso revocado (reached only via home.md §2 step 0)
+17a. Acceso revocado — tras tocar "Entendido" (button disabled/relabeled "Entendido ✓," inline "Ya puedes cerrar esta pestaña." confirmation shown; resets to 17 on a fresh app open, per this state's own "stable, repeatable terminal state" requirement)
 
 ## 6. Minimum step count
 
