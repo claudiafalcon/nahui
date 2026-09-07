@@ -74,3 +74,51 @@ designed anywhere in the product. `settings.md §2.5`'s "Cerrar sesión"
 action (Product Owner decision, 2026-08-13) resolves it. Kept in §11,
 marked resolved, for the same continuity discipline `settings.md §8` item 5
 already models for its own once-open `defaultSellingMode` gap.
+
+---
+
+## 2026-09-07 — Session-resume also checks for a pending Invitation, closing a gap Slice 12's build surfaced
+
+**Root decision:** building Slice 12 (Q24/Q25 first usable version — multi-staff concurrent selling) into `product/02c-high-fidelity-prototype/`, `ui-designer` found the literal §2.2 case-0 gate ("has this phone never been verified before, anywhere") never fires for a real, reachable population: a phone that verifies successfully, never completes Onboarding (no Business, no Membership anywhere), and only later — on an ordinary app reopen, no fresh OTP confirm — receives a pending Invitation. The build picked a behavior (proactively offer it) to make the app runnable; `architect` confirmed the scenario is real and the resolution reasonable, but flagged it as an unrouted code-level decision needing a proper spec amendment (`product/02-ux/CLAUDE.md` §4). `ux-designer` drafted the amendment; no new screen, copy, or interaction pattern — a corrected branch condition (test standing, not verification history) and a second entry point into the already-reviewed §3.10 offer screen, plus a repeat-ask guard.
+
+### §2.1 case 1
+*(cite as `authentication.changelog.md#2026-09-07-session-resume-invitation`)*
+
+Original text, before this amendment:
+
+> 1. Does this device already hold a valid verified-phone session? (The
+>    storage/validity mechanism itself is left as an implementation detail —
+>    same posture `onboarding.md` §0 already gives "how the platform
+>    determines which device/account maps to which Business.")
+>      → YES: Authentication is never shown — not even a flash of a phone/
+>        OTP screen. Control passes directly and silently to `onboarding.md`'s
+>        own resolution logic (`onboarding.md §2.1`), unchanged. Whether a
+>        complete Business exists, an incomplete one, or none yet is entirely
+>        that document's own question to resolve from here — this document
+>        has nothing further to say once a session is confirmed valid.
+
+Corrected to check, once, whether this User holds zero `BusinessMembership`/Business anywhere and has an undeclined pending Invitation, before delegating to `onboarding.md` — see the current §2.1 text for the live version.
+
+### §2.2 case 0
+
+Original text, before this amendment:
+
+> 0. [Checked FIRST, before 1–3 below — this ordering matters] Does this
+>    phone have a pending Invitation (`Invitation.status = pending`,
+>    `Invitation.phone` = this verified number) AND has this phone never
+>    been verified before, anywhere (the same condition that would
+>    otherwise route it into case 1)?
+>      → YES → Invitation-acceptance branch. See §2.2a. Never
+>        `onboarding.md §3.3`'s Business-creation handoff.
+>      → NO → fall through to cases 1–3 below, entirely unchanged from the
+>        Approved text.
+
+The "never been verified before, anywhere" clause used verification history as a stand-in for "has she landed anywhere yet" — correct for a true first-timer, but it silently excluded the population above. Corrected to test zero-Membership/zero-Business standing directly — see the current §2.2 case 0 text for the live version and its own inline reasoning.
+
+### §8 item 6
+
+Original text, before this amendment:
+
+> 6. **Multi-Business membership intersecting with a pending Invitation (§2.2 cases 2/3's new notes, 2026-09-06, `product-decisions.md` Q24/Q25)** — genuinely undesigned. A phone that already has a local/known Business elsewhere and also holds a pending Invitation falls through to that case's ordinary behavior, unchanged; the Invitation simply waits. `product-decisions.md` Q24/Q25 item 1 already names the underlying gap (no Business-switching surface exists) — this doesn't newly discover it, only confirms it also applies at this specific junction.
+
+Split into sub-case (a), Resolved by this amendment, and sub-case (b), still open — see the current §8 item 6 text. The stale cross-reference ("Q24/Q25 item 1") is also corrected to item 3, the entry that actually names the no-Business-switching-surface gap.

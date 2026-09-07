@@ -4,6 +4,8 @@
 
 **[Amended 2026-08-13 — see `authentication.changelog.md#2026-08-13-case-2`]**
 
+**[Further amended 2026-09-07 — see `authentication.changelog.md#2026-09-07-session-resume-invitation`]**
+
 **Scope:** the phone+OTP verification gate that precedes everything else in the Merchant Application, including the already-Approved `onboarding.md`. Not a nav tab, not reachable again once a device holds a verified session (same "never shown twice" shape `onboarding.md` §2.1 already gives its own completion state). Implementation-independent — low-fidelity only, no visual design.
 
 **Naming note (deviating from the task's suggested `owner-access.md`, reasoned explicitly):** this document is named `authentication.md`, not `owner-access.md`. The screens it designs — phone entry, OTP entry, resend, error/lockout states — are not Owner-specific; they're the general verification mechanism every future user of this product will eventually pass through, including a Seller accepting a future invitation (`§11`). Owner-provisioning is only *one* outcome of a successful verification (the first-ever-verification branch, `§2.2`), and per the Product Owner's own scope constraint this document shows no Owner-specific UI at all — naming the file after that one outcome would overstate what's actually on screen. This also directly resolves what `onboarding.md` §0 already calls, by name, "Authentication" — treated there as "an implementation-level concern below this spec's abstraction level." Reusing that exact word keeps continuity with the one place the Foundation already gestured at this concern, without editing that document (see `§11`).
@@ -12,7 +14,7 @@
 
 **Out of scope, by explicit instruction — flagged rather than designed around:**
 - **Role-management UI.** No role picker, no "you are the Owner" badge or screen, no membership-management surface. Owner-ness is a structural fact this flow produces, never something Ana chooses or sees named — the Product Owner's own explicit instruction, held to on every screen below.
-- **Invitations / SELLER-role onboarding — acceptance now designed (§2.2 case 0 / §2.2a / §3.10–§3.13a).** What *issuing* an Invitation does (`settings.md` §2.7, "Invitar a alguien") stays that document's own scope, unchanged. This document now owns only the moment a phone that already holds a pending Invitation verifies — not the invite-sending action itself.
+- **Invitations / SELLER-role onboarding — acceptance now designed (§2.2 case 0 / §2.1's session-resume check / §2.2a / §3.10–§3.13a).** What *issuing* an Invitation does (`settings.md` §2.7, "Invitar a alguien") stays that document's own scope, unchanged. This document now owns only the moment a phone that already holds a pending Invitation verifies — not the invite-sending action itself.
 - **Business onboarding redesign.** `onboarding.md`'s three paths are frozen; this document's terminal state for a first-time verification is the literal `onboarding.md §3.3` (cited, not redescribed).
 - **Payments/checkout, bazaar recommendations** — non-goals per `company/CLAUDE.md`, unrelated to this surface anyway.
 - **Logout / device / account-session management.** Not designed here. See `§11`.
@@ -28,7 +30,7 @@
 - A phone verified for the very first time, anywhere, proceeds directly — no separate "create account" step, no name/photo capture (that's `onboarding.md` §3.9/§3.10's job, not this document's) — into `onboarding.md`'s existing fresh entry point, cited by canonical ID (`onboarding.md §3.3`).
 - A device that already holds a verified session never sees this flow again, ever — the same "never ask twice" bar `onboarding.md`'s own D13 completion state already holds itself to.
 - No screen, in any state, names "Owner," "Seller," "role," or shows anything resembling a picker between them.
-- A phone with a pending `Invitation` (`Invitation.status = pending`, `Invitation.phone` matching the verified number) is never silently routed into `onboarding.md`'s Business-creation flow — it's offered, once, plainly, the specific Business that invited it, with an honest way to decline that costs her nothing (added 2026-09-06, `product-decisions.md` Q24/Q25).
+- A phone with a pending `Invitation` (`Invitation.status = pending`, `Invitation.phone` matching the verified number) is never silently routed into `onboarding.md`'s Business-creation flow — it's offered, once, plainly, the specific Business that invited it, with an honest way to decline that costs her nothing. This holds regardless of *when* the Invitation is discovered: at the moment of verification itself (§2.2 case 0), or later, on an ordinary app open, for a phone that verified once already but never got as far as choosing an Onboarding path (§2.1, added 2026-09-07). Added 2026-09-06, `product-decisions.md` Q24/Q25; extended 2026-09-07, this document's own §8 item 6(a).
 
 **Scope boundary, stated explicitly per this folder's own §1 rule:** this is an access/identity gate, not a parallel onboarding. It captures exactly one fact — a verified phone number — and nothing else. It does not decide *what* she can do once verified (that's the domain model's job, flagged to Architect, `§8`) and does not decide *how* her business gets set up (that's `onboarding.md`'s job, frozen).
 
@@ -47,12 +49,27 @@ Evaluated automatically, before anything else, on every app open:
    storage/validity mechanism itself is left as an implementation detail —
    same posture `onboarding.md` §0 already gives "how the platform
    determines which device/account maps to which Business.")
-     → YES: Authentication is never shown — not even a flash of a phone/
-       OTP screen. Control passes directly and silently to `onboarding.md`'s
-       own resolution logic (`onboarding.md §2.1`), unchanged. Whether a
-       complete Business exists, an incomplete one, or none yet is entirely
-       that document's own question to resolve from here — this document
-       has nothing further to say once a session is confirmed valid.
+     → YES: **[Amended 2026-09-07 — a genuine gap surfaced building Slice
+       12/Q24-Q25 into `product/02c-high-fidelity-prototype/`; see §8 item
+       6(a).]** Before delegating, check one more thing first — this
+       document still has something to say, exactly once, in exactly this
+       one situation: does this User hold zero `BusinessMembership`
+       anywhere AND zero Business (complete or in-progress) anywhere for
+       them — i.e., she verified successfully at some point but never even
+       chose an Onboarding path — AND is there a pending Invitation for
+       this phone she hasn't already declined on this device (§2.2a step
+       6)?
+         → YES to all → Invitation-acceptance branch, §2.2a. The identical
+           resolution logic and offer screen (§3.10) §2.2 case 0 reaches
+           from a fresh OTP confirm — not a second design, a second entry
+           point into the same one.
+         → NO to any → Authentication is never shown — not even a flash of
+           a phone/OTP screen. Control passes directly and silently to
+           `onboarding.md`'s own resolution logic (`onboarding.md §2.1`),
+           unchanged. Whether a complete Business exists, an incomplete
+           one, or none yet is entirely that document's own question to
+           resolve from here — this document has nothing further to say
+           once a session is confirmed valid.
 
 2. Was a phone number typed, or a code sent, but never confirmed, before
    the app was closed, backgrounded, or killed?
@@ -75,9 +92,24 @@ This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the re
 ```
 0. [Checked FIRST, before 1–3 below — this ordering matters] Does this
    phone have a pending Invitation (`Invitation.status = pending`,
-   `Invitation.phone` = this verified number) AND has this phone never
-   been verified before, anywhere (the same condition that would
-   otherwise route it into case 1)?
+   `Invitation.phone` = this verified number) AND does this User hold
+   zero `BusinessMembership` anywhere and zero Business (complete or
+   in-progress) anywhere?
+     **[Amended 2026-09-07 — see §8 item 6(a).]** This condition replaces
+     the original wording ("has this phone never been verified before,
+     anywhere"). That phrasing correctly covered a true first-time
+     verification but used verification history as a stand-in for the
+     thing that actually matters — has she landed anywhere yet — and
+     missed a real, reachable second population it wasn't written for: a
+     phone that verified successfully once already, never completed
+     Onboarding (no Business ever created, no Membership anywhere), and
+     only later — on an ordinary, later app open, session already valid,
+     no fresh OTP confirm involved at all — receives a pending
+     Invitation. §2.1's own new check (above) is what actually reaches
+     that population; this corrected condition is what makes both entry
+     points test the identical, correct thing. A genuine first-timer
+     trivially satisfies it too, so nothing about this branch's existing
+     behavior changes for that population.
      → YES → Invitation-acceptance branch. See §2.2a. Never
        `onboarding.md §3.3`'s Business-creation handoff.
      → NO → fall through to cases 1–3 below, entirely unchanged from the
@@ -139,7 +171,7 @@ This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the re
 
 ### 2.2a Invitation-acceptance resolution logic (new — `product-decisions.md` Q24/Q25)
 
-Reached only via §2.2 case 0. Evaluated fresh, at this exact moment — never a cached read from earlier in the flow (the Invitation could have changed status between OTP-send and OTP-confirm, however unlikely at pilot scale).
+Reached via §2.2 case 0 (a fresh OTP confirmation) or via §2.1's session-resume check (added 2026-09-07, §8 item 6(a)) — two entry points into one identical resolution. Evaluated fresh, at this exact moment, either way — never a cached read from earlier in the flow (the Invitation could have changed status since the check last ran, however unlikely at pilot scale).
 
 ```
 1. Re-check `Invitation.status` right now, not the value that triggered
@@ -187,6 +219,18 @@ Reached only via §2.2 case 0. Evaluated fresh, at this exact moment — never a
    §3.10c's single tap resolves, the same "hands off and stops"
    discipline §2.2 case 1 already holds itself to for `onboarding.md
    §3.3`.
+
+6. **[New, 2026-09-07]** Declining (step 4 above) is remembered locally,
+   per device, per specific Invitation — a plain local marker, the same
+   "below this document's abstraction level" treatment §2.1's own
+   parenthetical already gives session storage itself. This is what
+   keeps §2.1's session-resume check from re-showing the identical offer
+   on every subsequent app open after a genuine "Ahora no" — the same
+   "never ask twice" bar this document already holds itself to (§9),
+   extended here to a decision made once, not re-litigated on every idle
+   app open. Only the specific declined Invitation is suppressed; if a
+   different Invitation later arrives for the same phone (a new
+   Business, a new decision), it's offered fresh.
 ```
 
 ### 2.3 Merchant-visible behavior around simulated OTP delivery
@@ -377,6 +421,7 @@ No new wireframe — reaching any screen in §3.3–§3.7d a second time (after 
 Covers §2.1's own device-session check failing outright. Manual "Reintentar," same convention as `onboarding.md §3.8`/`inventory.md §3.18`/`events.md §3.18`/`reports.md §3.14` — no live-customer risk at this moment to justify a heavier auto-retry mechanism.
 
 ### 3.10 Invitation-acceptance — offer (new)
+(reached via: §2.2 case 0 — a fresh OTP confirm on a phone with zero standing anywhere; or §2.1's session-resume check, added 2026-09-07 — a phone that verified previously, still has zero Business/Membership anywhere, and only later received a pending Invitation)
 ```
 ┌───────────────────────────────┐
 │           Nahui                 │
@@ -465,8 +510,13 @@ Same idempotency guarantee §3.7d already carries for its own genuine first-time
 Open app (any time)
   → resolve device session (§2.1, automatic)
       → valid session exists ─────────────────────────────────────────→
-        onboarding.md's own resolution (onboarding.md §2.1), silently —
-        no screen in this document shown at all
+        [Amended 2026-09-07, §8 item 6(a)] first check: zero
+        BusinessMembership/Business anywhere for this User AND a
+        pending, not-yet-declined-on-this-device Invitation exists?
+          → YES → §2.2a's offer (§3.10) — the identical resolution §2.2
+            case 0 reaches from a fresh OTP confirm
+          → NO → onboarding.md's own resolution (onboarding.md §2.1),
+            silently — no screen in this document shown at all
       → in-progress (phone typed, or code sent, not yet confirmed),
         interrupted ────────────────────────────────────────────────→
         resume exact step (§3.8) — countdown recomputed from real
@@ -580,6 +630,7 @@ Any interruption up to and including a still-unconfirmed code:
 - Whether a client also auto-fires "Confirmar" the instant a 6th digit lands (without changing the underlying required, gated action itself) is a High-Fidelity/implementation nicety, deliberately left undecided here — below this document's abstraction level, the same way exact digit-grouping in the phone field is.
 - Which of two+ pending Invitations to offer (rare, unprevented case) — resolved automatically by recency, never a picker shown without real evidence of need (§2.2a step 2).
 - Whether a phone has a pending Invitation at all — checked automatically at OTP-confirm, never a question asked of her ("¿tienes una invitación?" never appears anywhere).
+- Whether a returning, still-not-onboarded phone should be offered a newly-arrived Invitation is now checked automatically on every ordinary session-resume app open too, not only at a fresh OTP confirmation (§2.1, added 2026-09-07) — she never has to sign out and re-verify just to be shown an Invitation that arrived after she'd already stalled.
 
 ## 8. Open questions
 
@@ -590,7 +641,9 @@ None of the items below block this document's own completion. Both are named exp
 3. **Provisional prototype defaults, not frozen domain invariants (Product Owner clarification, 2026-08-13):** the specific numbers chosen here by judgment call — 6-digit code, 30-second resend cooldown, 5-minute code validity, 5-attempt soft-invalidation bound — are product/prototype defaults, not settled Foundation rules. They should be revisited when a real authentication provider is integrated (Stage 7, Backend Integration) — a real SMS/OTP vendor may impose its own constraints (code length, delivery/expiry timing, rate limits) that supersede these values outright, and even absent that, they should be checked against a real or simulated first-run test before being treated as final, same evidence-driven caution `onboarding.md §8` items 1/5/6 already recommend for its own judgment calls. Nothing in this document's flow logic (§2, §4) depends on the exact values — only on their existence and the branches they gate.
 4. **[Amended 2026-08-13 — see `authentication.changelog.md#2026-08-13-open-q4`]** Resolved. `settings.md §2.5` activates §2.2 case 2.
 5. **`brand-guardian` consultation complete (2026-08-13)** — §3.7c's "too many attempts" copy revised per that consultation's finding (subject/causal-structure fix, same soft-invalidation design); flagged as `tone-of-voice.md`-Hypothesis-tagged, worth a real merchant-reaction check once shipped, not blocking now.
-6. **Multi-Business membership intersecting with a pending Invitation (§2.2 cases 2/3's new notes, 2026-09-06, `product-decisions.md` Q24/Q25)** — genuinely undesigned. A phone that already has a local/known Business elsewhere and also holds a pending Invitation falls through to that case's ordinary behavior, unchanged; the Invitation simply waits. `product-decisions.md` Q24/Q25 item 1 already names the underlying gap (no Business-switching surface exists) — this doesn't newly discover it, only confirms it also applies at this specific junction.
+6. **Multi-Business membership intersecting with a pending Invitation (§2.2 cases 2/3's new notes, 2026-09-06, `product-decisions.md` Q24/Q25) — split into two sub-cases, 2026-09-07:**
+   - **(a) Zero Membership, zero Business anywhere, later invited — Resolved.** A phone that verified successfully but never completed Onboarding (no Business ever created, no Membership anywhere), and only later receives a pending Invitation, is now proactively offered it — checked both at a fresh OTP confirm (§2.2 case 0, condition corrected to test standing rather than verification history) and, new, at ordinary session-resume on every app open (§2.1) for exactly this population. This closes a genuine gap surfaced building Slice 12/Q24-Q25 into `product/02c-high-fidelity-prototype/`: the build had already picked this behavior to make the app runnable at all, and `architect` confirmed it's a real, reachable scenario needing an approved spec decision rather than an unrouted code-level resolution (`product/02-ux/CLAUDE.md` §4). Declining is now remembered per-device per-Invitation (§2.2a step 6) so she's never asked about the same offer twice.
+   - **(b) A phone that already has a Membership in a different Business elsewhere, and also holds a pending Invitation from a new one — still genuinely undesigned, untouched by this amendment.** Falls through to that case's ordinary behavior, unchanged; the Invitation simply waits. `product-decisions.md` Q24/Q25 item 3 already names the underlying gap (no Business-switching surface exists) — deliberately out of scope here. Also not currently reachable in `product/02c-high-fidelity-prototype/`'s own single-Business-per-instance modeling.
 7. **A second/simultaneous pending Invitation for the same phone (§2.2a step 2)** — resolved by recency, not designed as a picker; no evidence yet this case is real at Nahui's pilot scale (3 merchants). Revisit if evidence warrants.
 8. **`brand-guardian` consultation complete (2026-09-07).** Finding: §3.10's offer copy correctly applies the peer-to-peer register question posed; no issue found there. §3.10c's welcome copy — which reuses `tone-of-voice.md`'s own worked exemplar ("Ya quedaste registrada con Ropa Ana") verbatim — was flagged on a narrower point: the verb ("quedaste registrada," a passive connotation) may undersell that a Seller accepting an invitation just gained real active capability (open Sessions, register Sales), not merely been added to a list. Called explicitly Minor and non-blocking — the very next line ("Cuando quieras vender, abre tu sesión aquí") resolves the ambiguity within about a second of reading. **`ux-designer` call, documented here rather than resolved by editing the screen: left as-is for now**, deliberately deferred rather than adjusted — changing this exemplar's own verb would mean deviating from the literal reused text `tone-of-voice.md` itself cites, which deserves its own pass rather than an ad hoc tweak folded into this unrelated remediation. Revisit if this screen is next substantively touched — a candidate replacement already on record: "Ya puedes vender con Ropa Ana," which carries the active-capability meaning more directly.
 9. **`settings.md §8` items 11 (cancelling a pending Invitation) and 12 (`Invitation.status = expired`'s trigger/timing)** — this document's §3.13a defensive state is deliberately written to cover *either* outcome without needing to distinguish them; those two gaps stay exactly as open as `settings.md` already left them, not resolved here.
@@ -619,6 +672,7 @@ None of the items below block this document's own completion. Both are named exp
 - *global-principles.md*, "the fastest interaction is the one that never happens" — no second/simultaneous-Invitation picker is built without evidence it's ever real (§2.2a step 2).
 - *architecture-principles.md* #7 (idempotent/keyed writes) — the accept action's atomic `BusinessMembership` creation + `Invitation.status` flip carries the same stable idempotency-key guarantee every other write-with-real-consequence in this document carries.
 - *brand/tone-of-voice.md*, "celebration is about her, plainly stated, never inflated" — §3.10c reuses that document's own literal worked example verbatim.
+- *global-principles.md*, "never ask twice" — extended 2026-09-07: the same offer is checked on every ordinary app open for a still-not-onboarded phone (§2.1), not only at the moment of verification, and a genuine decline is remembered per-device so it's never re-shown for the same Invitation.
 
 ## 10. Decisions made
 
@@ -634,12 +688,13 @@ None of the items below block this document's own completion. Both are named exp
 - **Accepting costs one real confirming tap (§3.10); declining costs zero** — matches this document's own existing asymmetry between committing actions and reversible/no-cost ones.
 - **§3.13a reuses `settings.md §3.14`'s exact non-diagnostic register** rather than inventing a second tone for a closely related "you don't have standing here" moment.
 - **§3.10c's `brand-guardian` consultation (§8, item 8) is complete — copy left as-is, deliberately deferred, not treated as a blocking finding.** See §8 for the full reasoning and the on-record candidate replacement if this screen is next revisited.
+- **§2.1's session-resume check now also tests for a pending Invitation on a phone with zero standing anywhere (2026-09-07).** The original case-0 gate ("never verified before, anywhere") missed a real population: verified once, stalled before choosing an Onboarding path, invited later. Corrected to test the state that matters (zero Business/Membership anywhere) rather than verification history, checked at both entry points that can reach it. Declining is remembered per-device per-Invitation so the "never ask twice" bar holds even though this check now runs on every app open, not just once at OTP-confirm.
 
 ## 11. Future considerations
 
 - **Invitation flow / SELLER-role onboarding — acceptance now designed (2026-09-06, `product-decisions.md` Q24/Q25); this item is resolved for that half.** What remains genuinely open: how an invited SELLER's Role gets attached (accepting writes `BusinessMembership` directly, §2.2a step 3 — no separate "attach a role" step exists), and cancelling/expiring a pending Invitation from the issuing side (`settings.md §8` items 11/12, unresolved there, not here).
 - **[Amended 2026-08-13 — see `authentication.changelog.md#2026-08-13-future-11`]** Self-service logout / account-level session management — resolved. `settings.md §2.5` ("Cerrar sesión") now designs exactly this.
-- **Multi-Business-per-phone — partially addressed as of 2026-09-06.** `product-decisions.md` Q24/Q25 resolved that a User may belong to more than one Business; this document's §2.2 cases 2/3 name the real, still-undesigned intersection with a pending Invitation (§8 item 6) rather than leaving the whole topic unaddressed. No Business-switching surface exists anywhere yet.
+- **Multi-Business-per-phone — partially addressed as of 2026-09-06, narrowed further 2026-09-07.** `product-decisions.md` Q24/Q25 resolved that a User may belong to more than one Business; this document's §2.2 cases 2/3 name the real, still-undesigned intersection with a pending Invitation. The zero-standing-anywhere half of that intersection is now resolved (§8 item 6(a)); only the harder cross-Business half — an existing Membership elsewhere plus a new pending Invitation — stays open (§8 item 6(b)). No Business-switching surface exists anywhere yet.
 - **A merchant-visible display name for a team member** — same gap `settings.md §2.7`/§11 already names; this document's §3.10 inherits the identical limitation (no way to name the inviting OWNER personally).
 - **`onboarding.md §0`'s own "Authentication... implementation-level concern below this spec's abstraction level" framing is now stale** now that this document exists as a real spec for exactly that concern. Flagged for whoever next amends `onboarding.md` — not resolved here, since `onboarding.md` is treated as frozen for this task.
 - **A persistent, read-only display of her own verified phone number somewhere in `settings.md`** — not designed here. **First real evidence, 2026-08-13:** a `merchant-user-tester` walk of `settings.md`'s new "Tu cuenta" section (`experience-review-2026-08-13-configuracion.md`) read the section as "an unfinished corner" for showing nothing but a sign-out button, with no way to confirm which number the device is verified under outside the OTP screen itself. Still not designed here — logged as a real, if mild, want rather than the prior "no evidence yet," for whoever next scopes a `settings.md` amendment.
