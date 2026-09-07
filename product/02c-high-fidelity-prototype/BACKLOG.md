@@ -558,17 +558,20 @@ This does not change product direction, business behavior, the Foundation, or UX
 `company/backlog.md` #3 (Bazaar recommendation) stays explicitly out of this
 sequencing — blocked, no data source exists, not attempted.
 
-## Recommendation — next slice: **Q24/Q25 first usable version (multi-staff concurrent selling), Slice 12** (2026-09-07)
+## What's built (Slice 12, complete — Q24/Q25 first usable version, multi-staff concurrent selling, 2026-09-07)
 
-**1. Product learning value — decisive, the same bar Slice 7's own recommendation was held to.** Real, unsolicited DM-pilot merchant feedback requested exactly this capability (`company/backlog.md`'s "Event-scoped inventory allocation" Discovery entry, 2026-09-03) — this is validated demand, not a speculative build. Multi-Membership concurrent selling is an entirely untested core assumption: no `merchant-user-tester` walk, no build, has ever exercised more than one `BusinessMembership` acting at once.
+Real, unsolicited DM-pilot merchant feedback (`company/backlog.md`'s "Event-scoped inventory allocation" Discovery entry, 2026-09-03) drove this — the largest slice since Slice 2, built in four phases per `architect`'s own Architecture Gap Analysis:
 
-**2. Merchant value — real and direct.** Lets a real merchant actually add family/staff and sell concurrently at one bazaar, the exact friction the requesting merchant named.
+1. **Foundational refactor** — `AppState.currentUser` (single-slot) → `users[]`/`currentUserId`, a real global-phone `verifyOtp` lookup, `actingMembership`/`myActiveSession` as the shared "this device's own acting Membership" primitive; D53's dead D17 overlap-check code removed from `createEvent`/`NuevoEvento.tsx`.
+2. **Identity capability** — `Invitation` (D56), `BusinessMembership.status`/`revokedAt` (D55), `Sale.performedByMembershipId` (D58); `authentication.md`'s Invitation-acceptance flow, `settings.md`'s new "Tu equipo" (invite/view/revoke a SELLER, Paid-tier gated, `company/business-decisions.md` Q18).
+3. **Home role experience + D53 resolution** — role-scoped nav/header, SELLER cold-start/idle variants, "Mi actividad de hoy," "Acceso no disponible," and D53's simultaneous multi-Event resolution ("Elegir evento," §3.6b).
+4. **Manual `EventAllocation` (D57) + concurrent-selling "lost the race" handling** — quantity-only allocation (`events.md` §3.21/§3.23; NFC-scan allocation, cross-Event reallocation, and Event-close reconciliation all explicitly deferred), and the real Physical-location-exclusivity compare-and-swap gate plus terminal conflict UI in `Selling.tsx`.
 
-**3. Dependency graph — unblocks the largest remaining Q24/Q25 surface.** The deferred remainder (NFC-scan allocation, cross-Event reallocation, reconciliation, richer seller analytics) all build directly on top of this slice's `EventAllocation`/`Invitation`/`actingMembership` primitives — none of it is reachable without this slice landing first.
+**Full Review Pipeline complete:** two `ux-critic` rounds (initial batch: 3 Major + 1 Minor; final verification: 0 Blockers/Major, 2 Minor + 2 Suggestions) and `reviewer` (0 Blockers throughout) all closed. A `merchant-user-tester` (Ana) walkthrough ran 4 times — 2 correctly diagnosed as test-environment artifacts (empty seed state; a stale cross-run phone-number collision), and 2 that found and confirmed real defects: an account-recovery dead end (a mistyped phone number after sign-out silently created a new Business, contradicting the sign-out dialog's own "nada se pierde" promise — fixed via a device-history check, `authentication.md §2.2`/new §3.7e, paired with a phone-number display in `settings.md §2.5`/§3.3a) and a dead "Entendido" tap on the revoked-access screen (`window.close()` silently no-ops in a real browser tab — fixed with real, always-visible acknowledgment feedback). Both fixes independently verified working, the account-recovery fix confirmed end-to-end in a full clean rerun.
 
-**4. Effort — large, the largest single slice since Slice 2.** Four sub-phases per `architect`'s Gap Analysis (`context/q24-q25-first-slice.md`): a foundational refactor (`currentUser` singleton → `users[]`, `actingMembership` selector, dead D17-check removal), the Identity capability (`Invitation`/revocation/attribution), the Home role experience + D53 resolution, and manual `EventAllocation` + lost-the-race. Doesn't override 1-3, but is why this slice is scoped explicitly to the Product Owner's own "first usable version" priority rather than the full Q24/Q25 capability surface.
+**Deliberately deferred, not this slice** (per the Product Owner's own "first usable version" scoping): NFC-scan allocation, cross-Event reallocation ("Mover mercancía"), reconciliation at Event close, `AllocationMovement`'s own implementation (no UI surface until reallocation exists), richer seller analytics beyond "Mi actividad de hoy."
 
-**Scope, Foundation grounding, and the full Gap Analysis:** `context/q24-q25-first-slice.md`.
+Full record: `docs/passes/slice-12-multi-staff-concurrent-selling.md`, `product/02-ux/experience-review-2026-09-07-slice-12-team-invite.md`, `context/q24-q25-first-slice.md` (working file, now superseded by this entry — see that file's own note).
 
 ### Historical: recommendation that led to NFC Selling (Slice 7, complete)
 
