@@ -133,7 +133,7 @@ The sequenced-writes-plus-compensation design is retained as a documented fallba
 
 ### 7. Out of scope — the sibling RFC's territory
 
-`Invitation`, `BusinessMembership.status`/`revokedAt` (already promoted, D55), `Sale.performedByMembershipId`, multi-Business membership, and the OWNER/SELLER permission table belong to "Membership invitation and concurrent selling," drafted alongside this one. This RFC assumes that design exists (OWNER-only gating on every allocation screen, per `events.md` §3.21/§3.24/§3.25's own repeated annotation) but doesn't formalize it.
+`Invitation`, `BusinessMembership.status`/`revokedAt` (already promoted, D55), and `Sale.performedByMembershipId` and multi-Business membership belong to "Membership invitation and concurrent selling," drafted alongside this one. **The OWNER/SELLER permission table is reasoned about, but not domain-modeled, by that sibling RFC** (its §6 concludes it's application-layer policy needing no schema representation) — not something either RFC formalizes into `domain-model.md`. This RFC assumes that design exists (OWNER-only gating on every allocation screen, per `events.md` §3.21/§3.24/§3.25's own repeated annotation) but doesn't formalize it.
 
 ### 8. Ubiquitous-language additions (for `ubiquitous-language.md`'s Selling context section, once promoted)
 

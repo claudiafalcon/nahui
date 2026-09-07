@@ -13,7 +13,11 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
-_(none currently)_
+### Q20 — Does NFC Readiness's existing "sellable tagged inventory" count need to account for units held by an open `EventAllocation`?
+
+- **Raised by:** `architect`, drafting `product/99-rfc/0009-event-scoped-inventory-allocation.md`'s Open Items, self-identified during the RFC's own analysis rather than found reactively.
+- **Question:** `domain-model.md`'s existing NFC Readiness Key Mechanism (D23) defines its business-wide "sellable tagged inventory" count over `available`-status tagged `InventoryUnit`s. Once `EventAllocation` legitimately holds allocated-but-unsold tagged units in `reserved` status (RFC 0009's own physical-location-exclusivity mechanism), an Event with a large NFC allocation could understate NFC Readiness's own count during that Event's life — even though those units are actively sellable via scan, just scoped to that Event rather than the general pool. NFC Readiness's definition predates `EventAllocation`'s existence and was never evaluated against it.
+- **Status:** Open — not resolved by RFC 0009, not yet evaluated by `architect` as a standalone question. Flagged for a proper `architect` pass once RFC 0009 is Accepted and promoted, rather than left living only inside the RFC's own prose where it risks being lost.
 
 ## Resolved
 
