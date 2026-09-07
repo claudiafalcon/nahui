@@ -8,8 +8,9 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
-### Q13 — Should multi-staff/SELLER accounts be a paid-tier-gated capability?
+### Q18 — Should multi-staff/SELLER accounts be a paid-tier-gated capability?
 
+- **Renumbered 2026-09-07 (`reviewer` finding) — this entry was originally logged as "Q13," colliding with the pre-existing, still-Open Q13 below ("Merchant Experience Kit... parallel Spanish page"). Not a deliberate reuse; corrected to the next available number. Cross-references in `product/02-ux/product-decisions.md` Q24/Q25 and `product/02-ux/settings.md` §2.7 updated to cite Q18.**
 - **Raised by:** `product/02-ux/product-decisions.md` Q24/Q25 (concurrent multi-seller selling + Event-scoped inventory allocation), architect's readiness review, 2026-09-06 — a real gap the requirement set didn't originally name.
 - **Question:** should a Business be able to invite/add SELLER accounts (`BusinessMembership`) regardless of `subscriptionTier`, or only once `subscriptionTier=paid`?
 - **Resolution (Product Owner, 2026-09-06):** **Paid-tier only** — same gating class as Frequent Customers/Customer Segmentation (`decision-log.md` D34).
