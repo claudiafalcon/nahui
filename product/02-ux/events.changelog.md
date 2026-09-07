@@ -569,3 +569,62 @@ check across §4, §7, §8 (Q3), §9, §10, §11 was also corrected or struck in
 this same pass — see `events.md`'s own current text for the corrected
 versions; not duplicated here since none of it carried unique reasoning
 beyond what's preserved above.
+
+---
+
+### decisions-q24-q25-allocation-ux
+
+**New §3.21-§3.25 designed 2026-09-06 (`product-decisions.md` Q24/Q25 —
+Event-scoped inventory allocation).** Additive, not a removal — this
+anchor exists because §7-§11 each carry a decisions-made/future-
+considerations bullet pointing here, per this document's own
+cross-referencing convention, even though nothing was struck or replaced.
+The full lifecycle (initial allocation, replenish, cross-Event
+reallocation, explicit merchant-initiated reconciliation at Event close)
+is designed in `events.md`'s own current text (§3.21-§3.25); see that
+document directly for the authoritative content rather than a duplicate
+here. OWNER-only per Q24/Q25's settled permission table; grounded in
+`EventAllocation`/`AllocationMovement`, the physical-location-exclusivity
+invariant, and the single-local-transaction reallocation mechanism.
+
+### decisions-3-21-collapse-correction
+
+**§3.21 corrected 2026-09-07 (`ux-critic` finding, Q24/Q25 remediation
+round 1).** The originally-shipped version rendered every Catalog-Product
+row's full control set (~8 facts/controls) simultaneously and claimed —
+inaccurately — that this matched Registrar Mercancía's own
+"multi-line-entry-then-single-commit shape" (`inventory.md` §3.6/§3.7).
+Checked directly, Registrar Mercancía is a sequential-add flow (one
+Product picked and committed at a time); §3.21 had no add step at all —
+every Catalog Product always has a row. Corrected to a genuine
+collapse-to-summary, one-row-expanded-at-a-time shape: every row starts
+collapsed ("Producto — N para este evento," or "nada para este evento
+todavía"), tapping a row's summary expands it, collapsing whichever other
+row was previously expanded. Collapsing/expanding is a pure display
+toggle, never a commit — a staged manual quantity persists regardless of
+which row is currently shown expanded, and "Guardar cambios" commits every
+row's staged quantity across the whole screen, not just the visible one.
+See `events.md` §3.21's own current text for the full wireframes and
+reasoning.
+
+### decisions-q24-q25-tap-count-correction
+
+**§6 corrected 2026-09-07 (`ux-critic` finding, Q24/Q25 remediation round
+2) — four task-efficiency rows undercounted by exactly one tap each,** a
+direct side effect of the §3.21 collapse-correction above landing after
+these rows were originally written. Each affected row's stated sequence
+omitted the tap required to expand a Catalog-Product row before any of
+its controls (manual stepper, "Escanear las que te llevas," "Mover a otro
+evento") are reachable:
+- "Llevar mercancía a un Evento por primera vez, 1 producto, cantidad
+  manual" — 3 taps stated, corrected to 4.
+- "Llevar mercancía con prendas etiquetadas" — same gap, corrected.
+- "Reponer un producto que se está agotando, a mitad del Evento" — same
+  gap, corrected to 4.
+- "Mover mercancía a otro Evento simultáneo" — 4 taps stated, corrected
+  to 5.
+
+The two reconciliation rows in the same table ("Resolver mercancía sin
+vender al cerrar un Evento...," §3.16/§3.25-driven) are unaffected — that
+screen has no collapse/expand mechanic. See `events.md` §6's own current
+table for the corrected figures.
