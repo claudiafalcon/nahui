@@ -27,3 +27,11 @@ The invite flow, the sign-out reassurance, and the sister's scoped-down SELLER e
 ## Status
 
 One severe, confirmed defect blocks approval — fix in progress. Two of five task steps (Event allocation, revocation) remain genuinely untested and need their own coverage once a rerun is possible.
+
+## Rerun 2 (post-fix) — Tooling Artifact, not a valid test of the fix
+
+**Verification status: Tooling Artifact.** After the code fix landed, a second full rerun was dispatched to verify it live. That run's browser session started with completely empty `localStorage` — no seeded Business at all — so Ana correctly signed up Free-tier from scratch (the only path available to a genuinely first-time device). "Tu equipo" is Paid-tier gated by design (`settings.md §2.7`), so it was correctly absent for a fresh Free-tier account — not a bug, and not evidence about the fix under test. Ana stopped at step 1, unable to find "Tu equipo" at all, and never reached the sign-out/sign-back-in scenario the fix targets. Confirmed via direct `localStorage` inspection (Main, `chrome-devtools-mcp`) that the account this run created (`ana Moda`, `subscriptionTier: 'free'`) was real but never exercised the defect's actual trigger condition.
+
+**Root cause of the empty state, for the record:** this project's dev server deliberately seeds convenience state from persisted `localStorage` when present (README's own documented pattern), but nothing guarantees a Paid-tier seed persists between one dispatch's browser session and the next — the first rerun happened to inherit a Paid "Negocio Pagado" business left over from `ui-designer`'s own live-testing during the original Slice 12 build; this second rerun's session did not.
+
+**Corrective action:** Main upgraded the account this run created (`ana Moda`) to `subscriptionTier: 'paid'` directly via `localStorage` (the same seeding-for-repeatable-reach precedent already established elsewhere in this project, e.g. Slice 10's own pass record) and confirmed live, via direct browser inspection, that: "Tu equipo" now renders correctly, the event this run created ("Bazar Lomas") survived the tier change, and — notably — the phone-number-display half of the fix is visibly working ("Tu cuenta" now shows "+52 55 1234 5678"). A third full rerun was dispatched against this properly-seeded account to actually exercise the fix.
