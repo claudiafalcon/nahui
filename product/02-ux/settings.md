@@ -9,6 +9,8 @@ visibility gate corrected):** Resultados' "Tus clientes" section gates on
 2026-08-14 — see
 settings.changelog.md#status-2026-08-08-d34-customer-segmentation-gate-corrected]**
 
+**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — concurrent multi-seller selling): new §2.7 "Tu equipo" — invite a SELLER (Paid-tier gated, `company/business-decisions.md`), view team status, and revoke an accepted SELLER's access (`BusinessMembership.status: active | revoked`, never deleted). New §3.11–§3.14. A new defensive state (§3.14, "Acceso revocado") is cross-referenced from `home.md` §2's new step 0. Pending `ux-critic`/`reviewer` review before folding back into Approved.**
+
 **Further amended 2026-08-09 (`decision-log.md` D40 — `loyaltyEnabled` retired):** Frequent Customers becomes automatically available the instant `subscriptionTier` reads `paid`, and unavailable when it reads `free` again — no Business-level field, screen, or action of Ana's own turns it on or off directly. Configuración narrows from six actions to four. **[Amended 2026-08-14 — see settings.changelog.md#status-2026-08-09-d40-loyalty-enabled-retired]**
 
 **Further amended 2026-08-09 (Product Owner decision):** the Configuración entry-point trigger is a top-right "⋯" icon (not the header's "▾"); the sheet's Configuración row carries a gear icon ("⚙"). **[Amended 2026-08-14 — see settings.changelog.md#status-2026-08-09-configuracion-entry-point-relocated]**
@@ -80,6 +82,8 @@ This document holds two things in tension, deliberately:
 Two of the four actions below carry a real, necessary fact beyond a toggle, and the design has to protect them even while every other action stays a clean single-tap-to-confirm.
 
 A fifth, differently-shaped concern joins these two as of 2026-08-13: whether *this phone, on this device* stays recognized by Nahui at all. It's not a business decision the way the four above are — it doesn't change her plan or how she sells — but it deserves the same honest, deliberate-beat treatment as turning something off, for the same reason: getting it wrong (reading as data loss) would break trust in exactly the way this document's whole second bullet above already exists to prevent.
+
+As of 2026-09-06, a third kind of decision joins the two above for a Paid-tier merchant: who else, besides her, is allowed to open a selling session and register a sale on her behalf. This document is also where that stays changeable, honestly — inviting someone in, and taking that access back without pretending it erases what they already sold.
 
 ## 2. Resolution / decision logic
 
@@ -282,6 +286,20 @@ Free→Paid makes `nfc` *available*, but `defaultSellingMode` stays whatever
 it already was (`buttons`, for every real Onboarding path, `onboarding.md`
 §2.3) until she takes this specific action.
 
+### 2.7 Tu equipo — invite, view, and revoke a SELLER (new — `product-decisions.md` Q24/Q25, "Concurrent multi-seller selling")
+
+**Who this is for.** A Paid-tier merchant who wants someone else — a family member, a trusted helper — to open her own selling Session and register Sales, from her own phone, without sharing Ana's own login. `decision-log.md` D44/RFC 0007 already modeled this (`User` + `BusinessMembership`, `role: OWNER | SELLER`) — this section closes the gap of an actual invitation mechanism, which never existed until now.
+
+**Gated on `subscriptionTier = paid`, composing with the existing gate, not a new gating dimension.** `company/business-decisions.md` Q13 (resolved 2026-09-06): multi-staff/SELLER seats are a Paid-tier commercial capability, the same class as Frequent Customers/segmentation. An `Invitation` can only be created while `subscriptionTier = paid` — identical shape to how `nfc` and "Tus clientes" are already gated in this document, no new mechanism. **Structurally absent from the Free-tier vista principal** — no row, no locked/disabled hint — same treatment §3.3a already gives Frequent Customers ("structurally absent, not a demoted sub-note") and the same reasoning §2.3 already gives a disabled-but-visible option ("would invite exactly the kind of 'why can't I tap this' confusion `global-principles.md`'s 'technology should disappear' argues against"). Discoverable only via "Activar plan de pago"'s own copy.
+
+**Who can invite/manage.** OWNER only — the Q24/Q25 permission table is explicit that invite/manage-staff is an OWNER capability; a SELLER has no reach into this document at all in the settled design (out of this amendment's own scope — see §8, item 5, for the larger, undesigned role-gating question this doesn't solve).
+
+**What "Invitar a alguien" writes.** A new `Invitation` (`businessId`, `phone`, `role`, `status: pending`) — never a `BusinessMembership` directly. `role` is always written as `SELLER`; no picker is shown, since inviting a second OWNER isn't a capability described anywhere in the settled architecture (`decision-log.md` D44: the OWNER Membership is created atomically with the Business, once). Showing a choice with exactly one real value would cost a tap for nothing — `global-principles.md`, "the fastest interaction is the one that never happens." **What happens on the invited phone once it verifies** (the acceptance side, in `authentication.md`) is genuinely undesigned — out of this amendment's scope, flagged in §8, item 1. "Tu equipo" is not end-to-end functional until that companion piece exists.
+
+**What "Quitar" actually writes (the previously unresolved point, now settled — `product-decisions.md` Q24/Q25).** `BusinessMembership.status` flips `active → revoked` (+ `revokedAt`). **Never a delete.** Every Sale she already registered keeps resolving through `Sale.performedByMembershipId` exactly as before — same non-deletion precedent this document already applies to `subscriptionTier`/`defaultSellingMode` history (D25) and the same shape `Product.active`/`inactive` already established for a discontinued Product (Q21): removed from the merchant's *active* working set, fully intact for history. **No reactivation path is designed here** — `product-decisions.md` Q24/Q25 explicitly names this as "a small, non-urgent open product-scope question, not resolved here"; this document doesn't invent one either.
+
+**Row display — a real, named constraint, not an oversight.** `ubiquitous-language.md`: `User` carries only `phone`/`phoneVerifiedAt` — no personal display-name field yet, a named gap. "Tu equipo" therefore identifies every row by phone number, not by name, for both pending and active members — a genuine usability cost (Ana can't see "Sofía" at a glance) this document cannot design around without inventing a `User` field the Foundation doesn't have. Flagged, not solved, in §8/§11 — a real candidate for a future, small additive `User`/local-note field once evidence warrants it.
+
 ## 3. Low-fidelity wireframes
 
 Conventions inherited from `home.md`/`inventory.md`/`onboarding.md`: `[ ]` = tappable, plain text = passive/informational.
@@ -345,10 +363,15 @@ No `defaultSellingMode` control shown while `subscriptionTier=free` — nothing 
 │  Botones                          │
 │  [ Cambiar a vender con tags ]    │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
+│  Tu equipo                        │
+│  2 personas vendiendo contigo     │
+│  [ Ver equipo ]                   │
+│ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu cuenta                        │
 │  [ Cerrar sesión ]                │
 └───────────────────────────────┘
 ```
+**"Tu equipo" (new, §2.7 — `product-decisions.md` Q24/Q25), present identically on both Paid-tier vista-principal variants, absent entirely on the Free-tier vista principal.** Count line reads "2 personas vendiendo contigo" from `BusinessMembership.status = active` rows only — a pending invitation or a revoked row doesn't count toward it. Zero active members reads "Nadie más vendiendo contigo todavía," never a bare "0." Opens §3.11.
 
 **Paid-tier state, `defaultSellingMode = nfc` (mirror — completes the pair of reachable Paid-tier states):**
 ```
@@ -360,6 +383,10 @@ No `defaultSellingMode` control shown while `subscriptionTier=free` — nothing 
 │  Cómo vendes normalmente:         │
 │  Con tags                         │
 │  [ Cambiar a vender con botones ] │
+│ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
+│  Tu equipo                        │
+│  2 personas vendiendo contigo     │
+│  [ Ver equipo ]                   │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu cuenta                        │
 │  [ Cerrar sesión ]                │
@@ -571,6 +598,116 @@ Same near-instant/slow convention as `inventory.md` §3.10, `events.md` §3.9, `
 ```
 A retried save replays the same already-confirmed toggle, never re-asking her to re-confirm it.
 
+### 3.11 Tu equipo — vista principal
+
+```
+┌───────────────────────────────┐
+│ ← Configuración                 │
+│  Tu equipo                       │
+│  [ Invitar a alguien ]           │
+│                                   │
+│  55 1234 5678                     │
+│  Vendiendo contigo    [ Quitar ] │
+│                                   │
+│  55 8765 4321                     │
+│  Invitación enviada               │
+│                                   │
+│  55 2222 3333                     │
+│  Ya no vende contigo              │
+└───────────────────────────────┘
+```
+
+**Empty state** (no `Invitation`/`BusinessMembership` row has ever existed for this Business):
+```
+┌───────────────────────────────┐
+│ ← Configuración                 │
+│  Tu equipo                       │
+│  Todavía nadie vende contigo.     │
+│  Invita a alguien de tu confianza │
+│  para que registre ventas también,│
+│  desde su propio teléfono.        │
+│  [ Invitar a alguien ]            │
+└───────────────────────────────┘
+```
+
+- **Three row states, each a pure read, never a merchant choice:** `Invitation.status = pending` → "Invitación enviada," no action; `BusinessMembership.status = active` → "Vendiendo contigo" + `[ Quitar ]`; `BusinessMembership.status = revoked` → "Ya no vende contigo," no action (no reactivation mechanism is designed, per `product-decisions.md` Q24/Q25). `Invitation.status = expired` has no defined trigger/timing anywhere in the settled architecture — not given a row treatment here (§8, item 3).
+- **Row order:** active first, then pending, then revoked; by invite date within each group — deterministic, never Ana-sorted (`global-principles.md`, "every repeated decision should become automation").
+- No delete/hide action on a revoked row — same non-deletion discipline as `subscriptionTier` history; it stays visible, clearly labeled, forever.
+
+### 3.12 Invitar a alguien
+
+```
+┌───────────────────────────────┐
+│ ← Tu equipo                     │
+│  Invitar a alguien               │
+│  Esta persona va a poder abrir    │
+│  sus propias sesiones de venta     │
+│  y registrar ventas desde su        │
+│  propio teléfono, usando tu          │
+│  mismo Catálogo y tus mismos          │
+│  precios.                              │
+│  Número celular                         │
+│  +52  [ __________ ]                    │
+│  [      Enviar invitación      ]         │  disabled until 10 digits
+└───────────────────────────────┘
+```
+
+Reuses `authentication.md` §3.3's exact phone-entry shape and gating (fixed "+52," 10-digit-disabled button) rather than inventing a second phone-collection pattern — `global-principles.md`, "capture business truth once, reuse it forever."
+
+Inline validation (shown in place, same discipline as `authentication.md` §3.4's inline invalid-format message — no navigation, no dedicated error screen):
+```
+Número celular
+ +52  [ 5512345678        ]
+ Ya invitaste a este número — está
+ esperando a que acepte.
+```
+```
+Número celular
+ +52  [ 5512345678        ]
+ Este número ya vende contigo.
+```
+Both read `Invitation`/`BusinessMembership` uniqueness before any write attempt; the button stays disabled while either message shows, until she changes the number.
+
+Write path: `[ Enviar invitación ]` → guardando (reuses §3.9, unchanged) → error (reuses §3.10's shape, copy variant "No pudimos enviar la invitación. Intenta de nuevo.") → success → back to §3.11, new "Invitación enviada" row shown for that number. No separate confirmation screen — typing the number and tapping "Enviar invitación" is already one deliberate act, the same two-tap floor (§6) every other action in this document holds to.
+
+### 3.13 Quitar a alguien — confirmar
+
+```
+┌───────────────────────────────┐
+│ Tu equipo                       │  dimmed, still visible underneath
+│  ¿Quitar a 55 1234 5678 de tu     │
+│  equipo?                           │
+│  Ya no va a poder abrir sesiones   │
+│  de venta ni registrar ventas       │
+│  desde su teléfono. Las ventas       │
+│  que ya registró siguen exactamente  │
+│  como están — no se pierde nada.      │
+│      [ Cancelar ]   [ Sí, quitar ]     │
+└───────────────────────────────┘
+```
+
+Same dimmed-overlay, two-button shape as §3.7/§3.8 — states the real, honest consequence (loses ability to act, going forward) and the real, honest guarantee (nothing she already sold is touched), mirroring "Volver al plan gratis"/"Cerrar sesión"'s established reassurance shape rather than a warning-styled dialog. `[ Sí, quitar ]` → guardando (§3.9) → error (§3.10, copy variant "No pudimos quitar a esta persona de tu equipo. Intenta de nuevo.") → success → back to §3.11, that row now reads "Ya no vende contigo," `[ Quitar ]` gone.
+
+### 3.14 Acceso revocado — what the revoked SELLER's own device shows
+
+Reached only from `home.md`'s own resolution (§2, new step 0) — never navigated into from within this document, never reachable by tapping anything in Configuración, since a Membership in this state has no read/write standing left to reach any of it.
+
+```
+┌───────────────────────────────┐
+│  Nahui                          │
+│  Ya no tienes acceso para         │
+│  vender en este negocio.            │
+│  Si crees que esto es un error,      │
+│  habla con quien te invitó.           │
+└───────────────────────────────┘
+```
+
+- **No header gear icon, no bottom nav, no back arrow** — the one state in the whole product where offering navigation elsewhere is correctly withheld: every other nav destination reads Business-scoped data this Membership has no standing reason to browse, and none of it helps her.
+- **States the fact, never a diagnosis** — "ya no tienes acceso," never "fuiste despedida" or anything implying data loss or personal judgment. Same non-diagnostic discipline `home.md` §3.6a's capability-revoked mention already established.
+- **Does not touch her device's own phone session** (`authentication.md §2.1`) — this is about her Membership in *this* Business only. If she also holds a Membership in a different Business (`product-decisions.md` Q24/Q25, multi-Business membership), that Membership is completely unaffected — a real case neither this document nor `home.md` resolves into yet (no Business-switching surface exists), flagged in §8/§11, not designed here.
+- **An already-open Session isn't forcibly interrupted.** Q24/Q25's settled architecture makes no change to `Session` itself; this document doesn't invent one. She reaches this screen the next time Home resolution runs fresh — an app reopen, or her next attempt to start a new Session — never mid-Sale.
+- No "Reintentar" — this isn't a failed write, it's an accurate read of her current status; the only real next step (a conversation outside the app) is stated plainly rather than implying a button fixes it.
+
 ## 4. Interaction flow (summary)
 
 ```
@@ -638,6 +775,26 @@ Cerrar sesión
         attempt). If the same phone re-verifies afterward, see settings.md
         §2.5a — authentication.md §2.2 case 2, made reachable by this
         action, hands off silently to onboarding.md §2.1's own resolution.
+
+From "Tu equipo" (§3.11, Paid-tier only, reached via the vista principal's
+"Ver equipo" row — §3.3a):
+
+  [ Invitar a alguien ] → phone entry (§3.12)
+    → invalid/duplicate/already-a-member → inline message, same screen,
+      button disabled until the number changes
+    → Enviar invitación → guardando (§3.9) → error (§3.10) → Reintentar
+    → success → back to §3.11, new "Invitación enviada" row
+
+  [ Quitar ] on an active row → confirmar (§3.13)
+    → Cancelar → back to §3.11, untouched
+    → Sí, quitar → guardando (§3.9) → error (§3.10) → Reintentar
+    → success → back to §3.11, that row now "Ya no vende contigo"
+
+  Back arrow ("← Configuración") → vista principal (§3.3a), untouched
+
+From home.md §2's new step 0 (this device's own Membership is revoked):
+  → §3.14 (Acceso revocado) directly — no path back into any other state
+    of this document, or of home.md, exists from here.
 ```
 
 ## 5. Screen states (enumeration)
@@ -655,6 +812,10 @@ Cerrar sesión
 11. Cerrar sesión — confirmar
 12. Cerrando sesión — near-instant / slow
 13. Error al cerrar sesión
+14. Tu equipo — vista principal (empty, or with pending/active/revoked rows)
+15. Invitar a alguien — phone entry, with inline duplicate/already-member validation
+16. Quitar a alguien — confirmar
+17. Acceso revocado (reached only via home.md §2 step 0)
 
 ## 6. Minimum step count
 
@@ -668,7 +829,12 @@ Cerrar sesión
 | Cancelar cambio pendiente | 2 | Mirrors `home.md`'s own destructive-action confirmation floor. |
 | Cerrar sesión | 2 (tap row → Sí, cerrar sesión) | Same two-tap floor as every other action here — a real, if fully reversible, commitment gets one real confirming tap, nothing more. |
 
-Every action in this table now shares an identical 2-tap floor, measured at this document's own boundary. The one previous exception — Activar venta con tags's code-entry requirement — is gone along with the path itself (`decision-log.md` D27): `defaultSellingMode`'s two directions are pure toggles like every other immediate-effect action, with no real fact left to type. Configuración is now the one document in this family where every merchant-initiated action, without exception, costs exactly two taps — open the action, confirm it.
+Every action in this table now shares an identical 2-tap floor, measured at this document's own boundary. The one previous exception — Activar venta con tags's code-entry requirement — is gone along with the path itself (`decision-log.md` D27): `defaultSellingMode`'s two directions are pure toggles like every other immediate-effect action, with no real fact left to type. Configuración is now the one document in this family where every merchant-initiated action, without exception, costs exactly two taps — open the action, confirm it. **Two new rows join it (§2.7, `product-decisions.md` Q24/Q25):**
+
+| Action | Taps | Why it can't be fewer |
+|---|---|---|
+| Invitar a alguien | 2 taps + typing a phone number (Invitar a alguien → Enviar invitación) | Same floor as every other action here — typing the number is unavoidable data entry, not a stallable step. |
+| Quitar a alguien | 2 (Quitar → Sí, quitar) | Same floor — a real, if reversible-in-history-only, commitment gets one confirming tap. |
 
 ## 7. Automation opportunities
 
@@ -686,6 +852,10 @@ Every action in this table now shares an identical 2-tap floor, measured at this
   reached via an unconditional handoff carrying only an entry marker; this
   document never reads or computes any Inventory-owned fact itself
   (`decision-log.md` D46 Addendum, architect ruling; §2.6).
+- Whether "Tu equipo" appears in the vista principal at all — a pure read of `subscriptionTier`, same derivation discipline as `defaultSellingMode`'s `nfc` option (§2.7).
+- Which action a "Tu equipo" row offers (`Quitar`, or nothing) — a pure read of `BusinessMembership.status`/`Invitation.status`, never Ana's own interpretation.
+- Row order in "Tu equipo" — deterministic (active → pending → revoked, by date), never manually sorted.
+- `Invitation.role` is never asked — always written `SELLER`, since no second value exists to choose between.
 
 ## 8. Open questions
 
@@ -711,6 +881,12 @@ None of the items below block this document's completion.
    Configuración stays reachable from *what shape* the trigger takes
    without noticing the second question was still open. See `home.md` §2
    and §10 for the fuller correction.
+10. **The acceptance-side flow** (`authentication.md`) for a phone that verifies with a pending `Invitation` waiting — genuinely undesigned, out of §2.7's scope. "Tu equipo" isn't end-to-end functional until this exists.
+11. **Cancelling a still-pending `Invitation`** before it's accepted — no mechanism named anywhere in the settled architecture; not designed here, same deferral treatment `product-decisions.md` Q24/Q25 already gave the sibling reactivation question.
+12. **`Invitation.status = expired`'s trigger/timing** isn't specified anywhere in the settled architecture — no UI treatment designed for a state with no defined trigger.
+13. **Whether an already-active SELLER `BusinessMembership` is affected by a Paid→Free downgrade** — the settled architecture only confirms *issuing new* Invitations requires Paid; it takes no position on existing ones. §3.5's "Volver al plan gratis" copy deliberately asserts nothing here either way — flagged for Architect/Product Decision.
+14. **Configuración/nav carries no role-based access gate at all today.** §2.7/§3.14 design the OWNER-only invite/revoke surface and the revoked-SELLER defensive state, but a full SELLER-specific stripped Home/nav experience isn't designed in this document — a materially larger, separate design gap, surfaced here rather than silently assumed solved.
+15. **Multi-Business membership switching** (`product-decisions.md` Q24/Q25, item 1) — no surface designed anywhere yet; §3.14 states this plainly rather than pretending it's handled.
 
 ## 9. Principle justification
 
@@ -729,7 +905,15 @@ None of the items below block this document's completion.
 - *#6 (one-way dependency direction)* — this document only writes to Identity's Business Capabilities; it never designs a Selling/Inventory/Intelligence screen of its own. "Cerrar sesión" writes only to this device's own session fact, not part of the domain model at all (RFC 0007 §5's explicit infrastructure deferral) — it never reads or writes Selling, Inventory, or Intelligence data, the identical discipline the rest of this document already holds itself to. **"Cambiar a vender con tags" (§2.6) observes this identically** — corrected specifically to hold this line, per `decision-log.md` D46's Addendum: it writes `defaultSellingMode` and hands off a bare entry marker, never reading or querying `InventoryUnit`/Catalog state itself; the one check that decides her routing lives entirely inside `inventory.md`, which already legitimately owns it.
 
 **brand-guide.md:**
-- *Tone — "warm, direct, respects the vendor's intelligence"* — every deactivation confirmation states plainly what's lost without a warning-styled dialog; "Activar plan de pago"'s restored copy states plainly that this activates by confirming a payment arranged elsewhere, rather than omitting that fact. §3.8's sign-out confirmation states the one fact that matters (nothing is lost) plainly and up front, mirroring the reassurance shape "Volver al plan gratis" (§3.5) already established, rather than an apology-first or warning-styled dialog.
+- *Tone — "warm, direct, respects the vendor's intelligence"* — every deactivation confirmation states plainly what's lost without a warning-styled dialog; "Activar plan de pago"'s restored copy states plainly that this activates by confirming a payment arranged elsewhere, rather than omitting that fact. §3.8's sign-out confirmation states the one fact that matters (nothing is lost) plainly and up front, mirroring the reassurance shape "Volver al plan gratis" (§3.5) already established, rather than an apology-first or warning-styled dialog. §3.13's confirmation and §3.14's defensive state (§2.7) extend this same register to a materially higher-stakes moment (losing access, not just a mode) without diagnosing or moralizing about why.
+
+**§2.7/§3.11–§3.14 additions:**
+- *global-principles.md*, "never delete historical data" (D25) — extended to `Quitar`: a status flip, not a delete; `Sale.performedByMembershipId` keeps resolving unaffected. Same non-deletion discipline this document already applies to `subscriptionTier` history, and the same shape `Product.active`/`inactive` (Q21) already established.
+- *global-principles.md*, "capture business truth once, reuse it forever" — Invitar a alguien's phone entry reuses `authentication.md` §3.3's exact mechanism rather than a second phone-collection pattern.
+- *global-principles.md*, "the fastest interaction is the one that never happens" — no role picker on Invitar a alguien, since only one real value exists to write.
+- *global-principles.md*, "business language before technical language" — every "Tu equipo" screen says "vendiendo contigo," "ya no vende contigo," never "Membership," "Invitation," or "status."
+- *architecture-principles.md* #7 (idempotent/keyed writes) — "Enviar invitación" and "Sí, quitar" both reuse §3.9/§3.10's shared guardando/error/Reintentar template, the same D30-keyed-retry guarantee every other write in this document already gets.
+- *architecture-principles.md* #6 (one-way dependency direction) — this section writes only to Identity's `Invitation`/`BusinessMembership`; it never reads or writes Selling data. `Sale.performedByMembershipId` continuing to resolve after a revoke is Selling's own read, not something this document touches.
 
 ## 10. Decisions made
 
@@ -785,6 +969,11 @@ None of the items below block this document's completion.
   receives the matching correction (status header, §2, §3.3–§3.6, §3.6a,
   §3.6c retired, §4, §5, §10). **[see
   settings.changelog.md#decisions-2026-08-15-non-session-gear-direct-nav]**
+- **New §2.7 "Tu equipo" capability** — Paid-tier gated (`company/business-decisions.md` Q13, resolved 2026-09-06), OWNER-only invite/manage per the `product-decisions.md` Q24/Q25 permission table.
+- **`BusinessMembership` revocation is a status flip (`active → revoked`), never a delete** (`product-decisions.md` Q24/Q25).
+- **No reactivation path designed** — explicitly deferred, matching the settled architecture's own deferral.
+- **No role picker on Invitar a alguien** — role is always `SELLER`.
+- **New §3.14 "Acceso revocado" defensive state**, cross-referenced from `home.md` §2's new step 0.
 
 ## 11. Future considerations
 
@@ -792,4 +981,11 @@ None of the items below block this document's completion.
 - Whether the pending-change-lands acknowledgment needs an ambient signal beyond the in-surface one (§8, item 4).
 - The `home.md` amendment this document specifies but doesn't perform (§2.1, §8 item 3) needs its own small pass through `home.md` directly.
 - The actual payment-collection mechanism for the paid plan (§8, item 2) — a future Business Decision.
+- The acceptance-side `authentication.md` amendment (§8, item 10).
+- Cancelling a still-pending Invitation (§8, item 11).
+- `Invitation.status = expired`'s trigger/timing (§8, item 12).
+- Whether a Paid→Free downgrade affects already-active SELLER Memberships (§8, item 13).
+- Role-based access gating for Configuración/nav as a whole, once a SELLER-specific Home experience is actually designed (§8, item 14) — this is the largest real gap surfaced by this amendment.
+- A merchant-visible display name for a team member, once evidence warrants a `User` field the Foundation doesn't have today (§2.7).
+- Multi-Business switching surface (§8, item 15).
 - Whether "Cerrar sesión" should interlock with an active, non-empty Sale (§8, item 6) — not designed now, no evidence of need.
