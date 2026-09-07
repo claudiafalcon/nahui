@@ -255,6 +255,74 @@ in one walkthrough this pass); the NFC-mode `addItemToSaleByTag` path
 sheets themselves (genuinely unreachable through real interaction, per
 this document's own disclosure above).
 
+## Fix round — Slice 12 `merchant-user-tester` defect (2026-09-07)
+
+A `merchant-user-tester` walk of this slice (sign out as OWNER, sign back in
+with a mistyped phone number) found a real, severe defect: the mistyped
+number, having never been verified anywhere before, silently produced a
+brand-new, empty Business with no error, no warning, and no way back to the
+real one — directly contradicting `settings.md §2.5`'s own "nada se pierde"
+sign-out promise. Full incident record:
+`product/02-ux/experience-review-2026-09-07-slice-12-team-invite.md`.
+`authentication.md` (§2.2 case 1, new §3.7e) and `settings.md` (§2.5/§3.3a)
+were amended the same day to close it — see those documents' own status
+headers. Fix built here, against the amended spec:
+
+- **New `User.phoneMismatchConfirmationPending: boolean`** (`types.ts`). Set
+  once, at `verifyOtp` mint-time, only for a genuinely brand-new row, to
+  whether `state.users` already held at least one other row at that instant
+  — which, by construction, can only be a *different* phone. Left untouched
+  on a returning-phone re-verify. Cleared permanently only by the new
+  `confirmPhoneMismatch` action ("Sí, es mi número") — a persisted flag, not
+  ephemeral React state, deliberately: it's what lets "never ask twice" hold
+  across a reload landing between confirmation and Onboarding's own
+  Business-creation write, while still correctly never firing on an
+  ordinary session-resume (`authentication.md §2.1` explicitly has "nothing
+  further to say" there — only a fresh OTP confirm reaches this check).
+- **New `confirmPhoneMismatch`/`retractMistypedVerification` store actions**
+  (`store.tsx`). The former clears the new flag. The latter reverts
+  `phoneVerifiedAt` to `null` for the current User — mechanically identical
+  to `signOut`, kept as its own named function since a real account sign-out
+  and correcting a fresh typo are different merchant-facing moments that
+  happen to share one mechanism.
+- **New `AppRouter.tsx` stage — `needsPhoneMismatchConfirmation`.** Reuses
+  the same `hasAnyMembership`/`hasOwnBusiness` computation
+  `derivedPendingInvitation` already needed (both are the "zero Membership
+  anywhere AND zero Business anywhere" test §2.2 case 0/case 1 each open
+  with), now hoisted out of that `if` block so both derivations share it.
+  Renders the new `PhoneMismatchConfirm.tsx` (§3.7e) between the
+  pending-Invitation stage and Onboarding — ordering matters, matching
+  §2.2's own "checked FIRST" instruction for the Invitation check. A new
+  `retractedPhone` local-state value carries the just-rejected number back
+  into a freshly-remounted `AuthenticationFlow` (new `initialPhone` prop)
+  when "No, corregir número" fires.
+- **`settings.md §2.5/§3.3a` — "Tu cuenta" now shows her own verified
+  phone.** `SettingsScreen.tsx`'s `SettingsMain` reads `currentUser(state)?.phone`
+  (new `phone` prop), rendered read-only above "Cerrar sesión," formatted
+  identically to `CodeStep.tsx`'s own existing "+52 XX XXXX XXXX" grouping.
+  No new interaction, no new persisted state.
+- **Migration:** `loadState`'s existing older-localStorage backfill pattern
+  extended — a pre-existing `User` row with no `phoneMismatchConfirmationPending`
+  key defaults to `false`, the same "nothing to confirm" value a User who
+  predates this check would honestly have had all along.
+
+**Verification:** `tsc -b` and `npm run build` both clean. **No
+browser-automation tool was available this dispatch** (only `Read`/`Write`/
+`Edit`/`Bash`) — unlike this pass's own two bugs above, found via a real
+`puppeteer-core` walkthrough, this fix round's live end-to-end scenario
+(sign out → sign in with a wrong number → confirm §3.7e appears → "No,
+corregir número" returns to a pre-filled phone entry) was **not** run
+against the dev server, and that gap is disclosed explicitly here rather
+than silently absorbed as "done." What was done instead: a full manual
+trace of the exact write/read paths in the real code for the failure
+scenario, the ordinary zero-friction first-time case (never sets the flag,
+so the new stage never renders), and the "retype the same wrong number
+again" case (re-fires correctly). **A real browser walkthrough of this
+specific fix still needs to happen before this slice folds back into
+Approved** — this same document's own "Two real bugs found and fixed via
+live verification" section is the concrete reason code-level tracing alone
+isn't being treated as sufficient here.
+
 ## Files touched
 
 `src/domain/types.ts`, `src/domain/store.tsx`, `src/domain/selectors.ts`,
@@ -263,7 +331,9 @@ this document's own disclosure above).
 SessionHeader.tsx`/`.module.css`, `src/components/ProductTile/
 ProductTile.tsx`/`.module.css`, `src/components/VentaActualTray/
 VentaActualTray.tsx`/`.module.css`, `src/screens/Authentication/
-InvitationFlow.tsx`/`.module.css` (new), `src/screens/Settings/
+InvitationFlow.tsx`/`.module.css` (new), `AuthenticationFlow.tsx`,
+`PhoneMismatchConfirm.tsx`/`.module.css` (new, Slice 12 defect-fix round),
+`src/screens/Settings/
 SettingsScreen.tsx`, `TeamScreen.tsx`/`.module.css` (new),
 `AccesoRevocado.tsx`/`.module.css` (new), `src/screens/Home/HomeScreen.tsx`,
 `ColdStart.tsx`, `Idle.tsx`, `EventResume.tsx`, `NfcSessionStartNote.tsx`,

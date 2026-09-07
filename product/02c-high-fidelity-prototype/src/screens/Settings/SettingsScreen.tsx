@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../domain/store';
 import type { Business } from '../../domain/types';
-import { activeTeamCount } from '../../domain/selectors';
+import { activeTeamCount, currentUser } from '../../domain/selectors';
 import { addDaysToKey, formatDateRange, formatShortDate, todayKey } from '../../domain/dates';
 import { pluralize } from '../../domain/format';
 import { Button } from '../../components/Button/Button';
@@ -260,6 +260,7 @@ export function SettingsScreen({
         business={business}
         landed={landed}
         teamCount={activeTeamCount(state, business.id)}
+        phone={currentUser(state)?.phone ?? ''}
         onBack={onBack}
         onActivatePaidTap={() => setSubView({ kind: 'confirm', action: 'activate-paid' })}
         onDowngradeTap={() => setSubView({ kind: 'confirm', action: 'downgrade' })}
@@ -290,6 +291,7 @@ function SettingsMain({
   business,
   landed,
   teamCount,
+  phone,
   onBack,
   onActivatePaidTap,
   onDowngradeTap,
@@ -308,6 +310,14 @@ function SettingsMain({
   landed: { tier: 'free' | 'paid'; effectiveDate: string } | null;
   /** settings.md §2.7/§3.3a — active-status SELLER count, Paid tier only. */
   teamCount: number;
+  /** settings.md §2.5/§3.3a (Slice 12 `merchant-user-tester` defect fix,
+   * 2026-09-07) — `User.phone` for whichever User currently holds this
+   * device's verified session, read-only, shown in "Tu cuenta" above
+   * "Cerrar sesión." `''` only in the defensive case no verified
+   * `currentUser` resolves at all (unreachable through the real UI — this
+   * screen only ever mounts once Onboarding is complete, which itself
+   * requires a verified User). */
+  phone: string;
   onBack: () => void;
   onActivatePaidTap: () => void;
   onDowngradeTap: () => void;
@@ -437,9 +447,18 @@ function SettingsMain({
         )}
 
         {/* settings.md §2.5 — "Tu cuenta," present identically regardless of
-            subscriptionTier or pending-change state. */}
+            subscriptionTier or pending-change state. Her own verified phone
+            number (added 2026-09-07, Slice 12 `merchant-user-tester` defect
+            fix) sits above "Cerrar sesión," read-only, plain text — the one
+            place in the product she can always come back to and check which
+            number this device is verified under. */}
         <div className={`${styles.accountSection} stitchTop`}>
           <p className={styles.sectionLabel}>Tu cuenta</p>
+          {phone && (
+            <p className={styles.planLine}>
+              +52 {phone.slice(0, 2)} {phone.slice(2, 6)} {phone.slice(6)}
+            </p>
+          )}
           <Button variant="secondary" onClick={onSignOutTap}>
             Cerrar sesión
           </Button>

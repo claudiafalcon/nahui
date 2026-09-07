@@ -1,0 +1,73 @@
+/* authentication.md §3.7e — reuses InvitationFlow.module.css's own
+   centered/mark/copy/cta shape (this codebase's own "each screen folder
+   owns its own CSS Modules" convention — a local copy, not a cross-file
+   import), since this state is the same "Nahui mark, a short plain-language
+   message, one or two CTAs" composition every other confirm/offer screen in
+   this flow already uses. */
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-6);
+  padding: var(--space-12) var(--space-6) var(--space-8);
+  overflow: hidden;
+}
+
+.mark {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) 3px;
+  background: var(--color-blush);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4px 10px rgba(45, 45, 45, 0.14),
+    0 0 0 14px color-mix(in srgb, var(--color-blush) 14%, transparent),
+    0 0 0 32px color-mix(in srgb, var(--color-blush) 7%, transparent);
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--color-obsidian);
+}
+
+.body {
+  font: var(--text-body);
+  color: #6B6259;
+  max-width: 34ch;
+}
+
+/* The one fact this screen exists to reflect back to her plainly — the
+   same "reflect what she typed" shape §3.6's own OTP-destination line
+   already establishes, given visual weight since it's the actual mechanism
+   that catches a mistyped digit, not the surrounding copy. */
+.phone {
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.ctaStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 320px;
+}
+
+.cta {
+  max-width: 320px;
+  width: 100%;
+}

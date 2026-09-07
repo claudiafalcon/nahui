@@ -21,9 +21,17 @@ type AuthStep = { kind: 'phone'; prefill?: string } | { kind: 'code'; phone: str
  * including tapping back and forth between §3.3 and §3.6 via "← Cambiar
  * número" — nothing typed is lost, which is the guarantee that actually
  * matters for the walkthrough this pass builds.
+ *
+ * `initialPhone` (Slice 12 `merchant-user-tester` defect fix, 2026-09-07,
+ * `authentication.md` §3.7e) — set by `AppRouter.tsx` only when it just
+ * mounted this component fresh in response to "No, corregir número"
+ * (`PhoneMismatchConfirm.tsx`), so the just-typed, just-rejected number is
+ * preserved for editing rather than retyped from scratch — the identical
+ * pre-fill behavior "← Cambiar número" (§3.6) already gives, applied to a
+ * second escape hatch rather than a new one.
  */
-export function AuthenticationFlow() {
-  const [step, setStep] = useState<AuthStep>({ kind: 'phone' });
+export function AuthenticationFlow({ initialPhone }: { initialPhone?: string } = {}) {
+  const [step, setStep] = useState<AuthStep>({ kind: 'phone', prefill: initialPhone });
 
   if (step.kind === 'code') {
     return (

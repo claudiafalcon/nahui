@@ -98,9 +98,18 @@ function loadState(): AppState {
         // "Ahora no" persistence fix) has no `declinedInvitationIds` key at
         // all; defaulted to `[]`, the same honest "nothing declined yet"
         // starting value `verifyOtp` now writes for a brand-new row.
+        // Slice 12 (Slice-12-defect fix, 2026-09-07) — an older saved `User`
+        // row (before the §3.7e device-history check existed) has no
+        // `phoneMismatchConfirmationPending` key at all; defaulted to
+        // `false`, the same honest "nothing to confirm" value a User who
+        // predates this check would have had all along.
         const users: User[] = (
           Array.isArray(parsed.users) ? parsed.users : parsed.currentUser ? [parsed.currentUser] : []
-        ).map((u) => ({ ...u, declinedInvitationIds: u.declinedInvitationIds ?? [] }));
+        ).map((u) => ({
+          ...u,
+          declinedInvitationIds: u.declinedInvitationIds ?? [],
+          phoneMismatchConfirmationPending: u.phoneMismatchConfirmationPending ?? false,
+        }));
         const currentUserId: ID | null =
           parsed.currentUserId !== undefined ? parsed.currentUserId : (parsed.currentUser?.id ?? null);
 
@@ -506,6 +515,32 @@ interface StoreValue {
    * to `AuthenticationFlow` automatically the instant `phoneVerifiedAt`
    * clears — no further navigation call needed here. */
   signOut: () => void;
+  /** authentication.md §3.7e "Sí, es mi número" (Slice 12
+   * `merchant-user-tester` defect fix, 2026-09-07) — clears
+   * `User.phoneMismatchConfirmationPending` permanently for the current
+   * User, so `AppRouter.tsx`'s own `needsPhoneMismatchConfirmation`
+   * derivation stops firing for this row, on this render and every future
+   * one (including across a reload), and control falls through to
+   * `onboarding.md §3.3` exactly as an ordinary first-ever verification on a
+   * virgin device already would. See `types.ts`'s own `User.phoneMismatchConfirmationPending`
+   * doc comment for the full "why a persisted flag, not ephemeral state"
+   * reasoning. */
+  confirmPhoneMismatch: () => void;
+  /** authentication.md §3.7e "No, corregir número" (Slice 12
+   * `merchant-user-tester` defect fix, 2026-09-07) — reverts the
+   * just-completed verification of a phone she's telling us, right now,
+   * wasn't the one she meant to type. Mechanically identical to `signOut`
+   * (reverting `phoneVerifiedAt` to `null` is the one honest way this build
+   * represents "this device no longer treats this phone as currently
+   * active"), but named and documented separately: this User row was only
+   * ever minted this same moment (§2.2 case 1, a genuinely
+   * first-ever-anywhere phone) and holds no Business/Membership/Session/Sale
+   * of its own yet, so reverting it costs nothing real — a different
+   * situation from an ordinary account sign-out, even though both happen to
+   * share one write. `AppRouter.tsx` falls back to `AuthenticationFlow`
+   * automatically the instant `phoneVerifiedAt` clears, the identical
+   * mechanism `signOut` already relies on. */
+  retractMistypedVerification: () => void;
   /** settings.md §2.7 "Invitar a alguien" — writes a new `Invitation`
    * (`businessId`, `phone`, `role='SELLER'`, `status='pending'`), gated on
    * `subscriptionTier=paid` (composing with the existing gate, never a new
@@ -687,13 +722,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * device/instance (e.g. an OWNER signing out, a SELLER verifying, the
    * OWNER later re-verifying) resolve back to each one's own stable `User`
    * identity rather than accumulating a fresh row every time.
+   *
+   * **Slice 12 defect fix (2026-09-07) — `authentication.md` §2.2 case 1's
+   * new device-history check.** `phoneMismatchConfirmationPending` is set
+   * here, once, only for a genuinely brand-new row (`existing` undefined):
+   * `state.users.length > 0` at this exact instant already means some
+   * *other* phone previously held a verified session on this device — this
+   * exact phone matched nothing already in `state.users`, or it wouldn't be
+   * minting a new row at all, so any pre-existing row necessarily differs.
+   * No separate "last known phone" field is needed for that reason. Left
+   * untouched on a returning row (`existing` defined) — re-verifying an
+   * already-known phone is never itself the ambiguous moment this check
+   * exists for.
    */
   function verifyOtp(phone: string, _code: string): User {
     const now = Date.now();
     const existing = state.users.find((u) => u.phone === phone);
     const user: User = existing
       ? { ...existing, phoneVerifiedAt: existing.phoneVerifiedAt ?? now }
-      : { id: makeId('user'), phone, phoneVerifiedAt: now, createdAt: now, declinedInvitationIds: [] };
+      : {
+          id: makeId('user'),
+          phone,
+          phoneVerifiedAt: now,
+          createdAt: now,
+          declinedInvitationIds: [],
+          phoneMismatchConfirmationPending: state.users.length > 0,
+        };
     setState((s) => ({
       ...s,
       users: existing ? s.users.map((u) => (u.id === user.id ? user : u)) : [...s.users, user],
@@ -1377,6 +1431,45 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  /** authentication.md §3.7e "Sí, es mi número" (Slice 12 `merchant-user-tester`
+   * defect fix, 2026-09-07) — see the `StoreValue` interface doc comment
+   * above for the full reasoning. Clears `User.phoneMismatchConfirmationPending`
+   * permanently for the current User, the same "shown once ever" persisted-flag
+   * shape `markNfcAvailabilityNudgeShown` already uses. A no-op if no
+   * verified `currentUser` resolves (defensive — unreachable through the
+   * real UI, which only ever calls this from `PhoneMismatchConfirm.tsx`'s
+   * own re-check). */
+  function confirmPhoneMismatch() {
+    setState((s) => {
+      const id = s.currentUserId;
+      if (!id) return s;
+      return {
+        ...s,
+        users: s.users.map((u) => (u.id === id ? { ...u, phoneMismatchConfirmationPending: false } : u)),
+      };
+    });
+  }
+
+  /** authentication.md §3.7e "No, corregir número" (Slice 12
+   * `merchant-user-tester` defect fix, 2026-09-07) — see the `StoreValue`
+   * interface doc comment above for the full reasoning. Reverts this
+   * just-completed verification's `phoneVerifiedAt` to `null`, the identical
+   * write `signOut` makes, kept as its own named function rather than a
+   * second, unrelated call site inside that one's own doc comment: a real
+   * account sign-out and correcting a fresh typo are different
+   * merchant-facing moments that happen to share one mechanism, not one
+   * action wearing two names. Safe to reuse here specifically because this
+   * User row, by construction (§3.7e is only ever reached for a genuinely
+   * first-ever-anywhere phone), holds no Business, Membership, Session, or
+   * Sale of its own yet — nothing real is at risk from reverting it. */
+  function retractMistypedVerification() {
+    setState((s) => {
+      const id = s.currentUserId;
+      if (!id) return s;
+      return { ...s, users: s.users.map((u) => (u.id === id ? { ...u, phoneVerifiedAt: null } : u)) };
+    });
+  }
+
   /** settings.md §2.7 "Invitar a alguien" (§3.12) — see this function's own
    * `StoreValue` doc comment for the full reasoning. Defensive re-check
    * mirrors the UI's own inline validation (§3.12: a duplicate pending
@@ -1529,6 +1622,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     markNfcAvailabilityNudgeShown,
     reconcilePendingSubscriptionTier,
     signOut,
+    confirmPhoneMismatch,
+    retractMistypedVerification,
     createInvitation,
     acceptInvitation,
     declineInvitation,

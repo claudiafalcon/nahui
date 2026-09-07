@@ -81,6 +81,33 @@ export interface User {
    * (`AppRouter.tsx`), not per-Business. Set only by `declineInvitation`
    * ("Ahora no"); never read or written anywhere else. */
   declinedInvitationIds: ID[];
+  /**
+   * `authentication.md` §2.2 case 1's new device-history check / §3.7e
+   * (Slice 12 `merchant-user-tester` defect fix, 2026-09-07) — "does this
+   * device remember a phone number that previously held a session on it —
+   * any phone, at any point, even long since signed out — that differs
+   * from the one just confirmed?" A plain local marker (the same
+   * "below this document's abstraction level" treatment `declinedInvitationIds`
+   * already gets), set exactly once, by `verifyOtp` (`store.tsx`), at the
+   * one moment this fact is actually decidable: when a genuinely
+   * first-ever-anywhere phone mints its own brand-new `User` row and
+   * `state.users` already holds at least one other row at that instant —
+   * which, by construction, can only be a *different* phone (this exact
+   * phone would otherwise have matched an existing row instead of minting
+   * a new one). Never recomputed on a later re-verification of the same
+   * phone. Cleared to `false` only by `confirmPhoneMismatch` ("Sí, es mi
+   * número," §3.7e) — the same "shown once ever" persisted-flag shape
+   * `Business.nfcAvailabilityNudgeShown`/`pendingSubscriptionTierAcknowledged`
+   * already use, chosen deliberately over an ephemeral React-state latch so
+   * the "never ask twice" guarantee survives a reload landing between this
+   * confirmation and `onboarding.md §3.5`'s own Business-creation write.
+   * Deliberately a *separate* device fact from the session itself:
+   * `signOut` (`settings.md §2.5`) only ever flips `phoneVerifiedAt` — it
+   * never touches this field, which is exactly what lets this check fire in
+   * the one situation it exists for (a signed-out device, re-verified with
+   * a mistyped number).
+   */
+  phoneMismatchConfirmationPending: boolean;
 }
 
 export type MembershipRole = 'OWNER' | 'SELLER';

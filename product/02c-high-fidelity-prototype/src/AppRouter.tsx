@@ -5,6 +5,7 @@ import { currentUser, findMembership, pendingInvitationsForPhone } from './domai
 import { businessForCurrentUser, isOnboardingComplete } from './domain/onboardingResolution';
 import { AuthenticationFlow } from './screens/Authentication/AuthenticationFlow';
 import { InvitationFlow } from './screens/Authentication/InvitationFlow';
+import { PhoneMismatchConfirm } from './screens/Authentication/PhoneMismatchConfirm';
 import { OnboardingFlow } from './screens/Onboarding/OnboardingFlow';
 
 /**
@@ -83,23 +84,33 @@ import { OnboardingFlow } from './screens/Onboarding/OnboardingFlow';
  * (§3.10c's own "Ir a Hoy" tap) or `onDeclined` ever clears it.
  */
 export function AppRouter() {
-  const { state, declineInvitation } = useStore();
+  const { state, declineInvitation, confirmPhoneMismatch, retractMistypedVerification } = useStore();
   const [lockedInvitation, setLockedInvitation] = useState<ReturnType<typeof pendingInvitationsForPhone>[number] | null>(
     null,
   );
+  // authentication.md §3.7e (Slice 12 `merchant-user-tester` defect fix,
+  // 2026-09-07) — the just-rejected number from "No, corregir número," so
+  // the freshly-remounted `AuthenticationFlow` below can pre-fill it rather
+  // than making her retype it. See that branch's own comment further down.
+  const [retractedPhone, setRetractedPhone] = useState<string | undefined>(undefined);
 
   const user = currentUser(state);
   const authenticated = user?.phoneVerifiedAt != null;
 
+  // Reused by both the pending-Invitation derivation below and
+  // `needsPhoneMismatchConfirmation` further down — both are the identical
+  // "zero Membership anywhere AND zero Business anywhere for this User"
+  // test `authentication.md` §2.2 case 0/§2.2 case 1 each open with, just
+  // gated on a different second condition (a pending Invitation vs. a
+  // device-history mismatch).
+  const hasAnyMembership = authenticated && user ? state.memberships.some((m) => m.userId === user.id) : false;
+  const hasOwnBusiness = authenticated && user ? businessForCurrentUser(state) != null : false;
+
   let derivedPendingInvitation = undefined as ReturnType<typeof pendingInvitationsForPhone>[number] | undefined;
-  if (authenticated && user) {
-    const hasAnyMembership = state.memberships.some((m) => m.userId === user.id);
-    const hasOwnBusiness = businessForCurrentUser(state) != null;
-    if (!hasAnyMembership && !hasOwnBusiness) {
-      const candidate = pendingInvitationsForPhone(state, user.phone)[0];
-      if (candidate && !user.declinedInvitationIds.includes(candidate.id)) {
-        derivedPendingInvitation = candidate;
-      }
+  if (authenticated && user && !hasAnyMembership && !hasOwnBusiness) {
+    const candidate = pendingInvitationsForPhone(state, user.phone)[0];
+    if (candidate && !user.declinedInvitationIds.includes(candidate.id)) {
+      derivedPendingInvitation = candidate;
     }
   }
   // See this component's own doc comment for why a live derivation alone
@@ -113,6 +124,20 @@ export function AppRouter() {
     // re-running on every subsequent identity change of that value would
     // defeat the whole point of latching it.
   }, [derivedPendingInvitation]);
+
+  // authentication.md §2.2 case 1's new device-history check / §3.7e (Slice
+  // 12 `merchant-user-tester` defect fix, 2026-09-07). "Checked FIRST,
+  // before 1–3" (§2.2's own case-0 ordering) is respected here by rendering
+  // this branch only *after* `pendingInvitation` in the JSX below, not by
+  // excluding it from this boolean — the same convention `isSeller`/
+  // `isOnboardingComplete` already follow for their own ternary-ordering.
+  // `user.phoneMismatchConfirmationPending` alone would already be correct
+  // (it can only ever be true for a User with zero Membership/Business,
+  // `verifyOtp`'s own invariant), but the explicit `!hasAnyMembership &&
+  // !hasOwnBusiness` guard is kept for the same defensive-redundancy style
+  // this file's other derivations already use.
+  const needsPhoneMismatchConfirmation =
+    authenticated && !!user && user.phoneMismatchConfirmationPending && !hasAnyMembership && !hasOwnBusiness;
 
   // This prototype models exactly one `Business` per running instance
   // (`types.ts`'s own "the whole AppState is implicitly one Business"
@@ -156,8 +181,11 @@ export function AppRouter() {
         // silently and directly into onboarding.md §3.3 — no interstitial
         // "¡verificado!" screen (§10). Nothing further to do here: once
         // `verifyOtp` sets `phoneVerifiedAt`, this component re-renders and
-        // falls through below.
-        <AuthenticationFlow />
+        // falls through below. `retractedPhone` (Slice 12 defect fix) is
+        // only ever non-`undefined` immediately after "No, corregir número"
+        // below — an ordinary fresh open, or a genuine account sign-out,
+        // never sets it.
+        <AuthenticationFlow initialPhone={retractedPhone} />
       ) : pendingInvitation ? (
         <InvitationFlow
           invitation={pendingInvitation}
@@ -173,6 +201,28 @@ export function AppRouter() {
             // resolution inside `<App />`. `isOnboardingComplete` is
             // irrelevant to a SELLER — she never runs Onboarding at all.
             setLockedInvitation(null);
+          }}
+        />
+      ) : needsPhoneMismatchConfirmation && user ? (
+        // authentication.md §3.7e (Slice 12 `merchant-user-tester` defect
+        // fix, 2026-09-07) — see `needsPhoneMismatchConfirmation`'s own
+        // derivation above for why this sits after `pendingInvitation` but
+        // before every other branch: a first-ever-anywhere phone must never
+        // reach `onboarding.md §3.3` — and so never `onboarding.md §3.5`'s
+        // own Business-creation write — while this device still remembers a
+        // different phone's prior session, unconfirmed. `&& user` here only
+        // narrows the type for the JSX below — `needsPhoneMismatchConfirmation`
+        // is already structurally `false` whenever `user` is undefined.
+        <PhoneMismatchConfirm
+          phone={user.phone}
+          onConfirm={() => confirmPhoneMismatch()}
+          onCorrect={() => {
+            // Preserve the just-typed number for the freshly-remounted
+            // `AuthenticationFlow` above, then revert this User row's own
+            // verification — `authenticated` flips false on the very next
+            // render, which is what actually swaps this component out.
+            setRetractedPhone(user.phone);
+            retractMistypedVerification();
           }}
         />
       ) : isSeller ? (
