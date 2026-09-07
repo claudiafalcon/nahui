@@ -558,6 +558,18 @@ This does not change product direction, business behavior, the Foundation, or UX
 `company/backlog.md` #3 (Bazaar recommendation) stays explicitly out of this
 sequencing — blocked, no data source exists, not attempted.
 
+## Recommendation — next slice: **Q24/Q25 first usable version (multi-staff concurrent selling), Slice 12** (2026-09-07)
+
+**1. Product learning value — decisive, the same bar Slice 7's own recommendation was held to.** Real, unsolicited DM-pilot merchant feedback requested exactly this capability (`company/backlog.md`'s "Event-scoped inventory allocation" Discovery entry, 2026-09-03) — this is validated demand, not a speculative build. Multi-Membership concurrent selling is an entirely untested core assumption: no `merchant-user-tester` walk, no build, has ever exercised more than one `BusinessMembership` acting at once.
+
+**2. Merchant value — real and direct.** Lets a real merchant actually add family/staff and sell concurrently at one bazaar, the exact friction the requesting merchant named.
+
+**3. Dependency graph — unblocks the largest remaining Q24/Q25 surface.** The deferred remainder (NFC-scan allocation, cross-Event reallocation, reconciliation, richer seller analytics) all build directly on top of this slice's `EventAllocation`/`Invitation`/`actingMembership` primitives — none of it is reachable without this slice landing first.
+
+**4. Effort — large, the largest single slice since Slice 2.** Four sub-phases per `architect`'s Gap Analysis (`context/q24-q25-first-slice.md`): a foundational refactor (`currentUser` singleton → `users[]`, `actingMembership` selector, dead D17-check removal), the Identity capability (`Invitation`/revocation/attribution), the Home role experience + D53 resolution, and manual `EventAllocation` + lost-the-race. Doesn't override 1-3, but is why this slice is scoped explicitly to the Product Owner's own "first usable version" priority rather than the full Q24/Q25 capability surface.
+
+**Scope, Foundation grounding, and the full Gap Analysis:** `context/q24-q25-first-slice.md`.
+
 ### Historical: recommendation that led to NFC Selling (Slice 7, complete)
 
 **NFC Selling (D.2) is complete** — see "What's built (Slice 7)" above; the
