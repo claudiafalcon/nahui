@@ -20,6 +20,8 @@ events.changelog.md#status-evt-q1-empieza-hoy-default]**
 
 **Further amended 2026-09-06 (`decision-log.md` D53 — D17 superseded, simultaneous multi-Event operation now supported):** the entire D17 overlap-validation mechanism (inline warning, disabled Guardar evento) is removed outright — D53 retired the single-active-Event rule it existed to enforce. Guardar evento's gate reverts to Lugar + Tipo alone, unconditionally. **[see events.changelog.md#status-2026-09-06-d53-overlap-validation-retired]**
 
+**Further amended 2026-09-06 (`product-decisions.md` Q24/Q25 — Event-scoped inventory allocation, settled architecture, RFCs not yet authored):** new §3.21–§3.25 design the full allocation lifecycle — initial allocation, replenish, reallocate between simultaneous Events, and explicit reconciliation at Event close — reachable via a new "Llevar mercancía" action on scheduled-Event detail (§3.11) and "Ver mercancía de este evento" on active-Event detail (§3.14/§3.15), both landing on the identical shared screen (§3.21), unlike "Ajustar precios" which stays strictly `scheduled`-only (see §3.21's own annotation for why this is a deliberate divergence, not an inconsistency). Gated OWNER-only per `product-decisions.md` Q24/Q25's settled permission table — the SELLER-role experience of these screens is not designed in this pass (§8). Grounded entirely in Q24/Q25's settled design (`EventAllocation`/`AllocationMovement`, the physical-location-exclusivity invariant, the single-local-transaction reallocation mechanism) — the two RFCs formalizing this into `domain-model.md` are not yet authored; this UX design does not wait on that authorship. Pending `ux-critic`/`reviewer`.
+
 **Amended 2026-08-04 (icon/comprehension audit):** §3.4/§3.5's Events list
 cards now show Event type alongside `Venue.displayName` ("Plaza Norte ·
 Bazar"), matching the subordinate role Type already has on Detail screens.
@@ -550,15 +552,17 @@ real current date, same as any other date field in this doc.)
 │  19-21 de agosto                  │
 │  Costo: $3,500                     │  passive info, only shown if set
 │                                │
+│      [ Llevar mercancía ]        │  secondary, optional
 │      [ Ajustar precios ]         │  secondary, optional
 │      [ Cancelar evento ]         │
 ├───────────────────────────────┤
 │ Hoy  Inventario [Eventos] Resultados │
 └───────────────────────────────┘
 ```
-- Passive info (Venue name, type, dates) + exactly one action. No edit
-  affordance designed — see §11. No Sessions exist yet (the Event hasn't
-  started), so there's nothing else to show.
+- Passive info (Venue name, type, dates) + exactly two secondary actions.
+  No edit affordance designed — see §11. No Sessions exist yet (the Event
+  hasn't started), so there's nothing else to show.
+- **"Llevar mercancía" — new secondary action (`product-decisions.md` Q24/Q25), opens §3.21.** Optional and non-gating: an Event with zero allocations remains exactly as valid and sellable as one with several — Selling's FIFO/manual resolution against the general pool is entirely unaffected by whether allocation was ever used for this Event (allocation is a planning aid, never a precondition for selling). OWNER-only, per `product-decisions.md` Q24/Q25's settled permission table.
 - **"Ajustar precios" — new secondary action, applies `decision-log.md`
   D33.** Opens §3.19's per-Product Price Override list for this Event.
   Optional and non-gating: an Event with zero overrides is exactly as
@@ -668,10 +672,12 @@ real current date, same as any other date field in this doc.)
 │  Día 1 · 12 jul · 5 ventas · $610  │
 │                                │
 │      [   Continuar Día 2     ]   │
+│      [ Ver mercancía de este evento ] │  secondary
 ├───────────────────────────────┤
 │ Hoy  Inventario [Eventos] Resultados │
 └───────────────────────────────┘
 ```
+- **"Ver mercancía de este evento" — new secondary action (`product-decisions.md` Q24/Q25), opens the identical §3.21 "Llevar mercancía" reaches from §3.11 (shared state, per `product/02-ux/CLAUDE.md` §4).** Present throughout the Event's `active` life, unlike "Ajustar precios" (absent from every active-state screen per this section's own annotation below) — see §3.21's own annotation for why this divergence is deliberate. OWNER-only.
 - **Headline is `Venue.displayName` ("Plaza Norte")**, same slot the former
   Nombre ("Bazar Plaza Norte") occupied; Tipo stays its own separate line
   ("Bazar · 12-14 de julio"), unaffected by the Venue change. No separate
@@ -751,10 +757,12 @@ under this `eventId` (new — closes `architect-questions.md` Q19,
 │  Día 1 · 12 jul · 5 ventas · $610  │
 │                                │
 │  [ Vendiendo ahora · Día 2 ▸ ]   │  tappable → Hoy, resumes selling exactly
-├───────────────────────────────┤   donde she left it
+│  [ Ver mercancía de este evento ] │  secondary — donde she left it
+├───────────────────────────────┤
 │ Hoy  Inventario [Eventos] Resultados │
 └───────────────────────────────┘
 ```
+- **"Ver mercancía de este evento" — same new secondary action as §3.14 (`product-decisions.md` Q24/Q25), opening the identical shared §3.21.** OWNER-only.
 - Reads the same underlying priority fact Home's §2 checks first ("is there a
   Session with status = active"), scoped here to this specific Event's
   `eventId` — Home's own check doesn't need that filter since it just needs
@@ -783,6 +791,46 @@ under this `eventId` (new — closes `architect-questions.md` Q19,
 │ Hoy  Inventario [Eventos] Resultados │
 └───────────────────────────────┘
 ```
+
+**With unresolved mercancía allocated (new §3.25 — `product-decisions.md` Q24/Q25, extends this state):**
+```
+┌───────────────────────────────┐
+│ ← Eventos                        │
+│  Plaza Metepec                    │
+│  Bazar · 5-7 de julio               │
+│  Costo: $2,500                     │  passive info, only shown if set
+│                                │
+│  3 días · 18 ventas · $2,340      │
+│                                │
+│  Mercancía de este evento que      │
+│  no se vendió:                   │
+│  ┌───────────────────────────┐ │
+│  │ Bolsas — 3 sin vender         │ │
+│  │  [ Regresar a inventario     │ │
+│  │    general ]                 │ │
+│  │  [ Mover a otro evento ]      │ │
+│  ├───────────────────────────┤ │
+│  │ Playeras — 1 sin vender       │ │
+│  │  [ Regresar a inventario     │ │
+│  │    general ]                 │ │
+│  │  [ Mover a otro evento ]      │ │
+│  └───────────────────────────┘ │
+│                                │
+│      [ Ver resumen en Resultados ]│
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+- **This is a real, persistent screen state on the closed-Event detail — not the ambient/fading pattern this doc uses for confirmations (§3.10/§3.13).** It renders whenever this closed Event has 1+ `EventAllocation` still `status = open` with unsold remaining stock (`quantityRemaining > 0` for manual, or ≥1 `available`-status unit still in `allocatedUnitIds` for NFC), and stays until every row is resolved — never a dismiss-and-forget banner. This is the Product Owner's own explicit "must never happen silently" requirement made real, not merely stated.
+- **Precedent for a persistent, must-resolve-but-non-blocking screen section: `inventory.md` §3.5's pending-tag-work Catalog state** — a real, standing state on an existing screen (not a modal/sheet), with a primary action, that disappears once resolved and never blocks any other capability. Reused here rather than inventing a new "reminder" primitive.
+- **Copy stays inside this document's own established plain, factual, non-judgmental register** for a zero/leftover-data state — "no se vendió," not "te quedaste con," "olvidaste vender," or any framing that reads as her failure. Same tonal family as §3.17's "No registraste ventas en este evento" and §3.4/§3.5's "Sin ventas registradas" — a routine fact about an Event, never a scold.
+- **Two actions per unresolved Product row, matching the Product Owner's own named pair exactly, applied per-row rather than Event-wide** — a merchant who wants to return some Products and move others to her next Event can do exactly that, consistent with D33's "she only edits the groups she actually wants to adjust for that event" precedent, applied here to reconciliation instead of pricing.
+- **"Regresar a inventario general" is a single, immediate tap — no confirmation dialog.** Writes `return_to_general` and sets `status = reconciled` for that row directly; ambient "Bolsas regresada a inventario general ✓" (fades); the row disappears from this list immediately. **Deliberately not treated as a rare/irreversible action requiring the confirmation-sheet pattern §3.12 reserves for Cancelar Evento** — returning stock to the general pool is safe and reversible in effect (she can always re-allocate it again later), so adding a confirmation step here would be padding a routine action, not protecting an irreversible one.
+- **"Mover a otro evento" opens §3.24's closed-source variant**, scoped to that one Product, pre-stated at the full unsold amount.
+- **Section disappears entirely, reverting to the plain screen already specified above, once every row is resolved** — exactly per the Product Owner's own instruction; never a hard block on "Ver resumen en Resultados" or anything else on this screen, matching this document's own §1 "not time-critical" posture.
+- **OWNER-only, per `product-decisions.md` Q24/Q25's settled permission table** — the SELLER-role experience of this screen is not designed here (§8).
+
+**NFC-mode reconciliation — a deliberate departure from the live-allocation scan requirement, reasoned explicitly.** Neither "Regresar a inventario general" nor "Mover a otro evento" ever asks for a fresh scan, for either manual or NFC-tagged remaining stock. Live allocation (§3.21/§3.22) requires a scan because, at that moment, the system doesn't yet know which specific tagged garments she's actually picking up — the scan *establishes* that fact and enforces the physical-location-exclusivity invariant in the same motion. By the time an Event closes, the exact set of unsold tagged units is already fully and unambiguously known — it's whatever remains in that `EventAllocation`'s own `allocatedUnitIds` after every Sale that ever consumed against it, and the exclusivity invariant guarantees nothing else could have touched those specific units meanwhile. Reconciliation is a bookkeeping update to an already-true record, not a new claim of physical possession — requiring a re-scan here would ask the system to re-verify something it already knows with certainty, a direct violation of *global-principles.md*'s "never ask twice," and would actively work against her, since reconciliation typically happens after the fact, possibly with the garments not all gathered in one place. "Regresar a inventario general" flips the already-known remaining `allocatedUnitIds` back to `available` directly; "Mover a otro evento" resolves which specific units transfer the same automatic way FIFO already resolves "which unit" in Buttons-mode selling.
 - **Corrected per Architect's resolution of Q7** (`product/02-ux/architect-questions.md`,
   Resolved): `information-architecture.md`'s nav table already assigns
   "Session/Event summaries" to Resultados; Eventos' own stated job is
@@ -985,6 +1033,225 @@ registered no Products at all yet in Inventario:
   point-of-sale override/haggling and promotions/discount pricing — this
   screen is not, and must never become, that mechanism.
 
+### 3.21 Mercancía para este evento — lista por producto (new, shared: "Llevar mercancía" / "Ver mercancía de este evento" — `product-decisions.md` Q24/Q25)
+
+```
+┌───────────────────────────────┐
+│ ← Plaza Norte                    │
+│  Mercancía para este evento        │
+│  Elige cuánto llevas de cada        │
+│  producto. Lo que no asignes se     │
+│  queda disponible para tus otros    │
+│  eventos.                        │
+│  ┌───────────────────────────┐ │
+│  │ Bolsas — Para este evento: 7  │ │
+│  │ Disponible en general: 8       │ │
+│  │ sin tag · 4 con tag            │ │
+│  │                             │ │
+│  │ Cantidad sin tag               │ │
+│  │  [ − ]  [ 5 ]  [ + ]           │ │
+│  │  (o escribe la cantidad)       │ │
+│  │                             │ │
+│  │ [ Escanear las que te llevas ] │ │
+│  │  2 escaneadas                  │ │
+│  │                             │ │
+│  │ [ Mover a otro evento ]        │ │
+│  ├───────────────────────────┤ │
+│  │ Accesorios — Para este evento: 0│ │
+│  │ Disponible en general: 12      │ │
+│  │  [ − ]  [ 0 ]  [ + ]           │ │
+│  │  (o escribe la cantidad)       │ │
+│  └───────────────────────────┘ │
+│      [    Guardar cambios    ]   │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+**Zero-Catalog-Products variant** (consistent with §3.19's own empty-state register):
+```
+┌───────────────────────────────┐
+│ ← Plaza Norte                    │
+│  Mercancía para este evento        │
+│  Todavía no registraste ningún      │
+│  producto. Registra mercancía en    │
+│  Inventario para poder llevar       │
+│  mercancía a este evento.           │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+- **Two entry points, one screen — a deliberate, real divergence from "Ajustar precios."** "Llevar mercancía" (§3.11, `scheduled`) and "Ver mercancía de este evento" (§3.14/§3.15, `active`) both land here, unchanged between them. This is a shared state per `product/02-ux/CLAUDE.md` §4's own rule (reference by canonical ID at every entry point, not restated). **Contrast with "Ajustar precios" (§3.19/§3.20), which is strictly `scheduled`-only and disappears entirely once an Event goes `active`:** Price Override is finalized-then-frozen, a one-time planning decision with no reason to revisit once selling starts. Allocation is the opposite — replenishing a Product that's running low, reallocating to a simultaneously-running Event, are things that specifically *only* make sense once selling is underway (`product-decisions.md` Q24/Q25's own lifecycle: "concurrent Sales consume against it → replenish() any number of times → reallocate(toEventId)"). Keeping this screen reachable throughout the Event's whole open life, unlike Price Override, is the correct application of the same underlying rule (D33's "finalized before activation, fixed for the duration"), not an exception to it — the two capabilities simply have opposite lifecycles by their own nature.
+- **One row per Catalog Product she's ever registered** — same source, same reasoning as §3.19 ("what she'd charge/bring... independent of that day's stock" for pricing; here, independent of whether she's decided to bring it at all).
+- **"Disponible en general" = Business-wide total minus whatever's allocated to every *other* open `EventAllocation`** — deliberately *includes* what's already allocated to *this* Event, since that stock is already hers to freely reassign within this screen, not "elsewhere." This is what makes the manual stepper's ceiling exactly equal to the displayed "Disponible en general" figure — no separate, unexplained cap.
+- **The "sin tag · con tag" split only renders when this Business has NFC capability *and* this specific Product has ≥1 available tagged unit** — otherwise a single plain "Disponible en general: N" figure, identical to `inventory.md` §3.4's own Catalog-row language, and the row shows only the manual stepper (no scan affordance at all). Reuses the exact "tienen tag" plain-language register `home.md` §3.6a already established for surfacing NFC state to Ana — never "NFCTag," "reserved," or "allocatedUnitIds."
+- **Manual and NFC-scan input compose on the same row rather than forcing a choice** (`product-decisions.md` Q24/Q25: "a Product can have both simultaneously... the same mixed state NFC Readiness already models elsewhere"). This reuses the same disambiguation principle `inventory.md` §3.4's Catalog row already established for its own three independent, non-overlapping tap zones (marker/body/price) — two independently-operable affordances on one row here, each targeting its own distinct pool (manual → untagged units, scan → tagged units), never resolving ambiguously between them.
+- **Manual quantity stepper — reuses `inventory.md` §3.6's Cantidad stepper shape (`[−]`/`[+]`/typed entry via `teclado numérico`) with one deliberate difference: floor is 0, not 1.** Cantidad's floor-of-1 exists because "0 units received" isn't a real receiving event; here, "0 units allocated to this Event" *is* a real, valid decision (she may simply choose not to bring a Product at all) — the two fields share a shape, not an identical business meaning. Ceiling = the row's own "Disponible en general" figure; `[+]` goes inert at the ceiling (symmetric to Cantidad's own inert-at-floor `[−]` behavior), and typing past it clamps to the ceiling with a one-line inline message ("Solo tienes N disponibles.") rather than a rejected/blocked keystroke.
+- **A successful scan is a live, immediate write — reserves that specific unit to this Event's allocation the instant it's read, exactly like `inventory.md` §3.14's Asignar Tags convention ("no per-unit confirmation tap").** It is *not* staged behind "Guardar cambios." "Para este evento" and the "con tag" figure update immediately on each successful scan; "Disponible en general" decrements live in step, keeping the manual stepper's ceiling honest without her computing anything.
+- **"Guardar cambios" commits only the manual (staged) quantities** — matches Registrar Mercancía's own multi-line-entry-then-single-commit shape (`inventory.md` §3.6/§3.7), reused rather than inventing a new batch pattern. Leaving this screen before tapping it discards only the unsaved manual edits (already-scanned units stay committed) — a deliberate choice for internal consistency with this document's own precedent (§10: "Nuevo Evento's draft is not auto-preserved across interruption"), not imported from Inventario's different draft-preservation posture.
+- **Whichever of `initial_allocation` / `replenish` / `adjustment` movement type actually applies is resolved entirely from current state, invisibly** (`product-decisions.md` Q24/Q25's `AllocationMovement` enum) — she only ever sees "Para este evento" go up or down; she never picks or is told which underlying movement type wrote.
+- **"Mover a otro evento" only appears on a row once "Para este evento" > 0** (nothing to move otherwise) — opens §3.24, live variant, scoped to that one Product.
+- Same near-instant/slow/error save convention as every other write in this doc (§3.9), detailed in new §3.23.
+- **OWNER-only**, per `product-decisions.md` Q24/Q25's settled permission table — the SELLER-role experience isn't designed here (§8).
+
+### 3.22 Escaneando — cola de escaneo (por Producto) (new — `product-decisions.md` Q24/Q25)
+
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │
+│  Escaneando: Bolsas               │
+│  Ya escaneadas: 2                 │
+│  Disponibles con tag: 4            │
+│                                │
+│      Acerca el tag de la          │
+│      prenda que te llevas          │
+│                                │
+│  [ Terminar ]                    │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+**Error — prenda ya asignada a otro evento** (the physical-location-exclusivity invariant, made visible):
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │
+│  Escaneando: Bolsas               │
+│  Esta prenda ya está en otro       │
+│  evento. Usa otra.               │
+│  Ya escaneadas: 2                 │
+│  Disponibles con tag: 4            │
+│      Acerca el tag de la          │
+│      prenda que te llevas          │
+│  [ Terminar ]                    │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+**Error — no se pudo leer:**
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │
+│  Escaneando: Bolsas               │
+│  No se pudo leer el tag.          │
+│  Acércalo de nuevo.               │
+│  Ya escaneadas: 2                 │
+│  Disponibles con tag: 4            │
+│      Acerca el tag de la          │
+│      prenda que te llevas          │
+│  [ Terminar ]                    │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+- Reached from §3.21's "Escanear las que te llevas." Reuses `inventory.md` §3.14/§3.15/§3.16's Asignar Tags shape and error register verbatim, not reinvented — same physical gesture, same failure classes (business-logic conflict vs. genuine read failure), same "business language before technical language" discipline (no UID, no "reserved," no "conflict").
+- **The "ya está en otro evento" error is the direct UI surface of `product-decisions.md` Q24/Q25's exclusivity invariant** ("a unit ID may appear in at most one `open` `EventAllocation.allocatedUnitIds` at a time, enforced via `InventoryUnit`'s existing `available→reserved` conditional write") — this is what makes the error possible at all: she physically tries to take a garment that's already committed elsewhere, and the system tells her plainly rather than silently double-booking it.
+- "Terminar" returns to §3.21; every scanned-so-far unit stays committed (§3.21's own annotation) — a failing tag never traps her or discards prior progress, same guarantee `inventory.md` §3.16 already gives.
+
+### 3.23 Guardando cambios de mercancía — saving / error (new — bulk manual commit, `product-decisions.md` Q24/Q25)
+
+```
+┌───────────────────────────────┐   ┌───────────────────────────────┐
+│                                │   │        Guardando…              │
+│        ▢▢▢▢▢▢▢▢▢▢▢▢            │   │                                │
+├───────────────────────────────┤   ├───────────────────────────────┤
+│ Hoy Inventario [Eventos] Resultados│ Hoy Inventario [Eventos] Resultados│
+└───────────────────────────────┘   └───────────────────────────────┘
+
+┌───────────────────────────────┐
+│  No se pudo guardar. Tus         │
+│  cambios siguen aquí, intenta     │
+│  de nuevo.                       │
+│      [   Reintentar   ]          │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+Ambient post-save (stays on §3.21 — no forced navigation, matching §3.10/§3.13's ambient-confirmation posture):
+```
+Mercancía actualizada ✓   (ambient, fades)
+```
+- Identical failure guarantee to §3.9 — a failed save never drops her typed quantities. This write carries a stable idempotency key per `architecture-principles.md` #7, since "Reintentar" is a client-initiated retry on a write with real merchant-facing consequence.
+
+### 3.24 Mover a otro evento (new — `product-decisions.md` Q24/Q25)
+
+**Live variant (from §3.21 or an active-Event context — partial quantities expected):**
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │  dimmed, visible underneath
+│  Mover Bolsas a otro evento        │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  A qué evento                    │
+│   [ Elegir evento ▾ ]             │
+│                                │
+│  Cuánto llevas                   │
+│   [ − ]  [ 0 ]  [ + ]             │
+│   (o escribe la cantidad)         │
+│  Tienes 5 disponibles aquí         │
+│  para mover.                     │
+│                                │
+│  [ Escanear las que te llevas ]   │  only if this Product has
+│  0 escaneadas                     │  tagged units allocated here
+│                                │
+│  [ Cancelar ]  [ Mover mercancía ] │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+**Destination picker sub-sheet ("Elegir evento"):**
+```
+┌───────────────────────────────┐
+│ ← Mover Bolsas a otro evento      │  dimmed
+│  ¿A qué evento la llevas?         │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Plaza Toluca · Expo · empieza en 5 días │
+│  Ixtapan · Bazar · Día 1 de 3       │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+Zero-other-Events: `No tienes otro evento programado o activo todavía.` — plain, no CTA designed, same restraint as §3.19's own zero-Catalog-Product state.
+
+**Closed-source variant (reconciliation entry, §3.25/§3.16 — no scan step, fixed full-remaining amount):**
+```
+┌───────────────────────────────┐
+│ ← Plaza Metepec                  │  dimmed
+│  Mover Bolsas que no se           │
+│  vendieron                       │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  A qué evento                    │
+│   [ Elegir evento ▾ ]             │
+│                                │
+│  Vas a mover 3 Bolsas que no       │
+│  se vendieron en este evento.      │
+│                                │
+│  [ Cancelar ]  [ Mover mercancía ] │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+Saving/error/ambient confirmation for either variant — identical shape to §3.23, worded for this action:
+```
+No se pudo mover. Tu mercancía sigue en [Venue origen], intenta de nuevo.
+                                                    [Reintentar]
+
+Mercancía movida ✓   (ambient, fades, returns to the screen she came from)
+```
+
+- **Destination picker lists only this Business's other `scheduled`/`active` Events, never the current one and never a create-inline option** — reuses §3.7/`inventory.md` §3.8's picker shape minus the create-new branch, since there's nothing to create here (she'd Agendar Evento first, separately, then return).
+- **"Tienes N disponibles aquí para mover" — the same honest-ceiling rule as §3.21's manual stepper, applied to "currently remaining at the source" instead of "disponible en general."** One rule, two screens, not two separately-invented ceiling concepts.
+- **The underlying two-write mechanism is entirely invisible to Ana.** `product-decisions.md` Q24/Q25's finalized design ("a single local DB transaction spanning both `EventAllocation` rows... one commit") is what "Mover mercancía" actually performs — one save state (§3.23's shape, reused), one confirmation, no intermediate "step 1 of 2" ever shown. If it fails, nothing has moved (the error copy says exactly that) — she retries the same single action, not a resume-from-halfway state.
+- **Live variant: partial quantities are the expected case** (she's not closing anything — the source Event may keep selling against what's left) — editable stepper/scan input, defaulting to 0.
+- **Closed-source variant (reconciliation): no stepper, no scan input, a fixed, pre-stated full-remaining amount.** This follows directly from `product-decisions.md` Q24/Q25's own framing — `return_to_general` *or* `reallocate_out` is "what actually closes the allocation," language that describes fully resolving the row, not partially splitting it. A partial split at reconciliation time (move some, return the rest of the same Product) is a real but narrower case, explicitly deferred, not designed here — see §11.
+- **Closed-source variant omits scanning entirely — see §3.16's reconciliation annotation for the full reasoning.**
+- **OWNER-only**, per `product-decisions.md` Q24/Q25's settled permission table.
+
 ## 4. Interaction flow (summary)
 
 ```
@@ -1036,6 +1303,52 @@ Event detail — scheduled only (3.11):
 Elsewhere:
   Home's upcoming-Event card (home.md §3.5) → tap → scheduled detail (3.11)
     for that specific Event — not a new destination invented for this entry.
+
+Event detail — scheduled (3.11):
+  tap "Llevar mercancía" → 3.21 (Mercancía para este evento)
+    zero Catalog Products → empty-state variant (3.21), no further branch
+    ≥1 Catalog Product → per-row:
+      adjust manual stepper (local, unsaved until Guardar cambios)
+      tap "Escanear las que te llevas" (only if Product has tagged stock)
+        → 3.22 (scan queue)
+          scan succeeds → assigns unit, live-committed, counters update
+          → "ya está en otro evento" → error state, rescan a different tag
+          → "no se pudo leer" → error state, rescan
+          tap "Terminar" → back to 3.21, updated
+      tap "Mover a otro evento" (only if Para este evento > 0)
+        → 3.24, live variant → Elegir evento (sub-sheet)
+          zero other scheduled/active Events → empty-state message, no
+            further branch
+          select destination → set cantidad and/or escanear (same
+            duality as 3.21, ceiling = remaining at source)
+          → Cancelar → back to 3.21, unchanged
+          → "Mover mercancía" → saving (3.23 shape) → error → Reintentar
+            → success → ambient "Mercancía movida ✓" → back to 3.21,
+              both source and destination allocations updated (single
+              transaction, invisible)
+    tap "Guardar cambios" → saving (3.23) → error → Reintentar
+      → success → ambient "Mercancía actualizada ✓", stays on 3.21
+
+Event detail — active, no Session today / Session open elsewhere (3.14/3.15):
+  tap "Ver mercancía de este evento" → 3.21 (identical shared screen,
+    identical branches to the block above)
+
+Event detail — closed/past, unresolved allocation (3.25, extends 3.16):
+  per unresolved Product row:
+    tap "Regresar a inventario general" → immediate write, no
+      confirmation sheet → ambient "[Producto] regresada a inventario
+      general ✓" → row removed from this list
+    tap "Mover a otro evento" → 3.24, closed-source variant → Elegir
+      evento (sub-sheet, identical to the live variant's) → Cancelar →
+      back to 3.25, unchanged → "Mover mercancía" → saving (3.23 shape)
+      → error → Reintentar → success → ambient "Mercancía movida ✓" →
+      back to 3.25, row removed
+  last unresolved row cleared → section disappears, screen reverts to
+    plain 3.16 (identity + one-line summary + hand-off), no separate
+    transition or acknowledgment screen
+  [Ver resumen en Resultados] remains reachable throughout, unaffected
+    by whether reconciliation is pending — no capability in this doc is
+    ever blocked by it (§1)
 ```
 
 ## 5. Screen states (enumeration)
@@ -1063,6 +1376,11 @@ Elsewhere:
 19. Ajustar precios — lista por producto, per-Event Price Override (D33),
     including its zero-Catalog-Product empty-state variant
 20. Editar precio para este evento — sheet (D33)
+21. Mercancía para este evento — lista por producto (shared: "Llevar mercancía" / "Ver mercancía de este evento"), including its zero-Catalog-Product empty-state variant
+22. Escaneando — cola de escaneo por Producto, including its two error states (prenda ya en otro evento; no se pudo leer)
+23. Guardando cambios de mercancía — saving (near-instant/slow) and error, plus ambient post-save confirmation
+24. Mover a otro evento — destino + cantidad/escaneo, live variant and closed-source (reconciliation) variant, including the Elegir evento sub-sheet, its zero-other-Events empty state, saving/error, and ambient post-save confirmation
+25. Event detail — closed/past, con mercancía sin resolver (reconciliation section, extends §3.16; disappears once every row is reconciled)
 
 ## 6. Minimum step count
 
@@ -1084,6 +1402,17 @@ never required.
 Unlike Home's <3s bar, Eventos has no comparable hard speed requirement — the
 floor above is about not adding unnecessary steps, the same posture
 `inventory.md` §6 already established for a non-selling context.
+
+**New rows (`product-decisions.md` Q24/Q25):**
+
+| Scenario | Taps / entries | Why it can't be fewer |
+|---|---|---|
+| Llevar mercancía a un Evento por primera vez, 1 producto, cantidad manual | 1 (Llevar mercancía) + 1 (ajustar stepper) + 1 (Guardar cambios) = 3 | The stepper defaults to the current allocation (0, first time) — she only touches what she's actually bringing, per §3.21's own manual/scan composability rule. |
+| Llevar mercancía con prendas etiquetadas | 1 (Llevar mercancía) + 1 (Escanear las que te llevas) + 1 scan por prenda + 1 (Terminar) | Per-unit tagging is a domain requirement (`decision-log.md` D4), reused unchanged from `inventory.md` §6's identical reasoning for Asignar Tags — one tag, one unit, no shortcut exists that preserves traceability. |
+| Reponer un producto que se está agotando, a mitad del Evento | 1 (Ver mercancía de este evento) + 1 (ajustar stepper) + 1 (Guardar cambios) = 3 | Same screen, same mechanism as initial allocation (§3.21) — no second flow to learn or navigate. |
+| Mover mercancía a otro Evento simultáneo | 1 (Mover a otro evento) + 1 (Elegir evento) + 1 (ajustar cantidad o escanear) + 1 (Mover mercancía) = 4 | The destination pick and the honest remaining-at-source ceiling are both real facts she must supply/see — not padding; the underlying two-write transaction stays a single tap regardless (§3.24). |
+| Resolver mercancía sin vender al cerrar un Evento — regresar a inventario general | 1 (tap "Regresar a inventario general") = 1 | No confirmation dialog — a safe, reversible action per §3.16's own reasoning, not the rare/irreversible class §3.12 gates behind a confirm step. |
+| Resolver mercancía sin vender al cerrar un Evento — moverla a otro | 1 (Mover a otro evento) + 1 (Elegir evento) + 1 (Mover mercancía) = 3 | One tap fewer than the live variant — quantity is pre-stated at the full remaining amount, not asked, since reconciliation-time "moving" is framed as fully resolving the row, and no scan step applies (§3.16's reconciliation annotation). |
 
 ## 7. Automation opportunities
 
@@ -1120,6 +1449,27 @@ floor above is about not adding unnecessary steps, the same posture
   resolution).
 - Cancelled Events disappearing from the list entirely, with no separate
   "archive" step required to hide them (§3.13).
+- "Disponible en general" (§3.21) is computed automatically as the
+  Business-wide total minus every other open `EventAllocation`, refreshed
+  live on every successful scan — never a figure Ana reconciles by hand
+  across Events.
+- Whether a Product row shows the "sin tag · con tag" split at all (§3.21)
+  is automatic, gated on Business NFC capability and that Product having at
+  least one available tagged unit — never asked, never shown for a
+  Buttons-only Business.
+- Which of `initial_allocation` / `replenish` / `adjustment` applies to a
+  given save (§3.23) is inferred entirely from current state — Ana only
+  ever sees a number change, never a movement-type choice.
+- The reconciliation section's own visibility (§3.16/§3.25) is a pure
+  computed read of unresolved `EventAllocation` rows for a closed Event,
+  never a manually-set flag she has to remember to check or clear.
+- Which specific physical units move or return at reconciliation (§3.25) is
+  resolved automatically from already-known `allocatedUnitIds`/
+  `quantityRemaining` — the same "repeated decision becomes automation"
+  reasoning FIFO already applies in Buttons mode (`inventory.md` §7).
+- The underlying two-write reallocation transaction (§3.24) is a single tap
+  ("Mover mercancía") regardless of which two `EventAllocation` instances
+  are actually touched underneath.
 
 ## 8. Open questions
 
@@ -1150,6 +1500,22 @@ floor above is about not adding unnecessary steps, the same posture
   D20.
 
 - **Q3 — was Resolved via `decision-log.md` D17; superseded 2026-09-06 (`decision-log.md` D53).** The original question (a tie-break rule for two simultaneously active Events) was closed by D17 removing the ambiguous state entirely — a Business could not create or activate an Event whose date range overlapped an already-scheduled-or-active Event, and the inline overlap-validation screen (formerly §3.6) enforced it. **D53 retires D17 outright**, not merely relaxes it: Nahui now supports true simultaneous multi-Event operation (a real prospective merchant's multi-seller use case, `product-decisions.md` Q24/Q25), so there is no longer a rule for Q3's original tie-break question to be moot against — D53's own text confirms this was never a business-capacity rule, only a now-obsolete single-actor `home.md` resolution safeguard. Kept here as historical record per this document's non-deletion discipline, not reopened as a live question — `home.md`'s own multi-Event resolution logic (routed to `ux-designer` per D53) is where the real successor design work lives now, not here.
+
+- **New — SELLER-role experience of these allocation screens is not
+  designed in this pass.** The permission table (§2) gates §3.21-§3.25
+  OWNER-only; a SELLER's own view of "what am I selling from" is designed
+  in `home.md` §3.6a/§3.9, not here. Flagged for a future `ux-designer`
+  pass whenever SELLER-facing Event-management needs surface.
+- **New, non-blocking implementation nuance, routed to Architect.** An
+  `EventAllocation` reaching zero through ordinary sale/reallocation (not
+  through the explicit §3.25 reconciliation action) may leave `status`
+  still `open` in the data model — this has no merchant-facing
+  consequence, since §3.25's own trigger condition is "unsold remaining
+  stock on a closed Event," named that way precisely so it isn't silently
+  assumed resolved just because the quantity happens to read zero.
+- Pre-existing, unaffected by this amendment: Q1 and Q6 stay open exactly
+  as already logged above; Q3 stays Resolved-then-superseded-by-D53 per
+  its own entry above.
 
 No other new domain ambiguities surfaced during this design — the
 `scheduled`/`active`/`closed`/`cancelled` transitions, cancellation being
@@ -1242,6 +1608,41 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 - *#6* — Eventos only ever writes into its own Event-owned Price Override
   entity; no new bounded-context dependency edge (`decision-log.md` D33's
   own RFC-trigger analysis already confirms this).
+
+**Allocation UX additions (`product-decisions.md` Q24/Q25):**
+
+**global-principles.md:**
+- *"Never ask twice"* — reconciliation (§3.25) never asks Ana to rescan
+  units she's already accounted for; the remaining-quantity amount is
+  pre-stated, not re-collected.
+- *"The fastest interaction is the one that never happens"* — "Regresar a
+  inventario general" (§3.25) is a single, un-confirmed tap; reconciliation
+  amounts arrive pre-stated rather than requiring her to re-enter them.
+- *"Every repeated decision should become automation"* — which unit(s) a
+  reconciliation move actually touches (§3.25) is resolved automatically
+  from already-known allocation state, never a per-unit choice Ana makes.
+- *"Capture business truth once, reuse it forever"* — "Disponible en
+  general" (§3.21) is computed once, upstream, from existing
+  `EventAllocation` rows, never a figure re-entered or reconciled by hand.
+- *"Business language before technical language"* — copy uses "mercancía
+  para este evento," "mover mercancía," "sin repartir" — never
+  "EventAllocation," "AllocationMovement," or "reallocation," anywhere on
+  screen.
+
+**architecture-principles.md:**
+- *#1 (capabilities resolved once, upstream)* — Business NFC capability and
+  allocation state are both resolved once and read, never re-derived
+  per-screen (§3.21's tag-split visibility).
+- *#4 (internal-only entities never leak into user-facing language)* —
+  `EventAllocation`/`AllocationMovement` are never named in copy; Ana sees
+  quantities and a single "mover mercancía" action, never the underlying
+  entities.
+- *#6 (one-way dependency direction)* — the allocation-exclusivity
+  invariant is enforced entirely inside Selling's own bookkeeping; Inventory
+  never learns Events or allocation exist, never gains a new read or write
+  path from this feature.
+- *#7 (idempotent/keyed retries)* — "Reintentar" on a failed save (§3.23)
+  is safe to tap more than once; it never double-applies a movement.
 
 ## 10. Decisions made
 
@@ -1345,6 +1746,44 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   factual message ("Todavía no registraste ningún producto..."). No direct
   link into Inventario designed. **[Amended 2026-08-14 — see
   events.changelog.md#decisions-3-19-zero-catalog-empty-state]**
+- **§3.21/§3.23 ("Mercancía para este evento") is a distinct screen from
+  §3.19 ("Ajustar precios"), not a shared/reused one**, reasoned explicitly:
+  the two capture genuinely different data (quantity-per-Event vs.
+  price-per-Event) with different gating (allocation is available on any
+  `scheduled`/`active` Event; price adjustment is `scheduled`-only, §3.19).
+  **[Amended 2026-09-06 — see events.changelog.md#decisions-q24-q25-allocation-ux]**
+- **Manual quantity entry and NFC scanning compose on the same screen
+  (§3.21/§3.22)**, reusing the Catalog-row precedent (`inventory.md` §3.4)
+  of a single row supporting both entry modes rather than forking into two
+  separate flows. **[Amended 2026-09-06 — see
+  events.changelog.md#decisions-q24-q25-allocation-ux]**
+- **An allocation's quantity floor is 0, not 1.** Ana can zero out an
+  Event's allocation entirely (e.g., she over-allocated and wants it all
+  back in general inventory) without that being treated as an error state.
+  **[Amended 2026-09-06 — see
+  events.changelog.md#decisions-q24-q25-allocation-ux]**
+- **Reconciliation (§3.25) never requires a fresh scan**, reasoned in full:
+  the system already knows which physical units (tagged) or how much
+  quantity (Buttons) remain allocated to a closed Event from its own
+  bookkeeping — asking Ana to rescan what she hasn't sold would be asking
+  her to re-tell the app something it already knows, violating "capture
+  business truth once." **[Amended 2026-09-06 — see
+  events.changelog.md#decisions-q24-q25-allocation-ux]**
+- **"Regresar a inventario general" (§3.25) is a single, un-confirmed tap** —
+  no intermediate confirmation dialog, matching this doc's existing
+  posture toward low-risk, easily-visible-consequence actions (e.g.
+  cancellation's own confirm-once pattern is reserved for destructive,
+  hard-to-notice mistakes, not routine stock movements).
+  **[Amended 2026-09-06 — see
+  events.changelog.md#decisions-q24-q25-allocation-ux]**
+- **Reconciliation's "Mover a otro evento" (§3.24/§3.25) moves the full
+  remaining amount, never a partial split.** A partial move is deferred
+  (§11). **[Amended 2026-09-06 — see
+  events.changelog.md#decisions-q24-q25-allocation-ux]**
+- **§3.21-§3.25 are OWNER-only**, per the permission table (§2) —
+  no SELLER-facing variant designed in this pass (§8).
+  **[Amended 2026-09-06 — see
+  events.changelog.md#decisions-q24-q25-allocation-ux]**
 
 ## 11. Future considerations
 
@@ -1397,3 +1836,16 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   Event's own Sale revenue — **named here explicitly as a future idea,
   not designed now** — out of scope per `decision-log.md` D33's
   "captured-but-not-computed" boundary.
+- Partial reconciliation for a single Product (moving only some of its
+  remaining units, leaving the rest allocated) — deferred; §3.25 always
+  moves the full remaining amount for a Product at once.
+- Action ordering on the scheduled-Event detail screen once both "Ajustar
+  precios" and "Mercancía para este evento" are both present (§3.11) —
+  deferred to Medium-Fidelity visual treatment, not a low-fidelity
+  behavioral question.
+- A visual indicator distinguishing an allocated-vs-not-yet-allocated
+  Product row on §3.21's list — deferred to Medium-Fidelity, same posture
+  as §3.19's own overridden-vs-default deferral above.
+- Bulk/batch scan shortcuts for allocating many units at once (§3.22) —
+  not designed now, matches `inventory.md` §11's identical deferral for
+  Catalog-scale scanning.
