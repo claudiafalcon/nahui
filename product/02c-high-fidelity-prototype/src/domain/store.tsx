@@ -250,13 +250,23 @@ interface StoreValue {
    * the resolved productId for each line, same order as input — a
    * freshly-minted id for `new` lines, the given id for `existing` ones. */
   commitLot: (lines: CommitLotLine[]) => ID[];
+  /** inventory.md §3.4a "Editar precio" — the Catalog-row-level
+   * `Product.defaultPrice` write. No idempotency key is currently generated
+   * for this write, despite `inventory.md` §3.4a's own prose previously
+   * (inaccurately) claiming otherwise. Same pre-existing gap as
+   * `commitLot()`/`setProductPhoto` (`BACKLOG.md` §F); a stated
+   * `architecture-principles.md` #7 guarantee this implementation doesn't
+   * yet satisfy, not fixed here — Stage 7 (Backend Integration) owns it. */
   editPrice: (productId: ID, newPrice: number) => void;
   /** inventory.md §3.4b "Guardar foto" (`product-decisions.md` Q23) — the
    * Catalog-row-level `Product.photo` write, same shape as `editPrice`
    * immediately above. `undefined` writes a removal ("Quitar" staged, then
-   * committed). Own idempotency key generated once per attempt, per
-   * `architecture-principles.md` #7 — same as every other retryable write in
-   * this doc family. */
+   * committed). No idempotency key is currently generated for this write —
+   * a doc comment here previously (inaccurately, copied from `editPrice`'s
+   * own now-corrected claim) said otherwise. Same pre-existing gap as
+   * `commitLot()`/`editPrice` (`BACKLOG.md` §F); a stated
+   * `architecture-principles.md` #7 guarantee this implementation doesn't
+   * yet satisfy, not fixed here — Stage 7 (Backend Integration) owns it. */
   setProductPhoto: (productId: ID, photo: string | undefined) => void;
   /** inventory.md §3.14 — Asignar Tags' own write, one scan at a time
    * (`addItemToSale`'s per-event-write shape, not `commitLot`'s batch

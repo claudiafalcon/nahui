@@ -270,7 +270,7 @@ instance (`ResultadosLoadError.tsx`, already disclosed). Owner: Stage 7
 slice should attempt these individually — build them together once a real
 backend makes the failure modes genuine.
 
-### F. `commitLot()` has no idempotency guard of its own — flagged 2026-09-04 (`reviewer`, Q20 build)
+### F. `commitLot()`/`editPrice()`/`setProductPhoto()` have no idempotency guard of their own — flagged 2026-09-04 (`reviewer`, Q20 build), extended 2026-09-06 (`reviewer`, Product.photo build)
 
 `decision-log.md` D30 / `architecture-principles.md` #7 require every
 client-retriable write to carry a stable, retry-safe key — Lot/InventoryEntry
@@ -288,6 +288,20 @@ point, matching the guarantee `completeOnboarding()` already has via its
 existing-Membership short-circuit. Not a current functional bug; a stated
 Foundation guarantee (`onboarding.md` §3.5c, `inventory.md` §3.10) that the
 implementation doesn't yet actually satisfy.
+
+**Extended 2026-09-06:** the same gap was found to also cover `editPrice()`
+and `setProductPhoto()` (`src/domain/store.tsx`) — both plain `setState`
+calls with no key generation, no dedup, no retry-safety mechanism, despite
+doc comments on `setProductPhoto` (and, by copy, `inventory.md` §3.4a/§3.4b's
+own prose) claiming an idempotency key was already generated "per
+`architecture-principles.md` #7 — same as every other retryable write in
+this doc family." That claim was inaccurate against the actual
+implementation and has been corrected in both `src/domain/store.tsx` and
+`product/02-ux/inventory.md` (documentation-accuracy only, no behavior
+change — the same restraint already applied to the `commitLot()` correction
+above). Same **Owner: Stage 7 (Backend Integration)** — `editPrice()` and
+`setProductPhoto()` need a real idempotency key at that point, same as
+`commitLot()`.
 
 ### B. Genuine regressions — fixed (2026-08-14)
 
