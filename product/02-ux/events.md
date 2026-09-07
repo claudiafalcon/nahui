@@ -1428,7 +1428,7 @@ floor above is about not adding unnecessary steps, the same posture
 | Llevar mercancía a un Evento por primera vez, 1 producto, cantidad manual | 1 (Llevar mercancía) + 1 (expandir el producto) + 1 (ajustar stepper) + 1 (Guardar cambios) = 4 | The stepper defaults to the current allocation (0, first time) — she only touches what she's actually bringing, per §3.21's own manual/scan composability rule. |
 | Llevar mercancía con prendas etiquetadas | 1 (Llevar mercancía) + 1 (expandir el producto) + 1 (Escanear las que te llevas) + 1 scan por prenda + 1 (Terminar) | Per-unit tagging is a domain requirement (`decision-log.md` D4), reused unchanged from `inventory.md` §6's identical reasoning for Asignar Tags — one tag, one unit, no shortcut exists that preserves traceability. |
 | Reponer un producto que se está agotando, a mitad del Evento | 1 (Ver mercancía de este evento) + 1 (expandir el producto) + 1 (ajustar stepper) + 1 (Guardar cambios) = 4 | Same screen, same mechanism as initial allocation (§3.21) — no second flow to learn or navigate. |
-| Mover mercancía a otro Evento simultáneo | 1 (expandir el producto) + 1 (Mover a otro evento) + 1 (Elegir evento) + 1 (ajustar cantidad o escanear) + 1 (Mover mercancía) = 5 | The destination pick and the honest remaining-at-source ceiling are both real facts she must supply/see — not padding; the underlying two-write transaction stays a single tap regardless (§3.24). |
+| Mover mercancía a otro Evento simultáneo | 1 (Ver mercancía de este evento) + 1 (expandir el producto) + 1 (Mover a otro evento) + 1 (Elegir evento) + 1 (ajustar cantidad o escanear) + 1 (Mover mercancía) = 6 | The destination pick and the honest remaining-at-source ceiling are both real facts she must supply/see — not padding; the underlying two-write transaction stays a single tap regardless (§3.24). |
 | Resolver mercancía sin vender al cerrar un Evento — regresar a inventario general | 1 (tap "Regresar a inventario general") = 1 | No confirmation dialog — a safe, reversible action per §3.16's own reasoning, not the rare/irreversible class §3.12 gates behind a confirm step. |
 | Resolver mercancía sin vender al cerrar un Evento — moverla a otro | 1 (Mover a otro evento) + 1 (Elegir evento) + 1 (Mover mercancía) = 3 | One tap fewer than the live variant — quantity is pre-stated at the full remaining amount, not asked, since reconciliation-time "moving" is framed as fully resolving the row, and no scan step applies (§3.16's reconciliation annotation). |
 
@@ -1822,7 +1822,12 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   "Escanear las que te llevas," "Mover a otro evento") are reachable. The
   two reconciliation rows in the same table ("Resolver mercancía sin
   vender al cerrar un Evento...," §3.16/§3.25-driven) are unaffected —
-  that screen has no collapse/expand toggle.
+  that screen has no collapse/expand toggle. A second verification pass
+  (2026-09-07, `ux-critic`) found "Mover mercancía a otro Evento
+  simultáneo" still undercounted by one further tap after that fix —
+  missing the tap that actually enters §3.21 in the first place ("Ver
+  mercancía de este evento," since this scenario's Event is active);
+  corrected again, from 5 to 6.
   **[see events.changelog.md#decisions-q24-q25-tap-count-correction]**
 
 ## 11. Future considerations

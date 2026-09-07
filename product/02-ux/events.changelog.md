@@ -622,7 +622,9 @@ evento") are reachable:
 - "Reponer un producto que se está agotando, a mitad del Evento" — same
   gap, corrected to 4.
 - "Mover mercancía a otro Evento simultáneo" — 4 taps stated, corrected
-  to 5.
+  to 5, then found still wrong by a second `ux-critic` verification pass
+  (missing the "Ver mercancía de este evento" entry tap present in its
+  sibling rows) and corrected again to 6.
 
 The two reconciliation rows in the same table ("Resolver mercancía sin
 vender al cerrar un Evento...," §3.16/§3.25-driven) are unaffected — that
