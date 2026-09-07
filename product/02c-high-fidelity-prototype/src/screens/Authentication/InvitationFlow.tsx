@@ -12,12 +12,14 @@ const ACCEPT_DELAY_MS = 260; // near-instant convention (§3.10a), matching ever
 
 /**
  * authentication.md §2.2a/§3.10–§3.13a (`product-decisions.md` Q24/Q25) —
- * the Invitation-acceptance branch, reached only via `AppRouter.tsx`'s own
- * §2.2 case 0 resolution (a verified phone, first-ever, holding a pending
- * Invitation). Mounted in place of `OnboardingFlow`/`App` for exactly as
- * long as this offer stays unresolved — see `AppRouter.tsx`'s own doc
- * comment for the full routing reasoning, including the disclosed,
- * state-derived approximation of "never verified before" this build uses.
+ * the Invitation-acceptance branch, reached via either entry point
+ * `AppRouter.tsx`'s own §2.1/§2.2 case 0 resolution reaches (a verified
+ * phone holding zero Membership anywhere and zero Business anywhere,
+ * whether just-confirmed or resumed from a prior session) and holding a
+ * pending Invitation. Mounted in place of `OnboardingFlow`/`App` for
+ * exactly as long as this offer stays unresolved — see `AppRouter.tsx`'s
+ * own doc comment for the full routing reasoning; no approximation or
+ * divergence from the spec remains, per the 2026-09-07 amendment.
  *
  * `businessName` is passed in already-resolved (`AppRouter.tsx` reads it
  * once from `state.business` matching `invitation.businessId` — this
