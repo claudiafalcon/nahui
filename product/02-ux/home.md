@@ -169,6 +169,8 @@ home.changelog.md#status-2026-08-15-non-session-gear-direct-affordance]**
 
 **Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25, `decision-log.md` D53 — concurrent multi-seller selling, simultaneous multi-Event operation):** §2 gains step 0 (revoked-Membership defensive gate, cross-referenced to `settings.md` §3.14) and step 2 is split into 2a (exactly one qualifying Event, unchanged) / 2b (2+ qualifying Events, new §3.6b "Elegir evento"). Closes the D53 remediation item flagged in `product-decisions.md`'s Q24/Q25 entry. Pending `ux-critic`/`reviewer` review before folding back into Approved.
 
+**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — the SELLER role's own stripped-down experience):** new role-resolution logic in §2; role-scoped nav bar (§3.16); a non-gear SELLER header icon routing to a new minimal "Tu cuenta" surface (§3.15a) hosted here as a stand-in pending a future `settings.md` amendment (see §11); SELLER-specific cold-start and §3.6a copy variants; a new "Mi actividad de hoy" own-activity view (§3.7c); a new "Acceso no disponible" defensive state (§3.17); an Event-scoped remaining-stock signal on the buttons-mode grid (§3.9); a new terminal "lost the race" concurrent-selling conflict state (§3.8a extended, plus new §3.8d-i). `knowledge-mentor` consultation flagged (§8) on the lost-race pattern specifically, not yet performed. Pending `ux-critic`/`reviewer` review before folding back into Approved.
+
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -202,7 +204,23 @@ Evaluated in this order, automatically, on every Home open:
        resolution branch that never resolves into any ordinary Hoy state,
        Session or otherwise. Stop here.
      → NO (status = active — the only case before this capability
-       existed, and still the default): continue to step 1, unchanged.
+       existed, and still the default): continue to Role resolution, then
+       step 1.
+
+**Role resolution (evaluated once per Home open, immediately after step 0's
+revoked-Membership check, before any of the numbered steps below —
+`architecture-principles.md` #1, "resolved once, upstream, never asked
+mid-flow," extended here to role the same way it already governs
+`Session.operatingMode`).** The acting `BusinessMembership.role` (OWNER |
+SELLER) is read once and drives, for the remainder of this Home open:
+which nav-tab set renders (§3.16); what the header icon does and where it
+routes (§3.15/§3.15a); which cold-start copy variant renders (§3.3, SELLER
+variant); which §3.6a mention/link variants render (SELLER variants);
+whether §3.9's tile-tap dead-end message can offer an Inventario link (it
+can't, for a SELLER). Never re-evaluated mid-Session, same discipline
+`Session.operatingMode` already gets — a role change (e.g. a revoke
+landing while she's mid-Session, already covered by step 0 on the *next*
+Home open) never silently reshapes a screen she's already looking at.
 
 1. Is there a Session with status = active (any eventId, including null)?
      → YES: selling becomes Home's default entry point. Stop here — highest
@@ -507,6 +525,20 @@ the persistent nav bar on every state, current tab in brackets.
   vista principal (§3.3a, or §3.6 if a pending change already exists).
   Extended here because the capabilities Configuración manages are
   meaningful to check even before Ana has ever registered a Product.
+
+**SELLER variant (new — zero `available` InventoryUnit exists, role-resolved per §2's new Role-resolution sub-step, `product-decisions.md` Q24/Q25):**
+```
+┌───────────────────────────────┐
+│  Nahui                        ⊚ │
+│  Todavía no hay nada para        │
+│  vender. Pídele a quien te        │
+│  invitó que registre mercancía.    │
+├───────────────────────────────┤
+│ [Hoy]                            │
+└───────────────────────────────┘
+```
+- **No "[ Registrar mercancía ]" CTA** — she cannot reach Inventario (§3.16), so a button leading nowhere would be exactly the "disguised dead end" this section's own OWNER copy already argues against, applied consistently rather than reintroduced by omission for this role.
+- **The honest way out is stated in the copy itself, not a fake button** — "pídele a quien te invitó" is a real, actionable next step, even though it's outside the app: matches `character-bible.md`'s "gives her an honest way out of anything — no dead ends" while staying truthful about what this screen alone can do for her.
 
 ### 3.4 Idle — no Event today, ready
 ```
@@ -926,6 +958,33 @@ via §3.5)
   available and unused — no longer holds). If she doesn't act on it, it
   still never repeats — one honest heads-up, not a recurring nag.
 
+**SELLER variants for the four cases above (new — `product-decisions.md` Q24/Q25).**
+
+**Governing rule (stated once, applies to all four cases above):** every existing OWNER-facing next-step link in this section (`[ Asignar tags ]`, `[ Ir a Configuración ]`) points at a destination a SELLER cannot reach (Inventario, full Configuración). Per this document's own established discipline (§3.16, below), an unreachable destination is never shown as a live link. The informational line above each link stays — it's operationally true and useful regardless of who's about to sell — only the link itself is replaced or removed, case by case below.
+
+**Limited Ready — unchanged for SELLER.** "Usar tags de todos modos" is not a Configuración/Inventario destination at all — it's a local, in-the-moment override of *this Session's own opening mode*, something the permission table already grants her ("open/close own Session"). No SELLER variant needed; the OWNER wireframe above applies as-is.
+
+**Not Ready — SELLER variant:**
+```
+   Todavía no tienes prendas con       │
+   tag para hoy — vas a vender con     │
+   botones.                             │
+   Pídele a quien te invitó que          │
+   etiquete mercancía.                   │
+```
+No `[ Asignar tags ]` link — replaced by a passive note. The primary CTA is unaffected either way; selling itself is never blocked for either role.
+
+**Capability revoked — SELLER variant:**
+```
+   Por ahora no puedes vender con       │
+   tags — vas a vender con botones.      │
+   Solo quien te invitó puede            │
+   activar esto.                          │
+```
+No `[ Ir a Configuración ]` link — a SELLER has no path to restore this regardless; the passive note states the true, actionable fact (ask the OWNER) rather than a link she can't use.
+
+**Ready-but-`defaultSellingMode = buttons` discoverability nudge — suppressed entirely for SELLER, not shown in any form.** Unlike the two cases above, this mention is purely discretionary — an OWNER-only opportunity to discover a durable setting change only she can make. Showing any version of it to a SELLER, who has no way to act on it and whose own selling experience isn't operationally affected by it either way (she's already selling in `buttons`, matching whatever the current default is), would be a pure, unactionable nag — the opposite of *global-principles.md*, "the fastest interaction is the one that never happens."
+
 ### 3.6b Elegir evento — idle Membership, more than one Event currently active (new — closes the `product-decisions.md` Q24/Q25 D53 remediation item)
 
 Reached only via §2 step 2b. Not reached at all while at most one Event qualifies — §3.6 alone still covers that case, pixel-identical, zero added tap.
@@ -1117,6 +1176,50 @@ stays legible; full prior content at `home.changelog.md#section-3-7a-retired`.
   (Previously also applied to §3.7a's dimmed sheet-backdrop header —
   retired 2026-08-14, see status header.)
 
+### 3.7c Mi actividad de hoy — own current-Session-context activity (new — `product-decisions.md` Q24/Q25, "own current-session activity... recommended as an extension of Home's existing Session-scoped state, not a cut-down Resultados variant")
+
+Applies to every active-Session header, §3.7–§3.11a. A new, tappable line beneath the ambient header (unchanged — §3.7's own "Hoy: $X · N ventas" row is not modified in place; this is an addition underneath it):
+```
+┌───────────────────────────────┐
+│ Plaza Norte · Día 2         ⚙/⊚ │
+│ Hoy: $850 · 6 ventas  [ Cerrar jornada de venta ] │
+│ [ Ver mi actividad de hoy ]        │
+├───────────────────────────────┤
+│ ...                              │
+└───────────────────────────────┘
+```
+
+Tapping it opens a full push-in screen (not a dimmed overlay — see the adjacency reasoning below):
+```
+┌───────────────────────────────┐
+│ ← Plaza Norte · Día 2            │
+│  Mi actividad de hoy              │
+│                                │
+│  3 ventas · $420                  │
+│                                │
+│  10:15  $150 · 1 artículo          │
+│  11:02  $180 · 2 artículos          │
+│  12:40  $90 · 1 artículo            │
+│                                │
+└───────────────────────────────┘
+```
+
+Empty state (0 finalized Sales yet under this scope, this Membership):
+```
+┌───────────────────────────────┐
+│ ← Plaza Norte · Día 2            │
+│  Mi actividad de hoy              │
+│  Todavía no has registrado         │
+│  ventas hoy.                        │
+└───────────────────────────────┘
+```
+- **Available identically to both roles.** Not a SELLER-exclusive screen: an OWNER who's personally selling alongside others has the same reason to want to see "what I personally rang up" distinct from the whole team's total — she already has richer historical reporting in Resultados, but this is a different thing, a quick in-context check without leaving the selling screen. Keeping the header's own shape identical across roles is simpler than special-casing it, and nothing in the Q24/Q25 permission table restricts an OWNER from seeing her own Sale history.
+- **Data source and scoping — a genuinely new dimension on an already-reused query, not a second mechanism.** `SUM(SaleItem.pricePaid)` / `COUNT(Sale)` filtered to `Sale.performedByMembershipId` = this device's own acting Membership, `Session.eventId` = this Session's own `eventId` (`null` for a Quick Session, matching every other Sale under that same null scope), and calendar date = today — across **every** Session sharing that scope, not only the currently-open one, the exact same "context, not Session" scoping §3.7's own ambient header already established (its own 2026-08-13 amendment), with one additional filter dimension layered on. *global-principles.md*, "capture business truth once, reuse it forever" — the identical `todaySalesSummary`-shaped query, one more `WHERE` clause, not a second query built from scratch.
+- **Never another Membership's individual Sales.** The permission table is explicit that this is *her own* activity — this screen has no affordance, filter, or picker that could ever surface a different seller's individual contribution; only the ambient all-sellers total in the header behind it does that, unchanged, aggregate-only.
+- **Full push-in, not a dimmed overlay, deliberately.** §3.7's own precedent (§3.11's dialog appearing over the dimmed header) already names the risk of two different "N ventas" figures being visible on screen simultaneously and reads as a discrepancy. This screen avoids that risk by construction rather than by relabeling: leaving the header behind and showing only her own figure means the two numbers are never on screen at the same time at all.
+- **Safe to reach mid-Sale, exactly like every other nav-away.** Reuses §3.13's own existing guarantee — "Venta actual" is untouched, and returning via the back arrow resumes exactly whichever active-Session state (§3.7–§3.10) was current, same as switching to another nav tab and back already does.
+- Row order: chronological, most-recent-last (a plain read of the log as it happened — no sorting decision for her to make).
+
 ### 3.8 Session active — Sale in progress
 ```
 ┌───────────────────────────────┐
@@ -1212,6 +1315,70 @@ shown inline, never a full-screen interruption
   unresolved, that item's sync is retried as part of the same save — see
   §3.8d for what happens if it still can't be confirmed.
 
+**Lost-race conflict — terminal, not retriable (new, `product-decisions.md`
+Q24/Q25 — a genuinely new interaction pattern in this document; flagged
+for a `knowledge-mentor` consultation, §8, not yet performed; best-effort
+design below in the meantime).** Applies only to a Product with an open
+`EventAllocation` for the current Session's Event (§3.9's own new
+Event-scoped tile line) — a Product with no `EventAllocation` still
+resolves from the plain Business-wide pool exactly as today, unaffected.
+
+```
+Ambient, self-dismissing, the instant the conflict is discovered by a
+background sync (reuses the identical ambient-confirmation pattern
+already established for "Venta finalizada ✓" and the sold-out-tile-tap
+message, §3.9):
+  "Playeras ya no está disponible — la dejamos marcada para que la quites."
+
+┌───────────────────────────────┐
+│ Venta actual: 3 artículos   Cancelar│
+│ Bolsas · Playeras ⊗ · Accesorios   │  ⊗ — distinct from ⚠ (retriable
+├───────────────────────────────┤      sync failure): this marker never
+│   [   zona de registro       ]   │   resolves via Reintentar
+│   [      Finalizar Venta     ]   │
+└───────────────────────────────┘
+tapping the flagged item →
+┌───────────────────────────────┐
+│  Playeras ya no está disponible. │
+│  Otro vendedor la vendió antes    │
+│  que tú.                          │
+│      [  Quitar de la venta  ]    │
+└───────────────────────────────┘
+```
+- **Distinct glyph (⊗) from the retriable sync-failure marker (⚠)** — the
+  two must never look identical, since one invites another attempt and
+  the other explicitly forecloses one. This is the *one* deliberate
+  exception to `architecture-principles.md` #7's usual "offer Reintentar"
+  shape: a lost-race conflict is discovered *because* the write already
+  failed a genuine compare-and-swap on the server (Stage 7's own
+  concurrency mechanism, `product-decisions.md` Q24/Q25) — the stock is
+  actually, verifiably gone, so a "Reintentar" here would promise
+  something that structurally cannot succeed. Correctly withholding retry
+  is this principle applied, not violated.
+- **"Quitar de la venta" is a single tap, no secondary Sí/No** — unlike
+  Cancelar venta actual (§3.8b), this isn't a decision she's making that
+  risks losing real, still-good data; it's acknowledging a fact that
+  already happened. Same single-acknowledging-tap shape §3.11a's
+  "Entendido" already establishes for a comparable "state a fact, one tap
+  to move on" moment.
+- **Removes only the flagged item — every other item in "Venta actual"
+  stays exactly as it was**, untouched, unrecalculated (no live subtotal
+  exists to recalculate anyway, per this section's own existing design).
+- **She can keep adding other items, or attempt Finalizar Venta, while
+  the marker sits unresolved** — it doesn't block anything except the
+  final save itself (§3.8d-i, below). She's never forced to stop and deal
+  with it the instant it appears, matching this document's existing "she
+  keeps tapping/selling uninterrupted" discipline for background retries.
+- **NFC-mode note, scoped deliberately narrow:** the settled architecture
+  treats a same-tag double-scan as structurally rare (each physical tag
+  is already a discrete, fixed unit — the genuine last-unit race is a
+  manual/buttons-mode phenomenon, fungible units drawn from one shared
+  counter). If a scan ever does discover its unit was already consumed
+  elsewhere, it resolves through the identical ⊗/terminal pattern above —
+  not redesigned separately here, since nothing about §3.10's scan
+  surface needs a different mechanism, only the same one triggered by a
+  different event.
+
 ### 3.8b Cancelar venta actual — inline confirm (new — resolves HOME-M1)
 ```
 ┌───────────────────────────────┐
@@ -1294,6 +1461,17 @@ shown inline, never a full-screen interruption
   abandon the sale, cancel it explicitly through the same confirmed path
   everywhere else uses — she's never stuck staring at a broken screen
   mid-transaction.
+
+### 3.8d-i Finalizar Venta blocked — lost-race item unresolved (new — `product-decisions.md` Q24/Q25)
+```
+┌───────────────────────────────┐
+│ Playeras ya no está disponible –  │
+│ tienes que quitarla antes de       │
+│ terminar la venta.                  │
+│      [  Quitar de la venta  ]       │
+└───────────────────────────────┘
+```
+Distinct from §3.8d's genuine save-failure state — this isn't a failure of the Finalizar Venta write itself, it's a precondition that hasn't been met yet. Reached only if she attempts to finalize while a §3.8a lost-race marker is still present; tapping "Quitar de la venta" resolves it in place and Finalizar Venta can proceed immediately after, no re-tap of Finalizar Venta needed if nothing else is pending.
 
 ### 3.8e Finalizar Venta — success (superseded — folded into §3.8f)
 
@@ -1505,6 +1683,40 @@ Three elements only — confirmation, total, business identity. No future-regist
   not a new mechanism. The underlying non-add-to-sale behavior is unchanged
   — this corrects only the "no message needed" assumption. Not RFC-worthy,
   same category as this document's other 2026-08-13 wording-precision fixes.
+- **A tile carries a second, Event-scoped remaining-stock line whenever
+  this Session's Event has an `EventAllocation` (`status = open`) for that
+  Product — new, `product-decisions.md` Q24/Q25** (a pre-emptive signal,
+  reducing how often a concurrent-selling conflict is actually hit, not
+  eliminating it — see the "lost the race" state below for what happens
+  when it's hit anyway):
+  ```
+  ┌─────────┐
+  │(P)      │
+  │Playeras │
+  │3 en este evento│
+  └─────────┘
+  ```
+  Reads `EventAllocation.quantityRemaining` (manual mode) or the count of
+  currently-`open` `allocatedUnitIds` still `available` (NFC mode) — never
+  the plain, Business-wide "disponibles" figure, which stays exactly as
+  invisible here as it always was outside a sold-out tile. **Absent
+  entirely** for a Quick Session (no `eventId`, no `EventAllocation`
+  possible), for an Event-linked Session where this Product has no
+  `EventAllocation` at all (pure Business-wide pool, unchanged behavior),
+  or once the count reaches its own zero — see the next bullet.
+- **"0 en este evento" replaces "0 disponibles" specifically when the
+  tile's zero is an allocation exhaustion, not a Business-wide
+  stockout** — a materially different, more honest fact: Business-wide
+  stock may well still exist, just not allocated here. Same dimmed,
+  non-tappable tile treatment as the sold-out state above; only the
+  caption changes to match what's actually true.
+- **This is a signal, not a guarantee** — it reflects this device's last
+  synced read of `quantityRemaining`, not a live lock. Two devices can
+  still see "1 en este evento" simultaneously and both attempt to sell it;
+  the pre-emptive signal exists to reduce how often that happens, never to
+  eliminate the need for the "lost the race" terminal correction below.
+- Rendered for both roles identically — this is a Business-Event fact, not
+  a role-gated one.
 - **Each tile now carries a small, automatically-generated marker — the
   first letter of `Product.name`, uppercased and whitespace-trimmed** (e.g.
   "Bolsas" → "B," "Accesorios" → "A"). Closes a real gap on the
@@ -1726,12 +1938,90 @@ items, same count, nothing silently dropped.
 - Nav bar unaffected by the error: a Home resolution failure never cascades
   into locking her out of Inventario/Eventos/Resultados.
 
+### 3.15 Header icon — role-scoped (new — `product-decisions.md` Q24/Q25)
+
+Applies wherever a persistent header renders, every state currently showing ⚙.
+
+**OWNER — unchanged.** The gear icon (⚙) routes directly into full Configuración (`settings.md §3.1/§3.2` → vista principal), exactly as already specified throughout this document.
+
+**SELLER — new, a different icon, never a gear.** Per the Q24/Q25 permission table, a SELLER has no Business Capability of her own to manage — no `subscriptionTier`, no `defaultSellingMode`, no team to invite/revoke. A gear would visually promise a settings surface she structurally cannot use; this document's own existing discipline (§3.16, below) already rejects showing an unreachable destination. What she does have, unconditionally, is the same `User`-level "Cerrar sesión" action every verified phone gets (`settings.md §2.5`, RFC 0007 — not a Business Capability at all, so nothing about role gates it). Her header icon is a plain, non-gear account-style marker — placeholder glyph ⊚ below, final iconography left to `ui-designer`; the only hard requirement this spec makes is that it must not read as a gear — routing to a new, minimal surface (§3.15a) rather than full Configuración.
+
+```
+Header, SELLER variant (applies everywhere §3.3–§3.11a currently show
+"⚙" for an OWNER):
+┌───────────────────────────────┐
+│  Nahui                        ⊚ │   (or, during an active Session:)
+└───────────────────────────────┘   │ Plaza Norte · Día 2         ⊚  │
+                                     │ Hoy: $850 · 6 ventas [ Cerrar   │
+                                     │ jornada de venta ]              │
+                                     └───────────────────────────────┘
+```
+
+**"Cerrar jornada de venta" is unaffected by role** — a SELLER opens and closes her own Session exactly like an OWNER does, per the permission table; the interlock (§2, §3.11a) applies identically regardless of who's selling.
+
+### 3.15a Tu cuenta — SELLER minimal account surface (new)
+
+```
+┌───────────────────────────────┐
+│ ← Hoy                          │
+│  Tu cuenta                       │
+│                                │
+│  [   Cerrar sesión   ]           │
+└───────────────────────────────┘
+```
+
+- **This is a stand-in, hosted here rather than in `settings.md`, and that's stated plainly rather than left implicit.** The canonical "Cerrar sesión" mechanism — the confirm dialog, the guardando/error states, the exact handoff to `authentication.md §3.3` — is not redescribed here; it's cited wholesale from `settings.md §2.5/§3.8/§3.8a/§3.8b`, unchanged, reused for a SELLER exactly as already specified for an OWNER. What's new here is only *reaching* this narrower surface instead of full Configuración — the write action itself has no role dependency at all.
+- **Why this lives in `home.md` rather than as a proper amendment to `settings.md`'s own role-gated vista:** that document's §8 item 14 already names the larger gap plainly ("Configuración/nav carries no role-based access gate at all today... a materially larger, separate design gap") and is explicitly out of this dispatch's scope to edit. Designing the destination content here, now, means nothing about a SELLER's experience ships underspecified while that larger `settings.md` amendment waits its turn — see §11 for the recommended future consolidation.
+- No capability rows of any kind — a SELLER genuinely has none to check or change; this document states that plainly rather than inventing a destination.
+
+### 3.16 Nav bar — role-scoped rendering (new — `product-decisions.md` Q24/Q25)
+
+Applies to every wireframe in this document; cross-referenced here rather than redrawn at each state, per `product/02-ux/CLAUDE.md` §4's shared-state convention — the same treatment §3.7b's Quick Session title row already gets.
+
+**OWNER — unchanged, every wireframe above renders this exactly as already specified:**
+```
+[Hoy]  Inventario Eventos Resultados
+```
+
+**SELLER — new:**
+```
+[Hoy]
+```
+
+Per the Q24/Q25 permission table, a SELLER's granted capabilities are exactly "open/close own Session, register Sales, read sellable Products/prices, own current-session activity" — nothing that lives in Inventario, Eventos, or Resultados. Rendering those three tabs dimmed or disabled would show her a destination she structurally cannot reach — this document's own existing discipline (§2.3's `nfc` capability toggle, already cited elsewhere in this file) is to hide an unavailable capability outright, never gray it out. Applied identically here: the three tabs are not rendered at all for a SELLER, not present-but-inert. "Hoy" alone is never visually a "current tab in brackets" convention competing with anything — it's simply the only destination that exists for her.
+
+### 3.17 Acceso no disponible — SELLER reaches an OWNER-only destination directly (new, defensive state — `product-decisions.md` Q24/Q25)
+
+Reached only via a stale link, a browser-back artifact, or any other path that lands a SELLER's device somewhere her own Membership has no standing reach (Inventario, Eventos, Resultados, or full Configuración) — never reachable by tapping anything this document or its siblings actually offer her (§3.16 already never renders those destinations as live affordances in the first place).
+
+```
+┌───────────────────────────────┐
+│  Nahui                          │
+│  Esto no está disponible para     │
+│  tu cuenta.                        │
+│      [   Volver a Hoy   ]          │
+├───────────────────────────────┤
+│ [Hoy]                            │
+└───────────────────────────────┘
+```
+
+- **States the fact, never a diagnosis** — same register `settings.md §3.14`'s "Acceso revocado" already established for the closely related case: no blame, no implication she did something wrong.
+- **Distinct from `settings.md §3.14` in one load-bearing way**: her Membership is still perfectly `active` here — this is about a structurally unreachable destination, not a revoked one. The nav bar (SELLER-scoped, §3.16) and header icon (§3.15) stay present and functional, since she's still a legitimate, working SELLER; only the one specific destination she landed on is withheld.
+- "Volver a Hoy" routes to `home.md §2`'s own fresh resolution — the same honest, single way out this project's error states already default to.
+
 ## 4. Interaction flow (summary)
 
 ```
 Open app
   [new, step 0] This device's own Membership is revoked → settings.md §3.14
     ("Acceso revocado") — terminal, no path back into any Home state below.
+  [new] Role resolution (§2's new sub-step, immediately after step 0):
+    OWNER → every wireframe below renders exactly as already specified
+      (four-tab nav, ⚙ → full Configuración).
+    SELLER → nav renders "[Hoy]" alone (§3.16); header icon renders ⊚ →
+      §3.15a "Tu cuenta" (Cerrar sesión only, citing settings.md §2.5/
+      §3.8 unchanged); cold-start (§3.3) and §3.6a mention/link variants
+      render their SELLER-specific text, above.
   → resolve (§2, automatic)
       → active Session exists ─────────────→ selling default (3.7-3.10)
       → Event(s) active, no Session today for this device ─→ resolve which
@@ -1788,7 +2078,19 @@ Inside selling (3.7-3.10):
       → sync happens silently in the background (3.8a)
       → [rare] persistent sync failure → non-blocking marker on that item (3.8a)
         → inline Reintentar
+      → [new, rare] background sync discovers an EventAllocation conflict
+        on an already-added item → ambient "[Producto] ya no está
+        disponible" → item marked ⊗ in the tray (3.8a, lost-race)
+          → tap the flagged item → detail sheet → [ Quitar de la venta ]
+            → item removed, rest of the tray untouched
+          → [if she instead attempts Finalizar Venta first] → 3.8d-i
+            (blocked, must remove first) → Quitar de la venta → resolved
+            → Finalizar Venta proceeds
   → repeat for more items
+  → [always visible, both roles] [ Ver mi actividad de hoy ] → §3.7c
+    (full push-in, her own Sales today under this Session's own scope)
+      → back arrow → resumes exactly whichever active-Session state
+        (§3.7-§3.10) was current, Session and any open Sale untouched
   → Finalizar Venta
       → saving (3.8c)
       → error (3.8d) → Reintentar, o resolve via Cancelar venta actual (3.8b)
@@ -1901,6 +2203,15 @@ and back to Hoy):
 25. Resolution error / defensive fallback
 26. Elegir evento — idle Membership, 2+ Events currently active (§3.6b)
 27. Acceso revocado — revoked Membership (reached via §2 step 0, defined in settings.md §3.14)
+28. Nav bar — role-scoped (§3.16), applied to every state above
+29. Header icon — role-scoped (§3.15); SELLER's own "Tu cuenta" minimal surface (§3.15a)
+30. Cold start — SELLER variant (§3.3)
+31. Session-start moment — SELLER variants for Not Ready and capability-revoked (§3.6a); Ready-but-buttons-default nudge suppressed entirely for SELLER
+32. Mi actividad de hoy — own current-Session-context activity, both roles (§3.7c), including its empty state
+33. Session active — tile carries an Event-scoped remaining-stock line when an EventAllocation applies (§3.9)
+34. Session active, Sale in progress — lost-race conflict, terminal (§3.8a extended): ambient notice, ⊗ marker, detail sheet, "Quitar de la venta"
+35. Finalizar Venta blocked — lost-race item unresolved (§3.8d-i)
+36. Acceso no disponible — SELLER reaches an OWNER-only destination (§3.17)
 
 ## 6. Minimum step count
 
@@ -1945,6 +2256,13 @@ buttons-mode grid (§3.9) may require scrolling in addition to the 1 tap;
 scrolling isn't counted as a "tap," and frequency-based tile ordering keeps
 her actual top sellers within the first screenful regardless of Catalog size.
 
+**Two new rows (`product-decisions.md` Q24/Q25):**
+
+| Scenario | Taps | Why it can't be fewer |
+|---|---|---|
+| Ver mi actividad de hoy | 1 to open, 1 (back) to return | A pure informational check, no write — the floor is exactly the nav-away cost this document already treats as free elsewhere. |
+| Resolving a lost-race conflict | 1 (Quitar de la venta) | Same single-acknowledging-tap floor as §3.11a's "Entendido" — nothing left to confirm twice about a fact that's already true. |
+
 ## 7. Automation opportunities
 
 - `Session.operatingMode` — resolved once at Session open from the
@@ -1983,6 +2301,10 @@ her actual top sellers within the first screenful regardless of Catalog size.
   display of an already-resolved token, the same zero-decision pattern
   already established for `SaleItem.pricePaid` (D33) and
   `Session.operatingMode` (D23).
+- Role (OWNER vs. SELLER) — resolved once per Home open from the acting Membership, never asked, never a toggle anywhere (§2's new Role-resolution sub-step).
+- Which nav tabs render, and what the header icon does — both pure, automatic consequences of role, never a merchant-configured setting.
+- The Event-scoped remaining-stock line's presence/absence (§3.9) — a pure read of whether an `EventAllocation` exists for that Product at that Event, never something Ana toggles per tile.
+- Whether a tap-to-add item is later flagged as a lost-race conflict — entirely automatic, discovered by background sync, never something she checks for manually.
 
 ## 8. Open questions
 
@@ -2034,6 +2356,10 @@ her actual top sellers within the first screenful regardless of Catalog size.
   on this item's own still-open question of reward/gift framing.
 - **Multi-device, same-Membership Session resolution** (`product-decisions.md` Q24/Q25) — §2 step 2b's "does this device already have a signal today" check is a local, device-scoped read, sufficient for the current no-backend prototype. A future backend-synced case (the same Membership acting from two devices) isn't resolved here — Q24/Q25 item 3 already names this gap; this amendment doesn't close it, only avoids pretending it's solved.
 - **A Business with 3+ simultaneously active Events** — §3.6b's list scales to any count without a new mechanism, but no evidence yet of real need beyond two; not a design gap, just unvalidated.
+- **`knowledge-mentor` consultation needed, not yet performed** — flagged explicitly, per this folder's own consultation-trigger discipline. §3.8a's new "lost the race" pattern (an already-added item visibly walked back mid-transaction, after a background sync discovers a conflict) has no existing precedent anywhere in this document family. **Specific question for the consultation:** does established point-of-sale/inventory UX practice for exactly this pattern suggest a different correction shape than the one designed here (ambient notice + persistent terminal marker + one-tap manual removal, rather than e.g. automatic silent removal, or a blocking modal at the moment of discovery)? Best-effort design is already written above (§3.8a, §3.8d-i) so nothing ships unwritten in the meantime; not treated as final until this consultation runs.
+- **The SELLER "Tu cuenta" surface (§3.15a) is hosted in this document as a stand-in, not its permanent home.** The larger gap — `settings.md` needing its own genuinely role-gated vista principal — is `settings.md §8` item 14's own already-named territory. Recommend a small future `settings.md` amendment that formally relocates this content there and retires the stand-in here, once that document is next in scope for amendment (§11).
+- **NFC-mode lost-race conflict** — the identical terminal pattern applies if a same-tag double-scan is ever actually hit, but this wasn't independently redesigned for that surface (§3.8a's own closing note) — the settled architecture treats it as structurally rare, not a case with real evidence behind it yet.
+- **Whether "Mi actividad de hoy" should ever surface anything beyond a flat chronological list (a per-Product breakdown, e.g.)** — not designed now, no evidence of need; would risk this becoming "a cut-down Resultados variant," exactly what `product-decisions.md` Q24/Q25 explicitly warned against building.
 
 ## 9. Principle justification
 
@@ -2119,6 +2445,15 @@ her actual top sellers within the first screenful regardless of Catalog size.
   bounded-context dependency edge — it reads only Inventory data Selling
   already reads (`decision-log.md` D23).
 - *"Never ask twice"* — §2 step 2b's same-day-signal check exists specifically so a device that already sold at one Event today is never re-asked which Event it's at.
+
+**SELLER-experience additions (`product-decisions.md` Q24/Q25):**
+- *global-principles.md*, "business language before technical language" — every SELLER-facing copy variant says "pídele a quien te invitó," "solo quien te invitó puede activar esto," never "role," "permission," "Membership," or "OWNER"/"SELLER" as literal on-screen terms.
+- *global-principles.md*, "never ask twice" — role is resolved once per Home open, never re-asked or re-confirmed mid-Session; the Ready-but-buttons-default nudge's full suppression for SELLER is this principle applied to an entire mention, not just a single re-ask.
+- *global-principles.md*, "the best interface stays out of the merchant's way" — the cold-start SELLER variant and the Not-Ready/capability-revoked SELLER mentions state real, actionable next steps (ask the OWNER) rather than dead-ending her or showing an unreachable link.
+- *architecture-principles.md* #1 (capabilities resolved once, upstream) — role, exactly like `Session.operatingMode`, is resolved once and never re-evaluated mid-flow.
+- *architecture-principles.md* #4 (internal-only entities never leak into language) — `BusinessMembership`, `role`, `EventAllocation`, `performedByMembershipId` never appear as literal on-screen copy anywhere in this amendment.
+- *architecture-principles.md* #6 (one-way dependency direction) — the Event-scoped tile count and "Mi actividad de hoy" both read data Selling already legitimately reads (Inventory/Selling's own `EventAllocation`, `Sale.performedByMembershipId`); neither introduces a new bounded-context edge.
+- *architecture-principles.md* #7 (idempotent/keyed writes, applied by exception) — the lost-race conflict is the one state in this document that correctly withholds a "Reintentar" affordance, because the underlying write structurally cannot succeed a second time; naming this explicitly, rather than defaulting to the doc's usual retry template, is this principle honored, not an inconsistency.
 
 ## 10. Decisions made
 
@@ -2284,6 +2619,12 @@ her actual top sellers within the first screenful regardless of Catalog size.
   home.changelog.md#decisions-2026-08-15-non-session-gear-direct-affordance]**
 - **New §3.6b "Elegir evento" added** — an idle Membership with 2+ simultaneously active Events picks one, folding into the existing §3.6/§3.6a machinery rather than inventing a parallel Session-start mechanism (`product-decisions.md` Q24/Q25, `decision-log.md` D53).
 - **New §2 step 0** — a revoked Membership resolves to `settings.md` §3.14 before any other Home state, cross-document per this folder's own §4 discipline.
+- **Nav bar and header icon are resolved once from role, per Home open** (§3.15/§3.16) — SELLER sees only "Hoy" (never a disabled/grayed tab) and a non-gear account icon routing to a minimal, hosted-here "Tu cuenta" surface, not full Configuración.
+- **Every OWNER-only next-step link in §3.6a is either replaced by a passive note (Not Ready, capability revoked) or fully suppressed (Ready-but-buttons-default discoverability nudge) for a SELLER** — the informational line stays where it's operationally true; only unreachable links are removed.
+- **"Mi actividad de hoy" is a new, small own-activity view, deliberately not a cut-down Resultados variant** — available to both roles, scoped to `performedByMembershipId` across the Session's own context, rendered as a full push-in specifically to avoid two simultaneously-visible "N ventas" figures reading as a discrepancy.
+- **An Event-scoped remaining-stock signal is added to buttons-mode tiles wherever an `EventAllocation` applies** — a pre-emptive, not guaranteed, reduction of concurrent-selling conflicts.
+- **A genuinely new terminal correction pattern ("lost the race") is designed for an already-added item invalidated by a background conflict** — flagged for a `knowledge-mentor` consultation not yet performed (§8); best-effort design shipped in the meantime rather than left unwritten.
+- **"Acceso no disponible" (§3.17) is a new defensive state, deliberately distinct from `settings.md §3.14`'s "Acceso revocado"** — a still-active SELLER hitting a structurally unreachable destination is not the same situation as a revoked one, and the two states say so plainly.
 
 ## 11. Future considerations
 
@@ -2320,3 +2661,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
   Foundation constant; not designed here, and Ana never sees the number
   either way (§3.6a).
 - **Exact single-device demo realization of the QR-to-loyalty-flow bridge (§3.8f) — a Medium-Fidelity/`ui-designer` task, not specified further here**, per `product/02-ux/CLAUDE.md` §4: this document names the destination and confirms engaging the element is the entry point; which Figma node/frame a click resolves to, and how a demo returns from `product/02-ux-loyalty/customer-loyalty-registration.md`'s own terminal states (which, by that document's own design, has no "return to Merchant App" destination — a presenter-driven manual step, not a designed interaction) is build-layer wiring.
+- **Relocate §3.15a's "Tu cuenta" content into a proper `settings.md` role-gated vista** once that document is next amended — this document's own version is a deliberate, disclosed stand-in, not the intended permanent home.
+- **NFC-mode lost-race conflict** — same pattern, not independently redesigned for that surface; revisit if real evidence surfaces it as more than structurally rare.
+- **Whether the Event-scoped remaining-stock line should ever show at a coarser resolution (e.g., only below a threshold, rather than always)** — kept simple (always shown when an `EventAllocation` applies) for now; revisit if real usage shows it adds noise rather than useful signal.
+- **Final iconography for the SELLER header icon (⊚ placeholder)** — a `ui-designer` decision at Medium-Fidelity; this spec's only binding requirement is that it never reads as a gear.
