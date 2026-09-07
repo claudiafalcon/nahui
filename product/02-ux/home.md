@@ -169,7 +169,7 @@ home.changelog.md#status-2026-08-15-non-session-gear-direct-affordance]**
 
 **Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25, `decision-log.md` D53 — concurrent multi-seller selling, simultaneous multi-Event operation):** §2 gains step 0 (revoked-Membership defensive gate, cross-referenced to `settings.md` §3.14) and step 2 is split into 2a (exactly one qualifying Event, unchanged) / 2b (2+ qualifying Events, new §3.6b "Elegir evento"). Closes the D53 remediation item flagged in `product-decisions.md`'s Q24/Q25 entry. Pending `ux-critic`/`reviewer` review before folding back into Approved.
 
-**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — the SELLER role's own stripped-down experience):** new role-resolution logic in §2; role-scoped nav bar (§3.16); a non-gear SELLER header icon routing to a new minimal "Tu cuenta" surface (§3.15a) hosted here as a stand-in pending a future `settings.md` amendment (see §11); SELLER-specific cold-start and §3.6a copy variants; a new "Mi actividad de hoy" own-activity view (§3.7c); a new "Acceso no disponible" defensive state (§3.17); an Event-scoped remaining-stock signal on the buttons-mode grid (§3.9); a new terminal "lost the race" concurrent-selling conflict state (§3.8a extended, plus new §3.8d-i). `knowledge-mentor` consultation on the lost-race pattern complete (§8) — pattern confirmed well-grounded, one copy correction applied (§3.8a). **Further amended 2026-09-07 (`ux-critic` round 1, Q24/Q25 batch):** found 4 Major + 4 Minor across settings.md/home.md/events.md, 0 Blockers. Scoped to this document: new §3.8d-ii defines the previously-undefined outcome for a lost-race conflict discovered by Finalizar Venta's own write (Major) — reuses §3.8a's existing terminal ⊗/no-Reintentar pattern and its already-established compare-and-swap distinguishability, no Architect consultation needed; §3.17's wireframe corrected to match its own stated header-icon rule (Major); §3.8a's "Quitar de la venta" now states the empty-tray transition explicitly (Minor); §3.7's and §3.9's existing `ui-designer` legibility flags extended to cover §3.7c's three-row header and §3.9's new tile line respectively (2 Minor). Re-verification pending. Pending `ux-critic`/`reviewer` review before folding back into Approved.
+**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — the SELLER role's own stripped-down experience):** new role-resolution logic in §2; role-scoped nav bar (§3.16); a non-gear SELLER header icon routing to a new minimal "Tu cuenta" surface (§3.15a) hosted here as a stand-in pending a future `settings.md` amendment (see §11); SELLER-specific cold-start and §3.6a copy variants; a new "Mi actividad de hoy" own-activity view (§3.7c); a new "Acceso no disponible" defensive state (§3.17); an Event-scoped remaining-stock signal on the buttons-mode grid (§3.9); a new terminal "lost the race" concurrent-selling conflict state (§3.8a extended, plus new §3.8d-i). `knowledge-mentor` consultation on the lost-race pattern complete (§8) — pattern confirmed well-grounded, one copy correction applied (§3.8a). **Further amended 2026-09-07 (`ux-critic` round 1, Q24/Q25 batch):** found 4 Major + 4 Minor across settings.md/home.md/events.md, 0 Blockers. Scoped to this document: new §3.8d-ii defines the previously-undefined outcome for a lost-race conflict discovered by Finalizar Venta's own write (Major) — reuses §3.8a's existing terminal ⊗/no-Reintentar pattern and its already-established compare-and-swap distinguishability, no Architect consultation needed; §3.17's wireframe corrected to match its own stated header-icon rule (Major); §3.8a's "Quitar de la venta" now states the empty-tray transition explicitly (Minor); §3.7's and §3.9's existing `ui-designer` legibility flags extended to cover §3.7c's three-row header and §3.9's new tile line respectively (2 Minor); §3.7c also gains its own missing near-instant/slow resolving pair, the `home.md` half of a Minor finding whose `settings.md` half (§3.11) was fixed in the first remediation pass but this half was initially missed — caught and closed directly by Main rather than left for a second `ux-critic` round. Re-verification pending. Pending `ux-critic`/`reviewer` review before folding back into Approved.
 
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
@@ -1205,6 +1205,16 @@ Tapping it opens a full push-in screen (not a dimmed overlay — see the adjacen
 │  12:40  $90 · 1 artículo            │
 │                                │
 └───────────────────────────────┘
+```
+
+Resolving (near-instant / slow) — same convention as every other read in this document (§3.1/§3.2):
+```
+┌───────────────────────────────┐        ┌───────────────────────────────┐
+│ ← Plaza Norte · Día 2            │        │ ← Plaza Norte · Día 2            │
+│  Mi actividad de hoy              │        │  Mi actividad de hoy              │
+│  ▢▢▢▢▢▢▢▢▢▢▢▢                      │        │  Un momento…                     │
+└───────────────────────────────┘        └───────────────────────────────┘
+   near-instant: silent skeleton              slow (>~1.5s): one plain line
 ```
 
 Empty state (0 finalized Sales yet under this scope, this Membership):
@@ -2277,7 +2287,7 @@ and back to Hoy):
 29. Header icon — role-scoped (§3.15); SELLER's own "Tu cuenta" minimal surface (§3.15a)
 30. Cold start — SELLER variant (§3.3)
 31. Session-start moment — SELLER variants for Not Ready and capability-revoked (§3.6a); Ready-but-buttons-default nudge suppressed entirely for SELLER
-32. Mi actividad de hoy — own current-Session-context activity, both roles (§3.7c), including its empty state
+32. Mi actividad de hoy — own current-Session-context activity, both roles (§3.7c), including its empty state and its own near-instant/slow resolving pair
 33. Session active — tile carries an Event-scoped remaining-stock line when an EventAllocation applies (§3.9)
 34. Session active, Sale in progress — lost-race conflict, terminal (§3.8a extended): ambient notice, ⊗ marker, detail sheet, "Quitar de la venta"
 35. Finalizar Venta blocked — lost-race item unresolved (§3.8d-i)
@@ -2700,6 +2710,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **"Quitar de la venta" (§3.8a, and by extension §3.8d-i/§3.8d-ii) now states explicitly that removing the last remaining item returns the tray to §3.7's empty state**, the same transition §3.8b's "Sí, cancelar" already produces. **[see home.changelog.md#decisions-quitar-last-item-empty-state]**
 - **§3.17's wireframe corrected to render the SELLER header icon (⊚)**, matching its own prose claim that the header icon stays present. **[see home.changelog.md#decisions-3-17-header-icon-fix]**
 - **§3.7's `ui-designer` legibility-verification flag extended to cover §3.7c's three-row header combination; §3.9 gains an equivalent flag for its new "N en este evento" tile line.** Neither resolved here, both correctly deferred to Medium/High-Fidelity per this document's own existing convention. **[see home.changelog.md#decisions-legibility-flags-extended]**
+- **§3.7c gains its own near-instant/slow resolving pair**, closing this document's own half of a `ux-critic` Minor finding (`settings.md` §3.11 shares the same finding, fixed in the same remediation round). **[see home.changelog.md#decisions-3-7c-resolving-pair]**
 
 ## 11. Future considerations
 
