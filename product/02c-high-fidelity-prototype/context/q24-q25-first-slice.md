@@ -46,4 +46,16 @@ No new RFC needed — every domain concept is already Accepted.
 
 ## Status
 
-Gap Analysis complete. Build not yet started.
+Gap Analysis complete. **Build complete, all 4 phases, `tsc -b`/`npm run
+build` clean throughout and at the end.** Full record — what was built per
+phase, disclosed judgment calls/scope gaps, two real bugs found and fixed
+via live `puppeteer-core` verification against `npm run dev`, and the live
+walkthroughs actually run — now lives in
+`docs/passes/slice-12-multi-staff-concurrent-selling.md`, per this folder's
+own knowledge-architecture convention (this file stays in place, not yet
+reduced to a pointer, until the Review Pipeline — `ux-critic`/`reviewer` —
+has actually run against this build; only then does it get superseded/
+retired the way this section's own rule describes). Next step: Review
+Pipeline (`ux-critic` → fix round → `reviewer`).
+
+**`architect` adjudication (2026-09-07) — `Session.openedByMembershipId` disclosed, no Foundation change.** `ui-designer` self-flagged that this field deviates from RFC 0008 §7/RFC 0009's own explicit "Session needs zero schema change" conclusion. `architect` confirmed the field is genuinely needed *in this prototype specifically* — `state.sessions` is one shared array standing in for every device at once (the same no-backend-simulation limitation already precedented and accepted at Q19, `home.md` line 2438), so without it there's no way to resolve "the Session this acting Membership itself opened" out of that shared array before any `Sale` exists to attribute. But RFC 0008/0009's conclusion about the *real* target architecture remains correct and unchanged — a real backend's auth/session gateway supplies this context structurally, the same way `businessId` already is. **Verdict: keep the field exactly as built and disclosed (`types.ts`'s own doc comment, lines 358-383) — no `decision-log.md` entry, no RFC, no `domain-model.md`/`ubiquitous-language.md` promotion.** Writing either would incorrectly assert the real domain model needs this field, contradicting what RFC 0008/0009 already correctly established. Explicit condition carried forward: this field must be stripped, not carried over, at Stage 7 backend integration.
