@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { tiltForProduct, toneForProduct, type TagTone } from '../../styles/productIdentity';
 import styles from './TagStub.module.css';
 
@@ -23,9 +23,24 @@ import styles from './TagStub.module.css';
  * same hex as `--color-blush` — invisible against that prompt's own blush
  * ring. Both default to the prior behavior — every existing call site is
  * unaffected.
+ *
+ * `photo` (`product-decisions.md` Q23, `decision-log.md` D54) — when set,
+ * renders `Product.photo` in place of the initial letter, the identical
+ * substitution rule `inventory.md` §3.4/§3.4b and `home.md` §3.9 both
+ * specify, applying identically wherever this one marker component is used
+ * (Catalog row, selling tile, committed-line previews). **Fallback is
+ * silent and local to this component, by design (§3.4b's own reasoning):**
+ * a photo that fails to load (`onError`) flips a local "failed" flag and the
+ * marker reverts to its plain letter rendering — no broken-image glyph, no
+ * message, no retry affordance, since every consumer of this component
+ * already treats "no photo" as a completely normal, first-class state. The
+ * flag resets whenever `photo` itself changes (a new selection, or the
+ * photo being removed/replaced elsewhere) so a stale failure never sticks to
+ * a since-corrected value.
  */
 export function TagStub({
   name,
+  photo,
   muted,
   size = 34,
   tilt = true,
@@ -33,15 +48,22 @@ export function TagStub({
   tone: toneOverride,
 }: {
   name: string;
+  photo?: string;
   muted?: boolean;
   size?: number;
   tilt?: boolean;
   showLetter?: boolean;
   tone?: TagTone;
 }) {
+  const [photoFailed, setPhotoFailed] = useState(false);
+  useEffect(() => {
+    setPhotoFailed(false);
+  }, [photo]);
+
   const letter = name.trim().charAt(0).toUpperCase() || '?';
   const tone = toneOverride ?? toneForProduct(name);
   const rotation = tilt ? tiltForProduct(name) : 0;
+  const showPhoto = !!photo && !photoFailed;
 
   return (
     <div
@@ -57,7 +79,13 @@ export function TagStub({
       }
     >
       <span className={styles.string} />
-      {showLetter && <span className={styles.letter}>{letter}</span>}
+      {showPhoto ? (
+        <span className={styles.photoClip}>
+          <img className={styles.photo} src={photo} alt="" onError={() => setPhotoFailed(true)} />
+        </span>
+      ) : (
+        showLetter && <span className={styles.letter}>{letter}</span>
+      )}
     </div>
   );
 }

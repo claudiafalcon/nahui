@@ -109,7 +109,7 @@ export function OnboardingFlow() {
               commitLot(
                 lines.map((l) => ({
                   quantity: l.quantity,
-                  product: { kind: 'new' as const, name: l.name, defaultPrice: l.defaultPrice },
+                  product: { kind: 'new' as const, name: l.name, defaultPrice: l.defaultPrice, photo: l.photo },
                 })),
               )
             }

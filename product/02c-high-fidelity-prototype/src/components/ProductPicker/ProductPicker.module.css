@@ -87,3 +87,55 @@
   font: var(--text-body);
   font-weight: 600;
 }
+
+/* Foto (opcional) — §3.8a (`product-decisions.md` Q23), same device-upload
+   composition `onboarding.md` §3.9's Logo field established, reused here
+   with this component's own class names. */
+.uploadBtn {
+  align-self: flex-start;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  padding: 12px 18px;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-coral-aa);
+  cursor: pointer;
+  margin-bottom: var(--space-4);
+}
+
+.photoRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.photoThumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-hilo);
+  flex-shrink: 0;
+}
+
+.linkBtn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.photoErrorText {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+  margin-bottom: var(--space-3);
+}

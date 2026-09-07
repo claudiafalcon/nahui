@@ -16,12 +16,18 @@ import styles from './ProductTile.module.css';
  */
 export function ProductTile({
   name,
+  photo,
   available,
   countInSale,
   onTap,
   onDisabledTap,
 }: {
   name: string;
+  /** `Product.photo` (`product-decisions.md` Q23) — display-only
+   * substitution in the tile's marker position, identical footprint, zero
+   * new interaction. See `TagStub`'s own doc comment for the render-failure
+   * fallback (silent revert to the initial letter). */
+  photo?: string;
   available: number;
   /** How many units of this Product are already in the open Sale — a purely
    * local aggregation of `Sale.items` (already-available data, home.md
@@ -65,7 +71,7 @@ export function ProductTile({
           overflow:hidden for the die-cut corner to read as a clean bite
           rather than a floating shape — see .surface's own comment). */}
       <span className={styles.pin}>
-        <TagStub name={name} muted={soldOut} size={40} />
+        <TagStub name={name} photo={photo} muted={soldOut} size={40} />
         {active && (
           <span key={countInSale} className={styles.countBadge}>
             ×{countInSale}

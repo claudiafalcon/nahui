@@ -197,6 +197,20 @@ export interface Product {
   id: ID;
   name: string;
   defaultPrice: number;
+  /**
+   * Optional, plain mutable current scalar — no version history, the same
+   * shape as `defaultPrice`/`Business.logo` (`decision-log.md` D54,
+   * `product-decisions.md` Q23). A browser-local object/data URL held
+   * entirely client-side, since this prototype has no backend — the same
+   * storage mechanism `Business.logo` already uses. Captured optionally at
+   * Product creation (`onboarding.md` §2.2a/§3.5b–§3.5e, `inventory.md`
+   * §3.8a) and manageable afterward via `inventory.md` §3.4b's Catalog-row
+   * "Editar foto" sheet. Consumed, display-only, wherever a Product's
+   * marker renders (`inventory.md` §3.4's Catalog row, `home.md` §3.9's
+   * Venta rápida tile) — never on the Digital Receipt (`home.md` §3.8f,
+   * deliberately untouched). One photo per Product, no gallery.
+   */
+  photo?: string;
   createdAt: number;
 }
 

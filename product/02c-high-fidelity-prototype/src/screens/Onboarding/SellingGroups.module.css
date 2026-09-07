@@ -60,6 +60,14 @@
   font: var(--text-meta);
 }
 
+/* "· foto" committed-line indicator (`product-decisions.md` Q23, §3.5c) —
+   fast-scan confirmation only, same positional convention as `.reviewFlag`
+   directly above; not itself tappable. */
+.photoFlag {
+  color: #6B6259;
+  font: var(--text-meta);
+}
+
 /* Committed line's Cantidad — a unit-suffixed meta figure ("10 pzas.") so
    it reads as distinct from the price tag at a glance, `product-decisions.md`
    Q20 (`ux-critic` M1 — the Product Owner's own confirmed treatment). */
@@ -141,6 +149,57 @@
 .error {
   font: var(--text-body-sm);
   color: var(--color-error);
+}
+
+/* Foto (opcional) field (`product-decisions.md` Q23) — same device-upload
+   composition `onboarding.md` §3.9's Logo field already established
+   (`BusinessIdentity.module.css`), reused here with this component's own
+   class names/scale, collapsed to fit this flat row per §3.5b's own
+   annotation. */
+.uploadBtn {
+  align-self: flex-start;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  padding: 12px 18px;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-coral-aa);
+  cursor: pointer;
+}
+
+.photoRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.photoThumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-hilo);
+  flex-shrink: 0;
+}
+
+.linkBtn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.hint {
+  font: var(--text-meta);
+  color: #8A8177;
 }
 
 .addAnother {

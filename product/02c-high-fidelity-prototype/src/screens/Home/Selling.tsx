@@ -300,6 +300,7 @@ export function Selling({
                     <ProductTile
                       key={product.id}
                       name={product.name}
+                      photo={product.photo}
                       available={available}
                       countInSale={countByProduct.get(product.id)}
                       onTap={() => addItemToSale(product.id)}

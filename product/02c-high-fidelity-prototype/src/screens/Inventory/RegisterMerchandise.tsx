@@ -15,7 +15,9 @@ import styles from './RegisterMerchandise.module.css';
  * draft/committed state, and only actually written (atomically with the
  * rest of the Lot) at "Guardar mercancía" — see `commitLot` in `store.tsx`.
  */
-type ProductRef = { kind: 'existing'; productId: string } | { kind: 'new'; name: string; price: number };
+type ProductRef =
+  | { kind: 'existing'; productId: string }
+  | { kind: 'new'; name: string; price: number; photo?: string };
 
 interface Line {
   key: string; // stable local identity for React lists/removal — a pending `new` line has no real productId yet
@@ -68,6 +70,19 @@ export function RegisterMerchandise({
 
   const canSave = committed.length > 0 || draft !== null;
 
+  // Resolves whichever photo this line's marker should show — a real
+  // Product's already-saved `photo` for an `existing` line, or the draft's
+  // own not-yet-written selection for a `new` one. Presentation-only, same
+  // "reuse the one TagStub component" discipline as every other marker in
+  // this codebase.
+  function photoForLine(line: Line): string | undefined {
+    const ref = line.product;
+    if (ref.kind === 'existing') {
+      return state.products.find((p) => p.id === ref.productId)?.photo;
+    }
+    return ref.photo;
+  }
+
   function commitDraftIfAny(next: Line[]): Line[] {
     if (draft) return [...next, draft];
     return next;
@@ -95,7 +110,12 @@ export function RegisterMerchandise({
           product:
             l.product.kind === 'existing'
               ? { kind: 'existing' as const, productId: l.product.productId }
-              : { kind: 'new' as const, name: l.product.name, defaultPrice: l.product.price },
+              : {
+                  kind: 'new' as const,
+                  name: l.product.name,
+                  defaultPrice: l.product.price,
+                  photo: l.product.photo,
+                },
         })),
       );
       // AT-M1 — exactly what this commit wrote, merging any repeated
@@ -137,7 +157,7 @@ export function RegisterMerchandise({
             <span className={styles.committedTitle}>Ya agregaste:</span>
             {committed.map((line) => (
               <div key={line.key} className={`${styles.committedRow} stitchBottom`}>
-                <TagStub name={line.productName} size={28} />
+                <TagStub name={line.productName} photo={photoForLine(line)} size={28} />
                 <span className={styles.committedName}>
                   {line.productName} — {line.quantity}
                   {!line.touched && <span className={styles.reviewFlag}> · revisa</span>}
@@ -203,13 +223,14 @@ export function RegisterMerchandise({
             });
             setPickerOpen(false);
           }}
-          onCreateNew={(name, price) => {
+          onCreateNew={(name, price, photo) => {
             // Not written to the store yet (inventory.md §3.8a) — held as a
             // pending `new` identity in local draft state until "Guardar
-            // mercancía" atomically resolves it via commitLot.
+            // mercancía" atomically resolves it via commitLot. Any selected
+            // Foto (`product-decisions.md` Q23) is carried the same way.
             setDraft({
               key: makeId('draft'),
-              product: { kind: 'new', name, price },
+              product: { kind: 'new', name, price, photo },
               productName: name,
               quantity: 1,
               touched: false,

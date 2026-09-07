@@ -54,3 +54,122 @@
   background-color: var(--color-balanced);
   position: relative;
 }
+
+/* inventory.md §3.4b "Editar foto" (`product-decisions.md` Q23) — same
+   device-upload composition `onboarding.md` §3.9's Logo field already
+   established (`BusinessIdentity.module.css`), reused here with its own
+   class names since this sheet is a separate component tree. */
+.uploadBtn {
+  align-self: flex-start;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  padding: 12px 18px;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-coral-aa);
+  cursor: pointer;
+  margin-bottom: var(--space-2);
+}
+
+.photoRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.photoThumbBtn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.photoThumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-hilo);
+  display: block;
+}
+
+.linkBtn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.photoHint {
+  font: var(--text-meta);
+  color: #8A8177;
+  margin-bottom: var(--space-2);
+}
+
+.error {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+  margin-bottom: var(--space-2);
+}
+
+/* §3.4b's "simple full-viewport, non-editable large view" — dismissed by
+   tapping again or the back arrow, no Cambiar/Quitar controls inside it.
+   Backdrop color matches Sheet.module.css's own established backdrop
+   (`rgba(45, 45, 45, 0.32)`, derived from --color-obsidian) rather than an
+   ad-hoc value — this overlay isn't built on Sheet itself (its full-viewport,
+   centered-image shape doesn't match Sheet's bottom-drawer panel), but it
+   still reuses this codebase's one dimmed-backdrop treatment. */
+.previewOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 45, 45, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  cursor: pointer;
+}
+
+.previewImg {
+  max-width: 88vw;
+  max-height: 76vh;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  cursor: default;
+}
+
+.previewClose {
+  position: absolute;
+  top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
+  left: var(--space-4);
+  border: none;
+  background: none;
+  /* Was --color-white (legible against the overlay's old near-opaque dark
+     scrim), then --color-coral-aa (matching .linkBtn's "Cambiar"/"Quitar"
+     dismiss-text color) — but --color-coral-aa's "WCAG AA safe" designation
+     in tokens.css was established for opaque surfaces (like .linkBtn's, sat
+     directly on --color-white). This overlay's backdrop is the translucent
+     rgba(45, 45, 45, 0.32) scrim over --color-balanced (#F4F4F4), a real
+     content-bleed-through composite (~rgb(180,180,180)), a materially
+     different context. --color-coral-aa (#C13F26) against that composite
+     computes to ~2.5:1, below the 4.5:1 normal-text AA minimum.
+     --color-obsidian (#2D2D2D) — this codebase's standard body-text-on-
+     light-surface token — clears ~6.6:1 against the same composite, so it's
+     used here instead. */
+  color: var(--color-obsidian);
+  font: var(--text-body);
+  font-weight: 600;
+  cursor: pointer;
+}

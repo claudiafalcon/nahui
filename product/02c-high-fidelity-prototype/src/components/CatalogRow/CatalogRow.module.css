@@ -29,6 +29,18 @@
   color: #9C9186;
 }
 
+/* Marker/photo tap target (`product-decisions.md` Q23) — a bare button
+   reset around `TagStub`, its own independent zone, distinct from `.main`
+   and `.price` below. */
+.marker {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+}
+
 .main {
   flex: 1;
   min-width: 0;

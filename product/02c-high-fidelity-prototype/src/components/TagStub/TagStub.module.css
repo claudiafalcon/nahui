@@ -26,6 +26,43 @@
   box-shadow: 0 2px 4px rgba(45, 45, 45, 0.18);
 }
 
+/* `Product.photo` (`product-decisions.md` Q23) — fills the tag body exactly
+   like the letter it replaces, cropped/scaled to fit, never distorted or
+   overflowing the marker's own footprint. Clipped to its own rounded-corner
+   wrapper (`.photoClip`), not to `.tag` itself — `.tag` deliberately carries
+   no `overflow: hidden`, since `.string` above intentionally pokes outside
+   the tag's own box (a real loop, not a boxed-in icon) and must stay
+   unclipped. The punched hole and string both sit in front of the photo
+   (z-index), so a photographed tag still reads as the same physical object
+   as a plain one, not a different shape. */
+.photoClip {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tag::before {
+  z-index: 2;
+}
+
+.string {
+  z-index: 2;
+}
+
+.tag.muted .photo {
+  opacity: 0.55;
+  filter: grayscale(35%);
+}
+
 .tag::before {
   /* the punched hole */
   content: '';

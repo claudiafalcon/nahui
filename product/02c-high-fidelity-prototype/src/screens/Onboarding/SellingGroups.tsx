@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { makeId } from '../../domain/id';
 import { pesos } from '../../domain/format';
 import { Button } from '../../components/Button/Button';
@@ -6,6 +6,10 @@ import { TagStub } from '../../components/TagStub/TagStub';
 import { QuantityStepper } from '../../components/QuantityStepper/QuantityStepper';
 import { WritingState } from './WritingState';
 import styles from './SellingGroups.module.css';
+
+/** `product-decisions.md` Q23 — verbatim inline failure copy, reused
+ * everywhere a selected photo can't be shown. */
+const PHOTO_UNREADABLE_MESSAGE = 'No pudimos mostrar ese archivo.';
 
 interface CommittedLine {
   key: string;
@@ -22,6 +26,9 @@ interface CommittedLine {
    * (§3.5c), the identical guarantee `inventory.md` §3.7 gives its own
    * committed lines. */
   touched: boolean;
+  /** `product-decisions.md` Q23 — fully optional, never gates "Continuar" on
+   * the active row or any committed line. Carried through to `commitLot()`. */
+  photo?: string;
 }
 
 /**
@@ -65,15 +72,35 @@ interface CommittedLine {
 export function SellingGroups({
   onSaved,
 }: {
-  onSaved: (lines: { name: string; defaultPrice: number; quantity: number }[]) => void;
+  onSaved: (lines: { name: string; defaultPrice: number; quantity: number; photo?: string }[]) => void;
 }) {
   const [committed, setCommitted] = useState<CommittedLine[]>([]);
   const [draftName, setDraftName] = useState('');
   const [draftPrice, setDraftPrice] = useState('');
   const [draftQuantity, setDraftQuantity] = useState(1);
   const [draftTouched, setDraftTouched] = useState(false);
+  const [draftPhoto, setDraftPhoto] = useState<string | undefined>(undefined);
+  const [draftPhotoError, setDraftPhotoError] = useState<string | null>(null);
   const [dupError, setDupError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
+  const photoFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  function handlePhotoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setDraftPhotoError(PHOTO_UNREADABLE_MESSAGE);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setDraftPhoto(typeof reader.result === 'string' ? reader.result : undefined);
+      setDraftPhotoError(null);
+    };
+    reader.onerror = () => setDraftPhotoError(PHOTO_UNREADABLE_MESSAGE);
+    reader.readAsDataURL(file);
+  }
 
   const draftPriceValue = useMemo(() => parseFloat(draftPrice), [draftPrice]);
   const draftValid =
@@ -100,12 +127,15 @@ export function SellingGroups({
         price: draftPriceValue,
         quantity: draftQuantity,
         touched: draftTouched,
+        photo: draftPhoto,
       },
     ]);
     setDraftName('');
     setDraftPrice('');
     setDraftQuantity(1);
     setDraftTouched(false);
+    setDraftPhoto(undefined);
+    setDraftPhotoError(null);
     setDupError(null);
     return true;
   }
@@ -124,13 +154,13 @@ export function SellingGroups({
   // §3.5c's own gating rule allows — saw a blank error preview on a failed
   // save even though her row was never lost (`ux-critic` Finding A).
   const previewLines = useMemo(() => {
-    const lines = committed.map((c) => ({ name: c.name, price: c.price, quantity: c.quantity }));
+    const lines = committed.map((c) => ({ name: c.name, price: c.price, quantity: c.quantity, photo: c.photo }));
     if (draftValid && !isDuplicate(draftName)) {
-      lines.push({ name: draftName.trim(), price: draftPriceValue, quantity: draftQuantity });
+      lines.push({ name: draftName.trim(), price: draftPriceValue, quantity: draftQuantity, photo: draftPhoto });
     }
     return lines;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [committed, draftValid, draftName, draftPriceValue, draftQuantity]);
+  }, [committed, draftValid, draftName, draftPriceValue, draftQuantity, draftPhoto]);
 
   function handleContinue() {
     if (draftValid && isDuplicate(draftName)) {
@@ -140,7 +170,12 @@ export function SellingGroups({
     if (!draftValid && !draftEmpty) {
       return; // guard — Continuar is disabled in this state, see canContinue
     }
-    const lines = previewLines.map((l) => ({ name: l.name, defaultPrice: l.price, quantity: l.quantity }));
+    const lines = previewLines.map((l) => ({
+      name: l.name,
+      defaultPrice: l.price,
+      quantity: l.quantity,
+      photo: l.photo,
+    }));
     if (lines.length === 0) return;
     setSaveState('saving');
     window.setTimeout(() => onSaved(lines), 260);
@@ -164,10 +199,11 @@ export function SellingGroups({
       <span className={styles.committedTitle}>Ya agregaste:</span>
       {committed.map((line) => (
         <div key={line.key} className={`${styles.committedRow} stitchBottom`}>
-          <TagStub name={line.name} size={28} />
+          <TagStub name={line.name} photo={line.photo} size={28} />
           <span className={styles.committedName}>
             {line.name}
             {!line.touched && <span className={styles.reviewFlag}> · revisa</span>}
+            {line.photo && <span className={styles.photoFlag}> · foto</span>}
           </span>
           <span className={styles.qtyMeta}>{line.quantity} pzas.</span>
           <span className={`${styles.priceTag} moneyTag`}>{pesos(line.price)}</span>
@@ -211,7 +247,8 @@ export function SellingGroups({
           <div className={styles.errorPreview}>
             {previewLines.map((line, i) => (
               <p key={`${line.name}-${i}`} className={styles.errorPreviewLine}>
-                {line.name} — {pesos(line.price)} · {line.quantity}
+                {line.name}
+                {line.photo && ' · foto'} — {pesos(line.price)} · {line.quantity}
               </p>
             ))}
           </div>
@@ -271,6 +308,47 @@ export function SellingGroups({
               setDraftQuantity(next);
               setDraftTouched(touched);
             }}
+          />
+        </div>
+        <div className={styles.field}>
+          <span className={styles.label}>Foto (opcional)</span>
+          {draftPhoto ? (
+            <div className={styles.photoRow}>
+              <img className={styles.photoThumb} src={draftPhoto} alt="" />
+              <button className={styles.linkBtn} onClick={() => photoFileInputRef.current?.click()}>
+                Cambiar
+              </button>
+              <button
+                className={styles.linkBtn}
+                onClick={() => {
+                  setDraftPhoto(undefined);
+                  setDraftPhotoError(null);
+                }}
+              >
+                Quitar
+              </button>
+            </div>
+          ) : (
+            <>
+              <button className={styles.uploadBtn} onClick={() => photoFileInputRef.current?.click()}>
+                Agregar foto
+              </button>
+              <span className={styles.hint}>Agrega una foto clara del producto.</span>
+            </>
+          )}
+          {draftPhotoError && (
+            <p className={styles.error}>
+              {draftPhotoError}
+              <br />
+              Intenta con otra foto, si quieres.
+            </p>
+          )}
+          <input
+            ref={photoFileInputRef}
+            type="file"
+            accept="image/*"
+            className={styles.hiddenFileInput}
+            onChange={handlePhotoFileChange}
           />
         </div>
         {dupError && <p className={styles.error}>{dupError}</p>}

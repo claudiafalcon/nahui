@@ -172,7 +172,14 @@ function mintClaimToken(saleId: ID, businessId: ID, finalizedAt: number): string
  */
 export interface CommitLotLine {
   quantity: number;
-  product: { kind: 'existing'; productId: ID } | { kind: 'new'; name: string; defaultPrice: number };
+  product:
+    | { kind: 'existing'; productId: ID }
+    /** `photo` (`product-decisions.md` Q23) — optional, only meaningful for
+     * a to-be-minted Product; an `existing` line never carries one, since an
+     * already-real Product's photo is managed separately via
+     * `setProductPhoto` (`inventory.md` §3.4b), never re-asked at receiving
+     * time. */
+    | { kind: 'new'; name: string; defaultPrice: number; photo?: string };
 }
 
 /**
@@ -244,6 +251,13 @@ interface StoreValue {
    * freshly-minted id for `new` lines, the given id for `existing` ones. */
   commitLot: (lines: CommitLotLine[]) => ID[];
   editPrice: (productId: ID, newPrice: number) => void;
+  /** inventory.md §3.4b "Guardar foto" (`product-decisions.md` Q23) — the
+   * Catalog-row-level `Product.photo` write, same shape as `editPrice`
+   * immediately above. `undefined` writes a removal ("Quitar" staged, then
+   * committed). Own idempotency key generated once per attempt, per
+   * `architecture-principles.md` #7 — same as every other retryable write in
+   * this doc family. */
+  setProductPhoto: (productId: ID, photo: string | undefined) => void;
   /** inventory.md §3.14 — Asignar Tags' own write, one scan at a time
    * (`addItemToSale`'s per-event-write shape, not `commitLot`'s batch
    * shape). "Next pending unit" = first entry in `state.units` (existing
@@ -406,8 +420,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * creation paths (onboarding.md §2.2a's own explicit instruction to
    * `builder`/`ui-designer`).
    */
-  function mintProduct(name: string, defaultPrice: number, createdAt: number): Product {
-    return { id: makeId('prod'), name: name.trim(), defaultPrice, createdAt };
+  function mintProduct(name: string, defaultPrice: number, createdAt: number, photo?: string): Product {
+    return { id: makeId('prod'), name: name.trim(), defaultPrice, photo, createdAt };
   }
 
   /**
@@ -456,7 +470,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const newProducts: Product[] = [];
     const resolvedProductIds: ID[] = lines.map((line) => {
       if (line.product.kind === 'existing') return line.product.productId;
-      const product = mintProduct(line.product.name, line.product.defaultPrice, receivedAt);
+      const product = mintProduct(line.product.name, line.product.defaultPrice, receivedAt, line.product.photo);
       newProducts.push(product);
       return product.id;
     });
@@ -645,6 +659,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => ({
       ...s,
       products: s.products.map((p) => (p.id === productId ? { ...p, defaultPrice: newPrice } : p)),
+    }));
+  }
+
+  /** inventory.md §3.4b "Guardar foto" — writes or clears `Product.photo`. */
+  function setProductPhoto(productId: ID, photo: string | undefined) {
+    setState((s) => ({
+      ...s,
+      products: s.products.map((p) => (p.id === productId ? { ...p, photo } : p)),
     }));
   }
 
@@ -1103,6 +1125,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     acknowledgeOnboarding,
     commitLot,
     editPrice,
+    setProductPhoto,
     assignTagToNextPendingUnit,
     createEvent,
     cancelEvent,
