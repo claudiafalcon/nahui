@@ -159,6 +159,21 @@
   color: #8A8177;
 }
 
+/* home.md §3.9's new Event-scoped remaining-stock line (Slice 12) — the
+   sole stock figure an event-scoped tile ever shows (see ProductTile.tsx's
+   own doc comment on why the plain `.caption` is suppressed in this case,
+   ux-critic fix round). Set at `--text-meta` — the Design System's own
+   smallest declared type-scale token (DESIGN-SYSTEM.md §5); the earlier
+   10px bespoke override sat below that floor and is retired here, not
+   reduced further. Tezontle-dark + a heavier weight than `.caption` still
+   give it a distinct, situational read without needing a smaller size to
+   do it. */
+.eventLine {
+  font: var(--text-meta);
+  color: var(--color-tezontle-dark);
+  font-weight: 600;
+}
+
 .tile.soldOut .surface {
   cursor: default;
   opacity: 0.6;

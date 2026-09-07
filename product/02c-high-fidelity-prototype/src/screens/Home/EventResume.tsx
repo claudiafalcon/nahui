@@ -1,5 +1,6 @@
 import { Button } from '../../components/Button/Button';
 import { pesos, pluralize } from '../../domain/format';
+import type { MembershipRole } from '../../domain/types';
 import { useNfcSessionStart } from './useNfcSessionStart';
 import { NfcSessionStartNote } from './NfcSessionStartNote';
 import styles from './Idle.module.css';
@@ -43,13 +44,17 @@ import styles from './Idle.module.css';
  * no `Sheet`, no `menuOpen` state.
  */
 export function EventResume({
+  role,
+  headerIcon,
   venueName,
   dayNumber,
   todaySales,
   onContinue,
-  onOpenSettings,
+  onOpenAccountSurface,
   onOpenAssignTagsPlaceholder,
 }: {
+  role: MembershipRole;
+  headerIcon: '⚙' | '⊚';
   venueName: string;
   dayNumber: number;
   todaySales?: { total: number; count: number } | null;
@@ -57,7 +62,7 @@ export function EventResume({
    * `useNfcSessionStart`'s own local override state currently reads at the
    * moment of this tap (always `false` outside the Limited Ready variant). */
   onContinue: (overrideToNfc: boolean) => void;
-  onOpenSettings: () => void;
+  onOpenAccountSurface: () => void;
   /** §3.6a's "Asignar tags" link — routes into Inventario's real Asignar
    * Tags queue (inventory.md §3.14, Asignar Tags pass, D43). Prop name kept
    * as-is (not a stub anymore) to keep that pass's diff scoped to wiring,
@@ -70,8 +75,12 @@ export function EventResume({
     <>
       <div className={styles.topbar}>
         <span className={styles.wordmark}>Nahui</span>
-        <button className={styles.gearBtn} onClick={onOpenSettings} aria-label="Configuración">
-          ⚙
+        <button
+          className={styles.gearBtn}
+          onClick={onOpenAccountSurface}
+          aria-label={role === 'OWNER' ? 'Configuración' : 'Tu cuenta'}
+        >
+          {headerIcon}
         </button>
       </div>
       <div className={styles.wrap}>
@@ -90,10 +99,11 @@ export function EventResume({
           </Button>
           <NfcSessionStartNote
             variant={variant}
+            role={role}
             overrideToNfc={overrideToNfc}
             onToggleOverride={toggleOverride}
             onOpenAssignTags={onOpenAssignTagsPlaceholder}
-            onOpenSettings={onOpenSettings}
+            onOpenSettings={onOpenAccountSurface}
           />
         </div>
       </div>

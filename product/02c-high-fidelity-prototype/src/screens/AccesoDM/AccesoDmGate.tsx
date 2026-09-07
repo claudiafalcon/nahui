@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { track } from '@vercel/analytics';
 import { useStore } from '../../domain/store';
+import { currentUser } from '../../domain/selectors';
 import { businessForCurrentUser } from '../../domain/onboardingResolution';
 import { DEMO_BUSINESS_DESCRIPTION, DEMO_BUSINESS_NAME, DEMO_SEED_LINES } from '../../domain/demoSeed';
 import { markAccesoDmActive } from './accesoDmStorage';
@@ -117,7 +118,7 @@ export function AccesoDmGate({ children }: { children: ReactNode }) {
     // together, and only when `state.products.length === 0`, exactly §2.1
     // step 5 / §8 item 2's own fix (`commitLot` carries no idempotency
     // guard of its own, unlike `completeOnboarding`).
-    const verified = state.currentUser?.phoneVerifiedAt != null;
+    const verified = currentUser(state)?.phoneVerifiedAt != null;
     const business = businessForCurrentUser(state);
     let step: Step = null;
     if (!verified) step = 'verify';
@@ -193,7 +194,7 @@ export function AccesoDmGate({ children }: { children: ReactNode }) {
   }
 
   if (active) {
-    const verified = state.currentUser?.phoneVerifiedAt != null;
+    const verified = currentUser(state)?.phoneVerifiedAt != null;
     const business = businessForCurrentUser(state);
     const sequenceComplete = verified && business != null && state.products.length > 0;
     if (!sequenceComplete) {

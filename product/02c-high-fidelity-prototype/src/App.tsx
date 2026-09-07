@@ -1,9 +1,13 @@
 import { useState } from 'react';
+import { useStore } from './domain/store';
+import { currentUser, findMembership } from './domain/selectors';
 import { NavBar, type TabKey } from './components/NavBar/NavBar';
 import { HomeScreen } from './screens/Home/HomeScreen';
 import { InventoryScreen, type InventoryView } from './screens/Inventory/InventoryScreen';
 import { EventsScreen, type EventsView } from './screens/Events/EventsScreen';
 import { ResultadosScreen, type ResultadosView } from './screens/Resultados/ResultadosScreen';
+import { AccesoRevocado } from './screens/Settings/AccesoRevocado';
+import { AccesoNoDisponible } from './screens/Home/AccesoNoDisponible';
 import { ScreenTransition } from './components/ScreenTransition/ScreenTransition';
 import styles from './App.module.css';
 
@@ -12,9 +16,32 @@ import styles from './App.module.css';
  * Eventos · Resultados). All four tabs are real as of the Resultados pass
  * (Migration Workflow, D43) — Hoy/Inventario/Eventos already were; this pass
  * closes the last one.
+ *
+ * **Slice 12 additions (`product-decisions.md` Q24/Q25) — role-scoped
+ * rendering at the tab-shell level.** `home.md` §2 step 0 (a revoked acting
+ * Membership) is resolved here, one level above the nav bar/tab content —
+ * `settings.md` §3.14's own wireframe shows no header, no bottom nav at
+ * all for that state, a stronger omission than any state `HomeScreen.tsx`
+ * itself renders. `home.md` §3.16 (role-scoped nav) is applied here too:
+ * a SELLER's `NavBar` renders only "Hoy," and — as a defensive backstop
+ * matching §3.17's own reachability note ("a stale link, a browser-back
+ * artifact, or any other path...never reachable by tapping anything this
+ * document or its siblings actually offer her") — this component never
+ * renders the real Inventario/Eventos/Resultados content for her even if
+ * `activeTab` somehow ends up pointed at one, since nothing in this
+ * codebase's own SELLER-facing screens ever fires a callback that would.
  */
 export default function App() {
+  const { state } = useStore();
   const [activeTab, setActiveTab] = useState<TabKey>('hoy');
+
+  const user = currentUser(state);
+  const membership = user && state.business ? findMembership(state, user.id, state.business.id) : undefined;
+
+  if (membership?.status === 'revoked') {
+    return <AccesoRevocado />;
+  }
+  const role = membership?.role ?? 'OWNER';
   const [inventoryView, setInventoryView] = useState<InventoryView>({ mode: 'catalog' });
   const [eventsView, setEventsView] = useState<EventsView>({ mode: 'list' });
   const [resultadosView, setResultadosView] = useState<ResultadosView>({ mode: 'main' });
@@ -79,7 +106,7 @@ export default function App() {
           </ScreenTransition>
         )}
 
-        {activeTab === 'inventario' && (
+        {activeTab === 'inventario' && role === 'OWNER' && (
           <ScreenTransition transitionKey="inventario">
             <InventoryScreen
               view={inventoryView}
@@ -114,7 +141,7 @@ export default function App() {
           </ScreenTransition>
         )}
 
-        {activeTab === 'eventos' && (
+        {activeTab === 'eventos' && role === 'OWNER' && (
           <ScreenTransition transitionKey="eventos">
             <EventsScreen
               view={eventsView}
@@ -136,7 +163,7 @@ export default function App() {
           </ScreenTransition>
         )}
 
-        {activeTab === 'resultados' && (
+        {activeTab === 'resultados' && role === 'OWNER' && (
           <ScreenTransition transitionKey="resultados">
             <ResultadosScreen
               view={resultadosView}
@@ -146,9 +173,18 @@ export default function App() {
             />
           </ScreenTransition>
         )}
+
+        {/* home.md §3.17 — defensive backstop only (see this component's
+            own top-of-file doc comment); never reached by tapping anything
+            this codebase's SELLER-facing screens actually offer. */}
+        {activeTab !== 'hoy' && role !== 'OWNER' && (
+          <ScreenTransition transitionKey="acceso-no-disponible">
+            <AccesoNoDisponible onBack={() => setActiveTab('hoy')} onOpenAccount={() => setActiveTab('hoy')} />
+          </ScreenTransition>
+        )}
       </main>
 
-      <NavBar active={activeTab} onChange={setActiveTab} />
+      <NavBar active={activeTab} onChange={setActiveTab} visibleTabs={role === 'OWNER' ? undefined : ['hoy']} />
     </>
   );
 }

@@ -1,0 +1,37 @@
+/* settings.md §3.14 — reuses the same centered/mark-less "copy + one CTA"
+   shape InvitationFlow.module.css already established for a comparable
+   terminal/defensive state, local copy per this folder's own convention. */
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-6);
+  padding: var(--space-12) var(--space-6) var(--space-8);
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--color-obsidian);
+}
+
+.body {
+  font: var(--text-body);
+  color: #6B6259;
+  max-width: 34ch;
+}
+
+.cta {
+  max-width: 320px;
+  width: 100%;
+}

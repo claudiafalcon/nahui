@@ -64,10 +64,24 @@ export function VentaActualTray({
   lines,
   subtotal,
   onCancel,
+  conflictedProductIds,
+  onTapConflictedChip,
 }: {
   lines: SaleLine[];
   subtotal: number;
   onCancel: () => void;
+  /** home.md §3.8a extended (Slice 12, `product-decisions.md` Q24/Q25) —
+   * "lost the race": a Product whose chip carries the terminal ⊗ marker,
+   * distinct from the retriable sync-failure marker (⚠, not built in this
+   * slice — no background-sync simulation exists to ever raise it either).
+   * Defaults to empty — every existing call site stays correct with no
+   * change. Genuinely unreachable through real interaction in this
+   * no-backend prototype (see `Selling.tsx`'s own disclosure); kept as a
+   * real, correctly-rendering prop/render path rather than an unwritten
+   * one, matching this codebase's established convention for states a
+   * genuine backend concurrency mechanism alone could trigger. */
+  conflictedProductIds?: Set<string>;
+  onTapConflictedChip?: (productId: string) => void;
 }) {
   const reduceMotion = useRef(
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -132,10 +146,14 @@ export function VentaActualTray({
         <div className={styles.chipRow}>
           {renderedLines.map((line, i) => {
             const tone = toneForProduct(line.name);
+            const conflicted = conflictedProductIds?.has(line.productId) ?? false;
             return (
               <span
                 key={line.productId}
                 className={`${styles.chip} ${exiting ? styles.chipExit : ''}`}
+                role={conflicted ? 'button' : undefined}
+                tabIndex={conflicted ? 0 : undefined}
+                onClick={conflicted ? () => onTapConflictedChip?.(line.productId) : undefined}
                 style={
                   {
                     '--tone-bg': tone.bg,
@@ -148,6 +166,7 @@ export function VentaActualTray({
                 <TagStub name={line.name} size={20} tilt={false} />
                 <span className={styles.chipName}>{line.name}</span>
                 {line.qty > 1 && <span className={styles.chipQty}>×{line.qty}</span>}
+                {conflicted && <span className={styles.chipConflict}>⊗</span>}
               </span>
             );
           })}

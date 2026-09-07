@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
 import {
-  activeSession,
+  actingMembership,
   dayNumberForDate,
+  eventScopedRemaining,
   findProduct,
   findVenue,
+  myActiveSession,
   openSaleForSession,
   sellingGridRows,
   sessionTotals,
@@ -18,6 +20,7 @@ import { NFCScanPrompt } from '../../components/NFCScanPrompt/NFCScanPrompt';
 import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
 import type { Receipt } from '../../domain/store';
+import type { MembershipRole } from '../../domain/types';
 import { articulos, pesos, pluralize } from '../../domain/format';
 import styles from './Selling.module.css';
 
@@ -38,26 +41,49 @@ import styles from './Selling.module.css';
  *   a new convention invented here.
  */
 export function Selling({
+  role,
   onSaleFinalized,
   onSessionClosed,
-  onOpenSettings,
+  onOpenAccountSurface,
   onNavigateToAssignTags,
+  onOpenMiActividad,
 }: {
+  /** home.md §3.15 (Slice 12) — role-scoped header icon/destination. */
+  role: MembershipRole;
   onSaleFinalized: (receipt: Receipt) => void;
   onSessionClosed: (summary: { count: number; revenue: number }, sessionId: string) => void;
-  onOpenSettings: () => void;
+  onOpenAccountSurface: () => void;
   /** Fix round, `docs/passes/slice-7-nfc-selling.md` (ux-critic Major) —
    * the same `HomeScreen.tsx`-owned hand-off `Idle.tsx`/`EventResume.tsx`
    * already use for §3.6a's "Asignar tags" mention, threaded one level
    * deeper so §3.10's no-match scan fallback can offer it too (see
    * `handleScan`'s own doc comment below). */
   onNavigateToAssignTags: () => void;
+  /** home.md §3.7c "Ver mi actividad de hoy" (Slice 12) — opens the full
+   * push-in own-activity screen; `HomeScreen.tsx` owns the actual mount
+   * swap (§3.7c is a distinct screen state, not a sheet over this one). */
+  onOpenMiActividad: () => void;
 }) {
-  const { state, addItemToSale, addItemToSaleByTag, cancelSale, finalizeSale, closeSession } = useStore();
+  const { state, addItemToSale, addItemToSaleByTag, removeSaleItem, cancelSale, finalizeSale, closeSession } =
+    useStore();
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [closeBlockedOpen, setCloseBlockedOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  // home.md §3.8a extended / §3.8d-i / §3.8d-ii (Slice 12, `product-
+  // decisions.md` Q24/Q25) — the "lost the race" terminal marker. Local,
+  // UI-only state (never part of the persisted `Sale`/`SaleItem` domain
+  // shape, which has no conflict concept at all) since nothing in this
+  // no-backend prototype ever produces a genuine cross-actor race within
+  // one synchronous write (see this file's own disclosure below,
+  // `handleFinalize`'s doc comment). Real, correctly-rendering machinery,
+  // wired to the real `removeSaleItem` write — simply never populated by
+  // any live handler in this build, the same disclosed-not-organically-
+  // reachable posture this codebase already holds for every other state a
+  // genuine backend concurrency mechanism alone could trigger.
+  const [conflictedItemIds, setConflictedItemIds] = useState<Set<string>>(new Set());
+  const [conflictDetailItemId, setConflictDetailItemId] = useState<string | null>(null);
+  const [finalizeBlockedOpen, setFinalizeBlockedOpen] = useState(false);
   // Sold-out tile tap feedback — not in home.md §3.9's original text (which
   // assumed a native `disabled` button needed no separate message, "there's
   // no tap to respond to"). A real device tap on a disabled button produces
@@ -79,7 +105,9 @@ export function Selling({
   );
   const stockHintTimeout = useRef<number | undefined>(undefined);
 
-  const session = activeSession(state);
+  const membership = actingMembership(state);
+  if (!membership) return null; // defensive — HomeScreen only mounts this once a valid acting Membership resolves
+  const session = myActiveSession(state, membership.id);
   if (!session) return null; // defensive — HomeScreen only mounts this once a Session exists
 
   const sale = openSaleForSession(state, session.id);
@@ -129,6 +157,35 @@ export function Selling({
   // src/domain/ change — same discipline as `lines` above.
   const subtotal = items.reduce((sum, item) => sum + item.pricePaid, 0);
 
+  // home.md §3.8a extended (Slice 12) — which Product chips carry the
+  // terminal ⊗ marker, derived from `conflictedItemIds` the same way
+  // `countByProduct` derives from `items` above.
+  const conflictedProductIds = new Set(
+    items.filter((item) => conflictedItemIds.has(item.id)).map((item) => item.productId),
+  );
+  const conflictDetailItem = conflictDetailItemId ? items.find((item) => item.id === conflictDetailItemId) : undefined;
+  const conflictDetailProductName = conflictDetailItem ? findProduct(state, conflictDetailItem.productId)?.name ?? '' : '';
+
+  function resolveConflict(itemId: string, andRetryFinalize: boolean) {
+    removeSaleItem(itemId);
+    setConflictedItemIds((prev) => {
+      const next = new Set(prev);
+      next.delete(itemId);
+      return next;
+    });
+    setConflictDetailItemId(null);
+    if (andRetryFinalize) {
+      // §3.8d-i: "Finalizar Venta can proceed immediately after [resolving
+      // the one blocking item] — no re-tap of Finalizar Venta needed" — the
+      // original attempt is still logically in progress (nothing was ever
+      // submitted, unlike §3.8d-ii's own mid-write discovery), so resolving
+      // the block re-triggers the same attempt automatically rather than
+      // waiting for a second tap.
+      setFinalizeBlockedOpen(false);
+      window.setTimeout(() => handleFinalize(), 0);
+    }
+  }
+
   function showHint(message: string, link?: { label: string; onTap: () => void }) {
     setStockHint({ message, link });
     window.clearTimeout(stockHintTimeout.current);
@@ -152,8 +209,25 @@ export function Selling({
     stockHintTimeout.current = window.setTimeout(() => setStockHint(null), 2400);
   }
 
-  function handleDisabledTap(productName: string) {
-    showHint(`Necesitas registrar stock de ${productName}.`);
+  // ux-critic fix round (Slice 12) — a dimmed tile can be gated by two
+  // materially different facts (§3.9's own distinction, already drawn
+  // correctly by the visible caption): genuinely no Business-wide stock at
+  // all, vs. stock that exists but simply isn't allocated to this Event.
+  // The original single message ("Necesitas registrar stock de...") is only
+  // true of the first case — telling her to register new stock when stock
+  // already exists, just elsewhere, sends her to the wrong screen
+  // (Inventario, not "Llevar mercancía"). `eventDepletedOnly` mirrors the
+  // exact condition the caption itself uses to decide "0 en este evento" vs
+  // "0 disponibles". Kept role-neutral (no reference to a specific
+  // OWNER-only screen name) since §3.9 renders identically for both
+  // roles — a SELLER reading this can't act on "Llevar mercancía" herself
+  // either way.
+  function handleDisabledTap(productName: string, eventDepletedOnly: boolean) {
+    showHint(
+      eventDepletedOnly
+        ? `${productName} tiene mercancía, pero no está asignada a este evento.`
+        : `Necesitas registrar stock de ${productName}.`,
+    );
   }
 
   /**
@@ -223,12 +297,28 @@ export function Selling({
   }
 
   function handleFinalize() {
+    // §3.8d-i — a client-side precondition check, ahead of ever calling the
+    // write itself: reached only if a §3.8a lost-race marker is still
+    // present (genuinely unreachable through real interaction in this
+    // build, see this file's own conflict-state disclosure above).
+    if (conflictedItemIds.size > 0) {
+      setFinalizeBlockedOpen(true);
+      return;
+    }
     setSaving(true);
     // Near-instant save convention (home.md §3.8c) — a brief, deliberate
     // beat so the state transition reads as real, never an invisible jump.
     window.setTimeout(() => {
       const receipt = finalizeSale();
       setSaving(false);
+      // §3.8d-ii — a lost-race conflict discovered by the write itself
+      // would resolve here (`finalizeSale()` returning `null` for a reason
+      // other than "nothing to finalize"); this mock write cannot actually
+      // distinguish that case from any other failure, and — since this
+      // build's own compare-and-swap runs at add-time, not at finalize —
+      // never has a conflict left to discover this late in the first
+      // place. Disclosed, not silently glossed over: see this file's own
+      // top-of-conflict-state comment.
       if (receipt) onSaleFinalized(receipt);
     }, 260);
   }
@@ -252,10 +342,21 @@ export function Selling({
           revenue={contextTotals.total}
           count={contextTotals.count}
           title={headerTitle}
+          headerIcon={role === 'OWNER' ? '⚙' : '⊚'}
           onCloseSession={handleCloseSessionRequest}
-          onOpenSettings={onOpenSettings}
+          onOpenAccountSurface={onOpenAccountSurface}
+          onOpenMiActividad={onOpenMiActividad}
         />
-        <VentaActualTray lines={lines} subtotal={subtotal} onCancel={() => setCancelConfirmOpen(true)} />
+        <VentaActualTray
+          lines={lines}
+          subtotal={subtotal}
+          onCancel={() => setCancelConfirmOpen(true)}
+          conflictedProductIds={conflictedProductIds}
+          onTapConflictedChip={(productId) => {
+            const item = items.find((i) => conflictedItemIds.has(i.id) && i.productId === productId);
+            if (item) setConflictDetailItemId(item.id);
+          }}
+        />
       </div>
 
       {saving ? (
@@ -296,17 +397,27 @@ export function Selling({
                 <p className={styles.emptyGrid}>Todavía no tienes productos registrados.</p>
               ) : (
                 <div className={styles.grid}>
-                  {grid.map(({ product, available }) => (
-                    <ProductTile
-                      key={product.id}
-                      name={product.name}
-                      photo={product.photo}
-                      available={available}
-                      countInSale={countByProduct.get(product.id)}
-                      onTap={() => addItemToSale(product.id)}
-                      onDisabledTap={() => handleDisabledTap(product.name)}
-                    />
-                  ))}
+                  {grid.map(({ product, available }) => {
+                    const eventRemaining = session.eventId
+                      ? eventScopedRemaining(state, session.eventId, product.id)
+                      : null;
+                    // Same distinction §3.9's own caption already draws:
+                    // exhausted at the Event level while Business-wide stock
+                    // still genuinely exists elsewhere.
+                    const eventDepletedOnly = eventRemaining != null && eventRemaining <= 0 && available > 0;
+                    return (
+                      <ProductTile
+                        key={product.id}
+                        name={product.name}
+                        photo={product.photo}
+                        available={available}
+                        eventRemaining={eventRemaining}
+                        countInSale={countByProduct.get(product.id)}
+                        onTap={() => addItemToSale(product.id)}
+                        onDisabledTap={() => handleDisabledTap(product.name, eventDepletedOnly)}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -374,6 +485,48 @@ export function Selling({
           <Button onClick={() => setCloseBlockedOpen(false)}>Entendido</Button>
         </Sheet>
       )}
+
+      {/* home.md §3.8a extended — the lost-race detail sheet, reached by
+          tapping a conflicted chip. "Quitar de la venta" is a single tap,
+          no secondary Sí/No — acknowledging an already-true fact, not a
+          decision that risks losing good data (§3.8a's own reasoning).
+          Genuinely unreachable through real interaction in this build (see
+          this file's own top-of-conflict-state disclosure). */}
+      {conflictDetailItem && (
+        <Sheet onDismiss={() => setConflictDetailItemId(null)}>
+          <p className={styles.confirmTitle}>{conflictDetailProductName} ya no está disponible.</p>
+          <p className={styles.confirmBody}>Otro vendedor la vendió.</p>
+          <Button variant="destructive" onClick={() => resolveConflict(conflictDetailItem.id, false)}>
+            Quitar de la venta
+          </Button>
+        </Sheet>
+      )}
+
+      {/* home.md §3.8d-i — Finalizar Venta attempted while a lost-race
+          marker is still present; a precondition, not a save failure.
+          Genuinely unreachable through real interaction in this build (see
+          this file's own top-of-conflict-state disclosure). */}
+      {finalizeBlockedOpen &&
+        (() => {
+          const firstConflictedId = Array.from(conflictedItemIds)[0];
+          const firstConflictedItem = items.find((i) => i.id === firstConflictedId);
+          const productName = firstConflictedItem ? findProduct(state, firstConflictedItem.productId)?.name ?? '' : '';
+          return (
+            <Sheet onDismiss={() => setFinalizeBlockedOpen(false)}>
+              <p className={styles.confirmBody}>
+                {productName || 'Un producto'} ya no está disponible – tienes que quitarla antes de terminar la venta.
+              </p>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (firstConflictedId) resolveConflict(firstConflictedId, true);
+                }}
+              >
+                Quitar de la venta
+              </Button>
+            </Sheet>
+          );
+        })()}
     </div>
   );
 }

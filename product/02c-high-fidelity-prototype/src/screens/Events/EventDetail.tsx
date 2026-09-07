@@ -16,10 +16,11 @@ import { pesos, pluralize } from '../../domain/format';
 import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
 import { AdjustPrices } from './AdjustPrices';
+import { MercanciaParaEsteEvento } from './MercanciaParaEsteEvento';
 import { EVENT_TYPE_LABELS } from './eventTypeLabels';
 import styles from './EventDetail.module.css';
 
-type SubView = 'main' | 'cancel-confirm' | 'adjust-prices';
+type SubView = 'main' | 'cancel-confirm' | 'adjust-prices' | 'mercancia';
 
 /**
  * events.md §3.11/§3.12/§3.14/§3.15/§3.16/§3.17 — Event detail, across every
@@ -64,6 +65,10 @@ export function EventDetail({
     return <AdjustPrices eventId={event.id} venueName={venueName} onBack={() => setSubView('main')} />;
   }
 
+  if (subView === 'mercancia') {
+    return <MercanciaParaEsteEvento eventId={event.id} venueName={venueName} onBack={() => setSubView('main')} />;
+  }
+
   const costLine = event.bazaarCost > 0 ? `Costo: ${pesos(event.bazaarCost)}` : null;
 
   return (
@@ -90,6 +95,9 @@ export function EventDetail({
 
         {status === 'scheduled' && (
           <div className={styles.actions}>
+            <Button variant="secondary" onClick={() => setSubView('mercancia')}>
+              Llevar mercancía
+            </Button>
             <Button variant="secondary" onClick={() => setSubView('adjust-prices')}>
               Ajustar precios
             </Button>
@@ -106,6 +114,7 @@ export function EventDetail({
             today={today}
             onContinue={handleContinue}
             onViewResultados={() => onNavigateToResultados(event.id)}
+            onViewMercancia={() => setSubView('mercancia')}
           />
         )}
       </div>
@@ -142,12 +151,19 @@ function ActiveOrClosedBody({
   today,
   onContinue,
   onViewResultados,
+  onViewMercancia,
 }: {
   eventId: string;
   status: 'active' | 'closed';
   today: string;
   onContinue: () => void;
   onViewResultados: () => void;
+  /** events.md §3.14/§3.15 "Ver mercancía de este evento" (Slice 12) —
+   * present throughout the Event's `active` life (unlike "Ajustar precios,"
+   * which is `scheduled`-only) — see `MercanciaParaEsteEvento.tsx`'s own
+   * doc comment for why this is a deliberate divergence, not an
+   * inconsistency. */
+  onViewMercancia: () => void;
 }) {
   const { state } = useStore();
 
@@ -187,6 +203,9 @@ function ActiveOrClosedBody({
         ) : (
           <Button onClick={onContinue}>Continuar Día {dayNumber}</Button>
         )}
+        <Button variant="secondary" onClick={onViewMercancia}>
+          Ver mercancía de este evento
+        </Button>
       </>
     );
   }

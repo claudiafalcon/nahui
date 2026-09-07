@@ -12,10 +12,16 @@ close/rollup), Configuración (the four Business Capability actions plus the
 account-level "Cerrar sesión"), Resultados (Free/Paid-tier review,
 Session/Event/Venue drill-down), Asignar Tags (Inventario's NFC-tagging
 queue for nfc-capable Businesses, auto-entered after Guardar mercancía,
-resumable via the Catalog view's own pending-tag status), and an optional
+resumable via the Catalog view's own pending-tag status), an optional
 `Product.photo` (captured at Product creation in either Onboarding or
 Inventario, managed afterward via Inventario's own "Editar foto" sheet,
-displayed on the Catalog row and the Venta rápida selling tile).
+displayed on the Catalog row and the Venta rápida selling tile), and
+multi-staff concurrent selling (`product-decisions.md` Q24/Q25's first
+usable version — Invitation-based SELLER onboarding, a role-scoped Home/nav
+experience, D53's simultaneous multi-Event Home resolution, manual
+Event-scoped inventory allocation, and the "lost the race" concurrent-
+selling conflict pattern; NFC-scan allocation, cross-Event reallocation,
+and Event-close reconciliation are explicitly out of this first slice).
 
 **Design system reference:** `DESIGN-SYSTEM.md` — the structured, reusable
 rules (tokens, primitives, the Swing Tag at five scales, typography/motion
@@ -80,6 +86,7 @@ content-preserving extraction: nothing summarized or reworded, only moved.
 - **[`docs/passes/demo-mode-reminder-banner.md`](docs/passes/demo-mode-reminder-banner.md)** — `demo-mode.md`'s 2026-08-18 §3.3 welcome-copy restructure (validation-not-a-sale sentence folded in, closing sentence rewritten, third bullet retired) plus the new "Reiniciar demo" restart feature (§2.4/§3.7/§3.8): the persistent reminder banner restructures from one full-width row into a primary row plus a slim secondary line (real "8-12 min" time estimate + a deliberately minor-weighted restart control, never a second full-width CTA), a `Sheet`-based confirm dialog, and a defensive fallback screen reusing `DemoLoadError.tsx`'s shape. Restart itself is a new `restartDemo.ts` module — clears `demoModeStorage.ts`'s device-acknowledgment flag plus `store.tsx`'s own newly-exported `STORAGE_KEY`, then forces a full reload, per the spec's own reasoning (`resetPrototype()` alone wouldn't remount `DemoModeGateActive`'s local gate state). Verified: `tsc -b` clean; production bundle still grepped clean of every Demo Mode string; demo-campaign bundle contains all new copy/labels; a full live click-through via a headless-Chromium/Playwright session (installed ad hoc, not a project dependency) exercised the real welcome screen, phone/OTP entry, the Onboarding demo path into Home, both banner rows, the confirm dialog's Cancelar (untouched-return) and Sí-reiniciar (real storage clear + reload back to a fresh welcome screen, confirmed via direct `localStorage` inspection) paths. The write-failure fallback (§3.8) was verified by code trace only, not a live-forced storage failure.
 
 - **[`docs/passes/slice-11-product-photo.md`](docs/passes/slice-11-product-photo.md)** — `product/02-ux/product-decisions.md` Q23 / `decision-log.md` D54: optional `Product.photo`, captured at Product creation (Onboarding's "Define lo que vendes," Inventario's "Registrar mercancía") and manageable afterward via Inventario's new Catalog-row "Editar foto" sheet (§3.4b — add/change/remove, staged until "Guardar foto," a simple full-viewport inspect view). The shared `TagStub` marker component (Catalog row, selling tile, product picker, committed-line previews) gains the photo-substitution rendering and its own silent render-failure fallback once, for every consumer at once. `CatalogRow`'s marker becomes its own independent tap target, disambiguated from the row body and the price figure. Display-only on Home's Venta rápida tile, by explicit Product Owner instruction — no upload/edit/remove/enlarge interaction there. `tsc -b` and `npm run build` both clean; no live browser verification this session (disclosed).
+- **[`docs/passes/slice-12-multi-staff-concurrent-selling.md`](docs/passes/slice-12-multi-staff-concurrent-selling.md)** — `product/02-ux/product-decisions.md` Q24/Q25's own directed "first usable version," built in the 4 phases `architect`'s own Architecture Gap Analysis recommended (`context/q24-q25-first-slice.md`, now superseded by this entry): a foundational refactor (`AppState.currentUser` → `users[]`/`currentUserId`, a real global-phone `verifyOtp` lookup, `actingMembership`/`myActiveSession` as the shared "this device's own acting Membership" primitive, D17's dead overlap-check code removed); Identity capability (`Invitation`, `BusinessMembership.status`/`revokedAt`, `Sale.performedByMembershipId`, `authentication.md`'s new Invitation-acceptance flow, `settings.md`'s new "Tu equipo"); Home's full role-scoped SELLER experience plus D53's simultaneous multi-Event resolution (`home.md` §3.6b "Elegir evento," §3.7c "Mi actividad de hoy," §3.15-§3.17); manual (quantity-only, no NFC-scan) Event-scoped inventory allocation (`events.md` §3.21/§3.23) and the real Physical-location-exclusivity compare-and-swap gate, plus the "lost the race" terminal UI pattern (disclosed genuinely unreachable through real interaction in this no-backend prototype, exactly as `product-decisions.md` itself anticipates). One disclosed, reasoned deviation from RFC 0009's own "No changes to Session" (a prototype-only `Session.openedByMembershipId`, standing in for real per-device separation) and one disclosed approximation of `authentication.md`'s own literal "never verified before" gate (`AppRouter.tsx`'s own doc comment). `tsc -b`/`npm run build` verified clean after every phase, not only at the end. Two real bugs found and fixed via live `puppeteer-core` walkthroughs against `npm run dev` (an `InvitationFlow` success-screen skip caused by a state-derived condition flipping under its own write; an `ElegirEvento` row tap that computed and discarded JSX instead of triggering a re-render) — both confirmed fixed via a second full live run. Full disclosure, scope-gap, and verification record in the pass entry itself.
 
 **A slice currently in progress** has its own live working file at
 `context/<slice-name>.md` instead (see `CLAUDE.md`'s "Per-slice bounded
@@ -97,10 +104,17 @@ product/02c-high-fidelity-prototype/
   package.json, tsconfig*.json, vite.config.ts, index.html
   src/
     main.tsx                  — StoreProvider + AppRouter
-    AppRouter.tsx              — Authentication → Onboarding → tab-shell
-                               resolution (authentication.md §2.1 /
+    AppRouter.tsx              — Authentication → InvitationFlow →
+                               Onboarding → tab-shell resolution
+                               (authentication.md §2.1/§2.2 case 0,
                                onboarding.md §2.1), pure function of state
-    App.tsx                   — the tab shell itself (frozen 4-tab nav)
+                               (Slice 12's own disclosed InvitationFlow-gate
+                               approximation lives in this file's own doc
+                               comment)
+    App.tsx                   — the tab shell (frozen 4-tab nav for OWNER;
+                               role-scoped to Hoy-only for SELLER, Slice 12
+                               — also resolves home.md §2 step 0, a revoked
+                               Membership, above the tab shell entirely)
     styles/
       tokens.css              — design tokens (see docs/passes/slice-1... "Design plan")
       patterns.css              — v3: shared system primitives (.grain,
@@ -112,51 +126,90 @@ product/02c-high-fidelity-prototype/
     domain/
       types.ts                — Product/Lot/InventoryEntry/InventoryUnit
                                  (including `tagId`, Asignar Tags pass, D43)/
-                                 Session/Sale/SaleItem/Business (including
-                                 the pending-subscriptionTier-change
-                                 triple)/User/BusinessMembership/Venue/Event/
-                                 PriceOverride, mirroring domain-model.md's
-                                 aggregates for this slice
+                                 Session (including `openedByMembershipId`,
+                                 a disclosed Slice 12 prototype-only field —
+                                 see its own doc comment)/Sale (including
+                                 `performedByMembershipId`, D58)/SaleItem/
+                                 Business (including the
+                                 pending-subscriptionTier-change triple)/
+                                 User (array-shaped, Slice 12)/
+                                 BusinessMembership (including
+                                 `status`/`revokedAt`, D55)/Invitation
+                                 (new, Slice 12, D56)/Venue/Event/
+                                 PriceOverride/EventAllocation (new, Slice
+                                 12, D57 — manual-mode fields only),
+                                 mirroring domain-model.md's aggregates for
+                                 this slice
       store.tsx                — StoreProvider/useStore: all writes (FIFO
                                  consumption, price resolution, Session/Sale
-                                 lifecycle, Authentication/Onboarding writes,
+                                 lifecycle scoped to the acting Membership,
+                                 the EventAllocation compare-and-swap gate,
+                                 Authentication/Onboarding writes,
                                  createEvent/cancelEvent/setPriceOverride,
                                  activatePaidPlan/requestDowngradeToFree/
                                  cancelPendingSubscriptionTierChange/
                                  changeDefaultSellingMode/
                                  reconcilePendingSubscriptionTier/signOut/
-                                 assignTagToNextPendingUnit),
-                                 localStorage-persisted
+                                 assignTagToNextPendingUnit/
+                                 createInvitation/acceptInvitation/
+                                 revokeMembership/removeSaleItem/
+                                 saveEventAllocations — Slice 12),
+                                 localStorage-persisted (with a full
+                                 pre-Slice-12 migration path in `loadState`)
       selectors.ts             — pure derived reads (catalog rows, selling
                                  grid order, session totals, eventStatus/
                                  dayNumberForDate/eventRollup/eventsForList,
                                  Resultados' own all-time/per-Product/
                                  per-Venue rollups and sales-trend comparison,
                                  pendingTagUnits/pendingTagCount/
-                                 pendingTagBreakdown/nfcCapable)
+                                 pendingTagBreakdown/nfcCapable,
+                                 currentUser/findMembership/actingMembership/
+                                 myActiveSession/sessionsOpenedBy/
+                                 pendingInvitationsForPhone/teamRows/
+                                 activeTeamCount/eventAllocationFor/
+                                 disponibleEnGeneral/eventScopedRemaining/
+                                 myActivityToday/activeEventsForBusiness —
+                                 Slice 12)
       dates.ts                  — calendar-date utilities (dateKey/todayKey,
                                  formatDateRange/formatShortDateRange,
-                                 addDaysToKey, rangesOverlap — the D17
-                                 check's own primitive)
+                                 addDaysToKey — `rangesOverlap`, the D17
+                                 check's own primitive, is no longer
+                                 imported by store.tsx as of Slice 12/D53,
+                                 kept here as a general-purpose utility)
       onboardingResolution.ts — pathFromCapabilities/isOnboardingComplete,
                                  the router's own pure-function resolution
       demoSeed.ts               — "Ver un ejemplo" seed data
       format.ts, id.ts         — pesos/pluralize/articulos formatting, id
                                  generator
-    components/                — Button, NavBar, SessionHeader, ProductTile,
-                                 TagStub, VentaActualTray, ReceiptTicket
+    components/                — Button, NavBar (role-scoped `visibleTabs`,
+                                 Slice 12), SessionHeader (role-scoped
+                                 header icon + "Ver mi actividad de hoy,"
+                                 Slice 12), ProductTile (Event-scoped
+                                 remaining-stock line, Slice 12), TagStub,
+                                 VentaActualTray (the ⊗ "lost the race"
+                                 marker, Slice 12), ReceiptTicket
                                  (signature element), Sheet, CatalogRow,
                                  QuantityStepper, ProductPicker, VenuePicker,
                                  EventTypeSheet, Placeholder, BrandMark,
                                  NFCScanPrompt (Asignar Tags pass, D43)
     screens/
-      Authentication/          — AuthenticationFlow, PhoneStep, CodeStep
+      Authentication/          — AuthenticationFlow, PhoneStep, CodeStep,
+                                 InvitationFlow (authentication.md
+                                 §2.2a/§3.10-§3.13a, Slice 12)
       Onboarding/               — OnboardingFlow, Welcome, ConfirmPaid,
                                  ConfirmDemo, WritingState, BusinessIdentity,
                                  SellingGroups, TodoListo
-      Home/                    — HomeScreen (resolution per home.md §2),
-                                 ColdStart, Idle, EventResume, Selling,
-                                 CloseSummary
+      Home/                    — HomeScreen (resolution per home.md §2,
+                                 including Slice 12's role resolution and
+                                 D53's §2 step 2a/2b split), ColdStart, Idle,
+                                 EventResume (all three role-scoped, Slice
+                                 12), Selling (role-scoped header + lost-
+                                 the-race handling, Slice 12), CloseSummary,
+                                 ElegirEvento (§3.6b, Slice 12),
+                                 MiActividadDeHoy (§3.7c, Slice 12),
+                                 SellerAccountScreen (§3.15a's own stand-in,
+                                 Slice 12), AccesoNoDisponible (§3.17, Slice
+                                 12)
       Inventory/                — InventoryScreen ({mode,...} resolution,
                                  including 'assign-tags'), CatalogView
                                  (including the §3.5 pending-tag-work
@@ -165,12 +218,20 @@ product/02c-high-fidelity-prototype/
                                  Asignar Tags pass, D43)
       Events/                    — EventsScreen ({mode,...} resolution,
                                  mirrors InventoryScreen), EventsColdStart,
-                                 EventsList, NuevoEvento, EventDetail,
-                                 AdjustPrices, eventTypeLabels.ts
+                                 EventsList, NuevoEvento (D17 dead code
+                                 removed, Slice 12), EventDetail (new
+                                 "Llevar mercancía"/"Ver mercancía de este
+                                 evento" entry points, Slice 12),
+                                 AdjustPrices, MercanciaParaEsteEvento
+                                 (§3.21/§3.23, manual-only, Slice 12),
+                                 eventTypeLabels.ts
       Settings/                  — SettingsScreen (orchestrator + SettingsMain,
-                                 settings.md §3.3a/§3.6), ActionConfirm
+                                 settings.md §3.3a/§3.6, now including "Tu
+                                 equipo," Slice 12), ActionConfirm
                                  (§3.4/§3.5, one generic component for both),
-                                 WritingState (§3.9/§3.10/§3.8a/§3.8b)
+                                 WritingState (§3.9/§3.10/§3.8a/§3.8b),
+                                 TeamScreen (§3.11-§3.13, Slice 12),
+                                 AccesoRevocado (§3.14, Slice 12)
       Resultados/                 — ResultadosScreen ({mode,...} resolution,
                                  mirrors InventoryScreen/EventsScreen, plus a
                                  returnTo chain for correct Session/Event

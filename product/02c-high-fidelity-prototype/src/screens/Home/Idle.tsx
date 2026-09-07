@@ -2,6 +2,7 @@ import { Button } from '../../components/Button/Button';
 import { BrandMark } from '../../components/BrandMark/BrandMark';
 import { daysFromToday } from '../../domain/dates';
 import { pesos, pluralize } from '../../domain/format';
+import type { MembershipRole } from '../../domain/types';
 import { useNfcSessionStart } from './useNfcSessionStart';
 import { NfcSessionStartNote } from './NfcSessionStartNote';
 import styles from './Idle.module.css';
@@ -54,14 +55,26 @@ import styles from './Idle.module.css';
  * (`NfcSessionStartNote`'s "Ir a Configuración" link is a separate,
  * secondary affordance, unaffected by this change). */
 export function Idle({
+  role,
+  headerIcon,
   upcomingEventVenueName,
   upcomingEventStartDate,
   onTapUpcomingEvent,
   todaySales,
   onStartSession,
-  onOpenSettings,
+  onOpenAccountSurface,
   onOpenAssignTagsPlaceholder,
 }: {
+  role: MembershipRole;
+  headerIcon: '⚙' | '⊚';
+  /** home.md §3.5 — the upcoming-Event card is an OWNER-only affordance in
+   * this build (`HomeScreen.tsx` never resolves an upcoming Event for a
+   * SELLER at all): it taps through into Eventos, a destination §3.16 never
+   * renders for her — showing it anyway would be exactly the dead link that
+   * section's own governing rule forbids. Not explicitly re-enumerated by
+   * the approved spec for this one card (a disclosed extension of an
+   * already-stated principle, not an invented behavior) — see this build's
+   * own report. */
   upcomingEventVenueName?: string;
   upcomingEventStartDate?: string;
   onTapUpcomingEvent?: () => void;
@@ -70,7 +83,7 @@ export function Idle({
    * `useNfcSessionStart`'s own local override state currently reads at the
    * moment of this tap (always `false` outside the Limited Ready variant). */
   onStartSession: (overrideToNfc: boolean) => void;
-  onOpenSettings: () => void;
+  onOpenAccountSurface: () => void;
   onOpenAssignTagsPlaceholder: () => void;
 }) {
   const { variant, overrideToNfc, toggleOverride } = useNfcSessionStart();
@@ -80,8 +93,12 @@ export function Idle({
     <>
       <div className={styles.topbar}>
         <span className={styles.wordmark}>Nahui</span>
-        <button className={styles.gearBtn} onClick={onOpenSettings} aria-label="Configuración">
-          ⚙
+        <button
+          className={styles.gearBtn}
+          onClick={onOpenAccountSurface}
+          aria-label={role === 'OWNER' ? 'Configuración' : 'Tu cuenta'}
+        >
+          {headerIcon}
         </button>
       </div>
       <div className={styles.wrap}>
@@ -112,10 +129,11 @@ export function Idle({
           </Button>
           <NfcSessionStartNote
             variant={variant}
+            role={role}
             overrideToNfc={overrideToNfc}
             onToggleOverride={toggleOverride}
             onOpenAssignTags={onOpenAssignTagsPlaceholder}
-            onOpenSettings={onOpenSettings}
+            onOpenSettings={onOpenAccountSurface}
           />
         </div>
       </div>

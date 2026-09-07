@@ -1,11 +1,107 @@
 import { addDaysToKey, dateKey } from './dates';
-import type { AppState, Event, ID, InventoryUnit, Product, Session, Venue } from './types';
+import type { AppState, BusinessMembership, Event, EventAllocation, ID, Invitation, InventoryUnit, Product, Session, User, Venue } from './types';
 
 /** Pure, derived reads over AppState — no mutation, mirrors domain-model.md's
  * "the merchant experiences Products, the platform preserves traceability." */
 
 export function activeSession(state: AppState): Session | undefined {
   return state.sessions.find((s) => s.status === 'active');
+}
+
+/** Identity context (RFC 0007/D44, Slice 12) — resolves `AppState.currentUserId`
+ * to its real `User` row. The one place every other selector/component
+ * should read "who is verified on this device" through, rather than
+ * indexing `state.users` directly. */
+export function currentUser(state: AppState): User | undefined {
+  return state.users.find((u) => u.id === state.currentUserId);
+}
+
+/** Any `BusinessMembership` for `(userId, businessId)`, regardless of
+ * `status` — the broader lookup `home.md` §2 step 0's revoked-Membership
+ * check needs (`actingMembership` below deliberately excludes a revoked row,
+ * so it can never answer "is my own Membership revoked" on its own). */
+export function findMembership(state: AppState, userId: ID, businessId: ID): BusinessMembership | undefined {
+  return state.memberships.find((m) => m.userId === userId && m.businessId === businessId);
+}
+
+/** `context/q24-q25-first-slice.md`'s own Architecture Gap Analysis — "the
+ * one primitive items 1, 2, 5, 6's 'this device's own acting Membership'
+ * language all resolve through" (`architecture-principles.md` #1, "resolved
+ * once, upstream"). `undefined` whenever no verified User, no Business, or
+ * no currently-`active` Membership exists for that pair — every one of
+ * those is a genuine pre-condition failure elsewhere in the app (Home only
+ * mounts once onboarding is complete; a revoked Membership is caught by
+ * `findMembership` above, one step earlier, before this selector is ever
+ * consulted for role/session/attribution purposes). */
+export function actingMembership(state: AppState): BusinessMembership | undefined {
+  const user = currentUser(state);
+  if (!user || !state.business) return undefined;
+  return state.memberships.find(
+    (m) => m.userId === user.id && m.businessId === state.business!.id && m.status === 'active',
+  );
+}
+
+/** `home.md` §2 step 1, corrected for Slice 12's multi-staff scope — "a
+ * Session active for this device's own acting Membership," the direct
+ * complement step 2's own text already names itself as. Never a bare
+ * business-wide `activeSession` (above) once more than one Membership can
+ * concurrently hold an open Session — see `Session.openedByMembershipId`'s
+ * own doc comment (`types.ts`) for why this field exists at all. */
+export function myActiveSession(state: AppState, membershipId: ID): Session | undefined {
+  return state.sessions.find((s) => s.status === 'active' && s.openedByMembershipId === membershipId);
+}
+
+/** Every Session this Membership has ever opened — `home.md` §3.6b's own
+ * "does this device already have a signal today" check, and §3.7c's own
+ * per-Membership Sale attribution, both narrow from this same set rather
+ * than re-deriving it independently. */
+export function sessionsOpenedBy(state: AppState, membershipId: ID): Session[] {
+  return state.sessions.filter((s) => s.openedByMembershipId === membershipId);
+}
+
+/** `authentication.md` §2.2 case 0 / §2.2a step 2 — every `pending`
+ * Invitation for a phone, most-recently-created first (the deterministic
+ * tiebreak §2.2a step 2 itself specifies for "more than one pending
+ * Invitation," rather than a picker). */
+export function pendingInvitationsForPhone(state: AppState, phone: string): Invitation[] {
+  return state.invitations
+    .filter((inv) => inv.phone === phone && inv.status === 'pending')
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** `settings.md` §3.11 "Tu equipo" — one row per active/pending/revoked
+ * SELLER, in a discriminated shape the screen can switch on directly. */
+export type TeamRow =
+  | { kind: 'active' | 'revoked'; membership: BusinessMembership; phone: string }
+  | { kind: 'pending'; invitation: Invitation };
+
+/** `settings.md` §2.7/§3.11 "Tu equipo" — every Invitation/Membership row
+ * for this Business, in the document's own stated display order (active →
+ * pending → revoked, by date within each group). Membership rows exclude
+ * OWNER (there is exactly one, never listed alongside her own team). */
+export function teamRows(state: AppState, businessId: ID): TeamRow[] {
+  const memberRows = state.memberships
+    .filter((m) => m.businessId === businessId && m.role === 'SELLER')
+    .map((membership) => ({
+      kind: membership.status,
+      membership,
+      phone: state.users.find((u) => u.id === membership.userId)?.phone ?? '',
+    }));
+  const active = memberRows.filter((r) => r.kind === 'active').sort((a, b) => a.membership.createdAt - b.membership.createdAt);
+  const revoked = memberRows.filter((r) => r.kind === 'revoked').sort((a, b) => a.membership.createdAt - b.membership.createdAt);
+  const pending: TeamRow[] = state.invitations
+    .filter((inv) => inv.businessId === businessId && inv.status === 'pending')
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .map((invitation) => ({ kind: 'pending', invitation }));
+  return [...active, ...pending, ...revoked];
+}
+
+/** `settings.md` §3.3a — "N personas vendiendo contigo," `active`-status
+ * SELLER Memberships only (a pending invitation or a revoked row doesn't
+ * count). */
+export function activeTeamCount(state: AppState, businessId: ID): number {
+  return state.memberships.filter((m) => m.businessId === businessId && m.role === 'SELLER' && m.status === 'active')
+    .length;
 }
 
 export function openSaleForSession(state: AppState, sessionId: ID) {
@@ -302,13 +398,17 @@ export function activeSessionForEvent(state: AppState, eventId: ID): Session | u
 }
 
 /**
- * The single `active` Event for this Business, if any — well-defined by
- * construction (D17 guarantees at most one `scheduled`/`active` Event's date
- * range overlaps another's, so at most one can ever compute `active` at
- * once).
+ * Every currently-`active` Event for this Business — **corrected for Slice
+ * 12** (`decision-log.md` D53 superseded D17's single-active-Event
+ * restriction; `product-decisions.md` Q24/Q25 confirms simultaneous
+ * multi-Event operation is a real, supported case now). Previously
+ * singular (`activeEventForBusiness`, returning at most one Event "well-
+ * defined by construction" under D17's own overlap guarantee) — that
+ * guarantee no longer holds, so this selector is now plural; `home.md` §2
+ * steps 2a/2b branch on its length (`HomeScreen.tsx`).
  */
-export function activeEventForBusiness(state: AppState, now: number = Date.now()): Event | undefined {
-  return state.events.find((e) => eventStatus(e, now) === 'active');
+export function activeEventsForBusiness(state: AppState, now: number = Date.now()): Event[] {
+  return state.events.filter((e) => eventStatus(e, now) === 'active');
 }
 
 /** The single soonest `scheduled` Event for this Business — home.md §3.5's
@@ -625,4 +725,62 @@ export function salesTrend(state: AppState, now: number = Date.now()): { thisWee
     else if (dk >= lastMonday && dk <= lastSunday) lastWeek += 1;
   }
   return { thisWeek, lastWeek };
+}
+
+/** Slice 12 (`events.md` §3.21, `product-decisions.md` Q24/Q25) — this
+ * Event's `open` EventAllocation for one Product, if any. Absence means "no
+ * allocation exists for this pair" — the plain Business-wide pool applies,
+ * unaffected (`home.md` §3.8a's own "a Product with no EventAllocation
+ * still resolves from the general pool exactly as today" rule). */
+export function eventAllocationFor(state: AppState, eventId: ID, productId: ID): EventAllocation | undefined {
+  return state.eventAllocations.find((a) => a.eventId === eventId && a.productId === productId && a.status === 'open');
+}
+
+/** `events.md` §3.21 — "Disponible en general": Business-wide `available`
+ * stock for this Product, minus whatever's committed to every *other* open
+ * EventAllocation for it. Deliberately does not subtract this Event's own
+ * allocation — that stock is already hers to freely reassign within this
+ * screen, "not elsewhere" (§3.21's own annotation) — which is what makes
+ * the manual stepper's ceiling exactly equal to this figure. */
+export function disponibleEnGeneral(state: AppState, eventId: ID, productId: ID): number {
+  const businessWide = availableCount(state, productId);
+  const committedElsewhere = state.eventAllocations
+    .filter((a) => a.status === 'open' && a.productId === productId && a.eventId !== eventId)
+    .reduce((sum, a) => sum + a.quantityRemaining, 0);
+  return Math.max(0, businessWide - committedElsewhere);
+}
+
+/** `home.md` §3.9's own new Event-scoped tile line ("N en este evento") —
+ * `null` when no open EventAllocation applies (the tile shows nothing extra,
+ * the Business-wide pool governs as always). */
+export function eventScopedRemaining(state: AppState, eventId: ID | null, productId: ID): number | null {
+  if (eventId == null) return null;
+  const allocation = eventAllocationFor(state, eventId, productId);
+  return allocation ? allocation.quantityRemaining : null;
+}
+
+/** `home.md` §3.7c "Mi actividad de hoy" — this acting Membership's own
+ * finalized Sales today, scoped to the same `eventId` context §3.7's own
+ * ambient header already uses (`null` for a Quick Session) — "the identical
+ * `todaySalesSummary`-shaped query... one more `WHERE` clause, not a second
+ * query built from scratch." Row order: chronological, most-recent-last. */
+export function myActivityToday(
+  state: AppState,
+  membershipId: ID,
+  eventId: ID | null,
+): { total: number; count: number; rows: { time: number; total: number; itemCount: number }[] } {
+  const today = dateKey(Date.now());
+  const sessionIds = new Set(state.sessions.filter((s) => s.eventId === eventId).map((s) => s.id));
+  let total = 0;
+  const rows: { time: number; total: number; itemCount: number }[] = [];
+  for (const sale of state.sales) {
+    if (sale.status !== 'finalized' || !sessionIds.has(sale.sessionId)) continue;
+    if (sale.performedByMembershipId !== membershipId) continue;
+    if (sale.finalizedAt == null || dateKey(sale.finalizedAt) !== today) continue;
+    const saleTotal = sale.items.reduce((sum, item) => sum + item.pricePaid, 0);
+    total += saleTotal;
+    rows.push({ time: sale.finalizedAt, total: saleTotal, itemCount: sale.items.length });
+  }
+  rows.sort((a, b) => a.time - b.time);
+  return { total, count: rows.length, rows };
 }

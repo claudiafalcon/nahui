@@ -1,0 +1,77 @@
+/* home.md §3.6b — reuses Idle.module.css's own topbar/gearBtn shape
+   verbatim (a local copy, per this folder's own convention), plus a simple
+   tappable-row list matching EventsList.module.css's own card shape at a
+   smaller, single-line scale. */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--color-obsidian);
+}
+
+.gearBtn {
+  appearance: none;
+  border: 1.5px solid var(--color-hilo);
+  background: var(--color-white);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-obsidian);
+  font-size: 20px;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+.gearBtn:active {
+  transform: scale(0.92);
+  background: var(--color-hilo);
+}
+
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-6) var(--space-8);
+}
+
+.question {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--color-obsidian);
+  text-align: center;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.row {
+  appearance: none;
+  cursor: pointer;
+  text-align: left;
+  border: 1.5px solid var(--color-hilo);
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-obsidian);
+  transition: transform var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
+}
+.row:active {
+  transform: scale(0.98);
+  background: var(--color-blush);
+}

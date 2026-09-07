@@ -1,5 +1,6 @@
 import type { AppState, Business } from './types';
 import type { OnboardingPath } from './store';
+import { currentUser } from './selectors';
 
 /**
  * `onboarding.md` §2.2's capability table is injective — the three paths
@@ -31,11 +32,10 @@ export function pathFromCapabilities(business: Business): OnboardingPath {
  * disclosure).
  */
 export function businessForCurrentUser(state: AppState): Business | null {
-  const { business, currentUser, memberships } = state;
-  if (!business || !currentUser) return null;
-  const owns = memberships.some(
-    (m) => m.userId === currentUser.id && m.businessId === business.id && m.role === 'OWNER',
-  );
+  const { business, memberships } = state;
+  const user = currentUser(state);
+  if (!business || !user) return null;
+  const owns = memberships.some((m) => m.userId === user.id && m.businessId === business.id && m.role === 'OWNER');
   return owns ? business : null;
 }
 

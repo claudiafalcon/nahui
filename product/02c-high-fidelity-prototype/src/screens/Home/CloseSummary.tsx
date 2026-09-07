@@ -33,6 +33,16 @@ import styles from './ColdStart.module.css';
  * first built. Primary action now, above "Entendido" — the faster,
  * more-informative path (§6's own minimum-step-count table treats it as the
  * expected route, not a secondary option).
+ *
+ * **`onViewDetail` omitted entirely for a SELLER (Slice 12,
+ * `product-decisions.md` Q24/Q25) — a disclosed, principle-consistent
+ * extension, not text the approved spec's own §3.12 explicitly enumerates.**
+ * Resultados is never reachable at all for a SELLER (`home.md` §3.16 — the
+ * tab isn't rendered), so "Ver detalle" would be exactly the dead link to
+ * an unreachable destination §3.6a's own governing rule already forbids
+ * elsewhere in this same document; applying that rule here rather than
+ * leaving a real dead end is this build's own judgment call, flagged in its
+ * report rather than silently absorbed.
  */
 export function CloseSummary({
   count,
@@ -46,7 +56,7 @@ export function CloseSummary({
   revenue: number;
   venueName?: string;
   dayNumber?: number;
-  onViewDetail: () => void;
+  onViewDetail?: () => void;
   onContinue: () => void;
 }) {
   return (
@@ -63,7 +73,7 @@ export function CloseSummary({
         </p>
       </div>
       <div className={styles.ctaStack}>
-        <Button onClick={onViewDetail}>Ver detalle</Button>
+        {onViewDetail && <Button onClick={onViewDetail}>Ver detalle</Button>}
         <Button variant="secondary" onClick={onContinue}>
           Entendido
         </Button>

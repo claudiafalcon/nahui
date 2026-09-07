@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../domain/store';
 import type { Business } from '../../domain/types';
+import { activeTeamCount } from '../../domain/selectors';
 import { addDaysToKey, formatDateRange, formatShortDate, todayKey } from '../../domain/dates';
+import { pluralize } from '../../domain/format';
 import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
 import { ActionConfirm } from './ActionConfirm';
 import { WritingState } from './WritingState';
+import { TeamScreen } from './TeamScreen';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 import styles from './SettingsScreen.module.css';
 
@@ -21,7 +24,12 @@ type SubView =
   | { kind: 'main' }
   | { kind: 'confirm'; action: ConfirmAction }
   | { kind: 'saving'; action: ActionKind }
-  | { kind: 'saving-error'; action: ActionKind };
+  | { kind: 'saving-error'; action: ActionKind }
+  /** settings.md §2.7 "Ver equipo" — its own self-contained sub-screen
+   * (`TeamScreen.tsx`), not folded into this file's own generic
+   * confirm/saving machinery, since it owns real internal navigation of its
+   * own (main list → invite → remove-confirm). */
+  | { kind: 'team' };
 
 const SAVE_DELAY_MS = 260; // this codebase's own near-instant convention (RegisterMerchandise, SellingGroups, OnboardingFlow)
 
@@ -236,16 +244,27 @@ export function SettingsScreen({
     );
   }
 
+  // §2.7/§3.11-§3.13 — "Tu equipo," its own self-contained sub-screen.
+  if (subView.kind === 'team') {
+    return (
+      <ScreenTransition transitionKey="team">
+        <TeamScreen onBack={() => setSubView({ kind: 'main' })} />
+      </ScreenTransition>
+    );
+  }
+
   // §3.3a/§3.6 — vista principal.
   return (
     <ScreenTransition transitionKey="main">
       <SettingsMain
         business={business}
         landed={landed}
+        teamCount={activeTeamCount(state, business.id)}
         onBack={onBack}
         onActivatePaidTap={() => setSubView({ kind: 'confirm', action: 'activate-paid' })}
         onDowngradeTap={() => setSubView({ kind: 'confirm', action: 'downgrade' })}
         onModeChangeTap={(nextAction) => setSubView({ kind: 'confirm', action: nextAction })}
+        onViewTeamTap={() => setSubView({ kind: 'team' })}
         cancelPendingOpen={cancelPendingOpen}
         onCancelPendingTap={() => setCancelPendingOpen(true)}
         onCancelPendingDismiss={() => setCancelPendingOpen(false)}
@@ -270,10 +289,12 @@ export function SettingsScreen({
 function SettingsMain({
   business,
   landed,
+  teamCount,
   onBack,
   onActivatePaidTap,
   onDowngradeTap,
   onModeChangeTap,
+  onViewTeamTap,
   cancelPendingOpen,
   onCancelPendingTap,
   onCancelPendingDismiss,
@@ -285,10 +306,13 @@ function SettingsMain({
 }: {
   business: Business;
   landed: { tier: 'free' | 'paid'; effectiveDate: string } | null;
+  /** settings.md §2.7/§3.3a — active-status SELLER count, Paid tier only. */
+  teamCount: number;
   onBack: () => void;
   onActivatePaidTap: () => void;
   onDowngradeTap: () => void;
   onModeChangeTap: (action: 'tags-on' | 'tags-off') => void;
+  onViewTeamTap: () => void;
   cancelPendingOpen: boolean;
   onCancelPendingTap: () => void;
   onCancelPendingDismiss: () => void;
@@ -392,6 +416,25 @@ function SettingsMain({
             </p>
           )}
         </div>
+
+        {/* settings.md §2.7 "Tu equipo" — Paid-tier only, structurally
+            absent on Free (no row, no locked/disabled hint), the identical
+            gating discipline this section already applies to Frequent
+            Customers. Discoverable only via "Activar plan de pago"'s own
+            copy. */}
+        {business.subscriptionTier === 'paid' && (
+          <div className={`${styles.section} stitchTop`}>
+            <p className={styles.sectionLabel}>Tu equipo</p>
+            <p className={styles.planLine}>
+              {teamCount === 0
+                ? 'Nadie más vendiendo contigo todavía'
+                : `${teamCount} ${pluralize(teamCount, 'persona vendiendo', 'personas vendiendo')} contigo`}
+            </p>
+            <Button variant="secondary" onClick={onViewTeamTap}>
+              Ver equipo
+            </Button>
+          </div>
+        )}
 
         {/* settings.md §2.5 — "Tu cuenta," present identically regardless of
             subscriptionTier or pending-change state. */}

@@ -128,3 +128,14 @@
   font-weight: 700;
   color: var(--tone-ink, var(--color-tezontle-dark));
 }
+
+/* home.md §3.8a extended (Slice 12) — the terminal "lost the race" marker,
+   distinct from ⚠ (a retriable sync failure, not built this slice): a
+   conflicted chip becomes tappable (see VentaActualTray.tsx's own
+   `role="button"`) into the detail sheet naming the one tap offered,
+   "Quitar de la venta." */
+.chipConflict {
+  color: var(--color-error);
+  font-weight: 700;
+  cursor: pointer;
+}

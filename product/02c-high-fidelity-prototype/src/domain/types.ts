@@ -32,6 +32,19 @@
  * `createEvent`/`cancelEvent`/`setPriceOverride` and `selectors.ts`'s
  * `eventStatus`/`dayNumberForDate` for the write/read rules these types
  * exist to support.
+ *
+ * Slice 12 additions (`product-decisions.md` Q24/Q25, RFC 0007/0008/0009,
+ * `decision-log.md` D53/D55/D56/D57/D58; see
+ * `context/q24-q25-first-slice.md`) — multi-staff concurrent selling:
+ * `currentUser: User | null` generalized to `users: User[]` +
+ * `currentUserId: ID | null` (the Architecture Gap Analysis's own
+ * foundational unblocker); `Invitation`, `BusinessMembership.status`/
+ * `revokedAt`, `Sale.performedByMembershipId`, `EventAllocation`
+ * (manual-mode fields only this slice), and one disclosed prototype-only
+ * addition beyond the settled architecture, `Session.openedByMembershipId`
+ * (see that field's own doc comment for the full reasoning). `AllocationMovement`
+ * and NFC-mode allocation (`allocatedUnitIds`) are both deliberately not
+ * modeled — out of this slice's scope.
  */
 
 export type ID = string;
@@ -39,35 +52,81 @@ export type ID = string;
 /** Identity context (RFC 0007 / D44) — the platform's own authenticated
  * person, distinct from `Customer` ("no login, no roles, no global
  * account"). Global, not Business-scoped — the one deliberate exception to
- * this Foundation's businessId-scoping pattern (RFC 0007 §1). This
- * prototype is a single localStorage instance per device, so there is at
- * most one `User` ever held in `AppState` at a time (`currentUser`) — a
- * disclosed simplification of RFC 0007's "looked up by phone, globally"
- * shape, which only has real work to do once a second device/session
- * exists. See docs/passes/slice-2-authentication-onboarding.md's disclosure
- * for this build's authentication pass.
+ * this Foundation's businessId-scoping pattern (RFC 0007 §1).
+ *
+ * **Array-shaped as of Slice 12 (`context/q24-q25-first-slice.md`'s own
+ * Architecture Gap Analysis)** — was a single-slot `currentUser: User |
+ * null` through Slice 2/11, a correctly-scoped simplification at the time
+ * ("at most one `User` ever relevant... only has real work to do once a
+ * second device/session exists," the exact condition Slice 12's own
+ * multi-staff concurrent-selling scope now creates). `AppState.users` now
+ * mirrors `memberships`/`sessions`'s own existing array-shaped convention;
+ * `AppState.currentUserId` names which row this device's own verified
+ * session currently is, resolved via `selectors.ts`'s `currentUser`. See
+ * `store.tsx`'s `verifyOtp`/`completeOnboarding`/`signOut` for the write
+ * paths and their invariants.
  */
 export interface User {
   id: ID;
   phone: string; // E.164 formatting left to the build layer, per RFC 0007
   phoneVerifiedAt: number | null; // null = unverified; set once OTP verification succeeds
   createdAt: number;
+  /** `authentication.md` §2.2a step 4 / §10 — "declining never re-surfaces
+   * the same offer on the next open." A small, durable, local-only UI
+   * marker (ux-critic fix round, Slice 12) — **never** a write to the
+   * `Invitation` record itself, which stays `pending`/untouched exactly as
+   * the spec requires ("as if this screen had never been shown"). Same
+   * "shown once ever" shape as `Business.nfcAvailabilityNudgeShown`, scoped
+   * per-User since the offer itself is resolved per verified phone
+   * (`AppRouter.tsx`), not per-Business. Set only by `declineInvitation`
+   * ("Ahora no"); never read or written anywhere else. */
+  declinedInvitationIds: ID[];
 }
 
 export type MembershipRole = 'OWNER' | 'SELLER';
 
 /** Identity context (RFC 0007 / D44) — the join between a User and a
  * Business, its own aggregate root (not nested inside Business — see RFC
- * 0007 §2). This slice can only ever produce an `OWNER` row (the atomic
- * Owner-creation write, `completeOnboarding` below) — no invitation flow
- * exists yet, so `SELLER` is unreachable by construction, not merely
- * deferred, matching RFC 0007 §5 exactly.
+ * 0007 §2). A `SELLER` row is produced only by the Invitation-acceptance
+ * invariant (`acceptInvitation` below, RFC 0008/D56) — never directly.
+ *
+ * `status`/`revokedAt` (Slice 12, `decision-log.md` D55) — closed set,
+ * plain mutable current scalar, no version history, same shape as
+ * `Product.active`; defaults `active`; flipped to `revoked` only via
+ * `revokeMembership` (OWNER-only, `settings.md` §2.7/§3.13), never deleted;
+ * no reactivation path designed. `revokedAt` is set once alongside the
+ * flip, never modified again while `status` stays `revoked`.
  */
 export interface BusinessMembership {
   id: ID;
   userId: ID;
   businessId: ID;
   role: MembershipRole;
+  status: 'active' | 'revoked';
+  revokedAt: number | null;
+  createdAt: number;
+}
+
+/** Identity context (RFC 0008/D56, Slice 12) — a not-yet-accepted offer to
+ * join a Business as a SELLER. Root, not an entity nested inside Business
+ * (`settings.md` §2.7's own "does this verified phone hold a pending
+ * Invitation" query must run before any single Business is in context, at
+ * OTP-verification time, `authentication.md` §2.2 case 0). `role` is a
+ * closed set of one value (`'SELLER'`) — inviting a second OWNER isn't a
+ * capability this Foundation describes anywhere, so no picker is ever shown
+ * for it (`settings.md` §2.7). Unique on `(businessId, phone)` while
+ * `pending` — a resolved Invitation never blocks a fresh reinvite to the
+ * same number. `expired` is included in the closed set for Foundation
+ * fidelity, but this build never writes it — `settings.md §8` item 12 names
+ * its trigger/timing as genuinely undesigned anywhere in the settled
+ * architecture.
+ */
+export interface Invitation {
+  id: ID;
+  businessId: ID;
+  phone: string;
+  role: 'SELLER';
+  status: 'pending' | 'accepted' | 'revoked' | 'expired';
   createdAt: number;
 }
 
@@ -191,6 +250,45 @@ export interface PriceOverride {
   overridePrice: number;
 }
 
+/**
+ * Root, Selling context (RFC 0009/D57, Slice 12) — how much of a Product
+ * Ana has decided to bring/reserve for one specific Event, out of the
+ * Business-wide shared pool. Not nested inside Event or Product — resolving
+ * "what's allocated to this Event" and "what's allocated to this Product,
+ * across every Event" are both real, independent query axes
+ * (`events.md` §3.21's own "Disponible en general" figure needs the
+ * second). Unique on `(eventId, productId)`.
+ *
+ * **Manual mode only, this slice** — `quantityAllocated`/`quantityRemaining`
+ * (`events.md` §3.21's manual stepper). `quantityRemaining` is the actual
+ * selling gate: atomically decremented at the moment a Sale item is added
+ * under this Event for this Product (the Physical-location-exclusivity
+ * invariant's mechanism (b), a compare-and-swap on `quantityRemaining > 0`,
+ * layered on top of ordinary Business-wide FIFO), floor 0. `quantityAllocated`
+ * is the current target total she's decided to bring — edited via the
+ * stepper, never reduced by a Sale.
+ *
+ * **`allocatedUnitIds` (NFC mode) and `AllocationMovement` are both
+ * deliberately not modeled in this slice** — NFC-scan allocation
+ * (`events.md` §3.22) and its own exclusivity mechanism (a) are out of this
+ * slice's scope (`context/q24-q25-first-slice.md`), and `AllocationMovement`
+ * has no UI surface until reallocation/reconciliation (`events.md`
+ * §3.24/§3.25, also deferred) are built — `quantityAllocated`/
+ * `quantityRemaining` alone serve everything this slice's screens read or
+ * write. No `businessId` field, matching this prototype's existing
+ * single-Business scoping convention (`Venue`, `Event`, etc. carry none
+ * either).
+ */
+export interface EventAllocation {
+  id: ID;
+  eventId: ID;
+  productId: ID;
+  quantityAllocated: number;
+  quantityRemaining: number;
+  status: 'open' | 'reconciled';
+  createdAt: number;
+}
+
 /** Inventory context */
 
 export interface Product {
@@ -267,6 +365,31 @@ export interface Session {
   status: 'active' | 'closed';
   openedAt: number;
   closedAt?: number;
+  /**
+   * **Disclosed, deliberate prototype-only deviation from RFC 0008/D56's
+   * own "No changes to `Session`" decision (Slice 12) — not a Foundation
+   * field, flagged here for `architect`/`reviewer` to challenge.** The
+   * settled architecture needs no Membership FK on `Session` because a real,
+   * separately-deployed device structurally only ever discovers the Session
+   * *it itself* opened — there is no cross-device "which Session is mine"
+   * query surface for a real backend to answer in the first place, so the
+   * ambiguity this field resolves simply doesn't exist there. This
+   * prototype's single shared `localStorage` blob stands in for *every*
+   * device at once (the same disclosed simplification `home.md` §3.6b's own
+   * "does this device already have a signal today" language already
+   * accepts, `product-decisions.md` Q19) — without this field, two
+   * concurrently `active` Sessions (the entire point of Q24/Q25's
+   * multi-staff scope) would be indistinguishable from each other the
+   * instant a second `BusinessMembership` signs in on "the same device,"
+   * and Home's own step 1 (`home.md` §2, "a Session active for this
+   * device's own acting Membership") would have no honest way to answer
+   * whose Session it's looking at. Trivially removable once real per-device
+   * backend separation exists (Stage 7) — never surfaced as merchant-facing
+   * copy, never read by any bounded context Selling doesn't already read
+   * (`Sale.performedByMembershipId` carries the identical kind of fact,
+   * already Foundation-promoted, D58).
+   */
+  openedByMembershipId: ID;
 }
 
 export interface SaleItem {
@@ -282,23 +405,34 @@ export interface Sale {
   items: SaleItem[];
   status: 'open' | 'finalized';
   finalizedAt?: number;
+  /** `decision-log.md` D58, RFC 0008 — the acting `BusinessMembership` that
+   * performed this Sale, resolved from already-validated authorization
+   * context (`actingMembership`, `selectors.ts`) at the moment this Sale's
+   * first item is appended, immutable thereafter. Consumed by `home.md`
+   * §3.7c "Mi actividad de hoy" — not yet consumed by Resultados (same
+   * restrained "captured now, not yet consumed by reporting" posture
+   * `Sale.claimToken` already established, D26). */
+  performedByMembershipId: ID;
 }
 
 /** Root state shape, persisted to localStorage. */
 export interface AppState {
-  /** Identity context (RFC 0007/D44). `null` until phone+OTP verification
-   * succeeds for the first time on this device — the genuine pre-
-   * Authentication state, per `authentication.md` §2.1. */
-  currentUser: User | null;
+  /** Identity context (RFC 0007/D44) — array-shaped as of Slice 12, see
+   * `User`'s own doc comment above. */
+  users: User[];
+  /** `null` until phone+OTP verification succeeds for the first time on this
+   * device — the genuine pre-Authentication state, per `authentication.md`
+   * §2.1. Resolve the actual row via `selectors.ts`'s `currentUser`, never
+   * by indexing `users` directly. */
+  currentUserId: ID | null;
   /** `null` until Onboarding's atomic Owner-creation write (`onboarding.md`
    * §3.5) succeeds — was previously a hardcoded, always-present singleton
    * ("Luna Mercado"); this build removes that workaround (see BACKLOG.md's
    * own "What's not built" entry for this exact gap). */
   business: Business | null;
-  /** Array shape even though this slice only ever produces 0–1 `OWNER`
-   * entries — RFC 0007's own explicit instruction ("keep the domain model
-   * ready for multiple Users per Business from the beginning"). */
   memberships: BusinessMembership[];
+  /** RFC 0008/D56, Slice 12 — see `Invitation`'s own doc comment above. */
+  invitations: Invitation[];
   products: Product[];
   lots: Lot[];
   entries: InventoryEntry[];
@@ -308,4 +442,7 @@ export interface AppState {
   venues: Venue[];
   events: Event[];
   priceOverrides: PriceOverride[];
+  /** RFC 0009/D57, Slice 12 — see `EventAllocation`'s own doc comment
+   * above. */
+  eventAllocations: EventAllocation[];
 }

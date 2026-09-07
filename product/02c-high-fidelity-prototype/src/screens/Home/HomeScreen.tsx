@@ -2,21 +2,26 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../../domain/store';
 import {
   hasAnyAvailableUnit,
-  activeSession,
-  activeEventForBusiness,
+  myActiveSession,
+  activeEventsForBusiness,
+  actingMembership,
   dayNumberForDate,
   findVenue,
+  sessionsOpenedBy,
   todaySalesSummary,
   upcomingEventForBusiness,
 } from '../../domain/selectors';
-import { todayKey } from '../../domain/dates';
+import { dateKey, todayKey } from '../../domain/dates';
 import { ColdStart } from './ColdStart';
 import { Idle } from './Idle';
 import { EventResume } from './EventResume';
+import { ElegirEvento } from './ElegirEvento';
+import { MiActividadDeHoy } from './MiActividadDeHoy';
 import { Selling } from './Selling';
 import { ReceiptTicket } from '../../components/ReceiptTicket/ReceiptTicket';
 import { CloseSummary } from './CloseSummary';
 import { SettingsScreen } from '../Settings/SettingsScreen';
+import { SellerAccountScreen } from './SellerAccountScreen';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 import { setReceiptScreenActive } from '../DemoMode/receiptScreenSignal';
 import { setHomeScreenMounted } from '../AccesoDM/homeScreenMountedSignal';
@@ -26,15 +31,20 @@ type HomeUiState =
   | { kind: 'resolved' }
   | { kind: 'receipt'; receipt: Receipt }
   | { kind: 'closed'; count: number; revenue: number; venueName?: string; dayNumber?: number; sessionId: string }
-  | { kind: 'settings' };
+  | { kind: 'account' };
 
 /**
  * home.md §2 — resolution/decision logic, evaluated automatically on every
- * open. Now covers all four numbered steps, per the Eventos pass (D43): an
- * active Session outranks everything (step 1); otherwise, an active Event
- * with no Session currently active (step 2 — see `EventResume.tsx`'s own
- * comment for the corrected reading applied here); otherwise cold start vs.
- * idle, gated on whether any `available` InventoryUnit exists (step 3).
+ * open. Covers all four numbered steps plus Slice 12's role resolution and
+ * D53 multi-Event split: an active Session (this device's own acting
+ * Membership) outranks everything (step 1); otherwise, qualifying Event(s)
+ * with no Session currently active for this Membership (step 2a/2b);
+ * otherwise cold start vs. idle, gated on whether any `available`
+ * InventoryUnit exists (step 3). **Step 0 (revoked Membership) is resolved
+ * one level up, in `App.tsx`, before this component — or the tab shell at
+ * all — ever mounts**, since `settings.md §3.14`'s own wireframe shows no
+ * header/nav bar at all for that state, a stronger omission than anything
+ * this component's own header-bearing states carry.
  */
 export function HomeScreen({
   onNavigateToRegister,
@@ -62,6 +72,19 @@ export function HomeScreen({
 }) {
   const { state, startSession } = useStore();
   const [ui, setUi] = useState<HomeUiState>({ kind: 'resolved' });
+  const [miActividadOpen, setMiActividadOpen] = useState(false);
+  // home.md §3.6b — "selecting a row never opens a Session itself... the
+  // Session only opens at that Event's own 'Continuar Día N' tap." Since
+  // nothing is written to `AppState` at the moment of the row tap itself,
+  // this screen needs its own local memory of which qualifying Event she
+  // picked — found and fixed via live verification (`npm run dev`, a real
+  // two-simultaneous-Event walkthrough): without this, tapping a row had
+  // nothing to trigger a re-render *toward*, since §2's own resolution logic
+  // is a pure function of `AppState` alone and nothing about tapping a row
+  // changes that state yet. Cleared implicitly the moment a Session actually
+  // opens (step 1 then wins outright, `qualifyingEvents`/this local pick are
+  // never consulted again for the rest of that Session).
+  const [pickedEventId, setPickedEventId] = useState<string | null>(null);
 
   // demo-mode.md §2.3 check 2 / §8 item 7 — reports this screen's own
   // `ui.kind === 'receipt'` fact to `receiptScreenSignal.ts`'s route-level
@@ -87,9 +110,23 @@ export function HomeScreen({
     return () => setHomeScreenMounted(false);
   }, []);
 
-  const session = activeSession(state);
-
   if (!state.business) return null; // defensive — AppRouter only mounts this once onboarding is complete
+
+  // §2's new Role-resolution sub-step, evaluated once per Home open,
+  // immediately after step 0's revoked-Membership check (resolved one level
+  // up, `App.tsx`) — drives which nav-tab set renders, what the header icon
+  // does, which cold-start/§3.6a copy variant renders, and whether §3.9's
+  // tile-tap dead-end message can offer an Inventario link. `membership`
+  // is defensively guaranteed non-null here (`App.tsx` only mounts the tab
+  // shell once a valid acting Membership resolves); the fallback exists
+  // only to keep this component typesafe against that defensive edge.
+  const membership = actingMembership(state);
+  if (!membership) return null;
+  const role = membership.role;
+  const headerIcon = role === 'OWNER' ? '⚙' : '⊚';
+  const openAccountSurface = () => setUi({ kind: 'account' });
+
+  const session = myActiveSession(state, membership.id);
 
   if (ui.kind === 'receipt') {
     return (
@@ -112,26 +149,43 @@ export function HomeScreen({
           revenue={ui.revenue}
           venueName={ui.venueName}
           dayNumber={ui.dayNumber}
-          onViewDetail={() => {
-            const sessionId = ui.sessionId;
-            setUi({ kind: 'resolved' });
-            onNavigateToResultadosSession(sessionId);
-          }}
+          // A SELLER has no standing reach into Resultados (home.md §3.16 —
+          // the tab is never rendered at all for her); "Ver detalle" would
+          // be exactly the dead link to an unreachable destination §3.6a's
+          // own governing rule already forbids elsewhere in this document.
+          // Not explicitly re-enumerated for this screen by the approved
+          // spec (a disclosed extension of that same already-stated
+          // principle, not an invented new behavior) — see this build's own
+          // report for the full reasoning.
+          onViewDetail={
+            role === 'OWNER'
+              ? () => {
+                  const sessionId = ui.sessionId;
+                  setUi({ kind: 'resolved' });
+                  onNavigateToResultadosSession(sessionId);
+                }
+              : undefined
+          }
           onContinue={() => setUi({ kind: 'resolved' })}
         />
       </ScreenTransition>
     );
   }
 
-  if (ui.kind === 'settings') {
-    // settings.md — the real Configuración flow (Migration Workflow, D43),
-    // replacing this branch's earlier honest Placeholder.
+  if (ui.kind === 'account') {
+    // settings.md — full Configuración for OWNER (Migration Workflow, D43);
+    // home.md §3.15a's own minimal stand-in for SELLER, reached through the
+    // identical header affordance (§3.15).
     return (
-      <ScreenTransition transitionKey="settings">
-        <SettingsScreen
-          onBack={() => setUi({ kind: 'resolved' })}
-          onSwitchedToTags={onNavigateToInventarioViaSettingsTagsOn}
-        />
+      <ScreenTransition transitionKey="account">
+        {role === 'OWNER' ? (
+          <SettingsScreen
+            onBack={() => setUi({ kind: 'resolved' })}
+            onSwitchedToTags={onNavigateToInventarioViaSettingsTagsOn}
+          />
+        ) : (
+          <SellerAccountScreen onBack={() => setUi({ kind: 'resolved' })} />
+        )}
       </ScreenTransition>
     );
   }
@@ -139,34 +193,61 @@ export function HomeScreen({
   if (session) {
     const eventForSession = session.eventId ? state.events.find((e) => e.id === session.eventId) : undefined;
     const venueName = eventForSession ? findVenue(state, eventForSession.venueId)?.displayName : undefined;
-    const dayNumber = eventForSession
-      ? dayNumberForDate(state, eventForSession.id, todayKey())
-      : undefined;
+    const dayNumber = eventForSession ? dayNumberForDate(state, eventForSession.id, todayKey()) : undefined;
+    const headerTitle = eventForSession && venueName ? `${venueName} · Día ${dayNumber}` : 'Venta rápida';
+    if (miActividadOpen) {
+      return (
+        <MiActividadDeHoy
+          membershipId={membership.id}
+          eventId={session.eventId}
+          headerTitle={headerTitle}
+          onBack={() => setMiActividadOpen(false)}
+        />
+      );
+    }
     return (
       <ScreenTransition transitionKey="selling">
         <Selling
+          role={role}
           onSaleFinalized={(receipt) => setUi({ kind: 'receipt', receipt })}
           onSessionClosed={(summary, sessionId) => setUi({ kind: 'closed', ...summary, venueName, dayNumber, sessionId })}
-          onOpenSettings={() => setUi({ kind: 'settings' })}
+          onOpenAccountSurface={openAccountSurface}
           onNavigateToAssignTags={onNavigateToAssignTags}
+          onOpenMiActividad={() => setMiActividadOpen(true)}
         />
       </ScreenTransition>
     );
   }
 
-  const activeEvent = activeEventForBusiness(state);
-  if (activeEvent) {
-    const venueName = findVenue(state, activeEvent.venueId)?.displayName ?? '';
-    const dayNumber = dayNumberForDate(state, activeEvent.id, todayKey());
+  // §2 steps 2a/2b (`decision-log.md` D53, `product-decisions.md` Q24/Q25)
+  // — simultaneous multi-Event operation is real now, so "an active Event"
+  // is no longer assumed singular.
+  const qualifyingEvents = activeEventsForBusiness(state);
+  if (qualifyingEvents.length === 1) {
+    return renderEventResume(qualifyingEvents[0].id);
+  }
+  if (qualifyingEvents.length > 1) {
+    const today = todayKey();
+    const qualifyingIds = new Set(qualifyingEvents.map((e) => e.id));
+    const todaysOwnSessions = sessionsOpenedBy(state, membership.id)
+      .filter((s) => s.eventId != null && qualifyingIds.has(s.eventId) && dateKey(s.openedAt) === today)
+      .sort((a, b) => b.openedAt - a.openedAt);
+    const signaledEventId = todaysOwnSessions[0]?.eventId ?? undefined;
+    // §3.6b's own row tap (see `pickedEventId`'s doc comment above) — only
+    // consulted once the "does today already have a signal" check above has
+    // already come back empty, the same priority order §2 step 2b itself
+    // specifies (signal first, picker only if genuinely nothing yet).
+    const effectiveEventId = signaledEventId ?? (pickedEventId && qualifyingIds.has(pickedEventId) ? pickedEventId : undefined);
+    if (effectiveEventId) {
+      return renderEventResume(effectiveEventId);
+    }
     return (
-      <ScreenTransition transitionKey="event-resume">
-        <EventResume
-          venueName={venueName}
-          dayNumber={dayNumber}
-          todaySales={todaySalesSummary(state, activeEvent.id)}
-          onContinue={(overrideToNfc) => startSession(activeEvent.id, overrideToNfc)}
-          onOpenSettings={() => setUi({ kind: 'settings' })}
-          onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
+      <ScreenTransition transitionKey="elegir-evento">
+        <ElegirEvento
+          events={qualifyingEvents}
+          headerIcon={headerIcon}
+          onOpenAccountSurface={openAccountSurface}
+          onSelect={(eventId) => setPickedEventId(eventId)}
         />
       </ScreenTransition>
     );
@@ -175,24 +256,52 @@ export function HomeScreen({
   if (!hasAnyAvailableUnit(state)) {
     return (
       <ScreenTransition transitionKey="cold-start">
-        <ColdStart onRegister={onNavigateToRegister} onOpenSettings={() => setUi({ kind: 'settings' })} />
+        <ColdStart role={role} onRegister={onNavigateToRegister} onOpenAccountSurface={openAccountSurface} headerIcon={headerIcon} />
       </ScreenTransition>
     );
   }
 
-  const upcomingEvent = upcomingEventForBusiness(state);
+  const upcomingEvent = role === 'OWNER' ? upcomingEventForBusiness(state) : undefined;
 
   return (
     <ScreenTransition transitionKey="idle">
       <Idle
+        role={role}
+        headerIcon={headerIcon}
         upcomingEventVenueName={upcomingEvent ? findVenue(state, upcomingEvent.venueId)?.displayName : undefined}
         upcomingEventStartDate={upcomingEvent?.startDate}
         onTapUpcomingEvent={upcomingEvent ? () => onNavigateToEvent(upcomingEvent.id) : undefined}
         todaySales={todaySalesSummary(state, null)}
         onStartSession={(overrideToNfc) => startSession(undefined, overrideToNfc)}
-        onOpenSettings={() => setUi({ kind: 'settings' })}
+        onOpenAccountSurface={openAccountSurface}
         onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
       />
     </ScreenTransition>
   );
+
+  // Local helper, closed over `state`/`membership`/`role`/`headerIcon` —
+  // §3.6's own screen, reached identically whether resolved straight
+  // through (2a, or 2b's own same-day-signal skip) or via a tap on §3.6b's
+  // list. Declared as a function (not a component) since it renders
+  // directly, mid-body, from three different call sites above.
+  function renderEventResume(eventId: string) {
+    const event = state.events.find((e) => e.id === eventId);
+    if (!event) return null; // defensive — every caller passes an id drawn from `state.events` itself
+    const venueName = findVenue(state, event.venueId)?.displayName ?? '';
+    const dayNumber = dayNumberForDate(state, event.id, todayKey());
+    return (
+      <ScreenTransition transitionKey={`event-resume:${eventId}`}>
+        <EventResume
+          role={role}
+          headerIcon={headerIcon}
+          venueName={venueName}
+          dayNumber={dayNumber}
+          todaySales={todaySalesSummary(state, eventId)}
+          onContinue={(overrideToNfc) => startSession(eventId, overrideToNfc)}
+          onOpenAccountSurface={openAccountSurface}
+          onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
+        />
+      </ScreenTransition>
+    );
+  }
 }

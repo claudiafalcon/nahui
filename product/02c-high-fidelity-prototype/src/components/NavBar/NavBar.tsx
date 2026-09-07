@@ -51,10 +51,25 @@ function TabIcon({ tab, active }: { tab: TabKey; active: boolean }) {
   }
 }
 
-export function NavBar({ active, onChange }: { active: TabKey; onChange: (tab: TabKey) => void }) {
+export function NavBar({
+  active,
+  onChange,
+  visibleTabs,
+}: {
+  active: TabKey;
+  onChange: (tab: TabKey) => void;
+  /** `home.md` §3.16 — role-scoped rendering (`product-decisions.md`
+   * Q24/Q25). A SELLER's own three unreachable destinations (Inventario,
+   * Eventos, Resultados) are "not rendered at all... not present-but-inert"
+   * — never grayed out. Defaults to every tab (the unchanged OWNER shape)
+   * when omitted, so every existing call site stays correct with no
+   * change. */
+  visibleTabs?: TabKey[];
+}) {
+  const tabs = visibleTabs ? TABS.filter((t) => visibleTabs.includes(t.key)) : TABS;
   return (
     <nav className={`${styles.bar} tearTop`} aria-label="Navegación principal">
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const isActive = tab.key === active;
         return (
           <button

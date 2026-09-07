@@ -1,8 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useStore } from '../../domain/store';
 import type { VenueRef } from '../../domain/store';
-import { eventStatus } from '../../domain/selectors';
-import { formatDateRange, rangesOverlap, todayKey } from '../../domain/dates';
+import { formatDateRange, todayKey } from '../../domain/dates';
 import { Button } from '../../components/Button/Button';
 import { VenuePicker } from '../../components/VenuePicker/VenuePicker';
 import { EventTypeSheet } from '../../components/EventTypeSheet/EventTypeSheet';
@@ -16,6 +15,16 @@ import styles from './NuevoEvento.module.css';
  * auto-fills from Empieza (editable) — both already valid the instant the
  * form opens, per the EVT-Q1/EVT-Q2 amendment. Costo del evento is optional
  * and never gates the save.
+ *
+ * **D17's own overlap-validation variant is removed outright, not merely
+ * relaxed (`decision-log.md` D53, Slice 12) — pure code-debt deletion, not
+ * new design work.** D53 confirmed the restriction (`domain-model.md`'s "at
+ * most one Event per Business may be `scheduled`/`active` with an
+ * overlapping date range at a time") was never a business-capacity rule,
+ * only a now-obsolete single-actor `home.md` resolution safeguard;
+ * simultaneous multi-Event operation is a real, supported case now. The
+ * conflict-detection/inline-warning machinery this form once ran on every
+ * date edit is gone along with the rule it enforced.
  */
 export function NuevoEvento({ onSaved, onBack }: { onSaved: (eventId: string) => void; onBack: () => void }) {
   const { state, createEvent } = useStore();
@@ -26,84 +35,43 @@ export function NuevoEvento({ onSaved, onBack }: { onSaved: (eventId: string) =>
   const [type, setType] = useState<EventType | null>(null);
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
-  const [startDateEdited, setStartDateEdited] = useState(false);
   const [endDateEdited, setEndDateEdited] = useState(false);
   const [bazaarCost, setBazaarCost] = useState('');
-  const [touched, setTouched] = useState(false); // EVT-Q1 — has she engaged with the form at all yet
   const [picker, setPicker] = useState<'venue' | 'type' | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
 
-  // D17 overlap check — computed the instant the form opens (Empieza already
-  // resolves to hoy by default), re-run on every date edit, against the same
-  // already-loaded Events list this tab already resolved (no new fetch).
-  const conflict = useMemo(() => {
-    const now = Date.now();
-    return state.events.find(
-      (e) =>
-        (eventStatus(e, now) === 'scheduled' || eventStatus(e, now) === 'active') &&
-        rangesOverlap(startDate, endDate, e.startDate, e.endDate),
-    );
-  }, [state.events, startDate, endDate]);
-  const conflictVenueName = conflict ? state.venues.find((v) => v.id === conflict.venueId)?.displayName ?? '' : '';
-
-  const showConflict = touched && Boolean(conflict);
-  // EVT-Q1's copy half — "si agendas para hoy" only while Empieza still
-  // holds its untouched hoy default; once she edits it herself, the message
-  // drops that framing.
-  const stillDefaultStart = !startDateEdited && startDate === today;
-  const conflictMessage = conflict
-    ? `${stillDefaultStart ? 'Si agendas para hoy, esas' : 'Esas'} fechas se cruzan con ${conflictVenueName} (${formatDateRange(
-        conflict.startDate,
-        conflict.endDate,
-      )}). Ajusta las fechas para continuar.`
-    : null;
-
-  const canSave =
-    venueRef !== null && type !== null && !conflict && endDate >= startDate && saveState !== 'saving';
-
-  function markTouched() {
-    if (!touched) setTouched(true);
-  }
+  const canSave = venueRef !== null && type !== null && endDate >= startDate && saveState !== 'saving';
 
   function handleStartDateChange(next: string) {
     setStartDate(next);
-    setStartDateEdited(true);
     if (!endDateEdited) setEndDate(next);
-    markTouched();
   }
 
   function handleEndDateChange(next: string) {
     setEndDate(next);
     setEndDateEdited(true);
-    markTouched();
   }
 
   function handleSave() {
     if (!canSave || !venueRef || !type) return;
     setSaveState('saving');
     // Near-instant save convention (events.md §3.9) — the same deliberate
-    // beat every other write in this codebase uses.
+    // beat every other write in this codebase uses. `createEvent` always
+    // succeeds now (D53 removed the one save-rejection case it ever had) —
+    // the `error` branch below is kept as a real, correctly-rendering,
+    // disclosed-not-wired state, matching this codebase's own convention
+    // for a write that structurally cannot fail in this mock (see
+    // docs/passes/slice-3-eventos.md's disclosure section).
     window.setTimeout(() => {
-      const result = createEvent({
+      const eventId = createEvent({
         venue: venueRef,
         type,
         startDate,
         endDate,
         bazaarCost: parseFloat(bazaarCost) || 0,
       });
-      if (result.ok) {
-        setSaveState('idle');
-        onSaved(result.eventId);
-      } else {
-        // §3.9's write-failure branch — unreachable through real interaction
-        // in this build for the same disclosed reason every other write
-        // here is (the local mock data layer never actually fails a write);
-        // `canSave` already excludes an overlap by the time this tap is
-        // reachable, so `createEvent` never actually returns `ok:false`
-        // here in practice. Kept as a real, correctly-rendering branch —
-        // see docs/passes/slice-3-eventos.md's disclosure section.
-        setSaveState('error');
-      }
+      setSaveState('idle');
+      onSaved(eventId);
     }, 260);
   }
 
@@ -187,7 +155,6 @@ export function NuevoEvento({ onSaved, onBack }: { onSaved: (eventId: string) =>
           </div>
         </div>
 
-        {showConflict && <p className={styles.conflict}>{conflictMessage}</p>}
       </div>
 
       <div className={`${styles.footer} stitchTop`}>
@@ -204,13 +171,11 @@ export function NuevoEvento({ onSaved, onBack }: { onSaved: (eventId: string) =>
             setVenueRef({ kind: 'existing', venueId: venue.id });
             setVenueLabel(venue.displayName);
             setPicker(null);
-            markTouched();
           }}
           onCreateNew={(displayName) => {
             setVenueRef({ kind: 'new', displayName });
             setVenueLabel(displayName);
             setPicker(null);
-            markTouched();
           }}
         />
       )}
@@ -221,7 +186,6 @@ export function NuevoEvento({ onSaved, onBack }: { onSaved: (eventId: string) =>
           onSelect={(t) => {
             setType(t);
             setPicker(null);
-            markTouched();
           }}
         />
       )}

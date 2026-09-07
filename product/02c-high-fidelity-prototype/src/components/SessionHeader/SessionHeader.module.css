@@ -131,6 +131,28 @@
   transform: scale(0.96);
 }
 
+/* home.md §3.7c "Ver mi actividad de hoy" — a third, always-visible row
+   (Slice 12), styled as a quiet secondary link, not a button competing with
+   "Cerrar jornada de venta" above it — the same weight class this file's
+   own `.gearBtn`/`.closeSessionBtn` pair already reserves for a primary
+   header action, deliberately not reused here. Flagged for High-Fidelity
+   legibility verification alongside this header's own existing two-row
+   packing (`home.md` §3.7's `ui-designer` note, extended by §3.7c's own
+   amendment to cover this exact three-row combination) — verified live via
+   `npm run dev` at realistic content widths (a 3-digit Día number, a
+   4-digit peso figure) rather than assumed correct from this comment alone. */
+.activityLink {
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  align-self: flex-start;
+  color: var(--color-coral-aa);
+  font: var(--text-label);
+  font-weight: 600;
+  padding: 2px 0 0;
+}
+
 .sheetTitle {
   font: var(--text-heading);
   margin-bottom: var(--space-4);

@@ -7,6 +7,7 @@ import { Button } from '../../components/Button/Button';
 import { RestartFailed } from './RestartFailed';
 import { restartDemo } from './restartDemo';
 import { useStore } from '../../domain/store';
+import { currentUser } from '../../domain/selectors';
 import { businessForCurrentUser, pathFromCapabilities } from '../../domain/onboardingResolution';
 import { isAccesoDmActive } from '../AccesoDM/accesoDmStorage';
 import styles from './ReminderBanner.module.css';
@@ -151,7 +152,7 @@ function AccesoDmPassThrough() {
  *   render — it covers both routes into `pass-through` (§2.1) without
  *   distinguishing which reached it, since neither route does anything but
  *   mount this same component.
- * - `demo_otp_completed` is an external observer of `state.currentUser?.
+ * - `demo_otp_completed` is an external observer of `currentUser(state)?.
  *   phoneVerifiedAt` via `useStore()` — no edit to `CodeStep.tsx`/
  *   `AuthenticationFlow.tsx`. Guarded so it only fires on an actual
  *   null→set transition witnessed during this mount, never on a value
@@ -250,16 +251,16 @@ function DemoReminderBanner() {
   // null→set transition witnessed live does.
   const sawUnverifiedRef = useRef(false);
   const otpFiredRef = useRef(false);
+  const verifiedAtForTracking = currentUser(state)?.phoneVerifiedAt ?? null;
   useEffect(() => {
-    const verifiedAt = state.currentUser?.phoneVerifiedAt ?? null;
-    if (verifiedAt == null) {
+    if (verifiedAtForTracking == null) {
       sawUnverifiedRef.current = true;
       return;
     }
     if (otpFiredRef.current || !sawUnverifiedRef.current) return;
     otpFiredRef.current = true;
     track('demo_otp_completed');
-  }, [state.currentUser?.phoneVerifiedAt]);
+  }, [verifiedAtForTracking]);
 
   // §2.5.2 `demo_onboarding_completed` — external observer of
   // `business.onboardingAcknowledged`, resolved the same way `OnboardingFlow`

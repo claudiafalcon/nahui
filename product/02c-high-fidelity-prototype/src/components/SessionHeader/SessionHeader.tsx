@@ -69,21 +69,34 @@ export function SessionHeader({
   revenue,
   count,
   title,
+  headerIcon,
   onCloseSession,
-  onOpenSettings,
+  onOpenAccountSurface,
+  onOpenMiActividad,
 }: {
   revenue: number;
   count: number;
   title?: string;
+  /** home.md §3.15 (Slice 12, `product-decisions.md` Q24/Q25) —
+   * role-scoped header icon: ⚙ for OWNER (routes to full Configuración,
+   * unchanged), ⊚ for SELLER (routes to §3.15a's own minimal "Tu cuenta"). */
+  headerIcon: '⚙' | '⊚';
   onCloseSession: () => void;
-  onOpenSettings: () => void;
+  onOpenAccountSurface: () => void;
+  /** home.md §3.7c "Ver mi actividad de hoy" — a new, always-visible third
+   * row beneath the ambient stat row, both roles (Slice 12). */
+  onOpenMiActividad: () => void;
 }) {
   return (
     <header className={styles.header}>
       <div className={styles.titleRow}>
         <span className={styles.title}>{title ?? 'Venta rápida'}</span>
-        <button className={styles.gearBtn} onClick={onOpenSettings} aria-label="Configuración">
-          ⚙
+        <button
+          className={styles.gearBtn}
+          onClick={onOpenAccountSurface}
+          aria-label={headerIcon === '⚙' ? 'Configuración' : 'Tu cuenta'}
+        >
+          {headerIcon}
         </button>
       </div>
       <div className={styles.statRow}>
@@ -94,6 +107,9 @@ export function SessionHeader({
           Cerrar jornada de venta
         </button>
       </div>
+      <button className={styles.activityLink} onClick={onOpenMiActividad}>
+        Ver mi actividad de hoy
+      </button>
     </header>
   );
 }

@@ -1,14 +1,16 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { makeId } from './id';
-import { addDaysToKey, dateKey, rangesOverlap, todayKey } from './dates';
-import { eventStatus, nfcCapable, nfcReadiness } from './selectors';
+import { addDaysToKey, dateKey, todayKey } from './dates';
+import { actingMembership, currentUser, eventAllocationFor, eventStatus, findMembership, myActiveSession, nfcCapable, nfcReadiness } from './selectors';
 import type {
   AppState,
   Business,
   BusinessMembership,
   Event,
+  EventAllocation,
   EventType,
   ID,
+  Invitation,
   InventoryUnit,
   InventoryUnitStatus,
   Product,
@@ -40,9 +42,11 @@ export const STORAGE_KEY = 'nahui-hifi-prototype-v1';
  */
 function initialState(): AppState {
   return {
-    currentUser: null,
+    users: [],
+    currentUserId: null,
     business: null,
     memberships: [],
+    invitations: [],
     products: [],
     lots: [],
     entries: [],
@@ -52,24 +56,54 @@ function initialState(): AppState {
     venues: [],
     events: [],
     priceOverrides: [],
+    eventAllocations: [],
   };
+}
+
+/** Legacy-shape read (localStorage written before Slice 12's `users[]`/
+ * `currentUserId` refactor) — `currentUser` was the single-slot field this
+ * migration replaces. Kept as a narrow, explicitly-typed escape hatch for
+ * `loadState`'s own migration branch only, never used elsewhere. */
+interface LegacyAppStateShape extends Omit<AppState, 'users' | 'currentUserId' | 'invitations' | 'eventAllocations'> {
+  currentUser?: User | null;
+  users?: User[];
+  currentUserId?: ID | null;
+  invitations?: Invitation[];
+  eventAllocations?: EventAllocation[];
 }
 
 function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as AppState;
+      const parsed = JSON.parse(raw) as LegacyAppStateShape;
       // minimal shape guard — a corrupt/old localStorage value never crashes
       // the app. `business` is legitimately `null` pre-Onboarding now, so
-      // the guard checks array-shaped fields and `currentUser`'s own key
-      // presence instead of truthiness of `business`.
+      // the guard checks array-shaped fields and either identity-shape's own
+      // key presence instead of truthiness of `business`.
       if (
         parsed &&
         Array.isArray(parsed.products) &&
         Array.isArray(parsed.memberships) &&
-        'currentUser' in parsed
+        ('currentUser' in parsed || 'users' in parsed)
       ) {
+        // Slice 12 migration — `currentUser: User | null` → `users: User[]` +
+        // `currentUserId: ID | null` (the Architecture Gap Analysis's own
+        // foundational unblocker, `context/q24-q25-first-slice.md`). A
+        // localStorage value written before this pass has `currentUser`
+        // only; one already migrated has `users`/`currentUserId` only. Never
+        // both real at once in practice, but this reads whichever is
+        // present rather than assuming.
+        // ux-critic fix round — an older saved `User` row (before the
+        // "Ahora no" persistence fix) has no `declinedInvitationIds` key at
+        // all; defaulted to `[]`, the same honest "nothing declined yet"
+        // starting value `verifyOtp` now writes for a brand-new row.
+        const users: User[] = (
+          Array.isArray(parsed.users) ? parsed.users : parsed.currentUser ? [parsed.currentUser] : []
+        ).map((u) => ({ ...u, declinedInvitationIds: u.declinedInvitationIds ?? [] }));
+        const currentUserId: ID | null =
+          parsed.currentUserId !== undefined ? parsed.currentUserId : (parsed.currentUser?.id ?? null);
+
         // Backward-compat with localStorage written before the Eventos pass
         // (D43) — an older saved state simply has no venues/events/
         // priceOverrides keys at all. Defaulting them to empty arrays here
@@ -81,11 +115,48 @@ function loadState(): AppState {
         // triple at all — defaulted here (`!= null` reads already used
         // throughout this file treat `undefined` and `null` identically, but
         // patching it here keeps a re-serialized state honestly typed).
+        const venues = Array.isArray(parsed.venues) ? parsed.venues : [];
+        const events = Array.isArray(parsed.events) ? parsed.events : [];
+        const priceOverrides = Array.isArray(parsed.priceOverrides) ? parsed.priceOverrides : [];
+        const invitations = Array.isArray(parsed.invitations) ? parsed.invitations : [];
+        const eventAllocations = Array.isArray(parsed.eventAllocations) ? parsed.eventAllocations : [];
+
+        // Slice 12 — an older saved Membership has no `status`/`revokedAt`
+        // at all; defaulted to `active`/`null`, the same honest "nothing
+        // revoked yet" starting value `completeOnboarding`/`acceptInvitation`
+        // now write for a brand-new row.
+        const memberships: BusinessMembership[] = parsed.memberships.map((m) => ({
+          ...m,
+          status: m.status ?? 'active',
+          revokedAt: m.revokedAt ?? null,
+        }));
+
+        // Slice 12 — an older saved Session has no `openedByMembershipId` at
+        // all (the disclosed prototype-only field, see `types.ts`'s own doc
+        // comment). Every pre-Slice-12 walkthrough only ever produced an
+        // OWNER Membership, so that row — if exactly one exists — is the
+        // only honest guess; falls back to `''` (never crashes, simply
+        // un-attributable) if that assumption doesn't hold for some reason.
+        const soleOwnerId = memberships.find((m) => m.role === 'OWNER')?.id ?? '';
+        const sessions: Session[] = Array.isArray(parsed.sessions)
+          ? parsed.sessions.map((s) => ({ ...s, openedByMembershipId: s.openedByMembershipId ?? soleOwnerId }))
+          : parsed.sessions;
+        const sales: Sale[] = Array.isArray(parsed.sales)
+          ? parsed.sales.map((sa) => ({ ...sa, performedByMembershipId: sa.performedByMembershipId ?? soleOwnerId }))
+          : parsed.sales;
+
         return {
           ...parsed,
-          venues: Array.isArray(parsed.venues) ? parsed.venues : [],
-          events: Array.isArray(parsed.events) ? parsed.events : [],
-          priceOverrides: Array.isArray(parsed.priceOverrides) ? parsed.priceOverrides : [],
+          users,
+          currentUserId,
+          memberships,
+          invitations,
+          sessions,
+          sales,
+          venues,
+          events,
+          priceOverrides,
+          eventAllocations,
           // Backward-compat with localStorage written before the Asignar
           // Tags pass (D43/Migration Workflow) — an older saved unit has no
           // `tagId` key at all. Defaulted to `null` (untagged), the same
@@ -206,14 +277,6 @@ export type OnboardingPath = 'free' | 'paid' | 'demo';
  */
 export type VenueRef = { kind: 'existing'; venueId: ID } | { kind: 'new'; displayName: string };
 
-/** `events.md` §3.6's D17 overlap-validation variant — `createEvent` never
- * returns a bare boolean; a rejected save names the specific conflicting
- * Event and its Venue's `displayName` so the form can render "Esas fechas
- * se cruzan con {venue} ({rango})" without a second lookup. */
-export type CreateEventResult =
-  | { ok: true; eventId: ID }
-  | { ok: false; conflictingEvent: Event; conflictingVenueName: string };
-
 interface StoreValue {
   state: AppState;
   /** authentication.md §3.7 (Confirmar) — mock verification: any 6-digit
@@ -285,17 +348,20 @@ interface StoreValue {
     | { ok: false; reason: 'queue-empty' };
   /** events.md §3.6 "Guardar evento" — the atomic Event-creation write.
    * Resolves `venue` (mint-or-find, `resolveVenue`'s own logic) inside the
-   * same transaction, and re-checks the D17 overlap rule at write time
-   * (defensive re-check — the form itself already blocks the tap, same
-   * "never trust the UI alone" posture `setPriceOverride`'s own defensive
-   * re-check below applies). */
+   * same transaction. **The D17 overlap check this write once re-ran
+   * defensively is removed outright, not merely relaxed (`decision-log.md`
+   * D53, Slice 12) — simultaneous multi-Event operation is a real,
+   * supported case now; there is nothing left for this write to reject a
+   * save for.** Always succeeds — returns the new Event's id directly, the
+   * same unwrapped-return shape `commitLot` already uses for a write that
+   * structurally cannot fail in this mock. */
   createEvent: (fields: {
     venue: VenueRef;
     type: EventType;
     startDate: string;
     endDate: string;
     bazaarCost: number;
-  }) => CreateEventResult;
+  }) => ID;
   /** events.md §3.12 — sets `cancelledAt`; only meaningful while the
    * Event's *computed* status is still `scheduled` (§2, §3.11). */
   cancelEvent: (eventId: ID) => void;
@@ -306,9 +372,14 @@ interface StoreValue {
    * codebase's existing defensive-guard style (`startSession`, `finalizeSale`). */
   setPriceOverride: (eventId: ID, productId: ID, overridePrice: number) => void;
   /** home.md §2 / events.md §2 — `eventId` is optional; omitted (or `null`)
-   * for a Quick Session, exactly as before. The existing "any active Session
-   * blocks a new one" guard already generalizes correctly with no change.
-   * **NFC Selling pass (D43):** `overrideToNfc` is Ana's own Limited Ready
+   * for a Quick Session, exactly as before. **Corrected for Slice 12's
+   * multi-staff scope:** the guard is no longer "any active Session,
+   * Business-wide, blocks a new one" — it's scoped to this device's own
+   * acting Membership (`actingMembership`, `selectors.ts`), since two
+   * different Memberships now genuinely can each hold their own
+   * concurrently-open Session (`product-decisions.md` Q24/Q25). Writes
+   * `Session.openedByMembershipId` (see that field's own `types.ts` doc
+   * comment). **NFC Selling pass (D43):** `overrideToNfc` is Ana's own Limited Ready
    * override choice (§3.6a's "Usar tags de todos modos"), resolved locally
    * in the UI *before* this tap (`useNfcSessionStart.ts`) and threaded
    * through here — it can't be derived from stored state, since it's a
@@ -319,6 +390,20 @@ interface StoreValue {
    * "never trust a UI-computed value, recheck defensively at the write"
    * posture `setPriceOverride` above already establishes. */
   startSession: (eventId?: ID | null, overrideToNfc?: boolean) => void;
+  /** home.md §3.8a/§3.9 — FIFO tap-to-add (Buttons mode). **Slice 12
+   * additions:** resolves this device's own acting Membership's Session
+   * (`myActiveSession`, never the bare "any active Session" read), stamps
+   * the Sale's own `performedByMembershipId` the moment its first item is
+   * appended (`decision-log.md` D58), and — whenever this Session's Event
+   * has an `open` `EventAllocation` for this Product — performs the
+   * Physical-location-exclusivity invariant's mechanism (b): a
+   * compare-and-swap on `EventAllocation.quantityRemaining > 0`, layered on
+   * top of the ordinary FIFO consumption below (RFC 0009/D57). Returns
+   * `false` (no-op) exactly when that gate fails, the identical shape "no
+   * FIFO candidate" already returns — defensively unreachable through the
+   * real UI, since the tile itself already dims to "0 en este evento" at
+   * that exact threshold (`home.md` §3.9), same posture every other guard
+   * in this file already applies. */
   addItemToSale: (productId: ID) => boolean;
   /** home.md §3.10 — the nfc-mode counterpart to `addItemToSale` above:
    * resolves the *specific* scanned unit (`tagId` match) rather than
@@ -336,6 +421,23 @@ interface StoreValue {
     | { ok: true; unitId: ID; productId: ID }
     | { ok: false; reason: 'no-active-session' }
     | { ok: false; reason: 'no-match' };
+  /** home.md §3.8a's "Quitar de la venta" — the single, always-offered tap
+   * that resolves a lost-race conflict marker (§3.8a extended, §3.8d-i,
+   * §3.8d-ii, `product-decisions.md` Q24/Q25), and the only per-item
+   * removal path in this file (`cancelSale` below still clears the whole
+   * open Sale at once — a different, pre-existing action). Reverts the
+   * item's own `InventoryUnit` to `available` (never leaves an orphaned
+   * `reserved` unit) but deliberately does **not** restore any
+   * `EventAllocation.quantityRemaining` — a genuinely lost-race unit was
+   * (in the real, backend-integrated world this state depicts) already
+   * consumed by whoever won the race, so there is nothing of this
+   * device's own to give back. **Disclosed:** the condition that ever
+   * flags an item this way is itself never organically produced in this
+   * no-backend prototype (see `addItemToSale`'s own doc comment, and
+   * `Selling.tsx`) — a real, correctly-rendering, disclosed-not-wired
+   * branch, the same posture this codebase already holds for every other
+   * state a genuine backend concurrency mechanism alone can trigger. */
+  removeSaleItem: (saleItemId: ID) => void;
   cancelSale: () => void;
   finalizeSale: () => Receipt | null;
   closeSession: () => void;
@@ -390,20 +492,76 @@ interface StoreValue {
   reconcilePendingSubscriptionTier: () => { justLanded: boolean; tier?: 'free' | 'paid'; effectiveDate?: string };
   /** settings.md §2.5/§2.5a, authentication.md §2.2 case 2, RFC 0007 §1 —
    * ends this device's verified-phone session without touching the Business
-   * or any of its data. **Critical correctness point:** sets
-   * `currentUser.phoneVerifiedAt = null` in place — never
-   * `currentUser: null` — preserving the existing `User` row's `id`/`phone`/
-   * `createdAt`. `verifyOtp` only resolves the *same* `User` row on a
-   * returning verification when `state.currentUser && state.currentUser.phone
-   * === phone`; nulling `currentUser` entirely would mint a *second* `User`
-   * id for the same phone on re-verification, violating RFC 0007 §1's
-   * global-phone-identity invariant. Touches only `currentUser` — `business`/
-   * `memberships`/products/sessions/sales are structurally untouched
-   * (RFC 0007's own guarantee, §2.5's "nothing is lost" copy).
-   * `AppRouter.tsx` falls back to `AuthenticationFlow` automatically the
-   * instant `phoneVerifiedAt` clears — no further navigation call needed
-   * here. */
+   * or any of its data. **Critical correctness point:** sets this User row's
+   * `phoneVerifiedAt = null` in place, inside `state.users`, and leaves
+   * `currentUserId` pointing at that same (now-unverified) row — never
+   * removes it from `users` or nulls `currentUserId` itself — preserving
+   * that row's `id`/`phone`/`createdAt`. `verifyOtp` resolves back to the
+   * *same* `User` row on a returning verification for that phone (a search
+   * across `state.users`, not a single-slot check); minting a *second* row
+   * for the same phone would violate RFC 0007 §1's global-phone-identity
+   * invariant. Touches only that one `User` row — `business`/`memberships`/
+   * products/sessions/sales are structurally untouched (RFC 0007's own
+   * guarantee, §2.5's "nothing is lost" copy). `AppRouter.tsx` falls back
+   * to `AuthenticationFlow` automatically the instant `phoneVerifiedAt`
+   * clears — no further navigation call needed here. */
   signOut: () => void;
+  /** settings.md §2.7 "Invitar a alguien" — writes a new `Invitation`
+   * (`businessId`, `phone`, `role='SELLER'`, `status='pending'`), gated on
+   * `subscriptionTier=paid` (composing with the existing gate, never a new
+   * dimension — `company/business-decisions.md` Q18) and re-checked
+   * defensively against the same uniqueness rule the UI already validates
+   * inline (§3.12: "Ya invitaste a este número" / "Este número ya vende
+   * contigo") — a no-op, matching this file's existing defensive-guard
+   * style, if either precondition doesn't hold at write time. `role` is
+   * never asked — always `'SELLER'`, the only value the settled
+   * architecture describes. */
+  createInvitation: (phone: string) => void;
+  /** authentication.md §2.2a step 3 — the Invitation-acceptance invariant
+   * (RFC 0008/D56): atomically creates `BusinessMembership(userId,
+   * businessId, role='SELLER', status='active')` and flips
+   * `Invitation.status: pending → accepted`, gated on a verified
+   * `currentUser` and a still-`pending` Invitation, idempotency-guarded the
+   * same way `completeOnboarding` already guards a retried Owner-creation
+   * write (a User who already holds a Membership for this Business is
+   * handed back that existing row rather than minting a duplicate). Returns
+   * the resolved Membership's businessId, or `null` if the precondition
+   * isn't met (defensive — unreachable through the real UI, which only ever
+   * calls this from §3.10's own re-checked-pending offer). */
+  acceptInvitation: (invitationId: ID) => ID | null;
+  /** authentication.md §2.2a step 4 / §10 "Ahora no" (ux-critic fix round,
+   * Slice 12) — "declining never re-surfaces the same offer on the next
+   * open." Appends `invitationId` to the current User's own
+   * `declinedInvitationIds`, a small durable local-only UI marker; never
+   * touches the `Invitation` record itself, which stays `pending` exactly
+   * as the spec requires. Idempotent (no duplicate id added on a repeat
+   * call), same defensive-guard style as this file's other writes. A no-op
+   * if no verified `currentUser` resolves — defensive, unreachable through
+   * the real UI, which only ever calls this from an already-authenticated
+   * `InvitationFlow`. */
+  declineInvitation: (invitationId: ID) => void;
+  /** settings.md §2.7 "Quitar" (§3.13) — flips `BusinessMembership.status:
+   * active → revoked`, sets `revokedAt`. **Never a delete** — every Sale
+   * already attributed to this Membership keeps resolving through
+   * `Sale.performedByMembershipId` unaffected, the same non-deletion
+   * discipline `subscriptionTier` history and `Product.active` already
+   * establish (`decision-log.md` D55, Q21). No reactivation path exists —
+   * the settled architecture explicitly leaves this undesigned. */
+  revokeMembership: (membershipId: ID) => void;
+  /** events.md §3.21/§3.23 "Guardar cambios" — the bulk manual-allocation
+   * commit: one write, every row's staged manual quantity at once, per
+   * `product-decisions.md` Q24/Q25's own "she only ever sees a number
+   * change... never picks or is told which underlying movement type wrote"
+   * rule. For each `(productId, quantity)` pair, upserts this Event's own
+   * `EventAllocation` — creates one (`status='open'`, `quantityRemaining` =
+   * the full new quantity) if none exists yet; otherwise shifts both
+   * `quantityAllocated` and `quantityRemaining` by the same signed delta
+   * (increase = a replenish, decrease = an adjustment — both invisible to
+   * her, `AllocationMovement`'s own role, not modeled this slice — see
+   * `EventAllocation`'s own `types.ts` doc comment), floor 0. Manual-mode
+   * only, this slice — NFC-scan allocation (`events.md` §3.22) is out of
+   * scope. */
+  saveEventAllocations: (eventId: ID, changes: { productId: ID; quantity: number }[]) => void;
   resetPrototype: () => void;
 }
 
@@ -517,22 +675,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   /**
    * authentication.md §3.7 — mock verification (RFC 0007 §5, disclosed in
-   * docs/passes/slice-2-authentication-onboarding.md): any 6-digit code is accepted, so this never fails. This
-   * prototype is a single localStorage instance per device, so there is at
-   * most one `User` ever relevant (`state.currentUser`) — a lookup "by
-   * phone, globally" (RFC 0007 §1) only has real work to do once a second
-   * device/session exists, out of this slice's scope. A first-ever
-   * verification (no `currentUser`, or a different phone than any already
-   * held) mints a new `User`; a returning verification for the same phone
-   * resolves the existing one and preserves its original `phoneVerifiedAt`.
+   * docs/passes/slice-2-authentication-onboarding.md): any 6-digit code is
+   * accepted, so this never fails. **Slice 12 — the real "looked up by
+   * phone, globally" lookup RFC 0007 §1 describes**, now that `users` is
+   * array-shaped: a first-ever verification for a phone (no existing row
+   * matches) mints a new `User`; a returning verification for a phone
+   * already held — whether or not it's the phone this device most recently
+   * had verified — resolves that same row and preserves its original
+   * `phoneVerifiedAt`, never minting a duplicate. This is what makes
+   * switching between two already-verified Memberships on one shared
+   * device/instance (e.g. an OWNER signing out, a SELLER verifying, the
+   * OWNER later re-verifying) resolve back to each one's own stable `User`
+   * identity rather than accumulating a fresh row every time.
    */
   function verifyOtp(phone: string, _code: string): User {
     const now = Date.now();
-    const user: User =
-      state.currentUser && state.currentUser.phone === phone
-        ? { ...state.currentUser, phoneVerifiedAt: state.currentUser.phoneVerifiedAt ?? now }
-        : { id: makeId('user'), phone, phoneVerifiedAt: now, createdAt: now };
-    setState((s) => ({ ...s, currentUser: user }));
+    const existing = state.users.find((u) => u.phone === phone);
+    const user: User = existing
+      ? { ...existing, phoneVerifiedAt: existing.phoneVerifiedAt ?? now }
+      : { id: makeId('user'), phone, phoneVerifiedAt: now, createdAt: now, declinedInvitationIds: [] };
+    setState((s) => ({
+      ...s,
+      users: existing ? s.users.map((u) => (u.id === user.id ? user : u)) : [...s.users, user],
+      currentUserId: user.id,
+    }));
     return user;
   }
 
@@ -553,10 +719,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * of minting a fresh one.
    */
   function completeOnboarding(path: OnboardingPath): ID | null {
-    if (!state.currentUser || state.currentUser.phoneVerifiedAt == null) return null;
-    const existingMembership = state.memberships.find(
-      (m) => m.userId === state.currentUser!.id && m.role === 'OWNER',
-    );
+    const user = currentUser(state);
+    if (!user || user.phoneVerifiedAt == null) return null;
+    const existingMembership = state.memberships.find((m) => m.userId === user.id && m.role === 'OWNER');
     if (existingMembership && state.business && state.business.id === existingMembership.businessId) {
       return state.business.id;
     }
@@ -582,9 +747,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
     const membership: BusinessMembership = {
       id: makeId('mem'),
-      userId: state.currentUser.id,
+      userId: user.id,
       businessId,
       role: 'OWNER',
+      status: 'active',
+      revokedAt: null,
       createdAt: now,
     };
     setState((s) => ({ ...s, business, memberships: [...s.memberships, membership] }));
@@ -645,6 +812,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * `setState` itself, so both write paths still go through exactly one
    * `setState` call each (no behavior change to when/how state actually
    * commits).
+   *
+   * `performedByMembershipId` (`decision-log.md` D58, Slice 12) stamps a
+   * newly-created open Sale's own attribution — never touched again once
+   * set, since every item a Sale ever accumulates is added by whichever
+   * Membership opened its own Session (`Session.openedByMembershipId`'s own
+   * doc comment, `types.ts`). `consumeEventAllocationId` (RFC 0009/D57,
+   * Slice 12), when given, decrements that `EventAllocation`'s
+   * `quantityRemaining` by one in the same write — the caller has already
+   * verified `quantityRemaining > 0` before ever reaching here (the
+   * compare-and-swap gate itself lives in `addItemToSale`, since a failed
+   * gate must return `false` without writing anything at all).
    */
   function appendItemToOpenSale(
     s: AppState,
@@ -652,17 +830,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     productId: ID,
     unitId: ID,
     pricePaid: number,
-  ): Pick<AppState, 'sales' | 'units'> {
+    performedByMembershipId: ID,
+    consumeEventAllocationId?: ID,
+  ): Pick<AppState, 'sales' | 'units' | 'eventAllocations'> {
     let sales = s.sales;
     let sale = sales.find((sa) => sa.sessionId === sessionId && sa.status === 'open');
     if (!sale) {
-      sale = { id: makeId('sale'), sessionId, items: [], status: 'open' };
+      sale = { id: makeId('sale'), sessionId, items: [], status: 'open', performedByMembershipId };
       sales = [...sales, sale];
     }
     const item: SaleItem = { id: makeId('item'), productId, unitId, pricePaid };
     sales = sales.map((sa) => (sa.id === sale!.id ? { ...sa, items: [...sa.items, item] } : sa));
     const units = s.units.map((u) => (u.id === unitId ? { ...u, status: 'reserved' as InventoryUnitStatus } : u));
-    return { sales, units };
+    const eventAllocations = consumeEventAllocationId
+      ? s.eventAllocations.map((a) =>
+          a.id === consumeEventAllocationId ? { ...a, quantityRemaining: Math.max(0, a.quantityRemaining - 1) } : a,
+        )
+      : s.eventAllocations;
+    return { sales, units, eventAllocations };
   }
 
   function editPrice(productId: ID, newPrice: number) {
@@ -708,15 +893,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   /**
    * events.md §3.6 "Guardar evento" — the atomic Event-creation write:
-   * resolves the pending Venue selection (mint-or-find, `resolveVenue`) and
-   * enforces D17's overlap rule, both inside the same transaction. D17: "at
-   * most one Event per Business may be `scheduled` or `active` with an
-   * overlapping date range at a time," checked against every other Event
-   * whose *computed* status (`eventStatus`, never a stored field) is
-   * `scheduled`/`active` — a cancelled or already-closed Event never
-   * conflicts. Returns a named conflict, never a bare boolean (§3.6's own
-   * overlap-validation variant: "names the conflicting Event, not a
-   * generic 'fechas inválidas'").
+   * resolves the pending Venue selection (mint-or-find, `resolveVenue`)
+   * inside the same transaction. **D17's own overlap rule, once re-checked
+   * defensively here, is removed outright (`decision-log.md` D53, Slice
+   * 12) — pure code-debt deletion, not new design work: D53 confirmed the
+   * restriction was never a business-capacity rule, only a now-obsolete
+   * single-actor `home.md` resolution safeguard, and simultaneous
+   * multi-Event operation is a real, supported case now.** Always
+   * succeeds — returns the new Event's id directly.
    */
   function createEvent(fields: {
     venue: VenueRef;
@@ -724,18 +908,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     startDate: string;
     endDate: string;
     bazaarCost: number;
-  }): CreateEventResult {
-    const now = Date.now();
-    const conflicting = state.events.find(
-      (e) =>
-        (eventStatus(e, now) === 'scheduled' || eventStatus(e, now) === 'active') &&
-        rangesOverlap(fields.startDate, fields.endDate, e.startDate, e.endDate),
-    );
-    if (conflicting) {
-      const venue = state.venues.find((v) => v.id === conflicting.venueId);
-      return { ok: false, conflictingEvent: conflicting, conflictingVenueName: venue?.displayName ?? '' };
-    }
-
+  }): ID {
     const { venueId, newVenue } = resolveVenue(fields.venue, state.venues);
     const event: Event = {
       id: makeId('event'),
@@ -751,7 +924,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       venues: newVenue ? [...s.venues, newVenue] : s.venues,
       events: [...s.events, event],
     }));
-    return { ok: true, eventId: event.id };
+    return event.id;
   }
 
   /** events.md §3.12/§2 — the only merchant-initiated Event transition.
@@ -792,7 +965,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   function startSession(eventId: ID | null = null, overrideToNfc: boolean = false) {
     setState((s) => {
       if (!s.business) return s; // defensive — Home only mounts once onboarding is complete
-      if (s.sessions.some((sess) => sess.status === 'active')) return s; // never ask twice
+      const membership = actingMembership(s);
+      if (!membership) return s; // defensive — Home only mounts once a valid acting Membership resolves
+      // Slice 12 — scoped to this acting Membership, never "any active
+      // Session, Business-wide" (see this function's own StoreValue doc
+      // comment): two different Memberships now genuinely can each hold
+      // their own concurrently-open Session.
+      if (s.sessions.some((sess) => sess.status === 'active' && sess.openedByMembershipId === membership.id)) {
+        return s; // never ask twice
+      }
 
       // NFC Readiness / Session-start resolution (home.md §2, decision-log.md
       // D23) — committed only here, at the Session-start tap, since
@@ -821,13 +1002,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         operatingMode,
         status: 'active',
         openedAt: Date.now(),
+        openedByMembershipId: membership.id,
       };
       return { ...s, sessions: [...s.sessions, session] };
     });
   }
 
   function addItemToSale(productId: ID): boolean {
-    const session = state.sessions.find((sess) => sess.status === 'active');
+    const membership = actingMembership(state);
+    if (!membership) return false; // defensive — Selling only mounts once a valid acting Membership resolves
+    const session = myActiveSession(state, membership.id);
     if (!session) return false;
     // Defensive re-check (fix round, `docs/passes/slice-7-nfc-selling.md`,
     // reviewer Suggestion) — the `'buttons'` grid is only ever rendered
@@ -844,13 +1028,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .sort((a, b) => a.receivedAt - b.receivedAt)[0];
     if (!candidate) return false;
 
+    // Physical-location-exclusivity invariant, mechanism (b) — a
+    // compare-and-swap on `EventAllocation.quantityRemaining > 0`, manual
+    // mode only (RFC 0009/D57, Slice 12). A Product with no `open`
+    // EventAllocation for this Session's Event resolves from the plain
+    // Business-wide pool exactly as before, unaffected — `eventAllocation`
+    // is `undefined` in that case, so this gate never fires.
+    const eventAllocation = session.eventId ? eventAllocationFor(state, session.eventId, productId) : undefined;
+    if (eventAllocation && eventAllocation.quantityRemaining <= 0) return false;
+
     // Price resolution (D33, domain-model.md "Price resolution") — shared
     // with `addItemToSaleByTag` via `resolvePricePaid` (see that function's
     // own doc comment for why this is now one implementation, not two).
     const pricePaid = resolvePricePaid(state, session, productId);
     if (pricePaid == null) return false;
 
-    setState((s) => ({ ...s, ...appendItemToOpenSale(s, session.id, productId, candidate.id, pricePaid) }));
+    setState((s) => ({
+      ...s,
+      ...appendItemToOpenSale(s, session.id, productId, candidate.id, pricePaid, membership.id, eventAllocation?.id),
+    }));
     return true;
   }
 
@@ -876,7 +1072,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     | { ok: true; unitId: ID; productId: ID }
     | { ok: false; reason: 'no-active-session' }
     | { ok: false; reason: 'no-match' } {
-    const session = state.sessions.find((sess) => sess.status === 'active');
+    const membership = actingMembership(state);
+    if (!membership) return { ok: false, reason: 'no-active-session' };
+    const session = myActiveSession(state, membership.id);
     if (!session) return { ok: false, reason: 'no-active-session' };
     // Defensive re-check (fix round, reviewer Suggestion — same posture as
     // `addItemToSale`'s own re-check above): the `NFCScanPrompt` surface is
@@ -894,16 +1092,37 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const pricePaid = resolvePricePaid(state, session, candidate.productId);
     if (pricePaid == null) return { ok: false, reason: 'no-match' };
 
+    // NFC-mode allocation (`EventAllocation.allocatedUnitIds`) is out of
+    // this slice's scope, deferred alongside NFC-scan allocation itself
+    // (`events.md` §3.22) — no compare-and-swap performed here; this mirrors
+    // `addItemToSale`'s own gate only where an `open` manual EventAllocation
+    // exists, which an nfc-mode Sale never touches.
     setState((s) => ({
       ...s,
-      ...appendItemToOpenSale(s, session.id, candidate.productId, candidate.id, pricePaid),
+      ...appendItemToOpenSale(s, session.id, candidate.productId, candidate.id, pricePaid, membership.id),
     }));
     return { ok: true, unitId: candidate.id, productId: candidate.productId };
   }
 
+  /** home.md §3.8a's "Quitar de la venta" — see this function's own
+   * `StoreValue` doc comment for the full reasoning (never restores
+   * `EventAllocation.quantityRemaining`, unlike `cancelSale` below). */
+  function removeSaleItem(saleItemId: ID) {
+    setState((s) => {
+      const sale = s.sales.find((sa) => sa.status === 'open' && sa.items.some((i) => i.id === saleItemId));
+      if (!sale) return s;
+      const item = sale.items.find((i) => i.id === saleItemId)!;
+      const sales = s.sales.map((sa) => (sa.id === sale.id ? { ...sa, items: sa.items.filter((i) => i.id !== saleItemId) } : sa));
+      const units = s.units.map((u) => (u.id === item.unitId ? { ...u, status: 'available' as InventoryUnitStatus } : u));
+      return { ...s, sales, units };
+    });
+  }
+
   function cancelSale() {
     setState((s) => {
-      const session = s.sessions.find((sess) => sess.status === 'active');
+      const membership = actingMembership(s);
+      if (!membership) return s;
+      const session = myActiveSession(s, membership.id);
       if (!session) return s;
       const openSale = s.sales.find((sa) => sa.sessionId === session.id && sa.status === 'open');
       if (!openSale) return s;
@@ -912,13 +1131,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         unitIds.has(u.id) ? { ...u, status: 'available' as InventoryUnitStatus } : u,
       );
       const sales = s.sales.filter((sa) => sa.id !== openSale.id);
-      return { ...s, sales, units };
+      // Slice 12 — restores each cancelled item's own EventAllocation
+      // `quantityRemaining` (the compare-and-swap `addItemToSale` already
+      // decremented at add-time), symmetric with how `units` above reverts
+      // to `available`. Grouped by Product so a multi-item cancel against
+      // the same allocation increments it once by the right count, not once
+      // per item independently mis-applied.
+      let eventAllocations = s.eventAllocations;
+      if (session.eventId) {
+        const restoreCountByProduct = new Map<ID, number>();
+        for (const item of openSale.items) {
+          restoreCountByProduct.set(item.productId, (restoreCountByProduct.get(item.productId) ?? 0) + 1);
+        }
+        eventAllocations = eventAllocations.map((a) => {
+          if (a.status !== 'open' || a.eventId !== session.eventId) return a;
+          const restore = restoreCountByProduct.get(a.productId);
+          return restore ? { ...a, quantityRemaining: a.quantityRemaining + restore } : a;
+        });
+      }
+      return { ...s, sales, units, eventAllocations };
     });
   }
 
   function finalizeSale(): Receipt | null {
     if (!state.business) return null; // defensive — Selling only mounts once onboarding is complete
-    const session = state.sessions.find((sess) => sess.status === 'active');
+    const membership = actingMembership(state);
+    if (!membership) return null;
+    const session = myActiveSession(state, membership.id);
     if (!session) return null;
     const openSale = state.sales.find((sa) => sa.sessionId === session.id && sa.status === 'open');
     if (!openSale || openSale.items.length === 0) return null;
@@ -977,12 +1216,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   function closeSession() {
-    setState((s) => ({
-      ...s,
-      sessions: s.sessions.map((sess) =>
-        sess.status === 'active' ? { ...sess, status: 'closed', closedAt: Date.now() } : sess,
-      ),
-    }));
+    setState((s) => {
+      const membership = actingMembership(s);
+      if (!membership) return s;
+      const session = myActiveSession(s, membership.id);
+      if (!session) return s;
+      // Slice 12 — closes only this acting Membership's own active Session;
+      // was previously "every active Session" (harmless when at most one
+      // could ever exist, wrong now that two Memberships can each hold
+      // their own concurrently).
+      return {
+        ...s,
+        sessions: s.sessions.map((sess) =>
+          sess.id === session.id ? { ...sess, status: 'closed' as const, closedAt: Date.now() } : sess,
+        ),
+      };
+    });
   }
 
   /** settings.md §2.2/§3.4 "Activar plan de pago" — immediate. Reachable only
@@ -1117,10 +1366,136 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /** settings.md §2.5/§2.5a — see the `StoreValue` interface doc comment
-   * above for the full correctness reasoning (why `phoneVerifiedAt: null`,
-   * never `currentUser: null`). */
+   * above for the full correctness reasoning (why this User row's own
+   * `phoneVerifiedAt: null`, `currentUserId` left pointing at it, never
+   * removed from `users`). */
   function signOut() {
-    setState((s) => (s.currentUser ? { ...s, currentUser: { ...s.currentUser, phoneVerifiedAt: null } } : s));
+    setState((s) => {
+      const id = s.currentUserId;
+      if (!id) return s;
+      return { ...s, users: s.users.map((u) => (u.id === id ? { ...u, phoneVerifiedAt: null } : u)) };
+    });
+  }
+
+  /** settings.md §2.7 "Invitar a alguien" (§3.12) — see this function's own
+   * `StoreValue` doc comment for the full reasoning. Defensive re-check
+   * mirrors the UI's own inline validation (§3.12: a duplicate pending
+   * Invitation, or an existing active/revoked Membership for this phone,
+   * both leave the number unwritable) — never trusts the UI alone, same
+   * posture every other write in this file already holds itself to. */
+  function createInvitation(phone: string) {
+    setState((s) => {
+      if (!s.business || s.business.subscriptionTier !== 'paid') return s;
+      const alreadyPending = s.invitations.some(
+        (inv) => inv.businessId === s.business!.id && inv.phone === phone && inv.status === 'pending',
+      );
+      const alreadyMember = s.memberships.some((m) => {
+        const u = s.users.find((usr) => usr.id === m.userId);
+        return m.businessId === s.business!.id && u?.phone === phone;
+      });
+      if (alreadyPending || alreadyMember) return s;
+      const invitation: Invitation = {
+        id: makeId('inv'),
+        businessId: s.business.id,
+        phone,
+        role: 'SELLER',
+        status: 'pending',
+        createdAt: Date.now(),
+      };
+      return { ...s, invitations: [...s.invitations, invitation] };
+    });
+  }
+
+  /** authentication.md §2.2a step 3 — the Invitation-acceptance invariant
+   * (RFC 0008/D56). See this function's own `StoreValue` doc comment for
+   * the full reasoning. */
+  function acceptInvitation(invitationId: ID): ID | null {
+    const user = currentUser(state);
+    if (!user || user.phoneVerifiedAt == null) return null;
+    const invitation = state.invitations.find((inv) => inv.id === invitationId);
+    if (!invitation || invitation.status !== 'pending') return null;
+    const existing = findMembership(state, user.id, invitation.businessId);
+    if (existing) return invitation.businessId; // idempotency guard — never mint a duplicate Membership
+    const membership: BusinessMembership = {
+      id: makeId('mem'),
+      userId: user.id,
+      businessId: invitation.businessId,
+      role: 'SELLER',
+      status: 'active',
+      revokedAt: null,
+      createdAt: Date.now(),
+    };
+    setState((s) => ({
+      ...s,
+      memberships: [...s.memberships, membership],
+      invitations: s.invitations.map((inv) => (inv.id === invitationId ? { ...inv, status: 'accepted' } : inv)),
+    }));
+    return invitation.businessId;
+  }
+
+  /** authentication.md §2.2a step 4 / §10 "Ahora no" — see this function's
+   * own `StoreValue` doc comment for the full reasoning. Touches only this
+   * User row's own `declinedInvitationIds` — the `Invitation` record itself
+   * is never read or written here. */
+  function declineInvitation(invitationId: ID) {
+    const user = currentUser(state);
+    if (!user) return;
+    if (user.declinedInvitationIds.includes(invitationId)) return; // idempotency guard
+    setState((s) => ({
+      ...s,
+      users: s.users.map((u) =>
+        u.id === user.id ? { ...u, declinedInvitationIds: [...u.declinedInvitationIds, invitationId] } : u,
+      ),
+    }));
+  }
+
+  /** settings.md §2.7 "Quitar" (§3.13) — see this function's own `StoreValue`
+   * doc comment for the full reasoning. */
+  function revokeMembership(membershipId: ID) {
+    setState((s) => ({
+      ...s,
+      memberships: s.memberships.map((m) =>
+        m.id === membershipId && m.status === 'active' ? { ...m, status: 'revoked', revokedAt: Date.now() } : m,
+      ),
+    }));
+  }
+
+  /** events.md §3.21/§3.23 "Guardar cambios" — see this function's own
+   * `StoreValue` doc comment for the full reasoning. One `setState` for the
+   * whole bulk commit, matching this file's "one write, one save moment"
+   * convention for every other multi-line commit (`commitLot`). */
+  function saveEventAllocations(eventId: ID, changes: { productId: ID; quantity: number }[]) {
+    setState((s) => {
+      let eventAllocations = s.eventAllocations;
+      for (const change of changes) {
+        const existingIndex = eventAllocations.findIndex(
+          (a) => a.eventId === eventId && a.productId === change.productId && a.status === 'open',
+        );
+        if (existingIndex === -1) {
+          if (change.quantity <= 0) continue; // nothing to create for a still-zero row
+          const allocation: EventAllocation = {
+            id: makeId('alloc'),
+            eventId,
+            productId: change.productId,
+            quantityAllocated: change.quantity,
+            quantityRemaining: change.quantity,
+            status: 'open',
+            createdAt: Date.now(),
+          };
+          eventAllocations = [...eventAllocations, allocation];
+        } else {
+          const current = eventAllocations[existingIndex];
+          const delta = change.quantity - current.quantityAllocated;
+          const updated: EventAllocation = {
+            ...current,
+            quantityAllocated: change.quantity,
+            quantityRemaining: Math.max(0, current.quantityRemaining + delta),
+          };
+          eventAllocations = [...eventAllocations.slice(0, existingIndex), updated, ...eventAllocations.slice(existingIndex + 1)];
+        }
+      }
+      return { ...s, eventAllocations };
+    });
   }
 
   function resetPrototype() {
@@ -1143,6 +1518,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     startSession,
     addItemToSale,
     addItemToSaleByTag,
+    removeSaleItem,
     cancelSale,
     finalizeSale,
     closeSession,
@@ -1153,6 +1529,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     markNfcAvailabilityNudgeShown,
     reconcilePendingSubscriptionTier,
     signOut,
+    createInvitation,
+    acceptInvitation,
+    declineInvitation,
+    revokeMembership,
+    saveEventAllocations,
     resetPrototype,
   };
 
