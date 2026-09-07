@@ -9,7 +9,7 @@ visibility gate corrected):** Resultados' "Tus clientes" section gates on
 2026-08-14 — see
 settings.changelog.md#status-2026-08-08-d34-customer-segmentation-gate-corrected]**
 
-**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — concurrent multi-seller selling): new §2.7 "Tu equipo" — invite a SELLER (Paid-tier gated, `company/business-decisions.md` Q18), view team status, and revoke an accepted SELLER's access (`BusinessMembership.status: active | revoked`, never deleted, `decision-log.md` D55). New §3.11–§3.14. A new defensive state (§3.14, "Acceso revocado") is cross-referenced from `home.md` §2's new step 0. Remediated same pass (`brand-guardian` finding, pre-`ux-critic`): §3.14 gains a single "Entendido" acknowledgment tap — the screen previously had zero tappable affordance, violating `character-bible.md`'s "no dead ends" rule. **`ux-critic` round 1 (2026-09-07) found, across the Q24/Q25 settings.md/home.md/events.md batch: 4 Major + 4 Minor, 0 Blockers.** Scoped to this document: §3.12's CTA/heading collision (Major — see §10) and §3.11's missing near-instant/slow resolving pair (Minor — see §10), both fixed and re-verified clean. **`reviewer` (2026-09-07) found 0 Blockers against this document specifically; its 3 Important findings were documentation-persistence gaps elsewhere (`decision-log.md` D55, `product-decisions.md`'s own stale status paragraph, the `business-decisions.md` Q13→Q18 renumbering) — all closed directly by Main.** Folded back into Approved.
+**Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — concurrent multi-seller selling): new §2.7 "Tu equipo" — invite a SELLER (Paid-tier gated, `company/business-decisions.md` Q18), view team status, and revoke an accepted SELLER's access (`BusinessMembership.status: active | revoked`, never deleted, `decision-log.md` D55). New §3.11–§3.14. A new defensive state (§3.14, "Acceso revocado") is cross-referenced from `home.md` §2's new step 0. Remediated same pass (`brand-guardian` finding, pre-`ux-critic`): §3.14 gains a single "Entendido" acknowledgment tap — the screen previously had zero tappable affordance, violating `character-bible.md`'s "no dead ends" rule. **`ux-critic` round 1 (2026-09-07) found, across the Q24/Q25 settings.md/home.md/events.md batch: 4 Major + 4 Minor, 0 Blockers.** Scoped to this document: §3.12's CTA/heading collision (Major — see §10) and §3.11's missing near-instant/slow resolving pair (Minor — see §10), both fixed and re-verified clean. **`reviewer` (2026-09-07) found 0 Blockers against this document specifically; its 3 Important findings were documentation-persistence gaps elsewhere (`decision-log.md` D55, `product-decisions.md`'s own stale status paragraph, the `business-decisions.md` Q13→Q18 renumbering) — all closed directly by Main.** Folded back into Approved. **Further amended 2026-09-07 (Slice 12 `merchant-user-tester` defect, paired with `authentication.md`'s own §2.2/§3.7e fix):** §2.5/§3.3a's "Tu cuenta" section now shows her own verified phone number, read-only, plain text — elevating this document's own already-named Future Consideration (§8 item 8, first flagged 2026-08-13) from deferred to designed. Closes half of a real defect where, with nowhere in the app ever showing her own number, a mistyped digit on re-verification after signing out silently produced a brand-new, empty Business with no way back. No new screen, no new tap — a single read-only line added to an existing, already-reviewed section. Pending `ux-critic`/`reviewer` re-verification and a fresh `merchant-user-tester` rerun before Slice 12 folds back into Approved.
 
 **Further amended 2026-08-09 (`decision-log.md` D40 — `loyaltyEnabled` retired):** Frequent Customers becomes automatically available the instant `subscriptionTier` reads `paid`, and unavailable when it reads `free` again — no Business-level field, screen, or action of Ana's own turns it on or off directly. Configuración narrows from six actions to four. **[Amended 2026-08-14 — see settings.changelog.md#status-2026-08-09-d40-loyalty-enabled-retired]**
 
@@ -187,6 +187,8 @@ Every action in §2.2's table changes something about the Business — what she'
 
 **Where it resolves.** A successful sign-out hands off to `authentication.md §3.3` (Número celular — entry), fresh — never that document's §3.8 resume state, which exists for an *interrupted*, incomplete verification attempt, a different situation from a deliberate, completed sign-out.
 
+**Her own verified phone number is now shown here too, read-only (added 2026-09-07 — see status header).** `User.phone` (`domain-model.md`), plain text, non-tappable, sitting directly above "Cerrar sesión" in "Tu cuenta" — the one place in the product she can always come back to and check which number this device is verified under, closing the exact gap a `merchant-user-tester` walk first named on 2026-08-13 (§8 item 8, then deferred) and a second, more severe walk (Slice 12) confirmed as a real defect once signing out became a routine part of the multi-Membership workflow. Never editable here — changing the verified number isn't a capability this document designs (it would mean re-running Authentication's own verification mechanism, not toggling a Business Capability).
+
 ### 2.5a What happens when the same phone re-verifies afterward (cross-document consequence, not a new destination invented here)
 
 `authentication.md §2.2` already enumerates three cases for what a confirmed code does next. Signing out and re-verifying with the same phone, on the same device, is **case 2** — "This phone was already verified on THIS device, with a Business already local to it (complete or in-progress)" — a case that document already named, but marked "Not reachable through this branch... this document never re-verifies a phone already verified on its own device," because nothing, before this action existed, ever cleared a device's session fact while leaving its local Business record intact. This action is exactly the mechanism that makes that case real for the first time — not a fourth, undesigned case, and not case 3 (a genuinely *new* device or reinstalled app with no local Business record at all — still "Not yet resolved," `product-decisions.md` Q18, untouched by this addition, since §2.5 above guarantees the local record is never cleared by signing out).
@@ -345,6 +347,7 @@ content at `settings.changelog.md#section-3-3-retired`.
 │  requiere el plan de pago)        │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu cuenta                        │
+│  +52 55 1234 5678                  │
 │  [ Cerrar sesión ]                │
 └───────────────────────────────┘
 ```
@@ -368,6 +371,7 @@ No `defaultSellingMode` control shown while `subscriptionTier=free` — nothing 
 │  [ Ver equipo ]                   │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu cuenta                        │
+│  +52 55 1234 5678                  │
 │  [ Cerrar sesión ]                │
 └───────────────────────────────┘
 ```
@@ -389,6 +393,7 @@ No `defaultSellingMode` control shown while `subscriptionTier=free` — nothing 
 │  [ Ver equipo ]                   │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu cuenta                        │
+│  +52 55 1234 5678                  │
 │  [ Cerrar sesión ]                │
 └───────────────────────────────┘
 ```
@@ -529,6 +534,7 @@ The date shown is illustrative — Q11 hasn't settled the exact deferred-timing 
 │  [ Cambiar a vender con tags ]    │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu cuenta                        │
+│  +52 55 1234 5678                  │
 │  [ Cerrar sesión ]                │
 └───────────────────────────────┘
 ```
@@ -870,6 +876,7 @@ Every action in this table now shares an identical 2-tap floor, measured at this
 - Which action a "Tu equipo" row offers (`Quitar`, or nothing) — a pure read of `BusinessMembership.status`/`Invitation.status`, never Ana's own interpretation.
 - Row order in "Tu equipo" — deterministic (active → pending → revoked, by date), never manually sorted.
 - `Invitation.role` is never asked — always written `SELLER`, since no second value exists to choose between.
+- Her own verified phone number is displayed automatically in "Tu cuenta" — never something she has to ask support for, guess from memory, or reconstruct from the original OTP screen.
 
 ## 8. Open questions
 
@@ -882,7 +889,7 @@ None of the items below block this document's completion.
 5. **Resolved, kept for continuity — a `defaultSellingMode` control is now designed here.** `decision-log.md` D27 extended self-service editability to this field: §2.2/§2.3/§3.4/§3.6 now specify it directly, as an immediate-effect action with no pending-change structure, constrained to whichever modes `subscriptionTier` currently makes available. The gap this item originally flagged (D25/Q5 resolving exactly three capabilities, none of which was `defaultSellingMode`) is closed — kept here, marked resolved, so the record of what was once genuinely out of scope stays visible rather than silently disappearing.
 6. **Whether signing out should interlock with an active, non-empty Sale or Session** — `home.md §3.11a` already blocks the Selling-Session close the moment "Venta actual" holds 1+ items, precisely because that action would otherwise silently put unfinished work at risk. §2.5 above states plainly that signing out never touches Selling data — the Session and its Venta actual stay exactly as they are, waiting for the same phone to re-verify (§2.5a) — so no *data* is at risk the way HOME-M2 was designed to prevent. Whether it's still worth warning her that a customer may be standing in front of her mid-Sale at the moment she chooses to sign out — a situational risk, not a data-loss one — isn't designed here. No evidence yet this is common enough to warrant its own interlock.
 7. **Resolved, kept for continuity.** `authentication.md §2.2` case 2 (and its §4 flow line, §8/§11 references) previously described re-verifying an already-verified-on-this-device phone as theoretically unreachable. This action (§2.5) makes it reachable for the first time (§2.5a). The matching correction to that document was applied in the same pass — see its own status header and §2.2/§4/§8/§11.
-8. **A persistent, read-only display of her own verified phone number in Configuración** — already named as a future consideration in `authentication.md §11`, unrelated to whether sign-out itself works; still not designed here, no evidence of need yet.
+8. **Resolved 2026-09-07 (Slice 12 `merchant-user-tester` defect).** A persistent, read-only display of her own verified phone number now exists in "Tu cuenta" (§2.5, §3.3a/§3.6) — `User.phone`, plain text, non-tappable, present in every vista-principal variant identically. Closes the want this item named on 2026-08-13 and the more severe defect a later Slice 12 walk surfaced once signing out became a routine part of the multi-Membership workflow (`authentication.md`'s own companion fix, §2.2/§3.7e, closes the other half).
 9. **Resolved 2026-08-15, kept for continuity.** This item asked whether
    the idle/cold-start/Event-active-no-Session sheet (formerly §3.3)
    should also collapse to a direct gear tap. It has: the Product Owner
@@ -928,6 +935,10 @@ None of the items below block this document's completion.
 - *global-principles.md*, "business language before technical language" — every "Tu equipo" screen says "vendiendo contigo," "ya no vende contigo," never "Membership," "Invitation," or "status."
 - *architecture-principles.md* #7 (idempotent/keyed writes) — "Enviar invitación" and "Sí, quitar" both reuse §3.9/§3.10's shared guardando/error/Reintentar template, the same D30-keyed-retry guarantee every other write in this document already gets.
 - *architecture-principles.md* #6 (one-way dependency direction) — this section writes only to Identity's `Invitation`/`BusinessMembership`; it never reads or writes Selling data. `Sale.performedByMembershipId` continuing to resolve after a revoke is Selling's own read, not something this document touches.
+
+**§2.5/§3.3a phone-number-display fix (Slice 12 `merchant-user-tester`, 2026-09-07):**
+- *global-principles.md*, "never ask twice" — she never has to ask a teammate, guess from memory, or reverse-engineer which number this device is verified under — it's always right where she'd already look to sign out (§2.5, §3.3a).
+- §3.3a's new phone-number line completes §3.8's own "no se pierde nada" promise in practice, not just in copy — she can always confirm which identity this device is holding, closing the exact trust gap a Slice 12 `merchant-user-tester` walk found this promise otherwise broke.
 
 ## 10. Decisions made
 
@@ -997,6 +1008,7 @@ None of the items below block this document's completion.
 - **"Tu equipo" (§3.11) now has its own explicit near-instant/slow
   resolving pair**, closing a gap where it was the one read in this
   document without one (`ux-critic` finding).
+- **Her own verified phone number is now shown, read-only, in "Tu cuenta" (2026-09-07, Slice 12 `merchant-user-tester` defect).** Elevates this document's own already-named Future Consideration (§8 item 8, first flagged 2026-08-13) from deferred to designed, paired with a companion fix in `authentication.md` §2.2/§3.7e. Plain text, non-tappable, `User.phone` — never editable here, since changing it isn't a Business Capability this document manages.
 
 ## 11. Future considerations
 

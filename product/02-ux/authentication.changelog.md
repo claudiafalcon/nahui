@@ -122,3 +122,40 @@ Original text, before this amendment:
 > 6. **Multi-Business membership intersecting with a pending Invitation (§2.2 cases 2/3's new notes, 2026-09-06, `product-decisions.md` Q24/Q25)** — genuinely undesigned. A phone that already has a local/known Business elsewhere and also holds a pending Invitation falls through to that case's ordinary behavior, unchanged; the Invitation simply waits. `product-decisions.md` Q24/Q25 item 1 already names the underlying gap (no Business-switching surface exists) — this doesn't newly discover it, only confirms it also applies at this specific junction.
 
 Split into sub-case (a), Resolved by this amendment, and sub-case (b), still open — see the current §8 item 6 text. The stale cross-reference ("Q24/Q25 item 1") is also corrected to item 3, the entry that actually names the no-Business-switching-surface gap.
+
+---
+
+## 2026-09-07 — Device-history check before a first-time verification hands off to Onboarding, closing a real Slice 12 defect
+
+**Root decision:** a `merchant-user-tester` (Ana) walk of Slice 12 (`product/02-ux/experience-review-2026-09-07-slice-12-team-invite.md`) found a real, severe defect: an OWNER who signed out (`settings.md §2.5`) and mistyped her own number on re-entry was silently dropped into a brand-new `onboarding.md §3.3`, with no way back to her existing Business — directly contradicting the sign-out screen's own "no se pierde nada" promise. Routed to `ux-designer`, who diagnosed the root cause as two compounding gaps: no display anywhere of her own verified phone number (already named, deferred, in this document's own §11 since 2026-08-13), and no distinguishing check at the one moment "genuinely new phone" and "my own number, mistyped" are actually ambiguous — right after this same device just held a *different* identity's session. Fixed by composing two already-approved conventions (reflecting typed data back to her, §3.6's OTP-destination line; a plain confirm/correct choice for a real commitment, §3.10's accept/decline shape) rather than inventing a new pattern, paired with a companion fix in `settings.md §2.5`/§3.3a.
+
+### §2.2 case 1
+*(cite as `authentication.changelog.md#2026-09-07-mistyped-own-number-after-signout`)*
+
+Original text, before this amendment:
+
+> 1. This phone has never been verified before, anywhere (and, per step 0
+>    above, carries no pending Invitation)?
+>      → First-verification branch. The moment `onboarding.md §3.5`'s own
+>        Business-creation write next succeeds (unchanged, that document's
+>        own mechanism, not redesigned here), Owner-ness is produced as a
+>        pure structural consequence of that write being the one write path
+>        capable of creating a Business at all, gated only on the acting
+>        User being verified (`decision-log.md` D44) — never asked, never
+>        shown, never named on any screen this document or `onboarding.md`
+>        define.
+>        This document's own job stops the instant verification succeeds: it
+>        hands off directly to `onboarding.md §3.3` (Bienvenida + Elegir cómo
+>        empezar), cited verbatim — the identical fresh entry point a true
+>        first launch already reaches there. No interstitial "¡verificado!"
+>        screen (§10).
+
+Corrected to check, before handing off, whether this device remembers a different phone's prior session — see the current §2.2 case 1 text for the live version, and new §3.7e for the confirming screen it gates.
+
+### §11 — the phone-number-display Future Consideration
+
+Original text, before this amendment:
+
+> - **A persistent, read-only display of her own verified phone number somewhere in `settings.md`** — not designed here. **First real evidence, 2026-08-13:** a `merchant-user-tester` walk of `settings.md`'s new "Tu cuenta" section (`experience-review-2026-08-13-configuracion.md`) read the section as "an unfinished corner" for showing nothing but a sign-out button, with no way to confirm which number the device is verified under outside the OTP screen itself. Still not designed here — logged as a real, if mild, want rather than the prior "no evidence yet," for whoever next scopes a `settings.md` amendment.
+
+Marked Resolved by this amendment — see the current §11 text, and `settings.md §2.5`/§3.3a for where the actual display now lives.

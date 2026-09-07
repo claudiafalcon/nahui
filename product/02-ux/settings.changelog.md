@@ -411,3 +411,18 @@ only) — the identical condition that retired the active-Session sheet
 (§2.1's own former text) a day earlier. `home.md`'s §3.6c (this sheet's
 own Home-side wireframe) is retired in the same pass — see that
 document's own changelog entry, `home.changelog.md#section-3-6c-retired`.
+
+---
+
+## 2026-09-07 — "Tu cuenta" gains a read-only phone-number display, closing a real Slice 12 defect
+
+**Root decision:** a `merchant-user-tester` (Ana) walk of Slice 12 (`product/02-ux/experience-review-2026-09-07-slice-12-team-invite.md`) found that signing back in as the OWNER after signing out silently created a brand-new Business when she mistyped her own number — with nowhere in the app ever having shown her that number to remember it. This document's own §8 item 8 had already named the gap as a Future Consideration since 2026-08-13 ("no evidence of need yet"); Slice 12's routine multi-Membership sign-out/sign-in cycling supplied that evidence. Paired with a companion fix in `authentication.md §2.2`/new §3.7e.
+
+### §8 item 8
+*(cite as `settings.changelog.md#2026-09-07-phone-number-display`)*
+
+Original text, before this amendment:
+
+> 8. **A persistent, read-only display of her own verified phone number in Configuración** — already named as a future consideration in `authentication.md §11`, unrelated to whether sign-out itself works; still not designed here, no evidence of need yet.
+
+Marked Resolved by this amendment — see the current §8 item 8, §2.5, and §3.3a/§3.6 for the live text and wireframes.
