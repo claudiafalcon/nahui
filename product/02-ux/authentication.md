@@ -12,7 +12,7 @@
 
 **Out of scope, by explicit instruction — flagged rather than designed around:**
 - **Role-management UI.** No role picker, no "you are the Owner" badge or screen, no membership-management surface. Owner-ness is a structural fact this flow produces, never something Ana chooses or sees named — the Product Owner's own explicit instruction, held to on every screen below.
-- **Invitations / SELLER-role onboarding.** A separate, future flow — not designed here. See `§11`.
+- **Invitations / SELLER-role onboarding — acceptance now designed (§2.2 case 0 / §2.2a / §3.10–§3.13a).** What *issuing* an Invitation does (`settings.md` §2.7, "Invitar a alguien") stays that document's own scope, unchanged. This document now owns only the moment a phone that already holds a pending Invitation verifies — not the invite-sending action itself.
 - **Business onboarding redesign.** `onboarding.md`'s three paths are frozen; this document's terminal state for a first-time verification is the literal `onboarding.md §3.3` (cited, not redescribed).
 - **Payments/checkout, bazaar recommendations** — non-goals per `company/CLAUDE.md`, unrelated to this surface anyway.
 - **Logout / device / account-session management.** Not designed here. See `§11`.
@@ -28,6 +28,7 @@
 - A phone verified for the very first time, anywhere, proceeds directly — no separate "create account" step, no name/photo capture (that's `onboarding.md` §3.9/§3.10's job, not this document's) — into `onboarding.md`'s existing fresh entry point, cited by canonical ID (`onboarding.md §3.3`).
 - A device that already holds a verified session never sees this flow again, ever — the same "never ask twice" bar `onboarding.md`'s own D13 completion state already holds itself to.
 - No screen, in any state, names "Owner," "Seller," "role," or shows anything resembling a picker between them.
+- A phone with a pending `Invitation` (`Invitation.status = pending`, `Invitation.phone` matching the verified number) is never silently routed into `onboarding.md`'s Business-creation flow — it's offered, once, plainly, the specific Business that invited it, with an honest way to decline that costs her nothing (added 2026-09-06, `product-decisions.md` Q24/Q25).
 
 **Scope boundary, stated explicitly per this folder's own §1 rule:** this is an access/identity gate, not a parallel onboarding. It captures exactly one fact — a verified phone number — and nothing else. It does not decide *what* she can do once verified (that's the domain model's job, flagged to Architect, `§8`) and does not decide *how* her business gets set up (that's `onboarding.md`'s job, frozen).
 
@@ -67,12 +68,23 @@ Evaluated automatically, before anything else, on every app open:
      → Fallback (§3.9), Reintentar.
 ```
 
-### 2.2 What happens once a code is confirmed — the three-way branch
+### 2.2 What happens once a code is confirmed — a four-way branch (amended 2026-09-06 — `product-decisions.md` Q24/Q25)
 
 This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the reason this document exists:
 
 ```
-1. This phone has never been verified before, anywhere?
+0. [Checked FIRST, before 1–3 below — this ordering matters] Does this
+   phone have a pending Invitation (`Invitation.status = pending`,
+   `Invitation.phone` = this verified number) AND has this phone never
+   been verified before, anywhere (the same condition that would
+   otherwise route it into case 1)?
+     → YES → Invitation-acceptance branch. See §2.2a. Never
+       `onboarding.md §3.3`'s Business-creation handoff.
+     → NO → fall through to cases 1–3 below, entirely unchanged from the
+       Approved text.
+
+1. This phone has never been verified before, anywhere (and, per step 0
+   above, carries no pending Invitation)?
      → First-verification branch. The moment `onboarding.md §3.5`'s own
        Business-creation write next succeeds (unchanged, that document's
        own mechanism, not redesigned here), Owner-ness is produced as a
@@ -98,6 +110,14 @@ This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the re
        through to Home (`home.md §2`); one still in-progress resumes
        exactly where Onboarding left off (`onboarding.md §2.1` cases
        2–4). See `settings.md §2.5a` for the full reasoning.
+     **New note (2026-09-06, `product-decisions.md` Q24/Q25):** if this
+     phone also happens to hold a pending Invitation from a *different*
+     Business at this same moment, this amendment does not design that
+     intersection — it's the multi-Business-membership case Q24/Q25 item
+     1 already names as real but undesigned (no Business-switching
+     surface exists anywhere yet). The Invitation simply stays pending,
+     undisturbed, reachable only once a future join surface can read it
+     from this state. Flagged, not solved — see §8, item 6.
 
 3. This phone verifies successfully on a device holding no local session,
    and it's already associated with an existing, already-onboarded
@@ -109,6 +129,64 @@ This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the re
        device or to a verified identity) that isn't this document's to
        invent. Flagged, not designed around, per this folder's own §4
        rule for exactly this situation.
+     **New note (2026-09-06, `product-decisions.md` Q24/Q25):** the
+     identical multi-Business/pending-Invitation intersection noted in
+     case 2 applies here too, for the same reason — not designed,
+     flagged at §8 item 6.
+```
+
+**Why step 0 outranks 1–3 rather than sitting after them:** the common, expected case is a trusted helper or family member with no prior Nahui use at all — exactly case 1's territory. Checking the Invitation first means that phone never even briefly resolves toward Business-creation before being redirected; there's no flicker, no "wrong" screen shown and then corrected. *global-principles.md*, "never ask twice" — extended here to "never show her the wrong next step even momentarily."
+
+### 2.2a Invitation-acceptance resolution logic (new — `product-decisions.md` Q24/Q25)
+
+Reached only via §2.2 case 0. Evaluated fresh, at this exact moment — never a cached read from earlier in the flow (the Invitation could have changed status between OTP-send and OTP-confirm, however unlikely at pilot scale).
+
+```
+1. Re-check `Invitation.status` right now, not the value that triggered
+   case 0's routing decision.
+     → Still `pending` → show §3.10 (the offer screen).
+     → No longer `pending` (already accepted some other way, revoked, or
+       any other state the settled architecture doesn't fully enumerate
+       triggers/timing for — `settings.md §8` items 11/12 name this same
+       gap from the issuing side) → §3.13a ("Ya no disponible"),
+       never §3.10. A stale local check must never show her an offer
+       for something that's already gone.
+
+2. More than one pending Invitation for this phone (a real, unprevented
+   case — `Invitation` is unique on `(businessId, phone)`, not on `phone`
+   alone, so two different Businesses can each hold one simultaneously).
+   Resolved automatically, no picker: the most-recently-created pending
+   Invitation is the one offered at §3.10. *global-principles.md*, "every
+   repeated decision should become automation" — the same deterministic-
+   tiebreak discipline `settings.md §3.11`'s row ordering and `home.md
+   §3.6b`'s Event-row ordering already use, rather than inventing a
+   second-invitation picker with no evidence yet that Nahui's actual
+   pilot scale (3 merchants) ever produces this case. Flagged, not
+   silently ignored — see §8, item 5.
+
+3. Accepting (§3.10, "Aceptar y empezar a vender") writes atomically:
+   `BusinessMembership(businessId, userId, role=SELLER, status=active)`
+   created AND `Invitation.status` flips `pending → accepted`, one
+   write, keyed once (`architecture-principles.md` #7, `decision-log.md`
+   D30) — a retried confirm must never risk a duplicate Membership or an
+   ambiguous "did it already join" state, the identical guarantee §3.7's
+   own OTP-confirm write already carries in this document.
+
+4. Declining (§3.10, "Ahora no") does not touch the Invitation at all —
+   it stays `pending`, untouched, exactly as if this screen had never
+   been shown. She falls through to the ordinary fresh-entry flow,
+   `onboarding.md §3.3`, cited verbatim — the identical destination
+   case 1 above already reaches. Only the inviting OWNER's own future
+   "cancel pending" action (`settings.md §8` item 11, a named,
+   not-yet-built gap) changes the Invitation's status from here forward.
+
+5. A successful accept hands off to §3.10c (a brief welcome screen),
+   which itself hands off into `home.md §2`'s own resolution — now
+   amended to resolve role-aware nav/header content from the freshly-
+   created SELLER Membership. This document's own job stops the instant
+   §3.10c's single tap resolves, the same "hands off and stops"
+   discipline §2.2 case 1 already holds itself to for `onboarding.md
+   §3.3`.
 ```
 
 ### 2.3 Merchant-visible behavior around simulated OTP delivery
@@ -298,6 +376,89 @@ No new wireframe — reaching any screen in §3.3–§3.7d a second time (after 
 ```
 Covers §2.1's own device-session check failing outright. Manual "Reintentar," same convention as `onboarding.md §3.8`/`inventory.md §3.18`/`events.md §3.18`/`reports.md §3.14` — no live-customer risk at this moment to justify a heavier auto-retry mechanism.
 
+### 3.10 Invitation-acceptance — offer (new)
+```
+┌───────────────────────────────┐
+│           Nahui                 │
+│                                │
+│  Te invitaron a vender con        │
+│  Ropa Ana.                        │
+│                                │
+│  Vas a poder abrir tus propias    │
+│  sesiones de venta y registrar     │
+│  ventas, usando su Catálogo y      │
+│  sus precios.                      │
+│                                │
+│  [  Aceptar y empezar a vender ] │
+│  [   Ahora no   ]                  │
+│                                │
+└───────────────────────────────┘
+```
+- No back arrow, no "← Cambiar número" — she's already committed to this phone number by reaching this screen; nothing about this moment is about *changing* the number.
+- **Copy reuses `settings.md §3.12`'s own already-written description of what a SELLER can do, mirrored from the inviting side rather than invented a second time** — "esta persona va a poder abrir sus propias sesiones de venta y registrar ventas... usando tu mismo Catálogo y tus mismos precios" becomes "vas a poder abrir tus propias sesiones... usando *su* Catálogo y *sus* precios." *global-principles.md*, "capture business truth once, reuse it forever" — this is the identical fact, said to the other party.
+- `Business.name` fills the one variable in the sentence — always present (`onboarding.md §2.2b`, required on every Business). No attempt to name the inviting OWNER personally: `User` carries no display-name field (the same named gap `settings.md §2.7` already states plainly rather than inventing around).
+- **"Aceptar y empezar a vender" is the one real confirming tap this commitment gets** — not a second nested Sí/No dialog on top of it. Same standard this document already holds "Enviar código" and "Cerrar sesión" to: a real commitment costs one deliberate tap, never zero, never two.
+- "Ahora no" costs nothing to tap — no confirmation of its own, since nothing is lost or destroyed by declining (§2.2a step 4).
+
+**`brand-guardian` consultation flagged, not yet performed, per §8 item 8 — this copy is a best-effort draft, not treated as final.**
+
+### 3.10a Aceptando invitación — near-instant / slow
+```
+┌───────────────────────────────┐        ┌───────────────────────────────┐
+│        ▢▢▢▢▢▢▢▢▢▢▢▢            │        │  Uniéndote a Ropa Ana…          │
+└───────────────────────────────┘        └───────────────────────────────┘
+   near-instant: silent skeleton              slow (>~1.5s): one plain line
+```
+Same near-instant/slow convention as every other write in this document.
+
+### 3.10b Aceptando invitación — error
+```
+┌───────────────────────────────┐
+│  No pudimos completar esto.      │
+│  Sigue aquí, intenta de nuevo.    │
+│      [   Reintentar   ]          │
+└───────────────────────────────┘
+```
+Same idempotency guarantee §3.7d already carries for its own genuine first-time-provisioning write — a retried accept must never risk creating a second `BusinessMembership` or leaving `Invitation.status` ambiguous.
+
+### 3.10c Invitación aceptada — bienvenida (new)
+```
+┌───────────────────────────────┐
+│                                │
+│           Nahui                 │
+│                                │
+│  Ya quedaste registrada con        │
+│  Ropa Ana.                         │
+│                                │
+│  Cuando quieras vender, abre       │
+│  tu sesión aquí.                    │
+│                                │
+│      [   Ir a Hoy   ]              │
+│                                │
+└───────────────────────────────┘
+```
+- **Copy reuses the exact register `tone-of-voice.md` itself names as the concrete example of "celebration is about her, plainly stated, never inflated"** — "Ya quedaste registrada con Ropa Ana" is that document's own worked example, applied here rather than invented fresh. No confetti-shaped language, no exclamation, no framing this as Nahui's own accomplishment.
+- One tap, "Ir a Hoy" — hands off into `home.md §2`'s own resolution, now reading a real, active SELLER Membership for the first time.
+
+### 3.13a Invitación ya no disponible (new — defensive state)
+```
+┌───────────────────────────────┐
+│           Nahui                 │
+│                                │
+│  Esta invitación ya no está        │
+│  disponible.                        │
+│                                │
+│  Si crees que esto es un error,     │
+│  habla con quien te invitó.          │
+│                                │
+│      [   Continuar   ]              │
+│                                │
+└───────────────────────────────┘
+```
+- **Reuses `settings.md §3.14`'s exact register** ("si crees que esto es un error, habla con quien te invitó") — the same non-diagnostic, no-blame phrasing already established for the sibling Membership-revoked defensive state, rather than inventing a second tone for a closely-related situation.
+- Deliberately doesn't diagnose *why* — already accepted, revoked, or any other non-`pending` state reads identically here; this document has no reliable way to distinguish them and shouldn't guess.
+- "Continuar" → falls through to the same fresh-entry flow decline reaches, `onboarding.md §3.3` — nothing left for this phone to do regarding this specific Invitation, so it lands exactly where a phone with no Invitation at all would.
+
 ## 4. Interaction flow (summary)
 
 ```
@@ -336,7 +497,21 @@ From §3.3, type a number:
             → código expirado (§3.7b) → Reenviar código → back to §3.5
             → demasiados intentos (§3.7c) → Reenviar código → back to §3.5
             → error de plataforma (§3.7d) → Reintentar → §3.7 again
-            → success, first-ever verification for this phone ─────────→
+            → success, checked FIRST against §2.2 case 0 (pending
+              Invitation + never-verified-before) ─────────────────→
+              §2.2a's fresh re-check of Invitation.status:
+                still pending → §3.10 (offer)
+                  → Aceptar y empezar a vender → guardando (§3.10a)
+                      → error (§3.10b) → Reintentar
+                      → success → §3.10c (bienvenida) → Ir a Hoy →
+                        home.md §2 (now role-aware — see home.md's own
+                        amendment)
+                  → Ahora no → onboarding.md §3.3, Invitation untouched,
+                    still pending
+                no longer pending → §3.13a → Continuar →
+                  onboarding.md §3.3
+            → success, first-ever verification for this phone, no
+              pending Invitation ─────────────────────────────────→
               onboarding.md §3.3 (Bienvenida + Elegir cómo empezar),
               cited verbatim — Owner-ness produced structurally the
               moment onboarding.md §3.5's own Business-creation write
@@ -378,6 +553,11 @@ Any interruption up to and including a still-unconfirmed code:
 14. Verificando código — error de plataforma
 15. Retomar autenticación interrumpida (resumes any of states 3–14, pixel-identical — except §3.6's resend countdown, recomputed from real elapsed time — in-progress data intact)
 16. Falla defensiva — no se pudo determinar el estado inicial
+17. Invitation-acceptance — offer (§3.10)
+18. Aceptando invitación (near-instant / slow) (§3.10a)
+19. Aceptando invitación — error (§3.10b)
+20. Invitación aceptada — bienvenida (§3.10c)
+21. Invitación ya no disponible (§3.13a)
 
 ## 6. Minimum step count
 
@@ -387,6 +567,8 @@ Any interruption up to and including a still-unconfirmed code:
 | Already-verified device | **0** — never shown | Direct consequence of §2.1's silent pass-through. |
 | Resuming an interrupted verification | **0 extra** | Same guarantee `onboarding.md §3.7` already gives its own in-progress work. |
 | Recovering from a wrong/expired/exhausted code | **+1 per occurrence** (retype code, or tap Reenviar código) | Not part of the floor — only reached when something genuinely went wrong; never a designed-in tax on the happy path. |
+| Accepting a pending Invitation | **2** (Aceptar y empezar a vender → Ir a Hoy) | One tap for the real commitment (§2.2a step 3's reasoning), one to leave the acknowledgment screen — same floor as every other real-commitment action in this document. |
+| Declining a pending Invitation | **1** (Ahora no) | Nothing to confirm — declining loses nothing, costs nothing beyond the tap itself. |
 
 ## 7. Automation opportunities
 
@@ -396,6 +578,8 @@ Any interruption up to and including a still-unconfirmed code:
 - The resend cooldown counts down automatically; she never tracks elapsed time herself.
 - Owner-ness — fully automatic, a pure structural consequence of the atomic Business-creation write (`decision-log.md` D44), never a question, never a picker, per the Product Owner's explicit scope constraint.
 - Whether a client also auto-fires "Confirmar" the instant a 6th digit lands (without changing the underlying required, gated action itself) is a High-Fidelity/implementation nicety, deliberately left undecided here — below this document's abstraction level, the same way exact digit-grouping in the phone field is.
+- Which of two+ pending Invitations to offer (rare, unprevented case) — resolved automatically by recency, never a picker shown without real evidence of need (§2.2a step 2).
+- Whether a phone has a pending Invitation at all — checked automatically at OTP-confirm, never a question asked of her ("¿tienes una invitación?" never appears anywhere).
 
 ## 8. Open questions
 
@@ -406,6 +590,10 @@ None of the items below block this document's own completion. Both are named exp
 3. **Provisional prototype defaults, not frozen domain invariants (Product Owner clarification, 2026-08-13):** the specific numbers chosen here by judgment call — 6-digit code, 30-second resend cooldown, 5-minute code validity, 5-attempt soft-invalidation bound — are product/prototype defaults, not settled Foundation rules. They should be revisited when a real authentication provider is integrated (Stage 7, Backend Integration) — a real SMS/OTP vendor may impose its own constraints (code length, delivery/expiry timing, rate limits) that supersede these values outright, and even absent that, they should be checked against a real or simulated first-run test before being treated as final, same evidence-driven caution `onboarding.md §8` items 1/5/6 already recommend for its own judgment calls. Nothing in this document's flow logic (§2, §4) depends on the exact values — only on their existence and the branches they gate.
 4. **[Amended 2026-08-13 — see `authentication.changelog.md#2026-08-13-open-q4`]** Resolved. `settings.md §2.5` activates §2.2 case 2.
 5. **`brand-guardian` consultation complete (2026-08-13)** — §3.7c's "too many attempts" copy revised per that consultation's finding (subject/causal-structure fix, same soft-invalidation design); flagged as `tone-of-voice.md`-Hypothesis-tagged, worth a real merchant-reaction check once shipped, not blocking now.
+6. **Multi-Business membership intersecting with a pending Invitation (§2.2 cases 2/3's new notes, 2026-09-06, `product-decisions.md` Q24/Q25)** — genuinely undesigned. A phone that already has a local/known Business elsewhere and also holds a pending Invitation falls through to that case's ordinary behavior, unchanged; the Invitation simply waits. `product-decisions.md` Q24/Q25 item 1 already names the underlying gap (no Business-switching surface exists) — this doesn't newly discover it, only confirms it also applies at this specific junction.
+7. **A second/simultaneous pending Invitation for the same phone (§2.2a step 2)** — resolved by recency, not designed as a picker; no evidence yet this case is real at Nahui's pilot scale (3 merchants). Revisit if evidence warrants.
+8. **`brand-guardian` consultation needed, not yet performed** — flagged explicitly per this folder's own consultation-trigger discipline. This is the first screen anywhere in the product establishing a working Owner↔Seller relationship — genuinely new emotional/tonal territory, not a routine copy variation of an already-reviewed pattern. **Specific question for the consultation:** does §3.10's offer copy and §3.10c's welcome copy correctly apply `character-bible.md`'s "Earning the right to advise"/"never implies a merchant needs rescuing" register to a *peer-to-peer* relationship moment (Ana inviting someone she trusts) rather than the Nahui-to-merchant relationship every existing screen in this document was written for — is there a register shift this draft missed? Best-effort draft copy is already written above (§3.10/§3.10c) so nothing ships unwritten in the meantime; not treated as final until this consultation runs.
+9. **`settings.md §8` items 11 (cancelling a pending Invitation) and 12 (`Invitation.status = expired`'s trigger/timing)** — this document's §3.13a defensive state is deliberately written to cover *either* outcome without needing to distinguish them; those two gaps stay exactly as open as `settings.md` already left them, not resolved here.
 
 ## 9. Principle justification
 
@@ -425,6 +613,13 @@ None of the items below block this document's own completion. Both are named exp
 - *Tone — "warm, direct, respects the vendor's intelligence... never intimidating"* — §3.7c's soft, code-level invalidation (never a hard account lockout) is the concrete application of this principle to a genuinely new situation this document introduces; flagged for a `brand-guardian` consultation rather than asserted as settled (§3.7c, §8).
 - *tone-of-voice.md, "state facts before offering an opinion"* — every error/limit state states what happened before what to do next, no apology-first structure.
 
+**§2.2a/§3.10–§3.13a additions (`product-decisions.md` Q24/Q25):**
+- *global-principles.md*, "capture business truth once, reuse it forever" — §3.10's description of what a SELLER can do is the identical fact `settings.md §3.12` already wrote for the inviting side, reused rather than reworded twice.
+- *global-principles.md*, "never ask twice" — checking for a pending Invitation happens automatically, before she's ever shown a screen that would need correcting a moment later; declining never re-surfaces the same offer on the next open.
+- *global-principles.md*, "the fastest interaction is the one that never happens" — no second/simultaneous-Invitation picker is built without evidence it's ever real (§2.2a step 2).
+- *architecture-principles.md* #7 (idempotent/keyed writes) — the accept action's atomic `BusinessMembership` creation + `Invitation.status` flip carries the same stable idempotency-key guarantee every other write-with-real-consequence in this document carries.
+- *brand/tone-of-voice.md*, "celebration is about her, plainly stated, never inflated" — §3.10c reuses that document's own literal worked example verbatim.
+
 ## 10. Decisions made
 
 - **Named `authentication.md`, not `owner-access.md`** — the screens designed here aren't Owner-specific; naming the file after one outcome of a successful verification would overstate what's on screen. Reasoned in full at the top of this document.
@@ -434,11 +629,16 @@ None of the items below block this document's own completion. Both are named exp
 - **§3.7c's "too many attempts" state is a soft, code-level invalidation, never a hard account/device lockout** — reasoned explicitly against `brand/brand-guide.md`'s tone, not defaulted to a generic security pattern. Copy itself revised per a completed `brand-guardian` consultation — see §3.7c, §8.
 - **§2.2 case 3 (returning phone, new device, already-onboarded Business) is explicitly marked "Not yet resolved"** rather than invented — routed to a new Product Decision (Q18) and a new Architect Question (Q17).
 - **[Amended 2026-08-13 — see `authentication.changelog.md#2026-08-13-decisions-10`]** Logout / account-session-management UI — resolved. `settings.md §2.5` ("Cerrar sesión") now designs exactly this, activating §2.2 case 2 above for the first time.
+- **Pending-Invitation check runs first, before the existing three-way branch (§2.2, §2.2a, 2026-09-06)** — never lets a first-time-verifying invited phone even briefly resolve toward Business-creation.
+- **A second/simultaneous pending Invitation resolves by recency, no picker** — a plain judgment call, not derived from the Foundation, revisited only if real evidence surfaces the case.
+- **Accepting costs one real confirming tap (§3.10); declining costs zero** — matches this document's own existing asymmetry between committing actions and reversible/no-cost ones.
+- **§3.13a reuses `settings.md §3.14`'s exact non-diagnostic register** rather than inventing a second tone for a closely related "you don't have standing here" moment.
 
 ## 11. Future considerations
 
-- **Invitation flow / SELLER-role onboarding** — explicitly out of scope for this document, per the Product Owner's own instruction. Will very likely reuse this document's phone+OTP mechanism as its underlying verification step, but the invitation-acceptance screens themselves, and how a Seller's Role gets attached to an existing Business, are not designed here.
+- **Invitation flow / SELLER-role onboarding — acceptance now designed (2026-09-06, `product-decisions.md` Q24/Q25); this item is resolved for that half.** What remains genuinely open: how an invited SELLER's Role gets attached (accepting writes `BusinessMembership` directly, §2.2a step 3 — no separate "attach a role" step exists), and cancelling/expiring a pending Invitation from the issuing side (`settings.md §8` items 11/12, unresolved there, not here).
 - **[Amended 2026-08-13 — see `authentication.changelog.md#2026-08-13-future-11`]** Self-service logout / account-level session management — resolved. `settings.md §2.5` ("Cerrar sesión") now designs exactly this.
-- **Multi-Business-per-phone** — not addressed. If an Owner ever runs two separate stalls under one phone number, that's a real future question, not evidenced today.
+- **Multi-Business-per-phone — partially addressed as of 2026-09-06.** `product-decisions.md` Q24/Q25 resolved that a User may belong to more than one Business; this document's §2.2 cases 2/3 name the real, still-undesigned intersection with a pending Invitation (§8 item 6) rather than leaving the whole topic unaddressed. No Business-switching surface exists anywhere yet.
+- **A merchant-visible display name for a team member** — same gap `settings.md §2.7`/§11 already names; this document's §3.10 inherits the identical limitation (no way to name the inviting OWNER personally).
 - **`onboarding.md §0`'s own "Authentication... implementation-level concern below this spec's abstraction level" framing is now stale** now that this document exists as a real spec for exactly that concern. Flagged for whoever next amends `onboarding.md` — not resolved here, since `onboarding.md` is treated as frozen for this task.
 - **A persistent, read-only display of her own verified phone number somewhere in `settings.md`** — not designed here. **First real evidence, 2026-08-13:** a `merchant-user-tester` walk of `settings.md`'s new "Tu cuenta" section (`experience-review-2026-08-13-configuracion.md`) read the section as "an unfinished corner" for showing nothing but a sign-out button, with no way to confirm which number the device is verified under outside the OTP screen itself. Still not designed here — logged as a real, if mild, want rather than the prior "no evidence yet," for whoever next scopes a `settings.md` amendment.
