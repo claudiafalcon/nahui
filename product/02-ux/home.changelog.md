@@ -1329,3 +1329,81 @@ this document's own non-deletion discipline.
 
 Full reasoning lives inline at `status-2026-09-06-q23-product-photo`
 above — this decision was recorded there in full, not restated here.
+
+### status-2026-09-10-scheduled-event-assignment-gap
+**Applies to:** `home.md` §2 step 3, §3.3, §3.4, §3.5, §9, §10.
+
+`merchant-user-tester`, playing Ana, found a real gap while validating
+RFC 0011/D60's `EventAssignment` implementation end to end: a SELLER
+assigned to a `scheduled` (not yet `active`) Event saw zero indication
+of that assignment anywhere on Home. Her own words: "if my helper called
+me confused about where to go, I'd have no way to point her to something
+in the app itself." Traced directly to an already-self-flagged Open Item
+in this document's own §8 — RFC 0011's Open Item 1 only ever narrowed
+the `active`-Event case (§2 step 2); the separate upcoming-Event card
+(§3.5) stayed Business-wide for both roles.
+
+`architect` classified this as a pure Architect Decision — completing
+RFC 0011's own already-established SELLER-narrowing pattern for the one
+lifecycle stage (`scheduled`) it happened not to cover, not a new product
+tradeoff requiring Product Owner input. `ux-designer` then designed the
+fix, applied directly to `home.md`.
+
+**Design:** §2 step 3's card-rendering check is now role-scoped the same
+way step 2 already is. OWNER: unchanged, Business-wide, no
+`EventAssignment` gate. SELLER: a new selector,
+`upcomingQualifyingEventForMembership` — the soonest `scheduled` Event
+she holds an `EventAssignment` for, sourced identically to the existing
+`active`-case `qualifyingEventsForMembership`. Card (§3.5, non-tappable —
+no Eventos tab, §3.16) and a new passive line ("Hay eventos programados y
+no estás asignada a ninguno...," §3.4) are mutually exclusive alternates
+of one slot — never both, never neither unless genuinely neither
+condition holds — composing independently with the already-built
+"active elsewhere, not assigned" line. A SELLER with 2+ qualifying
+upcoming assignments sees only the single soonest one (§10 decision:
+purely informational, nothing permanently hidden, matches the OWNER
+card's own pre-existing unresolved multiplicity, no evidence of real
+need for a fuller list).
+
+**Review round 1.** `ux-critic` found 2 Major + 3 Minor + 1 Suggestion:
+(M1) the new passive line's own stacking order with the rest of §3.4
+(same-day-resume line, the active-state sibling line) was left
+unspecified, unlike every sibling element in the document; (M2) the
+SELLER's own upcoming-assignment card's copy never stated the Event was
+hers — pixel-identical to the OWNER's Business-wide card, undercutting
+the fix's own stated purpose; (Mn1) no combined wireframe for the
+line-only, no-card composition; (Mn2) §9's citation section mixed
+2026-09-09 and 2026-09-10 content under one 2026-09-09 dateline;
+(Mn3) §2's Role-resolution summary paragraph didn't list either
+role-scoped qualifying-Event mechanism among what role "drives";
+(S1, pre-existing, deferred) an unrelated older annotation/prose tension
+on the OWNER's own card, not part of this amendment's scope.
+
+**Fixes:** M1 closed with an explicit stacking-order bullet + a worked
+combined wireframe (also closing Mn1) added to the new line's own
+subsection. M2 closed with a leading "Asignada" label added to the
+SELLER card's copy — reusing `events.md` §3.26's own already-established
+"Asignadas/Sin asignar" vocabulary, not a new term — with an explicit
+note that the OWNER's card correctly stays unlabeled (a Business-wide
+card has no single "assigned" status to claim). Mn2 closed by splitting
+the §9 header's dateline and tagging each of the three 2026-09-10 bullets
+individually. Mn3 closed by extending §2's Role-resolution paragraph to
+name both mechanisms.
+
+**`ux-critic` re-verification confirmed all 6 findings closed, no
+regressions**, with two documentation-process observations from its own
+regression scan (a self-contradictory in-progress status sentence in
+`home.md`'s own status header, and this very cross-reference anchor not
+yet existing) — both reconciled by Main in the same pass: the status
+header rewritten to a single consistent final-state sentence, and this
+entry added.
+
+Implemented in `product/02c-high-fidelity-prototype/`
+(`src/domain/selectors.ts`'s `upcomingQualifyingEventForMembership`;
+`HomeScreen.tsx`/`ColdStart.tsx`/`Idle.tsx` wiring; the "Asignada" label
+added to `Idle.tsx` as a small follow-up once M2 landed in the spec).
+`reviewer` found 0 Blockers/Important against the built code (2
+non-blocking Suggestions: a small shared-helper dedup opportunity between
+the two `qualifyingEventsForMembership`/`upcomingQualifyingEventForMembership`
+selectors, and `decision-log.md` D60's own "Applied" line needing this
+extension noted — both addressed). Folded back into Approved.

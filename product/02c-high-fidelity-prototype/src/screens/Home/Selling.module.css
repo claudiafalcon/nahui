@@ -73,7 +73,7 @@
   margin: 0 var(--space-4) var(--space-2);
   font: var(--text-body-sm);
   font-weight: 600;
-  color: var(--color-warning);
+  color: var(--color-warning-aa);
 }
 
 /* Fix round, docs/passes/slice-7-nfc-selling.md (ux-critic Major) — the

@@ -56,7 +56,7 @@
 }
 
 .reviewFlag {
-  color: var(--color-warning);
+  color: var(--color-warning-aa);
   font: var(--text-meta);
 }
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useStore } from '../../domain/store';
-import { disponibleEnGeneral, eventAllocationFor } from '../../domain/selectors';
+import { disponibleEnGeneral, eventAllocationFor, quantityRemaining } from '../../domain/selectors';
 import { Button } from '../../components/Button/Button';
 import styles from './MercanciaParaEsteEvento.module.css';
 
@@ -37,14 +37,18 @@ export function MercanciaParaEsteEvento({
   const [confirmation, setConfirmation] = useState(false);
 
   // Staged manual quantities — initialized once from each Product's current
-  // committed `quantityAllocated` (0 if no EventAllocation exists yet for
-  // this pair). Collapsing/expanding a row is a pure display toggle, never
-  // a commit (§3.21's own annotation) — this map persists whichever row is
-  // shown expanded or not.
+  // live-remaining committed count (`quantityRemaining`, 0 if no
+  // EventAllocation exists yet for this pair). **Corrected, RFC 0010/D59:**
+  // never `quantityAllocated`, which is now a monotonic lifetime total that
+  // never decreases — reading it here would silently ignore any prior
+  // mid-Event release and redisplay a stale, too-high number. Collapsing/
+  // expanding a row is a pure display toggle, never a commit (§3.21's own
+  // annotation) — this map persists whichever row is shown expanded or not.
   const [staged, setStaged] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
     for (const product of state.products) {
-      initial[product.id] = eventAllocationFor(state, eventId, product.id)?.quantityAllocated ?? 0;
+      const allocation = eventAllocationFor(state, eventId, product.id);
+      initial[product.id] = allocation ? quantityRemaining(state, allocation) : 0;
     }
     return initial;
   });

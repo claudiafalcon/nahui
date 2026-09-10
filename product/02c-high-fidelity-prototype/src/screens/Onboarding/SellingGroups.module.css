@@ -56,7 +56,7 @@
    same treatment `RegisterMerchandise.module.css`'s own `.reviewFlag` gives
    its committed lines under INV-Q1, reused verbatim. */
 .reviewFlag {
-  color: var(--color-warning);
+  color: var(--color-warning-aa);
   font: var(--text-meta);
 }
 

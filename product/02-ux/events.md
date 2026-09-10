@@ -24,6 +24,8 @@ events.changelog.md#status-evt-q1-empieza-hoy-default]**
 
 **Further amended 2026-09-09 (`product/99-rfc/0010-event-scoped-inventory-allocation-commitment-lifecycle-correction.md`, Proposed but Product-Owner-confirmed as design-settled — corrects RFC 0009's manual/quantity-mode commitment mechanism, and by extension this document's own §3.16 reconciliation UX):** §3.16's persistent reconciliation section now designs a genuinely new, deliberately lightweight manual-mode reconciliation action — one-tap "sí, regresaron las N" as the happy path, a secondary "Ajustar cantidad" affordance revealing a stepper for a lower confirmed number, and an honest "ya revisaste esto" framing on any later visit to a row with an outstanding shortfall — sitting alongside NFC's existing, entirely unchanged two-button mechanism. Manual and NFC evidence can now compose on the same closed-Event Product row (mirroring §3.21's own already-established "sin tag · con tag" composability at allocation time), so a single row may show one or both action shapes. §3.16's trigger-condition prose is corrected to RFC 0010's stated invariant ("1+ unit still `reserved` in `allocatedUnitIds`, either mode, for a `status = open` `EventAllocation`") — also fixing a pre-existing "available" vs. "reserved" wording inconsistency RFC 0010's own Open Items flagged in the prior text. "Mover a otro evento" (§3.24's existing closed-source variant, unchanged copy) is now also offered for manual rows, moving the full current live-expected quantity — decided here per RFC 0010's Open Item 4, routed explicitly to `ux-designer`. No schema change designed or assumed beyond what RFC 0010 itself specifies (`quantityExpected`, `unitSource` — both Architect/Product-Owner sign-off items, not resolved here). §4/§5/§6/§7/§9/§10 updated to match. `ux-critic` found 1 Major + 2 Minor: a mixed row's two "Mover a otro evento" buttons were identical and ungrouped despite moving genuinely different stock (fixed — blank-line grouping matching §3.21's own precedent, plus a mode qualifier on each button); an undefined branch for tapping "Mover a otro evento" mid-stepper-reveal (fixed — silently discards the staged value, matching §3.21's own precedent); the ambient checkmark on a confirmed-shortfall/zero outcome diverged from §3.13's own no-checkmark precedent for neutral/negative outcomes (fixed — checkmark dropped on any confirm below N). All three fixed in this same pass and confirmed closed by `ux-critic` re-verification, no regressions. `reviewer` (2026-09-09) found 0 Blockers/content defects against this amendment; 5 Important documentation-persistence findings (this section's own missing `ux-critic-findings.md` entry, `product-decisions.md`'s stale description of the corrected counter mechanism, `product/99-rfc/README.md`'s stale RFC 0010 summary, `company/bitacora.md`'s same-day entry describing the pre-rework design, and a forward-tracking gap for `home.md` §3.8a-d/§3.9 — now RFC 0010's own Open Item 7) — all closed directly by Main. Folded back into Approved. **[see events.changelog.md#status-2026-09-09-rfc0010-manual-reconciliation]**
 
+**Further amended 2026-09-09 (`product/99-rfc/0011-event-assignment.md`, Accepted, promoted `decision-log.md` D60):** new §3.26 "Personal para este evento" designs the OWNER-side surface for assigning specific `BusinessMembership` SELLERs to a specific Event — the missing half RFC 0011 itself named as unresolved (the SELLER-side consumption, a SELLER's Session-open Event picker narrowing to only Events she's assigned to, was already designed separately, `home.md` §2/§3.6b). Reached via a new secondary action on Event detail, both `scheduled` (§3.11, "Asignar personal") and `active` (§3.14/§3.15, "Ver personal de este evento") — mirroring exactly how "Llevar mercancía"/"Ver mercancía de este evento" already compose across those same two states, not a new entry-point pattern. Deliberately not surfaced on Nuevo Evento (§3.6/§3.7) — `EventAssignment` requires a real, already-saved `eventId`, and Nuevo Evento's own minimal-required-fields discipline (Lugar + Tipo only) is preserved unchanged. **Present unconditionally regardless of `subscriptionTier` (corrected 2026-09-10, EVT-M6 remediation — see below):** `EventAssignment` creation (D60/RFC 0011) gates only on `BusinessMembership.status = active`, never on `subscriptionTier` — this document's original claim that "a Free-tier Business can never hold an active SELLER Membership" is superseded by `settings.md` §8 item 13's resolution (an already-active SELLER Membership survives a Paid→Free downgrade entirely unaffected, grandfathered). A genuinely-never-Paid Free-tier Business simply has zero active SELLER Memberships to show — it could never have issued an Invitation in the first place — and lands on this screen's own zero-state (§3.26); no separate tier-based visibility rule is needed. The screen reads the identical roster `settings.md` §2.7 already maintains (phone-number identification, the same named `User` display-name gap) rather than inventing a second staff list, and adapts (not copies verbatim) `settings.md` §3.11's own zero-state framing. Designs RFC 0011's own Open Item 3 (the scheduling-conflict warning's UX, explicitly routed here) as a non-blocking, computed-live-on-every-render, per-row line, shown before she ever taps — never a separate confirmation step, never rejecting the write, per RFC 0011's own settled warn-with-override decision. RFC 0011's Open Item 4 (gating assignment to `status = active` Memberships) is resolved directly (D60), not merely assumed (§8). **`ux-critic` found 3 Major + 1 Minor against this section (2026-09-09) — all fixed 2026-09-10:** EVT-M4 (the conflict warning moved from a post-tap-only signal to a pre-tap, on-the-row signal, matching `home.md` §3.6a's own Limited Ready precedent), EVT-M5 (the zero-state now distinguishes never-invited from invitation-pending), EVT-M6 (the Free-tier structural-absence claim, superseded by `settings.md` §8 item 13's resolution, corrected here and at §3.11/§3.14/§3.15/§10), EVT-MIN1 (a light row-settle mitigation added). Re-review pending. **[see events.changelog.md#status-2026-09-09-rfc0011-event-assignment]**
+
 **Amended 2026-08-04 (icon/comprehension audit):** §3.4/§3.5's Events list
 cards now show Event type alongside `Venue.displayName` ("Plaza Norte ·
 Bazar"), matching the subordinate role Type already has on Detail screens.
@@ -556,6 +558,7 @@ real current date, same as any other date field in this doc.)
 │                                │
 │      [ Llevar mercancía ]        │  secondary, optional
 │      [ Ajustar precios ]         │  secondary, optional
+│      [ Asignar personal ]        │  secondary, optional
 │      [ Cancelar evento ]         │
 ├───────────────────────────────┤
 │ Hoy  Inventario [Eventos] Resultados │
@@ -565,6 +568,7 @@ real current date, same as any other date field in this doc.)
   No edit affordance designed — see §11. No Sessions exist yet (the Event
   hasn't started), so there's nothing else to show.
 - **"Llevar mercancía" — new secondary action (`product-decisions.md` Q24/Q25), opens §3.21.** Optional and non-gating: an Event with zero allocations remains exactly as valid and sellable as one with several — Selling's FIFO/manual resolution against the general pool is entirely unaffected by whether allocation was ever used for this Event (allocation is a planning aid, never a precondition for selling). OWNER-only, per `product-decisions.md` Q24/Q25's settled permission table.
+- **"Asignar personal" — new secondary action (`product/99-rfc/0011-event-assignment.md`), opens §3.26 "Personal para este evento."** Optional and non-gating: an Event with zero assignments is exactly as valid and sellable as one with several — an OWNER's own Session-open resolution never consults `EventAssignment` at all (RFC 0011's own Open Item 2), and a SELLER with zero assignments simply falls through to Quick Session, unaffected (`home.md` §2 step 2, RFC 0011 Open Item 1). OWNER-only, per `product-decisions.md` Q24/Q25's settled permission table — the same gate already governing "Llevar mercancía"/"Ajustar precios" on this screen and "Tu equipo" (`settings.md` §2.7). **Present unconditionally regardless of `subscriptionTier` (corrected 2026-09-10, EVT-M6 remediation).** `EventAssignment` creation (D60/RFC 0011) gates only on `BusinessMembership.status = active`, never on tier — a grandfathered Free-tier Business with an already-active SELLER Membership (`settings.md` §8 item 13: an active Membership survives a Paid→Free downgrade unaffected) retains real, ongoing ability to assign it to new Events. A genuinely-never-Paid Free-tier Business simply has zero active SELLER Memberships to assign and lands on §3.26's own zero-state — no tier check gates whether the row itself renders.
 - **"Ajustar precios" — new secondary action, applies `decision-log.md`
   D33.** Opens §3.19's per-Product Price Override list for this Event.
   Optional and non-gating: an Event with zero overrides is exactly as
@@ -675,11 +679,13 @@ real current date, same as any other date field in this doc.)
 │                                │
 │      [   Continuar Día 2     ]   │
 │      [ Ver mercancía de este evento ] │  secondary
+│      [ Ver personal de este evento ]  │  secondary
 ├───────────────────────────────┤
 │ Hoy  Inventario [Eventos] Resultados │
 └───────────────────────────────┘
 ```
 - **"Ver mercancía de este evento" — new secondary action (`product-decisions.md` Q24/Q25), opens the identical §3.21 "Llevar mercancía" reaches from §3.11 (shared state, per `product/02-ux/CLAUDE.md` §4).** Present throughout the Event's `active` life, unlike "Ajustar precios" (absent from every active-state screen per this section's own annotation below) — see §3.21's own annotation for why this divergence is deliberate. OWNER-only.
+- **"Ver personal de este evento" — new secondary action (`product/99-rfc/0011-event-assignment.md`), opens the identical §3.26 "Asignar personal" reaches from §3.11 (shared state, per `product/02-ux/CLAUDE.md` §4).** Present throughout the Event's `active` life, the same lifecycle shape as "Ver mercancía de este evento" (a roster she may still want to adjust mid-Event — a SELLER who can't make Día 2, a helper joining partway through) — unlike "Ajustar precios," which is `scheduled`-only. OWNER-only. **Present unconditionally regardless of `subscriptionTier`, same reasoning as §3.11's own annotation (corrected 2026-09-10, EVT-M6 remediation)** — never gated on tier, only on OWNER role; a genuinely-never-Paid Free-tier Business lands on §3.26's own zero-state instead of the row being hidden.
 - **Headline is `Venue.displayName` ("Plaza Norte")**, same slot the former
   Nombre ("Bazar Plaza Norte") occupied; Tipo stays its own separate line
   ("Bazar · 12-14 de julio"), unaffected by the Venue change. No separate
@@ -760,11 +766,13 @@ under this `eventId` (new — closes `architect-questions.md` Q19,
 │                                │
 │  [ Vendiendo ahora · Día 2 ▸ ]   │  tappable → Hoy, resumes selling exactly
 │  [ Ver mercancía de este evento ] │  secondary — donde she left it
+│  [ Ver personal de este evento ]  │  secondary
 ├───────────────────────────────┤
 │ Hoy  Inventario [Eventos] Resultados │
 └───────────────────────────────┘
 ```
 - **"Ver mercancía de este evento" — same new secondary action as §3.14 (`product-decisions.md` Q24/Q25), opening the identical shared §3.21.** OWNER-only.
+- **"Ver personal de este evento" — same new secondary action as §3.14 (`product/99-rfc/0011-event-assignment.md`), opening the identical shared §3.26.** OWNER-only. **Present unconditionally regardless of `subscriptionTier`, same reasoning as §3.11/§3.14's own annotations (corrected 2026-09-10, EVT-M6 remediation).**
 - Reads the same underlying priority fact Home's §2 checks first ("is there a
   Session with status = active"), scoped here to this specific Event's
   `eventId` — Home's own check doesn't need that filter since it just needs
@@ -887,10 +895,12 @@ under this `eventId` (new — closes `architect-questions.md` Q19,
 - **Corrected 2026-09-09 trigger condition (`product/99-rfc/0010-event-scoped-inventory-allocation-commitment-lifecycle-correction.md` §8/§11, Product-Owner-confirmed) — replaces this document's prior text.** This section renders whenever a closed Event has 1+ `EventAllocation` still `status = open` with **1+ unit still `reserved` in `allocatedUnitIds`, regardless of whether that unit's originating movement carries `unitSource = scan` (NFC) or `fifo_assignment` (manual)** — one unconditional trigger, not a per-mode rule — and stays until every row is resolved, never a dismiss-and-forget banner. The prior text read "`quantityRemaining > 0` for manual, or ≥1 `available`-status unit still in `allocatedUnitIds` for NFC" — both a stale schema reference (`quantityRemaining` is retired as a stored field under RFC 0010 §3, now a pure read-time derivation) and a pre-existing wording error RFC 0010's own Open Items flagged: an allocated NFC unit sits in `reserved`, never `available`, for the duration of its allocation — "available" there was always a documentation mistake, never a real second trigger condition. This is still the Product Owner's own explicit "must never happen silently" requirement made real — now correctly stated, uniformly, for both modes.
 - **"Expected quantity" for a manual/untagged sub-pool is a live derivation, computed fresh on every render of this screen — never a stored or cached number.** It is the count of this `EventAllocation`'s `allocatedUnitIds` entries whose unit is currently `reserved` and whose originating movement carries `unitSource = fifo_assignment` — the identical candidate-selection query `releaseAllocation()` already performs to find its own release pool (RFC 0010 §8/§11), reused here, not a new query. Same "no independently-writable, driftable number" discipline `quantityRemaining`'s own retirement already established for the aggregate (RFC 0010 §3).
 - **Two distinct action shapes per unresolved Product row now — NFC rows and manual rows differ because what the system can already verify differs (RFC 0010 §7's logical/physical-identity invariant), not because one mode is treated as less trustworthy.** NFC-tagged units were unit-identified at allocation time (a real scan), so the reconciliation tap is a bookkeeping confirmation of an already-fully-known fact — unchanged, no evidence to collect. Manual/untagged units were never individually identified, only counted — so reconciliation *is* the first and only moment the system can learn how many actually came back, and the interaction has to collect that evidence, at the coarsest grain that's honest (a quantity, never a fabricated per-unit identity).
-- **The manual-mode happy path: one tap on "Sí, regresaron las N" (or "Sí, regresó" at N=1) confirms the full live-expected quantity, with nothing to type or verify.** This is `releaseAllocation(eventAllocationId, quantity=N)` with `N` supplied automatically as the system's own already-known ceiling — she is never asked to state back a number the system already computed (`global-principles.md`'s "never ask twice"). Writes `type = return_to_general`, `quantityExpected = N`, `quantityDelta = -N`; ambient "[Producto] regresada a inventario general ✓" (fades, reuses the exact copy NFC's own full-return action already uses — this is the same underlying idea Ana already knows, just reaching a different pool of stock); the manual sub-block disappears from this row immediately (or, on a mixed row, only the manual sub-block — the NFC sub-block, if any, is independently gated and persists on its own).
+- **The manual-mode happy path: one tap on "Sí, regresaron las N" (or "Sí, regresó" at N=1) confirms the full live-expected quantity, with nothing to type or verify.** This is `releaseAllocation(eventAllocationId, quantity=N)` with `N` supplied automatically as the system's own already-known ceiling — she is never asked to state back a number the system already computed (`global-principles.md`'s "never ask twice"). Writes `type = return_to_general`, `quantityExpected = N`, `quantityDelta = -N`; ambient "Se regresó [Producto] a inventario general ✓" (fades, reuses the exact copy NFC's own full-return action already uses — this is the same underlying idea Ana already knows, just reaching a different pool of stock); the manual sub-block disappears from this row immediately (or, on a mixed row, only the manual sub-block — the NFC sub-block, if any, is independently gated and persists on its own).
 - **"Ajustar cantidad" is the secondary, deliberately lower-prominence path for the N > 1 case — a single-purpose reveal, not a rare/irreversible action requiring a confirmation sheet of its own.** Tapping it reveals, in place, the exact stepper shape §3.21's manual allocation stepper already established (`[−]`/`[+]`/typed entry via teclado numérico), floor 0, ceiling N, **starting at N** — she decrements from the full expected amount, which keeps the common "off by one or two" case (most of what she brought came back) a one- or two-tap edit, not a re-typed-from-zero entry. `[ Cancelar ]` returns to the default one-tap view with nothing written (matches §3.24's own `Cancelar` semantics — no write has happened yet, nothing to discard). **Tapping "Mover a otro evento" instead of Cancelar or Confirmar has the identical effect on the staged stepper value — it, too, is silently discarded before the screen proceeds into §3.24**, the same "leaving before the explicit commit action discards only the unsaved staged value" discipline §3.21's own precedent already states for its manual edits ("leaving this screen before tapping Guardar cambios discards only unsaved manual edits") — never a second, differently-worded rule invented for this row. `[ Confirmar ]` calls `releaseAllocation(eventAllocationId, quantity=<stepper value>)`, writing `quantityExpected = N`, `quantityDelta = -<value>`, and an ambient confirmation — **"Confirmaste que <value> de N [Producto] regresaron ✓" when `<value> = N` (the stepper reaching the full expected amount is still a full return, and keeps the same checkmark the one-tap happy path uses), or "Confirmaste que <value> de N [Producto] regresaron" — no checkmark — whenever `<value> < N`, including a confirmed 0** (see the new bullet below for why this divergence is deliberate); either way, used uniformly with no special-cased zero copy beyond the checkmark rule itself, keeping this consistent and avoiding a singular/plural rewrite of the merchant's own Product name.
 - **At N = 1, the secondary path collapses to a single direct tap — "No regresó" — with no intermediate stepper at all**, a deliberate simplification: there is no intermediate value to select when the only alternative to "1 came back" is "0 came back," so showing a stepper here would be UI for a choice that doesn't exist. Same discipline `inventory.md`'s Cantidad floor-of-1 reasoning already applies elsewhere in this document family (don't design a control for a state that isn't real). Tapping it writes `quantityExpected = 1`, `quantityDelta = 0`, ambient **"Confirmaste que 0 de 1 [Producto] regresaron" — no checkmark, per the same rule stated below.**
-- **No confirmed-shortfall or confirmed-zero reconciliation message carries the ambient checkmark the full-return confirmations use — a deliberate divergence from this section's own default treatment, not a silent gap (`ux-critic` finding).** This document already draws exactly this line for a comparably neutral/negative administrative outcome: §3.13's "Evento cancelado" deliberately renders with no checkmark, reserving ✓ for outcomes that are genuinely, unambiguously good news. Confirming that less than everything came back — including a confirmed zero — is a true and useful record, and stays exactly as low-friction and ungated as every other confirmation in this section (see below); it just isn't a moment to visually celebrate, since the merchandise, in fact, didn't come back. This applies identically to "Confirmaste que 0 de 1... regresaron" (the N = 1 path, above) and to the stepper path's own "Confirmaste que <value> de N... regresaron" whenever `<value> < N` — the same class of "not everything came back" outcome, treated the same way. Only a full-return confirmation — the one-tap default's "[Producto] regresada a inventario general ✓," or the stepper path reaching `<value> = N` — keeps the checkmark.
+- **No confirmed-shortfall or confirmed-zero reconciliation message carries the ambient checkmark the full-return confirmations use — a deliberate divergence from this section's own default treatment, not a silent gap (`ux-critic` finding).** This document already draws exactly this line for a comparably neutral/negative administrative outcome: §3.13's "Evento cancelado" deliberately renders with no checkmark, reserving ✓ for outcomes that are genuinely, unambiguously good news. Confirming that less than everything came back — including a confirmed zero — is a true and useful record, and stays exactly as low-friction and ungated as every other confirmation in this section (see below); it just isn't a moment to visually celebrate, since the merchandise, in fact, didn't come back. This applies identically to "Confirmaste que 0 de 1... regresaron" (the N = 1 path, above) and to the stepper path's own "Confirmaste que <value> de N... regresaron" whenever `<value> < N` — the same class of "not everything came back" outcome, treated the same way. Only a full-return confirmation — the one-tap default's "Se regresó [Producto] a inventario general ✓," or the stepper path reaching `<value> = N` — keeps the checkmark.
+
+- **Corrected 2026-09-10 (`merchant-user-tester` finding, D59 reconciliation-flow test):** the prior template, "[Producto] regresada a inventario general ✓," used a gender/number-agreeing participle (`regresada`) against a Product name whose own grammatical gender/number isn't guaranteed — broke on real catalog entries like "Calcetines" (masc. pl.). Corrected to an invariant finite-verb construction, "Se regresó [Producto] a inventario general ✓," which sidesteps gender entirely (verbs don't inflect for gender) and treats number as deliberately fixed rather than agreed — the same invariant-template principle this section's own stepper confirmation already established one bullet above ("avoiding a singular/plural rewrite of the merchant's own Product name"). Originates from RFC 0009's NFC-only copy, reused unmodified at D59 for manual mode — fixed at both call sites, not just the one D59 touched. A related, still-open latent bug of the identical shape ("[Producto] ya no está disponible," `home.md`'s lost-race ambient message — `disponible` doesn't inflect for gender but does for number) is named, not fixed, here — see `home.md`'s own open items.
 - **Neither the one-tap default, "Ajustar cantidad"'s stepper-Confirmar, nor "No regresó" is gated behind a confirmation dialog.** Same reasoning §3.16 already established for "Regresar a inventario general": returning (or confirming a lower/zero amount of) stock is safe and reversible in effect — she can always re-allocate it again later — so this stays in the same low-risk, routine-action class this document already draws a hard line around (contrast Cancelar Evento, §3.12, which is the rare/irreversible class this doc *does* gate behind a confirm step). Confirming a lower-than-expected or zero number doesn't change that classification — it's still a bookkeeping record of what's true, not a destructive commitment.
 - **A row that reflects an earlier partial or zero confirm never reads as untouched or as a fresh request for the original full amount.** Two guarantees, not one: (1) the displayed quantity is always the live-recomputed remaining amount — it already shrinks on its own, it is never redisplayed as the original N; (2) whenever this `EventAllocation`'s ledger already carries 1+ prior `return_to_general`-typed, `fifo_assignment`-sourced movement (i.e., she's visited and acted on this row before, whether that confirm released some units or zero), a passive line — "Ya revisaste esto — todavía falta N." — renders above the action buttons, so she never mistakes a shrunk-but-still-outstanding row for a screen that silently forgot her earlier action. This is a plain existence check against the already-written ledger (RFC 0010 §6/§8's `AllocationMovement` rows), not a new computation invented for this copy, and it deliberately states no precise historical split (never "2 of 3 already confirmed") — only that she's reviewed this row before and what remains now, keeping the check cheap and honest without over-claiming precision the ledger wasn't asked to expose here.
 - **"Mover a otro evento" is now also offered on a manual/untagged sub-block, reusing §3.24's existing closed-source variant unchanged — same screen, same copy ("Vas a mover N [Producto] que no se vendieron en este evento"), same no-stepper/no-scan/full-amount-only shape already established for NFC.** `N` here is simply this sub-block's own current live-expected quantity. See §10 for the reasoning this is offered at all (RFC 0010 Open Item 4, resolved here). **On a single-pool row (the common case, per the bullet below), the button stays plain "Mover a otro evento" exactly as before — the mode-specific qualifier described next exists only where two pools genuinely coexist on the same row.**
@@ -1344,6 +1354,116 @@ Mercancía movida ✓   (ambient, fades, returns to the screen she came from)
 - **This screen's own heading/copy stays pool-agnostic by design, even on a mixed row (§3.16) where both an NFC and a manual sub-block exist.** Disambiguation between the two pools happens one tap earlier, at the row itself — each sub-block's own "Mover a otro evento" button carries its own mode qualifier ("(de las con tag)" / "(de las sin tag)", §3.16's mixed-row amendment) precisely so a mis-tap can't happen in the first place, rather than asking her to catch it here after the fact. `N` on this screen is already scoped correctly to whichever single pool's button she tapped — there's never a genuine ambiguity left to resolve by the time she reaches this screen.
 - **OWNER-only**, per `product-decisions.md` Q24/Q25's settled permission table.
 
+### 3.26 Personal para este evento — lista de personal (new — `product/99-rfc/0011-event-assignment.md`, shared: "Asignar personal" / "Ver personal de este evento")
+
+**Resolving (near-instant / slow) — same convention as every other read in this document (§3.1/§3.2):**
+```
+┌───────────────────────────────┐        ┌───────────────────────────────┐
+│ ← Plaza Norte                    │        │ ← Plaza Norte                    │
+│  Personal para este evento         │        │  Personal para este evento         │
+│  ▢▢▢▢▢▢▢▢▢▢▢▢                      │        │  Un momento…                     │
+└───────────────────────────────┘        └───────────────────────────────┘
+   near-instant: silent skeleton              slow (>~1.5s): one plain line
+```
+
+**Default state (1+ active SELLER Membership exists, some assigned, some not, no scheduling conflict on any row):**
+```
+┌───────────────────────────────┐
+│ ← Plaza Norte                    │
+│  Personal para este evento         │
+│  Elige quién más va a vender en     │
+│  este evento — tú siempre puedes    │
+│  vender aquí, sin asignarte.       │
+│  Cualquiera puede estar asignada    │
+│  a más de un evento a la vez.       │
+│                                │
+│  Asignadas                      │
+│  ┌───────────────────────────┐ │
+│  │ 55 1234 5678                  │ │
+│  │ Vendiendo en este evento        │ │
+│  │ [ Quitar ]                    │ │
+│  └───────────────────────────┘ │
+│                                │
+│  Sin asignar                    │
+│  ┌───────────────────────────┐ │
+│  │ 55 8765 4321                  │ │
+│  │ [ Asignar ]                   │ │
+│  └───────────────────────────┘ │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+**Row with a scheduling conflict — computed live, on every render, for every row, whether it's already Asignada or still Sin asignar (corrected 2026-09-10, EVT-M4 remediation — the direct UI surface of RFC 0011's warn-with-override rule, moved to this pre-tap placement from the original post-tap-only design):**
+```
+│  Asignadas                      │
+│  ┌───────────────────────────┐ │
+│  │ 55 1234 5678                  │ │
+│  │ Vendiendo en este evento        │ │
+│  │ También va a vender en          │ │
+│  │ Plaza Metepec (5-7 jul), que     │ │
+│  │ se cruza con estas fechas.       │ │
+│  │ [ Quitar ]                    │ │
+│  └───────────────────────────┘ │
+│                                │
+│  Sin asignar                    │
+│  ┌───────────────────────────┐ │
+│  │ 55 9999 0000                  │ │
+│  │ También va a vender en          │ │
+│  │ Plaza Toluca (8-9 jul), que      │ │
+│  │ se cruza con estas fechas.       │ │
+│  │ [ Asignar ]                   │ │
+│  └───────────────────────────┘ │
+```
+(Two or more conflicting Events, either group: "También va a vender en Plaza Metepec (5-7 jul) y Plaza Toluca (8-9 jul), que se cruzan con estas fechas." — correct plural verb, both named.)
+
+**Zero active SELLER Memberships, and no pending Invitation either — genuinely never invited anyone (adapts, not copies verbatim, `settings.md` §3.11's own empty-state framing):**
+```
+┌───────────────────────────────┐
+│ ← Plaza Norte                    │
+│  Personal para este evento         │
+│  Todavía no tienes a nadie en       │
+│  tu equipo. Invita a alguien de     │
+│  tu confianza desde                │
+│  Configuración, luego regresa       │
+│  aquí para asignarla a este         │
+│  evento.                          │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+**Zero active SELLER Memberships, 1+ pending Invitation — invited, still waiting on acceptance (new, corrected 2026-09-10, EVT-M5 remediation):**
+```
+┌───────────────────────────────┐
+│ ← Plaza Norte                    │
+│  Personal para este evento         │
+│  Ya invitaste a alguien, pero      │
+│  todavía no acepta la invitación.  │
+│  En cuanto acepte, va a aparecer    │
+│  aquí para que la asignes a este    │
+│  evento.                          │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+- **New screen — the OWNER-side half of `product/99-rfc/0011-event-assignment.md`.** The SELLER-side consumption (a SELLER's Session-open Event picker narrowing to only the Events she's assigned to) was already designed separately, `home.md` §2/§3.6b — this screen is where the `EventAssignment` rows that filter feed actually get created and removed.
+- **One row per active `BusinessMembership` with `role = SELLER`** — the exact same roster `settings.md` §2.7/§3.11 ("Tu equipo") already maintains, read here rather than duplicated. **Only `active`-status Memberships are ever shown or selectable** — a pending Invitation has no `BusinessMembership` yet to assign, and a revoked one has already lost standing to sell at all; neither belongs on a screen about staffing a specific Event. **This is a deliberate narrowing from Tu equipo's own fuller three-state roster (active/pending/revoked), not an oversight** — Tu equipo's job is tracking the whole invite/membership lifecycle; this screen's job is narrower (who's working this one Event), and a row with no possible action attached would be pure clutter here. Gated on `BusinessMembership.status = active`, per `decision-log.md` D60/RFC 0011 Open Item 4 — resolved directly from the same Membership authorization-gate precedent already governing every other Membership-gated action in this Foundation (D55/D56).
+- **No display-name field exists on `User` yet** (`ubiquitous-language.md`, the same named gap `settings.md` §2.7 already flags) — rows identify by phone number, not name, the identical real usability cost Tu equipo already carries, not solved a second time here.
+- **Row order: "Asignadas" group first, then "Sin asignar," each ordered by `BusinessMembership.createdAt`** — deterministic, never Ana-sorted, matching Tu equipo's own active-first grouping discipline (`settings.md` §3.11) and this document's own "every repeated decision should become automation" posture (§9).
+- **Section headers render only when they have ≥1 row** — the identical rule this document's own Events list already applies to Activo/Próximos/Pasados (§3.4) — a Business with everyone already assigned never shows an empty "Sin asignar" label, and vice versa.
+- **The OWNER herself never appears on this list, and this screen states why directly rather than leaving her to wonder** — RFC 0011's own §0 confirms an OWNER's own Event-picking has never required assignment and this RFC introduces no such gate for her; the intro line's "tú siempre puedes vender aquí, sin asignarte" makes that explicit rather than implicit, a small, deliberate cost against "the fastest interaction is the one that never happens" justified by the real, first-time confusion a silent omission would otherwise cause (her own name genuinely missing from a new "who works here" list, with nothing on screen explaining why).
+- **"Asignar" and "Quitar" are both single, un-confirmed taps — no confirmation dialog, for either direction.** A deliberate departure from `settings.md` §3.13's "Quitar a alguien" (which *is* gated behind a confirmation) — different stakes, not an inconsistency: Tu equipo's "Quitar" permanently revokes a person's ability to sell anywhere in the Business until re-invited; this screen's "Quitar" only removes her from one Event's roster, trivially reversible in one more tap ("Asignar" again), the same low-risk/easily-undone class this document already reserves single-tap treatment for (e.g. "Regresar a inventario general," §3.16) — reserving a confirmation dialog for genuinely rare, hard-to-notice, effectively-irreversible actions (§3.12's "Cancelar evento" remains the actual bar for that).
+- **Assigning and un-assigning both save immediately — no "Guardar cambios" batch step exists on this screen**, unlike §3.21's manual-quantity stepper: a toggle has nothing to stage or reconsider mid-edit the way a typed quantity does, so committing it the instant she taps is both the fastest and the most honest representation of what she just decided. **This directly enables assigning multiple people to one Event in a single visit** — each row's tap is independent, so she taps as many rows as she wants, in any order, each one landing immediately; there is no artificial one-at-a-time flow to work around. **The mirror case — one person assigned to multiple Events — needs no special mechanism either**: this screen is scoped per-Event, so assigning the same person to a second Event is simply a second, independent visit to that other Event's own instance of this same screen.
+- **Save/error convention reuses this document's own established near-instant/slow/error shape (§3.9), applied per-row rather than per-screen** — the tapped row dims briefly (near-instant) or shows "Guardando…" in place of its action button (slow); a failed save shows inline, beneath that row, "No pudimos asignar a esta persona. Intenta de nuevo." (or "No pudimos quitarla de este evento. Intenta de nuevo." for the reverse direction) with `[ Reintentar ]`, and never drops her tap or silently reverts the row. Every assign/unassign write carries a stable idempotency key (`architecture-principles.md` #7) — a retried "Reintentar" never double-creates or double-removes the same `EventAssignment` row, the identical guarantee already required of every other write in this document. **On success, the row also briefly stays visually distinguished for a moment as it settles into its new group (EVT-MIN1, `ux-critic` finding) — a light, optional mitigation for the narrow risk that a mis-tap on the wrong "Quitar"/"Asignar" in a stacked, phone-number-only list (§11) could otherwise go unnoticed.** Fully recoverable regardless (one more tap); this just makes the change easier to notice in the moment, at effectively no cost.
+- **The scheduling-conflict warning (RFC 0011's own Open Item 3, designed here) is computed live, on every render of this screen, for every row — Asignada or Sin asignar alike — and shown before she ever taps "Asignar," not only after (corrected 2026-09-10, EVT-M4 remediation).** The check is a pure read against this Membership's other existing `EventAssignment` rows and their Events' date ranges — a fact entirely independent of whether she's assigned this Membership to *this* Event yet, so nothing about it requires waiting for a tap to compute or reveal. This is the same ambient, pre-commit placement `home.md` §3.6a already established for its own directly comparable Limited Ready recommendation — shown *before* its own commit-equivalent tap specifically so the merchant can make an informed choice before committing, a prior defect there (HOME2-MAJ2) having been fixed specifically to keep that signal pre-tap, not post-tap. RFC 0011 exists to help the OWNER make a good staffing judgment call, and a post-tap-only warning undermined exactly that: she can now scan every "Sin asignar" candidate and see at a glance who's already committed elsewhere, before deciding who to assign — not reconstruct that picture through an assign/read/unassign cycle per candidate. Tapping "Asignar" still saves unconditionally, exactly as before — the write itself never blocks, and the conflict line doesn't change or gate that tap; it's simply already visible on the row before she reaches it, and stays visible, unchanged, once the row moves groups. **This is still the deliberate reading of RFC 0011's own "the assigning OWNER may override" language**: there is nothing to explicitly override, because nothing was ever blocked — the one-tap "Quitar" already sitting on an Asignada row remains the entire override mechanism, should she reconsider after assigning anyway.
+- **Conflict copy names every conflicting Event by `Venue.displayName` and date range, joined with "y" when more than one, with the correct singular/plural verb ("se cruza" for one, "se cruzan" for two or more)** — the identical naming-the-specific-conflict discipline this document's own retired D17 overlap-warning already established (`events.changelog.md#status-2026-09-06-d53-overlap-validation-retired`), reused here rather than a generic "hay un conflicto de fechas" that would force her to go hunting for which one. Recomputed live on every render — never a stored flag that could drift from the actual current set of that Membership's other assignments.
+- **No ambient "✓" toast on either action** — a deliberate divergence from §3.16/§3.23's own ambient-confirmation convention, reasoned explicitly: this screen's closer structural precedent is Tu equipo (`settings.md` §3.11-§3.13), a standing, always-re-checkable roster whose own row state *is* the confirmation (compare "Vendiendo contigo"/"Ya no vende contigo," neither paired with a fading toast), not §3.16/§3.23's ephemeral action-confirmation flow. The row updating in place, from "Sin asignar" to "Vendiendo en este evento" (or back), is itself the acknowledgment.
+- **Two distinct zero-states now exist, both without settings.md's own tappable "[ Invitar a alguien ]" CTA** — that button would require a cross-tab deep-link into Configuración this document has never designed anywhere else, the same restraint §3.19/§3.21 already apply to their own zero-Catalog-Product states ("no direct link into Inventario designed here"); she's still one nav-bar tap from Configuración herself, either way. **Never-invited (zero active Memberships, zero pending Invitations)** adapts, not copies verbatim, `settings.md` §3.11's own empty framing ("todavía no tienes a nadie... invita a alguien de tu confianza"). **Invitation-pending (zero active Memberships, 1+ pending Invitation) is new (corrected 2026-09-10, EVT-M5 remediation, `ux-critic` finding)** — this document's own zero-state previously queried active Memberships only, so a merchant who followed its own "invita a alguien... luego regresa aquí" instruction landed back on the identical "todavía no tienes a nadie" copy, contradicting what she'd just done. The corrected query also checks `Invitation.status = pending` (the same fact `settings.md` §3.11's own three-row-state roster already tracks, read here only far enough to choose the right copy, not to render a second roster) and shows honest, distinct copy naming that an invitation is outstanding rather than repeating an instruction she's already followed. Neither zero-state ever promotes a pending Invitation to a row on this list — only active Memberships ever get rows, unchanged.
+- **OWNER-only** — the same `product-decisions.md` Q24/Q25 permission table already gating "Tu equipo" (`settings.md` §2.7) and this document's own allocation screens (§3.21-§3.24); RFC 0011 introduces no new permission dimension, only a new capability inside an already-established gate.
+- **Present unconditionally regardless of `subscriptionTier` (corrected 2026-09-10, EVT-M6 remediation — supersedes this document's earlier "structurally absent from Free tier" treatment).** `EventAssignment` creation (D60/RFC 0011) gates only on `BusinessMembership.status = active`, never on tier — `settings.md` §8 item 13 resolved that an already-active SELLER Membership survives a Paid→Free downgrade entirely unaffected, so a grandfathered Free-tier Business retains real ability to view and assign its existing staff. A genuinely-never-Paid Free-tier Business simply has zero active SELLER Memberships to show and lands on this screen's own zero-state above — no tier check is needed, or designed, to produce the correct outcome.
+
 ## 4. Interaction flow (summary)
 
 ```
@@ -1425,11 +1545,35 @@ Event detail — active, no Session today / Session open elsewhere (3.14/3.15):
   tap "Ver mercancía de este evento" → 3.21 (identical shared screen,
     identical branches to the block above)
 
+Event detail — scheduled (3.11):
+  tap "Asignar personal" → 3.26 (Personal para este evento)
+    zero active SELLER Memberships, zero pending Invitations → empty-state
+      variant (3.26, never-invited), no further branch
+    zero active SELLER Memberships, 1+ pending Invitation → empty-state
+      variant (3.26, invitation-pending), no further branch
+    ≥1 active SELLER Membership → per row, scheduling-conflict line (if any)
+      already computed and shown before any tap:
+      tap "Asignar" (Sin asignar row) → saving (per-row, 3.9 shape) → error
+        → Reintentar → success → row moves to "Asignadas," showing
+          "Vendiendo en este evento" — its conflict line, if any, was
+          already visible before the tap and carries over unchanged →
+          stays on 3.26
+      tap "Quitar" (Asignada row) → saving (per-row, 3.9 shape) → error →
+        Reintentar → success → row moves to "Sin asignar," its conflict
+        line (if any) likewise unchanged → stays on 3.26
+    [any point] leave the screen → every already-saved assign/unassign stays
+      exactly as saved — no batch step to discard, unlike 3.21's manual
+      stepper
+
+Event detail — active, no Session today / Session open elsewhere (3.14/3.15):
+  tap "Ver personal de este evento" → 3.26 (identical shared screen,
+    identical branches to the block above)
+
 Event detail — closed/past, unresolved allocation (extends 3.16, per-pool — 2026-09-09 amendment):
   per unresolved Product row, per pool present on that row (NFC sub-block, manual sub-block, or both):
     NFC sub-block (unchanged):
       tap "Regresar a inventario general" → immediate write, no
-        confirmation sheet → ambient "[Producto] regresada a inventario
+        confirmation sheet → ambient "Se regresó [Producto] a inventario
         general ✓" → sub-block removed from this list
       tap "Mover a otro evento" → 3.24, closed-source variant → Elegir
         evento (sub-sheet) → Cancelar → back to 3.16, unchanged →
@@ -1438,8 +1582,8 @@ Event detail — closed/past, unresolved allocation (extends 3.16, per-pool — 
         sub-block removed
     manual sub-block (new):
       tap "Sí, regresaron las N" (N > 1) / "Sí, regresó" (N = 1) →
-        immediate write, no confirmation sheet → ambient "[Producto]
-        regresada a inventario general ✓" → sub-block removed
+        immediate write, no confirmation sheet → ambient "Se regresó
+        [Producto] a inventario general ✓" → sub-block removed
       N = 1 only: tap "No regresó" → immediate write, no confirmation
         sheet → ambient "Confirmaste que 0 de 1 [Producto] regresaron"
         (no checkmark — a confirmed shortfall/zero, §3.16's own stated
@@ -1505,6 +1649,7 @@ Event detail — closed/past, unresolved allocation (extends 3.16, per-pool — 
 23. Guardando cambios de mercancía — saving (near-instant/slow) and error, plus ambient post-save confirmation
 24. Mover a otro evento — destino + cantidad/escaneo, live variant and closed-source (reconciliation) variant, including the Elegir evento sub-sheet, its zero-other-Events empty state, saving/error, and ambient post-save confirmation
 25. Event detail — closed/past, con mercancía sin resolver (reconciliation section, extends §3.16; per-pool — an NFC-tagged sub-block, unchanged two-button mechanism, and/or a manual/untagged sub-block, new one-tap-default + secondary quantity-adjust mechanism, composing on the same Product row where both apply; disappears once every pool on every row is reconciled) **[revised 2026-09-09, `product/99-rfc/0010-...`]**
+26. Personal para este evento — lista de personal (shared: "Asignar personal" / "Ver personal de este evento"), including its two zero-active-SELLER-Membership empty-state variants (never-invited vs. invitation-pending, EVT-M5) and its per-row scheduling-conflict variant, computed live and shown before any tap on every row (EVT-M4) **[new, `product/99-rfc/0011-event-assignment.md`; corrected 2026-09-10]**
 
 ## 6. Minimum step count
 
@@ -1539,6 +1684,14 @@ floor above is about not adding unnecessary steps, the same posture
 | Resolver mercancía sin vender al cerrar un Evento — manual, todo regresó (caso común) | 1 (tap "Sí, regresaron las N") = 1 | The Product Owner's own explicit instruction: confirming the full expected amount returned requires minimal interaction — the system already knows N, she only confirms it. |
 | Resolver mercancía sin vender al cerrar un Evento — manual, regresaron menos de lo esperado | 1 (Ajustar cantidad) + 1+ (ajustar el stepper, 1 toque por unidad de diferencia) + 1 (Confirmar) = 3+ | The genuinely secondary path — never faster than the happy path above, by design, since it's collecting a real fact the system didn't already have (§3.16's own reasoning); still bounded by however many units actually differ, never a full retyped count from zero (stepper starts at N). |
 | Resolver mercancía sin vender al cerrar un Evento — moverla a otro | 1 (Mover a otro evento) + 1 (Elegir evento) + 1 (Mover mercancía) = 3 | Unchanged, now available for either mode. One tap fewer than the live variant — quantity is pre-stated at the full remaining amount, not asked, since reconciliation-time "moving" is framed as fully resolving the row, and no scan step applies (§3.16's reconciliation annotation). |
+
+**New rows (`product/99-rfc/0011-event-assignment.md`):**
+
+| Scenario | Taps / entries | Why it can't be fewer |
+|---|---|---|
+| Asignar a una persona ya invitada a un Evento (sin conflicto de fechas) | 1 (Detalle → Asignar personal / Ver personal de este evento) + 1 (tocar Asignar) = 2 | She only supplies the one real decision (who) — the write and the conflict-check both happen automatically inside that same tap, never a second confirmation step. |
+| Asignar a varias personas al mismo Evento, en una sola visita | 1 (entrar a Personal para este evento) + N (un toque por persona) = 1+N | Each assignment is an independent, deliberate choice about a specific person — no batch/staging step exists to shortcut it, and none should: assigning three people is a different decision made three times, not one decision. |
+| Quitar a alguien de un Evento | 1 (Detalle → Ver personal de este evento) + 1 (tocar Quitar) = 2 | Same low-risk, single-tap posture as this document's other reversible, easily-undone actions (e.g. "Regresar a inventario general," §3.16) — she can always reassign in one more tap if she reconsiders. |
 
 ## 7. Automation opportunities
 
@@ -1597,6 +1750,10 @@ floor above is about not adding unnecessary steps, the same posture
   ("Mover mercancía") regardless of which two `EventAllocation` instances
   are actually touched underneath.
 - **Manual-mode reconciliation's "expected quantity" (§3.16, 2026-09-09 amendment) is computed live on every render, reusing `releaseAllocation()`'s own candidate-selection query — never a figure Ana re-derives or a second number the app maintains separately from real `InventoryUnit` state.**
+- Whether a Membership is already assigned to this Event (§3.26) — a pure read of existing `EventAssignment` rows, never a manual cross-check Ana performs herself.
+- Which Memberships even qualify to appear on §3.26's list — automatic, gated on `BusinessMembership.status = active`, never a picker of which staff to include.
+- The scheduling-conflict warning (§3.26) is computed automatically against this Membership's own other `EventAssignment` rows and their Events' date ranges, on every render, for every row regardless of assignment state (EVT-M4) — never a cross-check Ana has to remember to run herself, and never a stored flag that could go stale.
+- Row grouping (Asignadas / Sin asignar) on §3.26 — a pure, deterministic read of current assignment state, never manually sorted.
 
 ## 8. Open questions
 
@@ -1659,6 +1816,10 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 - **RFC 0010 Open Items 1/2 (`unitSource`, `quantityExpected` schema additions) are not resolved here — they're Architect/Product-Owner schema sign-off items per the RFC's own framing, orthogonal to this UX pass.** This document's screens are designed assuming both land as RFC 0010 specifies; if either is rejected or altered at sign-off, the manual-mode reconciliation mechanism designed here needs re-checking against whatever lands instead.
 - **RFC 0010 Open Item 3 (this document's own §3.16/§3.25 amendment) is now Resolved by this amendment itself.**
 - **New — the combined-move case for a mixed row (moving both an NFC sub-pool and a manual sub-pool of the same Product to the same destination Event in one action) is explicitly not designed** — see §11.
+- **New — RFC 0011 Open Item 4 (Membership-status gating) is resolved directly (D60), not merely assumed.** §3.26 is designed and implemented gating `EventAssignment` creation on `BusinessMembership.status = active` — resolved by `architect` from the existing Membership authorization-gate precedent (D55/D56), not left open.
+- **New — a revoked `BusinessMembership`'s existing `EventAssignment` rows are not addressed by RFC 0011 or this amendment.** Since §3.26 only ever displays `active`-status Memberships, a revoked Membership simply stops appearing on this list — but whether its prior `EventAssignment` rows are cleaned up, or left as harmless orphaned data, is a schema-level housekeeping question RFC 0011 doesn't resolve and this UX pass doesn't need to for correctness (no merchant-facing surface reads a revoked Membership's stale assignments — `home.md` §2 step 0 intercepts a revoked SELLER before her own Session-open resolution ever reaches the assignment check). Flagged for Architect, non-blocking.
+- **Resolved 2026-09-10 (EVT-M4, `ux-critic` finding) — a pre-emptive "already busy elsewhere" indicator on an unassigned row, shown before she taps "Asignar," is now designed.** §3.26's scheduling-conflict line renders on every row, assigned or not, computed live on every render — see §3.26's own annotation. Kept here, marked resolved, so the record of this being considered and initially deferred stays visible.
+- **New — SELLER-role experience of §3.26 is not designed in this pass**, matching the identical scoping already stated for §3.21-§3.25 above; a SELLER's own view of which Events she's assigned to is `home.md` §3.6b, not a screen in this document.
 
 ## 9. Principle justification
 
@@ -1782,6 +1943,22 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 - *"Business language before technical language"* — copy uses "sin vender," "regresaron," "ajustar cantidad" — never "EventAllocation," "AllocationMovement," "unitSource," "fifo_assignment," or "releaseAllocation," anywhere on screen.
 - *"The best interface stays out of the merchant's way"* — a row carrying an earlier partial/zero confirm never re-displays the original full amount or omits acknowledgment of her prior action (§3.16's "Ya revisaste esto" framing), so she's never left guessing whether the screen forgot what she already did.
 - *architecture-principles.md* #7 (idempotent/keyed retries) — every new manual-mode reconciliation write (the one-tap default, N=1's "No regresó," and the stepper's `Confirmar` alike) carries a stable idempotency key, the same discipline already required of every other write in this document (§3.9/§3.23).
+
+**Assignment UX additions (`product/99-rfc/0011-event-assignment.md`):**
+
+**global-principles.md:**
+- *"Never ask twice"* — assign/unassign state is a pure read, never re-asked; the scheduling-conflict warning is computed automatically against already-known `EventAssignment` data, never a cross-check Ana performs herself (§3.26).
+- *"The best interface stays out of the merchant's way"* — the scheduling-conflict warning renders on the row itself before she ever taps "Asignar" (corrected 2026-09-10, EVT-M4 remediation, matching `home.md` §3.6a's own Limited Ready precedent, HOME2-MAJ2) — she never has to run an assign/read/unassign cycle per candidate just to learn who's already committed elsewhere.
+- *"The fastest interaction is the one that never happens"* — assign/unassign is a single, un-confirmed tap for a safe, reversible action; empty "Asignadas"/"Sin asignar" group headers simply don't render (§3.26).
+- *"Business language before technical language"* — copy uses "personal," "vendiendo en este evento," "asignar," "quitar" — never "EventAssignment," "BusinessMembership," "Membership," or "eventId," anywhere on screen.
+- *"Capture business truth once, reuse it forever"* — §3.26 reads the identical roster `settings.md` §2.7 already maintains, rather than collecting a second staff list.
+- *"The best interface stays out of the merchant's way"* — a failed assign/unassign save never drops her tap or silently reverts the row; retry replays the same already-decided action.
+
+**architecture-principles.md:**
+- *#1 (capabilities resolved once, upstream)* — active-Membership gating is a pure read applied once per render, never re-derived ad hoc per row.
+- *#4 (internal-only entities never leak into user-facing language)* — `EventAssignment`/`BusinessMembership` are never named in copy; Ana sees a name (a phone number, today) and an "Asignar"/"Quitar" action.
+- *#6 (one-way dependency direction)* — Eventos reads Identity's `BusinessMembership` data read-only, the identical edge RFC 0011 itself confirms is already established (Selling→Identity, via `Sale.performedByMembershipId`, D58) — no new dependency direction introduced by this screen.
+- *#7 (idempotent/keyed retries)* — every assign/unassign write carries a stable idempotency key; "Reintentar" never double-creates or double-removes the same `EventAssignment` row.
 
 ## 10. Decisions made
 
@@ -1954,6 +2131,13 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 - **"Mover a otro evento" is now offered on manual/untagged reconciliation rows too, reusing §3.24's closed-source variant unchanged, moving the full current live-expected quantity (never a partial split, matching NFC's own existing constraint).** Resolves RFC 0010's Open Item 4. **[2026-09-09 — see events.changelog.md#decisions-rfc0010-manual-reconciliation]**
 - **A row carrying an earlier partial/zero confirm shows a passive "Ya revisaste esto — todavía falta N" line on any later visit, derived from a simple existence check against the already-written movement ledger — never a precise historical breakdown, and never silence.** **[2026-09-09 — see events.changelog.md#decisions-rfc0010-manual-reconciliation]**
 - **§3.16's trigger-condition prose corrected to RFC 0010's stated invariant** ("1+ unit still `reserved` in `allocatedUnitIds`, either mode, for a `status = open` `EventAllocation`"), replacing a stale `quantityRemaining`-based check and fixing a pre-existing "available"-vs-"reserved" wording error RFC 0010's own Open Items flagged. **[2026-09-09 — see events.changelog.md#decisions-rfc0010-manual-reconciliation]**
+- **New secondary action "Asignar personal" / "Ver personal de este evento" added to Event detail, both `scheduled` (§3.11) and `active` (§3.14/§3.15) — mirroring exactly how "Llevar mercancía"/"Ver mercancía de este evento" already compose across those same two states.** Deliberately not surfaced on Nuevo Evento (§3.6/§3.7) — `EventAssignment` requires an already-saved `eventId`, and Nuevo Evento's own minimal-required-fields discipline (Lugar + Tipo) is preserved unchanged. **[see events.changelog.md#decisions-rfc0011-event-assignment]**
+- **"Asignar"/"Quitar" on §3.26 are both single, un-confirmed taps, deliberately lighter than `settings.md` §3.13's "Quitar a alguien" confirmation** — different stakes (removing from one Event's roster vs. permanently revoking Business-wide access), not an inconsistency. **[see events.changelog.md#decisions-rfc0011-event-assignment]**
+- **The scheduling-conflict warning (RFC 0011 Open Item 3) is a computed-live, non-blocking, per-row passive line — shown on the row itself before she ever taps "Asignar," not only after (corrected 2026-09-10, EVT-M4 remediation).** The write itself still never blocks or requires a separate confirmation step; only the *timing* of when she sees the warning changed, from post-tap-only to the same ambient, pre-commit placement `home.md` §3.6a's own Limited Ready recommendation already established (a prior defect there, HOME2-MAJ2, was fixed specifically to keep that signal pre-tap). "Quitar," already present on an Asignada row, remains the entire override mechanism, should she reconsider after assigning anyway. **[see events.changelog.md#decisions-rfc0011-event-assignment]**
+- **§3.26 reads only `active`-status `BusinessMembership` rows with `role = SELLER`** — a deliberate narrowing from `settings.md`'s own fuller three-state Tu equipo roster, since a pending or revoked Membership has no possible action on this screen (the zero-state alone additionally checks for a pending `Invitation`, EVT-M5 remediation, purely to choose the correct empty-state copy — never to render a second row type). **[see events.changelog.md#decisions-rfc0011-event-assignment]**
+- **Both directions of multi-assignment are supported without a new mechanism**: multiple people assigned to one Event in a single visit (each row's tap is independent, no batch step); one person assigned to multiple Events (this screen is scoped per-Event, so a second Event just means a second, independent visit). **[see events.changelog.md#decisions-rfc0011-event-assignment]**
+- **"Asignar personal"/"Ver personal de este evento" are present unconditionally, regardless of `subscriptionTier` (corrected 2026-09-10, EVT-M6 remediation — supersedes this document's earlier "structurally absent from Free tier" treatment).** `EventAssignment` creation (D60/RFC 0011) gates only on `BusinessMembership.status = active`, never on tier — `settings.md` §8 item 13 resolved that an already-active SELLER Membership survives a Paid→Free downgrade entirely unaffected, so a grandfathered Free-tier Business retains real ability to view and assign its existing staff. A genuinely-never-Paid Free-tier Business simply has zero active SELLER Memberships to show and lands on §3.26's own zero-state — no tier check is needed to produce the correct outcome. **[see events.changelog.md#decisions-rfc0011-event-assignment]**
+- **§3.26's zero-state distinguishes "never invited anyone" from "invited someone, still awaiting acceptance" (corrected 2026-09-10, EVT-M5 remediation, `ux-critic` finding).** The second, previously-missing case now checks for a pending `Invitation` and shows honest, distinct copy naming that an invitation is outstanding, rather than repeating "invita a alguien" to a merchant who just did exactly that. **[see events.changelog.md#decisions-rfc0011-event-assignment]**
 
 ## 11. Future considerations
 
@@ -2011,13 +2195,21 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 - Partial reconciliation for a single Product (moving only some of its
   remaining units, leaving the rest allocated) — deferred; §3.25 always
   moves the full remaining amount for a Product at once.
-- Action ordering on the scheduled-Event detail screen once both "Ajustar
-  precios" and "Mercancía para este evento" are both present (§3.11) —
-  deferred to Medium-Fidelity visual treatment, not a low-fidelity
-  behavioral question.
+- Action ordering on the scheduled-Event detail screen now that "Ajustar
+  precios," "Mercancía para este evento," and "Asignar personal" (§3.11)
+  can all be present at once — deferred to Medium-Fidelity visual
+  treatment, not a low-fidelity behavioral question.
 - A visual indicator distinguishing an allocated-vs-not-yet-allocated
   Product row on §3.21's list — deferred to Medium-Fidelity, same posture
   as §3.19's own overridden-vs-default deferral above.
 - Bulk/batch scan shortcuts for allocating many units at once (§3.22) —
   not designed now, matches `inventory.md` §11's identical deferral for
   Catalog-scale scanning.
+- **Resolved 2026-09-10 (EVT-M4 remediation) — no longer a future consideration.** This item previously deferred a pre-emptive "already busy elsewhere" indicator on an unassigned row; §3.26 now designs exactly this, computed live and shown on every row before any tap (see §3.26, §10).
+- **A bulk "assign everyone" or "assign the same people as last time" shortcut on §3.26** — not designed now; every assignment is an individual, deliberate tap. Worth revisiting if a real merchant with a large, stable team finds this repetitive.
+- **Cleanup of orphaned `EventAssignment` rows left behind by a revoked `BusinessMembership`** — flagged in §8, not designed here; no merchant-facing surface currently depends on this being resolved either way.
+- **A display-name field for `User`, which would let §3.26 (and Tu equipo) identify rows by name instead of phone number** — the same real, already-flagged gap `settings.md` §2.7/§11 carries, not solved a second time here.
+
+**Known Limitations, `merchant-user-tester`-found friction on §3.26 (RFC 0011 build validation), deliberately not turned into a fix round — secondary-path polish beyond RFC 0011's actual Approved scope, per this document's own "converge, not oscillate" remediation discipline:**
+- **No confirmation summary after assigning staff to an Event** (e.g., "3 personas asignadas") — after tapping to assign someone on §3.26, the OWNER sees the row move from "Sin asignar" to "Asignadas" but gets no ambient count/summary of the Event's total staffing. A reasonable future affordance, not designed now; revisit if real usage shows OWNERs re-opening §3.26 repeatedly just to recount who's assigned.
+- **No visual signal on the Events list itself (§3.4/§3.5) that a given Event has staff assigned** — an OWNER scanning her Events list has no at-a-glance indicator distinguishing a fully-staffed upcoming Event from one nobody's been assigned to yet; she'd need to open each Event's own §3.26 to check. Not designed now, matches this document's own established "defer visual/list-density additions until real usage shows the need" posture (e.g. §3.19/§3.21's own deferred row indicators, above).

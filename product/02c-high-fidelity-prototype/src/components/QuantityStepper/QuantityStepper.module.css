@@ -51,6 +51,6 @@
 
 .marker {
   font: var(--text-meta);
-  color: var(--color-warning);
+  color: var(--color-warning-aa);
   white-space: nowrap;
 }

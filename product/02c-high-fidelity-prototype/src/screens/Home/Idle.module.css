@@ -166,6 +166,31 @@
   transform: scale(0.98);
 }
 
+/* home.md §3.5's new SELLER card subsection (2026-09-10) — "non-tappable,
+   unlike the OWNER's card... a deliberate role-scoped difference, not an
+   oversight." Same card, no affordance-implying cursor or press feedback. */
+.upcomingCardStatic {
+  cursor: default;
+}
+
+.upcomingCardStatic:active {
+  transform: none;
+}
+
+/* home.md §3.5's SELLER-only "Asignada" ownership label (2026-09-10
+   amendment, closes a ux-critic Major) — reuses SessionHeader.module.css's
+   own `.title` eyebrow treatment verbatim (small uppercase, letter-spaced,
+   muted) rather than inventing new label typography, per DESIGN-SYSTEM.md
+   §7's established eyebrow/body convention. Sits above `.upcomingVenue`
+   inside the same static card, never rendered on the OWNER's own card. */
+.upcomingCardLabel {
+  font: var(--text-body-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #8A7A6A;
+}
+
 .upcomingVenue {
   font: var(--text-body-sm);
   font-weight: 700;

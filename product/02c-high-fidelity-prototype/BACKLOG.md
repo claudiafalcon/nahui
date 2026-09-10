@@ -303,6 +303,16 @@ above). Same **Owner: Stage 7 (Backend Integration)** — `editPrice()` and
 `setProductPhoto()` need a real idempotency key at that point, same as
 `commitLot()`.
 
+**Extended 2026-09-10** (`ux-critic`, D59/RFC 0010 build): the same gap
+covers `commitAllocation()`, `releaseAllocation()`, and
+`saveEventAllocations()` (`src/domain/store.tsx`), RFC 0010's own new writes
+— plain `setState` calls with no key generation, no dedup, no retry-safety
+mechanism, despite RFC 0010 §8/§11 naming a stable idempotency key as a
+write-mechanics requirement. Disclosed with the same one-line comment
+pattern at each of the three call sites. Same **Owner: Stage 7 (Backend
+Integration)** — all three need a real idempotency key at that point, same
+as `commitLot()`/`editPrice()`/`setProductPhoto()`.
+
 ### B. Genuine regressions — fixed (2026-08-14)
 
 Unlike (A), these were built in Medium-Fidelity, are structurally reachable

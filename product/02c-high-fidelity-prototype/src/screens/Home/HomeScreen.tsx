@@ -7,9 +7,12 @@ import {
   actingMembership,
   dayNumberForDate,
   findVenue,
+  qualifyingEventsForMembership,
+  scheduledEventsForBusiness,
   sessionsOpenedBy,
   todaySalesSummary,
   upcomingEventForBusiness,
+  upcomingQualifyingEventForMembership,
 } from '../../domain/selectors';
 import { dateKey, todayKey } from '../../domain/dates';
 import { ColdStart } from './ColdStart';
@@ -221,8 +224,16 @@ export function HomeScreen({
 
   // §2 steps 2a/2b (`decision-log.md` D53, `product-decisions.md` Q24/Q25)
   // — simultaneous multi-Event operation is real now, so "an active Event"
-  // is no longer assumed singular.
-  const qualifyingEvents = activeEventsForBusiness(state);
+  // is no longer assumed singular. **Role-scoped as of
+  // `product/99-rfc/0011-event-assignment.md`/`decision-log.md` D60**
+  // (`qualifyingEventsForMembership`): unchanged Business-wide set for an
+  // OWNER, narrowed to only her own `EventAssignment` rows for a SELLER.
+  // `businessActiveEvents` stays the raw, unfiltered Business-wide set —
+  // needed separately below for the new SELLER passive-awareness line
+  // (§3.3/§3.4/§3.5), which must distinguish "nothing's happening" from
+  // "something's happening, just not for you."
+  const businessActiveEvents = activeEventsForBusiness(state);
+  const qualifyingEvents = qualifyingEventsForMembership(state, membership);
   if (qualifyingEvents.length === 1) {
     return renderEventResume(qualifyingEvents[0].id);
   }
@@ -253,15 +264,58 @@ export function HomeScreen({
     );
   }
 
+  // §3.3/§3.4/§3.5's new SELLER passive-awareness line
+  // (`product/99-rfc/0011-event-assignment.md`/`decision-log.md` D60) —
+  // reached only here, where `qualifyingEvents.length === 0` is already
+  // guaranteed by construction (both branches above returned otherwise).
+  // True only when *this* SELLER's own role-scoped check just failed *and*
+  // the Business has 1+ Event active elsewhere, Business-wide — "not you,"
+  // never "nothing's happening" (that case is `businessActiveEvents.length
+  // === 0`, which correctly renders nothing extra). Always `false` for an
+  // OWNER, whose own qualifying set is the Business-wide set already, so the
+  // two can never diverge for her.
+  const sellerEventsElsewhere = role === 'SELLER' && businessActiveEvents.length > 0;
+
+  // §2 step 3's card-rendering check, role-scoped (2026-09-10 amendment,
+  // `merchant-user-tester`-found defect, `architect`-confirmed as completing
+  // `product/99-rfc/0011-event-assignment.md`'s own SELLER-narrowing pattern
+  // for the `scheduled` case — the identical shape step 2's
+  // `qualifyingEventsForMembership` already established above). OWNER stays
+  // Business-wide, unchanged (`upcomingEventForBusiness`); SELLER narrows to
+  // the soonest `scheduled` Event she holds an `EventAssignment` for
+  // (`upcomingQualifyingEventForMembership`), `undefined` when she holds
+  // none. `businessScheduledEvents` is the raw, unfiltered Business-wide set
+  // — needed separately, exactly like `businessActiveEvents` above, to
+  // distinguish "nothing scheduled anywhere" from "something scheduled, just
+  // not for you" for the new §3.4 passive line below. Resolved here, ahead of
+  // both the cold-start and idle branches, since §3.3 can also carry this
+  // line (see `sellerEventsScheduledElsewhere`, passed to `ColdStart` too).
+  const businessScheduledEvents = scheduledEventsForBusiness(state);
+  const upcomingEvent = role === 'OWNER' ? upcomingEventForBusiness(state) : upcomingQualifyingEventForMembership(state, membership);
+  // §3.4/§3.5's new SELLER "scheduled elsewhere, not assigned" line — the
+  // `scheduled`-case mirror of `sellerEventsElsewhere` above, one Event
+  // lifecycle stage earlier. Mutually exclusive with `upcomingEvent` by
+  // construction: `upcomingEvent` is `undefined` for a SELLER exactly when
+  // her own `upcomingQualifyingEventForMembership` row count is zero, which
+  // is this line's own precondition. Always `false` for an OWNER, whose own
+  // upcoming-Event resolution is the Business-wide set already, so the two
+  // can never diverge for her.
+  const sellerEventsScheduledElsewhere = role === 'SELLER' && !upcomingEvent && businessScheduledEvents.length > 0;
+
   if (!hasAnyAvailableUnit(state)) {
     return (
       <ScreenTransition transitionKey="cold-start">
-        <ColdStart role={role} onRegister={onNavigateToRegister} onOpenAccountSurface={openAccountSurface} headerIcon={headerIcon} />
+        <ColdStart
+          role={role}
+          onRegister={onNavigateToRegister}
+          onOpenAccountSurface={openAccountSurface}
+          headerIcon={headerIcon}
+          sellerEventsElsewhere={sellerEventsElsewhere}
+          sellerEventsScheduledElsewhere={sellerEventsScheduledElsewhere}
+        />
       </ScreenTransition>
     );
   }
-
-  const upcomingEvent = role === 'OWNER' ? upcomingEventForBusiness(state) : undefined;
 
   return (
     <ScreenTransition transitionKey="idle">
@@ -270,11 +324,13 @@ export function HomeScreen({
         headerIcon={headerIcon}
         upcomingEventVenueName={upcomingEvent ? findVenue(state, upcomingEvent.venueId)?.displayName : undefined}
         upcomingEventStartDate={upcomingEvent?.startDate}
-        onTapUpcomingEvent={upcomingEvent ? () => onNavigateToEvent(upcomingEvent.id) : undefined}
+        onTapUpcomingEvent={upcomingEvent && role === 'OWNER' ? () => onNavigateToEvent(upcomingEvent.id) : undefined}
         todaySales={todaySalesSummary(state, null)}
         onStartSession={(overrideToNfc) => startSession(undefined, overrideToNfc)}
         onOpenAccountSurface={openAccountSurface}
         onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
+        sellerEventsElsewhere={sellerEventsElsewhere}
+        sellerEventsScheduledElsewhere={sellerEventsScheduledElsewhere}
       />
     </ScreenTransition>
   );

@@ -42,9 +42,25 @@
  * `revokedAt`, `Sale.performedByMembershipId`, `EventAllocation`
  * (manual-mode fields only this slice), and one disclosed prototype-only
  * addition beyond the settled architecture, `Session.openedByMembershipId`
- * (see that field's own doc comment for the full reasoning). `AllocationMovement`
- * and NFC-mode allocation (`allocatedUnitIds`) are both deliberately not
- * modeled — out of this slice's scope.
+ * (see that field's own doc comment for the full reasoning). NFC-mode
+ * allocation (a live scan writing into `allocatedUnitIds`) remains
+ * deliberately unmodeled this slice — out of scope.
+ *
+ * RFC 0010/`decision-log.md` D59 (commitment-lifecycle correction) —
+ * `EventAllocation.quantityRemaining` is retired as a *stored* field
+ * (closes a confirmed, reproduced defect: the old counter never touched
+ * `InventoryUnit.status`, so a same-day Quick Sale or another Event's own
+ * allocation could silently consume stock a merchant believed reserved).
+ * `EventAllocation` gains `quantityPlanned` (soft intent, no pool effect)
+ * and a real, row-level `allocatedUnitIds` set, populated by
+ * `commitAllocation()`'s FIFO conditional flip — the same class of write
+ * NFC allocation already performs, generalized to manual mode.
+ * `AllocationMovement`, previously deferred as having no UI surface until
+ * reconciliation was built, is now modeled — `events.md` §3.16's
+ * Approved reconciliation UI requires it (`quantityExpected`/`unitSource`
+ * are read directly by that screen). See `store.tsx`'s
+ * `commitAllocation`/`releaseAllocation` for the write paths and
+ * `selectors.ts`'s `quantityRemaining` for the read-time derivation.
  */
 
 export type ID = string;
@@ -278,41 +294,150 @@ export interface PriceOverride {
 }
 
 /**
- * Root, Selling context (RFC 0009/D57, Slice 12) — how much of a Product
- * Ana has decided to bring/reserve for one specific Event, out of the
- * Business-wide shared pool. Not nested inside Event or Product — resolving
- * "what's allocated to this Event" and "what's allocated to this Product,
- * across every Event" are both real, independent query axes
- * (`events.md` §3.21's own "Disponible en general" figure needs the
- * second). Unique on `(eventId, productId)`.
+ * Root, Selling context (RFC 0009/D57, corrected by RFC 0010/D59, Slice 12)
+ * — how much of a Product Ana has decided to bring/reserve for one specific
+ * Event, out of the Business-wide shared pool. Not nested inside Event or
+ * Product — resolving "what's allocated to this Event" and "what's
+ * allocated to this Product, across every Event" are both real, independent
+ * query axes (`events.md` §3.21's own "Disponible en general" figure needs
+ * the second). Unique on `(eventId, productId)`.
  *
- * **Manual mode only, this slice** — `quantityAllocated`/`quantityRemaining`
- * (`events.md` §3.21's manual stepper). `quantityRemaining` is the actual
- * selling gate: atomically decremented at the moment a Sale item is added
- * under this Event for this Product (the Physical-location-exclusivity
- * invariant's mechanism (b), a compare-and-swap on `quantityRemaining > 0`,
- * layered on top of ordinary Business-wide FIFO), floor 0. `quantityAllocated`
- * is the current target total she's decided to bring — edited via the
- * stepper, never reduced by a Sale.
+ * **Manual/FIFO mode only, this slice** — NFC-scan allocation
+ * (`events.md` §3.22) and its own exclusivity mechanism (a) remain out of
+ * this slice's scope (`context/q24-q25-first-slice.md`); every populated
+ * `allocatedUnitIds` entry in this build is `fifo_assignment`-sourced.
  *
- * **`allocatedUnitIds` (NFC mode) and `AllocationMovement` are both
- * deliberately not modeled in this slice** — NFC-scan allocation
- * (`events.md` §3.22) and its own exclusivity mechanism (a) are out of this
- * slice's scope (`context/q24-q25-first-slice.md`), and `AllocationMovement`
- * has no UI surface until reallocation/reconciliation (`events.md`
- * §3.24/§3.25, also deferred) are built — `quantityAllocated`/
- * `quantityRemaining` alone serve everything this slice's screens read or
- * write. No `businessId` field, matching this prototype's existing
- * single-Business scoping convention (`Venue`, `Event`, etc. carry none
- * either).
+ * **`quantityRemaining` is retired as a stored field (RFC 0010/D59)** — the
+ * old counter (`quantityRemaining > 0` compare-and-swap) never touched
+ * `InventoryUnit.status`, so any consumption path that didn't explicitly
+ * check it (Quick Sale's FIFO, another Event's own commitment) could still
+ * consume stock a merchant believed reserved — a confirmed, reproduced
+ * defect. The actual selling gate is now the ordinary `available`-status
+ * filter every consumption path already applies: `commitAllocation()`
+ * (`store.tsx`) performs a real, row-level FIFO conditional flip
+ * (`available AND untagged` → `reserved`) into `allocatedUnitIds`, the same
+ * class of write NFC allocation already performs — so a committed unit
+ * genuinely stops being `available` the moment it's committed.
+ * `quantityRemaining` is now a read-time derivation only (`selectors.ts`):
+ * the count of `allocatedUnitIds` entries whose unit is still `reserved`.
+ *
+ * `quantityAllocated` is a monotonic, hard-committed lifetime total —
+ * incremented only by `commitAllocation()`'s actual flipped count, never
+ * decremented by `releaseAllocation()` (RFC 0010 §11) — not a live count.
+ *
+ * `quantityPlanned` (RFC 0010 §2) is soft intent only — freely settable,
+ * zero effect on the shared pool, never read by any gate. Not yet surfaced
+ * in this slice's UI (Slice B, deferred) — defaults to `0` and stays there.
  */
 export interface EventAllocation {
   id: ID;
   eventId: ID;
   productId: ID;
+  quantityPlanned: number;
   quantityAllocated: number;
-  quantityRemaining: number;
+  /** RFC 0010/D59 — the real, row-level committed set (both NFC-scan and
+   * manual/FIFO commitment populate this array in the settled architecture;
+   * NFC-scan allocation itself is unmodeled this slice, so every entry here
+   * is currently `fifo_assignment`-sourced, written by `commitAllocation()`).
+   * Append-only — `releaseAllocation()` never prunes an id out of this
+   * array, only flips the referenced `InventoryUnit.status` back to
+   * `available` (RFC 0010 §11's own "the array remains the cumulative
+   * record of every unit ever committed" rule) — which is exactly why
+   * `quantityRemaining` must be a live-status derivation, never a bare
+   * array length. */
+  allocatedUnitIds: ID[];
   status: 'open' | 'reconciled';
+  createdAt: number;
+}
+
+/**
+ * Internal-only entity owned by `EventAllocation` (RFC 0009 §2, corrected
+ * RFC 0010/D59) — one row per discrete write action against an
+ * `EventAllocation`'s committed set, written unconditionally by
+ * `commitAllocation()`/`releaseAllocation()` (`store.tsx`). Previously
+ * deferred as having no UI surface — `events.md` §3.16's Approved
+ * reconciliation UI now reads `unitSource`/`quantityExpected` directly (the
+ * "Ya revisaste esto" ledger existence-check, the confirmed/expected split
+ * in the ambient confirmation copy), so this is now modeled.
+ *
+ * `unitSource` records how each unit entered `allocatedUnitIds` via this
+ * movement — every row this build ever writes carries `'fifo_assignment'`,
+ * since NFC-scan allocation (`unitSource = 'scan'`) remains unmodeled.
+ * `quantityExpected` is populated only on a manual-mode reconciliation write
+ * (`type = 'return_to_general'`, called from `events.md` §3.16's closed-Event
+ * reconciliation section) — `null` on every other movement, including an
+ * ordinary mid-Event `adjustment`. `counterpartEventAllocationId` is carried
+ * for Foundation-schema fidelity (reallocation pairs, `events.md` §3.24) —
+ * always `null` in this build, since the reallocation transaction itself
+ * (`reallocate_in`/`reallocate_out`) is out of this slice's scope.
+ */
+export interface AllocationMovement {
+  id: ID;
+  eventAllocationId: ID;
+  type:
+    | 'initial_allocation'
+    | 'replenish'
+    | 'reallocate_in'
+    | 'reallocate_out'
+    | 'return_to_general'
+    | 'adjustment';
+  unitIds: ID[];
+  quantityDelta: number;
+  unitSource: 'scan' | 'fifo_assignment';
+  quantityExpected: number | null;
+  counterpartEventAllocationId: ID | null;
+  createdAt: number;
+}
+
+/**
+ * Root, Selling context (`product/99-rfc/0011-event-assignment.md`,
+ * `decision-log.md` D60) — a standing record that a specific
+ * `BusinessMembership` is expected to sell at a specific `Event`, created by
+ * an OWNER ahead of Session-open (a roster/schedule fact, not a
+ * selling-time mechanism). Not nested inside Event or BusinessMembership —
+ * "which Memberships are assigned to this Event" (an OWNER's own staffing
+ * view, `src/screens/Events/PersonalParaEsteEvento.tsx`) and "which Events
+ * is this Membership assigned to" (the SELLER-side Session-open filter,
+ * `home.md` §2) are both real,
+ * independent query axes (RFC 0011 §1). Unique on `(eventId, membershipId)`
+ * — assigning the same Membership to the same Event twice is a no-op against
+ * the existing row (`createEventAssignment`, `store.tsx`), never a
+ * duplicate.
+ *
+ * **Plain-delete, no `status` field** — a deliberate departure from this
+ * Foundation's usual soft-state discipline (`BusinessMembership.status`,
+ * `Invitation.status`, `EventAllocation.status`), justified because no
+ * downstream write ever references an `EventAssignment` row directly: the
+ * actual selling mechanism (`Session.eventId`, `Sale.performedByMembershipId`)
+ * resolves through entirely separate, already-established linkages this RFC
+ * doesn't touch (RFC 0011 §1).
+ *
+ * **Never gates `Session.eventId`, never a new write path for it, never a
+ * gate on an OWNER's own Event-picking** — filters only the SELLER-side
+ * Session-open picker (`home.md` §2's role-scoped qualifying-Event check,
+ * `selectors.ts`'s `qualifyingEventsForMembership`).
+ *
+ * **Scheduling-conflict handling (RFC 0011 §2): warn, never block.**
+ * Assigning the same Membership to two date-overlapping Events is a
+ * legitimate business-judgment call for the assigning OWNER, not a
+ * system-resolution-ambiguity or physical-exclusivity case (contrast
+ * `decision-log.md` D17, contrast `EventAllocation`'s own invariant, D57) —
+ * `hasSchedulingConflict` (`selectors.ts`) is a pure read-side check that
+ * `src/screens/Events/PersonalParaEsteEvento.tsx` consults;
+ * `createEventAssignment` itself never blocks a write on it.
+ *
+ * `businessId` is carried directly, unlike this prototype's existing
+ * single-Business convention for sibling Selling types (`Venue`, `Event`,
+ * `EventAllocation` all omit it) — RFC 0011/D60's own schema requires it
+ * explicitly ("same tenant-scoping discipline every other aggregate root
+ * carries"), since the not-yet-built OWNER-side UI may need to query by it
+ * directly rather than resolving it indirectly through `eventId`.
+ */
+export interface EventAssignment {
+  id: ID;
+  businessId: ID;
+  eventId: ID;
+  membershipId: ID;
   createdAt: number;
 }
 
@@ -469,7 +594,11 @@ export interface AppState {
   venues: Venue[];
   events: Event[];
   priceOverrides: PriceOverride[];
-  /** RFC 0009/D57, Slice 12 — see `EventAllocation`'s own doc comment
-   * above. */
+  /** RFC 0009/D57, corrected RFC 0010/D59, Slice 12 — see
+   * `EventAllocation`'s own doc comment above. */
   eventAllocations: EventAllocation[];
+  /** RFC 0010/D59 — see `AllocationMovement`'s own doc comment above. */
+  allocationMovements: AllocationMovement[];
+  /** RFC 0011/D60 — see `EventAssignment`'s own doc comment above. */
+  eventAssignments: EventAssignment[];
 }

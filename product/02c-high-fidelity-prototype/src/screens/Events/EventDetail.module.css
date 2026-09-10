@@ -86,3 +86,153 @@
   display: flex;
   gap: 12px;
 }
+
+/* events.md §3.16 (2026-09-09 amendment, RFC 0010/D59) — the closed-Event
+   mercancía reconciliation section. Stepper classes mirror
+   `MercanciaParaEsteEvento.module.css`'s own stepper shape (local copy per
+   this folder's own convention, not a shared import — same precedent that
+   file's own header comment already states). */
+.reconcile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.reconcileHeading {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+/* ux-critic fix round (D59 review) — ambient reconciliation confirmations
+   are not uniformly celebratory: a full return is a completed, positive
+   outcome (--color-success, ✓ in the copy), but a confirmed shortfall or a
+   confirmed-zero return is just a stated fact, the same "pick status color
+   by the message's actual semantic character, not a default Success for
+   every ambient confirmation" precedent Selling.module.css's `.stockHint`
+   and SettingsScreen.module.css's `.ackLine` already establish. `.confirmation`
+   carries only the shared shape; `.confirmationSuccess`/`.confirmationNeutral`
+   supply the color, chosen by `EventDetail.tsx` from the same condition that
+   already gates the ✓ character (full return vs. anything less). */
+.confirmation {
+  font: var(--text-body-sm);
+  font-weight: 600;
+}
+
+.confirmationSuccess {
+  color: var(--color-success);
+}
+
+.confirmationNeutral {
+  color: var(--color-warning-aa);
+}
+
+.reconcileList {
+  display: flex;
+  flex-direction: column;
+}
+
+.reconcileRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+}
+
+.reconcileRowTitle {
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.reconcileRevisited {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.reconcileActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.reconcileAdjust {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* §3.16/§3.23 — the per-row save/error scaffold, reused verbatim in copy
+   and state shape from MercanciaParaEsteEvento.module.css's own
+   `.savingLine`/`.errorWrap`/`.errorBody` (§3.23's source pattern) but laid
+   out inline within one reconciliation row rather than that screen's
+   full-takeover `flex: 1` centering — this section can show several
+   independent rows at once, each with its own save/error state, so no
+   single row may claim the whole viewport the way a one-shot "Guardar
+   cambios" screen legitimately can. */
+.reconcileSaving {
+  font: var(--text-body);
+  color: #6B6259;
+}
+
+.reconcileError {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.reconcileErrorBody {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.stepperLabel {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.stepperRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stepBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-hilo);
+  background: var(--color-paper);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-obsidian);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.stepBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.valueWrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  height: 44px;
+  background: var(--color-paper);
+}
+
+.valueInput {
+  width: 60px;
+  border: none;
+  background: transparent;
+  font: var(--text-body);
+  font-weight: 600;
+  text-align: center;
+}

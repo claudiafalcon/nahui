@@ -1,5 +1,20 @@
 import { addDaysToKey, dateKey } from './dates';
-import type { AppState, BusinessMembership, Event, EventAllocation, ID, Invitation, InventoryUnit, Product, Session, User, Venue } from './types';
+import type {
+  AllocationMovement,
+  AppState,
+  BusinessMembership,
+  Event,
+  EventAllocation,
+  EventAssignment,
+  ID,
+  Invitation,
+  InventoryUnit,
+  InventoryUnitStatus,
+  Product,
+  Session,
+  User,
+  Venue,
+} from './types';
 
 /** Pure, derived reads over AppState — no mutation, mirrors domain-model.md's
  * "the merchant experiences Products, the platform preserves traceability." */
@@ -307,6 +322,45 @@ export function findEvent(state: AppState, eventId: ID): Event | undefined {
   return state.events.find((e) => e.id === eventId);
 }
 
+/**
+ * `product/99-rfc/0011-event-assignment.md` §2's own "Mechanism" —
+ * scheduling-conflict handling, warn-with-override (`decision-log.md` D60).
+ * Checks every existing `EventAssignment` row for `membershipId` (excluding
+ * `newEventId` itself) and returns the Event(s) whose date range overlaps
+ * `newEventId`'s own range — the same inclusive-range overlap test D17/D53's
+ * own mechanism already used (`event.startDate <= other.endDate &&
+ * other.startDate <= event.endDate`), rewritten fresh rather than reused
+ * verbatim: D53 deleted that D17-era helper outright, so there's nothing left
+ * to import.
+ *
+ * **Returns the conflicting Event(s), never a bare boolean** — the
+ * OWNER-side "assign staff to an Event" UI,
+ * `src/screens/Events/PersonalParaEsteEvento.tsx`, needs to name the
+ * conflicting Event in its own warning copy, per this pass's own dispatching
+ * task. **Purely a read-side check — never blocks anything itself.**
+ * `createEventAssignment` (`store.tsx`) never consults this;
+ * `PersonalParaEsteEvento.tsx` is the caller that calls this ahead of that
+ * write and decides whether to surface a warning, exactly as RFC 0011 §2
+ * describes ("surfaces as a warning the assigning OWNER may override, never
+ * a hard rejection").
+ */
+export function hasSchedulingConflict(state: AppState, membershipId: ID, newEventId: ID): Event[] {
+  const newEvent = findEvent(state, newEventId);
+  if (!newEvent) return [];
+  const otherAssignedEventIds = eventAssignmentsForMembership(state, membershipId)
+    .map((a) => a.eventId)
+    .filter((eventId) => eventId !== newEventId);
+  const conflicts: Event[] = [];
+  for (const eventId of otherAssignedEventIds) {
+    const other = findEvent(state, eventId);
+    if (!other) continue;
+    if (newEvent.startDate <= other.endDate && other.startDate <= newEvent.endDate) {
+      conflicts.push(other);
+    }
+  }
+  return conflicts;
+}
+
 /** Distinct calendar dates (D15) that have at least one Session under this
  * `eventId`, sorted ascending — the load-bearing computation everything
  * "Día N" derives from. Never a raw Session-row count: reopening a Session
@@ -411,14 +465,108 @@ export function activeEventsForBusiness(state: AppState, now: number = Date.now(
   return state.events.filter((e) => eventStatus(e, now) === 'active');
 }
 
+/** `product/99-rfc/0011-event-assignment.md`/`decision-log.md` D60 — every
+ * `EventAssignment` row for this Membership, regardless of the assigned
+ * Event's current computed status (a closed/cancelled Event's own row is
+ * filtered out downstream, by `qualifyingEventsForMembership` below, not
+ * here — this selector is the raw, unfiltered set). */
+export function eventAssignmentsForMembership(state: AppState, membershipId: ID): EventAssignment[] {
+  return state.eventAssignments.filter((a) => a.membershipId === membershipId);
+}
+
+/** The `eventId` set from `eventAssignmentsForMembership` above, as a `Set`
+ * for O(1) membership tests — shared by `qualifyingEventsForMembership` and
+ * `upcomingQualifyingEventForMembership` below, which otherwise each built
+ * this identically (reviewer Suggestion, 2026-09-10). */
+function assignedEventIdSet(state: AppState, membershipId: ID): Set<ID> {
+  return new Set(eventAssignmentsForMembership(state, membershipId).map((a) => a.eventId));
+}
+
+/**
+ * `home.md` §2 step 2, role-scoped (`product/99-rfc/0011-event-assignment.md`,
+ * `decision-log.md` D60) — the qualifying-Event set `HomeScreen.tsx` feeds
+ * into steps 2a/2b. **OWNER: unchanged** — every currently `active` Event,
+ * Business-wide, no `EventAssignment` gate (RFC 0011 Open Item 2 — an OWNER
+ * has never needed to be "assigned" to her own Business's Events). **SELLER:
+ * narrowed** to only Events with `status = active` for which an
+ * `EventAssignment` row exists naming this Membership — the Business's full
+ * active-Event set is never consulted for a SELLER through this path (RFC
+ * 0011 Open Item 1, Resolved). Zero qualifying Events for a SELLER is not a
+ * separate case here — it falls out of this same filter returning `[]`,
+ * exactly like the zero-active-Event case already does for either role.
+ */
+export function qualifyingEventsForMembership(
+  state: AppState,
+  membership: BusinessMembership,
+  now: number = Date.now(),
+): Event[] {
+  const active = activeEventsForBusiness(state, now);
+  if (membership.role === 'OWNER') return active;
+  const assignedEventIds = assignedEventIdSet(state, membership.id);
+  return active.filter((e) => assignedEventIds.has(e.id));
+}
+
+/** Every currently-`scheduled` Event for this Business — the `scheduled`-case
+ * mirror of `activeEventsForBusiness` above, needed as its own plural
+ * selector (not just `upcomingEventForBusiness`'s single soonest row) so
+ * `HomeScreen.tsx` can test "does the Business have 1+ Event scheduled
+ * elsewhere" independently of which one, if any, is soonest — the same
+ * distinction `activeEventsForBusiness`/`qualifyingEventsForMembership`
+ * already draw for the `active` case (`home.md` §2 step 3, 2026-09-10
+ * amendment, completing `product/99-rfc/0011-event-assignment.md`'s
+ * SELLER-narrowing pattern for the `scheduled` lifecycle stage). */
+export function scheduledEventsForBusiness(state: AppState, now: number = Date.now()): Event[] {
+  return state.events.filter((e) => eventStatus(e, now) === 'scheduled');
+}
+
 /** The single soonest `scheduled` Event for this Business — home.md §3.5's
  * upcoming-Event card shows only this one; events.md's own Próximos section
- * is the fuller list behind it, not a duplicate mechanism. */
+ * is the fuller list behind it, not a duplicate mechanism. **OWNER-only as
+ * of the 2026-09-10 amendment** — Business-wide, no `EventAssignment` gate,
+ * unchanged (RFC 0011 Open Item 2's reasoning, identical to
+ * `qualifyingEventsForMembership`'s own OWNER branch). A SELLER's own
+ * upcoming-Event resolution is `upcomingQualifyingEventForMembership`
+ * below, never this selector. */
 export function upcomingEventForBusiness(state: AppState, now: number = Date.now()): Event | undefined {
-  const scheduled = state.events
-    .filter((e) => eventStatus(e, now) === 'scheduled')
+  const scheduled = scheduledEventsForBusiness(state, now)
+    .slice()
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
   return scheduled[0];
+}
+
+/**
+ * `home.md` §2 step 3 / §3.5, role-scoped for a SELLER
+ * (`product/99-rfc/0011-event-assignment.md`'s own SELLER-narrowing
+ * pattern, extended to the `scheduled` case, 2026-09-10 — a
+ * `merchant-user-tester`-found defect, `architect`-confirmed as completing
+ * RFC 0011's own established pattern rather than a new product decision).
+ * The soonest `scheduled` Event this Membership holds an `EventAssignment`
+ * for — the `scheduled`-lifecycle-stage mirror of
+ * `qualifyingEventsForMembership`'s SELLER branch (§2 step 2), narrowed
+ * further to a single row the same way `upcomingEventForBusiness` narrows
+ * the OWNER's own Business-wide set to one. `undefined` when zero qualifying
+ * rows exist — not a separate case, the same "falls through" shape §2 step 2
+ * already establishes for the `active` case; `HomeScreen.tsx` is the caller
+ * that decides what renders instead (the card, when this resolves; the new
+ * "scheduled elsewhere, not assigned" passive line, §3.4, when it doesn't
+ * but `scheduledEventsForBusiness` above is non-empty; neither otherwise).
+ * **A SELLER with 2+ qualifying rows sees only this single soonest one**
+ * (`Event.startDate` ascending, the identical deterministic tiebreak §3.6b's
+ * own row order already uses) — reasoned in full at `home.md` §10, not left
+ * open: purely informational (unlike §3.6b's actual picker, nothing here
+ * commits her to a choice), self-correcting on the very next Home open once
+ * this row's own status advances past `scheduled`, and matches the OWNER's
+ * own card's pre-existing, already-accepted multiplicity behavior. */
+export function upcomingQualifyingEventForMembership(
+  state: AppState,
+  membership: BusinessMembership,
+  now: number = Date.now(),
+): Event | undefined {
+  const assignedEventIds = assignedEventIdSet(state, membership.id);
+  const qualifying = scheduledEventsForBusiness(state, now)
+    .filter((e) => assignedEventIds.has(e.id))
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  return qualifying[0];
 }
 
 /** Events list, grouped exactly the way `events.md` §3.4/§3.5 render them —
@@ -736,27 +884,119 @@ export function eventAllocationFor(state: AppState, eventId: ID, productId: ID):
   return state.eventAllocations.find((a) => a.eventId === eventId && a.productId === productId && a.status === 'open');
 }
 
+/** RFC 0010/D59 §3 — the read-time derivation that replaces the old, now-
+ * retired *stored* `EventAllocation.quantityRemaining` field: the count of
+ * this allocation's `allocatedUnitIds` entries whose referenced
+ * `InventoryUnit` is currently still `status='reserved'`. Always correct by
+ * construction — there is no longer a second, independently-writable number
+ * that can drift from the real committed set (the exact confirmed defect
+ * this RFC closes). The identical candidate-selection logic
+ * `store.tsx`'s `releaseAllocation()` performs to find its own release
+ * pool — this selector and that pool are the same query, read-only here. */
+export function quantityRemaining(state: AppState, allocation: EventAllocation): number {
+  return allocation.allocatedUnitIds.filter((id) => {
+    const unit = state.units.find((u) => u.id === id);
+    return unit?.status === 'reserved';
+  }).length;
+}
+
+/** `events.md` §3.16's closed-Event reconciliation section — every `open`
+ * `EventAllocation` for this Event, regardless of whether it still has any
+ * `reserved` unit outstanding (callers filter on `quantityRemaining` > 0
+ * themselves, per that section's own trigger condition). */
+export function openEventAllocationsForEvent(state: AppState, eventId: ID): EventAllocation[] {
+  return state.eventAllocations.filter((a) => a.eventId === eventId && a.status === 'open');
+}
+
+/** `events.md` §3.16's "Ya revisaste esto — todavía falta N" framing — a
+ * plain existence check against the already-written ledger (RFC 0010 §6/§8):
+ * has this manual/untagged `EventAllocation` ever had a
+ * `return_to_general`-typed, `fifo_assignment`-sourced reconciliation write
+ * against it before? States no precise historical split (never "2 of 3
+ * already confirmed") — only that she's reviewed this row before. */
+export function hasPriorFifoReconciliation(state: AppState, eventAllocationId: ID): boolean {
+  return state.allocationMovements.some(
+    (m) => m.eventAllocationId === eventAllocationId && m.type === 'return_to_general' && m.unitSource === 'fifo_assignment',
+  );
+}
+
+/** RFC 0010/D59 — `reviewer`-caught Blocker fix (`cancelSale`/`removeSaleItem`
+ * previously reverted a unit to `reserved` on the basis of bare
+ * `allocatedUnitIds` array membership alone, which can't distinguish
+ * "genuinely still committed to this allocation" from "was committed once,
+ * released, and is now free again" — `allocatedUnitIds` is append-only and
+ * never pruned, §11). The sound derivation is the most recent
+ * `AllocationMovement` — across every `EventAllocation`, in write order —
+ * whose `unitIds` includes this unit. `state.allocationMovements` is
+ * append-only (`store.tsx`'s `commitAllocation`/`releaseAllocation` only
+ * ever append, never reorder or remove a row), so array order already *is*
+ * chronological write order — reading from the end and taking the first
+ * match is exact, no `createdAt` tie-breaking needed. `undefined` means this
+ * unit never went through allocation machinery at all (never committed via
+ * `commitAllocation`, e.g. plain Business-wide FIFO/Quick-Sale stock). */
+export function mostRecentAllocationMovementForUnit(state: AppState, unitId: ID): AllocationMovement | undefined {
+  for (let i = state.allocationMovements.length - 1; i >= 0; i -= 1) {
+    const movement = state.allocationMovements[i];
+    if (movement.unitIds.includes(unitId)) return movement;
+  }
+  return undefined;
+}
+
+const COMMIT_MOVEMENT_TYPES: ReadonlyArray<AllocationMovement['type']> = [
+  'initial_allocation',
+  'replenish',
+  'reallocate_in',
+];
+
+/** RFC 0010/D59 — the corrected `cancelSale`/`removeSaleItem` revert target
+ * for one Sale-item unit, built on `mostRecentAllocationMovementForUnit`
+ * above. `'reserved'` only when this unit's most recent allocation-ledger
+ * movement is commit-typed (`initial_allocation`/`replenish`/`reallocate_in`
+ * — its most recent allocation-related action was a commitment) *and* that
+ * movement's own `EventAllocation` is still `status='open'` (genuinely still
+ * committed to that specific allocation, not one already reconciled out from
+ * under it). `'available'` in every other case: a release-typed most-recent
+ * movement (`adjustment`/`return_to_general`/`reallocate_out` — this unit's
+ * most recent action was a release, regardless of stale `allocatedUnitIds`
+ * membership elsewhere), a commit-typed movement whose allocation is no
+ * longer `open`, or no ledger movement at all (never went through allocation
+ * machinery — unaffected, the same `'available'` outcome this file always
+ * produced before RFC 0010/D59). */
+export function saleCancelRevertStatus(state: AppState, unitId: ID): InventoryUnitStatus {
+  const movement = mostRecentAllocationMovementForUnit(state, unitId);
+  if (!movement || !COMMIT_MOVEMENT_TYPES.includes(movement.type)) return 'available';
+  const allocation = state.eventAllocations.find((a) => a.id === movement.eventAllocationId);
+  return allocation && allocation.status === 'open' ? 'reserved' : 'available';
+}
+
 /** `events.md` §3.21 — "Disponible en general": Business-wide `available`
- * stock for this Product, minus whatever's committed to every *other* open
- * EventAllocation for it. Deliberately does not subtract this Event's own
- * allocation — that stock is already hers to freely reassign within this
- * screen, "not elsewhere" (§3.21's own annotation) — which is what makes
- * the manual stepper's ceiling exactly equal to this figure. */
+ * stock for this Product, plus this Event's own already-committed units
+ * (hers to freely reassign within this screen, "not elsewhere," §3.21's own
+ * annotation) — which is what makes the manual stepper's ceiling exactly
+ * equal to this figure. **Corrected, RFC 0010/D59:** no longer subtracts
+ * every *other* open EventAllocation's committed count — once
+ * `commitAllocation()` genuinely flips committed units to `reserved`,
+ * `availableCount()` already excludes every committed unit, from any Event;
+ * subtracting again would double-subtract and silently undercount the
+ * merchant-facing ceiling. Adds back only *this* Event's own currently-
+ * reserved units instead of subtracting every other Event's. */
 export function disponibleEnGeneral(state: AppState, eventId: ID, productId: ID): number {
   const businessWide = availableCount(state, productId);
-  const committedElsewhere = state.eventAllocations
-    .filter((a) => a.status === 'open' && a.productId === productId && a.eventId !== eventId)
-    .reduce((sum, a) => sum + a.quantityRemaining, 0);
-  return Math.max(0, businessWide - committedElsewhere);
+  const thisEventAllocation = eventAllocationFor(state, eventId, productId);
+  const thisEventOwnRemaining = thisEventAllocation ? quantityRemaining(state, thisEventAllocation) : 0;
+  return Math.max(0, businessWide + thisEventOwnRemaining);
 }
 
 /** `home.md` §3.9's own new Event-scoped tile line ("N en este evento") —
  * `null` when no open EventAllocation applies (the tile shows nothing extra,
- * the Business-wide pool governs as always). */
+ * the Business-wide pool governs as always). **Corrected, RFC 0010/D59:**
+ * reads the derived `quantityRemaining` selector above, never a stored field
+ * (`home.md` §3.9's own annotation — the "not a live lock" caveat is
+ * unaffected, independent of the storage mechanism). */
 export function eventScopedRemaining(state: AppState, eventId: ID | null, productId: ID): number | null {
   if (eventId == null) return null;
   const allocation = eventAllocationFor(state, eventId, productId);
-  return allocation ? allocation.quantityRemaining : null;
+  return allocation ? quantityRemaining(state, allocation) : null;
 }
 
 /** `home.md` §3.7c "Mi actividad de hoy" — this acting Membership's own

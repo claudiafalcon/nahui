@@ -24,7 +24,8 @@
   --color-white: #FFFFFF;           /* card/sheet surfaces */
 
   --color-success: #2E7D46;
-  --color-warning: #C8811A;
+  --color-warning: #C8811A;         /* borders/backgrounds/icons only — fails WCAG AA (~3.18:1) as text on white/balanced */
+  --color-warning-aa: #8F5A14;      /* darkened warning, same hue/family — WCAG AA safe for text (~5.77:1 white, ~5.25:1 balanced) */
   --color-error: #A72C2C;
 
   /* ---- Additive extensions (this prototype only — named, not shipped tokens) ---- */

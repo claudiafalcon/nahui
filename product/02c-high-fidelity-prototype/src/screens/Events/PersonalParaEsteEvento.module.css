@@ -1,0 +1,146 @@
+/* events.md §3.26 "Personal para este evento" — reuses
+   MercanciaParaEsteEvento.module.css's own topbar/heading/intro shape (local
+   copy per this folder's own convention, not a shared import) plus a
+   two-group roster row shape adapted from TeamScreen.module.css's own "Tu
+   equipo" precedent (`settings.md` §3.11-§3.13) — this screen's closer
+   structural sibling than Mercancía's own collapse/expand rows, per the
+   task's own routing to that file as the closest precedent. */
+.topbar {
+  padding: var(--space-4) var(--space-4) var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.back {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
+.heading {
+  font: var(--text-heading);
+  padding: 0 var(--space-4) var(--space-1);
+}
+
+.intro {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  padding: 0 var(--space-4) var(--space-3);
+}
+
+.empty {
+  font: var(--text-body);
+  color: #6B6259;
+  padding: 0 var(--space-4);
+}
+
+/* Only the row groups scroll — heading/intro stay pinned above, matching
+   `MercanciaParaEsteEvento.module.css`'s own `.list` precedent (this
+   screen's closest structural sibling). */
+.list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.groupLabel {
+  font: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8A8177;
+  padding: var(--space-2) 0;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-radius: var(--radius-sm);
+}
+
+/* ux-critic finding (EVT-MIN1) — a light, temporary settle highlight as a
+   row lands in its new group after a successful assign/unassign, mitigating
+   the narrow "mis-tapped the wrong stacked row" risk (§3.26's own
+   annotation, §11). `--ease-settle` per DESIGN-SYSTEM.md §6 ("moments that
+   represent something landing"); duration derived from `--duration-slow` via
+   `calc()` specifically so `prefers-reduced-motion: reduce`'s existing
+   zeroed-token mechanism (tokens.css) silences this automatically, with no
+   separate override needed here. */
+@keyframes settleFade {
+  from {
+    background: color-mix(in srgb, var(--color-blush) 30%, transparent);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+.rowSettled {
+  animation: settleFade calc(var(--duration-slow) * 3) var(--ease-settle) forwards;
+}
+
+/* §3.26's own per-row save shape ("the tapped row dims briefly
+   (near-instant)... never a second, separate loading affordance") — applied
+   only while `saveState.kind === 'saving' && !slow`; the `slow` branch swaps
+   the action button for "Guardando…" instead (`.savingLabel`), matching
+   `events.md` §3.9's near-instant/slow split, adapted per-row. */
+.rowSaving {
+  opacity: 0.55;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.rowTopLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.rowPhone {
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.rowStatus {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.conflictLine {
+  font: var(--text-body-sm);
+  color: var(--color-warning-aa);
+}
+
+.rowActions {
+  display: flex;
+}
+
+.savingLabel {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  padding: var(--space-2) 0;
+}
+
+.errorLine {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+}
+
+.errorActions {
+  display: flex;
+}
