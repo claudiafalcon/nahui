@@ -630,3 +630,52 @@ The two reconciliation rows in the same table ("Resolver mercancía sin
 vender al cerrar un Evento...," §3.16/§3.25-driven) are unaffected — that
 screen has no collapse/expand mechanic. See `events.md` §6's own current
 table for the corrected figures.
+
+---
+
+### status-2026-09-09-rfc0010-manual-reconciliation
+**Applies to:** `product/99-rfc/0010-event-scoped-inventory-allocation-commitment-lifecycle-correction.md`.
+
+**Further amended 2026-09-09:** §3.16's persistent reconciliation section
+gains a new manual/untagged-mode action distinct from NFC's unchanged
+two-button pair — a one-tap "sí, regresaron las N" happy path, a secondary
+stepper-based "Ajustar cantidad" path for a lower confirmed number, an N=1
+direct-tap simplification, and an honest "ya revisaste esto" framing for a
+row carrying an earlier partial/zero confirm. Manual and NFC evidence can
+now compose on one Product row (mirroring §3.21's own "sin tag · con tag"
+composability). "Mover a otro evento" (§3.24, unchanged copy) is now also
+offered on manual rows, resolving RFC 0010's Open Item 4. Trigger-condition
+prose corrected to RFC 0010's stated invariant, also fixing a pre-existing
+"available"-vs-"reserved" wording error the RFC's own Open Items flagged.
+§4/§5/§6/§7/§9/§10 updated to match. Not yet `ux-critic`/`reviewer` verified.
+
+### decisions-rfc0010-manual-reconciliation
+**Manual/untagged reconciliation rows (§3.16) gain a new, quantity-confirmed
+action distinct in shape from NFC's unchanged two-button mechanism, because
+the underlying evidence genuinely differs (RFC 0010 §7's logical vs.
+physical identity invariant) — quantity-confirmed vs. unit-identified,
+never a trust distinction.** One-tap "sí, regresaron las N" is the happy
+path (`releaseAllocation()` called with the system's own live-computed
+expected quantity as the default, per "never ask twice"); "Ajustar
+cantidad" reveals a stepper (floor 0, ceiling N, starting at N) for the
+genuinely secondary case where fewer came back, kept deliberately
+lower-prominence and never adding a step to the happy path; N=1 collapses
+the shortfall path to a direct "No regresó" tap since there's no
+intermediate value to pick. Neither path is gated behind a confirmation
+dialog, matching this document's existing classification of stock-return
+actions as safe/reversible-in-effect, not the rare/irreversible class
+Cancelar Evento (§3.12) is gated behind. A row carrying an earlier
+partial/zero confirm shows a passive "Ya revisaste esto — todavía falta N"
+line on any later visit — a simple existence check against the already-
+written movement ledger, deliberately not a precise historical breakdown —
+so the shortfall never reads as silently forgotten or as a fresh ask for
+the original full amount. "Mover a otro evento" (§3.24's existing
+closed-source variant, unchanged copy) is now also offered on manual rows,
+moving the full current live-expected quantity, resolving RFC 0010's Open
+Item 4 — decided for parity with NFC and because the underlying write
+machinery already supports it, with no principled reason to restrict the
+capability to tagged stock only. §3.16's trigger-condition prose corrected
+to RFC 0010's stated invariant ("1+ unit still `reserved` in
+`allocatedUnitIds`, either mode, for a `status = open` `EventAllocation`"),
+replacing a stale `quantityRemaining`-based check and fixing a pre-existing
+"available"-vs-"reserved" wording error RFC 0010's own Open Items flagged.

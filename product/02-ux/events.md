@@ -22,6 +22,8 @@ events.changelog.md#status-evt-q1-empieza-hoy-default]**
 
 **Further amended 2026-09-06 (`product-decisions.md` Q24/Q25 — Event-scoped inventory allocation, settled architecture, RFCs not yet authored):** new §3.21–§3.25 design the full allocation lifecycle — initial allocation, replenish, reallocate between simultaneous Events, and explicit reconciliation at Event close — reachable via a new "Llevar mercancía" action on scheduled-Event detail (§3.11) and "Ver mercancía de este evento" on active-Event detail (§3.14/§3.15), both landing on the identical shared screen (§3.21), unlike "Ajustar precios" which stays strictly `scheduled`-only (see §3.21's own annotation for why this is a deliberate divergence, not an inconsistency). Gated OWNER-only per `product-decisions.md` Q24/Q25's settled permission table — the SELLER-role experience of these screens is not designed in this pass (§8). Grounded entirely in Q24/Q25's settled design (`EventAllocation`/`AllocationMovement`, the physical-location-exclusivity invariant, the single-local-transaction reallocation mechanism) — the two RFCs formalizing this into `domain-model.md` are not yet authored; this UX design does not wait on that authorship. **Further amended 2026-09-07 (`ux-critic` finding):** §3.21's own claim of matching Registrar Mercancía's "multi-line-entry-then-single-commit shape" was checked against `inventory.md` §3.6/§3.7 directly and found inaccurate — that shape is a sequential-add mechanic Registrar Mercancía uses, not what §3.21 actually rendered (every row expanded simultaneously, no collapse). Corrected: §3.21 now genuinely adopts a collapse-to-summary/one-row-expanded-at-a-time shape, adapted (not copied verbatim, and stated honestly as such) from Registrar Mercancía's row-collapsing precedent. **Further amended 2026-09-07 (`ux-critic` round 2, remediation verification):** 7 of 8 round-1 fixes confirmed clean; one new regression found and fixed — §6's task-efficiency table undercounted four rows by one tap each, a direct side effect of the §3.21 collapse redesign not carried through to its own step-count table. A third, narrow verification pass then found one of those four corrected rows ("Mover mercancía a otro Evento simultáneo") still undercounted by one further tap (missing its own entry-point tap); corrected 5→6 and confirmed via direct arithmetic re-check. **`reviewer` (2026-09-07) found 0 Blockers against this document specifically; its 3 Important findings were documentation-persistence gaps elsewhere (`decision-log.md` D55, `product-decisions.md`'s own stale status paragraph, a `business-decisions.md` numbering collision) — all closed directly by Main.** Folded back into Approved.
 
+**Further amended 2026-09-09 (`product/99-rfc/0010-event-scoped-inventory-allocation-commitment-lifecycle-correction.md`, Proposed but Product-Owner-confirmed as design-settled — corrects RFC 0009's manual/quantity-mode commitment mechanism, and by extension this document's own §3.16 reconciliation UX):** §3.16's persistent reconciliation section now designs a genuinely new, deliberately lightweight manual-mode reconciliation action — one-tap "sí, regresaron las N" as the happy path, a secondary "Ajustar cantidad" affordance revealing a stepper for a lower confirmed number, and an honest "ya revisaste esto" framing on any later visit to a row with an outstanding shortfall — sitting alongside NFC's existing, entirely unchanged two-button mechanism. Manual and NFC evidence can now compose on the same closed-Event Product row (mirroring §3.21's own already-established "sin tag · con tag" composability at allocation time), so a single row may show one or both action shapes. §3.16's trigger-condition prose is corrected to RFC 0010's stated invariant ("1+ unit still `reserved` in `allocatedUnitIds`, either mode, for a `status = open` `EventAllocation`") — also fixing a pre-existing "available" vs. "reserved" wording inconsistency RFC 0010's own Open Items flagged in the prior text. "Mover a otro evento" (§3.24's existing closed-source variant, unchanged copy) is now also offered for manual rows, moving the full current live-expected quantity — decided here per RFC 0010's Open Item 4, routed explicitly to `ux-designer`. No schema change designed or assumed beyond what RFC 0010 itself specifies (`quantityExpected`, `unitSource` — both Architect/Product-Owner sign-off items, not resolved here). §4/§5/§6/§7/§9/§10 updated to match. `ux-critic` found 1 Major + 2 Minor: a mixed row's two "Mover a otro evento" buttons were identical and ungrouped despite moving genuinely different stock (fixed — blank-line grouping matching §3.21's own precedent, plus a mode qualifier on each button); an undefined branch for tapping "Mover a otro evento" mid-stepper-reveal (fixed — silently discards the staged value, matching §3.21's own precedent); the ambient checkmark on a confirmed-shortfall/zero outcome diverged from §3.13's own no-checkmark precedent for neutral/negative outcomes (fixed — checkmark dropped on any confirm below N). All three fixed in this same pass and confirmed closed by `ux-critic` re-verification, no regressions. `reviewer` (2026-09-09) found 0 Blockers/content defects against this amendment; 5 Important documentation-persistence findings (this section's own missing `ux-critic-findings.md` entry, `product-decisions.md`'s stale description of the corrected counter mechanism, `product/99-rfc/README.md`'s stale RFC 0010 summary, `company/bitacora.md`'s same-day entry describing the pre-rework design, and a forward-tracking gap for `home.md` §3.8a-d/§3.9 — now RFC 0010's own Open Item 7) — all closed directly by Main. Folded back into Approved. **[see events.changelog.md#status-2026-09-09-rfc0010-manual-reconciliation]**
+
 **Amended 2026-08-04 (icon/comprehension audit):** §3.4/§3.5's Events list
 cards now show Event type alongside `Venue.displayName` ("Plaza Norte ·
 Bazar"), matching the subordinate role Type already has on Detail screens.
@@ -792,7 +794,9 @@ under this `eventId` (new — closes `architect-questions.md` Q19,
 └───────────────────────────────┘
 ```
 
-**With unresolved mercancía allocated (new §3.25 — `product-decisions.md` Q24/Q25, extends this state):**
+**With unresolved mercancía allocated (extends this state — manual and NFC evidence can compose on the same Product row, never a forced choice, mirroring §3.21's own "sin tag · con tag" composability at allocation time):**
+
+**NFC-tagged row (unchanged, `unitSource = scan`):**
 ```
 ┌───────────────────────────────┐
 │ ← Eventos                        │
@@ -809,11 +813,6 @@ under this `eventId` (new — closes `architect-questions.md` Q19,
 │  │  [ Regresar a inventario     │ │
 │  │    general ]                 │ │
 │  │  [ Mover a otro evento ]      │ │
-│  ├───────────────────────────┤ │
-│  │ Playeras — 1 sin vender       │ │
-│  │  [ Regresar a inventario     │ │
-│  │    general ]                 │ │
-│  │  [ Mover a otro evento ]      │ │
 │  └───────────────────────────┘ │
 │                                │
 │      [ Ver resumen en Resultados ]│
@@ -821,16 +820,89 @@ under this `eventId` (new — closes `architect-questions.md` Q19,
 │ Hoy  Inventario [Eventos] Resultados │
 └───────────────────────────────┘
 ```
-- **This is a real, persistent screen state on the closed-Event detail — not the ambient/fading pattern this doc uses for confirmations (§3.10/§3.13).** It renders whenever this closed Event has 1+ `EventAllocation` still `status = open` with unsold remaining stock (`quantityRemaining > 0` for manual, or ≥1 `available`-status unit still in `allocatedUnitIds` for NFC), and stays until every row is resolved — never a dismiss-and-forget banner. This is the Product Owner's own explicit "must never happen silently" requirement made real, not merely stated.
-- **Precedent for a persistent, must-resolve-but-non-blocking screen section: `inventory.md` §3.5's pending-tag-work Catalog state** — a real, standing state on an existing screen (not a modal/sheet), with a primary action, that disappears once resolved and never blocks any other capability. Reused here rather than inventing a new "reminder" primitive.
-- **Copy stays inside this document's own established plain, factual, non-judgmental register** for a zero/leftover-data state — "no se vendió," not "te quedaste con," "olvidaste vender," or any framing that reads as her failure. Same tonal family as §3.17's "No registraste ventas en este evento" and §3.4/§3.5's "Sin ventas registradas" — a routine fact about an Event, never a scold.
-- **Two actions per unresolved Product row, matching the Product Owner's own named pair exactly, applied per-row rather than Event-wide** — a merchant who wants to return some Products and move others to her next Event can do exactly that, consistent with D33's "she only edits the groups she actually wants to adjust for that event" precedent, applied here to reconciliation instead of pricing.
-- **"Regresar a inventario general" is a single, immediate tap — no confirmation dialog.** Writes `return_to_general` and sets `status = reconciled` for that row directly; ambient "Bolsas regresada a inventario general ✓" (fades); the row disappears from this list immediately. **Deliberately not treated as a rare/irreversible action requiring the confirmation-sheet pattern §3.12 reserves for Cancelar Evento** — returning stock to the general pool is safe and reversible in effect (she can always re-allocate it again later), so adding a confirmation step here would be padding a routine action, not protecting an irreversible one.
-- **"Mover a otro evento" opens §3.24's closed-source variant**, scoped to that one Product, pre-stated at the full unsold amount.
-- **Section disappears entirely, reverting to the plain screen already specified above, once every row is resolved** — exactly per the Product Owner's own instruction; never a hard block on "Ver resumen en Resultados" or anything else on this screen, matching this document's own §1 "not time-critical" posture.
-- **OWNER-only, per `product-decisions.md` Q24/Q25's settled permission table** — the SELLER-role experience of this screen is not designed here (§8).
 
-**NFC-mode reconciliation — a deliberate departure from the live-allocation scan requirement, reasoned explicitly.** Neither "Regresar a inventario general" nor "Mover a otro evento" ever asks for a fresh scan, for either manual or NFC-tagged remaining stock. Live allocation (§3.21/§3.22) requires a scan because, at that moment, the system doesn't yet know which specific tagged garments she's actually picking up — the scan *establishes* that fact and enforces the physical-location-exclusivity invariant in the same motion. By the time an Event closes, the exact set of unsold tagged units is already fully and unambiguously known — it's whatever remains in that `EventAllocation`'s own `allocatedUnitIds` after every Sale that ever consumed against it, and the exclusivity invariant guarantees nothing else could have touched those specific units meanwhile. Reconciliation is a bookkeeping update to an already-true record, not a new claim of physical possession — requiring a re-scan here would ask the system to re-verify something it already knows with certainty, a direct violation of *global-principles.md*'s "never ask twice," and would actively work against her, since reconciliation typically happens after the fact, possibly with the garments not all gathered in one place. "Regresar a inventario general" flips the already-known remaining `allocatedUnitIds` back to `available` directly; "Mover a otro evento" resolves which specific units transfer the same automatic way FIFO already resolves "which unit" in Buttons-mode selling.
+**Manual/untagged row — new, quantity N > 1, fresh (never touched):**
+```
+│  ┌───────────────────────────┐ │
+│  │ Playeras — 3 sin vender        │ │
+│  │  [ Sí, regresaron las 3 ]       │ │
+│  │  [ Ajustar cantidad ]           │ │
+│  │  [ Mover a otro evento ]        │ │
+│  └───────────────────────────┘ │
+```
+
+**Manual/untagged row — "Ajustar cantidad" tapped (in place, same row):**
+```
+│  ┌───────────────────────────┐ │
+│  │ Playeras — 3 sin vender        │ │
+│  │  Cuántas regresaron             │ │
+│  │   [ − ]  [ 3 ]  [ + ]            │ │
+│  │   (o escribe la cantidad)        │ │
+│  │  [ Cancelar ]  [ Confirmar ]      │ │
+│  │  [ Mover a otro evento ]          │ │
+│  └───────────────────────────┘ │
+```
+
+**Manual/untagged row — new, quantity N = 1, fresh:**
+```
+│  ┌───────────────────────────┐ │
+│  │ Gorras — 1 sin vender          │ │
+│  │  [ Sí, regresó ]                │ │
+│  │  [ No regresó ]                 │ │
+│  │  [ Mover a otro evento ]        │ │
+│  └───────────────────────────┘ │
+```
+
+**Manual/untagged row — later visit, an earlier partial/zero confirm left a shortfall outstanding:**
+```
+│  ┌───────────────────────────┐ │
+│  │ Gorras — 1 sin vender          │ │
+│  │  Ya revisaste esto — todavía     │ │
+│  │  falta 1.                       │ │
+│  │  [ Sí, regresó ]                 │ │
+│  │  [ No regresó ]                  │ │
+│  │  [ Mover a otro evento ]         │ │
+│  └───────────────────────────┘ │
+```
+(plural equivalent: "Ya revisaste esto — todavía faltan N." with N's own primary/secondary copy — "Sí, regresaron las N" / "Ajustar cantidad" — unchanged in shape from the fresh state above; only this one passive line differs.)
+
+**Mixed row — both a scan-sourced and a fifo-sourced pool still outstanding on the same Product:**
+```
+│  ┌───────────────────────────┐ │
+│  │ Bolsas — 5 sin vender          │ │
+│  │  con tag: 3                    │ │
+│  │  [ Regresar a inventario      │ │
+│  │    general ]                  │ │
+│  │  [ Mover a otro evento         │ │
+│  │    (de las con tag) ]          │ │
+│  │                             │ │
+│  │  sin tag: 2                    │ │
+│  │  [ Sí, regresaron las 2 ]       │ │
+│  │  [ Ajustar cantidad ]           │ │
+│  │  [ Mover a otro evento          │ │
+│  │    (de las sin tag) ]           │ │
+│  └───────────────────────────┘ │
+```
+
+- **Corrected 2026-09-09 trigger condition (`product/99-rfc/0010-event-scoped-inventory-allocation-commitment-lifecycle-correction.md` §8/§11, Product-Owner-confirmed) — replaces this document's prior text.** This section renders whenever a closed Event has 1+ `EventAllocation` still `status = open` with **1+ unit still `reserved` in `allocatedUnitIds`, regardless of whether that unit's originating movement carries `unitSource = scan` (NFC) or `fifo_assignment` (manual)** — one unconditional trigger, not a per-mode rule — and stays until every row is resolved, never a dismiss-and-forget banner. The prior text read "`quantityRemaining > 0` for manual, or ≥1 `available`-status unit still in `allocatedUnitIds` for NFC" — both a stale schema reference (`quantityRemaining` is retired as a stored field under RFC 0010 §3, now a pure read-time derivation) and a pre-existing wording error RFC 0010's own Open Items flagged: an allocated NFC unit sits in `reserved`, never `available`, for the duration of its allocation — "available" there was always a documentation mistake, never a real second trigger condition. This is still the Product Owner's own explicit "must never happen silently" requirement made real — now correctly stated, uniformly, for both modes.
+- **"Expected quantity" for a manual/untagged sub-pool is a live derivation, computed fresh on every render of this screen — never a stored or cached number.** It is the count of this `EventAllocation`'s `allocatedUnitIds` entries whose unit is currently `reserved` and whose originating movement carries `unitSource = fifo_assignment` — the identical candidate-selection query `releaseAllocation()` already performs to find its own release pool (RFC 0010 §8/§11), reused here, not a new query. Same "no independently-writable, driftable number" discipline `quantityRemaining`'s own retirement already established for the aggregate (RFC 0010 §3).
+- **Two distinct action shapes per unresolved Product row now — NFC rows and manual rows differ because what the system can already verify differs (RFC 0010 §7's logical/physical-identity invariant), not because one mode is treated as less trustworthy.** NFC-tagged units were unit-identified at allocation time (a real scan), so the reconciliation tap is a bookkeeping confirmation of an already-fully-known fact — unchanged, no evidence to collect. Manual/untagged units were never individually identified, only counted — so reconciliation *is* the first and only moment the system can learn how many actually came back, and the interaction has to collect that evidence, at the coarsest grain that's honest (a quantity, never a fabricated per-unit identity).
+- **The manual-mode happy path: one tap on "Sí, regresaron las N" (or "Sí, regresó" at N=1) confirms the full live-expected quantity, with nothing to type or verify.** This is `releaseAllocation(eventAllocationId, quantity=N)` with `N` supplied automatically as the system's own already-known ceiling — she is never asked to state back a number the system already computed (`global-principles.md`'s "never ask twice"). Writes `type = return_to_general`, `quantityExpected = N`, `quantityDelta = -N`; ambient "[Producto] regresada a inventario general ✓" (fades, reuses the exact copy NFC's own full-return action already uses — this is the same underlying idea Ana already knows, just reaching a different pool of stock); the manual sub-block disappears from this row immediately (or, on a mixed row, only the manual sub-block — the NFC sub-block, if any, is independently gated and persists on its own).
+- **"Ajustar cantidad" is the secondary, deliberately lower-prominence path for the N > 1 case — a single-purpose reveal, not a rare/irreversible action requiring a confirmation sheet of its own.** Tapping it reveals, in place, the exact stepper shape §3.21's manual allocation stepper already established (`[−]`/`[+]`/typed entry via teclado numérico), floor 0, ceiling N, **starting at N** — she decrements from the full expected amount, which keeps the common "off by one or two" case (most of what she brought came back) a one- or two-tap edit, not a re-typed-from-zero entry. `[ Cancelar ]` returns to the default one-tap view with nothing written (matches §3.24's own `Cancelar` semantics — no write has happened yet, nothing to discard). **Tapping "Mover a otro evento" instead of Cancelar or Confirmar has the identical effect on the staged stepper value — it, too, is silently discarded before the screen proceeds into §3.24**, the same "leaving before the explicit commit action discards only the unsaved staged value" discipline §3.21's own precedent already states for its manual edits ("leaving this screen before tapping Guardar cambios discards only unsaved manual edits") — never a second, differently-worded rule invented for this row. `[ Confirmar ]` calls `releaseAllocation(eventAllocationId, quantity=<stepper value>)`, writing `quantityExpected = N`, `quantityDelta = -<value>`, and an ambient confirmation — **"Confirmaste que <value> de N [Producto] regresaron ✓" when `<value> = N` (the stepper reaching the full expected amount is still a full return, and keeps the same checkmark the one-tap happy path uses), or "Confirmaste que <value> de N [Producto] regresaron" — no checkmark — whenever `<value> < N`, including a confirmed 0** (see the new bullet below for why this divergence is deliberate); either way, used uniformly with no special-cased zero copy beyond the checkmark rule itself, keeping this consistent and avoiding a singular/plural rewrite of the merchant's own Product name.
+- **At N = 1, the secondary path collapses to a single direct tap — "No regresó" — with no intermediate stepper at all**, a deliberate simplification: there is no intermediate value to select when the only alternative to "1 came back" is "0 came back," so showing a stepper here would be UI for a choice that doesn't exist. Same discipline `inventory.md`'s Cantidad floor-of-1 reasoning already applies elsewhere in this document family (don't design a control for a state that isn't real). Tapping it writes `quantityExpected = 1`, `quantityDelta = 0`, ambient **"Confirmaste que 0 de 1 [Producto] regresaron" — no checkmark, per the same rule stated below.**
+- **No confirmed-shortfall or confirmed-zero reconciliation message carries the ambient checkmark the full-return confirmations use — a deliberate divergence from this section's own default treatment, not a silent gap (`ux-critic` finding).** This document already draws exactly this line for a comparably neutral/negative administrative outcome: §3.13's "Evento cancelado" deliberately renders with no checkmark, reserving ✓ for outcomes that are genuinely, unambiguously good news. Confirming that less than everything came back — including a confirmed zero — is a true and useful record, and stays exactly as low-friction and ungated as every other confirmation in this section (see below); it just isn't a moment to visually celebrate, since the merchandise, in fact, didn't come back. This applies identically to "Confirmaste que 0 de 1... regresaron" (the N = 1 path, above) and to the stepper path's own "Confirmaste que <value> de N... regresaron" whenever `<value> < N` — the same class of "not everything came back" outcome, treated the same way. Only a full-return confirmation — the one-tap default's "[Producto] regresada a inventario general ✓," or the stepper path reaching `<value> = N` — keeps the checkmark.
+- **Neither the one-tap default, "Ajustar cantidad"'s stepper-Confirmar, nor "No regresó" is gated behind a confirmation dialog.** Same reasoning §3.16 already established for "Regresar a inventario general": returning (or confirming a lower/zero amount of) stock is safe and reversible in effect — she can always re-allocate it again later — so this stays in the same low-risk, routine-action class this document already draws a hard line around (contrast Cancelar Evento, §3.12, which is the rare/irreversible class this doc *does* gate behind a confirm step). Confirming a lower-than-expected or zero number doesn't change that classification — it's still a bookkeeping record of what's true, not a destructive commitment.
+- **A row that reflects an earlier partial or zero confirm never reads as untouched or as a fresh request for the original full amount.** Two guarantees, not one: (1) the displayed quantity is always the live-recomputed remaining amount — it already shrinks on its own, it is never redisplayed as the original N; (2) whenever this `EventAllocation`'s ledger already carries 1+ prior `return_to_general`-typed, `fifo_assignment`-sourced movement (i.e., she's visited and acted on this row before, whether that confirm released some units or zero), a passive line — "Ya revisaste esto — todavía falta N." — renders above the action buttons, so she never mistakes a shrunk-but-still-outstanding row for a screen that silently forgot her earlier action. This is a plain existence check against the already-written ledger (RFC 0010 §6/§8's `AllocationMovement` rows), not a new computation invented for this copy, and it deliberately states no precise historical split (never "2 of 3 already confirmed") — only that she's reviewed this row before and what remains now, keeping the check cheap and honest without over-claiming precision the ledger wasn't asked to expose here.
+- **"Mover a otro evento" is now also offered on a manual/untagged sub-block, reusing §3.24's existing closed-source variant unchanged — same screen, same copy ("Vas a mover N [Producto] que no se vendieron en este evento"), same no-stepper/no-scan/full-amount-only shape already established for NFC.** `N` here is simply this sub-block's own current live-expected quantity. See §10 for the reasoning this is offered at all (RFC 0010 Open Item 4, resolved here). **On a single-pool row (the common case, per the bullet below), the button stays plain "Mover a otro evento" exactly as before — the mode-specific qualifier described next exists only where two pools genuinely coexist on the same row.**
+- **A mixed row shows two independent action sets, one per pool, visually grouped apart and never sharing an ambiguous CTA — a deliberate fix, not an oversight (`ux-critic` finding).** An NFC sub-block (unchanged two-button pair) and a manual sub-block (this section's new quantity-confirm pair) each get their own "Mover a otro evento," but on a mixed row specifically, two corrections apply that don't apply to a single-pool row: **(1) a blank line separates the two sub-blocks** — the identical grouping device §3.21's own expanded-row wireframe already establishes between its independent control clusters within one row, not a new convention invented here; **(2) each "Mover a otro evento" button carries a parenthetical mode qualifier — "(de las con tag)" / "(de las sin tag)"** — so the two buttons are never visually or textually identical, closing the mis-tap risk a bare repeated label would otherwise create between two controls that move genuinely different stock. They resolve independently: acting on one sub-block never affects the other, and a row with only one pool outstanding shows only that pool's sub-block, with its plain unqualified button copy (the common case for Ana's actual pilot scale — most Products will have exactly one pool, not both, since NFC is itself a gated capability most Businesses won't have at all; see §11 for the explicitly-deferred combined-move case).
+- **Section disappears entirely, reverting to the plain screen above, once every row's every sub-block is resolved** — unchanged from the existing rule, now correctly applying per-pool rather than per-Product where a mixed row exists.
+- **OWNER-only, per `product-decisions.md` Q24/Q25's settled permission table** — unchanged.
+- **Idempotency.** Every write action in this section — the one-tap default, N=1's "No regresó," and the stepper's `Confirmar` — carries a stable idempotency key, generated once per attempt and reused on retry — the same `architecture-principles.md` #7 discipline this document's other writes (§3.9, §3.23) already require, now explicitly extended to this write per RFC 0010 §8's own bullet.
+- **Saving/error/ambient-confirmation shape reuses §3.23 verbatim** — "Guardando…" / "No se pudo guardar. Tus cambios siguen aquí, intenta de nuevo. [ Reintentar ]" / the ambient-fade confirmations named above. No new save-state pattern invented for this action.
+
+**NFC-mode reconciliation — a deliberate departure from the live-allocation scan requirement, reasoned explicitly. (Unchanged, retitled to make explicit this reasoning is NFC-specific, not shared with manual mode's own reasoning below.)** Neither "Regresar a inventario general" nor "Mover a otro evento," on an NFC-tagged row, ever asks for a fresh scan. Live allocation (§3.21/§3.22) requires a scan because, at that moment, the system doesn't yet know which specific tagged garments she's actually picking up — the scan *establishes* that fact. By the time an Event closes, the exact set of unsold tagged units is already fully and unambiguously known, and the exclusivity invariant guarantees nothing else could have touched those specific units meanwhile — reconciliation is a bookkeeping update to an already-true record, not a new claim of physical possession. Requiring a re-scan here would violate `global-principles.md`'s "never ask twice" and would actively work against her, since reconciliation typically happens after the fact, possibly with the garments not all gathered in one place.
+
+**Manual-mode reconciliation — a genuinely different reasoning, not the same argument applied twice (RFC 0010 §7/§8, Product-Owner-confirmed 2026-09-09).** Unlike NFC, the system never verified *which specific physical units* remained out — only that some *quantity* did (§7's logical vs. physical identity invariant: a `fifo_assignment`-sourced unit never carried a verified physical claim in the first place). This is why manual reconciliation is not, and never could be, a bare unconfirmed tap the way NFC's is: there is a real fact to collect (how much actually came back) that the system genuinely does not already know, and asking for it is not "asking twice" — it's asking once, for the first time, at the one moment reconciliation actually happens. What stays identical to NFC's own posture is *that* an explicit action is required at all, never silently assumed, and that the happy path (everything came back) costs exactly one tap regardless.
 - **Corrected per Architect's resolution of Q7** (`product/02-ux/architect-questions.md`,
   Resolved): `information-architecture.md`'s nav table already assigns
   "Session/Event summaries" to Resultados; Eventos' own stated job is
@@ -1268,6 +1340,8 @@ Mercancía movida ✓   (ambient, fades, returns to the screen she came from)
 - **Live variant: partial quantities are the expected case** (she's not closing anything — the source Event may keep selling against what's left) — editable stepper/scan input, defaulting to 0.
 - **Closed-source variant (reconciliation): no stepper, no scan input, a fixed, pre-stated full-remaining amount.** This follows directly from `product-decisions.md` Q24/Q25's own framing — `return_to_general` *or* `reallocate_out` is "what actually closes the allocation," language that describes fully resolving the row, not partially splitting it. A partial split at reconciliation time (move some, return the rest of the same Product) is a real but narrower case, explicitly deferred, not designed here — see §11.
 - **Closed-source variant omits scanning entirely — see §3.16's reconciliation annotation for the full reasoning.**
+- **Reused verbatim for manual/untagged reconciliation rows (§3.16, 2026-09-09 amendment) — no new variant.** "Vas a mover N [Producto] que no se vendieron en este evento" already describes a full-remaining-amount move without naming a source mode; a manual sub-block's "Mover a otro evento" lands here identically, with `N` resolved from that sub-block's own live-expected quantity instead of NFC's known `allocatedUnitIds` count. The underlying write composes `releaseAllocation()`'s selection (most-recently-committed-first, `fifo_assignment`-only) with this same single-transaction reallocation mechanism, invisibly — she never sees which specific units moved, for either mode.
+- **This screen's own heading/copy stays pool-agnostic by design, even on a mixed row (§3.16) where both an NFC and a manual sub-block exist.** Disambiguation between the two pools happens one tap earlier, at the row itself — each sub-block's own "Mover a otro evento" button carries its own mode qualifier ("(de las con tag)" / "(de las sin tag)", §3.16's mixed-row amendment) precisely so a mis-tap can't happen in the first place, rather than asking her to catch it here after the fact. `N` on this screen is already scoped correctly to whichever single pool's button she tapped — there's never a genuine ambiguity left to resolve by the time she reaches this screen.
 - **OWNER-only**, per `product-decisions.md` Q24/Q25's settled permission table.
 
 ## 4. Interaction flow (summary)
@@ -1351,19 +1425,51 @@ Event detail — active, no Session today / Session open elsewhere (3.14/3.15):
   tap "Ver mercancía de este evento" → 3.21 (identical shared screen,
     identical branches to the block above)
 
-Event detail — closed/past, unresolved allocation (3.25, extends 3.16):
-  per unresolved Product row:
-    tap "Regresar a inventario general" → immediate write, no
-      confirmation sheet → ambient "[Producto] regresada a inventario
-      general ✓" → row removed from this list
-    tap "Mover a otro evento" → 3.24, closed-source variant → Elegir
-      evento (sub-sheet, identical to the live variant's) → Cancelar →
-      back to 3.25, unchanged → "Mover mercancía" → saving (3.23 shape)
-      → error → Reintentar → success → ambient "Mercancía movida ✓" →
-      back to 3.25, row removed
-  last unresolved row cleared → section disappears, screen reverts to
-    plain 3.16 (identity + one-line summary + hand-off), no separate
-    transition or acknowledgment screen
+Event detail — closed/past, unresolved allocation (extends 3.16, per-pool — 2026-09-09 amendment):
+  per unresolved Product row, per pool present on that row (NFC sub-block, manual sub-block, or both):
+    NFC sub-block (unchanged):
+      tap "Regresar a inventario general" → immediate write, no
+        confirmation sheet → ambient "[Producto] regresada a inventario
+        general ✓" → sub-block removed from this list
+      tap "Mover a otro evento" → 3.24, closed-source variant → Elegir
+        evento (sub-sheet) → Cancelar → back to 3.16, unchanged →
+        "Mover mercancía" → saving (3.23 shape) → error → Reintentar
+        → success → ambient "Mercancía movida ✓" → back to 3.16,
+        sub-block removed
+    manual sub-block (new):
+      tap "Sí, regresaron las N" (N > 1) / "Sí, regresó" (N = 1) →
+        immediate write, no confirmation sheet → ambient "[Producto]
+        regresada a inventario general ✓" → sub-block removed
+      N = 1 only: tap "No regresó" → immediate write, no confirmation
+        sheet → ambient "Confirmaste que 0 de 1 [Producto] regresaron"
+        (no checkmark — a confirmed shortfall/zero, §3.16's own stated
+        divergence from §3.13's precedent) → sub-block stays, now
+        showing the "Ya revisaste esto" framing on next render (still 1
+        outstanding — nothing released)
+      N > 1 only: tap "Ajustar cantidad" → stepper revealed in place
+        (floor 0, ceiling N, starts at N)
+        → Cancelar → collapses back to default view, nothing written
+        → Mover a otro evento (tapped instead of Cancelar/Confirmar) →
+          identical to Cancelar for the staged value — silently
+          discarded, nothing written — then proceeds into 3.24,
+          closed-source variant, exactly as the branch below
+        → Confirmar → saving (3.23 shape) → error → Reintentar
+          → success → ambient "Confirmaste que <valor> de N [Producto]
+            regresaron ✓" if valor = N (full return via the stepper —
+            same checkmark as the one-tap happy path), or "Confirmaste
+            que <valor> de N [Producto] regresaron" — no checkmark — if
+            valor < N → sub-block updates in place: fully resolved
+            (valor = N) → sub-block removed; partial or zero (valor < N)
+            → sub-block persists showing the new, smaller live-expected
+            count and the "Ya revisaste esto" framing on any later visit
+      tap "Mover a otro evento" (from the default, not-mid-stepper view)
+        → 3.24, closed-source variant (reused verbatim, N = this
+        sub-block's own live-expected quantity) → identical branch shape
+        to the NFC sub-block above → success → sub-block removed
+  last unresolved sub-block, of either pool, on the last unresolved row
+    → section disappears, screen reverts to plain 3.16 (identity +
+    one-line summary + hand-off), no separate transition or
+    acknowledgment screen
   [Ver resumen en Resultados] remains reachable throughout, unaffected
     by whether reconciliation is pending — no capability in this doc is
     ever blocked by it (§1)
@@ -1398,7 +1504,7 @@ Event detail — closed/past, unresolved allocation (3.25, extends 3.16):
 22. Escaneando — cola de escaneo por Producto, including its two error states (prenda ya en otro evento; no se pudo leer)
 23. Guardando cambios de mercancía — saving (near-instant/slow) and error, plus ambient post-save confirmation
 24. Mover a otro evento — destino + cantidad/escaneo, live variant and closed-source (reconciliation) variant, including the Elegir evento sub-sheet, its zero-other-Events empty state, saving/error, and ambient post-save confirmation
-25. Event detail — closed/past, con mercancía sin resolver (reconciliation section, extends §3.16; disappears once every row is reconciled)
+25. Event detail — closed/past, con mercancía sin resolver (reconciliation section, extends §3.16; per-pool — an NFC-tagged sub-block, unchanged two-button mechanism, and/or a manual/untagged sub-block, new one-tap-default + secondary quantity-adjust mechanism, composing on the same Product row where both apply; disappears once every pool on every row is reconciled) **[revised 2026-09-09, `product/99-rfc/0010-...`]**
 
 ## 6. Minimum step count
 
@@ -1429,8 +1535,10 @@ floor above is about not adding unnecessary steps, the same posture
 | Llevar mercancía con prendas etiquetadas | 1 (Llevar mercancía) + 1 (expandir el producto) + 1 (Escanear las que te llevas) + 1 scan por prenda + 1 (Terminar) | Per-unit tagging is a domain requirement (`decision-log.md` D4), reused unchanged from `inventory.md` §6's identical reasoning for Asignar Tags — one tag, one unit, no shortcut exists that preserves traceability. |
 | Reponer un producto que se está agotando, a mitad del Evento | 1 (Ver mercancía de este evento) + 1 (expandir el producto) + 1 (ajustar stepper) + 1 (Guardar cambios) = 4 | Same screen, same mechanism as initial allocation (§3.21) — no second flow to learn or navigate. |
 | Mover mercancía a otro Evento simultáneo | 1 (Ver mercancía de este evento) + 1 (expandir el producto) + 1 (Mover a otro evento) + 1 (Elegir evento) + 1 (ajustar cantidad o escanear) + 1 (Mover mercancía) = 6 | The destination pick and the honest remaining-at-source ceiling are both real facts she must supply/see — not padding; the underlying two-write transaction stays a single tap regardless (§3.24). |
-| Resolver mercancía sin vender al cerrar un Evento — regresar a inventario general | 1 (tap "Regresar a inventario general") = 1 | No confirmation dialog — a safe, reversible action per §3.16's own reasoning, not the rare/irreversible class §3.12 gates behind a confirm step. |
-| Resolver mercancía sin vender al cerrar un Evento — moverla a otro | 1 (Mover a otro evento) + 1 (Elegir evento) + 1 (Mover mercancía) = 3 | One tap fewer than the live variant — quantity is pre-stated at the full remaining amount, not asked, since reconciliation-time "moving" is framed as fully resolving the row, and no scan step applies (§3.16's reconciliation annotation). |
+| Resolver mercancía sin vender al cerrar un Evento — NFC, regresar a inventario general | 1 (tap "Regresar a inventario general") = 1 | Unchanged. No confirmation dialog — a safe, reversible action per §3.16's own reasoning. |
+| Resolver mercancía sin vender al cerrar un Evento — manual, todo regresó (caso común) | 1 (tap "Sí, regresaron las N") = 1 | The Product Owner's own explicit instruction: confirming the full expected amount returned requires minimal interaction — the system already knows N, she only confirms it. |
+| Resolver mercancía sin vender al cerrar un Evento — manual, regresaron menos de lo esperado | 1 (Ajustar cantidad) + 1+ (ajustar el stepper, 1 toque por unidad de diferencia) + 1 (Confirmar) = 3+ | The genuinely secondary path — never faster than the happy path above, by design, since it's collecting a real fact the system didn't already have (§3.16's own reasoning); still bounded by however many units actually differ, never a full retyped count from zero (stepper starts at N). |
+| Resolver mercancía sin vender al cerrar un Evento — moverla a otro | 1 (Mover a otro evento) + 1 (Elegir evento) + 1 (Mover mercancía) = 3 | Unchanged, now available for either mode. One tap fewer than the live variant — quantity is pre-stated at the full remaining amount, not asked, since reconciliation-time "moving" is framed as fully resolving the row, and no scan step applies (§3.16's reconciliation annotation). |
 
 ## 7. Automation opportunities
 
@@ -1488,6 +1596,7 @@ floor above is about not adding unnecessary steps, the same posture
 - The underlying two-write reallocation transaction (§3.24) is a single tap
   ("Mover mercancía") regardless of which two `EventAllocation` instances
   are actually touched underneath.
+- **Manual-mode reconciliation's "expected quantity" (§3.16, 2026-09-09 amendment) is computed live on every render, reusing `releaseAllocation()`'s own candidate-selection query — never a figure Ana re-derives or a second number the app maintains separately from real `InventoryUnit` state.**
 
 ## 8. Open questions
 
@@ -1545,6 +1654,11 @@ surfaced no new domain ambiguity — it's a fully-specified, Accepted RFC; the
 only items it leaves genuinely undesigned (Venue address capture, editing,
 active-status toggling) are non-blocking scope deferrals, not open questions
 — see §11.
+
+- **New, resolved (`product/99-rfc/0010-...` Open Item 4, 2026-09-09) — "Mover a otro evento" is offered on manual/untagged reconciliation rows, alongside the new one-tap quantity-confirm default, not NFC-only.** Reasoning: the write machinery already supports it either way per the RFC's own framing; Ana's own supported use case (D53's simultaneous multi-Event operation) makes "move remaining manual stock to another concurrently-running Event" exactly as realistic for untagged stock as for tagged stock, and restricting it to NFC only would be an arbitrary asymmetry between two pools that already compose on the same Product row (§3.21). See §3.16/§3.24, §10.
+- **RFC 0010 Open Items 1/2 (`unitSource`, `quantityExpected` schema additions) are not resolved here — they're Architect/Product-Owner schema sign-off items per the RFC's own framing, orthogonal to this UX pass.** This document's screens are designed assuming both land as RFC 0010 specifies; if either is rejected or altered at sign-off, the manual-mode reconciliation mechanism designed here needs re-checking against whatever lands instead.
+- **RFC 0010 Open Item 3 (this document's own §3.16/§3.25 amendment) is now Resolved by this amendment itself.**
+- **New — the combined-move case for a mixed row (moving both an NFC sub-pool and a manual sub-pool of the same Product to the same destination Event in one action) is explicitly not designed** — see §11.
 
 ## 9. Principle justification
 
@@ -1661,6 +1775,13 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   path from this feature.
 - *#7 (idempotent/keyed retries)* — "Reintentar" on a failed save (§3.23)
   is safe to tap more than once; it never double-applies a movement.
+
+**Manual reconciliation additions (`product/99-rfc/0010-...`, 2026-09-09):**
+- *"Never ask twice"* — manual reconciliation's one-tap default (§3.16) supplies the system's own already-computed expected quantity as the release amount; she is never asked to type back a number the system already knows. The stepper's shortfall path is the one place this document *does* ask her something new — deliberately, since that specific fact (how much physically came back) is genuinely unknown to the system until she states it, not a re-ask of something already captured.
+- *"The fastest interaction is the one that never happens"* — the N=1 shortfall path collapses to a direct "No regresó" tap rather than revealing a stepper with only one real alternative value to pick.
+- *"Business language before technical language"* — copy uses "sin vender," "regresaron," "ajustar cantidad" — never "EventAllocation," "AllocationMovement," "unitSource," "fifo_assignment," or "releaseAllocation," anywhere on screen.
+- *"The best interface stays out of the merchant's way"* — a row carrying an earlier partial/zero confirm never re-displays the original full amount or omits acknowledgment of her prior action (§3.16's "Ya revisaste esto" framing), so she's never left guessing whether the screen forgot what she already did.
+- *architecture-principles.md* #7 (idempotent/keyed retries) — every new manual-mode reconciliation write (the one-tap default, N=1's "No regresó," and the stepper's `Confirmar` alike) carries a stable idempotency key, the same discipline already required of every other write in this document (§3.9/§3.23).
 
 ## 10. Decisions made
 
@@ -1829,6 +1950,10 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   mercancía de este evento," since this scenario's Event is active);
   corrected again, from 5 to 6.
   **[see events.changelog.md#decisions-q24-q25-tap-count-correction]**
+- **Manual/untagged reconciliation rows (§3.16) gain a new, quantity-confirmed action — a one-tap "sí, regresaron las N" happy path, a secondary "Ajustar cantidad" stepper for a lower confirmed number (starting at N, decrementing), and an N=1 special case collapsing the shortfall path to a direct "No regresó" tap.** Distinct in shape from NFC's unchanged two-button mechanism because the underlying evidence differs (RFC 0010 §7) — quantity-confirmed vs. unit-identified — never because one mode is treated as less trustworthy. **[2026-09-09, `product/99-rfc/0010-event-scoped-inventory-allocation-commitment-lifecycle-correction.md` — see events.changelog.md#decisions-rfc0010-manual-reconciliation]**
+- **"Mover a otro evento" is now offered on manual/untagged reconciliation rows too, reusing §3.24's closed-source variant unchanged, moving the full current live-expected quantity (never a partial split, matching NFC's own existing constraint).** Resolves RFC 0010's Open Item 4. **[2026-09-09 — see events.changelog.md#decisions-rfc0010-manual-reconciliation]**
+- **A row carrying an earlier partial/zero confirm shows a passive "Ya revisaste esto — todavía falta N" line on any later visit, derived from a simple existence check against the already-written movement ledger — never a precise historical breakdown, and never silence.** **[2026-09-09 — see events.changelog.md#decisions-rfc0010-manual-reconciliation]**
+- **§3.16's trigger-condition prose corrected to RFC 0010's stated invariant** ("1+ unit still `reserved` in `allocatedUnitIds`, either mode, for a `status = open` `EventAllocation`"), replacing a stale `quantityRemaining`-based check and fixing a pre-existing "available"-vs-"reserved" wording error RFC 0010's own Open Items flagged. **[2026-09-09 — see events.changelog.md#decisions-rfc0010-manual-reconciliation]**
 
 ## 11. Future considerations
 
@@ -1859,6 +1984,8 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   presence of its own for Venue anywhere in this doc, per
   `product/99-rfc/0001-venue-entity.md`'s own scope note ("not a full
   location-management module").
+- **Moving both an NFC sub-pool and a manual sub-pool of the same mixed Product row to the same destination Event in a single action** — not designed here; today she performs two separate "Mover a otro evento" actions if she wants both. A reasonable, narrower future refinement if real usage shows mixed rows with a want to move both pools together, deferred rather than designed against a case this RFC's own architecture doesn't require unifying (the two pools resolve via genuinely different underlying mechanisms).
+- **No "write off as permanently lost" capability exists for a manual-mode shortfall that never resolves** — confirming "0 returned" (or a partial confirm) leaves the remainder genuinely `reserved` and outstanding indefinitely, by design (Product Owner's own "never silently release" instruction), with no mechanism designed here to ever clear it short of eventually confirming the rest returned or moving it to another Event. If real usage shows merchants accumulating permanently-stuck shortfalls (lost/stolen/given-away stock that will never "come back"), a genuine write-off capability is a real future gap, not solved by this amendment.
 - A richer Venue location record (map pin, geocoding, saved-locations
   browsing) — plain optional address/notes is sufficient per the RFC's own
   scope note; no such capability exists in the Foundation to build on yet.
