@@ -29,7 +29,7 @@ This directly reopens a settled item inside `product/02-ux/product-decisions.md`
 
 This RFC is authored in direct response to the Product Owner's own explicit direction to revisit this, logged verbatim in `product/02-ux/product-decisions.md`'s Q24/Q25 entry ("Amendment, 2026-09-09") before this RFC was drafted — the reversal is knowingly made and independently recorded, not implicit or asserted only by this document. It's named here so the record is honest about what changed and why, not to relitigate it.
 
-**One important scoping fact, confirmed regardless of how that question resolves:** `EventAssignment` does not change how the SELLER's Session actually gets pinned to an Event. Q24/Q25 item 3's own mechanism — `Session.eventId` resolved once at Session-open, immutable thereafter, reusing the Price Override linkage — is untouched by this RFC. `EventAssignment` is roster/scheduling data consulted (at most) to *filter or default* the SELLER's own Session-open picker; it never becomes a new write path for `Session.eventId`, and it creates no new selling-time mechanism. This is also why **the OWNER's own Event-picking at Session-open stays completely unscoped and unaffected** — an OWNER acting in her own Business has never needed to be "assigned" to her own Events, and nothing in this RFC introduces such a gate. `EventAssignment` only ever has a filtering role on the SELLER side, if the Product Owner wants one at all (see Open items, #1).
+**One important scoping fact, confirmed regardless of how that question resolves:** `EventAssignment` does not change how the SELLER's Session actually gets pinned to an Event. Q24/Q25 item 3's own mechanism — `Session.eventId` resolved once at Session-open, immutable thereafter, reusing the Price Override linkage — is untouched by this RFC. `EventAssignment` is roster/scheduling data consulted (at most) to *filter or default* the SELLER's own Session-open picker; it never becomes a new write path for `Session.eventId`, and it creates no new selling-time mechanism. This is also why **the OWNER's own Event-picking at Session-open stays completely unscoped and unaffected** — an OWNER acting in her own Business has never needed to be "assigned" to her own Events, and nothing in this RFC introduces such a gate. `EventAssignment` has a filtering role on the SELLER side, confirmed and scoped by the Product Owner's 2026-09-09 direction (Open Item 1, now Resolved — see below): a SELLER's Session-open Event-resolution narrows from the Business's full active-Event set to only the Events she holds an `EventAssignment` for, with zero assignments resolving to zero Events offered through this path — never a fallback to the Business-wide set.
 
 ### 1. `EventAssignment` is a new aggregate root, Selling context — confirmed by `knowledge-mentor` consultation, with one addition
 
@@ -105,6 +105,43 @@ Target schema/invariant design ahead of UX design, not formalizing an already-Ap
 
 0. **Confirmation that reopening Q24/Q25 item 3 is genuinely wanted, not merely disclosed.** Recorded in `product/02-ux/product-decisions.md`'s Q24/Q25 entry ("Amendment, 2026-09-09") before this RFC's persistence, per `reviewer`'s finding that this authorization must be independently checkable, not asserted only by this document's own §0.
 1. **Product Decision — the zero-assignment SELLER fallback.** Once `EventAssignment` exists, what does a SELLER's Session-open Event picker show when she has *no* `EventAssignment` rows at all (never assigned to anything, or every assignment already used/expired)? Two real options: (a) fall back to today's Q24/Q25 item 3 behavior — she sees every currently active/scheduled Event, same as an OWNER would; or (b) she sees nothing until an OWNER assigns her something. This changes what a real merchant experiences and isn't derivable from the domain model alone — it's the Product Owner's call, not architecture's.
+
+   **Resolved, 2026-09-09 (Product Owner) — option (b), refined.** Her exact direction: *"For decision #2, a SELLER with no active EventAssignment should not see or choose from all active Events. Preserve Quick Sale if permitted by the existing SELLER role, but Event access should come only from explicit OWNER assignment."* This rejects option (a) outright — no fallback to the Business's full active-Event set — and confirms option (b), refined to a specific zero-state: **zero `EventAssignment` rows (or every assigned Event no longer active) resolves to zero Events offered through this path — never a fallback, and never a dead end either.** "Preserve Quick Sale if permitted by the existing SELLER role" is satisfied as a finding, not a new mechanism: `product-decisions.md` Q24/Q25's Permission table already lists "open/close own Session" as an ungated SELLER capability, and `home.md` §2's Quick Session idle-state branch (§3.3/§3.4) is already role-agnostic and unconditional whenever no qualifying Event exists for the acting Membership — reached today by any merchant, either role, whenever the Business has zero active Events. This RFC adds no new permission check to that branch; it only narrows what feeds *into* the check ahead of it (below).
+
+   **SELLER Session-open Event-resolution logic (rewrite of `home.md` §2 step 2, scoped to SELLER only — the OWNER's Business-wide test is unchanged, per Open Item 2):**
+
+   ```
+   2. Role-scoped qualifying-Event check, and no Session currently active
+      for this device's own acting Membership:
+
+      - OWNER: at least one Event with status = active, Business-wide
+        (unchanged from today — `product-decisions.md` Q24/Q25 item 3; no
+        `EventAssignment` gate applies to an OWNER's own Event-picking,
+        per this RFC's Open Item 2).
+
+      - SELLER: at least one Event with status = active for which an
+        `EventAssignment` row exists with `membershipId` = this device's
+        own acting Membership. The Business's full active-Event set is
+        never consulted for a SELLER through this path. Zero qualifying
+        rows (no assignment ever made, or every assigned Event no longer
+        active) means this check fails outright — falls through to step 3
+        exactly as the zero-active-Event case already does today; no
+        separate zero-state branch, no fallback to the Business-wide set.
+
+      2a. Exactly one qualifying Event (role-scoped as above) → unchanged:
+          auto-resolve to that Event's "Continuar Día N" (`home.md` §3.6).
+
+      2b. 2+ qualifying Events (role-scoped as above) → unchanged
+          mechanism, narrowed input: `home.md` §3.6b's "Elegir evento"
+          picker, populated from the role-scoped set defined above rather
+          than the Business's full active-Event list. For a SELLER this
+          is now a list of Events she's been assigned to, not every Event
+          currently active in the Business.
+   ```
+
+   This is a strict narrowing of what this Open Item originally framed as option (a) — "she sees every currently active/scheduled Event, same as an OWNER would" — which is rejected outright, not adopted with modification. Option (b) is confirmed, refined specifically to mean **zero Events offered through the Event-picker path**, not "no way to sell": she still reaches Quick Session, unaffected, through the pre-existing, already-Approved step-3 idle-state branch. This reuses the identical `home.md` §3.6/§3.6a/§3.6b machinery Q24/Q25 already established, with a narrowed input source for one role only — no new picker, mechanism, or screen.
+
+   **Routed to `ux-designer`:** (a) `home.md` §2/§3.6b amendment implementing the role-scoped step 2 above — §3.6b's own wireframe/copy needs no change beyond its data source (same screen, same interaction, per-row `Venue.displayName` + Día N as already specified); (b) confirm the zero-assignment SELLER experience is `home.md`'s existing Quick Session idle state (§3.3/§3.4, "Iniciar Sesión Rápida," already Approved, already role-agnostic) with no new screen or copy variant required — but this is now a newly-*reachable* state combination that didn't previously exist (the Business has 1+ Event active elsewhere while this SELLER's own idle screen shows none of them), and whether that idle state needs any passive awareness line, or is correctly silent (matching "preserve current Quick Sale behavior" literally), is a UX call, not an architecture one.
 2. **Scoping confirmation — the OWNER's own Event-picking is unaffected.** Stated in §0 above, restated here so it isn't missed: an OWNER opening her own Session continues to pick from any currently active/scheduled Event exactly as Q24/Q25 item 3 already established, with no `EventAssignment` gate of any kind. This RFC introduces no change to OWNER-side selection.
 3. **The scheduling-conflict warning's actual UX** (copy, timing — at assignment-creation time vs. surfaced later on a roster view) is not designed here — routed to `ux-designer` once/if this RFC and item 1 above are resolved.
 4. **Whether `EventAssignment` creation should be gated by `BusinessMembership.status=active`** (an OWNER shouldn't be able to assign a revoked Membership) is assumed to reuse the existing Membership authorization gate (D55/D56) rather than needing a new mechanism, but isn't spelled out as its own write-time rule anywhere yet — flagged so it isn't silently assumed.

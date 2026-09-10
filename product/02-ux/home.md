@@ -171,6 +171,8 @@ home.changelog.md#status-2026-08-15-non-session-gear-direct-affordance]**
 
 **Further amended 2026-09-06 (`product/02-ux/product-decisions.md` Q24/Q25 — the SELLER role's own stripped-down experience):** new role-resolution logic in §2; role-scoped nav bar (§3.16); a non-gear SELLER header icon routing to a new minimal "Tu cuenta" surface (§3.15a) hosted here as a stand-in pending a future `settings.md` amendment (see §11); SELLER-specific cold-start and §3.6a copy variants; a new "Mi actividad de hoy" own-activity view (§3.7c); a new "Acceso no disponible" defensive state (§3.17); an Event-scoped remaining-stock signal on the buttons-mode grid (§3.9); a new terminal "lost the race" concurrent-selling conflict state (§3.8a extended, plus new §3.8d-i). `knowledge-mentor` consultation on the lost-race pattern complete (§8) — pattern confirmed well-grounded, one copy correction applied (§3.8a). **Further amended 2026-09-07 (`ux-critic` round 1, Q24/Q25 batch):** found 4 Major + 4 Minor across settings.md/home.md/events.md, 0 Blockers. Scoped to this document: new §3.8d-ii defines the previously-undefined outcome for a lost-race conflict discovered by Finalizar Venta's own write (Major) — reuses §3.8a's existing terminal ⊗/no-Reintentar pattern and its already-established compare-and-swap distinguishability, no Architect consultation needed; §3.17's wireframe corrected to match its own stated header-icon rule (Major); §3.8a's "Quitar de la venta" now states the empty-tray transition explicitly (Minor); §3.7's and §3.9's existing `ui-designer` legibility flags extended to cover §3.7c's three-row header and §3.9's new tile line respectively (2 Minor); §3.7c also gains its own missing near-instant/slow resolving pair, the `home.md` half of a Minor finding whose `settings.md` half (§3.11) was fixed in the first remediation pass but this half was initially missed — caught and closed directly by Main rather than left for a second `ux-critic` round. **`ux-critic` re-verification (2026-09-07) confirmed all 8 findings resolved with no regressions in this document.** `reviewer` (2026-09-07) found 0 Blockers against this document specifically; its 3 Important findings were documentation-persistence gaps elsewhere (`decision-log.md` D55, `product-decisions.md`'s own stale status paragraph, a `business-decisions.md` numbering collision) — all closed directly by Main. Folded back into Approved.
 
+**Further amended 2026-09-09 (`product/99-rfc/0011-event-assignment.md`, Proposed but Product-Owner-confirmed as design-settled — reopens `product-decisions.md` Q24/Q25 item 3's 2026-09-06 "no OWNER pre-assignment concept added" resolution, per that entry's own 2026-09-09 Amendment):** §2 step 2's qualifying-Event check is now role-scoped, not a single Business-wide test for both roles. **OWNER: unchanged, Business-wide, no `EventAssignment` gate (RFC's Open Item 2).** **SELLER: narrows to only the Events she holds an `EventAssignment` for; zero qualifying rows falls through to step 3 exactly as the zero-active-Event case already does — never a fallback to the Business-wide set (RFC's Open Item 1, Resolved).** §3.6b's "Elegir evento" picker needs no wireframe/copy change — only its data source narrows for SELLER, confirmed and documented in place. New SELLER-only passive awareness line ("Hay eventos activos hoy y no estás asignada a ninguno. Pídele a quien te invitó que te asigne a uno.") added at §3.3/§3.4/§3.5 for the one newly-reachable situation this narrowing creates: the Business has 1+ Event active elsewhere, assigned to other staff, while this SELLER's own idle screen shows none of them. Added deliberately rather than staying silent, reasoned against this document's own existing transparency precedent (§3.6a's Not Ready/capability-revoked design notes) and `character-bible.md`'s "no dead ends" — full reasoning in §9/§10. No new screen, no new mechanism, zero added taps. `ux-critic` review (2026-09-09) found 1 Major + 2 Minor, all scoped to this new line: the Major found its closing shape broke this document's own state-then-resolve precedent — ending on the bare exclusion fact rather than a reassurance/resolving clause, worst on §3.3's cold-start stack (two unresolved negative facts, zero CTA, zero positive element); the two Minors found §3.5's stacking order for three co-occurring ambient elements left unspecified, and a missing High-Fidelity legibility flag for the new CTA-sandwiched composition. All three fixed in this same pass — the line's closing clause revised to mirror §3.6a's own Not Ready/capability-revoked SELLER mentions (§3.3/§3.4/§3.5), §3.5's explicit stacking order added, and the legibility flag extended to cover this composition (§3.4). **`ux-critic` re-verification (2026-09-09) confirmed all three findings closed, no regressions.** `reviewer` (2026-09-09) found 0 Blockers/content defects against this amendment; 3 Important documentation-persistence gaps (this header's own staleness, no `ux-critic-findings.md` entries for either this round or the 2026-09-06/07 Q24/Q25 batch, and `product-decisions.md`'s Q24/Q25 entry not reflecting RFC 0011 Open Item 1's Resolved status) — all closed directly by Main. Folded back into Approved.
+
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -230,28 +232,54 @@ Home open) never silently reshapes a screen she's already looking at.
        step never re-runs NFC Readiness or re-resolves the mode; see the
        folded-in sub-step below for where that resolution actually happens.
 
-2. Is there at least one Event with status = active, and no Session
-   currently active for this device's own acting Membership (the direct
-   complement of step 1 — dropping the earlier "opened yet today"
-   qualifier, so a same-day resume still lands here rather than falling
-   through to step 3; matches `decision-log.md` D15's own worked example)?
+2. Role-scoped qualifying-Event check, and no Session currently active
+   for this device's own acting Membership (the direct complement of
+   step 1 — dropping the earlier "opened yet today" qualifier, so a
+   same-day resume still lands here rather than falling through to
+   step 3; matches `decision-log.md` D15's own worked example).
    **Corrected 2026-09-06 (`product-decisions.md` Q24/Q25, `decision-log.md`
    D53): "an Event" is no longer assumed singular** — D53 retired D17's
    single-active-Event restriction; simultaneous multi-Event operation is
-   now a real, supported case.
+   now a real, supported case for either role. **Further corrected
+   2026-09-09 (`product/99-rfc/0011-event-assignment.md`, Open Item 1,
+   Resolved): the qualifying-Event set itself is now role-scoped, not
+   one Business-wide test shared by both roles** — see the two branches
+   below.
 
-     2a. Exactly one Event qualifies → unchanged: show "Continuar Día N"
-         (N = the number of distinct calendar dates before today with at
-         least one Session under this eventId, plus one for today —
-         `decision-log.md` D15, `domain-model.md`'s "Día N" computation)
-         directly — zero added taps, the common case stays exactly as
-         fast as before. Tapping it is the moment a new Session actually
-         opens — see the folded-in sub-step below.
+   - **OWNER: at least one Event with status = active, Business-wide —
+     unchanged.** No `EventAssignment` gate applies to an OWNER's own
+     Event-picking (`product/99-rfc/0011-event-assignment.md`, Open Item
+     2) — an OWNER has never needed to be "assigned" to her own
+     Business's Events, and this RFC introduces no such gate for her.
 
-     2b. More than one Event qualifies → **new (§3.6b, "Elegir evento").**
-         First check whether this device already has a signal for today:
-         does 1+ Session (any status) opened from this device already
-         exist today, under exactly one of the qualifying eventIds?
+   - **SELLER: at least one Event with status = active for which an
+     `EventAssignment` row exists with `membershipId` = this device's
+     own acting Membership** (`product/99-rfc/0011-event-assignment.md`,
+     Open Item 1). The Business's full active-Event set is never
+     consulted for a SELLER through this path — a narrowing of what
+     feeds this check, not a new mechanism or a new permission gate.
+     Zero qualifying rows (never assigned, or every assigned Event no
+     longer active) means this check fails outright for her, exactly
+     like the zero-active-Event case already does today — falls through
+     to step 3, no separate zero-state branch, never a fallback to the
+     Business-wide set (see §3.4's new SELLER-awareness line, below, for
+     the one passive addition this narrowing introduces at that
+     fallthrough).
+
+     2a. Exactly one Event qualifies (role-scoped as above) →
+         unchanged: show "Continuar Día N" (N = the number of distinct
+         calendar dates before today with at least one Session under
+         this eventId, plus one for today — `decision-log.md` D15,
+         `domain-model.md`'s "Día N" computation) directly — zero added
+         taps, the common case stays exactly as fast as before. Tapping
+         it is the moment a new Session actually opens — see the
+         folded-in sub-step below.
+
+     2b. More than one Event qualifies (role-scoped as above) → **new
+         (§3.6b, "Elegir evento").** First check whether this device
+         already has a signal for today: does 1+ Session (any status)
+         opened from this device already exist today, under exactly one
+         of the qualifying eventIds?
          (A local read against this device's own Session history — the
          prototype is confirmed local-storage-based, `product-decisions.md`
          Q19; Q24/Q25's settled architecture makes no change to `Session`
@@ -267,11 +295,15 @@ Home open) never silently reshapes a screen she's already looking at.
              twice").
            → NO signal (first Session-relevant action of the day for this
              device, 2+ Events genuinely tied) → §3.6b, "Elegir evento" —
-             reached identically whether the acting Membership is OWNER
-             or SELLER, no separate mechanism per role
-             (`product-decisions.md` Q24/Q25: "session-based selection
-             confirmed sufficient, no OWNER pre-assignment concept
-             added").
+             **reached via the identical picker mechanism for either
+             role, but populated from the role-scoped set defined above:
+             the Business's full active-Event set for an OWNER, or only
+             the Events she holds an `EventAssignment` for a SELLER
+             (`product/99-rfc/0011-event-assignment.md`, knowingly
+             reopening `product-decisions.md` Q24/Q25 item 3's
+             2026-09-06 "no OWNER pre-assignment concept added"
+             resolution — see that entry's own 2026-09-09 Amendment for
+             the record of why this isn't silently superseded).**
 
 3. Does at least one `available` InventoryUnit exist?
      → NO:  cold-start empty state → route to Inventario. Reached whenever
@@ -539,6 +571,30 @@ the persistent nav bar on every state, current tab in brackets.
 ```
 - **No "[ Registrar mercancía ]" CTA** — she cannot reach Inventario (§3.16), so a button leading nowhere would be exactly the "disguised dead end" this section's own OWNER copy already argues against, applied consistently rather than reintroduced by omission for this role.
 - **The honest way out is stated in the copy itself, not a fake button** — "pídele a quien te invitó" is a real, actionable next step, even though it's outside the app: matches `character-bible.md`'s "gives her an honest way out of anything — no dead ends" while staying truthful about what this screen alone can do for her.
+- **Further amended 2026-09-09 (`product/99-rfc/0011-event-assignment.md`) — the same Events-active-elsewhere condition §3.4 defines below can coexist with this cold-start state too** (zero available inventory is independent of whether any Event is active). When it holds, the identical passive line appends beneath the existing copy:
+```
+┌───────────────────────────────┐
+│  Nahui                        ⊚ │
+│  Todavía no hay nada para        │
+│  vender. Pídele a quien te        │
+│  invitó que registre mercancía.    │
+│  Hay eventos activos hoy y         │
+│  no estás asignada a ninguno.       │
+│  Pídele a quien te invitó que       │
+│  te asigne a uno.                    │
+├───────────────────────────────┤
+│ [Hoy]                            │
+└───────────────────────────────┘
+```
+Condition and shown-every-occurrence timing are identical to §3.4's
+own definition of this line — cross-referenced, not restated, per
+`product/02-ux/CLAUDE.md` §4's shared-state convention. **This is the
+worst composition in this document for the line's closing shape
+(`ux-critic` Major finding, 2026-09-09): two unresolved negative facts
+would otherwise stack with zero CTA and zero positive element anywhere
+on this screen.** The correction closes the new line on its own
+resolving clause rather than the bare exclusion fact — see §3.4's own
+note below for the full reasoning; not restated here.
 
 ### 3.4 Idle — no Event today, ready
 ```
@@ -591,6 +647,123 @@ already exists today (new — closes `architect-questions.md` Q19,
   exactly as §3.6a already specifies — neither suppresses or reflows the
   other.
 
+**SELLER — Events active elsewhere, not assigned (new — `product/99-rfc/0011-event-assignment.md`, closing Open Item 1's routed UX question):**
+```
+┌───────────────────────────────┐
+│  Nahui                        ⊚ │
+│        ¿Vas a vender hoy?       │
+│   [   Iniciar Sesión Rápida  ]  │
+│   Hay eventos activos hoy y      │
+│   no estás asignada a ninguno.    │
+│   Pídele a quien te invitó que    │
+│   te asigne a uno.                 │
+├───────────────────────────────┤
+│ [Hoy]                            │
+└───────────────────────────────┘
+```
+- **Condition:** shown only for a SELLER whose §2 role-scoped check
+  failed (zero qualifying `EventAssignment` rows) *and* the Business
+  has 1+ Event with `status = active`, Business-wide, right now — the
+  exact combination `product/99-rfc/0011-event-assignment.md` names as
+  newly reachable once `EventAssignment` exists. Absent entirely
+  otherwise, including the pre-RFC common case (Business has zero
+  active Events anywhere) — the screen renders pixel-identical to the
+  base §3.4 wireframe, zero added line, zero added tap.
+- **Recommendation, not silence — reasoned explicitly, not defaulted.**
+  The Product Owner's direction was to "preserve the current Quick Sale
+  behavior" for this case. Read most literally, that could mean this
+  screen stays completely unchanged and silent. This document applies
+  the narrower, more precise reading instead: "preserve Quick Sale
+  behavior" resolves *whether* she can still sell (yes, unconditionally
+  — RFC 0011 Open Item 1) — it doesn't settle whether the screen should
+  say nothing about a fact she might reasonably wonder about the moment
+  she lands here. Weighed against `character-bible.md`'s "gives her an
+  honest way out of anything — no dead ends" and this document's own
+  already-established precedent for exactly this tradeoff — the Not
+  Ready mention's own design note (§3.6a) reasons that "silently
+  substituting would read as an unexplained inconsistency... a worse
+  violation of 'technology should disappear' than one calm, actionable
+  line" — the same logic applies here, arguably more so: a SELLER who
+  knows other staff are actively selling somewhere today, while her own
+  screen shows nothing, has a real, reasonable "wait, is something
+  wrong?" moment with no way to check for herself (she has no Eventos
+  tab, §3.16). Silence wouldn't just be uninformative — the same
+  failure mode capability-revoked's own design note calls "actively
+  worse" than a mention — it risks masking a real OWNER mistake (an
+  Event she should have been assigned to and wasn't) behind a screen
+  that looks identical to the ordinary, nothing-happening case.
+- **Copy states the fact plainly, then closes on a resolving clause,
+  without diagnosis or blame** — same register `settings.md §3.14`/this
+  document's own §3.17 already establish for the closely related
+  "still active, just can't reach this" case. No "deberías," no
+  implied fault on her part or the OWNER's (`brand/tone-of-voice.md`,
+  "never imply a merchant needed rescuing" — applied here to a SELLER
+  exactly as it already applies to Ana, per that document's own "Three
+  audiences" section). **Closing shape corrected 2026-09-09 (`ux-critic`
+  Major finding):** the original copy ("Hay eventos activos hoy, pero
+  no estás asignada a ninguno.") ended on the bare exclusion fact, with
+  no reassurance or resolving element after it — breaking this
+  document's own established state-then-resolve shape. Every comparable
+  precedent (§3.6a's Not Ready/capability-revoked SELLER mentions,
+  §3.17's "Acceso no disponible") closes on either a reassurance clause
+  or a real next step, never on the unresolved fact alone. The revised
+  copy adds the same closing "Pídele a quien te invitó que..." clause
+  its own SELLER siblings already use ("...que etiquete mercancía" for
+  Not Ready; "Solo quien te invitó puede activar esto" for capability
+  revoked) — the honest next step for *this* fact specifically (only an
+  OWNER can create an `EventAssignment`), not a new mechanism. Also
+  drops the "pero" construction — none of the cited precedents use it —
+  in favor of a plain statement followed by its own resolving sentence,
+  the same shape those precedents already establish.
+- **No tappable link, by design — nothing to tap that would help her.**
+  Unlike Not Ready's "Asignar tags" or capability-revoked's "Ir a
+  Configuración," there is no self-service *action* a SELLER can take
+  from this screen to fix this (only an OWNER can create an
+  `EventAssignment`). The closing "Pídele a quien te invitó que te
+  asigne a uno" line is plain text, not a link — matching the exact
+  shape §3.6a's own Not Ready/Capability-revoked SELLER variants
+  already use for their own closing lines, neither of which is
+  tappable either. The link is dropped when there's genuinely nothing
+  to route to; the resolving *clause* is not.
+- **Shown every time the condition currently holds, not once ever.**
+  This is a live operational fact (which Events are active, and
+  whether she's assigned to any of them), not a discretionary settings
+  nudge — the one case in this section that gets "shown once ever"
+  treatment (§3.6a's Ready-but-buttons-default nudge) is explicitly a
+  durable, merchant-controllable setting choice, not a fact that
+  changes hour to hour. Disappears automatically the moment it no
+  longer holds (an Event ends, or she's assigned to one) — never a
+  standing badge or an unread-count.
+- "Iniciar Sesión Rápida" is completely unaffected either way — this
+  line never gates, delays, or adds a tap to Quick Session
+  (`architecture-principles.md` #3, `domain-model.md`'s "Quick Session
+  works regardless").
+- **Coexists independently with §3.4's own "Same-day resume" line,
+  above, when both conditions hold** — same non-suppression discipline
+  this document already applies everywhere two ambient facts can
+  coexist. Order when both apply: same-day-resume line above the CTA,
+  this line beneath it.
+- **Flagged for High-Fidelity attention, not resolved here (`ux-critic`
+  finding, 2026-09-09 amendment review)** — the same verification §3.7's
+  own header-row packing and §3.9's Event-scoped tile line already
+  require: sandwiching a same-day-resume line above the primary CTA and
+  this SELLER-awareness line beneath it (when both hold at once) is a
+  legitimate Low-Fidelity tradeoff — this fidelity doesn't pixel-verify
+  legibility or visual hierarchy — but `ui-designer` must explicitly
+  confirm, when building this in `product/02c-high-fidelity-prototype/`,
+  that "Iniciar Sesión Rápida" still reads as the unambiguous primary
+  action rather than getting visually lost between two lines of ambient
+  text on an actual phone screen, not simply assume the Low-Fidelity
+  text description alone proves it. Applies identically to §3.6's
+  "Continuar Día N" carrying the same-day-sales line above it and this
+  line beneath, and to §3.5's fuller three-element composition — see
+  §3.5's own stacking-order note for that case.
+- **Applies identically wherever a SELLER's role-scoped step 2 check
+  fails and this condition holds — §3.3 (cold start) and §3.5 (idle,
+  ready, with an unrelated upcoming-Event card) both get the identical
+  line, cross-referenced rather than redrawn, per
+  `product/02-ux/CLAUDE.md` §4's shared-state convention.**
+
 ### 3.5 Idle — ready, with an upcoming (not-yet-active) Event
 ```
 ┌───────────────────────────────┐
@@ -616,6 +789,22 @@ already exists today (new — closes `architect-questions.md` Q19,
   2026-08-09, glyph changed 2026-08-15).**
   The event card and the direct-gear entry point are unrelated — opening
   Configuración never touches the upcoming Event.
+- **Further amended 2026-09-09 (`product/99-rfc/0011-event-assignment.md`) — a SELLER can also see §3.4's new "Events active elsewhere, not assigned" line here, independent of and unrelated to this screen's own upcoming-Event card** (the card names a not-yet-active Event; the new line names a currently-active Event elsewhere she isn't assigned to — two different facts, about two different Events, that can both be true at once, neither suppressing the other). Condition and copy identical to §3.4's own definition (copy corrected 2026-09-09, see §3.4) — cross-referenced, not restated, per §4's shared-state convention.
+- **Stacking order when multiple of this screen's ambient elements hold
+  at once (Minor finding, `ux-critic`, 2026-09-09) — this screen can now
+  carry up to three independently-triggered ambient elements, and needed
+  its own explicit order the way §3.4/§3.6 already state theirs for
+  their own two-element cases:** upcoming-Event card (top, unchanged
+  position) → same-day-resume line ("Ya vendiste $X · N ventas hoy,"
+  when it holds, below) → primary CTA ("Iniciar Sesión Rápida") →
+  SELLER "events active elsewhere" line (when it holds, beneath the
+  CTA) → §3.6a's own NFC Readiness/capability recommendation or mention
+  line, if any, beneath that — the identical relative order §3.4
+  already states between the same-day-resume line, the CTA, and the
+  SELLER line, with the upcoming-Event card simply anchored at the top
+  as the base §3.5 wireframe already shows. None of these elements
+  suppress or reflow any other; a condition that doesn't currently hold
+  is skipped entirely, never left as blank space.
 
 **Same-day resume — a Session with `eventId = null` and finalized Sales
 already exists today (new — closes `architect-questions.md` Q19,
@@ -1009,6 +1198,7 @@ Reached only via §2 step 2b. Not reached at all while at most one Event qualifi
 - Selecting a row never opens a Session itself — exactly like every other §3.4/§3.5/§3.6 primary action, the Session only opens, and `Session.eventId`/`Session.operatingMode` only commit, at that Event's own "Continuar Día N" tap (§2's NFC Readiness sub-step, unchanged, evaluated Business-wide, not per-Event).
 - **`Session.eventId` is immutable for that Session's lifecycle once opened** (unchanged, pre-existing rule) — this screen's only job is the initial pick, never revisited mid-Session.
 - No back arrow, no dismiss — a top-level Home resolution state, same category as §3.3–§3.6. Header's gear icon (⚙) routes directly into Configuración, no intermediate sheet, identically to §3.3–§3.6 (§2.1).
+- **Data source is role-scoped as of `product/99-rfc/0011-event-assignment.md` (2026-09-09) — wireframe and interaction unchanged.** For an OWNER, unchanged: every currently `active` Event, Business-wide. For a SELLER, this list is now only the Events she holds an `EventAssignment` for (§2's role-scoped step 2) — never the Business's full active-Event set. Nothing about this section's own wireframe, row content, tap behavior, or copy differs between the two cases; only which rows exist to render does.
 - **Not reached by a Quick Session** — `eventId = null` has no Event to disambiguate; "Iniciar Sesión Rápida" stays reachable and unaffected regardless of how many Events are active (`architecture-principles.md` #3).
 
 ### 3.6c Session-controls sheet — retired (superseded 2026-08-15 — see status header)
@@ -2093,21 +2283,34 @@ Open app
     SELLER → nav renders "[Hoy]" alone (§3.16); header icon renders ⊚ →
       §3.15a "Tu cuenta" (Cerrar sesión only, citing settings.md §2.5/
       §3.8 unchanged); cold-start (§3.3) and §3.6a mention/link variants
-      render their SELLER-specific text, above.
+      render their SELLER-specific text, above. §2 step 2's
+      qualifying-Event check narrows to her own `EventAssignment`-scoped
+      Events only, never the Business-wide set
+      (`product/99-rfc/0011-event-assignment.md`).
   → resolve (§2, automatic)
       → active Session exists ─────────────→ selling default (3.7-3.10)
       → Event(s) active, no Session today for this device ─→ resolve which
           Event (§2 step 2, corrected 2026-09-06 — product-decisions.md
-          Q24/Q25, decision-log.md D53):
-            exactly one qualifying Event → "Continuar Día N" (3.6) → tap
+          Q24/Q25, decision-log.md D53; role-scoped as of 2026-09-09 —
+          product/99-rfc/0011-event-assignment.md — OWNER Business-wide,
+          SELLER EventAssignment-scoped):
+            exactly one qualifying Event (role-scoped) → "Continuar Día N" (3.6) → tap
               (NFC Readiness resolves Session.operatingMode — silent, or
               §3.6a if it disagrees with defaultSellingMode) → selling
-            2+ qualifying Events, no same-day signal for this device →
+            2+ qualifying Events (role-scoped), no same-day signal for this device →
               "Elegir evento" (3.6b) → tap a row → that Event's own
               "Continuar Día N" (3.6) → tap → selling, same as above
-            2+ qualifying Events, but this device already has 1+ Session
+            2+ qualifying Events (role-scoped), but this device already has 1+ Session
               today under exactly one of them → skip 3.6b, straight to
               that Event's own "Continuar Día N" (3.6) → tap → selling
+            zero qualifying Events for this Membership (role-scoped — for
+              a SELLER this now includes the case where the Business has
+              Events active elsewhere she isn't assigned to) → falls
+              through to the next branch below exactly like the
+              zero-active-Event case; for a SELLER, when the Business
+              does have 1+ Event active elsewhere, she also sees the new
+              passive awareness line at whichever of 3.3/3.4/3.5 she
+              lands on next (product/99-rfc/0011-event-assignment.md)
           [§3.6a, when it disagrees, also offers up to one inline secondary
           action beneath the Session-start CTA, before it's tapped — none of
           which open a Session on their own:]
@@ -2293,6 +2496,10 @@ and back to Hoy):
 35. Finalizar Venta blocked — lost-race item unresolved (§3.8d-i)
 36. Acceso no disponible — SELLER reaches an OWNER-only destination (§3.17)
 37. Finalizar Venta — lost-race conflict discovered by the write itself, terminal, no Reintentar (§3.8d-ii)
+38. SELLER — Quick Session idle state (3.3/3.4/3.5) gains a passive
+    "Events active elsewhere, not assigned" line whenever the Business
+    has 1+ Event active she holds no `EventAssignment` for
+    (`product/99-rfc/0011-event-assignment.md`)
 
 ## 6. Minimum step count
 
@@ -2441,6 +2648,8 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **The SELLER "Tu cuenta" surface (§3.15a) is hosted in this document as a stand-in, not its permanent home.** The larger gap — `settings.md` needing its own genuinely role-gated vista principal — is `settings.md §8` item 14's own already-named territory. Recommend a small future `settings.md` amendment that formally relocates this content there and retires the stand-in here, once that document is next in scope for amendment (§11).
 - **NFC-mode lost-race conflict** — the identical terminal pattern applies if a same-tag double-scan is ever actually hit, but this wasn't independently redesigned for that surface (§3.8a's own closing note) — the settled architecture treats it as structurally rare, not a case with real evidence behind it yet.
 - **Whether "Mi actividad de hoy" should ever surface anything beyond a flat chronological list (a per-Product breakdown, e.g.)** — not designed now, no evidence of need; would risk this becoming "a cut-down Resultados variant," exactly what `product-decisions.md` Q24/Q25 explicitly warned against building.
+- **§3.5's upcoming (not-yet-active) Event card is not addressed by `product/99-rfc/0011-event-assignment.md`** — that RFC's own Open Item 1 scopes the SELLER narrowing strictly to Events with `status = active`. Whether a SELLER's view of a *scheduled, not yet active* Event should also narrow to `EventAssignment`-scoped visibility (today, implicitly Business-wide, unchanged since before this RFC) is a real, related question this amendment deliberately doesn't resolve — not derivable from RFC 0011's own settled scope, flagged for Architect/Product Owner rather than decided here.
+- **`product/99-rfc/0011-event-assignment.md` is Proposed, not yet Accepted**, at the time this amendment was designed — the Product Owner confirmed its design as settled for UX-design purposes, but this document's own Approval should be understood as contingent on that RFC actually reaching Accepted. Its Open Items #3 (the scheduling-conflict warning UI) and #4 (whether `EventAssignment` creation gates on `BusinessMembership.status=active`) are both explicitly out of Home's scope — neither surfaces on any Home screen; both belong to a future OWNER-side roster/assignment surface not yet designed anywhere (RFC 0011's own "Sequencing" section).
 
 ## 9. Principle justification
 
@@ -2535,6 +2744,11 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - *architecture-principles.md* #4 (internal-only entities never leak into language) — `BusinessMembership`, `role`, `EventAllocation`, `performedByMembershipId` never appear as literal on-screen copy anywhere in this amendment.
 - *architecture-principles.md* #6 (one-way dependency direction) — the Event-scoped tile count and "Mi actividad de hoy" both read data Selling already legitimately reads (Inventory/Selling's own `EventAllocation`, `Sale.performedByMembershipId`); neither introduces a new bounded-context edge.
 - *architecture-principles.md* #7 (idempotent/keyed writes, applied by exception) — the lost-race conflict is the one state in this document that correctly withholds a "Reintentar" affordance, because the underlying write structurally cannot succeed a second time; naming this explicitly, rather than defaulting to the doc's usual retry template, is this principle honored, not an inconsistency.
+
+**`EventAssignment`-scoping additions (`product/99-rfc/0011-event-assignment.md`, 2026-09-09):**
+- *`character-bible.md`*, "gives her an honest way out of anything — no dead ends" — grounds the decision to add §3.4/§3.3/§3.5's new Events-active-elsewhere line rather than defaulting to silence for the newly-reachable zero-`EventAssignment` SELLER case.
+- *`brand/tone-of-voice.md`*, "never imply a merchant needed rescuing" / "state facts before offering an opinion" — the new line states the fact plainly, offers no diagnosis, and carries the same "pregúntale/pídele a quien te invitó" honest-next-step shape this document already established three times for a SELLER.
+- *`architecture-principles.md`* #3 (optional relationships stay optional) — the new line never gates, delays, or adds a tap to Quick Session; it's purely observational.
 
 ## 10. Decisions made
 
@@ -2711,6 +2925,11 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **§3.17's wireframe corrected to render the SELLER header icon (⊚)**, matching its own prose claim that the header icon stays present. **[see home.changelog.md#decisions-3-17-header-icon-fix]**
 - **§3.7's `ui-designer` legibility-verification flag extended to cover §3.7c's three-row header combination; §3.9 gains an equivalent flag for its new "N en este evento" tile line.** Neither resolved here, both correctly deferred to Medium/High-Fidelity per this document's own existing convention. **[see home.changelog.md#decisions-legibility-flags-extended]**
 - **§3.7c gains its own near-instant/slow resolving pair**, closing this document's own half of a `ux-critic` Minor finding (`settings.md` §3.11 shares the same finding, fixed in the same remediation round). **[see home.changelog.md#decisions-3-7c-resolving-pair]**
+- **§2 step 2's qualifying-Event check is role-scoped as of `product/99-rfc/0011-event-assignment.md` (2026-09-09): OWNER stays Business-wide, unchanged; SELLER narrows to Events she holds an `EventAssignment` for, with zero qualifying rows falling through to the existing Quick Session idle state exactly as the zero-active-Event case already does — never a fallback to the Business-wide set.**
+- **§3.6b "Elegir evento" needed no wireframe/copy change** — confirmed, not assumed: only its data source narrows for SELLER, documented in place rather than redesigned.
+- **New SELLER-only passive line, "Hay eventos activos hoy y no estás asignada a ninguno. Pídele a quien te invitó que te asigne a uno." (§3.3/§3.4/§3.5), added deliberately rather than staying silent** for the one newly-reachable situation RFC 0011 creates (Events active elsewhere, none assigned to this SELLER) — reasoned against this document's own existing Not Ready/capability-revoked transparency precedent and `character-bible.md`'s "no dead ends," not a default. No tappable link (no self-service fix exists for her), shown every occurrence rather than once ever (a live fact, not a durable setting), zero added taps. **Closing shape corrected 2026-09-09 (`ux-critic` Major finding)** — the original copy ended on the bare exclusion fact; the revised copy closes on the same resolving-clause shape its own §3.6a SELLER siblings already use, and drops the "pero" construction none of those precedents use.
+- **§3.5's ambient-element stacking order made explicit (Minor finding, `ux-critic`, 2026-09-09)** — this screen can now carry three independently-triggered ambient elements at once (upcoming-Event card, same-day-resume line, SELLER "events active elsewhere" line); the order is now stated explicitly, matching the specificity §3.4/§3.6 already established for their own two-element cases.
+- **§3.4's new CTA-sandwiched-between-two-ambient-lines composition gets the same High-Fidelity legibility flag §3.7/§3.9 already use (Minor/Suggestion, `ux-critic`, 2026-09-09)** — not resolved here, deferred to `ui-designer` per this document's own existing convention; applies identically to §3.5's fuller three-element composition and §3.6's Día-N equivalent.
 
 ## 11. Future considerations
 
