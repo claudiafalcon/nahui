@@ -4,6 +4,9 @@
 # Campaign production binary media — deliberately local-only, see company/CLAUDE.md
 company/campaign-assets/
 
+# Claude Code local plugin/session config — personal to this machine, not project config
+.claude/settings.json
+
 # OS
 .DS_Store
 
