@@ -1,6 +1,6 @@
 # 0011 — EventAssignment: staff-to-Event scheduling as a new Selling-context aggregate root
 
-Status: Proposed.
+Status: Accepted. Promoted to `product/00-foundation/decision-log.md` D60.
 
 ## The idea
 
