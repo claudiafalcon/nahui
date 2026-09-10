@@ -1,20 +1,24 @@
 import { useState } from 'react';
+import { useStore } from '../../domain/store';
 import { Button } from '../../components/Button/Button';
 import { BrandMark } from '../../components/BrandMark/BrandMark';
 import styles from './PhoneStep.module.css';
-
-const SEND_DELAY_MS = 260; // near-instant convention (§3.5), matching every other write-like action in this build
 
 /**
  * authentication.md §3.3/§3.4/§3.5/§3.5a — Número celular. The one screen in
  * the whole product with nowhere to go back to (§3.3) — no back arrow, no
  * nav bar (not even a Business exists yet).
  *
- * §3.5a ("No pudimos enviar tu código") is built as a real render branch —
- * `sendState`'s `'error'` case — but never actually triggered: this
- * prototype's local mock send never fails, the same disclosed-not-wired
- * convention already established for this codebase's other sync-failure
- * states (`BACKLOG.md`'s migration inventory, section A). §3.4's format-invalid state *is*
+ * Stage 7 Backend Integration — `handleSend` now calls the store's real
+ * `requestOtp` (the `send-otp` Supabase Edge Function, via
+ * `otpClient.ts`), replacing the previous local-only fake-delay mock.
+ * §3.5a ("No pudimos enviar tu código") is a real, now genuinely reachable
+ * render branch (`sendState === 'error'`) — a rate-limited or
+ * platform-error outcome from the real call lands here; the same generic
+ * copy covers both without inventing new UI text beyond the Approved spec.
+ * Not live-tested end to end — no real Supabase/Twilio account exists yet
+ * (`supabase/README.md`); until credentials are configured, every real
+ * call resolves to this error branch. §3.4's format-invalid state *is*
  * genuinely reachable, through real interaction (pasting a non-numeric
  * value) — the field is deliberately never auto-stripped of non-digit
  * characters, so a paste carries through exactly as typed.
@@ -26,6 +30,7 @@ export function PhoneStep({
   initialValue?: string;
   onCodeSent: (phone: string) => void;
 }) {
+  const { requestOtp } = useStore();
   const [raw, setRaw] = useState(initialValue ?? '');
   const [sendState, setSendState] = useState<'entry' | 'sending' | 'error'>('entry');
 
@@ -41,12 +46,15 @@ export function PhoneStep({
   const showFormatError = trimmed.length > 0 && (hasNonDigit || isTooLong);
   const canSend = isValidDigits;
 
-  function handleSend() {
+  async function handleSend() {
     if (!canSend) return;
     setSendState('sending');
-    window.setTimeout(() => {
+    const result = await requestOtp(trimmed);
+    if (result.ok) {
       onCodeSent(trimmed);
-    }, SEND_DELAY_MS);
+    } else {
+      setSendState('error');
+    }
   }
 
   if (sendState === 'error') {

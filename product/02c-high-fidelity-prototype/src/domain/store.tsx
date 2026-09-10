@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { makeId } from './id';
 import { addDaysToKey, dateKey, todayKey } from './dates';
+import { sendOtp, verifyOtpCode } from './otpClient';
 import {
   actingMembership,
   currentUser,
@@ -318,11 +319,12 @@ export interface CommitLotLine {
 
 /**
  * `onboarding.md` §2.2's three-way capability table. Note: this `'demo'`
- * value is the Onboarding "Ver un ejemplo" path — unrelated to the separate
- * Demo Mode validation-campaign build gate in `src/screens/DemoMode/`
- * (`DemoModeGate`/`DemoModeGateActive`), which reuses the same "demo" token
- * for a different, build-time concept. No shared imports or storage keys;
- * this comment exists only to disambiguate at a grep/read level.
+ * value is the Onboarding "Ver un ejemplo" path — unrelated to the
+ * now-retired `demo.nahui.app` validation-campaign build gate, which reused
+ * the same "demo" token for a different, build-time concept before it was
+ * removed (2026-09-10, Product Owner decision — see `company/bitacora.md`'s
+ * retirement entry). No shared imports or storage keys ever existed between
+ * the two; this comment exists only to disambiguate at a grep/read level.
  */
 export type OnboardingPath = 'free' | 'paid' | 'demo';
 
@@ -340,14 +342,39 @@ export type OnboardingPath = 'free' | 'paid' | 'demo';
  */
 export type VenueRef = { kind: 'existing'; venueId: ID } | { kind: 'new'; displayName: string };
 
+/** authentication.md §3.7's own error-state vocabulary (`CodeStep.tsx`'s
+ * `codeError`) — `verifyOtp` now resolves to one of these instead of
+ * always succeeding. */
+export type VerifyOtpOutcome =
+  | { ok: true; user: User }
+  | { ok: false; reason: 'incorrect' | 'expired' | 'too-many' | 'platform-error' };
+
+/** authentication.md §3.5a's own error state (`PhoneStep.tsx`'s
+ * `sendState === 'error'`). */
+export type RequestOtpOutcome = { ok: true } | { ok: false; reason: 'rate-limited' | 'platform-error' };
+
 interface StoreValue {
   state: AppState;
-  /** authentication.md §3.7 (Confirmar) — mock verification: any 6-digit
-   * code is accepted (RFC 0007 §5's own suggested simplification, disclosed
-   * in docs/passes/slice-2-authentication-onboarding.md). Creates the device's `User` row on a first-ever
-   * verification, or resolves the existing one on a returning verification
-   * for the same phone. Returns the resolved User. */
-  verifyOtp: (phone: string, code: string) => User;
+  /** authentication.md §3.5 "Enviar código" — Stage 7 Backend Integration:
+   * a real call to the `send-otp` Supabase Edge Function
+   * (`supabase/functions/send-otp/`, via `otpClient.ts`), which generates
+   * and WhatsApp-delivers a real code via Twilio. Nothing is written to
+   * `AppState` here — the OTP itself lives entirely server-side
+   * (`otp_attempts`), never in the client. See `supabase/README.md`: not
+   * live-tested, since no real Supabase/Twilio account exists yet. */
+  requestOtp: (phone: string) => Promise<RequestOtpOutcome>;
+  /** authentication.md §3.7 (Confirmar) — Stage 7 Backend Integration: a
+   * real call to the `verify-otp` Supabase Edge Function
+   * (`supabase/functions/verify-otp/`, via `otpClient.ts`), replacing the
+   * previous "any 6-digit code is accepted" mock (RFC 0007 §5's own
+   * suggested simplification, disclosed in
+   * docs/passes/slice-2-authentication-onboarding.md — now retired).
+   * Creates the device's `User` row on a first-ever *successful*
+   * verification, or resolves the existing one on a returning
+   * verification for the same phone; on any rejected outcome, no `User`
+   * row is created or changed. See `supabase/README.md`: not live-tested,
+   * since no real Supabase/Twilio account exists yet. */
+  verifyOtp: (phone: string, code: string) => Promise<VerifyOtpOutcome>;
   /** onboarding.md §3.5 "Creando tu negocio" — the atomic Owner-creation
    * write (RFC 0007/D44): creates the Business (capabilities per `path`,
    * §2.2's table) and an OWNER BusinessMembership in the same state update,
@@ -849,15 +876,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return resolvedProductIds;
   }
 
+  /** authentication.md §3.5 — Stage 7 Backend Integration: proxies straight
+   * through to the real `send-otp` Edge Function (`otpClient.ts`). No
+   * domain-state write happens here; the OTP itself is entirely
+   * server-side state, not `AppState`. `invalid-phone` is folded into
+   * `platform-error` — the real UI can't actually produce it, since
+   * `PhoneStep.tsx` already validates the 10-digit format before this is
+   * ever called. */
+  async function requestOtp(phone: string): Promise<RequestOtpOutcome> {
+    const result = await sendOtp(phone);
+    if (result.ok) return result;
+    return { ok: false, reason: result.reason === 'rate-limited' ? 'rate-limited' : 'platform-error' };
+  }
+
   /**
-   * authentication.md §3.7 — mock verification (RFC 0007 §5, disclosed in
-   * docs/passes/slice-2-authentication-onboarding.md): any 6-digit code is
-   * accepted, so this never fails. **Slice 12 — the real "looked up by
-   * phone, globally" lookup RFC 0007 §1 describes**, now that `users` is
-   * array-shaped: a first-ever verification for a phone (no existing row
-   * matches) mints a new `User`; a returning verification for a phone
-   * already held — whether or not it's the phone this device most recently
-   * had verified — resolves that same row and preserves its original
+   * authentication.md §3.7 — Stage 7 Backend Integration: real verification
+   * against the `verify-otp` Edge Function (`otpClient.ts`), replacing the
+   * previous "any 6-digit code is accepted" mock (RFC 0007 §5, disclosed in
+   * docs/passes/slice-2-authentication-onboarding.md — retired by this
+   * pass). The domain-write shape below (find-or-mint the `User` row) is
+   * unchanged from the mock; only the gate in front of it is real now — on
+   * any rejected outcome, this function returns early and writes nothing.
+   *
+   * **Slice 12 — the real "looked up by phone, globally" lookup RFC 0007
+   * §1 describes**, now that `users` is array-shaped: a first-ever
+   * *successful* verification for a phone (no existing row matches) mints
+   * a new `User`; a returning successful verification for a phone already
+   * held — whether or not it's the phone this device most recently had
+   * verified — resolves that same row and preserves its original
    * `phoneVerifiedAt`, never minting a duplicate. This is what makes
    * switching between two already-verified Memberships on one shared
    * device/instance (e.g. an OWNER signing out, a SELLER verifying, the
@@ -876,7 +922,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * already-known phone is never itself the ambiguous moment this check
    * exists for.
    */
-  function verifyOtp(phone: string, _code: string): User {
+  async function verifyOtp(phone: string, code: string): Promise<VerifyOtpOutcome> {
+    const result = await verifyOtpCode(phone, code);
+    if (!result.ok) {
+      // `invalid-phone`/`invalid-code` are malformed-request outcomes the
+      // real UI can't actually produce (both fields are already validated
+      // client-side before this is ever called) — folded into
+      // `platform-error`, the one CodeStep.tsx branch that doesn't assume
+      // a specific correctable user mistake.
+      const reason = result.reason === 'incorrect' || result.reason === 'expired' || result.reason === 'too-many'
+        ? result.reason
+        : 'platform-error';
+      return { ok: false, reason };
+    }
     const now = Date.now();
     const existing = state.users.find((u) => u.phone === phone);
     const user: User = existing
@@ -894,7 +952,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       users: existing ? s.users.map((u) => (u.id === user.id ? user : u)) : [...s.users, user],
       currentUserId: user.id,
     }));
-    return user;
+    return { ok: true, user };
   }
 
   /**
@@ -1967,6 +2025,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value: StoreValue = {
     state,
+    requestOtp,
     verifyOtp,
     completeOnboarding,
     setBusinessIdentity,

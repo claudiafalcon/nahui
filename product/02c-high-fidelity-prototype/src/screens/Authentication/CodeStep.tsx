@@ -4,25 +4,29 @@ import { Button } from '../../components/Button/Button';
 import styles from './CodeStep.module.css';
 
 const RESEND_COOLDOWN_MS = 30_000; // §3.6, judgment call
-const VERIFY_DELAY_MS = 260; // near-instant convention (§3.7)
 
 /**
  * authentication.md §3.6/§3.6a/§3.6b/§3.7/§3.7a-d — Ingresa el código.
  *
- * Mock verification (RFC 0007 §5, disclosed in
- * docs/passes/slice-2-authentication-onboarding.md): any 6-digit code
- * is accepted, so `verifying` always succeeds. §3.7a (código incorrecto),
- * §3.7b (código expirado), §3.7c (demasiados intentos), and §3.7d (error de
- * plataforma) are all built as real, correctly-rendering `codeError`
- * branches on this same screen — never triggered, the same disclosed-not-
- * wired convention already established for this codebase's sync-failure
- * states. §3.6b's format-invalid inline message *is* genuinely reachable
- * (pasting a non-numeric value into the code field, never auto-stripped).
- * §3.6/§3.6a's resend cooldown *is* a real, ticking 30-second countdown —
- * not a static mock.
+ * Stage 7 Backend Integration — `handleConfirm`/`handleResend` now call the
+ * store's real `verifyOtp`/`requestOtp` (the `verify-otp`/`send-otp`
+ * Supabase Edge Functions, via `otpClient.ts`), replacing the previous
+ * mock (RFC 0007 §5, disclosed in
+ * docs/passes/slice-2-authentication-onboarding.md — retired). §3.7a
+ * (código incorrecto), §3.7b (código expirado), §3.7c (demasiados
+ * intentos), and §3.7d (error de plataforma) are real `codeError`/
+ * `verifyState` branches that a real rejected outcome now genuinely
+ * drives, mapped 1:1 from `verifyOtp`'s `VerifyOtpOutcome.reason`. Not
+ * live-tested end to end — no real Supabase/Twilio account exists yet
+ * (`supabase/README.md`); until credentials are configured, every real
+ * call resolves to the `platform-error`/`'error'` branch. §3.6b's
+ * format-invalid inline message *is* genuinely reachable (pasting a
+ * non-numeric value into the code field, never auto-stripped). §3.6/§3.6a's
+ * resend cooldown *is* a real, ticking 30-second countdown — not a static
+ * mock, and now also triggers a real resend, not just a local UI reset.
  */
 export function CodeStep({ phone, onBack }: { phone: string; onBack: () => void }) {
-  const { verifyOtp } = useStore();
+  const { verifyOtp, requestOtp } = useStore();
   const [raw, setRaw] = useState('');
   const [verifyState, setVerifyState] = useState<'entry' | 'verifying' | 'platform-error'>('entry');
   const [codeError, setCodeError] = useState<'incorrect' | 'expired' | 'too-many' | null>(null);
@@ -50,22 +54,37 @@ export function CodeStep({ phone, onBack }: { phone: string; onBack: () => void 
   const remainingSeconds = Math.ceil(remainingMs / 1000);
   const countdownLabel = `0:${String(remainingSeconds).padStart(2, '0')}`;
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!canConfirm) return;
     setVerifyState('verifying');
-    window.setTimeout(() => {
-      verifyOtp(phone, trimmed);
+    const result = await verifyOtp(phone, trimmed);
+    if (result.ok) {
       // Success hands off silently — AppRouter re-renders once
       // `currentUser.phoneVerifiedAt` is set; nothing further to do here.
-    }, VERIFY_DELAY_MS);
+      return;
+    }
+    if (result.reason === 'platform-error') {
+      setVerifyState('platform-error');
+    } else {
+      setVerifyState('entry');
+      setCodeError(result.reason);
+    }
   }
 
-  function handleResend() {
-    setRaw('');
+  async function handleResend() {
     setCodeError(null);
-    setResendAt(Date.now() + RESEND_COOLDOWN_MS);
-    setJustResent(true);
-    window.setTimeout(() => setJustResent(false), 2400);
+    const result = await requestOtp(phone);
+    if (result.ok) {
+      setRaw('');
+      setResendAt(Date.now() + RESEND_COOLDOWN_MS);
+      setJustResent(true);
+      window.setTimeout(() => setJustResent(false), 2400);
+    }
+    // A failed resend leaves the existing code field/cooldown untouched —
+    // the merchant can just tap "Reenviar código" again once the cooldown
+    // clears, the same recovery path §3.5a's own "Reintentar" already
+    // gives PhoneStep for an identical failure class. No separate
+    // resend-failure copy exists in the Approved spec to show instead.
   }
 
   if (verifyState === 'platform-error') {
