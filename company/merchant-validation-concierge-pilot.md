@@ -2,6 +2,8 @@
 
 **Status: Approved by the Product Owner, 2026-09-03 — content and caps signed off in full.** Not yet live: the Beat 4b video variant (§4) still needs to be built, and Instagram Business Suite's Instant Reply/automation tooling still needs to be confirmed against the real account (§3 item 5) before anything is actually published. No ad published, no Instagram automation configured, no message sent as of this status line. Prepared by `marketing` at the Product Owner's direct request, following the Product Owner's review of this agent's earlier DM-feasibility analysis and a parallel `knowledge-mentor` consultation on Concierge MVP methodology.
 
+**Amended 2026-09-10 (Product Owner decision — `demo.nahui.app`/Acceso DM retirement).** §0's Loop 2 mechanism, §6.2/§6.4/§6.6's script lines, and §7.1/§7.5's PF5 definition are reworked below, per the dated notes in each section — see the "Retirement adjustment note (2026-09-10)" immediately following the Supersession note for the full summary. This amendment changes wording that was part of the 2026-09-03 Approval (§3's checklist); those checkmarks predate this rework and should be read as approval of the *prior* wording only, not of what's written below, until the standard `brand-guardian`/`reviewer` pipeline re-confirms it.
+
 ---
 
 ## Supersession note (2026-08-27) — read this before anything below
@@ -23,6 +25,22 @@ Everything in this document is built to answer that question honestly — includ
 
 **On the referenced Concierge MVP consultation:** this document does not have that consultation's specific text on hand — it was routed and returned outside this dispatch. Where this design leans on Concierge MVP theory (Eric Ries' "manually deliver the service by hand, behind the scenes, before automating it" pattern — do the unscalable thing on purpose, to learn, not to launch a channel), that's this agent's own general knowledge (Model Knowledge tier, `company/CLAUDE.md`'s Knowledge Mentor tiering), not a citation of that specific consultation's findings. The core Concierge MVP discipline this design does apply throughout: keep automation to the absolute minimum needed to not lose people entirely (one Instant Reply), and put a real human in every substantive exchange — the opposite of a scaled acquisition channel, on purpose.
 
+## Retirement adjustment note (2026-09-10) — read this before §0
+
+**LAUNCH GATE, added 2026-09-10 (`reviewer` Blocker, closed by adding this gate — read before running a single conversation).** The rework below (§0, §6.4.3, §6.6) describes `nahui.app`'s phone verification as a working, real WhatsApp-delivered OTP. As of this amendment, **that backend is built but not deployed** — no real Supabase or Twilio account exists yet, no WhatsApp message template is approved, nothing has been live-tested (`product/02c-high-fidelity-prototype/supabase/README.md`'s own checklist, unchecked). Sending a real recruited respondent to `nahui.app` today would land her on a phone-entry screen that can never actually deliver a code — a materially broken experience, at the exact moment this pilot is trying to build trust with her, one DM at a time. **Loop 2 (§0) may not go live — no link sent, no §6.6 Track 1 "sí" acted on — until the Product Owner or Main confirms the backend is actually deployed and a real end-to-end OTP has been verified.** Loop 1 (the conversation itself, §6.1-§6.5, §6.6's Track 2 variant) is unaffected by this gate and may proceed regardless, since it never depends on `nahui.app`'s backend being live.
+
+The Product Owner has retired `demo.nahui.app`, the paid campaign that drove traffic to it, and the "Acceso DM" auto-login shortcut. Her reasoning, quoted directly: now that real WhatsApp OTP is implemented (in code — see the launch gate above for what "implemented" does and doesn't mean yet), `demo.nahui.app` mirrors the same auth flow as `nahui.app`, so it no longer offers the low-friction, no-real-phone-number experience it was originally built for. Going forward, the experience to validate is the real one — **interest/DM/organic discovery → `nahui.app` → WhatsApp OTP → real business → real Nahui usage** — no separate demo deployment or auth path.
+
+This pilot is **not** retired — it remains the active DM-qualification instrument, and this real-app-only direction actually brings it closer to what it was always meant to observe, not further away. What changes, each amended below with its own dated reasoning:
+
+1. **§0's flow diagram and Loop 2 mechanism** — no longer routes to the retired Acceso DM link; reworked, not just re-pointed, since "try it yourself" is now a materially heavier ask than before.
+2. **§6.2's branch-check line and §6.6's closing line** — updated to the real app, in natural Mexican Spanish, honestly disclosing what trying it now actually involves.
+3. **§6.4 ("Track 2")** — redefined to mean someone who already completed real sign-up on `nahui.app` on her own, not someone who tried a disposable demo (which no longer exists).
+4. **§7.1/§7.5 (PF5)** — rescoped from a demo-specific side signal to direct evidence about the real, universal phone-entry step, and re-routed accordingly.
+5. **§0.3's citation of D19/D51's "disposable/non-convertible" framing** — flagged as needing a follow-up cross-reference now that `decision-log.md` D61 supersedes D51/D52 (see §0.3 below).
+
+**A consequence worth stating plainly for whoever runs this pipeline next:** these changes edit script lines and a signal category that were part of the 2026-09-03 Approval sign-off (§3's checklist — Instant Reply copy, Discussion guide). That approval covered the *prior* wording. The amended lines below should be treated as needing re-confirmation through the standard `brand-guardian`/`reviewer` pipeline before this pilot is considered ready to go live again — this document does not re-approve itself by being edited.
+
 ---
 
 ## Companion documents, referenced not duplicated
@@ -38,41 +56,58 @@ Everything in this document is built to answer that question honestly — includ
 
 ---
 
-## 0. Two-loop structure (added 2026-08-27, supersedes the single-loop CP1-CP5 design; Loop 2's own mechanism updated 2026-09-04, see §0.3)
+## 0. Two-loop structure (added 2026-08-27, supersedes the single-loop CP1-CP5 design; Loop 2's own mechanism reworked twice since — 2026-09-04's skip-Authentication correction, then substantively redesigned 2026-09-10 following `demo.nahui.app`/Acceso DM's retirement, see below)
 
-The DM conversation is no longer asked to explain anonymous demo abandonment. Instead it does what it's actually suited for — qualification and discovery — and hands off into a second, independent loop with its own dedicated, minimally-instrumented entry point:
+**⚠ Loop 2 is not launch-ready — see the LAUNCH GATE at the top of the "Retirement adjustment note" above before sending anyone to `nahui.app`.** The real backend it depends on isn't deployed yet.
+
+The DM conversation is no longer asked to explain anonymous demo abandonment. Instead it does what it's actually suited for — qualification and discovery — and hands off into a second loop, now the same real product every other merchant uses, not a dedicated, minimally-instrumented entry point:
 
 ```
 Ad → DM conversation (§6, mostly unchanged, see §0.1)
    → short qualification (3-5 natural questions, already the shape of §6.3-6.5)
    → does Nahui appear to solve a real problem for this merchant? (H1 signal)
-   → if yes: "¿quieres probar un demo de 2 minutos?" → send the Acceso DM link
-     (https://demo.nahui.app/?acceso=dm)
-   → she lands directly on a working, sellable sample catalog — no
-     phone/OTP screen, no path-choice screen (product/02-ux/acceso-dm.md)
-   → acceso_dm_* instrumentation (four count-only events: opened, sale
-     completed, session closed, Results viewed) captures where she gets to
+   → if she wants to actually start using Nahui: "¿te gustaría empezar a
+     usarla tú misma?" → send the real link, https://nahui.app
+   → she goes through the same sign-up every other merchant uses — a real
+     WhatsApp OTP to her real number, then a real Business she creates and
+     keeps (product/02-ux/authentication.md, onboarding.md) — no separate
+     demo build, no shortcut, no disposable sample
+   → no DM-pilot-specific instrumentation exists on this path — the
+     acceso_dm_* events were retired along with Acceso DM itself
    → optional follow-up: "¿llegaste a probarlo? ¿en qué parte te trabaste?"
 ```
 
-**Loop 1 — the conversation itself** tells us who the ICP really is, whether the problem resonates, how merchants describe it in their own words, what builds trust. This is what §6's discussion guide already collects; see §0.2 for the specific reframe.
+**Loop 1 — the conversation itself** tells us who the ICP really is, whether the problem resonates, how merchants describe it in their own words, what builds trust. This is what §6's discussion guide already collects; see §0.2 for the specific reframe. **As of 2026-09-10, Loop 1 is this pilot's primary and most authoritative evidence source** — see the reasoning below for why.
 
-**Loop 2 — the demo, for an already-qualified population** tells us where genuinely interested merchants still struggle *inside the product*, a different and more useful signal than an anonymous bounce rate. What this loop deliberately does NOT do, decided explicitly rather than left ambiguous:
+**Loop 2 — inviting an already-qualified respondent into the real product, reworked 2026-09-10, not merely re-pointed.** Before this amendment, Loop 2 sent her to a dedicated, disposable demo build (Acceso DM) that skipped Authentication entirely — a deliberately low-commitment, no-real-phone-number "look inside" for someone who'd already built trust in conversation. That mechanism, and the reasoning that justified skipping Authentication for it, no longer exist to reuse: there is no separate build left to route to, and the real app's own Authentication is not something this pilot can skip without literally handing out a bypass to a real production account — which was never on the table.
 
-- **It does not modify the self-serve flow, and anonymous/organic traffic still reaches exactly what it always has.** **Corrected 2026-09-04 (`decision-log.md` D52):** Acceso DM now lives inside the same `demo.nahui.app` build (moved there from an earlier, since-superseded design that shipped it in the real production bundle instead) — not a separate domain, but still a separate, marker-gated (`?acceso=dm`) entry point with zero effect on any visitor whose URL doesn't carry that marker. `demo-mode.md`'s own Welcome screen, Authentication pass-through, and `ReminderBanner` are otherwise completely unmodified. One real, accepted side effect worth knowing when reading the dashboard: because `ReminderBanner` (and its `demo_*` event suite) now also composites for Acceso-DM-arrived merchants, those events no longer distinguish DM-pilot traffic from ordinary self-serve visitors — the separate, dedicated `acceso_dm_*` events (`product/02-ux/acceso-dm.md §2.4`) remain the reliable, DM-pilot-only signal. Acceso DM is reached only via a link the Product Owner sends directly in a qualified DM conversation, never discoverable any other way (`product/02-ux/acceso-dm.md`'s own placement ruling, `decision-log.md` D51/D52).
-- **It now does skip Authentication — a deliberate, later correction to this section's original reasoning, not an oversight.** This section originally kept phone/OTP in Loop 2 specifically to preserve the option of learning whether phone-entry is a barrier for a genuinely-interested population. The Product Owner revisited that tradeoff directly (2026-09-03/04): that research question was secondary to the pilot's actual goal — a value-first first impression for a population that already built trust in conversation — and not worth damaging the experience to preserve, especially once the prior campaign's own funnel data (§2, `merchant-validation-funnel-diagnosis.md`) showed essentially no real downstream progression to begin with. PF5 (§7) is unaffected by this change — it's scored from Track 2 of the DM conversation itself (§6.4.3, someone who already tried `demo.nahui.app` on her own, before this conversation), a population Acceso DM's own link never touches.
+**The real methodology question this forces, reasoned through rather than resolved by find-and-replace:** does "pruébala tú misma" still make sense as a low-commitment ask once trying it means a real WhatsApp OTP to her real phone and creating a real, retained Business — or does this argue for leaning fully into Loop 1 as a human-conversation-only instrument instead? Two considerations point in opposite directions, both real:
+- **Against keeping Loop 2 as previously designed:** the entire point of the 2026-09-04 skip-Authentication correction was to preserve a value-first first impression without real friction. That correction is now structurally impossible to preserve — there's no other entry point left. Asking a DM respondent to create a real, retained Business is a materially heavier, more consequential ask than "click this link to see a sample," and blurs into actual pilot recruitment (already handled by `merchant-validation-campaign.md`'s own merit-based admission logic) in a way the original design never intended — this pilot's own §1 non-goal #3 explicitly rules out becoming "a pivot to concierge-style, human-mediated onboarding as Nahui's standing model."
+- **For keeping it, redesigned:** the Product Owner's own stated experience to validate — interest/DM/organic discovery → `nahui.app` → WhatsApp OTP → real business → real Nahui usage — is *literally* what a redesigned Loop 2 already is. Retiring it entirely would mean this pilot only ever collects self-reported conversation data and never observes a single genuinely-qualified merchant actually walk the real path the company most needs validated right now. And because signing up now means something real, a "sí" here is a stronger, more literal adoption-intent signal than the old disposable-demo click ever was.
 
-**Attribution caveat, named honestly:** `acceso_dm_*` events are anonymous/aggregate, same discipline as the retired `demo_*` suite — no per-visitor ID, no PII. There is no automatic way to link a specific instrumented demo session back to a specific DM conversation. The reliable mechanism is the optional follow-up question in the flow above (self-report) — treat anything from the dashboard itself as directional corroboration only, never as individual attribution. **Not carried forward from the prior campaign, deliberately:** the earlier Meta Ads campaign's own funnel data showed essentially no meaningful real-user progression past the first stage — the few downstream events observed were the Product Owner's own internal testing, not real prospects (`company/bitacora.md`, internal record only, never disclosed in external-facing material). This pilot's population and funnel are different enough that continuity with that prior instrumentation was judged not worth preserving as a constraint on this design.
+**Resolution: Loop 2 survives, redesigned, but demoted in evidentiary weight relative to Loop 1, not treated as a second, equally-instrumented measurement channel.** Concretely:
+- The invitation must be offered honestly, at the real weight of what it now is — not undersold as a quick, harmless look the way the old "nada obligatorio, pruébala" framing did. See §6.6's rewritten closing line.
+- Expect a materially lower Loop 2 opt-in/completion rate than before. That's not a design failure to fix — it's itself real signal about adoption willingness that the old disposable-demo mechanism could never have produced honestly.
+- **No dashboard-level corroboration exists anymore.** The retired `acceso_dm_*` events were this pilot's only quantitative, anonymous-aggregate signal for Loop 2; nothing replaces them, since `nahui.app` has no way to tag a signup as DM-pilot-sourced. The only evidence Loop 2 produces going forward is what she self-reports back — the optional follow-up question in the flow above, and, where relevant, corroborating PF5 evidence (§7.1, reworked below). This is a real degradation of Loop 2's own evidentiary rigor, stated plainly rather than glossed over.
+- **Attribution caveat, restated:** there is no automatic way to link a real `nahui.app` sign-up back to a specific DM conversation, and — unlike the retired `acceso_dm_*` suite — there is no anonymous/aggregate corroboration layer at all anymore. Self-report is the only mechanism; treat it exactly as such.
 
 ### 0.1 Discussion guide status
 
-§6 (Instant Reply, discussion guide, standing probes, tone check) needs no structural rewrite — a 3-5 question qualification conversation asking about her business, whether the problem resonates, and what she'd tell someone else about Nahui is the same shape of conversation whether the downstream use is CP1-CP5 coding or H1 signal collection. What changes is §6.2's branch-check purpose (§0.2) and how answers get coded (§7, reframed).
+Unchanged. §6 (Instant Reply, discussion guide, standing probes, tone check) needs no structural rewrite beyond the specific lines named in this note — a 3-5 question qualification conversation asking about her business, whether the problem resonates, and what she'd tell someone else about Nahui is the same shape of conversation regardless of what Loop 2 now is.
 
-### 0.2 §6.2's branch-check, reframed
+### 0.2 §6.2's branch-check, reframed (updated 2026-09-10)
 
-The original branch-check ("¿ya le entraste a la app... o el video fue lo único que has visto?") was designed to route into CP1-CP5 coding for people who already saw the demo unprompted. Under the two-loop design, that question no longer routes to a different question set — Track 1/2's downstream questions (§6.3/§6.4) still work fine as-is for H1 signal (problem-fit, comprehension, trust), since none of them actually depended on being able to explain funnel abandonment. Keep the question, drop its role as a CP1-CP5 gate.
+The branch-check ("¿ya le entraste a la app... o el video fue lo único que has visto?") still exists and still routes to Track 1/Track 2 exactly as before — what changed is what the "yes" branch now means. Previously it asked whether she'd already opened the disposable demo. Since that no longer exists, it now asks whether she's already opened the real `nahui.app` on her own — a meaningfully different, and meaningfully stronger, signal of self-directed engagement than before (see §6.4's own redefinition, below). The question's exact wording is updated in §6.2 itself.
 
-### 0.3 Value-first demo sequencing — evaluated, approved, shipped as Acceso DM (2026-09-04)
+### 0.3 Value-first demo sequencing — evaluated, approved, shipped as Acceso DM (2026-09-04), now itself retired (2026-09-10) — kept as historical record, not deleted
+
+**2026-09-10 amendment note, read before the preserved text below.** Everything shipped from this evaluation (Acceso DM) is retired as of 2026-09-10, per the Product Owner's decision recorded in the "Retirement adjustment note" above — `demo.nahui.app` no longer offers a distinct experience from `nahui.app` now that real WhatsApp OTP is live, so the dedicated bypass this subsection describes evaluating, approving, and shipping no longer exists to route to.
+
+**Follow-up on D19/D51's citation below, now resolved.** `decision-log.md` D61 (2026-09-10) supersedes D51/D52 — the disposable-Business mechanism `acceso-dm.md` built on remains accurate history of how the route worked while it existed, but the route itself, and `product/02-ux/acceso-dm.md`, are now marked Retired. D19's own "Ver un ejemplo" concept is unaffected by D61 — it remains live inside the real product, unchanged; only Acceso DM's separate, auth-free shortcut into it is gone. The text below should be read with that in mind: a historical record of a mechanism that existed and is now gone, not a still-current Foundation reference.
+
+**Everything below this note is the original text, unedited** — preserved as an honest paper trail of how Acceso DM came to exist and, now, why it's gone, per this document's own non-deletion/amend-forward discipline (§7's rule, applied here to §0 as well as to §7 itself):
+
+---
 
 **Status: shipped, not merely planned.** Everything below this line is the original evaluation, kept verbatim as the honest paper trail of how this design evolved (same non-deletion discipline as `market-validation.md`'s own retired §7 and this document's own §7.6). What actually got built diverged from what's described below in one real respect: **not a new, kept, ongoing fourth Onboarding path.** A later round of scoping (2026-09-03/04) found that requirement unnecessary — the demo/sample experience never needs to convert into her real Business/account at all — which allowed a much smaller design: a dedicated entry route (`product/02-ux/acceso-dm.md`, `decision-log.md` D51) that composes the existing, already-shipped "Ver un ejemplo" mechanism (`decision-log.md` D19) behind a fixed demo-only credential, skipping Authentication entirely rather than deferring it to a conversion moment. See `product/02-ux/product-decisions.md` Q19–Q22 (marked Superseded) for the full intermediate reasoning this shipped design replaced. §0's flow diagram and non-goal list above reflect what actually shipped, not this subsection's original plan.
 
@@ -95,7 +130,10 @@ Logged as a Product Decision, not decided here — recorded as Q19 in `product/0
 ## 1. Non-goals — stated plainly, binding on this document and on how its findings get used
 
 1. **The phone/OTP step in the self-serve flow is not being removed, redesigned, or touched based on this pilot alone.** Any UX change to `authentication.md`'s real screens stays gated on confirmed evidence (§7's threshold convention) and is a separate Product Decision, routed through `product/02-ux/product-decisions.md` per the standard Decision Ownership policy — never resolved unilaterally from this pilot's own findings, however suggestive. **Distinct from Acceso DM's own credential bypass (§0.3):** that's a fixed demo-only fixture scoped entirely to this pilot's own dedicated entry route, never a change to the real Authentication screens or mechanism every other merchant still sees — see `product/02-ux/acceso-dm.md`'s own non-goals for the full boundary.
-2. **The self-serve funnel and its existing instrumentation stay fully intact and running, unmodified by this pilot.** `demo.nahui.app`, its Demo Mode welcome screen, the persistent Form-reminder banner, and the pending Stage 4-7 `track()` events (`merchant-validation-funnel-diagnosis.md`) continue exactly as already designed. This pilot's findings are meant to be read *alongside* that self-serve data once both exist, not in place of it.
+
+**2026-09-10 note:** Acceso DM itself is retired (see the Retirement adjustment note above) — the sentence above describes a mechanism that existed and is now gone, kept here because point 1's own binding rule (no UX change to the real Authentication screens based on this pilot alone) survives unchanged and independent of Acceso DM's existence or retirement.
+
+2. **Corrected 2026-09-10 — this point described `demo.nahui.app` as "intact and running," which is no longer true.** `demo.nahui.app`, its Demo Mode welcome screen, and the persistent Form-reminder banner are retired (`decision-log.md` D61); the pending Stage 4-7 `track()` events this point referenced are themselves closed as Won't-implement/Superseded (`merchant-validation-funnel-diagnosis.md`). This pilot no longer has a separate self-serve instrumentation stream to read its own findings alongside — `nahui.app`'s real sign-up funnel has no dedicated analytics of its own yet, a gap for whoever next instruments it directly, not something this pilot creates or depends on.
 3. **This pilot is explicitly not a replacement acquisition channel, and not a pivot to concierge-style, human-mediated onboarding as Nahui's standing model.** It is a bounded, time-boxed diagnostic experiment. If it produces useful signal, the next step is a decision about what (if anything) to fix in the self-serve flow — not a decision to keep running DM campaigns instead of self-serve.
 4. **This pilot does not, on its own, confirm or reject H1, or any of the PF1-PF5 signal categories (§7).** At the sample size this design can realistically produce (§2), every finding is a candidate signal per the same confidence discipline this project already holds itself to everywhere else (`market-validation.md`, `merchant-validation-decision-matrix.md`) — never a resolved conclusion from n=10-20 DM conversations alone.
 
@@ -271,25 +309,33 @@ Deliberately doesn't repeat "alguien de nuestro equipo te escribe" — the Salud
 
 > Hola [nombre], soy [Product Owner], de Nahui — gracias de verdad por escribirnos, aunque no vendas en un bazar. Como ya te comentamos, si conoces a alguien que sí venda en bazares o tianguis, nos ayudaría muchísimo que le compartas esto — así como tú nos escribiste a nosotros. No hace falta que me contestes si no se te ocurre nadie, de verdad. Gracias otra vez por tu tiempo.
 
-### 6.2 Branch check — did she reach the demo at all
+### 6.2 Branch check — did she already reach the real app on her own
 
 *From here to §6.7, applies to Branch A only (confirmed bazaar/tianguis vendors, per §5's Q1).*
 
-> Para empezar — ¿ya le entraste a la app que se ve en el video (demo.nahui.app), o el video fue lo único que has visto hasta ahora?
+**Updated 2026-09-10 (demo.nahui.app retired) — the question now asks about the real app, not a disposable demo build. This is a script change, not only a URL swap: see §6.4's own redefinition of what a "yes" here now means.**
 
-**→ Track 1 if no. → Track 2 if yes.** (Renamed from "Branch A/B" 2026-09-05 to avoid collision with §5's new vendor-status Branches A/B/C — this is an unrelated, nested branch that only ever applies within vendor-Branch A.)
+> Para empezar — ¿ya has entrado tú misma a nahui.app, o el video fue lo único que has visto hasta ahora?
 
-### 6.3 Track 1 — never opened the demo
+**→ Track 1 if no. → Track 2 if yes.** (Renamed from "Branch A/B" 2026-09-05 to avoid collision with §5's vendor-status Branches A/B/C — this is an unrelated, nested branch that only ever applies within vendor-Branch A.)
+
+### 6.3 Track 1 — never used the real app on her own (heading updated 2026-09-10 for consistency with §6.2/§6.4's redefinition; questions below are unchanged, generic to either referent)
 
 1. **Open, no options offered:** "¿Qué te detuvo, o qué te hizo dudar?" — wait for her actual answer before saying anything else. Log it verbatim; code it per §7 as **spontaneous**.
 2. **Only if her answer is vague/non-specific** (e.g., "no he tenido tiempo," "se me pasó," "ahorita ando ocupada"): "Te entiendo, a todas nos pasa. Si te animas a intentarlo en algún momento, ¿qué esperarías que te pidiera la app al abrirla? ¿Habría algo que te hiciera dudar en meter tu información — como tu número de teléfono — o es más que no ha llegado el momento?" — a gentle, still-open nudge, offered only as a probe, never a leading confirmation. Log her answer here as **prompted**, distinct from a spontaneous mention, per §7's evidence-weighting rule.
 3. "¿Qué entendiste que hace la app, nada más viendo el video?" — probes value-prop clarity independent of whether she ever tried it. **Equivalence skip:** if she already gave an equivalent answer earlier in the conversation (this overlaps with §6.5.1), don't ask it again — code her existing answer against both, note it in the log rather than re-asking.
 
-### 6.4 Track 2 — opened the demo
+### 6.4 Track 2 — already using the real app on her own (redefined 2026-09-10)
 
-1. "Ok, cuéntame: ¿hasta dónde llegaste — alcanzaste a hacer una venta de prueba, o te quedaste en algún paso antes?"
+**What changed, and why, stated explicitly rather than assumed.** Track 2's entire prior premise was "someone who already tried the *disposable* demo" — a distinction from Track 1 that made sense specifically because trying the demo cost her nothing real. `demo.nahui.app` no longer exists, so that referent is gone. Two options were weighed, not defaulted between:
+- **Retire Track 2, merge into Track 1**, on the theory that once both paths are "the real thing," the distinction that justified two tracks disappears.
+- **Redefine Track 2 to mean someone who already completed real sign-up on `nahui.app` on her own** — real WhatsApp OTP, a real Business she created — before this conversation ever happened.
+
+**Chosen: redefine, don't merge.** A respondent who has already created a real, verified account before ever talking to us represents a meaningfully *deeper* level of self-directed commitment than someone who has only watched a video — if anything, the gap between Track 1 and Track 2 is now wider than it was under the old, disposable-demo definition, not narrower. Merging them would discard a real, distinguishable population and force Track-2-specific questions (below) onto a Track 1 respondent who has no relevant experience to answer them from.
+
+1. "Ok, cuéntame: ¿hasta dónde llegaste — llegaste a registrar una venta, o te quedaste en algún paso antes?"
 2. **Open:** "¿Hubo algún momento en el que dudaste si seguir, o que te costó más trabajo del que esperabas?"
-3. **The one direct, targeted phone-entry question — asked openly, not leadingly, and only here, where she actually experienced the step:** "Cuando te pidió tu número de teléfono para entrar, ¿cómo se sintió eso? ¿Lo hubieras hecho igual si fuera una app que no conoces?" **Applicability skip:** only ask this if 6.4.1's answer confirms she actually reached the phone/OTP step before stopping — if she says she got stuck before that point, this question doesn't apply; don't ask it hypothetically.
+3. **The one direct, targeted phone-entry question — asked openly, not leadingly, and only here, where she actually experienced the step. Reworded 2026-09-10: the old phrasing asked her to imagine a hypothetical ("¿lo hubieras hecho igual si fuera una app que no conoces?") — no longer hypothetical, since `nahui.app` genuinely is an app she barely knows:** "Cuando te pidió tu número de teléfono y te llegó el código por WhatsApp, ¿cómo se sintió eso, siendo una app que apenas estás conociendo?" **Applicability skip:** only ask this if 6.4.1's answer confirms she actually reached and completed that step before stopping — if she says she got stuck before that point, this question doesn't apply; don't ask it hypothetically.
 
 ### 6.5 Both branches converge
 
@@ -297,13 +343,25 @@ Deliberately doesn't repeat "alguien de nuestro equipo te escribe" — the Salud
 2. "¿Esto te resolvería algo de verdad en tu día a día vendiendo, o se sintió como algo bonito pero no tan necesario?" — reusing `usability-testing-plan.md` §4 Q8's exact convention, per the Product Owner's own instruction not to reinvent Nahui's established discipline for this kind of conversation.
 3. "¿Hay algo que te haya dado dudas o desconfianza de nosotros o de la app? Así sea chiquito, nos ayuda mucho saberlo." — direct, honest trust-probe.
 
-### 6.6 Closing
+### 6.6 Closing (rewritten 2026-09-10 — the ask itself, not just its destination, changed)
 
-> Muchísimas gracias por platicar conmigo, de verdad ayuda un montón. Como te comenté, ya quedaste en la lista de acceso prioritario. Si te late, te mando el link para que pruebes la app tú misma cuando quieras — nada obligatorio. ¿Te gustaría?
+**⚠ Track 1's "sí, mándame el link" branch is gated — see the LAUNCH GATE near the top of this document.** Don't actually send the `nahui.app` link until the backend is confirmed deployed and live-tested. Track 2's variant below has no such dependency.
 
-If yes, this is the Loop 2 handoff (§0): send the Acceso DM link (`https://demo.nahui.app/?acceso=dm`), log it in §8's template. If she opts in but doesn't want the link right now, that's still a valid, complete close — don't push for it.
+**Why this line changed beyond a URL swap.** The prior closing ("te mando el link para que pruebes la app tú misma cuando quieras — nada obligatorio") was accurate for a disposable demo and would now understate what's actually being offered — a real sign-up, a real WhatsApp code, a real Business. `character-bible.md`'s "states facts before offering an opinion" and "gives her an honest way out of anything" both require this to be disclosed plainly, at its real weight, not softened into something that reads smaller than it is.
 
-Log the opt-in for future contact (Sí/Tal vez/No) same as before, non-blended-rate convention `merchant-validation-decision-matrix.md` §E already applies to Q16/Q17 — and log the separate Loop 2 opt-in (demo link accepted or not) distinctly, per §8's template.
+**`brand-guardian` Suggestion, applied 2026-09-10:** §6's own "Standing guidance" (a short reflective acknowledgment before moving between questions) applies going into this closing too, not just between §6's own numbered questions — especially when §6.5.3 just surfaced a trust concern. Don't launch straight into the script below off the back of a trust answer without first acknowledging what she said.
+
+**Track 1 (never signed up) — the version above:**
+
+> Muchísimas gracias por platicar conmigo, de verdad ayuda un montón. Como te comenté, ya quedaste en la lista de acceso prioritario. Y si te nace, puedo pasarte el link para que empieces a usar Nahui tú misma cuando quieras — es la app real, no una prueba: vas a meter tu número, te va a llegar un código por WhatsApp, y con eso queda registrado tu negocio. Nada de esto es obligatorio, ni ahorita ni después — tú decides si te late. ¿Te gustaría el link?
+
+**Track 2 (already completed real sign-up, §6.4) — a distinct variant, added 2026-09-10 (`brand-guardian` Minor finding, closed).** Offering her a link "to start using Nahui" when she's already using it reads as if the conversation forgot what she just told us — `character-bible.md`'s "quietly observe... never make her feel watched or managed" means carrying forward what she's already said, not re-asking her to begin something she's already begun:
+
+> Muchísimas gracias por platicar conmigo, de verdad ayuda un montón. Como te comenté, ya quedaste en la lista de acceso prioritario. Y ya que la estás usando tú misma, me encantaría saber cómo te ha ido — si en algún momento te trabas con algo, o si hay algo que te gustaría que hiciera diferente, aquí ando.
+
+If yes, this is the Loop 2 handoff (§0, redesigned 2026-09-10): for Track 1, send the real app link (`https://nahui.app`), log it in §8's template. Track 2 has no link to send — her own §6.4 answers are already the evidence this handoff would have collected. If she opts in but doesn't want the link right now (Track 1), that's still a valid, complete close — don't push for it.
+
+Log the opt-in for future contact (Sí/Tal vez/No) same as before, non-blended-rate convention `merchant-validation-decision-matrix.md` §E already applies to Q16/Q17 — and log the separate Loop 2 opt-in (real app link accepted or not) distinctly, per §8's template.
 
 ### 6.7 Standing probes — use throughout, don't improvise variants mid-conversation
 
@@ -333,10 +391,10 @@ Log the opt-in for future contact (Sí/Tal vez/No) same as before, non-blended-r
 ### 7.1 Five signal categories — not funnel-diagnosis codes, not ranked by likelihood
 
 - **PF1 — Problem recognition.** The core H1 signal (`market-validation.md` §1/§6): does she recognize "losing track of a sale competes with attending the next customer" as a real, recurring, specifically-describable friction in her own business — a remembered concrete incident, not a vague "sí, a veces"? What would weaken it, same bar `market-validation.md` already sets for H1: she describes sales-tracking as a solved non-issue, or ranks it clearly below other frictions when asked.
-- **PF2 — Value-prop clarity.** Can she restate what Nahui does, accurately, in her own words (§6.5.1) — independent of whether she ever opened the demo? A gap here is evidence about messaging/creative, not about whether the underlying problem is real.
+- **PF2 — Value-prop clarity.** Can she restate what Nahui does, accurately, in her own words (§6.5.1) — independent of whether she's ever used the app herself (updated 2026-09-10, "the demo" retired)? A gap here is evidence about messaging/creative, not about whether the underlying problem is real.
 - **PF3 — Perceived effort/cost.** Does she describe an assumed setup/time cost as a reason for hesitation — distinct from PF1 (is the problem real) and PF2 (does she understand the product)?
 - **PF4 — Trust/unfamiliarity.** General hesitancy toward Nahui as an unknown company/app, named spontaneously or in response to §6.5.3's direct question.
-- **PF5 — Phone-entry experience (Track 2 only, §6.4.3).** Kept as a direct, in-context question for anyone who actually reached that step. Not evidence about anonymous funnel abandonment (that population is unreachable by this instrument, per the supersession note) — real evidence about how a genuinely-interested, already-engaged person experiences that specific step, useful context whenever the separate anonymous-bounce investigation needs a comparison point.
+- **PF5 — Phone-entry experience (real WhatsApp OTP).** Amended 2026-09-10: `demo.nahui.app` and Acceso DM are retired; phone-entry is no longer a demo-specific friction point held up for comparison against a separate, unreachable anonymous-bounce population — it is the one, universal step every real Nahui sign-up goes through, DM-sourced or self-serve alike. PF5's core question survives unchanged (how does a genuinely-interested, already-engaged merchant experience being asked for her real phone number and completing a real WhatsApp OTP), and its evidentiary weight is stronger than before, not weaker: this is no longer a proxy for something a disposable demo simulated — it's the real step, with real stakes. **Primary source:** Track 2's direct §6.4.3 answer (§6.4, redefined 2026-09-10 — someone who already completed real sign-up before this conversation), asked in-context, immediately after she lived it. **Secondary, weaker source, new as of this amendment:** a Track 1 respondent who accepts the Loop 2 invitation (§0, redesigned 2026-09-10) and later self-reports on the phone-entry step through the optional follow-up question — logged and counted separately from Track 2's direct answer, never blended into the same tally, per the same spontaneous/prompted-style evidence-weighting discipline §7.2 already applies elsewhere.
 - **Other, named verbatim, no pre-set code.** Any reason a respondent gives that doesn't fit PF1-PF5 is logged in her own words, not forced into one of the five — stays open by design.
 
 ### 7.2 Evidence weighting — spontaneous vs. prompted, stated once, applied to every hypothesis below
@@ -358,15 +416,17 @@ A reason she names **unprompted**, in response to an open question (§6.3.1, §6
 | Signal | Supporting evidence | Invalidating evidence (weakens it, per `market-validation.md` H1's own bar) |
 |---|---|---|
 | **PF1 — Problem recognition** | Spontaneous mentions of a remembered, concrete lost-sale/lost-record incident, in her own words, before being asked directly; a specific description of the flow-competes-with-next-customer dynamic matching H1's own framing, offered unprompted. | She describes sales-tracking as a solved non-issue ("uso una libreta y me funciona bien"), or ranks it clearly below other frictions (cobrar, cargar mercancía, elegir bazar) when asked. |
-| **PF2 — Value-prop clarity** | She can't restate what Nahui does in §6.5.1, or restates it inaccurately/vaguely; spontaneous language like "no entendí bien para qué es," "no supe qué hacía diferente." | She restates the value proposition accurately and specifically (e.g., names the speed/registration angle unprompted) in §6.5.1, whether or not she ever opened the demo. |
+| **PF2 — Value-prop clarity** | She can't restate what Nahui does in §6.5.1, or restates it inaccurately/vaguely; spontaneous language like "no entendí bien para qué es," "no supe qué hacía diferente." | She restates the value proposition accurately and specifically (e.g., names the speed/registration angle unprompted) in §6.5.1, whether or not she's ever used the app herself. |
 | **PF3 — Perceived effort/cost** | Spontaneous mentions coding to assumed setup burden, catalog entry, or general "esto me va a quitar tiempo" reasoning — said *before* or *instead of* trying. | She says she assumed it would be quick/easy, or that time cost wasn't part of her hesitation at all. |
 | **PF4 — Trust/unfamiliarity** | Spontaneous mentions of not recognizing Nahui, general scam/legitimacy worry, or an explicit "no" answer to §6.5.3's direct trust question. | She names Nahui as familiar/credible (e.g., via a referral, having heard of it before), or explicitly says trust wasn't a factor when asked directly at §6.5.3. |
 | **PF5 — Phone-entry experience (Track 2 only)** | Track 2's direct §6.4.3 answer describing real hesitation or genuine confusion at that step, from someone who actually experienced it. | She says the phone step felt normal/expected, comparable to other apps she already uses. |
 | **Other (unclassified)** | Logged verbatim, no threshold applied at n=10-20 — if the same *unclassified* reason recurs across 3+ respondents in a later batch, it becomes a candidate for a sixth named signal in a future amendment to this document, not silently folded into one of PF1-PF5. | N/A — this bucket exists to stay open, not to be falsified. |
 
+**2026-09-10 note on the PF5 table row above:** "Track 2 only" in the row label now means "Track 2 as redefined in §6.4 (already completed real sign-up on `nahui.app` on her own)," and the row's evidence now also has a secondary source (a Loop 2 self-report from a Track 1 respondent) — see §7.1's fuller PF5 amendment above rather than duplicating that reasoning here.
+
 ### 7.5 What this feeds — and, explicitly, what it doesn't
 
-Per §1's non-goals: every outcome above tops out at **candidate signal**, never a unilateral resolution. **PF1 findings route to `company/market-validation.md`, as a second, DM-sourced evidence stream feeding H1 directly** (alongside the survey/interview channel already scoped there — same signal, different channel, both tagged by origin, never blended, per this project's standing evidence-tiering discipline). **PF2-PF4 findings route to `product/02-ux/product-decisions.md`** when they implicate a genuine UX/product question, per standard Decision Ownership — never resolved unilaterally from this pilot's own findings. **PF5 is logged and retained, not routed anywhere for action** — it's context for a possible future anonymous-abandonment investigation, not actionable on its own since it doesn't represent that population (per the supersession note). Escalation past "candidate" requires the same second-batch-of-10 pattern this project already requires everywhere else, or independent corroboration from another source, the same bar `market-validation.md` already sets for "Validated."
+Per §1's non-goals: every outcome above tops out at **candidate signal**, never a unilateral resolution. **PF1 findings route to `company/market-validation.md`, as a second, DM-sourced evidence stream feeding H1 directly** (alongside the survey/interview channel already scoped there — same signal, different channel, both tagged by origin, never blended, per this project's standing evidence-tiering discipline). **PF2-PF4 findings route to `product/02-ux/product-decisions.md`** when they implicate a genuine UX/product question, per standard Decision Ownership — never resolved unilaterally from this pilot's own findings. **PF5 now routes the same way PF2-PF4 do, amended 2026-09-10** — to `product/02-ux/product-decisions.md` when it implicates a genuine UX/product question about the real Authentication step, per standard Decision Ownership, never resolved unilaterally from this pilot's own findings (§1 non-goal #1 still applies in full: this pilot alone never justifies a change to the real phone/OTP screens, however suggestive). The prior routing ("logged and retained... context for a possible future anonymous-abandonment investigation") assumed a structurally separate anonymous-bounce population this instrument couldn't represent — that framing no longer applies once there is no demo/real-app split left to separate; PF5 evidence is now direct evidence about the same real screen every merchant actually experiences. Escalation past "candidate" requires the same second-batch-of-10 pattern this project already requires everywhere else, or independent corroboration from another source, the same bar `market-validation.md` already sets for "Validated."
 
 ### 7.6 Superseded CP1-CP5 framework — retained as dated historical record, no longer the operative framing
 
@@ -406,7 +466,7 @@ CONCIERGE PILOT — CONVERSATION LOG
 Respondent ID: __________          Date first contacted: __________
 Instant Reply — vendor status (§5 Q1): [ ] A - bazar/tianguis  [ ] B - vende, no bazar  [ ] C - no vende
 Instant Reply answers (zona / tipo de bazar, vendor-Branch A only): __________ / __________
-Demo track (vendor-Branch A only, §6.2): [ ] Track 1 — never opened demo   [ ] Track 2 — opened demo
+Track (vendor-Branch A only, §6.2, redefined 2026-09-10): [ ] Track 1 — never used nahui.app on her own   [ ] Track 2 — already completed real sign-up on nahui.app on her own
 Codeable: [ ] Yes   [ ] No (Instant Reply only, no human-follow-up reply — excluded from n)
 
 Reasons named (code each, mark spontaneous [S] or prompted [P]):
@@ -417,8 +477,9 @@ Reasons named (code each, mark spontaneous [S] or prompted [P]):
   [ ] PF5 phone-entry (Track 2 only) [S/P]   Quote: "________________________"
   [ ] Other (verbatim): ___________________________________________
 
-Loop 2 — demo invited: [ ] Yes  [ ] No     If yes, link sent: __________
+Loop 2 — real app invited (redesigned 2026-09-10): [ ] Yes  [ ] No     If yes, link sent (https://nahui.app): __________
   Self-reported outcome (optional follow-up, §0): _______________________
+  If self-report touches phone-entry/WhatsApp OTP, also log under PF5 as [secondary/self-report] per §7.1
 
 Value-prop-in-her-own-words (§6.5.1): "____________________________"
 Would this solve something real (§6.5.2): [ ] Sí  [ ] Tal vez  [ ] No
@@ -439,6 +500,6 @@ Keep raw logs — they're the primary source for whatever synthesis follows once
 - **It cannot cleanly separate a DM-qualified respondent's stated problem-fit from the self-selection built into being willing to DM a business at all** — §2.5's confound is real and unresolved by this design; state it every time PF1 findings are cited toward H1.
 - **It cannot be compared to Campaign B's own self-serve numbers as a controlled experiment** — different objective, different CTA, different audience draw at a different time (§2.5).
 - **It cannot, by itself, justify a UX change to Authentication, or justify building the value-first onboarding path described in §0.3** — both require confirmed evidence, gated separately, and §0.3's own decision explicitly defers that build until Loop 2's own instrumentation shows whether it's actually needed.
-- **Loop 2 cannot individually attribute a specific demo session to a specific DM conversation** — the `acceso_dm_*` instrumentation is anonymous/aggregate, same as the retired `demo_*` suite; only the optional self-report follow-up reliably closes that gap (§0).
+- **Loop 2 cannot individually attribute a specific demo session to a specific DM conversation** — the `acceso_dm_*` instrumentation is anonymous/aggregate, same as the retired `demo_*` suite; only the optional self-report follow-up reliably closes that gap (§0). **2026-09-10 update:** the `acceso_dm_*` instrumentation referenced above is itself retired along with Acceso DM — there is now no anonymous/aggregate corroboration layer for Loop 2 at all, only the optional self-report follow-up (§0, redesigned 2026-09-10). Also note: this document's earlier reference to "justify building the value-first onboarding path described in §0.3" now describes a mechanism (Acceso DM) that shipped and has since been retired — §0.3 is preserved as historical record only, not as a still-open build option.
 
 What it *can* do — the actual point — is give the Product Owner, and this project, real, human, unscripted conversations that test H1 against a broader population than Ana alone, and, for whoever gets far enough to want to try it, a first read on whether a genuinely interested merchant still struggles inside the existing product — at a scale one person can genuinely absorb and act on.

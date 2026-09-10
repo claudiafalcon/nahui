@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useStore } from '../../domain/store';
 import {
   hasAnyAvailableUnit,
@@ -26,8 +26,6 @@ import { CloseSummary } from './CloseSummary';
 import { SettingsScreen } from '../Settings/SettingsScreen';
 import { SellerAccountScreen } from './SellerAccountScreen';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
-import { setReceiptScreenActive } from '../DemoMode/receiptScreenSignal';
-import { setHomeScreenMounted } from '../AccesoDM/homeScreenMountedSignal';
 import type { Receipt } from '../../domain/store';
 
 type HomeUiState =
@@ -88,30 +86,6 @@ export function HomeScreen({
   // opens (step 1 then wins outright, `qualifyingEvents`/this local pick are
   // never consulted again for the rest of that Session).
   const [pickedEventId, setPickedEventId] = useState<string | null>(null);
-
-  // demo-mode.md §2.3 check 2 / §8 item 7 — reports this screen's own
-  // `ui.kind === 'receipt'` fact to `receiptScreenSignal.ts`'s route-level
-  // signal, the one thing the demo-only reminder banner's mounting wrapper
-  // needs to suppress itself while `home.md §3.8f` is active. A no-op in a
-  // real production build (nothing ever reads this signal there). Called
-  // unconditionally, before any of this component's own early returns, to
-  // keep hook order stable.
-  useEffect(() => {
-    setReceiptScreenActive(ui.kind === 'receipt');
-    return () => setReceiptScreenActive(false);
-  }, [ui.kind]);
-
-  // acceso-dm.md §2.3 check 4 — reports "HomeScreen is currently mounted"
-  // (i.e. the Hoy tab is active) to `homeScreenMountedSignal.ts`, the one
-  // fact `ResultsGuidanceNudge.tsx` needs to render on Home only, never on
-  // Inventario/Eventos/Resultados, without reaching into `App.tsx`'s own tab
-  // shell. Same mount/unmount-reporting shape as the receipt signal above —
-  // a no-op for every merchant not on the Acceso DM route, since nothing
-  // else in this codebase subscribes to it.
-  useEffect(() => {
-    setHomeScreenMounted(true);
-    return () => setHomeScreenMounted(false);
-  }, []);
 
   if (!state.business) return null; // defensive — AppRouter only mounts this once onboarding is complete
 

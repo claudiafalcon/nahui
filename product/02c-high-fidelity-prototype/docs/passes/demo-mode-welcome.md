@@ -1,5 +1,13 @@
 # Demo Mode — Welcome Screen
 
+> **Retired 2026-09-10.** The `demo.nahui.app` build variant this pass
+> created (`DemoModeGate.tsx`, `.env.demo-campaign`, the Demo Mode screens)
+> was removed from the codebase — Product Owner decision, once real
+> WhatsApp OTP shipped, `demo.nahui.app` mirrored `nahui.app`'s own auth
+> flow and no longer offered the low-friction rationale it was built for.
+> This record is preserved as history, not current state — see
+> `company/bitacora.md`'s retirement entry for the full story.
+
 **New-Feature Workflow (`decision-log.md` D42), not a Migration Workflow
 slice** — first of its kind in this codebase. No prior Approved
 Medium-Fidelity spec exists for this feature; `product/02-ux/demo-mode.md`

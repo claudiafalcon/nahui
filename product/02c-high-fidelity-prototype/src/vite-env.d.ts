@@ -1,11 +1,12 @@
 /// <reference types="vite/client" />
 
-// demo-mode.md, Architecture Review §8 item 1 — the compile-time build-mode
-// flag `DemoModeGate.tsx` reads. Not set in a real production build (`npm
-// run build`); only `.env.demo-campaign` (consumed by `npm run
-// build:demo-campaign` / `vite --mode demo-campaign`) defines it.
 interface ImportMetaEnv {
-  readonly VITE_DEMO_MODE?: string;
+  // Stage 7 Backend Integration (real WhatsApp OTP delivery) — see
+  // supabase/README.md. Unset in local dev until a real Supabase project
+  // exists; `otpClient.ts` treats that as a configuration error, not a
+  // silent success.
+  readonly VITE_SUPABASE_URL?: string;
+  readonly VITE_SUPABASE_ANON_KEY?: string;
 }
 
 interface ImportMeta {

@@ -2,6 +2,12 @@
 
 **Status: Strategy/planning deliverable. Nothing here has been posted, sent, filmed, built, or approved. Requires explicit Product Owner sign-off before any piece is produced or published, per the standing Approval gate (`company/CLAUDE.md`).** Prepared by `marketing` at the Product Owner's direct request, evolving the merchant-validation strategy based on real learning from the first Meta Ads campaign.
 
+**RETIRED 2026-09-10 (Product Owner decision).** Per this document's own top status line, nothing in it was ever posted, sent, filmed, or built — retiring it discards no executed work.
+
+Superseded by the shift to a real-app-only validation direction: `demo.nahui.app`, the Acceso DM shortcut, and the paid campaign driving traffic to the demo are all retired now that real WhatsApp OTP makes `demo.nahui.app` functionally identical, in authentication friction, to `nahui.app` itself. This document's hypothesis-specific video-campaign architecture (§1–§2), deep-linking/guided-entry design (§7), and questionnaire-restructure proposal (§8, §11) were all built around a disposable demo entry point that every campaign could guide traffic toward without real stakes for the respondent — that premise no longer holds once the only entry point is the real, retained app.
+
+Its underlying Product Discovery reasoning (segmenting hypotheses by merchant profile so a thin recruitment funnel isn't fragmented past readability, sequencing campaigns rather than parallelizing all of them at once) remains a valid methodological reference for a future real-app-only campaign design — but nothing in this document should be built or launched as currently written.
+
 **Companion documents, not duplicated here:**
 - `company/merchant-validation-campaign.md` — the organic campaign (recruitment copy, the 17-question Google Forms instrument, the non-monetary incentive structure). This document's questionnaire-architecture recommendations (§8) extend that instrument; they don't replace it.
 - `company/merchant-validation-campaign-meta-ads.md` — the first Meta Ads campaign (MXN $500/3 days, static ad, single audience, single entry point). This document is the direct evolution of that campaign, grounded in its actual results. That document's §9 Learning Agenda also carries Hypothesis E ("H5"), a validation-process hypothesis about whether Demo Mode itself is reducing the confusion described in this document's own §0/§13 — see the pointers in those sections below rather than a restatement here.

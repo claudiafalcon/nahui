@@ -280,7 +280,7 @@ it was already true when Inventario's own "Registrar mercancía" was its only
 caller. `product-decisions.md` Q20 widens the blast radius, not the gap
 itself — both real Onboarding paths now also depend on this same
 under-guarded function for a real, non-mocked-forever write, alongside
-Inventario and the Acceso DM entry route. Dormant today only because this
+Inventario. Dormant today only because this
 prototype's local writes never fail, the same disclosed convention every
 other entry in this section relies on. **Owner: Stage 7 (Backend
 Integration)** — add a real idempotency key to `commitLot()`'s write at that

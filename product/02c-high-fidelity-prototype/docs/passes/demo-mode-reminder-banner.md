@@ -1,5 +1,13 @@
 # Demo Mode — Welcome Copy Restructure + "Reiniciar demo"
 
+> **Retired 2026-09-10.** The `demo.nahui.app` build variant this pass
+> extended (`ReminderBanner.tsx`, `restartDemo.ts`, `demoModeStorage.ts`)
+> was removed from the codebase — Product Owner decision, once real
+> WhatsApp OTP shipped, `demo.nahui.app` mirrored `nahui.app`'s own auth
+> flow and no longer offered the low-friction rationale it was built for.
+> This record is preserved as history, not current state — see
+> `company/bitacora.md`'s retirement entry for the full story.
+
 **New-Feature Workflow (D42), same feature family as `docs/passes/demo-mode-welcome.md`** — built against `product/02-ux/demo-mode.md`'s 2026-08-18 amendments (welcome-screen restructure §3.3; persistent Form-reminder banner §2.3/§3.6, restart §2.4/§3.7/§3.8), all through a complete review pipeline (`ux-critic`/`reviewer`/`brand-guardian`) and folded back into Approved before this pass started. Two pieces, both scoped strictly to `src/screens/DemoMode/`, `demoModeStorage.ts`, and one small, additive export in `store.tsx`.
 
 ## (1) `DemoWelcome.tsx` — §3.3 copy-only restructure

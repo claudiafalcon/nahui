@@ -2,6 +2,12 @@
 
 **Status: spec/recommendation only. Nothing here is authorized to be published, spent, or sent.** Prepared by `marketing` at Main's request. Requires explicit Product Owner sign-off before anything below is created in Ads Manager, per the standing Approval gate (`company/CLAUDE.md`). Ready to launch the moment that sign-off is given — every field below is a real, paste-ready value, not a placeholder.
 
+**RETIRED 2026-09-10 (Product Owner decision).** Nothing in this document was ever published or spent, per its own top status line.
+
+Retired because its destination and analytics wiring are built entirely around `demo.nahui.app` — the Website URL throughout §5b/§10 (e.g. Step 13's `https://demo.nahui.app`), and the six `demo_*` client-side analytics events (§7b) that only ever fired on that build. Both are retired alongside `demo.nahui.app` itself, now that real WhatsApp OTP makes it functionally identical, in authentication friction, to `nahui.app`.
+
+**What is not affected:** the underlying video asset this spec would have launched (`campaign-b-final-v3.mp4`) shows the real running prototype's screens, not `demo.nahui.app`-specific UI — it remains in active use elsewhere, specifically `company/merchant-validation-concierge-pilot.md`'s own DM-pilot ad creative (destination: Instagram Direct, never `demo.nahui.app`), which is unaffected by this retirement. Only this document's own campaign spec — its destination, analytics wiring, and Ads Manager field values — is retired, not the video file itself.
+
 **Asset this spec launches:** `company/campaign-assets/campaign-b-draft/final/campaign-b-final-v3.mp4` — 29.31s, vertical 1080×1920, real captured footage of the real running prototype (Playwright `recordVideo` → Remotion composition, per `company/merchant-validation-campaign-b-storyboard.md`), Marina voiceover (Azure Neural TTS, `es-MX`, generated on the paid S0 tier — commercial-use rights held from generation, no pending licensing action). Per the dispatching instruction, this asset has already cleared a full review loop (`ux-critic` motion/overlay quality, `brand-guardian` copy-delta review across every `[CHANGED]` line in the script, `reviewer` Foundation consistency) with 0 Blockers. This document treats that as settled and does not re-litigate it — the same "treat as settled" convention `merchant-validation-strategy-v2.md` §12 already applies to its own architecture verdict.
 
 **Read first, treated as this document's precedent and evidence base, not re-derived from scratch:**
