@@ -1,9 +1,8 @@
 # Supabase CLI project configuration — standard structure, so this folder
 # is linkable (`supabase link --project-ref <ref>`) the moment a real
-# Supabase project exists (see supabase/README.md's checklist). No real
-# project has been created yet — `project_id` is a placeholder, not a real
-# ref, and must never be treated as one.
-project_id = "nahui-PLACEHOLDER-project-ref"
+# Supabase project exists (see supabase/README.md's checklist).
+# Real project created 2026-09-11 (Product Owner).
+project_id = "exvzsfnwogmyxfmaffxn"
 
 [api]
 enabled = true
