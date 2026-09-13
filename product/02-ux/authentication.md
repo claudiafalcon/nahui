@@ -8,7 +8,9 @@
 
 **[Further amended 2026-09-07 — Slice 12 `merchant-user-tester` defect, see `authentication.changelog.md#2026-09-07-mistyped-own-number-after-signout`.]** An OWNER who signed out (`settings.md §2.5`) and mistyped her own number on re-entry was silently dropped into a brand-new `onboarding.md §3.3`, with no way back to her existing Business — directly contradicting the sign-out screen's own "no se pierde nada" promise. New §3.7e adds a one-tap confirming screen, reached only when a genuinely-first-time-anywhere phone verifies on a device that has previously held a session for a *different* phone — the exact, narrow condition of this defect — adding zero friction to any ordinary first-time verification. Paired with `settings.md §2.5`/§3.3a, which elevates that document's own already-named, previously-deferred Future Consideration (her own verified number, shown read-only) from deferred to designed.
 
-**Scope:** the phone+OTP verification gate that precedes everything else in the Merchant Application, including the already-Approved `onboarding.md`. Not a nav tab, not reachable again once a device holds a verified session (same "never shown twice" shape `onboarding.md` §2.1 already gives its own completion state). Implementation-independent — low-fidelity only, no visual design.
+**[Further amended 2026-09-13 — see `authentication.changelog.md#2026-09-13-google-email`.]** Activates two new, fully independent first-time sign-in/sign-up methods — Google Sign-In and Email — alongside phone, per `decision-log.md` D62/D63 and `product/99-rfc/0012-auth-identity-multi-method.md` (Accepted). A new method-choice screen (§3.2a) now precedes what was previously the phone-only entry point; §2.1/§2.2's resolution logic is generalized to read "any verified `AuthIdentity`" rather than "phone" specifically. §2.2a and §3.10–§3.13a (Invitation acceptance) are explicitly untouched — that surface stays phone-scoped per RFC 0012 §3's own ruling, pending `product/99-rfc/0013-invitation-token-based.md` (Proposed).
+
+**Scope:** the identity-verification gate that precedes everything else in the Merchant Application, including the already-Approved `onboarding.md`. A brand-new merchant reaches this gate via any of three independent, parallel methods — phone/WhatsApp OTP, Google Sign-In, or Email OTP (`decision-log.md` D62/D63) — never a mandatory phone step. Not a nav tab, not reachable again once a device holds a verified session (same "never shown twice" shape `onboarding.md` §2.1 already gives its own completion state). Implementation-independent — low-fidelity only, no visual design.
 
 **Naming note (deviating from the task's suggested `owner-access.md`, reasoned explicitly):** this document is named `authentication.md`, not `owner-access.md`. The screens it designs — phone entry, OTP entry, resend, error/lockout states — are not Owner-specific; they're the general verification mechanism every future user of this product will eventually pass through, including a Seller accepting a future invitation (`§11`). Owner-provisioning is only *one* outcome of a successful verification (the first-ever-verification branch, `§2.2`), and per the Product Owner's own scope constraint this document shows no Owner-specific UI at all — naming the file after that one outcome would overstate what's actually on screen. This also directly resolves what `onboarding.md` §0 already calls, by name, "Authentication" — treated there as "an implementation-level concern below this spec's abstraction level." Reusing that exact word keeps continuity with the one place the Foundation already gestured at this concern, without editing that document (see `§11`).
 
@@ -34,12 +36,14 @@
 - No screen, in any state, names "Owner," "Seller," "role," or shows anything resembling a picker between them.
 - A phone with a pending `Invitation` (`Invitation.status = pending`, `Invitation.phone` matching the verified number) is never silently routed into `onboarding.md`'s Business-creation flow — it's offered, once, plainly, the specific Business that invited it, with an honest way to decline that costs her nothing. This holds regardless of *when* the Invitation is discovered: at the moment of verification itself (§2.2 case 0), or later, on an ordinary app open, for a phone that verified once already but never got as far as choosing an Onboarding path (§2.1, added 2026-09-07). Added 2026-09-06, `product-decisions.md` Q24/Q25; extended 2026-09-07, this document's own §8 item 6(a).
 - A first-ever-anywhere verification succeeding on a device that has previously held a session for a *different* phone number is confirmed once, plainly, showing the number back to her, before a new Business is ever created under it — closing a real defect (§10, §3.7e) where a mistyped digit silently became a brand-new, empty Business with no way back to her real one.
+- **Added 2026-09-13, `decision-log.md` D62/D63:** a merchant may complete first-ever Owner-creation via Google Sign-In, or via Email + one-time code, with zero phone number ever requested or required, converging into the identical `onboarding.md §3.3` handoff the phone path already reaches. All three methods are presented as equally valid, equally prominent choices (§3.2a) — none framed as the default and the others as fallbacks.
 
 **Scope boundary, stated explicitly per this folder's own §1 rule:** this is an access/identity gate, not a parallel onboarding. It captures exactly one fact — a verified phone number — and nothing else. It does not decide *what* she can do once verified (that's the domain model's job, flagged to Architect, `§8`) and does not decide *how* her business gets set up (that's `onboarding.md`'s job, frozen).
 
 **The tension this design holds, mirroring `onboarding.md` §1's own framing:**
 - Nothing here is time-critical the way Home's <3s bar is (`company/backlog.md` #1) — no customer is standing in front of her at this moment.
 - But unlike `onboarding.md`, which is genuinely "once ever," this gate is the very *first* screen she can ever reach in the whole product — before she's even seen `onboarding.md §3.3`'s own warm welcome copy. A verification step that feels bureaucratic or intimidating here risks losing her before Nahui has said a single word to her. The standard: the minimum honest friction a real verification mechanism ever requires, then silence, permanently, on that device.
+- **Added 2026-09-13.** Offering a genuine, equal-weight choice of method (§3.2a) costs one additional tap on every path, including the already-optimized phone path (§6's minimum-step-count table corrected accordingly, from 4 to 5). This is a deliberate, named trade against "the fastest interaction is the one that never happens" (`global-principles.md`) — accepted because the trigger for this activation (`decision-log.md` D62) is specifically that *not* offering a real choice was itself excluding some prospective merchants (those reluctant to register a phone number under the current government mobile-line policy). The extra tap buys the thing that's actually load-bearing here.
 
 ## 2. Resolution / decision logic
 
@@ -48,10 +52,35 @@
 Evaluated automatically, before anything else, on every app open:
 
 ```
-1. Does this device already hold a valid verified-phone session? (The
-   storage/validity mechanism itself is left as an implementation detail —
-   same posture `onboarding.md` §0 already gives "how the platform
-   determines which device/account maps to which Business.")
+0. **[New, 2026-09-13 — closes a contradiction `ux-critic` caught while
+   verifying the §2.1/§3.8 generalization fix: §3.8 claims §3.7e resumes
+   correctly, but without this check, step 1 below would silently treat
+   a bare successful verification as "valid session" and route straight
+   past an unconfirmed §3.7e, defeating the exact safety gate it exists
+   to enforce. Checked FIRST, before step 1, the same "outranks the
+   ordinary branches" pattern §2.2's own step 0 already establishes for
+   the Invitation check. The underlying fact this step reads is a plain
+   local marker — below this document's abstraction level, the same
+   treatment already given §2.2a step 6's decline-memory marker and
+   §2.2 case 1's device-history marker — set the moment §3.7e is shown
+   and cleared the moment either of its buttons is tapped, not a domain-
+   model concept requiring any Foundation representation.]** Did a
+   credential verify successfully
+   (§3.7/§3.2c), triggering §3.7e's device-history confirmation, without
+   her yet tapping "Sí, es mío/mía" or "No, elegir otro"?
+     → YES → resume directly to §3.7e, unconfirmed — never falls through
+       to step 1's ordinary valid-session logic below, which would
+       otherwise treat the bare verification as sufficient on its own.
+     → NO → fall through to step 1, unchanged.
+
+1. **[Generalized 2026-09-13 — `decision-log.md` D62/D63, see the
+   amendment banner above.]** Does this device already hold a valid
+   verified session — any linked `AuthIdentity` (phone, Google, or
+   email), not phone specifically — **with no §3.7e confirmation left
+   pending (step 0, above)**? (The storage/validity mechanism itself
+   is left as an implementation detail — same posture `onboarding.md` §0
+   already gives "how the platform determines which device/account maps
+   to which Business.")
      → YES: **[Amended 2026-09-07 — a genuine gap surfaced building Slice
        12/Q24-Q25 into `product/02c-high-fidelity-prototype/`; see §8 item
        6(a).]** Before delegating, check one more thing first — this
@@ -59,9 +88,13 @@ Evaluated automatically, before anything else, on every app open:
        one situation: does this User hold zero `BusinessMembership`
        anywhere AND zero Business (complete or in-progress) anywhere for
        them — i.e., she verified successfully at some point but never even
-       chose an Onboarding path — AND is there a pending Invitation for
-       this phone she hasn't already declined on this device (§2.2a step
-       6)?
+       chose an Onboarding path — AND is there a pending Invitation
+       matching a phone `AuthIdentity` linked to this User, that she
+       hasn't already declined on this device (§2.2a step 6)? (`Invitation`
+       stays phone-specific by design, RFC 0012 §3 — a User with no
+       linked phone `AuthIdentity` at all simply never satisfies this, the
+       expected consequence of that ruling, not a gap this amendment needs
+       to close; see the open item this creates, §8.)
          → YES to all → Invitation-acceptance branch, §2.2a. The identical
            resolution logic and offer screen (§3.10) §2.2 case 0 reaches
            from a fresh OTP confirm — not a second design, a second entry
@@ -74,23 +107,20 @@ Evaluated automatically, before anything else, on every app open:
            resolve from here — this document has nothing further to say
            once a session is confirmed valid.
 
-2. Was a phone number typed, or a code sent, but never confirmed, before
-   the app was closed, backgrounded, or killed?
-     → YES: resume at the exact step, nothing re-typed (§3.8) — same
-       discipline `onboarding.md §3.7` already applies to its own
-       in-progress work.
+2. **[Generalized 2026-09-13 — `ux-critic`-caught gap: this step was left phone-specific while §3.2a/§4 moved on without it, closed.]** Was a phone number or email address typed, a code sent, or a Google sign-in started, but never confirmed/completed, before the app was closed, backgrounded, or killed?
+     → YES: resume at the exact step, nothing re-typed or re-started (§3.8, its own covered range extended to match) — same discipline `onboarding.md §3.7` already applies to its own in-progress work.
 
-3. Neither (true first open, or a device with no persisted session at
+3. **[Generalized 2026-09-13]** Neither (true first open, or a device with no persisted session at
    all)?
-     → Show §3.3, fresh — Número celular.
+     → Show §3.2a, fresh — Elegir cómo entrar.
 
 4. The check itself fails outright (can't determine session state)?
      → Fallback (§3.9), Reintentar.
 ```
 
-### 2.2 What happens once a code is confirmed — a four-way branch (amended 2026-09-06 — `product-decisions.md` Q24/Q25)
+### 2.2 What happens once a credential is verified — a four-way branch (generalized 2026-09-13, `decision-log.md` D62/D63 — see amendment banner)
 
-This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the reason this document exists:
+This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the reason this document exists. Reached from any successful credential verification — a phone OTP confirm (§3.7), an email OTP confirm (§3.7, reached via §3.2e/§3.2f), or a returned Google sign-in (§3.2c). Whichever credential just verified, this branch resolves generically from here on: does the resulting `AuthIdentity.userId` correspond to a User who already holds a Business, a User with no Business yet, or no existing User at all (RFC 0012 §4's "AuthIdentity resolution invariant"). **Case 0, immediately below, is deliberately untouched by this generalization** — it's still evaluated against the resolved User's phone-type `AuthIdentity` specifically, per RFC 0012 §3's explicit ruling to keep `Invitation` phone-only (pending revision, RFC 0013). A User who verified via Google or Email and holds no linked phone `AuthIdentity` simply never satisfies case 0 — zero new design required for that outcome, and not a gap.
 
 ```
 0. [Checked FIRST, before 1–3 below — this ordering matters] Does this
@@ -118,27 +148,31 @@ This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the re
      → NO → fall through to cases 1–3 below, entirely unchanged from the
        Approved text.
 
-1. This phone has never been verified before, anywhere (and, per step 0
-   above, carries no pending Invitation)?
+1. **This credential has never been verified before, anywhere** (no
+   existing `AuthIdentity` row for it — RFC 0012 §4 shape 1), and, per
+   step 0 above, carries no matching pending Invitation?
      → First-verification branch. The moment `onboarding.md §3.5`'s own
        Business-creation write next succeeds (unchanged, that document's
        own mechanism, not redesigned here), Owner-ness is produced as a
        pure structural consequence of that write being the one write path
        capable of creating a Business at all, gated only on the acting
-       User being verified (`decision-log.md` D44) — never asked, never
+       User holding at least one verified `AuthIdentity`, of any type
+       (`decision-log.md` D44, amended RFC 0012/D62) — never asked, never
        shown, never named on any screen this document or `onboarding.md`
        define.
 
        **[New check, 2026-09-07 — Slice 12 merchant-user-tester defect,
-       see §8 item 16/§10.]** Before handing off, one more silent, local
-       check: does this device remember a phone number that previously
-       held a session on it — any phone, at any point, even long since
-       signed out — that differs from the one just confirmed? (A plain
-       local marker, the same "below this document's abstraction level"
+       see §8 item 16/§10. Generalized 2026-09-13, `decision-log.md`
+       D62/D63.]** Before handing off, one more silent, local check: does
+       this device remember a *different* verified identity having held a
+       session on it before — any `AuthIdentity`, any type (phone, email,
+       or Google), at any point, even long since signed out — whose
+       resolved User differs from the User just confirmed? (A plain local
+       marker, the same "below this document's abstraction level"
        treatment §2.2a step 6 already gives its own per-Invitation
        decline marker. Deliberately a *separate* device fact from the
        session itself: `settings.md §2.5`'s "Cerrar sesión" clears which
-       phone currently holds a session, but never clears this marker —
+       identity currently holds a session, but never clears this marker —
        otherwise this exact check could never fire in the one situation
        it exists for.)
          → No such marker (a genuinely virgin device — the ordinary case
@@ -148,14 +182,16 @@ This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the re
            true first launch already reaches there. No interstitial
            "¡verificado!" screen (§10). This document's own job stops
            here, unchanged from its original text.
-         → A different phone's marker is found → show §3.7e first, once.
-           "Sí, es mi número" hands off exactly as the branch above.
-           "No, corregir número" returns to §3.3 with the just-typed
-           number pre-filled — the identical destination and pre-fill
-           behavior "← Cambiar número" (§3.6) already establishes, not a
-           new escape-hatch shape.
+         → A different identity's marker is found → show §3.7e first,
+           once (generalized 2026-09-13, see §3.7e below). "Sí, es
+           mío/mía" hands off exactly as the branch above. "No, elegir
+           otro" returns to whichever entry point she used — §3.3 (phone,
+           number pre-filled) or §3.2e (email, value pre-filled), the
+           identical destination and pre-fill behavior "← Cambiar número"
+           (§3.6) already establishes, not a new escape-hatch shape; for
+           Google, returns to §3.2a.
 
-2. This phone was already verified on THIS device, with a Business
+2. This credential was already verified on THIS device, with a Business
    already local to it (complete or in-progress)?
      → **[Amended 2026-08-13 — see `authentication.changelog.md#2026-08-13-case-2`]**
        Reachable. Hands off to `onboarding.md`'s own resolution logic
@@ -175,7 +211,7 @@ This is the part `onboarding.md`'s own §0 explicitly left unmodeled, and the re
      undisturbed, reachable only once a future join surface can read it
      from this state. Flagged, not solved — see §8, item 6.
 
-3. This phone verifies successfully on a device holding no local session,
+3. This credential verifies successfully on a device holding no local session,
    and it's already associated with an existing, already-onboarded
    Business elsewhere (a new device, a reinstalled app, or any case where
    verification succeeds but no local Business record exists to match
@@ -281,11 +317,95 @@ Identical silent-skeleton convention to every other tab's own §3.1. *global-pri
 └───────────────────────────────┘
 ```
 
-### 3.3 Número celular — entry
+### 3.2a Elegir cómo entrar (new, 2026-09-13 — true first-run entry point, `decision-log.md` D62/D63)
+
 ```
 ┌───────────────────────────────┐
 │                                │
 │           Nahui                 │
+│                                │
+│  Para empezar, elige cómo        │
+│  quieres entrar.                  │
+│                                │
+│  [   Continuar con Google      ] │
+│  [   Continuar con correo      ] │
+│  [   Continuar con número        │
+│       celular                  ] │
+│                                │
+└───────────────────────────────┘
+```
+- No back arrow — this is now the one screen in the whole product with nowhere to return to, the claim §3.3 previously made for itself and now inherits from this screen instead.
+- All three options are the same visual weight — bracketed, same size, stacked — deliberately not primary/secondary/tertiary the way `onboarding.md §3.3`'s three paths are. *global-principles.md*, "business language before technical language": no raw method-type picker ("Teléfono / Google / Email" as bare labels) — each option is phrased as the actual action she takes ("Continuar con...").
+- **Order (Google, Correo, Número celular) is a stated judgment call, not a priority ranking.** Google is listed first because it's genuinely the lowest-friction of the three when she's already signed into a Google account on her device (zero typing at all); phone is listed last, not because it's lesser, but because the exact motivating trigger for this activation (`decision-log.md` D62 — some prospective merchants are reluctant to register a phone number at all under the current government policy) means a phone-reluctant merchant shouldn't have to visually pass it first. Not asserted as validated — worth revisiting once real merchant reaction exists (Hypothesis-tagged, `tone-of-voice.md`'s own posture toward untested register choices).
+- Copy never names "OTP," "AuthIdentity," "credential," or "provider" — "correo," "número celular," "Google" (a proper noun she already knows, not a technical concept) are the only words used.
+
+**Behavior:** "Continuar con número celular" → §3.3 (unchanged content, amended entry point). "Continuar con correo" → §3.2e. "Continuar con Google" → §3.2b.
+
+### 3.2b Continuando con Google — near-instant / slow (new)
+```
+┌───────────────────────────────┐        ┌───────────────────────────────┐
+│        ▢▢▢▢▢▢▢▢▢▢▢▢            │        │      Un momento…                │
+└───────────────────────────────┘        └───────────────────────────────┘
+   near-instant: silent skeleton              slow (>~1.5s): one plain line
+```
+Reached the instant she taps "Continuar con Google" (§3.2a). Hands off to Google's own account-picker/consent UI — Google's own surface, below this document's abstraction level, the same treatment `onboarding.md §2.2b` already gives the OS-level device file-picker. Same near-instant/slow convention as every other transition in this document.
+
+### 3.2c Verificando con Google — near-instant / slow (new)
+```
+┌───────────────────────────────┐        ┌───────────────────────────────┐
+│        ▢▢▢▢▢▢▢▢▢▢▢▢            │        │      Confirmando…               │
+└───────────────────────────────┘        └───────────────────────────────┘
+```
+Reached the moment control returns to Nahui from Google's UI, whatever she did there. Resolves into exactly one of: success (converges directly into §2.2's generalized four-way branch, reading `AuthIdentity(type=google, identifier=<Google's stable subject id>)`) or §3.2d (genuine error only). Carries the identical idempotency-key guarantee §3.7 already gives its own confirm action (`architecture-principles.md` #7) — a retried resolve must never risk a duplicate `User`/`AuthIdentity` if the original callback actually succeeded server-side and only the confirmation was lost.
+
+**A deliberate, stated distinction — cancellation is not an error.** If she backs out of, denies, or dismisses Google's own consent screen, control returns here to find nothing to resolve — treated as a deliberate choice she made, not a failure, and routes silently back to §3.2a with no message at all. The identical posture `onboarding.md §3.4`'s "Mejor quiero empezar gratis" already takes toward a reversible mid-flow change of mind, applied here to an external cancellation instead of an in-app one. How "she cancelled" is technically distinguished from "Google returned a genuine error" is below this document's abstraction level (the same treatment §2.3 already gives OTP delivery mechanics) — only the two different merchant-visible outcomes matter here.
+
+### 3.2d Google — no se pudo continuar (new, genuine platform error only)
+```
+┌───────────────────────────────┐
+│  No pudimos continuar con        │
+│  Google. Intenta de nuevo o       │
+│  elige otra forma de entrar.      │
+│      [   Reintentar   ]          │
+│      [   Elegir otra forma   ]    │
+└───────────────────────────────┘
+```
+Reached only on a genuine send/confirm failure (network drop, a real error Google's own callback reports) — never for a plain cancellation (§3.2c). "Reintentar" replays §3.2b under the same idempotency-key guarantee. "Elegir otra forma" returns to §3.2a — never a dead end (`global-principles.md`), the same honest escape every other error state in this document already gives.
+
+### 3.2e Correo electrónico — entry (new)
+```
+┌───────────────────────────────┐
+│ ← Elegir cómo entrar             │
+│                                │
+│  Para empezar, dinos tu           │
+│  correo.                          │
+│                                │
+│ Correo electrónico                │
+│  [ __________________ ]           │
+│                                │
+│  [      Enviar código      ]     │  disabled until it looks like a real email
+│                                │
+└───────────────────────────────┘
+```
+- "Enviar código" disabled until the typed value has a minimally plausible email shape — at least one character before "@", an "@", at least one character between it and a final ".", and at least one character after that "." (a deliberately loose structural check, not full validation — the same posture §3.4's ten-digit phone gate takes: catch the obviously-incomplete case, real delivery/verification catches the rest). Same "required, no default, disabled-until-valid" convention every other required field in this family uses.
+- Not auto-submitted the instant it looks valid, same reasoning §3.3 already states for the phone field: sending a code is a real action with a real consequence.
+- "← Elegir cómo entrar" returns to §3.2a, typed value preserved for the same session, identical courtesy §3.3's own back arrow (below) gives.
+
+### 3.2f Correo electrónico — formato inválido (inline, new)
+```
+Correo electrónico
+ [ ana@correo         ]
+ Verifica tu correo — parece que le falta algo.
+[      Enviar código      ]   (disabled)
+```
+Reached on a paste producing a value that satisfies the loose "@ plus something" shape but fails the fuller structural check above (e.g., nothing after a trailing "."). Unlike §3.4/§3.6b's phone/code equivalents, this state is not strictly paste-only, since email validity has no fixed length the way a 10-digit phone or a 6-digit code does — a genuinely typed value could momentarily satisfy then fail the check as she edits. Non-blocking, corrects in place, same as every other formato-inválido state in this family.
+
+**Behavior from here:** Enviar código → shares §3.5/§3.5a ("Enviando código," near-instant/slow, and its error state) — cited, not redescribed, per this folder's own §4 shared-state rule. Success → shares §3.6/§3.6a/§3.6b ("Ingresa el código"), generalized below. → Confirmar → shares §3.7/§3.7a–§3.7d ("Verificando código"), unchanged, already channel-neutral copy.
+
+### 3.3 Número celular — entry
+```
+┌───────────────────────────────┐
+│ ← Elegir cómo entrar             │
 │                                │
 │  Para empezar, dinos tu          │
 │  número celular.                  │
@@ -297,7 +417,7 @@ Identical silent-skeleton convention to every other tab's own §3.1. *global-pri
 │                                │
 └───────────────────────────────┘
 ```
-- No back arrow — the one screen in the whole product with nowhere to return to, even more literally than `onboarding.md §3.3`'s own equivalent claim.
+- **[Amended 2026-09-13]** Gains a back arrow, "← Elegir cómo entrar," returning to §3.2a — this is no longer the first screen in the product; §3.2a is. Not a persisted resume state (that's still §3.8's job) — simply doesn't clear a partially-typed number if she taps back into this screen within the same session, the same "don't discard typed-but-unsent input" courtesy every other escape hatch in this family already gives (§3.6's "← Cambiar número").
 - "+52" shown as fixed context, never typed — she gives her number the way she already gives it out to anyone; *global-principles.md*, "business language before technical language."
 - "Enviar código" disabled until exactly 10 numeric digits are entered — the same required-no-default, disabled-until-valid convention every other required field in this family uses (`onboarding.md §3.5b`'s Producto+Precio gate, `§3.9`'s Nombre gate). **Deliberately not auto-submitted** the instant the 10th digit lands — sending a code is a real action with a real consequence (a message actually goes out), the identical reasoning `onboarding.md §6` already gives for keeping "Confirmar y activar" an explicit tap even though nothing is typed there: "the extra tap protects a real commitment from a stray tap."
 
@@ -311,7 +431,7 @@ Número celular
 ```
 Non-blocking, corrects in place — nothing was ever submitted, so nothing "failed" from her side.
 
-### 3.5 Enviando código — near-instant / slow
+### 3.5 Enviando código — near-instant / slow (reached via: phone flow — §3.3's Enviar código; or email flow — §3.2e/§3.2f's Enviar código)
 ```
 ┌───────────────────────────────┐        ┌───────────────────────────────┐
 │        ▢▢▢▢▢▢▢▢▢▢▢▢            │        │      Un momento…                │
@@ -330,14 +450,15 @@ The one write-like action in this half of the flow: requests a code be generated
 ```
 Su typed number isn't lost — same guarantee every retry state in this family already gives.
 
-### 3.6 Ingresa el código — entry (code sent)
+### 3.6 Ingresa el código — entry (code sent) (reached via: phone flow §3.3, or email flow §3.2e/§3.2f — shared state, this document's own §4 rule)
 ```
 ┌───────────────────────────────┐
-│ ← Cambiar número                 │
+│ ← Cambiar [número / correo]      │
 │                                │
 │  Ingresa el código                │
-│  Te mandamos un código a         │
-│  +52 55 1234 5678.               │
+│  Te mandamos un código a tu       │
+│  [número / correo], [+52 55 1234  │
+│  5678 / ana@correo.com].          │
 │                                │
 │ Código                          │
 │  [ ______ ]                      │
@@ -348,19 +469,19 @@ Su typed number isn't lost — same guarantee every retry state in this family a
 │                                │
 └───────────────────────────────┘
 ```
-- **"← Cambiar número"** — a real, always-available escape hatch, returns to §3.3 with her number pre-filled, never a dead end (`global-principles.md`). Same posture `onboarding.md §3.4`'s "Mejor quiero empezar gratis" already establishes.
+- **[Amended 2026-09-13]** The destination line and escape hatch are parametrized: the bracketed pair resolves to whichever channel she actually used — never both, never a generic "identifier" word. **"← Cambiar [número / correo]"** — a real, always-available escape hatch, returns to §3.3 (phone) or §3.2e (email) with her value pre-filled, never a dead end (`global-principles.md`). Same posture `onboarding.md §3.4`'s "Mejor quiero empezar gratis" already establishes.
 - **Assumed: 6-digit code.** Stated plainly as a judgment call, not derived from anywhere in the Foundation (there is none to derive it from).
 - **Assumed: 30-second resend cooldown.** Also a plain judgment call — long enough to discourage abuse of the send mechanism, short enough that it never reads as a punitive wait for a merchant who genuinely didn't receive anything.
 - Countdown is plain text, not bracketed, per the `[ ]`-vs-plain-text convention already established throughout this family (tappable = brackets).
 
-### 3.6a Ingresa el código — reenvío disponible
+### 3.6a Ingresa el código — reenvío disponible (reached via: phone or email flow)
 Same screen as §3.6, once the cooldown elapses — not a distinct destination, the identical relationship `onboarding.md §3.9/§3.9a` already have to each other.
 ```
   ¿No te llegó?  [ Reenviar código ]
 ```
 Tapping it replays §3.5's send action (same idempotency guarantee), returns to §3.6 with the cooldown restarted, and shows a brief, self-dismissing ambient confirmation — "Código reenviado" — reusing the identical ambient-confirmation pattern `home.md §3.8e` already established for "Venta finalizada ✓," rather than inventing a new one.
 
-### 3.6b Código — formato inválido (inline)
+### 3.6b Código — formato inválido (inline) (reached via: phone or email flow)
 Reached whenever a paste or similar places non-numeric characters into the Código field — most plausibly, per this flow's own channel (§2.3), pasting the entire delivered message ("Tu código de Nahui es: 123456") rather than just the code itself. Not reachable through ordinary typing, since "Confirmar" stays disabled until the field holds exactly 6 digits — the identical shape §3.4 already handles for the phone field.
 ```
 Código
@@ -370,7 +491,7 @@ Código
 ```
 Non-blocking, corrects in place — nothing was ever submitted, so nothing "failed" from her side. Same treatment as §3.4's equivalent state for the phone field.
 
-### 3.7 Verificando código — near-instant / slow
+### 3.7 Verificando código — near-instant / slow (reached via: phone or email flow)
 ```
 ┌───────────────────────────────┐        ┌───────────────────────────────┐
 │        ▢▢▢▢▢▢▢▢▢▢▢▢            │        │      Confirmando…               │
@@ -381,7 +502,7 @@ The one write-like action that actually resolves whether the code was right, exp
 
 Resolves into exactly one of §3.7a–§3.7d below, or — on success — the handoff branch (§2.2/§4). Never a fifth, undefined outcome.
 
-### 3.7a Verificando código — código incorrecto
+### 3.7a Verificando código — código incorrecto (reached via: phone or email flow)
 Same screen as §3.6/§3.6a, re-rendered with the code field cleared (nothing worth preserving in a wrong guess) and an inline message:
 ```
 Código
@@ -391,7 +512,7 @@ Código
 ```
 No attempt counter shown anywhere on screen — deliberately. Surfacing a raw "3 de 5 intentos" style count would read as pressure this moment doesn't need; the fact only becomes relevant, and is stated plainly, once the limit is actually reached (§3.7c). *brand/tone-of-voice.md*, "state facts before offering an opinion" — extended here to mean stating the *relevant* fact at the moment it's true, not manufacturing anxiety ahead of it.
 
-### 3.7b Verificando código — código expirado
+### 3.7b Verificando código — código expirado (reached via: phone or email flow)
 ```
 Código
  [ ______ ]
@@ -400,7 +521,7 @@ Código
 ```
 **Assumed: 5-minute code validity window**, another plain judgment call. "Confirmar" is replaced entirely by "Reenviar código" — there's nothing left worth letting her retry against. Resend here is available immediately, regardless of §3.6's own cooldown state — a deliberate exception: the code is already dead through no further fault of hers, so forcing an additional wait on top of that would be pure friction with no anti-abuse purpose left to serve.
 
-### 3.7c Verificando código — demasiados intentos
+### 3.7c Verificando código — demasiados intentos (reached via: phone or email flow)
 Reached after **5 incorrect attempts on the same code**, stated explicitly as the chosen bound — a plain judgment call, not derived from the Foundation.
 ```
 ┌───────────────────────────────┐
@@ -421,7 +542,7 @@ Reached after **5 incorrect attempts on the same code**, stated explicitly as th
 
 **Copy revised per `brand-guardian` consultation (2026-08-13).** The original draft — "Ya intentaste varias veces con este código, así que dejó de ser válido" — made *her* the grammatical subject of the failure clause and used a causal "así que," reading as a tally of her attempts being reported back to her rather than a system-state fact, breaking from this document family's own established pattern (`tone-of-voice.md`'s "no pudimos guardar" precedent, where the system, not the merchant, is always the subject of what-went-wrong). Revised to make "este código" the subject instead, dropping the causal "así que" — same information (she still learns why, per `character-bible.md`'s "tells the truth about what it does and doesn't know yet"), same soft-invalidation behavior, same two-beat fact-then-path-forward shape as every other error state in this family. `brand-guardian` also flagged this register as `tone-of-voice.md`-Hypothesis-tagged, not yet validated against a real merchant reaction — worth a real check once this ships, not a blocker now.
 
-### 3.7d Verificando código — error de plataforma
+### 3.7d Verificando código — error de plataforma (reached via: phone or email flow)
 Distinct from a wrong code — this is a genuine send/confirm failure (network drop, platform error) where the code's correctness was never actually determined.
 ```
 ┌───────────────────────────────┐
@@ -432,56 +553,72 @@ Distinct from a wrong code — this is a genuine send/confirm failure (network d
 ```
 Her typed code isn't lost. Retrying replays the same confirm attempt under the same idempotency key (§3.7's own guarantee) — critical here specifically, since this is the one ambiguous-outcome case `architecture-principles.md` #7 exists for: if the original attempt actually succeeded server-side and only the confirmation was lost, a blind retry must never risk a second, duplicate provisioning consequence for a first-time phone.
 
-### 3.7e Verificando código — éxito, pero este teléfono guarda otro número (new — Slice 12 defect fix, 2026-09-07)
+### 3.7e Verificando código / Google — éxito, pero este dispositivo guarda otra identidad (generalized 2026-09-13 — originally "éxito, pero este teléfono guarda otro número," Slice 12 defect fix, 2026-09-07)
 
 Reached only from §2.2 case 1's new check above: a genuinely
-first-time-anywhere phone just verified successfully, on a device that
-remembers a *different* phone having held a session on it before
-(including via a completed `settings.md §2.5` "Cerrar sesión"). Not
-reached by an ordinary first-ever verification on a device with no such
-history — the common case stays exactly as fast as it already was.
+first-time-anywhere credential just verified successfully — phone, email,
+or Google alike — on a device that remembers a *different* identity
+having held a session on it before (including via a completed
+`settings.md §2.5` "Cerrar sesión"). Not reached by an ordinary
+first-ever verification on a device with no such history — the common
+case stays exactly as fast as it already was.
 
 ```
 ┌───────────────────────────────┐
 │           Nahui                 │
 │                                │
-│  Este número todavía no tiene     │
+│  Este [número / correo / cuenta   │
+│  de Google] todavía no tiene       │
 │  un negocio en Nahui:              │
 │                                │
-│      +52 55 1234 5678            │
+│      [ +52 55 1234 5678 /          │
+│        ana@correo.com /            │
+│        ana@gmail.com ]             │
 │                                │
-│  Si es tu número, seguimos y       │
+│  Si es tuyo, seguimos y            │
 │  empezamos tu negocio aquí.        │
 │                                │
-│  [   Sí, es mi número   ]        │
-│  [   No, corregir número   ]      │
+│  [   Sí, es mío/mía   ]          │
+│  [   No, elegir otro   ]          │
 │                                │
 └───────────────────────────────┘
 ```
 
-- The number is shown back to her, plainly, in the same "reflect what she
-  typed" shape §3.6's "Te mandamos un código a +52 55 1234 5678" already
-  establishes — the actual mechanism that catches a mistyped digit, not
-  the surrounding copy.
+- The identifier is shown back to her, plainly — for phone/email, in the
+  same "reflect what she typed" shape §3.6's "Te mandamos un código a..."
+  already establishes, the actual mechanism that catches a mistyped
+  digit; for Google, no typing occurred, so this reflects the resolved
+  value back to her instead, the same underlying confirm-before-commit
+  purpose, not the identical mechanism. **For Google specifically**, this
+  is whatever human-readable label Google's own callback returns for
+  that account (typically an associated email) — display-only,
+  deliberately never the actual stored `AuthIdentity.identifier` value for
+  `type=google`, which RFC 0012 §1 keeps as the provider's opaque stable
+  subject ID, not this display value. Below this document's own
+  abstraction level to specify further, the same posture §2.3 already
+  gives OTP delivery mechanics.
 - No new tone invented: states the fact (no Business exists yet under
-  this number) before anything else, per `tone-of-voice.md`'s "state
+  this identity) before anything else, per `tone-of-voice.md`'s "state
   facts before offering an opinion" — the identical discipline this
   document already holds every other screen to (§9).
-- "Sí, es mi número" — the one real confirming tap a genuine new-Business
-  commitment gets, the same standard §3.10's "Aceptar y empezar a vender"
-  and §3.3's "Enviar código" already hold themselves to ("a real
-  commitment costs one deliberate tap, never zero, never two" —
+- "Sí, es mío/mía" (gender-neutral form, since this screen no longer only
+  ever refers to a "número") — the one real confirming tap a genuine
+  new-Business commitment gets, the same standard §3.10's "Aceptar y
+  empezar a vender" and §3.3's "Enviar código" already hold themselves to
+  ("a real commitment costs one deliberate tap, never zero, never two" —
   `onboarding.md §6`).
-- "No, corregir número" — costs nothing beyond the tap; returns to §3.3,
-  her just-typed number still there to edit rather than retype in full,
-  exactly as §3.6's "← Cambiar número" already behaves.
+- "No, elegir otro" (renamed from "No, corregir número," since Google has
+  nothing to "correct") — costs nothing beyond the tap; returns to §3.2a
+  for Google, or to §3.3/§3.2e (typed value preserved) for phone/email —
+  the identical destination and pre-fill behavior §3.6's "← Cambiar
+  [número / correo]" already establishes, not a new escape-hatch shape.
 - No loading state of its own: the underlying write (provisioning a
-  User/verified phone) already completed at §3.7; this screen is a pure
-  local read-and-confirm gate before `onboarding.md`'s own write path
-  (§3.5 there) ever runs.
+  User/verified credential) already completed at §3.7/§3.2c; this screen
+  is a pure local read-and-confirm gate before `onboarding.md`'s own
+  write path (§3.5 there) ever runs.
 
 ### 3.8 Retomar autenticación interrumpida
-No new wireframe — reaching any screen in §3.3–§3.7d a second time (after the app was closed, backgrounded, or crashed mid-flow) renders it pixel-identical, with whatever she'd already typed (her phone number, a partially-typed code) still present. The one exception to "pixel-identical": §3.6's resend countdown is recomputed from real elapsed time on resume, not frozen at its pre-interruption value or reset to a fresh 0:30 — the number changes, nothing else about the screen does. Same guarantee `onboarding.md §3.7`/`home.md §3.13`/`inventory.md §3.7` already make for their own in-progress work. *global-principles.md*, "never ask twice." Never restarts from §3.3 once she's made real progress past it.
+No new wireframe — reaching any screen in §3.2a–§3.2f, §3.3–§3.7e a second time (after the app was closed, backgrounded, or crashed mid-flow) renders it pixel-identical, with whatever she'd already typed or started (her phone number or email, a partially-typed code, an in-progress Google redirect) still present. **[Range extended 2026-09-13 — `ux-critic`-caught gap: the original range, "§3.3–§3.7d," predated the Google/email screens and left no defined resume path for a background/kill mid-Google-redirect or mid-email-entry, closed.]** For the Google flow specifically (§3.2b/§3.2c), "resume" means re-attempting the redirect/callback resolution, not literally replaying stale external UI state — the same "below this document's abstraction level" treatment §2.3 already gives OTP delivery mechanics. The one exception to "pixel-identical" otherwise: §3.6's resend countdown is recomputed from real elapsed time on resume, not frozen at its pre-interruption value or reset to a fresh 0:30 — the number changes, nothing else about the screen does. Same guarantee `onboarding.md §3.7`/`home.md §3.13`/`inventory.md §3.7` already make for their own in-progress work. *global-principles.md*, "never ask twice." Never restarts from §3.2a once she's made real progress past it.
 
 ### 3.9 Falla defensiva — no se pudo determinar el estado inicial
 ```
@@ -581,7 +718,12 @@ Same idempotency guarantee §3.7d already carries for its own genuine first-time
 ```
 Open app (any time)
   → resolve device session (§2.1, automatic)
-      → valid session exists ─────────────────────────────────────────→
+      → [New, 2026-09-13, §2.1 step 0] verified, but §3.7e's device-
+        history confirmation still unconfirmed? ────────────────────────→
+        resume directly to §3.7e — never falls through to the ordinary
+        valid-session check below, which would otherwise treat the bare
+        verification as sufficient on its own
+      → valid session exists (no §3.7e pending) ────────────────────────→
         [Amended 2026-09-07, §8 item 6(a)] first check: zero
         BusinessMembership/Business anywhere for this User AND a
         pending, not-yet-declined-on-this-device Invitation exists?
@@ -589,16 +731,31 @@ Open app (any time)
             case 0 reaches from a fresh OTP confirm
           → NO → onboarding.md's own resolution (onboarding.md §2.1),
             silently — no screen in this document shown at all
-      → in-progress (phone typed, or code sent, not yet confirmed),
-        interrupted ────────────────────────────────────────────────→
-        resume exact step (§3.8) — countdown recomputed from real
-        elapsed time, not frozen or reset
+      → in-progress (phone/email typed, code sent, or Google redirect
+        started, not yet confirmed), interrupted ─────────────────────→
+        resume exact step (§3.8, range extended to cover §3.2a–§3.2f) —
+        countdown recomputed from real elapsed time, not frozen or reset
       → fresh, no session ────────────────────────────────────────────→
-        Número celular (§3.3)
+        Elegir cómo entrar (§3.2a, new 2026-09-13)
+          → Continuar con número celular → Número celular (§3.3), same
+            flow as before, entry point relabeled only
+          → Continuar con correo → §3.2e
+              → formato inválido (§3.2f) → corrects in place
+              → Enviar código → shares §3.5/§3.5a → Ingresa el código
+                (§3.6/§3.6a, generalized) → shares §3.6b/§3.7/§3.7a-d →
+                success → §2.2's generalized branch, reading
+                AuthIdentity(type=email)
+          → Continuar con Google → §3.2b (redirecting, Google's own UI,
+            out of scope) → §3.2c (verificando)
+              → she cancels/backs out → silently back to §3.2a, no error
+              → genuine platform error → §3.2d → Reintentar → §3.2b again,
+                or Elegir otra forma → §3.2a
+              → success → §2.2's generalized branch, reading
+                AuthIdentity(type=google)
       → resolution itself fails ──────────────────────────────────────→
         fallback (§3.9), Reintentar
 
-From §3.3, type a number:
+From §3.3 (reached via §3.2a's "Continuar con número celular"), type a number:
 
   A paste (or similar) produces a superficially-complete, non-numeric
   value ───────────────────────────────────────────────────────────→
@@ -632,20 +789,22 @@ From §3.3, type a number:
                     still pending
                 no longer pending → §3.13a → Continuar →
                   onboarding.md §3.3
-            → success, first-ever verification for this phone, no
+            → success, first-ever verification for this credential, no
               pending Invitation ─────────────────────────────────→
-              [New check, 2026-09-07] does this device remember a
-              different phone's session, ever?
+              [New check, 2026-09-07, generalized 2026-09-13] does this
+              device remember a different identity's session, ever (any
+              AuthIdentity type)?
                 → NO → onboarding.md §3.3 (Bienvenida + Elegir cómo
                   empezar), cited verbatim — Owner-ness produced
                   structurally the moment onboarding.md §3.5's own
                   Business-creation write next succeeds (§2.2, not
                   designed here)
-                → YES → §3.7e (confirm número) →
-                    Sí, es mi número → onboarding.md §3.3, same as NO
+                → YES → §3.7e (confirm identity) →
+                    Sí, es mío/mía → onboarding.md §3.3, same as NO
                       above
-                    No, corregir número → back to §3.3, number
-                      preserved for editing
+                    No, elegir otro → back to whichever entry point she
+                      used (§3.3/§3.2e, value preserved; §3.2a for
+                      Google)
             → success, already-verified-on-this-device, Business local
               and intact [Amended 2026-08-13 — see
               authentication.changelog.md#2026-08-13-case-2] (reached
@@ -688,19 +847,27 @@ Any interruption up to and including a still-unconfirmed code:
 19. Aceptando invitación — error (§3.10b)
 20. Invitación aceptada — bienvenida (§3.10c)
 21. Invitación ya no disponible (§3.13a)
-22. Verificando código — éxito, teléfono con otro número guardado (§3.7e, new)
+22. Verificando código / Google — éxito, otra identidad en este dispositivo (§3.7e, generalized)
+23. Elegir cómo entrar (§3.2a, new)
+24. Continuando con Google — near-instant / slow (§3.2b, new)
+25. Verificando con Google — near-instant / slow (§3.2c, new)
+26. Google — no se pudo continuar, genuine error only (§3.2d, new)
+27. Correo electrónico — entry (§3.2e, new)
+28. Correo electrónico — formato inválido (§3.2f, new)
 
 ## 6. Minimum step count
 
 | Scenario | Taps to handoff | Why it can't be fewer |
 |---|---|---|
-| First-time verification (or any fresh verification on a session-less device) | **4** (typed phone + Enviar código + typed code + Confirmar) | Both fields are genuinely required, unique-per-person facts with no honest default — a phone number and a one-time code are the entire minimum a verification mechanism can ask for. Neither "Enviar código" nor "Confirmar" is auto-fired on field completion — both actions have a real, non-trivial consequence (a message sent; an identity confirmed), the same reasoning `onboarding.md §6` already gives its own "Confirmar y activar." |
+| First-time verification, phone (or any fresh verification on a session-less device) | **[Corrected 2026-09-13] 5** (Elegir cómo entrar + typed phone + Enviar código + typed code + Confirmar — was 4) | Both fields are genuinely required, unique-per-person facts with no honest default — a phone number and a one-time code are the entire minimum a verification mechanism can ask for. Neither "Enviar código" nor "Confirmar" is auto-fired on field completion — both actions have a real, non-trivial consequence (a message sent; an identity confirmed), the same reasoning `onboarding.md §6` already gives its own "Confirmar y activar." The new choice screen (§3.2a) adds one real tap to every path — a deliberate, named trade for genuine method choice, reasoned in §1. |
+| First-time verification, email (new, 2026-09-13) | **5** (Elegir cómo entrar + typed correo + Enviar código + typed code + Confirmar) | Identical shape to phone — two genuinely required fields, no honest default. |
+| First-time verification, Google (new, 2026-09-13) | **2**, then Google's own UI, uncounted (Elegir cómo entrar + Continuar con Google) | The lowest-friction of the three by construction — no typing on Nahui's own screens at all. Google's own account-picker interaction is out of scope, the same treatment `onboarding.md §2.2b`'s file picker already gets. |
 | Already-verified device | **0** — never shown | Direct consequence of §2.1's silent pass-through. |
 | Resuming an interrupted verification | **0 extra** | Same guarantee `onboarding.md §3.7` already gives its own in-progress work. |
 | Recovering from a wrong/expired/exhausted code | **+1 per occurrence** (retype code, or tap Reenviar código) | Not part of the floor — only reached when something genuinely went wrong; never a designed-in tax on the happy path. |
 | Accepting a pending Invitation | **2** (Aceptar y empezar a vender → Ir a Hoy) | One tap for the real commitment (§2.2a step 3's reasoning), one to leave the acknowledgment screen — same floor as every other real-commitment action in this document. |
 | Declining a pending Invitation | **1** (Ahora no) | Nothing to confirm — declining loses nothing, costs nothing beyond the tap itself. |
-| First-time verification on a device that previously held a different phone's session | **+1** (Sí, es mi número) | Not part of the floor — only reached when a device carries this specific history; protects a real, first-time Business-creation commitment from a mistyped digit, the same reasoning `onboarding.md §6` already gives every real-commitment tap in this family (§3.7e). |
+| First-time verification on a device that previously held a different identity's session | **+1** (Sí, es mío/mía) | Not part of the floor — only reached when a device carries this specific history; protects a real, first-time Business-creation commitment from a mistyped digit or accidental re-verification, the same reasoning `onboarding.md §6` already gives every real-commitment tap in this family (§3.7e, generalized). |
 
 ## 7. Automation opportunities
 
@@ -714,13 +881,14 @@ Any interruption up to and including a still-unconfirmed code:
 - Whether a phone has a pending Invitation at all — checked automatically at OTP-confirm, never a question asked of her ("¿tienes una invitación?" never appears anywhere).
 - Whether a returning, still-not-onboarded phone should be offered a newly-arrived Invitation is now checked automatically on every ordinary session-resume app open too, not only at a fresh OTP confirmation (§2.1, added 2026-09-07) — she never has to sign out and re-verify just to be shown an Invitation that arrived after she'd already stalled.
 - Whether this device has ever held a session for a *different* phone is checked automatically, silently, before any Business-creation handoff — never a raw question asked of her ("¿ya usaste este teléfono antes?" never appears anywhere); it only ever surfaces as the one confirming screen it gates (§3.7e).
+- **Added 2026-09-13:** which of the three methods she used is never re-asked — §2.2's four-way branch resolves generically off whichever `AuthIdentity` just verified, never a separate "how did you sign in" question. Google's own account picker does her typing for her when she's already signed in on the device — the closest this document gets to a genuinely zero-typing verification path.
 
 ## 8. Open questions
 
 None of the items below block this document's own completion. Both are named explicitly rather than invented around, per this folder's own §4 rule that every branch resolves to a named destination or an explicit "Not yet resolved" marker.
 
 1. **Architect Question Q17 (`product/02-ux/architect-questions.md`) — Resolved.** Was: the User/Owner/Seller domain model this document's flow needs to actually be implementable. `domain-model.md` previously had no User/Account aggregate, no Role concept, no Business↔User relationship — Business was modeled as belonging to "an install" (`onboarding.md §2.1`'s own language), not to an authenticated identity — the concrete follow-up `company/business-decisions.md` Q14 already named as owed. **Resolved** via `product/99-rfc/0007-user-and-business-membership.md`, Accepted and promoted in full via `decision-log.md` D44 — `User` (global aggregate root, identified by `phone`) and `BusinessMembership` (`role: OWNER | SELLER`) are now part of `domain-model.md`/`ubiquitous-language.md`, with Business creation carrying the structural Owner-Membership invariant this document's §2.2 first-verification branch already assumed. No amendment to this document's own flow logic (§2.2/§4) was needed — it already describes exactly the behavior D44 makes implementable.
-2. **Product Decision (proposed Q18, `product/02-ux/product-decisions.md`) — §2.2 case 3 (a verified phone, on a session-less device, already tied to an existing already-onboarded Business).** Genuinely undecided: whether a Business belongs to a device or an identity, and whether this mock/local-data prototype can even represent "same Business, second device" today.
+2. **Product Decision (proposed Q18, `product/02-ux/product-decisions.md`) — §2.2 case 3 (a verified credential — phone, email, or Google — on a session-less device, already tied to an existing already-onboarded Business; wording generalized 2026-09-13 to match the operative branch text, `ux-critic`-caught drift).** Genuinely undecided: whether a Business belongs to a device or an identity, and whether this mock/local-data prototype can even represent "same Business, second device" today.
 3. **Provisional prototype defaults, not frozen domain invariants (Product Owner clarification, 2026-08-13):** the specific numbers chosen here by judgment call — 6-digit code, 30-second resend cooldown, 5-minute code validity, 5-attempt soft-invalidation bound — are product/prototype defaults, not settled Foundation rules. They should be revisited when a real authentication provider is integrated (Stage 7, Backend Integration) — a real SMS/OTP vendor may impose its own constraints (code length, delivery/expiry timing, rate limits) that supersede these values outright, and even absent that, they should be checked against a real or simulated first-run test before being treated as final, same evidence-driven caution `onboarding.md §8` items 1/5/6 already recommend for its own judgment calls. Nothing in this document's flow logic (§2, §4) depends on the exact values — only on their existence and the branches they gate.
 4. **[Amended 2026-08-13 — see `authentication.changelog.md#2026-08-13-open-q4`]** Resolved. `settings.md §2.5` activates §2.2 case 2.
 5. **`brand-guardian` consultation complete (2026-08-13)** — §3.7c's "too many attempts" copy revised per that consultation's finding (subject/causal-structure fix, same soft-invalidation design); flagged as `tone-of-voice.md`-Hypothesis-tagged, worth a real merchant-reaction check once shipped, not blocking now.
@@ -731,6 +899,10 @@ None of the items below block this document's own completion. Both are named exp
 8. **`brand-guardian` consultation complete (2026-09-07).** Finding: §3.10's offer copy correctly applies the peer-to-peer register question posed; no issue found there. §3.10c's welcome copy — which reuses `tone-of-voice.md`'s own worked exemplar ("Ya quedaste registrada con Ropa Ana") verbatim — was flagged on a narrower point: the verb ("quedaste registrada," a passive connotation) may undersell that a Seller accepting an invitation just gained real active capability (open Sessions, register Sales), not merely been added to a list. Called explicitly Minor and non-blocking — the very next line ("Cuando quieras vender, abre tu sesión aquí") resolves the ambiguity within about a second of reading. **`ux-designer` call, documented here rather than resolved by editing the screen: left as-is for now**, deliberately deferred rather than adjusted — changing this exemplar's own verb would mean deviating from the literal reused text `tone-of-voice.md` itself cites, which deserves its own pass rather than an ad hoc tweak folded into this unrelated remediation. Revisit if this screen is next substantively touched — a candidate replacement already on record: "Ya puedes vender con Ropa Ana," which carries the active-capability meaning more directly.
 9. **`settings.md §8` items 11 (cancelling a pending Invitation) and 12 (`Invitation.status = expired`'s trigger/timing)** — this document's §3.13a defensive state is deliberately written to cover *either* outcome without needing to distinguish them; those two gaps stay exactly as open as `settings.md` already left them, not resolved here.
 10. **[New, 2026-09-07] Resolved — the exact defect a `merchant-user-tester` walk of Slice 12 surfaced (see status header).** An OWNER who signed out (`settings.md §2.5`) and mistyped her own number on re-entry was silently routed into a brand-new `onboarding.md §3.3`, with zero warning and no way back — directly undercutting the sign-out screen's own "no se pierde nada" promise. Closed by §2.2 case 1's new device-history check and the new §3.7e confirming screen, paired with `settings.md §2.5`/§3.3a now showing her own verified phone number, read-only, in "Tu cuenta" (elevating that document's own already-named Future Consideration, first flagged 2026-08-13, from deferred to designed). Deliberately narrow: fires only for a first-time-anywhere phone on a device with prior different-phone history — never for an ordinary first-ever verification on a fresh device, and never a second time for the same already-confirmed number.
+11. **New Product Decision — account linking (`product/02-ux/product-decisions.md` Q26, `decision-log.md` D62/D63, RFC 0012 §5 Open Item 1, now live per D63) — added 2026-09-13, logged Q26 same day (`ux-critic`-caught documentation-persistence gap, closed).** Should Nahui ever offer a way for a merchant to link a second method to her existing identity (e.g., someone who signed up via Google later wants phone/WhatsApp too)? Not designed here — RFC 0012 §5 Invariant C already names the structural risk this activation makes live for the first time: the same real person completing cold sign-up twice, via two different methods, now silently produces two separate `User` rows with two separate Businesses, with no in-app way to notice or recover. This is a genuine, material risk this amendment introduces by design (per D63's own explicit choice), not a hypothetical — flagged plainly, not resolved, since resolving it requires a Product Owner call this document can't make.
+12. **`settings.md §2.5/§3.3a` ("Tu cuenta") needs a follow-up amendment — added 2026-09-13, genuinely stale, not fixed by this document's own scope.** That section unconditionally shows a phone number, read-only, on every "Tu cuenta" variant, with no case for a merchant who has no linked phone `AuthIdentity` at all — now a real, reachable state the instant a merchant completes Owner-creation via Google or Email alone (D63 explicitly permits exactly this). RFC 0012 §6's "second Approved consumer checked" note only confirmed the field path is correct for a merchant who *has* a verified phone — it couldn't have addressed the zero-phone case, since Google/Email weren't activated at that point. Flagged explicitly for a follow-up `settings.md` amendment (new screen state — what "Tu cuenta" shows for a Google-only or Email-only merchant, presumably her verified email or a Google-account label, by the same reasoning §3.7e applies); not designed here since it's outside this document's own file scope.
+13. **Provisional prototype defaults, email-specific — added 2026-09-13.** This amendment reuses phone's existing 6-digit code / 30-second cooldown / 5-minute validity / 5-attempt bound for email, unchanged, for consistency — but email delivery in the real world is frequently slower than SMS/WhatsApp (spam-filter queueing, greylisting). Worth a dedicated check once a real email provider is integrated (Stage 7), same caution §8 item 3 already states for the phone defaults, extended explicitly to cover this new channel rather than silently assumed identical.
+14. **§3.7e's device-history check doesn't cover Google's actual realistic error mode — `ux-critic`-caught Major, named explicitly 2026-09-13, not resolved here.** The check fires only when *this device* remembers a *different identity's* prior session — built to catch a transcription error (a mistyped digit or email address). Google has no transcription step at all, so the real risk isn't "wrong device history," it's **picking the wrong already-signed-in account from Google's own account picker** — common on a shared/family device with multiple Google accounts signed in — and that can happen on a device with **zero prior Nahui history**, meaning §3.7e never fires for it under the current trigger condition. A merchant could tap "Continuar con Google," pick the wrong account, and silently get a brand-new Business created under someone else's Google identity, with no confirmation screen at any point. **Not solved in this pass** — named as a real, accepted gap (same class as items 11–13) rather than the narrower "is the existing check even worth firing for Google" question this item originally, incompletely, asked. A future fix would need a Google-specific confirmation step independent of device history (e.g., always showing the resolved Google account's label back to her before proceeding, regardless of device history) — not designed here.
 
 ## 9. Principle justification
 
@@ -763,6 +935,13 @@ None of the items below block this document's own completion. Both are named exp
 - The same reasoning `onboarding.md §6` gives every real-commitment tap in this family ("the extra tap protects a real commitment from a stray tap") — extended here to protect a Business-creation commitment, the single highest-consequence write this document gates, from a plain typing mistake.
 - *brand/tone-of-voice.md* — §3.7e states the one fact that matters (no Business exists yet under this number) before asking anything — the identical two-beat shape every other confirm/error state in this document already uses (§3.7c, `settings.md §3.8`).
 
+**Google/Email activation (`decision-log.md` D62/D63, added 2026-09-13):**
+- *global-principles.md*, "business language before technical language" — §3.2a presents three named actions ("Continuar con Google/correo/número celular"), never a technical method-type picker.
+- *global-principles.md*, "never ask twice" — §2.2's generalized branch resolves which credential/User this is exactly once, regardless of method, never asking "¿ya tienes cuenta?" through any of the three paths.
+- *architecture-principles.md* #7 (idempotent/keyed retries) — extended explicitly to §3.2c's Google-callback resolution and §3.2e/§3.2f's email send, the identical guarantee §3.5/§3.7 already carry.
+- *tone-of-voice.md*, "state facts before offering an opinion" — §3.2d states what happened (couldn't continue with Google) before offering the fix, same two-beat shape as every other error state in this document; §3.2c's cancel-is-silent design applies the same discipline in the other direction — no manufactured "something went wrong" framing for a moment where nothing did.
+- *global-principles.md*, "the fastest interaction is the one that never happens" — weighed explicitly against, not silently overridden: §1's "tension" section names the one real cost this activation adds (one extra tap on every path, including the previously-optimized phone path) as a deliberate trade, not an oversight.
+
 ## 10. Decisions made
 
 - **Named `authentication.md`, not `owner-access.md`** — the screens designed here aren't Owner-specific; naming the file after one outcome of a successful verification would overstate what's on screen. Reasoned in full at the top of this document.
@@ -779,6 +958,12 @@ None of the items below block this document's own completion. Both are named exp
 - **§3.10c's `brand-guardian` consultation (§8, item 8) is complete — copy left as-is, deliberately deferred, not treated as a blocking finding.** See §8 for the full reasoning and the on-record candidate replacement if this screen is next revisited.
 - **§2.1's session-resume check now also tests for a pending Invitation on a phone with zero standing anywhere (2026-09-07).** The original case-0 gate ("never verified before, anywhere") missed a real population: verified once, stalled before choosing an Onboarding path, invited later. Corrected to test the state that matters (zero Business/Membership anywhere) rather than verification history, checked at both entry points that can reach it. Declining is remembered per-device per-Invitation so the "never ask twice" bar holds even though this check now runs on every app open, not just once at OTP-confirm.
 - **§2.2 case 1 gains a device-history check before handing off to `onboarding.md §3.3` (2026-09-07, Slice 12 `merchant-user-tester` defect).** A first-time-anywhere phone verifying on a device that remembers a different phone's prior session is shown its own typed number back, once, before a new Business is created under it. Fires only for that narrow, real-risk intersection — never for the ordinary first-ever-device case. Grounded in composing two already-reviewed conventions rather than inventing a new one: reflecting typed data back to her (§3.6's own OTP-destination line) and a plain confirm/correct choice for a real commitment (`settings.md §3.8`'s "Cerrar sesión" shape, §3.10's accept/decline shape) — not a `knowledge-mentor` consultation candidate, since neither element is new to this document family, only their combination.
+- **Email uses a numeric code, not a magic link — added 2026-09-13.** A magic link requires leaving the app into a mail client and, on mobile, frequently resolves into a browser rather than back into the app — a real, documented deep-link reliability gap, not hypothetical. A code also lets Email reuse the entire already-Approved "Ingresa el código" state machine (§3.6–§3.7e) verbatim, generalized only to show the right identifier back to her — versus a magic link needing its own entirely new "revisa tu correo"/expired-link/already-used-link state family with no existing precedent in this document. A `ux-designer` judgment call, stated plainly per this folder's own convention for undecided-by-the-Foundation numbers (§8 item 3), not asserted as the only valid choice.
+- **All three sign-in methods presented as equal-weight options, order stated as a non-priority judgment call (Google, Correo, Número celular) — added 2026-09-13.** Reasoned explicitly in §3.2a, not asserted as validated.
+- **Google's redirect-cancel treated as a non-event, not an error — added 2026-09-13.** A deliberate distinction from a genuine platform error (§3.2d), reasoned against `tone-of-voice.md`'s "never manufacture a problem that didn't happen."
+- **No account-linking UI designed in this amendment — added 2026-09-13.** RFC 0012 §5's duplicate-User gap is named as a live, accepted risk (§8 item 11), not solved here; this document only activates the three methods as independent cold-sign-up entry points, per D63's own explicit scope.
+- **§2.2a/§3.10–§3.13a (Invitation acceptance) left entirely untouched by this amendment, including §2.2 case 0's literal phone-specific text — added 2026-09-13.** Already correctly phone-scoped per RFC 0012 §3 (pending revision, RFC 0013) — touching it here risked getting ahead of that separately-in-progress work.
+- **§2.1 gains a new step 0, checked before the ordinary valid-session test — added 2026-09-13, `ux-critic`-caught contradiction, closed.** The first remediation round extended §3.8's resumability claim to cover §3.7e without checking whether §2.1's own step-priority logic actually supported it — it didn't: a bare successful verification already satisfies "valid session" (step 1), so an interruption landing exactly between verification success and her §3.7e tap would have silently fallen through past the confirmation screen the moment ordinary step 1 logic ran, defeating its own safety purpose. Step 0 closes this the same way §2.2's own step 0 already outranks its 1–3 for the Invitation check — checked first, resumes directly to §3.7e, never lets the ordinary session check treat an unconfirmed §3.7e as settled.
 
 ## 11. Future considerations
 
@@ -786,6 +971,9 @@ None of the items below block this document's own completion. Both are named exp
 - **[Amended 2026-08-13 — see `authentication.changelog.md#2026-08-13-future-11`]** Self-service logout / account-level session management — resolved. `settings.md §2.5` ("Cerrar sesión") now designs exactly this.
 - **Multi-Business-per-phone — partially addressed as of 2026-09-06, narrowed further 2026-09-07.** `product-decisions.md` Q24/Q25 resolved that a User may belong to more than one Business; this document's §2.2 cases 2/3 name the real, still-undesigned intersection with a pending Invitation. The zero-standing-anywhere half of that intersection is now resolved (§8 item 6(a)); only the harder cross-Business half — an existing Membership elsewhere plus a new pending Invitation — stays open (§8 item 6(b)). No Business-switching surface exists anywhere yet.
 - **A merchant-visible display name for a team member** — same gap `settings.md §2.7`/§11 already names; this document's §3.10 inherits the identical limitation (no way to name the inviting OWNER personally).
+- **Account linking / duplicate-User merge — added 2026-09-13.** The real gap named in §8 item 11, not designed here; a future RFC's own scope once evidence or a Product Owner decision warrants it.
+- **Apple Sign-In — added 2026-09-13.** Modeled in RFC 0012's schema (`AuthIdentity.type` includes `apple`) but not activated by D62/D63 and not designed in this amendment. Same posture this document already takes toward anything schema-ready-but-not-yet-exposed.
+- **`settings.md` "Tu cuenta" zero-phone display state — added 2026-09-13.** Flagged, not fixed here — see §8 item 12.
 - **`onboarding.md §0`'s own "Authentication... implementation-level concern below this spec's abstraction level" framing is now stale** now that this document exists as a real spec for exactly that concern. Flagged for whoever next amends `onboarding.md` — not resolved here, since `onboarding.md` is treated as frozen for this task.
 - **A persistent, read-only display of her own verified phone number somewhere in `settings.md` — Resolved 2026-09-07.** First flagged 2026-08-13 (`merchant-user-tester` walk of "Tu cuenta," read as "an unfinished corner"), logged then as a mild want; a second, later `merchant-user-tester` walk of Slice 12 confirmed it as a real, severe defect once routine sign-out/sign-in cycling became part of the multi-Membership workflow (`product/02-ux/experience-review-2026-09-07-slice-12-team-invite.md`) — a mistyped digit on re-verification silently produced a brand-new, empty Business with no way back, directly contradicting the sign-out screen's own "no se pierde nada" promise. Closed by `settings.md §2.5`/§3.3a now showing her own verified number, read-only, in "Tu cuenta," paired with this document's own §2.2/§3.7e device-history check.
 - **The device-history marker §2.2/§3.7e relies on is itself a plain local fact, not a domain concept** — if a device's local storage is ever cleared independently of a deliberate sign-out (app reinstall, cache clear), this safeguard silently stops firing for that device, the same limitation §2.1's own session-persistence mechanism already has. Not designed around here, consistent with this document's existing abstraction-level line.

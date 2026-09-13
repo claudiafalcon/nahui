@@ -1,6 +1,6 @@
 # 0012 — AuthIdentity: multi-method identity for User, decoupling business identity from any single authentication credential
 
-Status: Proposed
+Status: Accepted (Product Owner, 2026-09-13) — promoted into the Foundation, `decision-log.md` D62. Two of this RFC's own explicitly-flagged open items were resolved the same day: §5 Open Item 1 (cold-sign-up vs. session-linked-only for a second method) resolved in favor of cold sign-up, `decision-log.md` D63; §3's "keep `Invitation` phone-specific" ruling is being revisited as a direct consequence, tracked as RFC 0013.
 
 ## The idea
 
@@ -84,6 +84,8 @@ User (Identity context, aggregate root, global)
 `User`'s existing named gap (no personal display-name field, RFC 0007 §5 item 2) is unaffected and restated, not resolved, here.
 
 ### 3. Every existing domain relationship touching identity, checked individually against this change
+
+**The "kept `Invitation` phone-specific" ruling below is Superseded by RFC 0013 (`decision-log.md` D64, Accepted 2026-09-13)** — the rest of this section (BusinessMembership, Sale.performedByMembershipId, EventAssignment) stands unaffected and still fully in force. Text below preserved unedited per this Foundation's non-deletion/supersession discipline — an accurate record of the ruling made and why, at the time it was made, not a currently-operative rule.
 
 **`BusinessMembership` (D44).** Already correct as-is — no change. Its schema references `userId`, never `phone` or any credential value directly. `BusinessMembership`'s own uniqueness (`userId, businessId`) and its consumer-facing behavior (which Businesses a login can reach) are entirely unaffected by how that `userId` got authenticated.
 

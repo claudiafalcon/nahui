@@ -8,6 +8,13 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
+### Q26 — Should Nahui ever offer account linking, to prevent/resolve the duplicate-User risk a real person creates by signing up cold via two different methods?
+
+- **Question:** `product/99-rfc/0012-auth-identity-multi-method.md` §5 Invariant C names a structural gap: two independently-created `User` rows can represent the same real person if she completes first-ever-credential creation twice, once per method (e.g., phone once, Google another time), with no structural link between them. `decision-log.md` D63 (2026-09-13) made this gap live by activating Google/Email as fully independent cold-sign-up methods — previously it was structurally unreachable (phone-only). `product/02-ux/authentication.md §8` item 11 names it as an open Product Decision but doesn't design a fix.
+- **Why this can't be answered yet:** resolving it requires a real UX shape (how would a merchant discover/initiate linking a second method to her existing identity? a settings-surface "add another way to sign in" action? an automatic prompt if the same device/email pattern is detected?) that doesn't exist and hasn't been evaluated against product evidence of actual need.
+- **What's already resolved, not reopened:** D63 explicitly accepted this risk as deferred, not mitigated, at current pilot scale (two known merchants, any collision trivially fixable by hand) — building merge/dedup machinery now, with zero live instances, would be exactly the kind of pre-building `architecture-principles.md` #5/D26 already argues against.
+- **Status:** Open. Doesn't block `authentication.md`'s Google/Email activation (named explicitly per that folder's own §4 rule rather than invented around) — revisit once real evidence (an actual duplicate-account collision, or explicit merchant demand for linking) warrants design work.
+
 ### Q24/Q25 — Concurrent multi-seller selling with Event-scoped inventory allocation (unified design, 2026-09-06)
 
 The Product Owner directed these be treated as one coherent design problem (a real prospective merchant's actual use case), designed fully before deciding what ships first. Full architecture pass complete; superseding the two separate, narrower findings this replaces (kept below in "Superseded prior findings" per this log's non-deletion rule).
