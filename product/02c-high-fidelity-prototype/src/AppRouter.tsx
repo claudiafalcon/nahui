@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import App from './App';
 import { useStore } from './domain/store';
-import { currentUser, findMembership, pendingInvitationsForPhone } from './domain/selectors';
+import { currentUser, findMembership, pendingInvitationsForPhone, phoneIdentifierFor } from './domain/selectors';
 import { businessForCurrentUser, isOnboardingComplete } from './domain/onboardingResolution';
 import { AuthenticationFlow } from './screens/Authentication/AuthenticationFlow';
 import { InvitationFlow } from './screens/Authentication/InvitationFlow';
 import { PhoneMismatchConfirm } from './screens/Authentication/PhoneMismatchConfirm';
 import { OnboardingFlow } from './screens/Onboarding/OnboardingFlow';
+import type { AuthIdentity } from './domain/types';
 
 /**
  * The top-level resolution layer, mounted above the existing tab-shell
  * `App.tsx` — `authentication.md` §2.1's device-session check first ("does
- * this device already hold a valid verified-phone session?"), then
+ * this device already hold a valid verified session?"), then
  * `onboarding.md` §2.1's own resolution, falling through to the four-tab
  * shell only once both resolve complete.
  *
@@ -22,15 +23,28 @@ import { OnboardingFlow } from './screens/Onboarding/OnboardingFlow';
  * (`authentication.md` §3.8, `onboarding.md` §3.7) come for free from
  * localStorage persistence, once a real write has happened. What genuinely
  * cannot come from persisted `AppState` — because nothing has been written
- * yet — is the pre-write UI state within each flow (a phone number typed
- * but not yet sent, a code sent but not yet confirmed, an Onboarding path
- * tapped but not yet confirmed): those live as local component state inside
+ * yet — is the pre-write UI state within each flow (a value typed but not
+ * yet sent, a code sent but not yet confirmed, an Onboarding path tapped but
+ * not yet confirmed): those live as local component state inside
  * `AuthenticationFlow`/`OnboardingFlow`, the same disclosed-simplification
  * shape `RegisterMerchandise.tsx`'s own in-progress draft already has
  * (docs/passes/slice-1-home-inventario.md "Scope decisions") — reload or a
  * tab switch away from the flow resets to that flow's fresh entry point
  * rather than the exact mid-typing step. See
  * docs/passes/slice-2-authentication-onboarding.md for the full disclosure.
+ *
+ * **RFC 0012/D62-63 (`decision-log.md`, 2026-09-13) — Google Sign-In and
+ * Email activated as fully independent first-time sign-up methods,
+ * alongside phone.** `authenticated` is now "does this device hold a live
+ * session at all" (`state.currentUserId != null`), never phone-specific —
+ * `User` no longer carries `phoneVerifiedAt`, or `phone`, directly (see
+ * `AuthIdentity`'s own doc comment, `types.ts`). Every read that used to go
+ * through `user.phone` now resolves through `phoneIdentifierFor` instead
+ * (`''` for a Google/Email-only merchant — `Invitation` stays phone-scoped
+ * by design, RFC 0012 §3, so that population simply never matches a pending
+ * Invitation or `needsPhoneMismatchConfirmation`'s own phone-shaped display,
+ * the expected consequence of that ruling, not a gap this file needs to
+ * close).
  *
  * **Slice 12 addition — `authentication.md` §2.1 / §2.2 case 0 / §2.2a
  * (`product-decisions.md` Q24/Q25, amended 2026-09-07): a fourth stage,
@@ -40,10 +54,10 @@ import { OnboardingFlow } from './screens/Onboarding/OnboardingFlow';
  * anywhere for them" — a fact that, unlike the original ("has this phone
  * never been verified before, anywhere") wording it replaced, is honestly
  * re-derivable from persisted `AppState` alone on every render, including a
- * later reload with no fresh OTP confirm involved at all. That's exactly
+ * later reload with no fresh verification involved at all. That's exactly
  * why the amendment exists: §2.1 now runs the identical check at ordinary
- * session-resume, not only at a fresh `verifyOtp` (§2.2 case 0), so a phone
- * that verified once, never finished Onboarding, and is invited only
+ * session-resume, not only at a fresh credential confirm (§2.2 case 0), so
+ * a phone that verified once, never finished Onboarding, and is invited only
  * afterward is still reached. `derivedPendingInvitation` below implements
  * that corrected condition directly — `hasAnyMembership` /
  * `hasOwnBusiness` together are the "zero Membership anywhere AND zero
@@ -89,13 +103,28 @@ export function AppRouter() {
     null,
   );
   // authentication.md §3.7e (Slice 12 `merchant-user-tester` defect fix,
-  // 2026-09-07) — the just-rejected number from "No, corregir número," so
-  // the freshly-remounted `AuthenticationFlow` below can pre-fill it rather
-  // than making her retype it. See that branch's own comment further down.
-  const [retractedPhone, setRetractedPhone] = useState<string | undefined>(undefined);
+  // 2026-09-07; **generalized 2026-09-13, `decision-log.md` D62/D63** — was
+  // phone-only, now covers whichever of the two typed channels "No, elegir
+  // otro" was reached from). The just-rejected value, so the freshly-
+  // remounted `AuthenticationFlow` below can pre-fill it rather than making
+  // her retype it — `undefined` for Google (nothing to pre-fill — returns to
+  // §3.2a fresh instead), an ordinary fresh open, or a genuine account
+  // sign-out.
+  const [retractedPrefill, setRetractedPrefill] = useState<{ channel: 'phone' | 'email'; value: string } | undefined>(
+    undefined,
+  );
+  // §3.7e's own display value for the Google channel specifically — read
+  // live from the OAuth session at the moment it resolved
+  // (`AuthenticationFlow`'s own `onGoogleResolved` callback), never
+  // persisted anywhere (RFC 0012 §1). If a reload happens in the narrow gap
+  // between a Google credential resolving and this confirm screen's own tap
+  // — this ephemeral value is genuinely lost, same as any other in-memory
+  // React state in this app; `mismatchDisplayValue` below falls back to a
+  // generic, still-true phrase rather than inventing or persisting a label.
+  const [googleDisplayLabel, setGoogleDisplayLabel] = useState<string | null>(null);
 
   const user = currentUser(state);
-  const authenticated = user?.phoneVerifiedAt != null;
+  const authenticated = state.currentUserId != null;
 
   // Reused by both the pending-Invitation derivation below and
   // `needsPhoneMismatchConfirmation` further down — both are the identical
@@ -106,9 +135,14 @@ export function AppRouter() {
   const hasAnyMembership = authenticated && user ? state.memberships.some((m) => m.userId === user.id) : false;
   const hasOwnBusiness = authenticated && user ? businessForCurrentUser(state) != null : false;
 
+  // `Invitation` stays phone-scoped by design (RFC 0012 §3) — `''` for a
+  // Google/Email-only merchant, which simply never matches a real
+  // Invitation.phone, the expected consequence of that ruling.
+  const ownPhone = user ? phoneIdentifierFor(state, user.id) : '';
+
   let derivedPendingInvitation = undefined as ReturnType<typeof pendingInvitationsForPhone>[number] | undefined;
   if (authenticated && user && !hasAnyMembership && !hasOwnBusiness) {
-    const candidate = pendingInvitationsForPhone(state, user.phone)[0];
+    const candidate = pendingInvitationsForPhone(state, ownPhone)[0];
     if (candidate && !user.declinedInvitationIds.includes(candidate.id)) {
       derivedPendingInvitation = candidate;
     }
@@ -125,19 +159,51 @@ export function AppRouter() {
     // defeat the whole point of latching it.
   }, [derivedPendingInvitation]);
 
-  // authentication.md §2.2 case 1's new device-history check / §3.7e (Slice
-  // 12 `merchant-user-tester` defect fix, 2026-09-07). "Checked FIRST,
-  // before 1–3" (§2.2's own case-0 ordering) is respected here by rendering
-  // this branch only *after* `pendingInvitation` in the JSX below, not by
-  // excluding it from this boolean — the same convention `isSeller`/
-  // `isOnboardingComplete` already follow for their own ternary-ordering.
-  // `user.phoneMismatchConfirmationPending` alone would already be correct
-  // (it can only ever be true for a User with zero Membership/Business,
-  // `verifyOtp`'s own invariant), but the explicit `!hasAnyMembership &&
-  // !hasOwnBusiness` guard is kept for the same defensive-redundancy style
-  // this file's other derivations already use.
+  // authentication.md §2.2 case 1's device-history check / §3.7e (Slice 12
+  // `merchant-user-tester` defect fix, 2026-09-07; generalized 2026-09-13).
+  // **[Corrected 2026-09-13, `reviewer`-caught Important finding.]** This
+  // branch is now checked BEFORE `pendingInvitation` in the JSX below,
+  // reversing the prior ordering. §2.2's own case-0-before-case-1 rule
+  // ("checked FIRST, before 1-3") only governs the moment immediately after
+  // a *fresh* verification, where the two conditions are mutually exclusive
+  // by construction (case 1's device-history sub-check only ever fires
+  // after case 0 already said no) — so this reordering changes nothing for
+  // that path. It matters for a separate, narrower window §2.1's own new
+  // step 0 exists specifically to close: resuming the app while §3.7e sits
+  // unconfirmed (backgrounded before tapping either button) must show §3.7e
+  // first, "never falls through to [the ordinary valid-session logic]
+  // below" (§2.1 step 0's own text) — and the Invitation check lives inside
+  // that ordinary logic. The prior ordering let a pending Invitation that
+  // appeared during that exact window win, letting her accept it without
+  // ever passing the identity-confirmation gate the spec requires take
+  // priority there. `user.phoneMismatchConfirmationPending` alone would
+  // already be correct (it can only ever be true for a User with zero
+  // Membership/Business, `resolveAuthIdentity`'s own invariant), but the
+  // explicit `!hasAnyMembership && !hasOwnBusiness` guard is kept for the
+  // same defensive-redundancy style this file's other derivations already
+  // use.
   const needsPhoneMismatchConfirmation =
     authenticated && !!user && user.phoneMismatchConfirmationPending && !hasAnyMembership && !hasOwnBusiness;
+
+  // §3.7e's own display copy needs to know *which* credential type just
+  // verified — by construction, a User this screen fires for holds exactly
+  // one `AuthIdentity` row (the one just minted, `resolveAuthIdentity`'s own
+  // `'new-user'` branch — nothing else could have been linked yet, since
+  // zero Membership/Business also means this User has never gotten far
+  // enough to link a second method through any built UI).
+  const mismatchIdentity: AuthIdentity | undefined = needsPhoneMismatchConfirmation
+    ? state.authIdentities.find((a) => a.userId === user!.id)
+    : undefined;
+  const mismatchDisplayValue = (() => {
+    if (!mismatchIdentity) return '';
+    if (mismatchIdentity.type === 'phone') {
+      const p = mismatchIdentity.identifier;
+      return `+52 ${p.slice(0, 2)} ${p.slice(2, 6)} ${p.slice(6)}`;
+    }
+    if (mismatchIdentity.type === 'email') return mismatchIdentity.identifier;
+    if (mismatchIdentity.type === 'google') return googleDisplayLabel ?? 'tu cuenta de Google';
+    return mismatchIdentity.identifier; // 'apple' — schema-modeled, not activated, defensively unreachable
+  })();
 
   // This prototype models exactly one `Business` per running instance
   // (`types.ts`'s own "the whole AppState is implicitly one Business"
@@ -167,7 +233,7 @@ export function AppRouter() {
   // No stage-level `ScreenTransition` wrap here (removed — ux-critic Minor
   // finding, screen-transitions pass): each of the three stages below
   // already wraps its own first-rendered screen in its own `ScreenTransition`
-  // (AuthenticationFlow's "phone" step, OnboardingFlow's "welcome" step,
+  // (AuthenticationFlow's own first step, OnboardingFlow's "welcome" step,
   // App's "hoy" tab) — an outer wrap at this level meant that exact first
   // screen doubled up two nested, concurrently-running fade+rise animations
   // (opacity compounding multiplicatively, translateY compounding through
@@ -179,13 +245,44 @@ export function AppRouter() {
       {!authenticated ? (
         // authentication.md §2.2: a first-ever verification hands off
         // silently and directly into onboarding.md §3.3 — no interstitial
-        // "¡verificado!" screen (§10). Nothing further to do here: once
-        // `verifyOtp` sets `phoneVerifiedAt`, this component re-renders and
-        // falls through below. `retractedPhone` (Slice 12 defect fix) is
-        // only ever non-`undefined` immediately after "No, corregir número"
-        // below — an ordinary fresh open, or a genuine account sign-out,
-        // never sets it.
-        <AuthenticationFlow initialPhone={retractedPhone} />
+        // "¡verificado!" screen (§10). Nothing further to do here: once a
+        // credential resolves, `currentUserId` is set, this component
+        // re-renders and falls through below. `retractedPrefill` (Slice 12
+        // defect fix) is only ever set immediately after "No, elegir otro"
+        // below — an ordinary fresh open, a genuine account sign-out, or a
+        // Google-channel rejection never sets it.
+        <AuthenticationFlow initialPrefill={retractedPrefill} onGoogleResolved={setGoogleDisplayLabel} />
+      ) : needsPhoneMismatchConfirmation && user && mismatchIdentity ? (
+        // authentication.md §3.7e (Slice 12 `merchant-user-tester` defect
+        // fix, 2026-09-07; generalized 2026-09-13) — see
+        // `needsPhoneMismatchConfirmation`'s own derivation above for why
+        // this now sits BEFORE `pendingInvitation` (corrected 2026-09-13):
+        // a first-ever-anywhere credential must never reach
+        // `onboarding.md §3.3` — and so never `onboarding.md §3.5`'s own
+        // Business-creation write, nor an Invitation's own accept write —
+        // while this device still remembers a different identity's prior
+        // session, unconfirmed. `&& user && mismatchIdentity` here only
+        // narrows the type for the JSX below — both are already guaranteed
+        // whenever `needsPhoneMismatchConfirmation` is `true`.
+        <PhoneMismatchConfirm
+          channel={mismatchIdentity.type}
+          displayValue={mismatchDisplayValue}
+          onConfirm={() => confirmPhoneMismatch()}
+          onCorrect={() => {
+            // Preserve the just-typed value for the freshly-remounted
+            // `AuthenticationFlow` above (phone/email only — Google has
+            // nothing to preserve, returns to §3.2a fresh, §3.7e's own
+            // text), then revert this User row's own verification —
+            // `authenticated` flips false on the very next render, which is
+            // what actually swaps this component out.
+            if (mismatchIdentity.type === 'phone' || mismatchIdentity.type === 'email') {
+              setRetractedPrefill({ channel: mismatchIdentity.type, value: mismatchIdentity.identifier });
+            } else {
+              setRetractedPrefill(undefined);
+            }
+            retractMistypedVerification();
+          }}
+        />
       ) : pendingInvitation ? (
         <InvitationFlow
           invitation={pendingInvitation}
@@ -201,28 +298,6 @@ export function AppRouter() {
             // resolution inside `<App />`. `isOnboardingComplete` is
             // irrelevant to a SELLER — she never runs Onboarding at all.
             setLockedInvitation(null);
-          }}
-        />
-      ) : needsPhoneMismatchConfirmation && user ? (
-        // authentication.md §3.7e (Slice 12 `merchant-user-tester` defect
-        // fix, 2026-09-07) — see `needsPhoneMismatchConfirmation`'s own
-        // derivation above for why this sits after `pendingInvitation` but
-        // before every other branch: a first-ever-anywhere phone must never
-        // reach `onboarding.md §3.3` — and so never `onboarding.md §3.5`'s
-        // own Business-creation write — while this device still remembers a
-        // different phone's prior session, unconfirmed. `&& user` here only
-        // narrows the type for the JSX below — `needsPhoneMismatchConfirmation`
-        // is already structurally `false` whenever `user` is undefined.
-        <PhoneMismatchConfirm
-          phone={user.phone}
-          onConfirm={() => confirmPhoneMismatch()}
-          onCorrect={() => {
-            // Preserve the just-typed number for the freshly-remounted
-            // `AuthenticationFlow` above, then revert this User row's own
-            // verification — `authenticated` flips false on the very next
-            // render, which is what actually swaps this component out.
-            setRetractedPhone(user.phone);
-            retractMistypedVerification();
           }}
         />
       ) : isSeller ? (

@@ -31,6 +31,19 @@ export function currentUser(state: AppState): User | undefined {
   return state.users.find((u) => u.id === state.currentUserId);
 }
 
+/** RFC 0012/D62-63 — resolves a User's own phone-type `AuthIdentity`
+ * identifier, if any. The one place every pre-amendment `User.phone` read
+ * now resolves through, since `User` itself no longer carries a `phone`
+ * field directly (`AuthIdentity` does — see that type's own doc comment).
+ * `''` when absent — the same safe fallback every pre-amendment call site
+ * already used; genuinely reachable now for a real Google/Email-only
+ * merchant (`authentication.md` §8 item 12/Future Considerations — a real,
+ * flagged, not-yet-designed gap in `settings.md`'s own "Tu cuenta" display,
+ * not something this dispatch's domain-layer fix invents or resolves). */
+export function phoneIdentifierFor(state: AppState, userId: ID): string {
+  return state.authIdentities.find((a) => a.userId === userId && a.type === 'phone')?.identifier ?? '';
+}
+
 /** Any `BusinessMembership` for `(userId, businessId)`, regardless of
  * `status` — the broader lookup `home.md` §2 step 0's revoked-Membership
  * check needs (`actingMembership` below deliberately excludes a revoked row,
@@ -100,7 +113,7 @@ export function teamRows(state: AppState, businessId: ID): TeamRow[] {
     .map((membership) => ({
       kind: membership.status,
       membership,
-      phone: state.users.find((u) => u.id === membership.userId)?.phone ?? '',
+      phone: phoneIdentifierFor(state, membership.userId),
     }));
   const active = memberRows.filter((r) => r.kind === 'active').sort((a, b) => a.membership.createdAt - b.membership.createdAt);
   const revoked = memberRows.filter((r) => r.kind === 'revoked').sort((a, b) => a.membership.createdAt - b.membership.createdAt);

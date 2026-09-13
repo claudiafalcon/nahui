@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../../domain/store';
-import { teamRows } from '../../domain/selectors';
+import { phoneIdentifierFor, teamRows } from '../../domain/selectors';
 import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
 import { WritingState } from './WritingState';
@@ -40,10 +40,9 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
   const alreadyPending = state.invitations.some(
     (inv) => inv.businessId === state.business!.id && inv.phone === trimmedPhone && inv.status === 'pending',
   );
-  const alreadyMember = state.memberships.some((m) => {
-    const u = state.users.find((usr) => usr.id === m.userId);
-    return m.businessId === state.business!.id && u?.phone === trimmedPhone;
-  });
+  const alreadyMember = state.memberships.some(
+    (m) => m.businessId === state.business!.id && phoneIdentifierFor(state, m.userId) === trimmedPhone,
+  );
   const inlineMessage = !isValidDigits
     ? null
     : alreadyPending

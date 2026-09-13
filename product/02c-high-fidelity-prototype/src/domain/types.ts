@@ -26,6 +26,17 @@
  * Foundation. See `store.tsx`'s `verifyOtp`/`completeOnboarding` for the
  * write paths and their invariants.
  *
+ * `AuthIdentity` (RFC 0012, `decision-log.md` D62/D63 — Google Sign-In and
+ * Email activated as fully independent first-time sign-up methods alongside
+ * phone; `authentication.md`'s 2026-09-13 amendment) — `User` is corrected
+ * to drop `phone`/`phoneVerifiedAt` entirely; a verified credential (phone,
+ * email, or Google) is now its own row, keyed on `(type, identifier)`, never
+ * embedded on `User` itself (RFC 0012 §1: a User may eventually hold more
+ * than one). See `store.tsx`'s `resolveAuthIdentity`/`verifyOtp`/
+ * `requestEmailOtp`/`verifyEmailOtp`/`startGoogleSignIn`/`resolveGoogleSignIn`
+ * for the write paths and their invariants, and `src/domain/authProviders.ts`
+ * for the Supabase Auth wiring these last four call through.
+ *
  * Eventos additions (Migration Workflow, D43; `product/02-ux/events.md`
  * Approved) — `Venue`, `Event`, `PriceOverride`, and `Session.eventId`
  * generalized from a hardcoded `null` to `ID | null`. See `store.tsx`'s
@@ -82,10 +93,55 @@ export type ID = string;
  * `store.tsx`'s `verifyOtp`/`completeOnboarding`/`signOut` for the write
  * paths and their invariants.
  */
+/**
+ * Identity context (RFC 0012, `decision-log.md` D62/D63) — a single verified
+ * credential, unique on `(type, identifier)`. `User` no longer embeds
+ * `phone`/`phoneVerifiedAt` directly (corrected from the RFC 0007-era shape)
+ * — every credential a User has ever verified, of any type, is its own row
+ * here instead, resolved via `store.tsx`'s `resolveAuthIdentity`.
+ *
+ * `identifier`:
+ * - `phone` — the raw 10-digit number, the same un-prefixed string
+ *   `verifyOtp` always keyed on before this amendment.
+ * - `email` — lowercased, trimmed.
+ * - `google` — the provider's own opaque stable subject ID (RFC 0012 §1's
+ *   own reasoning: an email can be hidden/relayed/changed without the
+ *   underlying identity changing) — **never** a human-readable label.
+ *   `authentication.md` §3.7e's confirm-screen display value is read live
+ *   from the OAuth session at render time and is deliberately never
+ *   persisted anywhere, including here.
+ * - `apple` — schema-ready per RFC 0012, not activated by D62/D63, not
+ *   reachable through any built UI this slice (`authentication.md` §11).
+ *
+ * `verifiedAt` is set once, at creation, and never cleared again — unlike
+ * the old `User.phoneVerifiedAt`, which `signOut` used to null back out.
+ * "Is this device's session currently live" is now a property of
+ * `AppState.currentUserId` alone (`null` = no live session), never of an
+ * `AuthIdentity` row — a credential, once verified, stays verified forever;
+ * only the device's *session* turns on and off. See `store.tsx`'s `signOut`
+ * for the corrected mechanism.
+ */
+export interface AuthIdentity {
+  id: ID;
+  userId: ID;
+  type: 'phone' | 'email' | 'google' | 'apple';
+  identifier: string;
+  verifiedAt: number;
+  createdAt: number;
+}
+
+/** Identity context (RFC 0007/D44, corrected RFC 0012/D62-63) — the
+ * platform's own authenticated person, distinct from `Customer` ("no login,
+ * no roles, no global account"). A bare anchor as of the `AuthIdentity`
+ * correction above — every credential fact (`phone`, `phoneVerifiedAt`) that
+ * used to live directly on this row now lives on its own `AuthIdentity` row
+ * instead, resolved by `userId`. What's left here is genuinely device-local
+ * UI state, below the Foundation's own abstraction level (the same posture
+ * `Business.nfcAvailabilityNudgeShown` already takes for its own one-time
+ * marker) — not credential data, so it stays on `User` unchanged by this
+ * amendment. */
 export interface User {
   id: ID;
-  phone: string; // E.164 formatting left to the build layer, per RFC 0007
-  phoneVerifiedAt: number | null; // null = unverified; set once OTP verification succeeds
   createdAt: number;
   /** `authentication.md` §2.2a step 4 / §10 — "declining never re-surfaces
    * the same offer on the next open." A small, durable, local-only UI
@@ -98,30 +154,36 @@ export interface User {
    * ("Ahora no"); never read or written anywhere else. */
   declinedInvitationIds: ID[];
   /**
-   * `authentication.md` §2.2 case 1's new device-history check / §3.7e
-   * (Slice 12 `merchant-user-tester` defect fix, 2026-09-07) — "does this
-   * device remember a phone number that previously held a session on it —
-   * any phone, at any point, even long since signed out — that differs
-   * from the one just confirmed?" A plain local marker (the same
-   * "below this document's abstraction level" treatment `declinedInvitationIds`
-   * already gets), set exactly once, by `verifyOtp` (`store.tsx`), at the
-   * one moment this fact is actually decidable: when a genuinely
-   * first-ever-anywhere phone mints its own brand-new `User` row and
-   * `state.users` already holds at least one other row at that instant —
-   * which, by construction, can only be a *different* phone (this exact
-   * phone would otherwise have matched an existing row instead of minting
-   * a new one). Never recomputed on a later re-verification of the same
-   * phone. Cleared to `false` only by `confirmPhoneMismatch` ("Sí, es mi
-   * número," §3.7e) — the same "shown once ever" persisted-flag shape
+   * `authentication.md` §2.2 case 1's device-history check / §3.7e (Slice 12
+   * `merchant-user-tester` defect fix, 2026-09-07; **generalized 2026-09-13,
+   * `decision-log.md` D62/D63** — was "does this device remember a *phone
+   * number* that previously held a session on it," now "does this device
+   * remember a *different identity* having held a session on it — any
+   * `AuthIdentity`, any type (phone, email, or Google)"). A plain local
+   * marker (the same "below this document's abstraction level" treatment
+   * `declinedInvitationIds` already gets), set exactly once, by
+   * `resolveAuthIdentity` (`store.tsx`, shared by `verifyOtp`/
+   * `verifyEmailOtp`/`resolveGoogleSignIn`), at the one moment this fact is
+   * actually decidable: when a genuinely first-ever-anywhere credential
+   * mints its own brand-new `User` row and `state.users` already holds at
+   * least one other row at that instant — which, by construction, can only
+   * be a *different* identity (this exact credential would otherwise have
+   * matched an existing `AuthIdentity` row instead of minting a new one).
+   * Never recomputed on a later re-verification of the same credential.
+   * Cleared to `false` only by `confirmPhoneMismatch` ("Sí, es mío/mía,"
+   * §3.7e) — the same "shown once ever" persisted-flag shape
    * `Business.nfcAvailabilityNudgeShown`/`pendingSubscriptionTierAcknowledged`
    * already use, chosen deliberately over an ephemeral React-state latch so
    * the "never ask twice" guarantee survives a reload landing between this
    * confirmation and `onboarding.md §3.5`'s own Business-creation write.
    * Deliberately a *separate* device fact from the session itself:
-   * `signOut` (`settings.md §2.5`) only ever flips `phoneVerifiedAt` — it
-   * never touches this field, which is exactly what lets this check fire in
-   * the one situation it exists for (a signed-out device, re-verified with
-   * a mistyped number).
+   * `signOut` (`settings.md §2.5`) only ever nulls `AppState.currentUserId`
+   * — it never touches this field, which is exactly what lets this check
+   * fire in the one situation it exists for (a signed-out device, re-
+   * verified with a mistyped number/address, or a wrong Google account).
+   * Field name kept as-is despite the generalized meaning — a rename here
+   * would touch every existing call site for a purely cosmetic reason; the
+   * doc comment is the source of truth for what it actually now means.
    */
   phoneMismatchConfirmationPending: boolean;
 }
@@ -572,10 +634,17 @@ export interface AppState {
   /** Identity context (RFC 0007/D44) — array-shaped as of Slice 12, see
    * `User`'s own doc comment above. */
   users: User[];
-  /** `null` until phone+OTP verification succeeds for the first time on this
-   * device — the genuine pre-Authentication state, per `authentication.md`
-   * §2.1. Resolve the actual row via `selectors.ts`'s `currentUser`, never
-   * by indexing `users` directly. */
+  /** RFC 0012/D62-63 — see `AuthIdentity`'s own doc comment above. */
+  authIdentities: AuthIdentity[];
+  /** `null` whenever this device holds no live verified session — the
+   * genuine pre-Authentication state, per `authentication.md` §2.1. Resolve
+   * the actual row via `selectors.ts`'s `currentUser`, never by indexing
+   * `users` directly. **Corrected, RFC 0012/D62-63:** previously stayed
+   * non-`null` even after `signOut` (only `User.phoneVerifiedAt` flipped);
+   * now `signOut` nulls this directly — `AuthIdentity.verifiedAt` is
+   * permanent once set (a credential, once verified, stays verified
+   * forever), so "is this device's session currently live" needs its own,
+   * separate on/off signal, and this is it. */
   currentUserId: ID | null;
   /** `null` until Onboarding's atomic Owner-creation write (`onboarding.md`
    * §3.5) succeeds — was previously a hardcoded, always-present singleton

@@ -5,9 +5,15 @@ import { BrandMark } from '../../components/BrandMark/BrandMark';
 import styles from './PhoneStep.module.css';
 
 /**
- * authentication.md §3.3/§3.4/§3.5/§3.5a — Número celular. The one screen in
- * the whole product with nowhere to go back to (§3.3) — no back arrow, no
- * nav bar (not even a Business exists yet).
+ * authentication.md §3.3/§3.4/§3.5/§3.5a — Número celular.
+ *
+ * **Amended 2026-09-13, `decision-log.md` D62/D63:** gains a back arrow,
+ * "← Elegir cómo entrar," returning to §3.2a — no longer the first screen in
+ * the product; `ChooseMethodStep` (§3.2a) is. Not a persisted resume state
+ * (`AuthenticationFlow.tsx`'s own §3.8 mechanism owns that) — simply doesn't
+ * discard a partially-typed number if she taps back into this screen within
+ * the same session, the same courtesy every other escape hatch in this
+ * family already gives (`CodeStep.tsx`'s "← Cambiar [número / correo]").
  *
  * Stage 7 Backend Integration — `handleSend` now calls the store's real
  * `requestOtp` (the `send-otp` Supabase Edge Function, via
@@ -25,9 +31,11 @@ import styles from './PhoneStep.module.css';
  */
 export function PhoneStep({
   initialValue,
+  onBack,
   onCodeSent,
 }: {
   initialValue?: string;
+  onBack: () => void;
   onCodeSent: (phone: string) => void;
 }) {
   const { requestOtp } = useStore();
@@ -83,19 +91,26 @@ export function PhoneStep({
 
   return (
     <div className={styles.wrap}>
+      <button className={styles.back} onClick={onBack}>
+        ← Elegir cómo entrar
+      </button>
       <div className={styles.mark}>
         <BrandMark />
       </div>
       <div className={styles.copy}>
-        <h1 className={styles.eyebrow}>Nahui</h1>
+        <p className={styles.eyebrow}>Nahui</p>
+        <h1 className={styles.heading}>Número celular</h1>
         <p className={styles.body}>Para empezar, dinos tu número celular.</p>
       </div>
 
       <div className={styles.field}>
-        <span className={styles.label}>Número celular</span>
+        <label className={styles.label} htmlFor="phone-step-input">
+          Número celular
+        </label>
         <div className={styles.inputRow}>
           <span className={styles.prefix}>+52</span>
           <input
+            id="phone-step-input"
             className={styles.input}
             type="tel"
             inputMode="numeric"

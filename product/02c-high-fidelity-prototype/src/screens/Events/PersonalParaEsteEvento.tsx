@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../../domain/store';
-import { findVenue, hasSchedulingConflict } from '../../domain/selectors';
+import { findVenue, hasSchedulingConflict, phoneIdentifierFor } from '../../domain/selectors';
 import { formatShortDateRange } from '../../domain/dates';
 import { Button } from '../../components/Button/Button';
 import type { AppState, BusinessMembership, Event, ID } from '../../domain/types';
@@ -69,7 +69,7 @@ export function PersonalParaEsteEvento({
   const sinAsignar = activeSellers.filter((m) => !assignedMembershipIds.has(m.id));
 
   function phoneFor(membership: BusinessMembership): string {
-    return state.users.find((u) => u.id === membership.userId)?.phone ?? '';
+    return phoneIdentifierFor(state, membership.userId);
   }
 
   function rowState(membershipId: ID): RowSaveState {

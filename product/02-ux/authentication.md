@@ -567,9 +567,9 @@ case stays exactly as fast as it already was.
 ┌───────────────────────────────┐
 │           Nahui                 │
 │                                │
-│  Este [número / correo / cuenta   │
-│  de Google] todavía no tiene       │
-│  un negocio en Nahui:              │
+│  [Este número / Este correo /      │
+│  Esta cuenta de Google] todavía no  │
+│  tiene un negocio en Nahui:         │
 │                                │
 │      [ +52 55 1234 5678 /          │
 │        ana@correo.com /            │
@@ -584,6 +584,7 @@ case stays exactly as fast as it already was.
 └───────────────────────────────┘
 ```
 
+- **The demonstrative agrees in gender with the noun, not left as a bare bracket-substitution ("Este número / Este correo / Esta cuenta de Google," never "Este cuenta de Google") — corrected 2026-09-13, `ux-critic`-caught, traced back to this wireframe's own original text rather than something `ui-designer` introduced independently in code.** "Cuenta" is feminine; the original `[número / correo / cuenta de Google]` single-demonstrative pattern only ever produced correct Spanish for the two masculine nouns it was written against, since Google wasn't yet a live path when §3.7e was first drafted — the gender mismatch was real from the moment Google's branch became reachable, not a new defect introduced by generalizing this screen.
 - The identifier is shown back to her, plainly — for phone/email, in the
   same "reflect what she typed" shape §3.6's "Te mandamos un código a..."
   already establishes, the actual mechanism that catches a mistyped

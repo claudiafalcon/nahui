@@ -1,52 +1,209 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useStore } from '../../domain/store';
+import { ChooseMethodStep } from './ChooseMethodStep';
 import { PhoneStep } from './PhoneStep';
+import { EmailStep } from './EmailStep';
+import { GoogleProgress, GoogleError } from './GoogleStep';
 import { CodeStep } from './CodeStep';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 
-type AuthStep = { kind: 'phone'; prefill?: string } | { kind: 'code'; phone: string };
+type Channel = 'phone' | 'email';
+
+type AuthStep =
+  | { kind: 'choose' }
+  | { kind: 'phone'; prefill?: string }
+  | { kind: 'email'; prefill?: string }
+  | { kind: 'code'; channel: Channel; identifier: string }
+  | { kind: 'google-redirecting' }
+  | { kind: 'google-verifying' }
+  | { kind: 'google-error' };
 
 /**
- * authentication.md — the phone+OTP verification gate that precedes
+ * §3.8's own extended resumability range — a device reopened mid-Google-
+ * redirect (backgrounded, killed, or a genuine page reload while Google's
+ * own UI, or the return trip from it, is in flight) needs to resume the
+ * resolve attempt rather than silently restarting at §3.2a. Since navigating
+ * to Google is a real full-page navigation, this app's own React state is
+ * guaranteed gone on return — the only signal available is the URL itself:
+ * Supabase's own OAuth redirect appends either a session in the hash
+ * fragment (`#access_token=...`) or an error in the hash/query
+ * (`#error=...` / `?error=...`) the moment it lands back here. Below this
+ * document's abstraction level to specify further (`authentication.md`
+ * §3.8's own text) — only the two merchant-visible outcomes this resolves
+ * into (§3.2c success/cancel, or §3.2d error) matter to the spec.
+ */
+function computeInitialStep(prefill?: { channel: Channel; value: string }): AuthStep {
+  if (prefill) return { kind: prefill.channel, prefill: prefill.value };
+  if (typeof window !== 'undefined') {
+    const { hash, search } = window.location;
+    if (hash.includes('access_token') || hash.includes('error') || search.includes('error')) {
+      return { kind: 'google-verifying' };
+    }
+  }
+  return { kind: 'choose' };
+}
+
+/**
+ * authentication.md — the identity-verification gate that precedes
  * everything else in the Merchant Application (§0). Mounted by `AppRouter`
- * whenever `state.currentUser?.phoneVerifiedAt` is unset.
+ * whenever this device holds no live verified session
+ * (`state.currentUserId == null`).
+ *
+ * **Generalized 2026-09-13, `decision-log.md` D62/D63** — was a two-state
+ * phone→code flow; now a full state machine covering all three independent
+ * first-time methods (§3.2a "Elegir cómo entrar," the new default entry
+ * point) — Google, Email, and phone/número celular, converging back into the
+ * shared `CodeStep` for the two channels that use a code at all.
  *
  * §3.8 ("Retomar autenticación interrumpida") is a disclosed, narrower
- * simplification in this build: nothing is written to the persisted store
- * before `verifyOtp` succeeds (per RFC 0007 — a `User` row is only created
- * on successful verification), so a typed-but-unsent phone number or a
- * sent-but-unconfirmed code lives only in this component's own local state,
- * the same "resets on reload/tab-away, not on ordinary in-flow navigation"
- * shape `RegisterMerchandise.tsx`'s own in-progress draft already has
- * (docs/passes/slice-1-home-inventario.md "Scope decisions"). Within a single mount of this flow —
- * including tapping back and forth between §3.3 and §3.6 via "← Cambiar
- * número" — nothing typed is lost, which is the guarantee that actually
- * matters for the walkthrough this pass builds.
+ * simplification in this build for the phone/email typing steps, unchanged
+ * from before: nothing is written to the persisted store before a code is
+ * actually confirmed, so a typed-but-unsent value or a sent-but-unconfirmed
+ * code lives only in this component's own local state — resets on
+ * reload/tab-away, not on ordinary in-flow navigation (the same posture
+ * `RegisterMerchandise.tsx`'s own in-progress draft already has). **The
+ * Google channel is the one genuine exception** — because leaving for
+ * Google's own UI is a real full-page navigation, its own resumability
+ * (§3.2b/§3.2c) is reconstructed from the URL itself on mount
+ * (`computeInitialStep`), not from in-memory state, which a real redirect
+ * always destroys anyway.
  *
- * `initialPhone` (Slice 12 `merchant-user-tester` defect fix, 2026-09-07,
- * `authentication.md` §3.7e) — set by `AppRouter.tsx` only when it just
- * mounted this component fresh in response to "No, corregir número"
- * (`PhoneMismatchConfirm.tsx`), so the just-typed, just-rejected number is
- * preserved for editing rather than retyped from scratch — the identical
- * pre-fill behavior "← Cambiar número" (§3.6) already gives, applied to a
- * second escape hatch rather than a new one.
+ * `initialPrefill` (Slice 12 `merchant-user-tester` defect fix, 2026-09-07,
+ * `authentication.md` §3.7e; generalized 2026-09-13 to cover both typed
+ * channels) — set by `AppRouter.tsx` only when it just mounted this
+ * component fresh in response to "No, elegir otro" (`PhoneMismatchConfirm.tsx`),
+ * so the just-typed, just-rejected value is preserved for editing rather
+ * than retyped from scratch — the identical pre-fill behavior "← Cambiar
+ * [número / correo]" (§3.6) already gives, applied to a second escape hatch
+ * rather than a new one. `undefined` for an ordinary fresh open, a genuine
+ * account sign-out, or a "No, elegir otro" reached via Google (which has
+ * nothing to pre-fill — returns to §3.2a instead).
+ *
+ * `onGoogleResolved` — fires the instant a Google credential resolves
+ * successfully, passing up the one human-readable display value
+ * `authentication.md` §3.7e's confirm screen needs for the Google channel
+ * specifically (read live from the OAuth session, never persisted — RFC
+ * 0012 §1). Needed because `AppRouter.tsx` may swap this whole component out
+ * for `PhoneMismatchConfirm` the very next render (the instant
+ * `currentUserId` is set), which would otherwise lose this ephemeral value
+ * along with every other piece of this component's own local state.
  */
-export function AuthenticationFlow({ initialPhone }: { initialPhone?: string } = {}) {
-  const [step, setStep] = useState<AuthStep>({ kind: 'phone', prefill: initialPhone });
+export function AuthenticationFlow({
+  initialPrefill,
+  onGoogleResolved,
+}: {
+  initialPrefill?: { channel: Channel; value: string };
+  onGoogleResolved?: (displayLabel: string | null) => void;
+} = {}) {
+  const { startGoogleSignIn, resolveGoogleSignIn } = useStore();
+  const [step, setStep] = useState<AuthStep>(() => computeInitialStep(initialPrefill));
 
-  if (step.kind === 'code') {
+  useEffect(() => {
+    if (step.kind !== 'google-verifying') return;
+    let cancelled = false;
+    resolveGoogleSignIn().then((result) => {
+      if (cancelled) return;
+      if (result.status === 'success') {
+        onGoogleResolved?.(result.displayLabel);
+        // AppRouter re-renders once `currentUserId` is set — nothing
+        // further to do here, the identical "hands off silently" posture
+        // `CodeStep.tsx`'s own `handleConfirm` already holds for phone/email.
+        return;
+      }
+      if (result.status === 'error') {
+        setStep({ kind: 'google-error' });
+        return;
+      }
+      // §3.2c — a deliberate, stated distinction: cancellation is not an
+      // error. Routes silently back to §3.2a, no message at all.
+      setStep({ kind: 'choose' });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resolves
+    // exactly once per mount into this step; re-running on every render, or
+    // whenever `resolveGoogleSignIn`'s own function identity changes, would
+    // replay the resolution unnecessarily.
+  }, [step.kind]);
+
+  async function handleGoogle() {
+    setStep({ kind: 'google-redirecting' });
+    const result = await startGoogleSignIn();
+    if (!result.ok) {
+      // A genuine send-time failure (§3.2d) — a real navigation never
+      // started at all. A successful `startGoogleSignIn` means the browser
+      // is already navigating away; nothing further renders here either way.
+      setStep({ kind: 'google-error' });
+    }
+  }
+
+  if (step.kind === 'choose') {
     return (
-      <ScreenTransition transitionKey="code">
-        <CodeStep
-          phone={step.phone}
-          onBack={() => setStep({ kind: 'phone', prefill: step.phone })}
+      <ScreenTransition transitionKey="choose">
+        <ChooseMethodStep
+          onGoogle={handleGoogle}
+          onEmail={() => setStep({ kind: 'email' })}
+          onPhone={() => setStep({ kind: 'phone' })}
         />
       </ScreenTransition>
     );
   }
 
+  if (step.kind === 'google-redirecting' || step.kind === 'google-verifying') {
+    return (
+      <ScreenTransition transitionKey="google-progress">
+        <GoogleProgress mode={step.kind === 'google-redirecting' ? 'redirecting' : 'verifying'} />
+      </ScreenTransition>
+    );
+  }
+
+  if (step.kind === 'google-error') {
+    return (
+      <ScreenTransition transitionKey="google-error">
+        <GoogleError onRetry={handleGoogle} onChooseOther={() => setStep({ kind: 'choose' })} />
+      </ScreenTransition>
+    );
+  }
+
+  if (step.kind === 'email') {
+    return (
+      <ScreenTransition transitionKey="email">
+        <EmailStep
+          initialValue={step.prefill}
+          onBack={() => setStep({ kind: 'choose' })}
+          onCodeSent={(email) => setStep({ kind: 'code', channel: 'email', identifier: email })}
+        />
+      </ScreenTransition>
+    );
+  }
+
+  if (step.kind === 'code') {
+    return (
+      <ScreenTransition transitionKey="code">
+        <CodeStep
+          channel={step.channel}
+          identifier={step.identifier}
+          onBack={() =>
+            setStep(
+              step.channel === 'phone'
+                ? { kind: 'phone', prefill: step.identifier }
+                : { kind: 'email', prefill: step.identifier },
+            )
+          }
+        />
+      </ScreenTransition>
+    );
+  }
+
+  // step.kind === 'phone'
   return (
     <ScreenTransition transitionKey="phone">
-      <PhoneStep initialValue={step.prefill} onCodeSent={(phone) => setStep({ kind: 'code', phone })} />
+      <PhoneStep
+        initialValue={step.prefill}
+        onBack={() => setStep({ kind: 'choose' })}
+        onCodeSent={(phone) => setStep({ kind: 'code', channel: 'phone', identifier: phone })}
+      />
     </ScreenTransition>
   );
 }

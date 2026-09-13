@@ -7,26 +7,42 @@ const RESEND_COOLDOWN_MS = 30_000; // §3.6, judgment call
 
 /**
  * authentication.md §3.6/§3.6a/§3.6b/§3.7/§3.7a-d — Ingresa el código.
+ * **Generalized 2026-09-13, `decision-log.md` D62/D63** — this screen is now
+ * shared by both the phone and email channels (§3.6's own text: "reached
+ * via: phone flow — §3.3's Enviar código; or email flow —
+ * §3.2e/§3.2f's Enviar código"), not forked into a duplicate
+ * `EmailCodeStep.tsx`. `channel`/`identifier` parametrize the one thing that
+ * actually differs between the two: the destination line and the back
+ * arrow's own label/target (§3.6's own "the bracketed pair resolves to
+ * whichever channel she actually used — never both, never a generic
+ * 'identifier' word").
  *
- * Stage 7 Backend Integration — `handleConfirm`/`handleResend` now call the
- * store's real `verifyOtp`/`requestOtp` (the `verify-otp`/`send-otp`
- * Supabase Edge Functions, via `otpClient.ts`), replacing the previous
- * mock (RFC 0007 §5, disclosed in
- * docs/passes/slice-2-authentication-onboarding.md — retired). §3.7a
+ * Stage 7 Backend Integration — `handleConfirm`/`handleResend` call the
+ * store's real `verifyOtp`/`requestOtp` (phone) or `verifyEmailOtp`/
+ * `requestEmailOtp` (email) — same channel-neutral copy either way (§3.6's
+ * own note: "already channel-neutral copy" for §3.7/§3.7a–§3.7d). §3.7a
  * (código incorrecto), §3.7b (código expirado), §3.7c (demasiados
  * intentos), and §3.7d (error de plataforma) are real `codeError`/
- * `verifyState` branches that a real rejected outcome now genuinely
- * drives, mapped 1:1 from `verifyOtp`'s `VerifyOtpOutcome.reason`. Not
- * live-tested end to end — no real Supabase/Twilio account exists yet
- * (`supabase/README.md`); until credentials are configured, every real
- * call resolves to the `platform-error`/`'error'` branch. §3.6b's
+ * `verifyState` branches driven by whichever channel's own rejected
+ * outcome. Not live-tested end to end for either channel — no real
+ * Supabase/Twilio account (`supabase/README.md`) or real Supabase-side
+ * email confirmation exists yet; until credentials are configured, every
+ * real call resolves to the `platform-error`/`'error'` branch. §3.6b's
  * format-invalid inline message *is* genuinely reachable (pasting a
  * non-numeric value into the code field, never auto-stripped). §3.6/§3.6a's
  * resend cooldown *is* a real, ticking 30-second countdown — not a static
  * mock, and now also triggers a real resend, not just a local UI reset.
  */
-export function CodeStep({ phone, onBack }: { phone: string; onBack: () => void }) {
-  const { verifyOtp, requestOtp } = useStore();
+export function CodeStep({
+  channel,
+  identifier,
+  onBack,
+}: {
+  channel: 'phone' | 'email';
+  identifier: string;
+  onBack: () => void;
+}) {
+  const { verifyOtp, requestOtp, verifyEmailOtp, requestEmailOtp } = useStore();
   const [raw, setRaw] = useState('');
   const [verifyState, setVerifyState] = useState<'entry' | 'verifying' | 'platform-error'>('entry');
   const [codeError, setCodeError] = useState<'incorrect' | 'expired' | 'too-many' | null>(null);
@@ -54,13 +70,19 @@ export function CodeStep({ phone, onBack }: { phone: string; onBack: () => void 
   const remainingSeconds = Math.ceil(remainingMs / 1000);
   const countdownLabel = `0:${String(remainingSeconds).padStart(2, '0')}`;
 
+  const backLabel = channel === 'phone' ? '← Cambiar número' : '← Cambiar correo';
+  const destinationLine =
+    channel === 'phone'
+      ? `Te mandamos un código a tu número, +52 ${identifier.slice(0, 2)} ${identifier.slice(2, 6)} ${identifier.slice(6)}.`
+      : `Te mandamos un código a tu correo, ${identifier}.`;
+
   async function handleConfirm() {
     if (!canConfirm) return;
     setVerifyState('verifying');
-    const result = await verifyOtp(phone, trimmed);
+    const result = channel === 'phone' ? await verifyOtp(identifier, trimmed) : await verifyEmailOtp(identifier, trimmed);
     if (result.ok) {
       // Success hands off silently — AppRouter re-renders once
-      // `currentUser.phoneVerifiedAt` is set; nothing further to do here.
+      // `currentUserId` is set; nothing further to do here.
       return;
     }
     if (result.reason === 'platform-error') {
@@ -73,7 +95,7 @@ export function CodeStep({ phone, onBack }: { phone: string; onBack: () => void 
 
   async function handleResend() {
     setCodeError(null);
-    const result = await requestOtp(phone);
+    const result = channel === 'phone' ? await requestOtp(identifier) : await requestEmailOtp(identifier);
     if (result.ok) {
       setRaw('');
       setResendAt(Date.now() + RESEND_COOLDOWN_MS);
@@ -83,7 +105,7 @@ export function CodeStep({ phone, onBack }: { phone: string; onBack: () => void 
     // A failed resend leaves the existing code field/cooldown untouched —
     // the merchant can just tap "Reenviar código" again once the cooldown
     // clears, the same recovery path §3.5a's own "Reintentar" already
-    // gives PhoneStep for an identical failure class. No separate
+    // gives PhoneStep/EmailStep for an identical failure class. No separate
     // resend-failure copy exists in the Approved spec to show instead.
   }
 
@@ -110,7 +132,7 @@ export function CodeStep({ phone, onBack }: { phone: string; onBack: () => void 
     return (
       <div className={styles.wrap}>
         <button className={styles.back} onClick={onBack}>
-          ← Cambiar número
+          {backLabel}
         </button>
         <h1 className={styles.heading}>Ingresa el código</h1>
         <p className={styles.body}>
@@ -127,12 +149,10 @@ export function CodeStep({ phone, onBack }: { phone: string; onBack: () => void 
   return (
     <div className={styles.wrap}>
       <button className={styles.back} onClick={onBack}>
-        ← Cambiar número
+        {backLabel}
       </button>
       <h1 className={styles.heading}>Ingresa el código</h1>
-      <p className={styles.body}>
-        Te mandamos un código a +52 {phone.slice(0, 2)} {phone.slice(2, 6)} {phone.slice(6)}.
-      </p>
+      <p className={styles.body}>{destinationLine}</p>
 
       {justResent && <p className={styles.confirmation}>Código reenviado ✓</p>}
 

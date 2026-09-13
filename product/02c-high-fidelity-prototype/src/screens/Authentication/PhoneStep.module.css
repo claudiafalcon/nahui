@@ -9,6 +9,17 @@
   overflow: hidden;
 }
 
+.back {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
 .mark {
   width: 56px;
   height: 56px;
@@ -29,10 +40,19 @@
   gap: 10px;
 }
 
+/* Nahui brand caption — a true typographic "eyebrow" (small, uppercase,
+   letter-spaced) sitting above the screen's real heading, not the heading
+   itself (`ux-critic` fix, 2026-09-13 — was previously the page's only
+   `<h1>`, identical text on every screen, breaking heading navigation). */
 .eyebrow {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 26px;
+  font: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8A8177;
+}
+
+.heading {
+  font: var(--text-display-md);
   color: var(--color-obsidian);
 }
 

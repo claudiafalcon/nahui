@@ -1,19 +1,26 @@
-/* authentication.md §3.7e — reuses InvitationFlow.module.css's own
-   centered/mark/copy/cta shape (this codebase's own "each screen folder
-   owns its own CSS Modules" convention — a local copy, not a cross-file
-   import), since this state is the same "Nahui mark, a short plain-language
-   message, one or two CTAs" composition every other confirm/offer screen in
-   this flow already uses. */
+/* authentication.md §3.2e/§3.2f — reuses PhoneStep.module.css's own
+   composition verbatim (this codebase's own "each screen folder owns its
+   own CSS Modules" convention — a local copy, not a cross-file import). */
 .wrap {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   text-align: center;
   gap: var(--space-6);
   padding: var(--space-12) var(--space-6) var(--space-8);
   overflow: hidden;
+}
+
+.back {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
 }
 
 .mark {
@@ -55,28 +62,48 @@
 .body {
   font: var(--text-body);
   color: #6B6259;
-  max-width: 34ch;
+  max-width: 30ch;
 }
 
-/* The one fact this screen exists to reflect back to her plainly — the
-   same "reflect what she typed" shape §3.6's own OTP-destination line
-   already establishes, given visual weight since it's the actual mechanism
-   that catches a mistyped digit, not the surrounding copy. */
-.phone {
-  font: var(--text-body);
+.field {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font: var(--text-body-sm);
   font-weight: 600;
   color: var(--color-obsidian);
 }
 
-.ctaStack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+.input {
   width: 100%;
-  max-width: 320px;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+  height: 52px;
+  background: var(--color-white);
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
+
+.error {
+  font: var(--text-body-sm);
+  color: var(--color-error);
 }
 
 .cta {
   max-width: 320px;
-  width: 100%;
+}
+
+.savingLine {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B6259;
+  font: var(--text-body);
 }

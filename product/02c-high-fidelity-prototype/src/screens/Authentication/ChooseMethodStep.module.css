@@ -1,15 +1,13 @@
-/* authentication.md §3.7e — reuses InvitationFlow.module.css's own
-   centered/mark/copy/cta shape (this codebase's own "each screen folder
-   owns its own CSS Modules" convention — a local copy, not a cross-file
-   import), since this state is the same "Nahui mark, a short plain-language
-   message, one or two CTAs" composition every other confirm/offer screen in
-   this flow already uses. */
+/* authentication.md §3.2a — reuses PhoneStep.module.css's own centered
+   mark/copy/cta composition (this codebase's own "each screen folder owns
+   its own CSS Modules" convention — a local copy, not a cross-file import),
+   since this is the same "Nahui mark, a short plain-language line, stacked
+   CTAs" shape every other top-of-flow screen in this family already uses. */
 .wrap {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   text-align: center;
   gap: var(--space-6);
   padding: var(--space-12) var(--space-6) var(--space-8);
@@ -55,19 +53,11 @@
 .body {
   font: var(--text-body);
   color: #6B6259;
-  max-width: 34ch;
+  max-width: 30ch;
 }
 
-/* The one fact this screen exists to reflect back to her plainly — the
-   same "reflect what she typed" shape §3.6's own OTP-destination line
-   already establishes, given visual weight since it's the actual mechanism
-   that catches a mistyped digit, not the surrounding copy. */
-.phone {
-  font: var(--text-body);
-  font-weight: 600;
-  color: var(--color-obsidian);
-}
-
+/* Same-weight stack — no button in here is primary; §3.2a's own explicit
+   rule that these three are equal, non-ranked choices. */
 .ctaStack {
   display: flex;
   flex-direction: column;

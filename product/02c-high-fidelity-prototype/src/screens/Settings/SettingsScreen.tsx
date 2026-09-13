@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../domain/store';
 import type { Business } from '../../domain/types';
-import { activeTeamCount, currentUser } from '../../domain/selectors';
+import { activeTeamCount, currentUser, phoneIdentifierFor } from '../../domain/selectors';
 import { addDaysToKey, formatDateRange, formatShortDate, todayKey } from '../../domain/dates';
 import { pluralize } from '../../domain/format';
 import { Button } from '../../components/Button/Button';
@@ -114,6 +114,14 @@ export function SettingsScreen({
     signOut,
   } = useStore();
   const business = state.business;
+  // RFC 0012/D62-63 — `User.phone` no longer exists; resolved through
+  // `AuthIdentity` instead (see `phoneIdentifierFor`'s own doc comment).
+  // `''` for a Google/Email-only merchant — the already-flagged, not-yet-
+  // designed `settings.md §8` item 12 gap, not invented or resolved here.
+  const ownPhone = (() => {
+    const u = currentUser(state);
+    return u ? phoneIdentifierFor(state, u.id) : '';
+  })();
 
   const [subView, setSubView] = useState<SubView>({ kind: 'main' });
   const [cancelPendingOpen, setCancelPendingOpen] = useState(false);
@@ -179,9 +187,10 @@ export function SettingsScreen({
     window.setTimeout(() => {
       signOut();
       // settings.md §2.5 / AppRouter.tsx — `AppRouter` falls back to
-      // AuthenticationFlow automatically the instant `phoneVerifiedAt`
-      // clears; no further navigation call is needed here, and this
-      // component itself unmounts as part of that same re-render.
+      // AuthenticationFlow automatically the instant `currentUserId` clears
+      // (RFC 0012/D62-63 — was `phoneVerifiedAt`); no further navigation
+      // call is needed here, and this component itself unmounts as part of
+      // that same re-render.
     }, SAVE_DELAY_MS);
   }
 
@@ -260,7 +269,7 @@ export function SettingsScreen({
         business={business}
         landed={landed}
         teamCount={activeTeamCount(state, business.id)}
-        phone={currentUser(state)?.phone ?? ''}
+        phone={ownPhone}
         onBack={onBack}
         onActivatePaidTap={() => setSubView({ kind: 'confirm', action: 'activate-paid' })}
         onDowngradeTap={() => setSubView({ kind: 'confirm', action: 'downgrade' })}

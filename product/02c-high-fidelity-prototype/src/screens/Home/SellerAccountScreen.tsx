@@ -32,8 +32,9 @@ export function SellerAccountScreen({ onBack }: { onBack: () => void }) {
     window.setTimeout(() => {
       signOut();
       // `AppRouter.tsx` falls back to `AuthenticationFlow` automatically the
-      // instant `phoneVerifiedAt` clears — no further navigation call
-      // needed here, same guarantee `settings.md §2.5` already relies on.
+      // instant `currentUserId` clears (RFC 0012/D62-63 — was
+      // `phoneVerifiedAt`) — no further navigation call needed here, same
+      // guarantee `settings.md §2.5` already relies on.
     }, SAVE_DELAY_MS);
   }
 

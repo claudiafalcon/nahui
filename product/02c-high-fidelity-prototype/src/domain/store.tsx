@@ -17,6 +17,7 @@ import {
 import type {
   AllocationMovement,
   AppState,
+  AuthIdentity,
   Business,
   BusinessMembership,
   Event,
@@ -35,6 +36,7 @@ import type {
   User,
   Venue,
 } from './types';
+import { resolveGoogleSession, sendEmailCode, signInWithGoogle, verifyEmailCode } from './authProviders';
 
 /**
  * Exported (demo-mode.md §8 item 8) so `restartDemo.ts`'s own "clear both
@@ -57,6 +59,7 @@ export const STORAGE_KEY = 'nahui-hifi-prototype-v1';
 function initialState(): AppState {
   return {
     users: [],
+    authIdentities: [],
     currentUserId: null,
     business: null,
     memberships: [],
@@ -80,13 +83,25 @@ function initialState(): AppState {
  * `currentUserId` refactor) — `currentUser` was the single-slot field this
  * migration replaces. Kept as a narrow, explicitly-typed escape hatch for
  * `loadState`'s own migration branch only, never used elsewhere. */
+/** RFC 0012/D62-63 — a `User` row as it existed before the `AuthIdentity`
+ * correction (`phone`/`phoneVerifiedAt` directly on `User`), for `loadState`'s
+ * own migration branch only. */
+type LegacyUser = Omit<User, never> & { phone?: string; phoneVerifiedAt?: number | null };
+
 interface LegacyAppStateShape
   extends Omit<
     AppState,
-    'users' | 'currentUserId' | 'invitations' | 'eventAllocations' | 'allocationMovements' | 'eventAssignments'
+    | 'users'
+    | 'authIdentities'
+    | 'currentUserId'
+    | 'invitations'
+    | 'eventAllocations'
+    | 'allocationMovements'
+    | 'eventAssignments'
   > {
-  currentUser?: User | null;
-  users?: User[];
+  currentUser?: LegacyUser | null;
+  users?: LegacyUser[];
+  authIdentities?: AuthIdentity[];
   currentUserId?: ID | null;
   invitations?: Invitation[];
   /** RFC 0010/D59 — an old saved row predates `quantityPlanned`/
@@ -133,15 +148,64 @@ function loadState(): AppState {
         // `phoneMismatchConfirmationPending` key at all; defaulted to
         // `false`, the same honest "nothing to confirm" value a User who
         // predates this check would have had all along.
-        const users: User[] = (
-          Array.isArray(parsed.users) ? parsed.users : parsed.currentUser ? [parsed.currentUser] : []
-        ).map((u) => ({
-          ...u,
+        const legacyUsers: LegacyUser[] = Array.isArray(parsed.users)
+          ? parsed.users
+          : parsed.currentUser
+            ? [parsed.currentUser]
+            : [];
+        const users: User[] = legacyUsers.map((u) => ({
+          id: u.id,
+          createdAt: u.createdAt,
           declinedInvitationIds: u.declinedInvitationIds ?? [],
           phoneMismatchConfirmationPending: u.phoneMismatchConfirmationPending ?? false,
         }));
-        const currentUserId: ID | null =
+
+        // RFC 0012/D62-63 — `AuthIdentity` migration. A localStorage value
+        // written after this pass already has a real `authIdentities` array;
+        // one written before it has none at all, but every legacy `User` row
+        // carries its own `phone`/`phoneVerifiedAt` directly — exactly the
+        // two fields this migration folds into a synthesized `type='phone'`
+        // `AuthIdentity` row per verified legacy User, so an existing
+        // walkthrough's phone-verification history is never silently lost.
+        // An unverified legacy row (`phoneVerifiedAt == null`, i.e. a signed-
+        // out User under the old model) mints no identity row at all — under
+        // the old model that phone was never actually re-nulled out of
+        // existence, but the *fact* that mattered structurally was always
+        // "was it ever successfully verified," which is exactly what
+        // `phoneVerifiedAt` staying non-null on first verification, forever,
+        // already told us — so this reads `phoneVerifiedAt` for the
+        // timestamp, not as a live on/off session flag (that role now
+        // belongs to `currentUserId` alone, corrected below).
+        const authIdentities: AuthIdentity[] = Array.isArray(parsed.authIdentities)
+          ? parsed.authIdentities
+          : legacyUsers
+              .filter((u) => u.phone && u.phoneVerifiedAt != null)
+              .map((u) => ({
+                id: makeId('authid'),
+                userId: u.id,
+                type: 'phone' as const,
+                identifier: u.phone!,
+                verifiedAt: u.phoneVerifiedAt!,
+                createdAt: u.phoneVerifiedAt!,
+              }));
+
+        // **Corrected, RFC 0012/D62-63:** `currentUserId` used to stay
+        // pointed at a User row even after `signOut` (only that row's own
+        // `phoneVerifiedAt` flipped to `null`) — under the new model,
+        // `currentUserId` itself is the one live/dead session signal
+        // (`AuthIdentity.verifiedAt` is permanent once set, never nulled
+        // again). A pre-migration save whose pointed-to legacy User had
+        // already been signed out (`phoneVerifiedAt == null`) migrates to no
+        // live session at all — the honest equivalent under the corrected
+        // model, not a behavior regression: that device was already showing
+        // `AuthenticationFlow` before this migration ever runs.
+        const rawCurrentUserId: ID | null =
           parsed.currentUserId !== undefined ? parsed.currentUserId : (parsed.currentUser?.id ?? null);
+        const pointedLegacyUser = legacyUsers.find((u) => u.id === rawCurrentUserId);
+        const currentUserId: ID | null =
+          rawCurrentUserId != null && (pointedLegacyUser ? pointedLegacyUser.phoneVerifiedAt != null : true)
+            ? rawCurrentUserId
+            : null;
 
         // Backward-compat with localStorage written before the Eventos pass
         // (D43) — an older saved state simply has no venues/events/
@@ -210,6 +274,7 @@ function loadState(): AppState {
         return {
           ...parsed,
           users,
+          authIdentities,
           currentUserId,
           memberships,
           invitations,
@@ -375,14 +440,52 @@ interface StoreValue {
    * row is created or changed. See `supabase/README.md`: not live-tested,
    * since no real Supabase/Twilio account exists yet. */
   verifyOtp: (phone: string, code: string) => Promise<VerifyOtpOutcome>;
+  /** authentication.md §3.2e "Enviar código" (`decision-log.md` D62/D63) —
+   * the email-channel counterpart to `requestOtp`, through
+   * `src/domain/authProviders.ts`'s thin wrapper around Supabase Auth's own
+   * `signInWithOtp({ email })`. Not live-tested — same posture `requestOtp`
+   * already has. */
+  requestEmailOtp: (email: string) => Promise<RequestOtpOutcome>;
+  /** authentication.md §3.7 (shared with the email channel) — the
+   * email-channel counterpart to `verifyOtp`, through `authProviders.ts`'s
+   * `verifyEmailCode` (Supabase Auth's own `verifyOtp({ type: 'email' })`).
+   * Same `AuthIdentity` resolution shape as `verifyOtp` (`resolveAuthIdentity`,
+   * `type='email'`). Not live-tested — same posture `verifyOtp` already
+   * has. */
+  verifyEmailOtp: (email: string, code: string) => Promise<VerifyOtpOutcome>;
+  /** authentication.md §3.2a/§3.2b "Continuar con Google" (`decision-log.md`
+   * D62/D63) — starts the real Supabase Auth OAuth redirect
+   * (`authProviders.ts`'s `signInWithGoogle`). A genuine full-page
+   * navigation away from and back to this app — `ok: false` means the
+   * redirect itself never started (a genuine send-time platform error,
+   * §3.2d), not a later cancellation (that's `resolveGoogleSignIn` below).
+   * Fails closed until a real Google Cloud OAuth Client is provisioned in
+   * the Supabase project (Product Owner action, not code) — same "ships
+   * real code, gated on external credentials" posture `requestOtp` already
+   * has for Twilio/WhatsApp. */
+  startGoogleSignIn: () => Promise<{ ok: true } | { ok: false }>;
+  /** authentication.md §3.2c "Verificando con Google" (`decision-log.md`
+   * D62/D63) — resolves whatever happened once control returns from
+   * Google's own UI (real success / silent cancellation / genuine platform
+   * error), called on mount by `AuthenticationFlow.tsx` whenever there's
+   * reason to believe a Google redirect is being resumed. `displayLabel` is
+   * the human-readable value read live from the OAuth session, for
+   * `authentication.md` §3.7e's confirm-screen display only — **never**
+   * persisted to `AppState`/`AuthIdentity` (RFC 0012 §1). */
+  resolveGoogleSignIn: () => Promise<
+    { status: 'success'; user: User; displayLabel: string | null } | { status: 'cancelled' } | { status: 'error' }
+  >;
   /** onboarding.md §3.5 "Creando tu negocio" — the atomic Owner-creation
    * write (RFC 0007/D44): creates the Business (capabilities per `path`,
    * §2.2's table) and an OWNER BusinessMembership in the same state update,
-   * gated on `currentUser.phoneVerifiedAt != null`. Returns the new
-   * Business's id, or `null` if the precondition isn't met (defensive —
-   * unreachable through the real UI flow, which never calls this before
-   * verification succeeds). `Business.name` starts `''` (see types.ts) —
-   * identity is a separate, later write (`setBusinessIdentity`). */
+   * gated on this User holding at least one verified `AuthIdentity`, of any
+   * type (`decision-log.md` D44, amended RFC 0012/D62-63 — was
+   * `currentUser.phoneVerifiedAt != null`, phone-specific, before this
+   * amendment). Returns the new Business's id, or `null` if the
+   * precondition isn't met (defensive — unreachable through the real UI
+   * flow, which never calls this before verification succeeds).
+   * `Business.name` starts `''` (see types.ts) — identity is a separate,
+   * later write (`setBusinessIdentity`). */
   completeOnboarding: (path: OnboardingPath) => ID | null;
   /** onboarding.md §3.10 "Guardando tu negocio" — additive identity fields
    * on the already-existing Business (§2.2b), a separate write from
@@ -783,6 +886,84 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   /**
+   * RFC 0012 §4 — the `AuthIdentity` resolution invariant, shared by every
+   * credential-verification write path (`verifyOtp`, `verifyEmailOtp`,
+   * `resolveGoogleSignIn`) the exact same way `mintProduct`/`resolveVenue`
+   * below are shared by their own multiple callers — one mechanism, never
+   * copy-pasted per channel. Three outcomes:
+   *
+   * - `'existing'` — a plain read: this exact `(type, identifier)` already
+   *   has an `AuthIdentity` row. Resolves its `userId`, mints nothing.
+   * - `'new-user'` — first-ever-credential creation (shape 1): no existing
+   *   row for this `(type, identifier)`, and this device holds no live
+   *   session either. Mints a brand-new `User` + its first `AuthIdentity`
+   *   row together, atomically (the caller's own `setState` folds both in
+   *   as one update).
+   * - `'linked'` — additive linking (shape 2): no existing row for this
+   *   `(type, identifier)`, but this device *does* hold a live session
+   *   (`s.currentUserId` resolves to a real `User`) — mints one new
+   *   `AuthIdentity` row against that same, already-authenticated User,
+   *   never a second `User` row. **Not reachable through any built UI this
+   *   slice** (`authentication.md` §8 item 11/Q26 — a future "link a second
+   *   method" surface has no design yet), but the domain invariant is
+   *   modeled correctly now so that future UI has real ground to stand on,
+   *   per this dispatch's own build-order instruction.
+   *
+   * `phoneMismatchConfirmationPending`'s own device-history condition
+   * (`s.users.length > 0` at the exact instant a brand-new row is minted)
+   * is preserved unchanged from the pre-`AuthIdentity` `verifyOtp` — see
+   * `User`'s own doc comment (`types.ts`) for the full "why this is
+   * decidable, no separate 'last known identity' field needed" reasoning,
+   * now generalized to any credential type rather than phone specifically.
+   *
+   * Pure, given `s` — never calls `setState` itself, mirroring
+   * `mintProduct`/`resolveVenue`'s own "resolution helper, not a writer"
+   * shape immediately below.
+   */
+  function resolveAuthIdentity(
+    s: AppState,
+    type: AuthIdentity['type'],
+    identifier: string,
+    now: number,
+  ):
+    | { kind: 'existing'; user: User; identity: AuthIdentity }
+    | { kind: 'new-user'; user: User; identity: AuthIdentity }
+    | { kind: 'linked'; user: User; identity: AuthIdentity } {
+    const existingIdentity = s.authIdentities.find((a) => a.type === type && a.identifier === identifier);
+    if (existingIdentity) {
+      const user = s.users.find((u) => u.id === existingIdentity.userId)!;
+      return { kind: 'existing', user, identity: existingIdentity };
+    }
+    const authedUser = s.currentUserId ? s.users.find((u) => u.id === s.currentUserId) : undefined;
+    if (authedUser) {
+      const identity: AuthIdentity = {
+        id: makeId('authid'),
+        userId: authedUser.id,
+        type,
+        identifier,
+        verifiedAt: now,
+        createdAt: now,
+      };
+      return { kind: 'linked', user: authedUser, identity };
+    }
+    const user: User = {
+      id: makeId('user'),
+      createdAt: now,
+      declinedInvitationIds: [],
+      phoneMismatchConfirmationPending: s.users.length > 0,
+    };
+    const identity: AuthIdentity = {
+      id: makeId('authid'),
+      userId: user.id,
+      type,
+      identifier,
+      verifiedAt: now,
+      createdAt: now,
+    };
+    return { kind: 'new-user', user, identity };
+  }
+
+  /**
    * Shared new-Product minting/resolution logic — extracted so `commitLot`
    * (inventory.md §3.8a/§3.9, and — as of `product-decisions.md` Q20 —
    * onboarding.md §2.2a's "Define lo que vendes" as well) resolves a
@@ -894,33 +1075,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * against the `verify-otp` Edge Function (`otpClient.ts`), replacing the
    * previous "any 6-digit code is accepted" mock (RFC 0007 §5, disclosed in
    * docs/passes/slice-2-authentication-onboarding.md — retired by this
-   * pass). The domain-write shape below (find-or-mint the `User` row) is
-   * unchanged from the mock; only the gate in front of it is real now — on
-   * any rejected outcome, this function returns early and writes nothing.
+   * pass). On any rejected outcome, this function returns early and writes
+   * nothing.
    *
-   * **Slice 12 — the real "looked up by phone, globally" lookup RFC 0007
-   * §1 describes**, now that `users` is array-shaped: a first-ever
-   * *successful* verification for a phone (no existing row matches) mints
-   * a new `User`; a returning successful verification for a phone already
-   * held — whether or not it's the phone this device most recently had
-   * verified — resolves that same row and preserves its original
-   * `phoneVerifiedAt`, never minting a duplicate. This is what makes
-   * switching between two already-verified Memberships on one shared
+   * **Corrected, RFC 0012/D62-63 (`decision-log.md`):** the find-or-mint
+   * write now goes through `resolveAuthIdentity` (`type='phone'`,
+   * `identifier=phone`) — the same shared resolution every credential type
+   * goes through — rather than a phone-specific `state.users.find(u =>
+   * u.phone === phone)` lookup, since `User` no longer carries `phone`
+   * directly. Behaviorally identical to the pre-amendment mechanism for the
+   * phone channel specifically: a first-ever-successful verification for a
+   * phone (no existing `AuthIdentity` row) mints a new `User` + its first
+   * `AuthIdentity`; a returning successful verification for a phone already
+   * held resolves that same `User` row, never minting a duplicate — what
+   * makes switching between two already-verified Memberships on one shared
    * device/instance (e.g. an OWNER signing out, a SELLER verifying, the
    * OWNER later re-verifying) resolve back to each one's own stable `User`
    * identity rather than accumulating a fresh row every time.
-   *
-   * **Slice 12 defect fix (2026-09-07) — `authentication.md` §2.2 case 1's
-   * new device-history check.** `phoneMismatchConfirmationPending` is set
-   * here, once, only for a genuinely brand-new row (`existing` undefined):
-   * `state.users.length > 0` at this exact instant already means some
-   * *other* phone previously held a verified session on this device — this
-   * exact phone matched nothing already in `state.users`, or it wouldn't be
-   * minting a new row at all, so any pre-existing row necessarily differs.
-   * No separate "last known phone" field is needed for that reason. Left
-   * untouched on a returning row (`existing` defined) — re-verifying an
-   * already-known phone is never itself the ambiguous moment this check
-   * exists for.
    */
   async function verifyOtp(phone: string, code: string): Promise<VerifyOtpOutcome> {
     const result = await verifyOtpCode(phone, code);
@@ -936,23 +1107,92 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return { ok: false, reason };
     }
     const now = Date.now();
-    const existing = state.users.find((u) => u.phone === phone);
-    const user: User = existing
-      ? { ...existing, phoneVerifiedAt: existing.phoneVerifiedAt ?? now }
-      : {
-          id: makeId('user'),
-          phone,
-          phoneVerifiedAt: now,
-          createdAt: now,
-          declinedInvitationIds: [],
-          phoneMismatchConfirmationPending: state.users.length > 0,
-        };
+    const resolution = resolveAuthIdentity(state, 'phone', phone, now);
     setState((s) => ({
       ...s,
-      users: existing ? s.users.map((u) => (u.id === user.id ? user : u)) : [...s.users, user],
-      currentUserId: user.id,
+      users: resolution.kind === 'new-user' ? [...s.users, resolution.user] : s.users,
+      authIdentities: resolution.kind === 'existing' ? s.authIdentities : [...s.authIdentities, resolution.identity],
+      currentUserId: resolution.user.id,
     }));
-    return { ok: true, user };
+    return { ok: true, user: resolution.user };
+  }
+
+  /** authentication.md §3.2e "Enviar código" (new, `decision-log.md`
+   * D62/D63) — the email-channel counterpart to `requestOtp` above,
+   * through the thin Nahui-domain wrapper (`authProviders.ts`) around
+   * Supabase Auth's own `signInWithOtp({ email })`, per §10's own decision
+   * ("a numeric code, not a magic link"). No domain-state write happens
+   * here — same posture `requestOtp` already holds. */
+  async function requestEmailOtp(email: string): Promise<RequestOtpOutcome> {
+    return sendEmailCode(email);
+  }
+
+  /**
+   * authentication.md §3.7 (shared with the email channel via §3.2e/§3.2f,
+   * generalized 2026-09-13) — the email-channel counterpart to `verifyOtp`
+   * above, through `authProviders.ts`'s `verifyEmailCode` (Supabase Auth's
+   * own `verifyOtp({ email, token, type: 'email' })`). Identical
+   * `resolveAuthIdentity` write shape, `type='email'`, `identifier` = the
+   * lowercased, trimmed email address her own typed value resolves to.
+   */
+  async function verifyEmailOtp(email: string, code: string): Promise<VerifyOtpOutcome> {
+    const result = await verifyEmailCode(email, code);
+    if (!result.ok) return { ok: false, reason: result.reason };
+    const now = Date.now();
+    const resolution = resolveAuthIdentity(state, 'email', result.identifier, now);
+    setState((s) => ({
+      ...s,
+      users: resolution.kind === 'new-user' ? [...s.users, resolution.user] : s.users,
+      authIdentities: resolution.kind === 'existing' ? s.authIdentities : [...s.authIdentities, resolution.identity],
+      currentUserId: resolution.user.id,
+    }));
+    return { ok: true, user: resolution.user };
+  }
+
+  /** authentication.md §3.2a "Continuar con Google" / §3.2b (new,
+   * `decision-log.md` D62/D63) — starts the real Supabase Auth OAuth
+   * redirect (`authProviders.ts`'s `signInWithGoogle`), which performs a
+   * genuine full-page navigation away from this app and back — no
+   * domain-state write happens here at all; the eventual write happens in
+   * `resolveGoogleSignIn` below, once control actually returns. `ok: false`
+   * here means the redirect itself never started (a genuine send-time
+   * platform error, e.g. Google not yet enabled as a provider on the
+   * Supabase project — §3.2d) — distinct from her cancelling/denying
+   * *after* the redirect started, which `resolveGoogleSignIn` handles. */
+  async function startGoogleSignIn(): Promise<{ ok: true } | { ok: false }> {
+    return signInWithGoogle(window.location.origin + window.location.pathname);
+  }
+
+  /**
+   * authentication.md §3.2c "Verificando con Google" (new, `decision-log.md`
+   * D62/D63) — resolves whatever happened once control returns to Nahui
+   * from Google's own UI (a real success, a silent cancellation, or a
+   * genuine platform error), called from `AuthenticationFlow.tsx` on mount
+   * whenever there's reason to believe a Google redirect is being resumed
+   * (§3.8's own extended resumability range covers exactly this). Mirrors
+   * `verifyOtp`/`verifyEmailOtp`'s own `resolveAuthIdentity` write shape,
+   * `type='google'`, `identifier` = the provider's own opaque stable
+   * subject ID (`authProviders.ts`'s own doc comment — never the
+   * human-readable `displayLabel`, which is returned here purely for
+   * `PhoneMismatchConfirm`/§3.7e's own display-only use and is never
+   * written to `AppState` at all, per RFC 0012 §1).
+   */
+  async function resolveGoogleSignIn(): Promise<
+    | { status: 'success'; user: User; displayLabel: string | null }
+    | { status: 'cancelled' }
+    | { status: 'error' }
+  > {
+    const session = await resolveGoogleSession();
+    if (session.status !== 'success') return session;
+    const now = Date.now();
+    const resolution = resolveAuthIdentity(state, 'google', session.subjectId, now);
+    setState((s) => ({
+      ...s,
+      users: resolution.kind === 'new-user' ? [...s.users, resolution.user] : s.users,
+      authIdentities: resolution.kind === 'existing' ? s.authIdentities : [...s.authIdentities, resolution.identity],
+      currentUserId: resolution.user.id,
+    }));
+    return { status: 'success', user: resolution.user, displayLabel: session.displayLabel };
   }
 
   /**
@@ -973,7 +1213,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    */
   function completeOnboarding(path: OnboardingPath): ID | null {
     const user = currentUser(state);
-    if (!user || user.phoneVerifiedAt == null) return null;
+    // RFC 0012/D62-63 — the Owner-creation gate is now "holds at least one
+    // verified AuthIdentity, of any type," not phone-specifically. In
+    // practice this is never reachable false through the real UI: `user`
+    // only resolves at all via `currentUser`/`currentUserId`, which is only
+    // ever set by a successful `resolveAuthIdentity` write, so the User this
+    // function sees already holds ≥1 AuthIdentity by construction — the
+    // explicit check is kept for the same defensive-redundancy style this
+    // file's other guards already use, not because it's expected to fire.
+    const hasVerifiedIdentity = !!user && state.authIdentities.some((a) => a.userId === user.id);
+    if (!user || !hasVerifiedIdentity) return null;
     const existingMembership = state.memberships.find((m) => m.userId === user.id && m.role === 'OWNER');
     if (existingMembership && state.business && state.business.id === existingMembership.businessId) {
       return state.business.id;
@@ -1641,26 +1890,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return { justLanded: false };
   }
 
-  /** settings.md §2.5/§2.5a — see the `StoreValue` interface doc comment
-   * above for the full correctness reasoning (why this User row's own
-   * `phoneVerifiedAt: null`, `currentUserId` left pointing at it, never
-   * removed from `users`). */
+  /**
+   * settings.md §2.5/§2.5a — ends this device's live verified session
+   * without touching the Business, Membership, or any of its data.
+   *
+   * **Corrected, RFC 0012/D62-63:** previously flipped this `User` row's own
+   * `phoneVerifiedAt: null` in place while deliberately leaving
+   * `currentUserId` still pointing at it — that mechanism relied on
+   * `phoneVerifiedAt` being nullable/re-settable, which no longer exists on
+   * `User` at all (`AuthIdentity.verifiedAt` is permanent once set, a
+   * credential stays verified forever). "Is this device's session currently
+   * live" is now `currentUserId` itself — `null` = no live session — so
+   * signing out simply nulls it. `users`/`authIdentities`/`business`/
+   * `memberships`/products/sessions/sales are all structurally untouched
+   * either way (RFC 0007's own guarantee, §2.5's "nothing is lost" copy): a
+   * later re-verification of any of this User's linked credentials
+   * (`verifyOtp`/`verifyEmailOtp`/`resolveGoogleSignIn`) resolves straight
+   * back to this exact same `User` row via `resolveAuthIdentity`'s
+   * `'existing'` branch, never minting a duplicate. `AppRouter.tsx` falls
+   * back to `AuthenticationFlow` automatically the instant `currentUserId`
+   * clears — no further navigation call needed here.
+   */
   function signOut() {
-    setState((s) => {
-      const id = s.currentUserId;
-      if (!id) return s;
-      return { ...s, users: s.users.map((u) => (u.id === id ? { ...u, phoneVerifiedAt: null } : u)) };
-    });
+    setState((s) => (s.currentUserId ? { ...s, currentUserId: null } : s));
   }
 
-  /** authentication.md §3.7e "Sí, es mi número" (Slice 12 `merchant-user-tester`
-   * defect fix, 2026-09-07) — see the `StoreValue` interface doc comment
-   * above for the full reasoning. Clears `User.phoneMismatchConfirmationPending`
-   * permanently for the current User, the same "shown once ever" persisted-flag
-   * shape `markNfcAvailabilityNudgeShown` already uses. A no-op if no
-   * verified `currentUser` resolves (defensive — unreachable through the
-   * real UI, which only ever calls this from `PhoneMismatchConfirm.tsx`'s
-   * own re-check). */
+  /** authentication.md §3.7e "Sí, es mío/mía" (Slice 12 `merchant-user-tester`
+   * defect fix, 2026-09-07; generalized 2026-09-13, `decision-log.md`
+   * D62/D63) — see the `StoreValue` interface doc comment above for the full
+   * reasoning. Clears `User.phoneMismatchConfirmationPending` permanently
+   * for the current User, the same "shown once ever" persisted-flag shape
+   * `markNfcAvailabilityNudgeShown` already uses. A no-op if no verified
+   * `currentUser` resolves (defensive — unreachable through the real UI,
+   * which only ever calls this from `PhoneMismatchConfirm.tsx`'s own
+   * re-check). */
   function confirmPhoneMismatch() {
     setState((s) => {
       const id = s.currentUserId;
@@ -1672,23 +1935,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  /** authentication.md §3.7e "No, corregir número" (Slice 12
-   * `merchant-user-tester` defect fix, 2026-09-07) — see the `StoreValue`
-   * interface doc comment above for the full reasoning. Reverts this
-   * just-completed verification's `phoneVerifiedAt` to `null`, the identical
-   * write `signOut` makes, kept as its own named function rather than a
-   * second, unrelated call site inside that one's own doc comment: a real
-   * account sign-out and correcting a fresh typo are different
-   * merchant-facing moments that happen to share one mechanism, not one
-   * action wearing two names. Safe to reuse here specifically because this
-   * User row, by construction (§3.7e is only ever reached for a genuinely
-   * first-ever-anywhere phone), holds no Business, Membership, Session, or
-   * Sale of its own yet — nothing real is at risk from reverting it. */
+  /**
+   * authentication.md §3.7e "No, elegir otro" (Slice 12 `merchant-user-tester`
+   * defect fix, 2026-09-07; generalized 2026-09-13, `decision-log.md`
+   * D62/D63, renamed from "No, corregir número" since Google has nothing to
+   * "correct" — §3.7e's own text) — see the `StoreValue` interface doc
+   * comment above for the full reasoning.
+   *
+   * **Corrected, RFC 0012/D62-63:** the old mechanism (null out this User
+   * row's own `phoneVerifiedAt`, the identical write `signOut` made) no
+   * longer applies — there's no field left to null. The honest equivalent
+   * now is a real removal: this User row and its one `AuthIdentity` row were
+   * both only ever minted this same moment (§3.7e is only ever reached for a
+   * genuinely first-ever-anywhere credential, `resolveAuthIdentity`'s own
+   * `'new-user'` branch), and hold no Business, Membership, Session, or Sale
+   * of their own yet — nothing real is at risk from deleting them outright,
+   * the same "costs nothing real" reasoning this function's own spec
+   * citation already gives, made more literal by this correction rather
+   * than contradicted by it. Kept as its own named function rather than
+   * folded into `signOut`: a real account sign-out and correcting a fresh
+   * mistake are different merchant-facing moments that happen to share
+   * *some* mechanism, not the exact same one anymore.
+   */
   function retractMistypedVerification() {
     setState((s) => {
       const id = s.currentUserId;
       if (!id) return s;
-      return { ...s, users: s.users.map((u) => (u.id === id ? { ...u, phoneVerifiedAt: null } : u)) };
+      return {
+        ...s,
+        users: s.users.filter((u) => u.id !== id),
+        authIdentities: s.authIdentities.filter((a) => a.userId !== id),
+        currentUserId: null,
+      };
     });
   }
 
@@ -1704,10 +1982,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const alreadyPending = s.invitations.some(
         (inv) => inv.businessId === s.business!.id && inv.phone === phone && inv.status === 'pending',
       );
-      const alreadyMember = s.memberships.some((m) => {
-        const u = s.users.find((usr) => usr.id === m.userId);
-        return m.businessId === s.business!.id && u?.phone === phone;
-      });
+      // RFC 0012/D62-63 — `User.phone` no longer exists; resolved through
+      // `AuthIdentity` instead (out-of-scope Invitation logic otherwise left
+      // untouched — this is the load-bearing domain-layer correction, not a
+      // redesign of this check's own meaning).
+      const alreadyMember = s.memberships.some(
+        (m) =>
+          m.businessId === s.business!.id &&
+          s.authIdentities.some((a) => a.userId === m.userId && a.type === 'phone' && a.identifier === phone),
+      );
       if (alreadyPending || alreadyMember) return s;
       const invitation: Invitation = {
         id: makeId('inv'),
@@ -1725,8 +2008,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * (RFC 0008/D56). See this function's own `StoreValue` doc comment for
    * the full reasoning. */
   function acceptInvitation(invitationId: ID): ID | null {
+    // RFC 0012/D62-63 — `user.phoneVerifiedAt == null` was the old
+    // authenticated-session gate; `currentUser` now only ever resolves a row
+    // at all when `currentUserId` is set, which itself only happens via a
+    // successful credential resolution, so `!user` alone is the identical
+    // check under the corrected model (out-of-scope Invitation logic
+    // otherwise left untouched).
     const user = currentUser(state);
-    if (!user || user.phoneVerifiedAt == null) return null;
+    if (!user) return null;
     const invitation = state.invitations.find((inv) => inv.id === invitationId);
     if (!invitation || invitation.status !== 'pending') return null;
     const existing = findMembership(state, user.id, invitation.businessId);
@@ -2027,6 +2316,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     state,
     requestOtp,
     verifyOtp,
+    requestEmailOtp,
+    verifyEmailOtp,
+    startGoogleSignIn,
+    resolveGoogleSignIn,
     completeOnboarding,
     setBusinessIdentity,
     acknowledgeOnboarding,
