@@ -296,11 +296,26 @@ it already was (`buttons`, for every real Onboarding path, `onboarding.md`
 
 **Who can invite/manage.** OWNER only — the Q24/Q25 permission table is explicit that invite/manage-staff is an OWNER capability; a SELLER has no reach into this document at all in the settled design (out of this amendment's own scope — see §8, item 5, for the larger, undesigned role-gating question this doesn't solve).
 
-**What "Invitar a alguien" writes.** A new `Invitation` (`businessId`, `phone`, `role`, `status: pending`) — never a `BusinessMembership` directly. `role` is always written as `SELLER`; no picker is shown, since inviting a second OWNER isn't a capability described anywhere in the settled architecture (`decision-log.md` D44: the OWNER Membership is created atomically with the Business, once). Showing a choice with exactly one real value would cost a tap for nothing — `global-principles.md`, "the fastest interaction is the one that never happens." **What happens on the invited phone once it verifies** (the acceptance side, in `authentication.md`) is genuinely undesigned — out of this amendment's scope, flagged in §8, item 1. "Tu equipo" is not end-to-end functional until that companion piece exists.
+**What "Invitar a alguien" writes (reworked — `product/99-rfc/0013-invitation-token-based.md`, Accepted, `decision-log.md` D64).** A new `Invitation` (`businessId`, `token` — a cryptographically random, single-use value Nahui generates on her behalf, never typed or chosen by Ana; `role`; `status: pending`; `expiresAt`; an optional `targetHint`) — never a `BusinessMembership` directly, unchanged from before. `role` is still always written as `SELLER`, still with no picker, for the identical reason already stated: showing a choice with exactly one real value would cost a tap for nothing (`global-principles.md`, "the fastest interaction is the one that never happens"). **What's genuinely new: creating an Invitation no longer requires Ana to know or type anything about the person she's inviting.** The superseded design (`Invitation.phone`) required her to know the invitee's number and type it correctly before an offer could exist at all; RFC 0013 replaces that with a token Nahui generates unconditionally, alongside an entirely optional `targetHint` (today: an email address) she may add purely as her own memory aid. `targetHint` is never matched against anything, never treated as the accepting person's identity, and never required (§2.7a; §3.12).
+
+**What happens once the invited person opens the link** is specified in `authentication.md` — today, that document's own §2.2a/§3.10–§3.13a acceptance-side flow is still phone-scoped by design (RFC 0012 §3's original ruling, not yet reworked for RFC 0013). Checked directly against that document's current text (not assumed): several of its mechanisms depend on `Invitation.phone` and a `(businessId, phone)` uniqueness constraint that RFC 0013 already removed from the domain model — this does **not** compose cleanly as-is, a genuine gap, not a citation nit. "Tu equipo" is not end-to-end functional until `authentication.md`'s own token-based acceptance rework exists — a real, not-yet-started follow-on (RFC 0013 §6's own scope), out of this amendment's scope. Full findings: §8, item 10.
 
 **What "Quitar" actually writes (the previously unresolved point, now settled — `product-decisions.md` Q24/Q25).** `BusinessMembership.status` flips `active → revoked` (+ `revokedAt`). **Never a delete.** Every Sale she already registered keeps resolving through `Sale.performedByMembershipId` exactly as before — same non-deletion precedent this document already applies to `subscriptionTier`/`defaultSellingMode` history (D25) and the same shape `Product.active`/`inactive` already established for a discontinued Product (Q21): removed from the merchant's *active* working set, fully intact for history. **No reactivation path is designed here** — `product-decisions.md` Q24/Q25 explicitly names this as "a small, non-urgent open product-scope question, not resolved here"; this document doesn't invent one either.
 
-**Row display — a real, named constraint, not an oversight.** `ubiquitous-language.md`: `User` carries only `phone`/`phoneVerifiedAt` — no personal display-name field yet, a named gap. "Tu equipo" therefore identifies every row by phone number, not by name, for both pending and active members — a genuine usability cost (Ana can't see "Sofía" at a glance) this document cannot design around without inventing a `User` field the Foundation doesn't have. Flagged, not solved, in §8/§11 — a real candidate for a future, small additive `User`/local-note field once evidence warrants it.
+**Row display — a real, named constraint, not an oversight, sharpened by two separate Foundation changes since this was first written.** `ubiquitous-language.md`: `User` carries only `phone`/`phoneVerifiedAt` in the original model — no personal display-name field yet, a named gap — and, as of RFC 0012/D62–D63, `phone` itself is no longer guaranteed to be populated at all (a `User` created cold via email or Google may hold no phone `AuthIdentity` whatsoever). "Tu equipo" identifies an **active or revoked Membership** row by phone number today, for the same reason this was always true — no display-name field exists to use instead — but that display is a narrower correctness claim than it looks: it silently assumes every accepted SELLER verified by phone, true only as long as `authentication.md`'s own Invitation-acceptance flow stays phone-scoped by design (§8, item 10). A **pending or expired Invitation** row, by contrast, never has a phone to show at all anymore — RFC 0013 removed the one field the old row design used to identify a pending offer, replaced with a generic label plus creation date and an optional, explicitly-advisory `targetHint` (§3.11, below). Both gaps are flagged, not solved, in §8/§11 — real candidates for a future, small additive `User` display-name field once evidence warrants one, not invented here.
+
+### 2.7a Token expiry — why 24 hours (RFC 0013 §4/§7's own named tension, resolved here)
+
+`product/99-rfc/0013-invitation-token-based.md` §4/§7 deliberately left the exact `expiresAt` default to this document, naming a real tension rather than a default answer: product need favors a window measured in days (a family member or helper may not check WhatsApp, or open the link at all, for a day or more after Ana sends it — the same real-world delivery delay `architect`'s own original reasoning named); general security practice for a bearer token embedded in a URL favors a window measured in minutes to hours, because every leakage vector `knowledge-mentor` confirmed (§7 — referrer headers, server access logs, analytics pageview capture, browser history) stays exposed for the entire life of the token, not just at the moment it's generated.
+
+**Resolved: 24 hours.** Reasoned explicitly, not defaulted to either extreme:
+
+- **Meaningfully shorter than the "days" `architect`'s original draft proposed**, cutting the window every leakage vector above stays live for, without pretending a multi-day window is risk-free the way `knowledge-mentor` (§7) explicitly warned against.
+- **Long enough to survive one full missed day** — the realistic worst case for a helper who doesn't open WhatsApp until the next morning, not just the same evening. A window measured in hours (the pure-security-practice end of the tension) would produce a real, frequent cost at Nahui's actual pilot scale: a merchant generating a link in the evening for someone who doesn't check it until the next day would routinely find it already dead.
+- **The stakes here are lower than the password-reset links OWASP's own guidance is written against** (`knowledge-mentor`, RFC 0013 §7) — a leaked `Invitation` token grants only the *right to join* a Business as a SELLER, contingent on the person who opens it *also* independently authenticating through the ordinary `AuthIdentity` resolution invariant (RFC 0012 §4) before anything is created. It never grants access to an existing account or existing data the way a password-reset token does. This doesn't make the leakage vectors any less real — they stay real regardless of what the token unlocks — but it's a legitimate factor in choosing where inside the named range to land, not a reason to ignore the tension.
+- **Paired with a genuinely cheap regenerate affordance** (§3.11/§3.12d, "Generar otra") — exactly the mitigation RFC 0013 §4 itself names as the way to resolve this tension in practice: if 24 hours turns out too short for a given case, recovering from that costs one tap, not a support conversation or a dead-end invitation.
+
+**Not designed here, flagged for the eventual Architecture Gap Analysis** (RFC 0013 §4/§7's own scope, unaffected by this section): `Referrer-Policy: no-referrer` on the invite-landing route, excluding that route from access logs/analytics capture, and rate-limiting the token-lookup endpoint per IP — real mitigations RFC 0013 already names as reducing the *exposure* these leakage vectors create, independent of whatever window this section sets. Choosing 24 hours doesn't substitute for those; it narrows the window they'd apply to.
 
 ## 3. Low-fidelity wireframes
 
@@ -626,15 +641,22 @@ this document (§3.1/§3.2):
 │  55 1234 5678                     │
 │  Vendiendo contigo    [ Quitar ] │
 │                                   │
-│  55 8765 4321                     │
-│  Invitación enviada               │
+│  Invitación pendiente             │
+│  Para ana@correo.com · creada     │
+│  el 13 sep              [ Cancelar ] │
+│                                   │
+│  Invitación caducada              │
+│  Creada el 10 sep     [ Generar otra ] │
 │                                   │
 │  55 2222 3333                     │
 │  Ya no vende contigo              │
+│                                   │
+│  Invitación cancelada             │
+│  Creada el 8 sep                  │
 └───────────────────────────────┘
 ```
 
-**Empty state** (no `Invitation`/`BusinessMembership` row has ever existed for this Business):
+**Empty state** (no `Invitation`/`BusinessMembership` row has ever existed for this Business) — unchanged, kept verbatim: "desde su propio teléfono" already referred to her own device, not a phone-*identity* claim, so it stays accurate under the token model:
 ```
 ┌───────────────────────────────┐
 │ ← Configuración                 │
@@ -647,11 +669,18 @@ this document (§3.1/§3.2):
 └───────────────────────────────┘
 ```
 
-- **Three row states, each a pure read, never a merchant choice:** `Invitation.status = pending` → "Invitación enviada," no action; `BusinessMembership.status = active` → "Vendiendo contigo" + `[ Quitar ]`; `BusinessMembership.status = revoked` → "Ya no vende contigo," no action (no reactivation mechanism is designed, per `product-decisions.md` Q24/Q25). `Invitation.status = expired` has no defined trigger/timing anywhere in the settled architecture — not given a row treatment here (§8, item 3).
-- **Row order:** active first, then pending, then revoked; by invite date within each group — deterministic, never Ana-sorted (`global-principles.md`, "every repeated decision should become automation").
-- No delete/hide action on a revoked row — same non-deletion discipline as `subscriptionTier` history; it stays visible, clearly labeled, forever.
+- **Five row states now, each a pure read, never a merchant choice** (widened from three — RFC 0013/D64 corrected here, not just field-path). **`Invitation.status = accepted` deliberately has no row of its own** (`ux-critic`-caught gap, closed 2026-09-13) — accepting is an atomic write (RFC 0013 §2 step 6) that creates the active `BusinessMembership` in the same transaction that flips the `Invitation`, so the person simply appears as a new "Vendiendo contigo" row instead; nothing stays visible under its old pending identity:
+  - `BusinessMembership.status = active` → "Vendiendo contigo" + `[ Quitar ]` (unchanged).
+  - `Invitation.status = pending` **and not yet expired** → "Invitación pendiente" + creation date, plus "Para {targetHint}" only if one was set + `[ Cancelar ]`. **No phone number is ever shown here** — `Invitation` carries none anymore (RFC 0013).
+  - `Invitation.status = pending` **and past `expiresAt`** (a read-time derivation, `status = pending AND now > expiresAt` — §2.7a; never a written value) → "Invitación caducada" + creation date, plus "Para {targetHint}" only if one was set + `[ Generar otra ]`. No `[ Cancelar ]` on this row — the link is already unusable, so cancelling it would be a no-op action offered for nothing.
+  - `Invitation.status = revoked` → "Invitación cancelada" + creation date, no action — reached via §3.12d.
+  - `BusinessMembership.status = revoked` → "Ya no vende contigo," no action (unchanged; no reactivation mechanism is designed, per `product-decisions.md` Q24/Q25).
+- **`targetHint`, when shown, is always framed as "Para {value}," never "Enviado a {value}"** — deliberate: Nahui never automatically emailed anything (§2.7, "What 'Invitar a alguien' writes"; RFC 0013 §1's Business Decision #1), so "enviado" would overstate what actually happened. "Para" states only what Ana herself typed as a memory aid.
+- **Row order:** active Memberships, then pending Invitations, then expired Invitations, then revoked Memberships, then cancelled Invitations — deterministic, by date within each group, never Ana-sorted (`global-principles.md`, "every repeated decision should become automation"). Both terminal groups (revoked Memberships, cancelled Invitations) sit last, since neither offers an action; the two still-actionable groups (pending, expired) sit ahead of them.
+- **No delete/hide action on a revoked Membership row or a cancelled/expired Invitation row** — same non-deletion discipline as `subscriptionTier` history; every one of them stays visible, clearly labeled, forever.
+- **A still-pending row never offers "Copiar enlace" again.** RFC 0013 §4 requires the token stored hashed at rest, never raw — the plaintext link is only ever retrievable once, at generation time (§3.12c). If Ana needs to reshare a link that's still valid but that she's lost, her only path is the always-available top-level `[ Invitar a alguien ]` CTA to create a fresh, independent invitation (nothing structurally prevents two simultaneously-valid Invitations for the same Business — RFC 0013's own uniqueness is global on `token`, not per-recipient).
 
-### 3.12 Invitar a alguien
+### 3.12 Nueva invitación
 
 ```
 ┌───────────────────────────────┐
@@ -663,29 +692,106 @@ this document (§3.1/§3.2):
 │  propio teléfono, usando tu          │
 │  mismo Catálogo y tus mismos          │
 │  precios.                              │
-│  Número celular                         │
-│  +52  [ __________ ]                    │
-│  [      Enviar invitación      ]         │  disabled until 10 digits
+│                                          │
+│  Correo electrónico (opcional)           │
+│  [ __________________ ]                  │
+│  Es solo para que tú recuerdes a quién     │
+│  es esta invitación — no hace falta para    │
+│  crear la invitación.                        │
+│                                                │
+│  [      Generar invitación      ]              │
 └───────────────────────────────┘
 ```
 
-Reuses `authentication.md` §3.3's exact phone-entry shape and gating (fixed "+52," 10-digit-disabled button) rather than inventing a second phone-collection pattern — `global-principles.md`, "capture business truth once, reuse it forever."
+**Opening paragraph is preserved verbatim from the retired phone-entry screen** — the same "esta persona va a poder..." sentence `authentication.md §3.10` already mirrors from the invitee's side (`global-principles.md`, "capture business truth once, reuse it forever"). That cross-reference still holds correctly after this rework: no correction needed there (§8, item 10).
 
-Inline validation (shown in place, same discipline as `authentication.md` §3.4's inline invalid-format message — no navigation, no dedicated error screen):
-```
-Número celular
- +52  [ 5512345678        ]
- Ya invitaste a este número — está
- esperando a que acepte.
-```
-```
-Número celular
- +52  [ 5512345678        ]
- Este número ya vende contigo.
-```
-Both read `Invitation`/`BusinessMembership` uniqueness before any write attempt; the button stays disabled while either message shows, until she changes the number.
+**The button is never gated on the optional field, in either direction** — a structural departure from the retired design, not just a copy change. The old phone-entry screen disabled "Enviar invitación" until 10 digits were typed; this screen's "Generar invitación" is always enabled, since RFC 0013 makes the field genuinely optional, never required (§1). This is a real, measurable simplification (§6): the old floor required a correctly-typed phone number before anything could be created at all; this floor requires nothing.
 
-Write path: `[ Enviar invitación ]` → guardando (reuses §3.9, unchanged) → error (reuses §3.10's shape, copy variant "No pudimos enviar la invitación. Intenta de nuevo.") → success → back to §3.11, new "Invitación enviada" row shown for that number. No separate confirmation screen — typing the number and tapping "Enviar invitación" is already one deliberate act, the same two-tap floor (§6) every other action in this document holds to.
+Inline validation, shown in place (same discipline as `authentication.md §3.2f`'s own inline invalid-email message — no navigation, no dedicated error screen), **both variants non-blocking — the button stays enabled either way**, since `targetHint` is advisory, never a hard gate (RFC 0013 §1):
+```
+Correo electrónico (opcional)
+ [ ana@corr         ]
+ Verifica tu correo — parece que le falta
+ algo. Puedes dejarlo en blanco si prefieres.
+```
+```
+Correo electrónico (opcional)
+ [ ana@correo.com    ]
+ Ya tienes una invitación pendiente con
+ este correo. Puedes crear otra invitación
+ de todas formas si quieres.
+```
+**Wording corrected 2026-09-13 (`reviewer` Suggestion, closed)** — "generar otra" was reused here for a genuinely different operation than the identically-worded `[ Generar otra ]` CTA on an expired row (§3.11): this advisory means *create a brand-new, independent Invitation*, while the row action means *mutate this same Invitation in place* (§4). Reworded to "crear otra invitación" to avoid the collision, matching this document's own established discipline of distinguishing near-identical actions by name (§10's "Invitar a alguien" vs. "Nueva invitación" precedent).
+The second is a soft, optional nicety, not a structural check — RFC 0013 §4/Domain-model additions are explicit that uniqueness on `(businessId, targetHint.value)` is "an optional, soft UX-level duplicate-pending-row nicety... not a hard invariant," reused here exactly as scoped.
+
+Write path: `[ Generar invitación ]` → guardando (§3.12a) → error (§3.12b) → success → Invitación lista (§3.12c).
+
+### 3.12a Generando invitación — near-instant / slow
+```
+┌───────────────────────────────┐        ┌───────────────────────────────┐
+│        ▢▢▢▢▢▢▢▢▢▢▢▢            │        │      Generando…                 │
+└───────────────────────────────┘        └───────────────────────────────┘
+   near-instant: silent skeleton              slow (>~1.5s): one plain line
+```
+Own copy variant, distinct from §3.9's "Guardando…" — a link/token is being produced, not a stored capability flipped. Same near-instant/slow convention as every other write in this family.
+
+### 3.12b Error al generar invitación
+```
+┌───────────────────────────────┐
+│  No pudimos generar la            │
+│  invitación. Intenta de nuevo.      │
+│      [   Reintentar   ]              │
+└───────────────────────────────┘
+```
+Same idempotent-retry guarantee §3.10's shared shape already carries (`architecture-principles.md` #7, `decision-log.md` D30) — a retried generation attempt must never risk creating two live tokens for one confirming tap.
+
+### 3.12c Invitación lista
+```
+┌───────────────────────────────┐
+│ ← Tu equipo                     │
+│  Invitación lista                │
+│  Comparte este enlace con la       │
+│  persona que va a vender contigo.    │
+│  El enlace funciona para cualquiera   │
+│  que lo abra — compártelo solo con     │
+│  la persona de tu confianza.            │
+│                                           │
+│  nahui.app/invite/8fK3x91Q...             │
+│                                             │
+│  [   Copiar enlace   ]                      │
+│  [   Compartir...    ]                       │
+│                                                │
+│  Este es el único momento en que vas a         │
+│  poder ver este enlace — guárdalo o             │
+│  compártelo ahora. Deja de funcionar 24           │
+│  horas después de creado.                          │
+│                                                        │
+│  [        Listo        ]  (disabled until Copiar       │
+│                             enlace or Compartir has      │
+│                             fired at least once)          │
+└───────────────────────────────┘
+```
+- **The link display shown here is illustrative** — exact truncation width/format is `ui-designer`'s call at Medium-Fidelity, not fixed here. The route shape itself (`nahui.app/invite/<token>`) mirrors RFC 0013 §2's own worked example; RFC 0013 explicitly leaves the exact route shape to `ux-designer`/`ui-designer`, not fixed at the architecture layer.
+- **"Compartir..." opens the device's own native share mechanism** (WhatsApp, SMS, correo, or any other installed app) — which apps actually appear is device-controlled, not something Nahui lists or names explicitly, the same "below this document's abstraction level" treatment `authentication.md §2.3` already gives OTP delivery mechanics.
+- **"El enlace funciona para cualquiera que lo abra — compártelo solo con la persona de tu confianza" states RFC 0013's own accepted-risk posture plainly, once, at the one moment it's actionable** (RFC 0013 §4 — a forwarded/leaked link is a named, accepted risk at current pilot scale, not a structural guarantee this document can offer). Stated as fact, not warning-styled ceremony (`brand/tone-of-voice.md`, "state facts before offering an opinion"). **Wording corrected 2026-09-13 (`brand-guardian` finding, Minor, closed)** — the original phrasing ("Cualquiera que lo abra puede aceptar — compártelo solo con quien quieres invitar") was factually correct but read closer to a disclaimer label than Nahui's own voice: an elided-object fragment ("puede aceptar" what?) and a generic "cualquiera" subject, disconnected from §3.12's own established "alguien de tu confianza" framing one screen earlier. The fix keeps the fact exactly as blunt and complete, restates it with a real subject/object, and reconnects to the "confianza" vocabulary already live in this document family, so the caution reads as continuity of the same companion voice rather than a register shift into disclaimer language mid-screen.
+- **"Este es el único momento en que vas a poder ver este enlace" is a real, structural constraint, not manufactured urgency** — RFC 0013 §4 requires the token stored hashed at rest, never raw, so the plaintext is genuinely unrecoverable after this screen. Stated once, plainly, no exclamation, no countdown framing (`brand/tone-of-voice.md`, "never use urgency Nahui hasn't earned" — this is a factual, one-time disclosure of a real constraint, not the manufactured-scarcity pattern that rule targets).
+- **"Listo" is gated on having tapped "Copiar enlace" or "Compartir" at least once — corrected 2026-09-13, `ux-critic`-raised, `knowledge-mentor`-confirmed (§8, item 18).** The original draft left it ungated, defended only by brand-tone reasoning ("respects the vendor's intelligence") — `ux-critic` correctly named this as a usability-safety question a tone citation can't settle on its own. Research converged from two independent directions: general practice for one-time, non-recoverable secrets (password managers, 2FA backup codes, API-key-generation flows) uniformly gates the dismiss/continue action, grounded in Norman's "forcing function" principle (block-until-acknowledged for high-cost, irreversible errors) and Nielsen's error-prevention-over-warning heuristic; and this exact project already holds itself to the identical standard elsewhere — `settings.md §3.14`'s own earlier fix moved that screen from a silent, unconfirmed exit mechanism to one that positively confirms before letting her go, for the same underlying reason (a passive warning alone proved insufficient once a real interruption-prone user was the actual audience). Once either action fires, "Listo" enables — no forced navigation into Compartir's own native OS flow, no requirement to actually complete a share, only to have started one.
+- **Interruption before she taps Copiar/Compartir/Listo (`ux-critic`-caught gap, closed 2026-09-13) — stated plainly, a real named limitation, not left silent.** Unlike every other in-progress flow in this family (`ux-pattern-conventions`'s standing "resumes pixel-identical" guarantee), this screen's content cannot be resumed the ordinary way if the app is closed or reloaded before she acts: RFC 0013 §4 requires the plaintext link to exist only in this one render — it's never re-fetchable from the server once this moment passes, by design (the token is stored hashed). If she backgrounds the app and it's later reloaded fresh (not merely backgrounded in a way the OS keeps alive), the link is genuinely gone — she'd return to §3.11 and find a still-"Invitación pendiente" row with no link she can retrieve, and would need `[ Generar otra ]` (only available once it's `caducada`) or, in the interim, re-open "Nueva invitación" for a fresh one. Not designed around further here — named so it isn't discovered as a silent gap later.
+- `[ Listo ]` → back to §3.11, new "Invitación pendiente" row.
+
+### 3.12d Cancelar invitación — confirmar
+```
+┌───────────────────────────────┐
+│ Tu equipo                       │  dimmed, still visible underneath
+│  ¿Cancelar esta invitación?       │
+│  Nadie va a poder usar este         │
+│  enlace después de esto.             │
+│      [ No ]   [ Sí, cancelar ]        │
+└───────────────────────────────┘
+```
+Same dimmed-overlay, two-button shape as §3.7/§3.8/§3.13 — states the real, honest consequence plainly. `[ Sí, cancelar ]` → guardando (§3.9's shared template — a plain status flip, not a generation write) → error (§3.10's shared template, copy variant "No pudimos cancelar la invitación. Intenta de nuevo.") → success → back to §3.11, that row now "Invitación cancelada." Writes `Invitation.status: pending → revoked` — closes §8 item 11.
+
+**"Generar otra" (expired-row action) reuses §3.12a/§3.12b/§3.12c directly, with no separate confirm screen and no intervening form** — see §4 for the full branch. Closes §8 item 12.
 
 ### 3.13 Quitar a alguien — confirmar
 
@@ -798,11 +904,37 @@ Cerrar sesión
 From "Tu equipo" (§3.11, Paid-tier only, reached via the vista principal's
 "Ver equipo" row — §3.3a):
 
-  [ Invitar a alguien ] → phone entry (§3.12)
-    → invalid/duplicate/already-a-member → inline message, same screen,
-      button disabled until the number changes
-    → Enviar invitación → guardando (§3.9) → error (§3.10) → Reintentar
-    → success → back to §3.11, new "Invitación enviada" row
+  [ Invitar a alguien ] → Nueva invitación (§3.12)
+    → optional Correo electrónico left blank, or filled with a soft
+      format/duplicate advisory shown inline — never blocking, button
+      stays enabled either way (RFC 0013 §1 — targetHint is never
+      required, never a hard gate)
+    → Generar invitación → guardando (§3.12a) → error (§3.12b) → Reintentar
+    → success → Invitación lista (§3.12c), showing the generated link
+        → [ Copiar enlace ] / [ Compartir... ] → device-level copy/share
+          mechanism, outside this document's own scope — same screen,
+          tappable any number of times before leaving
+        → [ Listo ] → back to §3.11, new "Invitación pendiente" row
+
+  [ Cancelar ] on a still-pending, not-yet-expired row → confirmar (§3.12d)
+    → No → back to §3.11, untouched
+    → Sí, cancelar → guardando (§3.9) → error (§3.10) → Reintentar
+    → success → back to §3.11, that row now "Invitación cancelada"
+
+  [ Generar otra ] on an expired row → guardando (§3.12a) → error (§3.12b)
+    → Reintentar → success → Invitación lista (§3.12c), showing the new
+      link — no intervening form screen, since nothing new needs typing
+      (the expired row's own targetHint, if it had one, carries forward
+      automatically — global-principles.md, "never ask twice") → [ Listo ]
+      → back to §3.11, **that same row** now reads "Invitación pendiente"
+      again (`ux-critic`-caught branch-destination gap, closed 2026-09-13:
+      "Generar otra" mutates the existing Invitation in place — same
+      `id`, freshly-generated `token`, `status` reset to `pending`,
+      `expiresAt` reset — never a second, independent Invitation. This
+      is the write-semantics choice that actually makes the regenerate
+      affordance read as "fixing this offer," not as leaving a dead
+      "Invitación caducada" row sitting next to an unrelated new one;
+      RFC 0013 itself didn't fix this mechanic, left to this document.)
 
   [ Quitar ] on an active row → confirmar (§3.13)
     → Cancelar → back to §3.11, untouched
@@ -831,9 +963,12 @@ From home.md §2's new step 0 (this device's own Membership is revoked):
 11. Cerrar sesión — confirmar
 12. Cerrando sesión — near-instant / slow
 13. Error al cerrar sesión
-14. Tu equipo — vista principal (empty, or with pending/active/revoked
-    rows), plus its own near-instant/slow resolving pair
-15. Invitar a alguien — phone entry, with inline duplicate/already-member validation
+14. Tu equipo — vista principal (empty, or with pending/expired/active/revoked rows), plus its own near-instant/slow resolving pair
+15. Nueva invitación — entry form, optional email `targetHint` field with inline soft format/duplicate advisories (both non-blocking)
+15a. Generando invitación — near-instant / slow
+15b. Error al generar invitación
+15c. Invitación lista — generated link, copiar/compartir, one-time-display notice
+15d. Cancelar invitación — confirmar
 16. Quitar a alguien — confirmar
 17. Acceso revocado (reached only via home.md §2 step 0)
 17a. Acceso revocado — tras tocar "Entendido" (button disabled/relabeled "Entendido ✓," inline "Ya puedes cerrar esta pestaña." confirmation shown; resets to 17 on a fresh app open, per this state's own "stable, repeatable terminal state" requirement)
@@ -850,11 +985,13 @@ From home.md §2's new step 0 (this device's own Membership is revoked):
 | Cancelar cambio pendiente | 2 | Mirrors `home.md`'s own destructive-action confirmation floor. |
 | Cerrar sesión | 2 (tap row → Sí, cerrar sesión) | Same two-tap floor as every other action here — a real, if fully reversible, commitment gets one real confirming tap, nothing more. |
 
-Every action in this table now shares an identical 2-tap floor, measured at this document's own boundary. The one previous exception — Activar venta con tags's code-entry requirement — is gone along with the path itself (`decision-log.md` D27): `defaultSellingMode`'s two directions are pure toggles like every other immediate-effect action, with no real fact left to type. Configuración is now the one document in this family where every merchant-initiated action, without exception, costs exactly two taps — open the action, confirm it. **Two new rows join it (§2.7, `product-decisions.md` Q24/Q25):**
+Every action in this table now shares an identical 2-tap floor, measured at this document's own boundary. The one previous exception — Activar venta con tags's code-entry requirement — is gone along with the path itself (`decision-log.md` D27): `defaultSellingMode`'s two directions are pure toggles like every other immediate-effect action, with no real fact left to type. Configuración was, until this amendment, the one document in this family where every merchant-initiated action, without exception, cost exactly two taps. That's no longer quite true, named plainly rather than left stale: "Generar otra" (below) is a single deliberate exception, reasoned the same way `authentication.md §3.10`'s zero-tap "Ahora no" already is — nothing to disclose, nothing at risk. Every other action in this document, including every other part of "Tu equipo," still holds the uniform two-tap floor. **Rows updated for §2.7's RFC 0013/D64 rework:**
 
 | Action | Taps | Why it can't be fewer |
 |---|---|---|
-| Invitar a alguien | 2 taps + typing a phone number (Invitar a alguien → Enviar invitación) | Same floor as every other action here — typing the number is unavoidable data entry, not a stallable step. |
+| Invitar a alguien | **[Corrected 2026-09-13] 4** (Invitar a alguien → Generar invitación → Copiar enlace *or* Compartir → Listo — was undercounted at 2, missing the §3.12c screen entirely) | The optional email field itself still costs nothing when skipped — that part of the floor genuinely improved over the retired phone-entry path, which required a full, correctly-typed number before the button would even enable. But §3.12c's one-time-link display is a real, new required screen this floor has to account for honestly: reaching a usable "Invitación pendiente" state now requires acting on the link (Copiar or Compartir, gated per §8 item 18) before "Listo" enables, not just generating it. Higher than the old floor, not a regression — the old design never showed her anything to act on at all. |
+| Generar otra (regenerate an expired Invitation) | 1 | The one deliberate exception to this document's otherwise-uniform two-tap floor, reasoned explicitly, not a gap: nothing new needs disclosing (she already saw and accepted the consequences once, when she first created the invitation being replaced), and nothing is lost or put at risk by tapping it — mirrors why `authentication.md §3.10`'s "Ahora no" already costs zero taps ("nothing is lost or destroyed"), the identical reasoning applied to the positive-activation side. |
+| Cancelar invitación | 2 (Cancelar → Sí, cancelar) | Same floor as "Quitar a alguien" — a real, if only-ever-history-preserving, commitment gets one confirming tap. |
 | Quitar a alguien | 2 (Quitar → Sí, quitar) | Same floor — a real, if reversible-in-history-only, commitment gets one confirming tap. |
 
 ## 7. Automation opportunities
@@ -875,9 +1012,13 @@ Every action in this table now shares an identical 2-tap floor, measured at this
   (`decision-log.md` D46 Addendum, architect ruling; §2.6).
 - Whether "Tu equipo" appears in the vista principal at all — a pure read of `subscriptionTier`, same derivation discipline as `defaultSellingMode`'s `nfc` option (§2.7).
 - Which action a "Tu equipo" row offers (`Quitar`, or nothing) — a pure read of `BusinessMembership.status`/`Invitation.status`, never Ana's own interpretation.
-- Row order in "Tu equipo" — deterministic (active → pending → revoked, by date), never manually sorted.
+- Row order in "Tu equipo" — deterministic (active → pending → expired → revoked → cancelled, by date), never manually sorted.
 - `Invitation.role` is never asked — always written `SELLER`, since no second value exists to choose between.
 - Her own verified phone number is displayed automatically in "Tu cuenta" — never something she has to ask support for, guess from memory, or reconstruct from the original OTP screen.
+- Whether an Invitation row shows as pending, expired, active, or revoked — a pure read-time derivation (`status = pending AND now > expiresAt` for "expired," per RFC 0013 §4/D64), never something Ana marks herself.
+- Which action a pending/expired Invitation row offers ("Cancelar," "Generar otra," or nothing) — computed automatically from that same derived state, the identical discipline this document already applies to an active/revoked Membership row's own action.
+- The token itself — generated, formatted, and (per RFC 0013 §4) stored hashed entirely by Nahui; Ana never sees, types, or handles anything about it beyond the finished shareable link.
+- The soft duplicate-`targetHint` advisory (§3.12) — a pure read of existing pending rows, shown automatically, never something she has to check for herself.
 
 ## 8. Open questions
 
@@ -903,12 +1044,15 @@ None of the items below block this document's completion.
    Configuración stays reachable from *what shape* the trigger takes
    without noticing the second question was still open. See `home.md` §2
    and §10 for the fuller correction.
-10. **The acceptance-side flow** (`authentication.md`) for a phone that verifies with a pending `Invitation` waiting — genuinely undesigned, out of §2.7's scope. "Tu equipo" isn't end-to-end functional until this exists.
-11. **Cancelling a still-pending `Invitation`** before it's accepted — no mechanism named anywhere in the settled architecture; not designed here, same deferral treatment `product-decisions.md` Q24/Q25 already gave the sibling reactivation question.
-12. **`Invitation.status = expired`'s trigger/timing** isn't specified anywhere in the settled architecture — no UI treatment designed for a state with no defined trigger.
+10. **The acceptance-side flow's own real rework** (`authentication.md`) — genuinely undesigned still, and now a sharper gap than when this item was first written. RFC 0013/D64 already replaced `Invitation.phone` in the domain model itself; `authentication.md`'s own §2.1/§2.2/§2.2a/§3.10–§3.13a, as currently written, depend on that exact field (a phone-keyed lookup, and a `(businessId, phone)` uniqueness constraint that no longer exists at all) and do not compose cleanly against the now-Accepted model — confirmed directly against that document's actual text, not assumed. The citations most acutely affected: §2.1's device-level Invitation check and §2.2's case-0 routing (both depend on a phone-match mechanism the schema no longer supports), §2.2a step 1's re-check and step 2's multi-pending tie-break (the uniqueness constraint it tie-breaks against is gone), and §2.2a step 6's decline-memory marker (RFC 0013 §2 already reasons this should be eliminated outright under the new mechanism, not merely re-pathed, since nothing auto-surfaces an Invitation anymore). **One citation confirmed to still hold, named so it isn't mistakenly re-flagged:** §3.10's reuse of this document's "what a SELLER can do" sentence — that exact sentence is preserved verbatim in the redesigned §3.12, so no correction is needed there. **A second, smaller stale cross-reference, worth naming precisely:** §2.2a step 1's own parenthetical ("`settings.md §8` items 11/12 name this same gap from the issuing side") now points at two items this same amendment resolves — needs updating from "names this same gap" to "this gap is resolved from the issuing side," once `authentication.md` gets its own pass. "Tu equipo" is not end-to-end functional until `authentication.md`'s own token-based acceptance rework exists — a real, not-yet-started follow-on (RFC 0013 §6's own scope), out of this amendment.
+11. **Resolved in this pass.** Cancelling a still-pending `Invitation` before it's accepted is now designed — §3.11's "Cancelar" action on a still-valid pending row, §3.12d's confirm screen, writing `Invitation.status: pending → revoked`. Bundled alongside RFC 0013's own token rework per that RFC's own explicit suggestion (§6) that this had become a natural, low-cost close once `revoked` already existed in the schema.
+12. **Resolved in this pass.** `Invitation.status = expired`'s trigger is now defined (RFC 0013 §4/D64 — `expiresAt`, set at creation; `expired` itself stays a read-time derivation, `status = pending AND now > expiresAt`, never written) and given a real UI treatment: an expired row reads "Invitación caducada" and offers "Generar otra" (§3.11/§2.7a), rather than being silently indistinguishable from a still-live pending offer.
 13. **Resolved, 2026-09-09 (`architect`), from existing Foundation precedent — no Product Decision needed.** An already-active SELLER `BusinessMembership` survives a Paid→Free downgrade entirely unaffected. `BusinessMembership.status` has exactly one specified write path — the OWNER-only "Quitar" action (D55: "only via the OWNER-only revoke action... no reactivation path designed") — with no second, tier-driven path anywhere in the Foundation, unlike `nfc`'s deliberate pure read-time derivation from `subscriptionTier` (D27). The Membership authorization gate (`domain-model.md` Key Mechanism, written in D56 *after* Q18's Paid-gating decision) checks existence and `status=active` only, naming no `subscriptionTier` condition. Q18/`settings.md` §2.7 both consistently gate *creating a new Invitation* on `subscriptionTier=paid`, never the *validity of an already-created Membership* — the same shape D40/D25 already established for Claim Tokens (generation stops on downgrade; existing Claims untouched). A downgrade gates future capability, never claws back already-granted state (D25's general invariant). §3.5's "Volver al plan gratis" copy correctly asserts nothing here — nothing changes for an existing SELLER, so there's nothing to disclose. **Real consequence, not just documentation:** `product/02-ux/events.md` §3.26's own affordances needed correcting to match — routed to `ux-designer`, applied 2026-09-10. Both "Ver personal de este evento" and "Asignar personal" are now present unconditionally, regardless of `subscriptionTier` — `ux-designer`'s own remediation pass corrected this entry's own initial framing here, which had conflated *assigning an already-active Membership to an Event* (`EventAssignment` creation, D60/RFC 0011 — gated only on `BusinessMembership.status = active`, never on tier) with *creating a new `Invitation`* (a separate write, reached from a separate screen, genuinely still Paid-gated). A grandfathered Free-tier Business with an active SELLER can both view and reassign that person to new Events; only inviting someone new stays behind the Paid gate. See `events.md` §3.26/§10 for the corrected design.
 14. **Configuración/nav carries no role-based access gate at all today.** §2.7/§3.14 design the OWNER-only invite/revoke surface and the revoked-SELLER defensive state, but a full SELLER-specific stripped Home/nav experience isn't designed in this document — a materially larger, separate design gap, surfaced here rather than silently assumed solved.
 15. **Multi-Business membership switching** (`product-decisions.md` Q24/Q25, item 1) — no surface designed anywhere yet; §3.14 states this plainly rather than pretending it's handled.
+16. **Whether Nahui ever builds automated email delivery for a `targetHint`** (rather than Ana always sharing the link herself) — explicitly deferred, not a gap this document leaves accidentally open: RFC 0013's own Business/Product Decisions (§1) resolve this as a separable, optional future enhancement, deliberately not built now, the identical "don't gate a path on unvalidated infrastructure" lesson `company/business-decisions.md` Q19 already taught. `targetHint`'s schema shape already supports it without a migration, whenever it does land.
+17. **Whether a soft post-acceptance mismatch warning** (the authenticated person's own resolved identity doesn't match the `targetHint` she set) is worth designing — RFC 0013 §4/Open items name this explicitly as a UX-quality call, not an architecture requirement, delegated to `ux-designer`. Not designed here: no evidence yet, at Nahui's actual pilot scale, that a forwarded/leaked link has ever been a real problem (RFC 0013 §4's own accepted-risk posture, mirrored here rather than re-litigated).
+18. **Resolved 2026-09-13.** §3.12c's "Listo" is now gated on Copiar enlace/Compartir having fired at least once — `ux-critic`-raised, `knowledge-mentor`-confirmed (general practice for one-time, non-recoverable secrets uniformly gates the dismiss action; Norman's forcing-function principle and Nielsen's error-prevention-over-warning heuristic both apply directly; this project already holds `settings.md §3.14` to the identical standard). The original ungated design, defended on brand-tone grounds alone, is corrected — see §3.12c.
 
 ## 9. Principle justification
 
@@ -931,11 +1075,12 @@ None of the items below block this document's completion.
 
 **§2.7/§3.11–§3.14 additions:**
 - *global-principles.md*, "never delete historical data" (D25) — extended to `Quitar`: a status flip, not a delete; `Sale.performedByMembershipId` keeps resolving unaffected. Same non-deletion discipline this document already applies to `subscriptionTier` history, and the same shape `Product.active`/`inactive` (Q21) already established.
-- *global-principles.md*, "capture business truth once, reuse it forever" — Invitar a alguien's phone entry reuses `authentication.md` §3.3's exact mechanism rather than a second phone-collection pattern.
-- *global-principles.md*, "the fastest interaction is the one that never happens" — no role picker on Invitar a alguien, since only one real value exists to write.
-- *global-principles.md*, "business language before technical language" — every "Tu equipo" screen says "vendiendo contigo," "ya no vende contigo," never "Membership," "Invitation," or "status."
-- *architecture-principles.md* #7 (idempotent/keyed writes) — "Enviar invitación" and "Sí, quitar" both reuse §3.9/§3.10's shared guardando/error/Reintentar template, the same D30-keyed-retry guarantee every other write in this document already gets.
+- *global-principles.md*, "the fastest interaction is the one that never happens" — extended further by RFC 0013: creating an Invitation now requires zero required input from Ana at all (not even a correctly-typed phone number), only an optional memory-aid field she may skip entirely. The prior design's reuse of `authentication.md §3.3`'s phone-entry mechanism is retired along with the phone-entry step itself, not replaced with a second collection pattern — there is nothing left here to capture-once-and-reuse, since the token is generated, not collected. No role picker on Invitar a alguien either, since only one real value exists to write.
+- *global-principles.md*, "business language before technical language" — every "Tu equipo" screen says "vendiendo contigo," "ya no vende contigo," never "Membership," "Invitation," or "status." Extended to the new copy: "enlace," "invitación," "caducada," never "token," "expiresAt," or "targetHint" anywhere on screen.
+- *architecture-principles.md* #7 (idempotent/keyed writes) — "Sí, quitar" reuses §3.9/§3.10's shared guardando/error/Reintentar template, the same D30-keyed-retry guarantee every other write in this document already gets; "Generar invitación," "Generar otra," and "Sí, cancelar" reuse the same template at §3.12a/§3.12b — a retried token-generation attempt must never risk creating two live Invitations for one confirming tap.
 - *architecture-principles.md* #6 (one-way dependency direction) — this section writes only to Identity's `Invitation`/`BusinessMembership`; it never reads or writes Selling data. `Sale.performedByMembershipId` continuing to resolve after a revoke is Selling's own read, not something this document touches.
+- RFC 0013 §1/§4 (the `targetHint`/token design itself) — "Correo electrónico (opcional)" is worded, and behaves, as a pure memory aid: never gates the primary action, never validated as identity, and its own inline soft-duplicate advisory (§3.12) is explicitly non-blocking, matching RFC 0013's own explicit ruling that uniqueness on `(businessId, targetHint.value)` is "an optional, soft UX-level duplicate-pending-row nicety... not a hard invariant."
+- *company/brand/brand-guide.md*, tone — "warm, direct, respects the vendor's intelligence" — §3.12c's one-time-display notice states the real constraint plainly, once, without manufactured urgency (`brand/tone-of-voice.md`, "never use urgency Nahui hasn't earned" — a factual, one-time disclosure of a real technical constraint is not the countdown-language pattern that rule targets). **"Listo" is force-gated on Copiar enlace/Compartir (corrected 2026-09-13, §8 item 18)** — this is a deliberate exception to "respects the vendor's intelligence" trumping every other consideration: `knowledge-mentor`'s research confirmed that for a one-time, non-recoverable secret, a forcing function is the established, correct pattern precisely because trusting-the-user's-attention is what fails for a realistically interrupted user, not a brand-tone call to make unilaterally.
 
 **§2.5/§3.3a phone-number-display fix (Slice 12 `merchant-user-tester`, 2026-09-07):**
 - *global-principles.md*, "never ask twice" — she never has to ask a teammate, guess from memory, or reverse-engineer which number this device is verified under — it's always right where she'd already look to sign out (§2.5, §3.3a).
@@ -1010,6 +1155,13 @@ None of the items below block this document's completion.
   resolving pair**, closing a gap where it was the one read in this
   document without one (`ux-critic` finding).
 - **Her own verified phone number is now shown, read-only, in "Tu cuenta" (2026-09-07, Slice 12 `merchant-user-tester` defect).** Elevates this document's own already-named Future Consideration (§8 item 8, first flagged 2026-08-13) from deferred to designed, paired with a companion fix in `authentication.md` §2.2/§3.7e. Plain text, non-tappable, `User.phone` — never editable here, since changing it isn't a Business Capability this document manages.
+- **RFC 0013/D64: `Invitation`'s identity moves from `Invitation.phone` to `Invitation.token`.** §3.12's invite-creation screen no longer collects a phone number — it generates a secure link unconditionally, gated on nothing but the existing `subscriptionTier=paid`/OWNER-only checks already in place. §2.7/§3.11 corrected to match throughout.
+- **A `targetHint` email field is added to invite-creation — optional, non-blocking, never gating the primary action, never matched against anything** (RFC 0013 §1). Real share affordances (copy link, native share sheet) are added at generation time (§3.12c), replacing the old design's silent "invitation sent" assumption.
+- **§3.11's pending-row display no longer shows a phone number** — a generic "Invitación pendiente" + creation date, plus the `targetHint` email only when one was set, explicitly labeled and reasoned as an advisory-only memory aid, never a delivery confirmation.
+- **§8 items 11/12 closed in this same pass, per RFC 0013's own suggestion.** A pending Invitation can now be cancelled (new §3.12d, writes `pending → revoked`); `Invitation.status = expired` now has a real, defined trigger (`expiresAt`, §2.7a) and a real row treatment ("Invitación caducada" + "Generar otra").
+- **`expiresAt` default set to 24 hours, reasoned explicitly against both sides of the tension `knowledge-mentor` surfaced** (RFC 0013 §4/§7) — see §2.7a for the full reasoning; paired with a deliberately cheap, single-tap regenerate affordance rather than defaulting to either "days" or "hours" silently.
+- **"Generar otra" is a deliberate, reasoned one-tap exception to this document's otherwise-uniform two-tap floor** (§6) — the positive-activation mirror of `authentication.md §3.10`'s already-zero-tap "Ahora no."
+- **`authentication.md`'s own §2.2a/§3.10–§3.13a confirmed NOT to compose cleanly against the now-Accepted RFC 0013 domain model** — checked directly, not assumed (§8, item 10). Its own real rework is out of this amendment's scope, per RFC 0013 §6's own sequencing, and remains a named, not-yet-started follow-on.
 
 ## 11. Future considerations
 
@@ -1017,11 +1169,12 @@ None of the items below block this document's completion.
 - Whether the pending-change-lands acknowledgment needs an ambient signal beyond the in-surface one (§8, item 4).
 - The `home.md` amendment this document specifies but doesn't perform (§2.1, §8 item 3) needs its own small pass through `home.md` directly.
 - The actual payment-collection mechanism for the paid plan (§8, item 2) — a future Business Decision.
-- The acceptance-side `authentication.md` amendment (§8, item 10).
-- Cancelling a still-pending Invitation (§8, item 11).
-- `Invitation.status = expired`'s trigger/timing (§8, item 12).
+- `authentication.md`'s own real token-based Invitation-acceptance rework (§8, item 10) — a separate, not-yet-started follow-on, RFC 0013 §6's own scope.
 - Whether a Paid→Free downgrade affects already-active SELLER Memberships (§8, item 13).
 - Role-based access gating for Configuración/nav as a whole, once a SELLER-specific Home experience is actually designed (§8, item 14) — this is the largest real gap surfaced by this amendment.
 - A merchant-visible display name for a team member, once evidence warrants a `User` field the Foundation doesn't have today (§2.7).
 - Multi-Business switching surface (§8, item 15).
 - Whether "Cerrar sesión" should interlock with an active, non-empty Sale (§8, item 6) — not designed now, no evidence of need.
+- Whether Nahui ever builds automated email delivery for `targetHint` (§8, item 16).
+- Whether a post-acceptance soft mismatch warning (`targetHint` vs. resolved identity) is worth designing (§8, item 17) — no evidence yet it's needed.
+- The phone-display gap on an active/revoked "Tu equipo" row once a SELLER can accept via a method other than phone (§2.7's "Row display" paragraph) — sharpened, not created, by this amendment; still unsolved, still needs a real `User` display-name field.
