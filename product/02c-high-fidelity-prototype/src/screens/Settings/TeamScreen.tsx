@@ -24,8 +24,6 @@ type SubView =
   | { kind: 'remove-saving'; membershipId: ID; phone: string }
   | { kind: 'remove-error'; membershipId: ID; phone: string };
 
-const SAVE_DELAY_MS = 260; // near-instant convention, matching every other write in this family
-
 /** "Para {email} · creada el {date}" / "Creada el {date}" — settings.md
  * §3.11's own two row-meta shapes (with/without a `targetHint`), shared by
  * the pending/expired/cancelled row kinds alike (§3.11's own wireframe uses
@@ -87,6 +85,14 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
   // cleared once that attempt is genuinely settled (a real error the caller
   // has moved past, or a success), so the *next* tap starts a fresh one.
   const createKeyRef = useRef<string | null>(null);
+  // Same persisted-across-retries convention as `createKeyRef` above — a
+  // retry of the same logical "Cancelar" attempt must reuse the original
+  // key, not mint a fresh one: `cancel_invitation`'s CAS consumes the
+  // `pending` status on success, so a fresh key on a retry of an
+  // already-succeeded-but-lost-response attempt would hit the CAS again
+  // instead of the idempotency replay path and come back
+  // `invitation_not_pending` even though the cancel already landed.
+  const cancelKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!copyFeedback) return;
@@ -224,20 +230,27 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
     await recoverToken(result.invitationId);
   }
 
-  function handleConfirmCancel(invitationId: ID) {
+  async function handleConfirmCancel(invitationId: ID) {
+    if (!cancelKeyRef.current) cancelKeyRef.current = crypto.randomUUID();
     setSubView({ kind: 'cancel-saving', invitationId });
-    window.setTimeout(() => {
-      cancelInvitation(invitationId);
-      setSubView({ kind: 'main' });
-    }, SAVE_DELAY_MS);
+    const result = await cancelInvitation(invitationId, cancelKeyRef.current);
+    // Both a platform failure (`null`) and a lost CAS (`invitation_not_pending`
+    // — already accepted/cancelled elsewhere) route into the same
+    // §3.9/§3.10 shared write-failure shape; neither has a dedicated copy
+    // in settings.md, and a retry is still the right recovery affordance
+    // for either. Reintentar replays with the same key.
+    if (!result || 'error' in result) {
+      setSubView({ kind: 'cancel-error', invitationId });
+      return;
+    }
+    cancelKeyRef.current = null; // this logical attempt is settled — a future tap starts a fresh one
+    setSubView({ kind: 'main' });
   }
 
-  function handleConfirmRemove(membershipId: ID, phoneLabel: string) {
+  async function handleConfirmRemove(membershipId: ID, phoneLabel: string) {
     setSubView({ kind: 'remove-saving', membershipId, phone: phoneLabel });
-    window.setTimeout(() => {
-      revokeMembership(membershipId);
-      setSubView({ kind: 'main' });
-    }, SAVE_DELAY_MS);
+    const ok = await revokeMembership(membershipId);
+    setSubView(ok ? { kind: 'main' } : { kind: 'remove-error', membershipId, phone: phoneLabel });
   }
 
   if (subView.kind === 'invite-saving') {
@@ -284,10 +297,10 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
     );
   }
   if (subView.kind === 'cancel-error') {
-    // §3.9/§3.10's shared write-failure shape — never actually triggered in
-    // this build (`cancelInvitation` is a local-mock write that can't fail,
-    // same disclosed-not-wired convention as `revokeMembership`'s own
-    // sibling error state below).
+    // §3.9/§3.10's shared write-failure shape — genuinely reachable now
+    // that `cancelInvitation` calls the real `cancel_invitation` RPC (a
+    // platform error, or a lost `status = 'pending'` CAS), the same
+    // real-wiring fix `remove-error` below got for `revokeMembership`.
     return (
       <ScreenTransition transitionKey="team-cancel-error">
         <WritingState

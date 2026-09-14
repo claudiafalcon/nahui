@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { makeId } from './id';
 import { dateKey, todayKey } from './dates';
 import { sendOtp, verifyOtpCode } from './otpClient';
+import { peekInvitationRemote } from './invitationClient';
 import {
   actingMembership,
   currentUser,
@@ -964,14 +965,26 @@ interface StoreValue {
    * again." `null` outright on any failure (not authorized, not pending,
    * platform error). */
   regenerateInvitation: (invitationId: ID, idempotencyKey: string) => Promise<{ token: string | null; expiresAt: number } | null>;
-  /** RFC 0013 §2 — calls `peek_invitation`: read-only, resolves an
-   * Invitation by `token` alone, before authentication runs at all (granted
-   * to `anon`, never gated on `state.currentUserId`). `status` already
-   * reflects the read-time `expired` derivation the server itself computes
-   * — never call `invitationDisplayStatus` on this result, it's already
-   * resolved. `null` if the token doesn't resolve to any Invitation, or on
-   * a platform error — the caller can't distinguish the two, matching what
-   * `peek_invitation` itself returns (an empty result set either way). */
+  /** RFC 0013 §2 / §4 / §7 — calls the `peek-invitation` Edge Function
+   * (`invitationClient.ts`), which itself rate-limits by caller IP before
+   * calling `peek_invitation` server-side (`peek_invitation` is no longer
+   * directly PostgREST-callable at all —
+   * `20260914060000_peek_invitation_rate_limit.sql` revokes anon/
+   * authenticated execute on it — closing the token-enumeration surface
+   * RFC 0013 §4/§7 named but never actually closed). Read-only, resolves an
+   * Invitation by `token` alone, before authentication runs at all (never
+   * gated on `state.currentUserId`). `status` already reflects the
+   * read-time `expired` derivation the server itself computes — never call
+   * `invitationDisplayStatus` on this result, it's already resolved.
+   * `null` on token-not-found, rate-limited, or platform error alike — the
+   * caller can't usefully distinguish these (a rate-limited caller has no
+   * more actionable next step than "the read itself failed," §3.9b's own
+   * generic "no se pudo abrir el enlace" retry copy already covers it; the
+   * same collapse `sendOtp`'s own `rate-limited` reason already gets at the
+   * `PhoneStep.tsx` UI layer, `docs/passes` — a plumbing-level protection,
+   * not a distinguishable user-facing state), so this keeps the same
+   * two-way `null`/success shape the RPC-direct version already had rather
+   * than inventing a third UI state nothing in `authentication.md` defines. */
   peekInvitation: (
     token: string,
   ) => Promise<{ businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' } | null>;
@@ -1005,31 +1018,50 @@ interface StoreValue {
    * the real UI, which only ever calls this from an already-authenticated
    * `InvitationFlow`. */
   declineInvitation: (invitationId: ID) => void;
-  /** settings.md §3.12d "Cancelar invitación" (RFC 0013/D64) — flips
-   * `Invitation.status: pending → revoked`, closing §8 item 11 ("cancelling
-   * a pending Invitation"). Gated by the caller to a still-`pending`,
-   * not-yet-expired row only (`TeamScreen.tsx`'s own §3.11 button gating) —
-   * this function itself only re-confirms `status === 'pending'`
-   * server-side-equivalently, the same defensive-guard style
-   * `revokeMembership` below already uses. **Local-mock only, same
-   * disclosed, not-yet-real-backend-wired shape `revokeMembership` already
-   * has** — the real `cancel_invitation` RPC is a named, out-of-scope gap
-   * (`context/team-invitations-real-wiring.md`'s own "Open items," the same
-   * defect class as `revokeMembership`'s still-local-mock write), not
-   * something this dispatch's UI-focused rebuild adds. Reachable through the
-   * real UI (`TeamScreen.tsx`, §3.12d) — its own §3.9/§3.10 shared
-   * write/error states are therefore correctly-rendering but practically
-   * unreachable branches, the same disclosed convention every other
-   * guaranteed-succeed local mock write in this file already carries. */
-  cancelInvitation: (invitationId: ID) => void;
+  /** settings.md §3.12d "Cancelar invitación" (RFC 0013/D64, real backend
+   * write — Stage 7 Backend Integration) — calls `cancel_invitation`:
+   * OWNER-only (re-checked server-side), idempotency-keyed, flips
+   * `Invitation.status: pending → revoked` via a `status = 'pending'` CAS
+   * — deliberately expiry-independent (the migration's own header comment:
+   * `settings.md` §3.11 hides the "Cancelar" button on an expired row for
+   * UX reasons only, not a domain rule, matching `regenerate_invitation`'s
+   * own final "any still-pending row" precondition). No Paid-tier gate,
+   * deliberately — unlike `createInvitation`/`regenerateInvitation` (which
+   * mint a new capability a downgraded Business shouldn't get),
+   * `cancel_invitation` only ever closes an existing exposure; gating it
+   * would strand a downgraded OWNER unable to kill a leaked link. Returns
+   * `{ error: 'invitation_not_pending' }` when the CAS loses (already
+   * accepted/cancelled, or a losing actor in a same-row race) — matching
+   * `acceptInvitation`'s named-exception convention above; `null` on any
+   * other failure (not authorized, not found, platform error).
+   * `revokeMembership` below was the same still-mock-after-RPC-shipped
+   * defect class until its own real `revoke_membership` RPC was wired up
+   * client-side; this closes the last still-open instance. */
+  cancelInvitation: (
+    invitationId: ID,
+    idempotencyKey: string,
+  ) => Promise<{ invitationId: ID; status: 'revoked' } | { error: 'invitation_not_pending' } | null>;
   /** settings.md §2.7 "Quitar" (§3.13) — flips `BusinessMembership.status:
    * active → revoked`, sets `revokedAt`. **Never a delete** — every Sale
    * already attributed to this Membership keeps resolving through
    * `Sale.performedByMembershipId` unaffected, the same non-deletion
    * discipline `subscriptionTier` history and `Product.active` already
    * establish (`decision-log.md` D55, Q21). No reactivation path exists —
-   * the settled architecture explicitly leaves this undesigned. */
-  revokeMembership: (membershipId: ID) => void;
+   * the settled architecture explicitly leaves this undesigned. Stage 7
+   * Backend Integration: a real call to the `revoke_membership` RPC (added
+   * to the schema during Phase 0's own `reviewer` fix round,
+   * `20260913010000_identity_persistence_layer_fixes.sql`, but never wired
+   * client-side until now — the same still-mock-after-its-RPC-shipped gap
+   * `createInvitation`/`acceptInvitation` had before the Team Invitations
+   * wiring pass closed theirs). OWNER-only, re-checked server-side, never
+   * trusted from this client alone. Naturally idempotent (a revoke landing
+   * on an already-revoked or nonexistent-for-this-Business row is a no-op,
+   * not an error) — no client-supplied idempotency key needed, matching
+   * `cancelEvent`'s own precedent (itself following this RPC's). Resolves
+   * to `false` on a genuine RPC failure, so `TeamScreen.tsx`'s existing
+   * `remove-error` state is actually reachable; a no-op still resolves to
+   * `true`, matching the RPC's own documented no-op-is-success shape. */
+  revokeMembership: (membershipId: ID) => Promise<boolean>;
   /** events.md §3.21/§3.23 "Guardar cambios" — the bulk manual-allocation
    * commit: one write, every row's staged manual quantity at once, per
    * `product-decisions.md` Q24/Q25's own "she only ever sees a number
@@ -3122,23 +3154,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return { token: row.token, expiresAt };
   }
 
-  /** RFC 0013 §2 — see this function's own `StoreValue` doc comment for the
-   * full reasoning. Read-only; never mirrors anything into `state`, since
-   * the caller may not even hold a `currentUserId` yet. */
+  /** RFC 0013 §2 / §4 / §7 — see this function's own `StoreValue` doc
+   * comment for the full reasoning. Read-only; never mirrors anything into
+   * `state`, since the caller may not even hold a `currentUserId` yet. */
   async function peekInvitation(
     token: string,
   ): Promise<{ businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' } | null> {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      console.error('[store] peekInvitation: Supabase not configured. See supabase/README.md.');
-      return null;
-    }
-    const { data, error } = await supabase.rpc('peek_invitation', { p_token: token }).single();
-
-    if (error || !data) return null;
-
-    const row = data as { business_name: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' };
-    return { businessName: row.business_name, status: row.status };
+    const result = await peekInvitationRemote(token);
+    if (!result.ok) return null;
+    return { businessName: result.businessName, status: result.status };
   }
 
   /** authentication.md §2.2a step 3 (RFC 0013/D64) — see this function's
@@ -3209,26 +3233,62 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /** settings.md §3.12d "Cancelar invitación" (RFC 0013/D64) — see this
-   * function's own `StoreValue` doc comment for the full reasoning
-   * (local-mock only, same disclosed shape as `revokeMembership` below). */
-  function cancelInvitation(invitationId: ID) {
-    setState((s) => ({
+   * function's own `StoreValue` doc comment for the full reasoning. */
+  async function cancelInvitation(
+    invitationId: ID,
+    idempotencyKey: string,
+  ): Promise<{ invitationId: ID; status: 'revoked' } | { error: 'invitation_not_pending' } | null> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] cancelInvitation: Supabase not configured. See supabase/README.md.');
+      return null;
+    }
+    const { data, error } = await supabase
+      .rpc('cancel_invitation', { p_invitation_id: invitationId, p_idempotency_key: idempotencyKey })
+      .single();
+
+    if (error || !data) {
+      if (error?.message === 'invitation_not_pending') {
+        return { error: 'invitation_not_pending' };
+      }
+      console.error('[store] cancel_invitation failed', error);
+      return null;
+    }
+
+    const row = data as { invitation_id: ID; status: string };
+    applyWriteMirror((s) => ({
       ...s,
       invitations: s.invitations.map((inv) =>
-        inv.id === invitationId && inv.status === 'pending' ? { ...inv, status: 'revoked' } : inv,
+        inv.id === row.invitation_id ? { ...inv, status: 'revoked' } : inv,
       ),
     }));
+    return { invitationId: row.invitation_id, status: 'revoked' };
   }
 
   /** settings.md §2.7 "Quitar" (§3.13) — see this function's own `StoreValue`
    * doc comment for the full reasoning. */
-  function revokeMembership(membershipId: ID) {
-    setState((s) => ({
+  async function revokeMembership(membershipId: ID): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] revokeMembership: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('revoke_membership', {
+      p_business_id: state.business.id,
+      p_membership_id: membershipId,
+    });
+    if (error) {
+      console.error('[store] revoke_membership failed', error);
+      return false;
+    }
+    applyWriteMirror((s) => ({
       ...s,
       memberships: s.memberships.map((m) =>
         m.id === membershipId && m.status === 'active' ? { ...m, status: 'revoked', revokedAt: Date.now() } : m,
       ),
     }));
+    return true;
   }
 
   /** `product/99-rfc/0011-event-assignment.md`/`decision-log.md` D60 — see

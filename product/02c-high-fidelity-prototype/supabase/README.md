@@ -328,6 +328,12 @@ clean. Not yet `reviewer`-verified.
 
 **`accept_invitation` membership-conflict fix (`20260914040000_accept_invitation_membership_conflict_fix.sql`, `architect`-designed, `builder`-implemented)** — a second, separate `architect`-found Blocker on `accept_invitation` itself (untouched by every prior pass above): `already_member`/`membership_revoked` were never actually raised, since a pre-existing `BusinessMembership` row for `(user_id, business_id)` made the membership insert's `on conflict do nothing` silently no-op, with the fallback `select` then returning that row's id as an ordinary success. Fixed by looking up the pre-existing row's own `status` on conflict and raising the exact exception name `store.tsx`'s `acceptInvitation` already string-matches against, instead of silently succeeding. No client-side change needed — see checklist item 30 and `context/team-invitations-real-wiring.md` for full detail, including a separate, named-not-fixed open item (the `idempotency_keys` cached-error-replay branch is structurally unreachable for a rollback reason, in this function and `regenerate_invitation`).
 
+**`revokeMembership` real wiring (2026-09-14, `builder`, pure client-side — no new migration)** — closes the same defect class the Team Invitations pass above closed for `createInvitation`/`acceptInvitation`/`cancelInvitation`. The `revoke_membership` RPC has existed and been deployed since Phase 0's own `reviewer` fix round (`20260913010000_identity_persistence_layer_fixes.sql`, OWNER-only, naturally idempotent, no client-supplied key), but `store.tsx`'s `revokeMembership` was never actually updated to call it — 100% local-mock (`setState`, never `applyWriteMirror`, never touched Supabase) until now. Rewritten as a real `async` function matching `cancelEvent`'s own established shape (single-target RPC call, no idempotency key, `applyWriteMirror` mirror on success, `false`-returning on a genuine RPC error). `TeamScreen.tsx`'s `handleConfirmRemove` updated to `await` it and route a real failure into the screen's own already-built `remove-error` state (previously unreachable — the mock write couldn't fail) instead of the artificial `window.setTimeout` delay the mock used. `cancelInvitation`/`cancel-error` were the one still-open instance of this defect class at the time — closed by the `cancel_invitation` pass immediately below. `tsc -b`/`npm run build` clean. Not yet `reviewer`-verified.
+
+**`cancel_invitation` real wiring (`20260914050000_cancel_invitation.sql`, `architect`-designed, `builder`-implemented)** — closes the last still-open instance of the defect class the two passes above closed for `createInvitation`/`acceptInvitation`/`revokeMembership`: `settings.md` §3.12d "Cancelar invitación" was already fully built in `TeamScreen.tsx`'s cancel-confirm sheet, calling a local-mock `cancelInvitation` that couldn't fail. New RPC `cancel_invitation` (OWNER-only, idempotency-keyed, flips `Invitation.status: pending → revoked` via a `status = 'pending'` CAS — deliberately expiry-independent, matching `regenerate_invitation`'s own final "any still-pending row" precondition, since `settings.md` §3.11 hides the button on an expired row for UX reasons only, not a domain rule; deliberately **no** Paid-tier gate, unlike `create_invitation`/`regenerate_invitation`, since closing an existing exposure should never strand a downgraded OWNER). Client: `store.tsx`'s `cancelInvitation` rewritten as a real `async` RPC call matching `acceptInvitation`'s own conventions (checks `error?.message === 'invitation_not_pending'`, mirrors success via `applyWriteMirror`, returns `{ invitationId, status: 'revoked' } | { error: 'invitation_not_pending' } | null`). `TeamScreen.tsx`'s `handleConfirmCancel` updated to `await` it (a persisted `cancelKeyRef`, same reused-across-retries convention as `createKeyRef` — required here, unlike `regenerateInvitation`'s per-call fresh key, because this CAS consumes the `pending` status on success) and route both a platform failure and a lost CAS into the screen's own already-built `cancel-error` state (previously unreachable — the mock write couldn't fail), same real-wiring pattern `remove-error` got above. `tsc -b`/`npm run build` clean. Not yet `reviewer`-verified.
+
+**`peek_invitation` rate-limit mitigation (`20260914060000_peek_invitation_rate_limit.sql`, RFC 0013/D64, `architect`-designed, `builder`-implemented — independent of the `cancel_invitation` pass above, no shared files touched)** — closes the token-enumeration surface RFC 0013 §4/§7 named but never actually closed: `peek_invitation` is anon-callable and resolves an Invitation by token alone, before authentication runs at all, with nothing stopping a caller from hammering it with guessed tokens directly via PostgREST. New table `invitation_peek_attempts` (same deny-by-default RLS posture as `otp_attempts` — zero policies, service-role-only), and `peek_invitation(text)`'s `EXECUTE` grant to `anon`/`authenticated` revoked outright, closing the direct-PostgREST bypass. A new Edge Function, `peek-invitation` (structured identically to `send-otp`), fronts the RPC: reads the caller's IP from `x-forwarded-for` (Supabase's edge network populates it before the handler runs, distinct from `inet_client_addr()`'s problem inside Postgres, which would only ever see Supabase's own internal pooler IP — bucketed under `'unknown'` when the header is absent, failing closed rather than skipping the check), counts `invitation_peek_attempts` rows for that IP in the last 10 minutes, returns `429 rate-limited` at ≥20 without touching `peek_invitation` at all, otherwise logs the attempt and calls the RPC via its own service-role connection (which bypasses the new revoke by design, same shape `send-otp`/`verify-otp` already use). Client: new `src/domain/invitationClient.ts` (mirrors `otpClient.ts`'s `callOtpFunction` shape, kept separate since it isn't an OTP call), `store.tsx`'s `peekInvitation` switched from a direct `supabase.rpc('peek_invitation', …)` call to this Edge Function; a rate-limited response collapses into the same `null` → §3.9b "no se pudo abrir el enlace" retry state every other `peekInvitation` failure already produces — no new UI state, matching how `sendOtp`'s own `rate-limited` reason already collapses into `PhoneStep.tsx`'s one generic `sendState === 'error'` branch (a plumbing-level protection, not a distinguishable user-facing state). Migration pushed via `supabase db push`, function deployed via `supabase functions deploy peek-invitation` (no `--no-verify-jwt` — confirmed `verify_jwt: true` via `supabase functions list`, matching `send-otp`/`verify-otp`'s own config; the anon key sent as `Authorization: Bearer` already satisfies default JWT verification, same convention `otpClient.ts` already established). Both confirmed live: `supabase migration list` shows `20260914060000` local/remote-matched, `supabase functions list` shows `peek-invitation` `ACTIVE`. **NOT LIVE-TESTED end to end** — this environment can't actually invoke the deployed function to verify the `x-forwarded-for` behavior live; asserted from Supabase's own documented platform behavior only, same disclosure `send-otp`/`verify-otp` already carry for their own real-infrastructure gaps. `tsc -b`/`npm run build` both clean. Not yet `reviewer`-verified.
+
 ## What's here
 
 ```
@@ -698,10 +704,41 @@ supabase/
                                                              client change
                                                              needed. PUSHED
                                                              2026-09-14.
+    20260914050000_cancel_invitation.sql                    — real
+                                                             cancel_invitation
+                                                             RPC (OWNER-only,
+                                                             idempotency-keyed,
+                                                             status =
+                                                             'pending' CAS,
+                                                             deliberately
+                                                             expiry-
+                                                             independent, no
+                                                             Paid-tier gate),
+                                                             closing
+                                                             settings.md
+                                                             §3.12d's last
+                                                             still-mock write
+                                                             in TeamScreen.tsx.
+                                                             PUSHED
+                                                             2026-09-14.
+    20260914060000_peek_invitation_rate_limit.sql            — invitation_peek_attempts
+                                                             table (otp_attempts'
+                                                             own deny-by-default
+                                                             RLS shape) + revokes
+                                                             peek_invitation's
+                                                             anon/authenticated
+                                                             EXECUTE grant, closing
+                                                             the direct-PostgREST
+                                                             bypass around the new
+                                                             peek-invitation Edge
+                                                             Function's rate limit.
+                                                             PUSHED 2026-09-14.
   functions/
     send-otp/index.ts                — generates + WhatsApp-sends a code
     verify-otp/index.ts              — checks a submitted code, single-use
-    _shared/cors.ts, _shared/otp.ts  — shared helpers (both functions)
+    peek-invitation/index.ts         — IP-rate-limited front for peek_invitation
+                                        (RFC 0013 §4/§7), DEPLOYED 2026-09-14
+    _shared/cors.ts, _shared/otp.ts  — shared helpers (send-otp/verify-otp)
 ```
 
 ## Manual checklist (Product Owner — cannot be done on her behalf)
@@ -1015,6 +1052,35 @@ supabase/
     `idempotency_keys` cached-error-replay branch is structurally
     unreachable for the same rollback reason, in this function and its
     `regenerate_invitation` twin).
+31. ~~**Push the `cancel_invitation` migration**~~ **DONE** 2026-09-14 —
+    `20260914050000_cancel_invitation.sql` applied to the real hosted
+    project via `supabase db push`. `architect`-designed: real
+    `cancel_invitation` RPC (OWNER-only re-checked server-side,
+    idempotency-keyed, `status = 'pending'` CAS — deliberately
+    expiry-independent, matching `regenerate_invitation`'s own final
+    precondition, since `settings.md` §3.11 hides the "Cancelar" button on
+    an expired row for UX reasons only, not a domain rule; deliberately no
+    Paid-tier gate, since closing an existing exposure should never strand
+    a downgraded OWNER). Closes `settings.md` §3.12d — `TeamScreen.tsx`'s
+    cancel-confirm sheet was already fully built, calling a local-mock
+    `cancelInvitation` that couldn't fail. Client: `store.tsx`'s
+    `cancelInvitation` rewritten as a real `async` RPC call matching
+    `acceptInvitation`'s own conventions; `TeamScreen.tsx`'s
+    `handleConfirmCancel` updated to `await` it and route a real failure
+    into the screen's own already-built `cancel-error` state. `tsc -b`/
+    `npm run build` both clean. Not yet `reviewer`-verified.
+32. ~~**Push the `peek_invitation_rate_limit` migration and deploy
+    `peek-invitation`**~~ **DONE** 2026-09-14 —
+    `20260914060000_peek_invitation_rate_limit.sql` applied via
+    `supabase db push`; `peek-invitation` deployed via
+    `supabase functions deploy peek-invitation` (no `--no-verify-jwt`,
+    confirmed `verify_jwt: true` via `supabase functions list`, matching
+    `send-otp`/`verify-otp`). `architect`-designed: closes RFC 0013 §4/§7's
+    token-enumeration surface on `peek_invitation` — see the narrative entry
+    above for full detail. **NOT LIVE-TESTED end to end** (item 7's own
+    caveat applies here too — this environment can't invoke the deployed
+    function to verify `x-forwarded-for` behavior live). `tsc -b`/
+    `npm run build` both clean. Not yet `reviewer`-verified.
 
 ## Judgment calls made building this (tune freely, not escalated)
 
@@ -1027,6 +1093,13 @@ supabase/
 - **Verify lockout: 5 wrong guesses per issued code.**
   `VERIFY_MAX_ATTEMPTS`, enforced in `verify-otp` — a fresh code (a new
   "Reenviar código") resets the count, since it's a new row.
+- **`peek-invitation` rate limit: 20 peek attempts/IP/10 minutes.**
+  `PEEK_RATE_LIMIT_PER_10_MIN` in `peek-invitation/index.ts` — generous
+  enough that a merchant/customer legitimately retrying a slow-loading
+  invite link never trips it, tight enough to stop a scripted enumeration
+  sweep against `peek_invitation`'s 256-bit token space (the token's own
+  entropy already makes guessing infeasible either way; this bound exists
+  to stop the sweep pattern itself, not to compensate for a weak token).
 - **Idempotency key for `verify-otp`** is the phone+code pair itself
   rather than a separately generated key: a retry of the same already-
   consumed pair replays the original success outcome instead of
