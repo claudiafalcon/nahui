@@ -97,7 +97,10 @@ Event (bazaarCost, optional) ────┘
             └─ SaleItem (pricePaid — resolved at write time: this Event's
                           Price Override for the sold Product if one
                           exists, else Product.defaultPrice. Never asked;
-                          exactly one InventoryUnit consumed.)
+                          exactly one InventoryUnit consumed. Also carries
+                          eventAllocationId, optional, set once at write
+                          time if the consumed unit came from an open
+                          EventAllocation, D67.)
 ```
 
 Key point: `Product → InventoryUnit → Lot` is the traceability chain. The merchant only ever sees Product-level aggregates ("Hoodie (4 available)" = count of InventoryUnits with status `available` for that Product, across all Lots). The platform always knows which specific Lot a sold unit came from.
