@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../../domain/store';
 import { Button } from '../../components/Button/Button';
 import { BrandMark } from '../../components/BrandMark/BrandMark';
+import { InvitationContextLine, type InvitationContext } from './InvitationContextLine';
 import styles from './PhoneStep.module.css';
 
 /**
@@ -33,10 +34,14 @@ export function PhoneStep({
   initialValue,
   onBack,
   onCodeSent,
+  invitationContext,
 }: {
   initialValue?: string;
   onBack: () => void;
   onCodeSent: (phone: string) => void;
+  /** RFC 0013, added 2026-09-14 — see `InvitationContextLine.tsx`'s own doc
+   * comment for the full reasoning. */
+  invitationContext?: InvitationContext;
 }) {
   const { requestOtp } = useStore();
   const [raw, setRaw] = useState(initialValue ?? '');
@@ -70,6 +75,7 @@ export function PhoneStep({
     // as a real, correctly-rendering branch rather than an unwritten state.
     return (
       <div className={styles.wrap}>
+        {invitationContext && <InvitationContextLine businessName={invitationContext.businessName} />}
         <div className={styles.copy}>
           <p className={styles.body}>No pudimos enviar tu código. Intenta de nuevo.</p>
         </div>
@@ -98,6 +104,7 @@ export function PhoneStep({
         <BrandMark />
       </div>
       <div className={styles.copy}>
+        {invitationContext && <InvitationContextLine businessName={invitationContext.businessName} />}
         <p className={styles.eyebrow}>Nahui</p>
         <h1 className={styles.heading}>Número celular</h1>
         <p className={styles.body}>Para empezar, dinos tu número celular.</p>

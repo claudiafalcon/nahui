@@ -1005,6 +1005,23 @@ interface StoreValue {
    * the real UI, which only ever calls this from an already-authenticated
    * `InvitationFlow`. */
   declineInvitation: (invitationId: ID) => void;
+  /** settings.md §3.12d "Cancelar invitación" (RFC 0013/D64) — flips
+   * `Invitation.status: pending → revoked`, closing §8 item 11 ("cancelling
+   * a pending Invitation"). Gated by the caller to a still-`pending`,
+   * not-yet-expired row only (`TeamScreen.tsx`'s own §3.11 button gating) —
+   * this function itself only re-confirms `status === 'pending'`
+   * server-side-equivalently, the same defensive-guard style
+   * `revokeMembership` below already uses. **Local-mock only, same
+   * disclosed, not-yet-real-backend-wired shape `revokeMembership` already
+   * has** — the real `cancel_invitation` RPC is a named, out-of-scope gap
+   * (`context/team-invitations-real-wiring.md`'s own "Open items," the same
+   * defect class as `revokeMembership`'s still-local-mock write), not
+   * something this dispatch's UI-focused rebuild adds. Reachable through the
+   * real UI (`TeamScreen.tsx`, §3.12d) — its own §3.9/§3.10 shared
+   * write/error states are therefore correctly-rendering but practically
+   * unreachable branches, the same disclosed convention every other
+   * guaranteed-succeed local mock write in this file already carries. */
+  cancelInvitation: (invitationId: ID) => void;
   /** settings.md §2.7 "Quitar" (§3.13) — flips `BusinessMembership.status:
    * active → revoked`, sets `revokedAt`. **Never a delete** — every Sale
    * already attributed to this Membership keeps resolving through
@@ -3191,6 +3208,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   }
 
+  /** settings.md §3.12d "Cancelar invitación" (RFC 0013/D64) — see this
+   * function's own `StoreValue` doc comment for the full reasoning
+   * (local-mock only, same disclosed shape as `revokeMembership` below). */
+  function cancelInvitation(invitationId: ID) {
+    setState((s) => ({
+      ...s,
+      invitations: s.invitations.map((inv) =>
+        inv.id === invitationId && inv.status === 'pending' ? { ...inv, status: 'revoked' } : inv,
+      ),
+    }));
+  }
+
   /** settings.md §2.7 "Quitar" (§3.13) — see this function's own `StoreValue`
    * doc comment for the full reasoning. */
   function revokeMembership(membershipId: ID) {
@@ -3732,6 +3761,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     peekInvitation,
     acceptInvitation,
     declineInvitation,
+    cancelInvitation,
     revokeMembership,
     saveEventAllocations,
     scanUnitIntoEventAllocation,

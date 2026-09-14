@@ -1,4 +1,5 @@
 import { Button } from '../../components/Button/Button';
+import { InvitationContextLine, type InvitationContext } from './InvitationContextLine';
 import styles from './GoogleStep.module.css';
 
 /**
@@ -21,6 +22,10 @@ import styles from './GoogleStep.module.css';
  * below this document's abstraction level (§3.2b's own text, the same
  * treatment `onboarding.md §2.2b` already gives the OS-level device
  * file-picker) — this component never renders anything representing it.
+ *
+ * Deliberately takes no `invitationContext` prop, unlike `GoogleError`
+ * below — see `InvitationContextLine.tsx`'s own doc comment for why a
+ * silent-skeleton/single-status-word transition doesn't carry the line.
  */
 export function GoogleProgress({ mode }: { mode: 'redirecting' | 'verifying' }) {
   return <p className={styles.savingLine}>{mode === 'redirecting' ? 'Un momento…' : 'Confirmando…'}</p>;
@@ -33,9 +38,20 @@ export function GoogleProgress({ mode }: { mode: 'redirecting' | 'verifying' }) 
  * silently back to §3.2a instead, with no message at all, handled entirely
  * in `AuthenticationFlow.tsx`, never reaching this component at all).
  */
-export function GoogleError({ onRetry, onChooseOther }: { onRetry: () => void; onChooseOther: () => void }) {
+export function GoogleError({
+  onRetry,
+  onChooseOther,
+  invitationContext,
+}: {
+  onRetry: () => void;
+  onChooseOther: () => void;
+  /** RFC 0013, added 2026-09-14 — see `InvitationContextLine.tsx`'s own doc
+   * comment for the full reasoning. */
+  invitationContext?: InvitationContext;
+}) {
   return (
     <div className={styles.wrap}>
+      {invitationContext && <InvitationContextLine businessName={invitationContext.businessName} />}
       <p className={styles.body}>No pudimos continuar con Google. Intenta de nuevo o elige otra forma de entrar.</p>
       <div className={styles.ctaStack}>
         <Button className={styles.cta} onClick={onRetry}>

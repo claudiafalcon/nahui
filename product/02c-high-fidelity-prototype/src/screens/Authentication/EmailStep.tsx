@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../../domain/store';
 import { Button } from '../../components/Button/Button';
 import { BrandMark } from '../../components/BrandMark/BrandMark';
+import { InvitationContextLine, type InvitationContext } from './InvitationContextLine';
 import styles from './EmailStep.module.css';
 
 /**
@@ -33,10 +34,14 @@ export function EmailStep({
   initialValue,
   onBack,
   onCodeSent,
+  invitationContext,
 }: {
   initialValue?: string;
   onBack: () => void;
   onCodeSent: (email: string) => void;
+  /** RFC 0013, added 2026-09-14 — see `InvitationContextLine.tsx`'s own doc
+   * comment for the full reasoning. */
+  invitationContext?: InvitationContext;
 }) {
   const { requestEmailOtp } = useStore();
   const [raw, setRaw] = useState(initialValue ?? '');
@@ -65,6 +70,7 @@ export function EmailStep({
     // the email channel's own send attempt.
     return (
       <div className={styles.wrap}>
+        {invitationContext && <InvitationContextLine businessName={invitationContext.businessName} />}
         <div className={styles.copy}>
           <p className={styles.body}>No pudimos enviar tu código. Intenta de nuevo.</p>
         </div>
@@ -92,6 +98,7 @@ export function EmailStep({
         <BrandMark />
       </div>
       <div className={styles.copy}>
+        {invitationContext && <InvitationContextLine businessName={invitationContext.businessName} />}
         <p className={styles.eyebrow}>Nahui</p>
         <h1 className={styles.heading}>Correo electrónico</h1>
         <p className={styles.body}>Para empezar, dinos tu correo.</p>

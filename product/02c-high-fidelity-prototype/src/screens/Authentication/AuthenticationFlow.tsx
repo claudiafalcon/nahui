@@ -5,6 +5,7 @@ import { PhoneStep } from './PhoneStep';
 import { EmailStep } from './EmailStep';
 import { GoogleProgress, GoogleError } from './GoogleStep';
 import { CodeStep } from './CodeStep';
+import type { InvitationContext } from './InvitationContextLine';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 
 type Channel = 'phone' | 'email';
@@ -87,13 +88,26 @@ function computeInitialStep(prefill?: { channel: Channel; value: string }): Auth
  * for `PhoneMismatchConfirm` the very next render (the instant
  * `currentUserId` is set), which would otherwise lose this ephemeral value
  * along with every other piece of this component's own local state.
+ *
+ * `invitationContext` (RFC 0013, added 2026-09-14, closes `ux-critic` M1) —
+ * threaded straight through to every step component below, unchanged, per
+ * `InvitationContextLine.tsx`'s own doc comment. Set only by
+ * `InvitationFlow.tsx`'s own "no session exists" branch (§2.0 step 4/§3.10)
+ * when it mounts this component to carry a pre-auth Invitation token through
+ * authentication — `undefined` for every other mounting of this component
+ * (an ordinary fresh open, a `settings.md §2.5` sign-out re-verification, a
+ * §3.7e "No, elegir otro" retry via `AppRouter.tsx`), which is the entire
+ * reason this is a plain optional prop rather than a context/global — most
+ * callers have nothing to thread.
  */
 export function AuthenticationFlow({
   initialPrefill,
   onGoogleResolved,
+  invitationContext,
 }: {
   initialPrefill?: { channel: Channel; value: string };
   onGoogleResolved?: (displayLabel: string | null) => void;
+  invitationContext?: InvitationContext;
 } = {}) {
   const { startGoogleSignIn, resolveGoogleSignIn } = useStore();
   const [step, setStep] = useState<AuthStep>(() => computeInitialStep(initialPrefill));
@@ -145,6 +159,7 @@ export function AuthenticationFlow({
           onGoogle={handleGoogle}
           onEmail={() => setStep({ kind: 'email' })}
           onPhone={() => setStep({ kind: 'phone' })}
+          invitationContext={invitationContext}
         />
       </ScreenTransition>
     );
@@ -161,7 +176,11 @@ export function AuthenticationFlow({
   if (step.kind === 'google-error') {
     return (
       <ScreenTransition transitionKey="google-error">
-        <GoogleError onRetry={handleGoogle} onChooseOther={() => setStep({ kind: 'choose' })} />
+        <GoogleError
+          onRetry={handleGoogle}
+          onChooseOther={() => setStep({ kind: 'choose' })}
+          invitationContext={invitationContext}
+        />
       </ScreenTransition>
     );
   }
@@ -173,6 +192,7 @@ export function AuthenticationFlow({
           initialValue={step.prefill}
           onBack={() => setStep({ kind: 'choose' })}
           onCodeSent={(email) => setStep({ kind: 'code', channel: 'email', identifier: email })}
+          invitationContext={invitationContext}
         />
       </ScreenTransition>
     );
@@ -191,6 +211,7 @@ export function AuthenticationFlow({
                 : { kind: 'email', prefill: step.identifier },
             )
           }
+          invitationContext={invitationContext}
         />
       </ScreenTransition>
     );
@@ -203,6 +224,7 @@ export function AuthenticationFlow({
         initialValue={step.prefill}
         onBack={() => setStep({ kind: 'choose' })}
         onCodeSent={(phone) => setStep({ kind: 'code', channel: 'phone', identifier: phone })}
+        invitationContext={invitationContext}
       />
     </ScreenTransition>
   );

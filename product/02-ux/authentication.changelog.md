@@ -228,3 +228,49 @@ All updated to match — see the document's own current text; no historical text
 ### `ux-critic` closure round (same day, folded into this entry rather than a separate one)
 
 `ux-critic` reviewed the amendment above and found 4 Major findings, no Blockers, all closed the same day: **M1** (the offer-before-authentication sequencing left no visible trace of the commitment across §3.2a–§3.7e's screens, risking her losing confidence her "Aceptar" tap registered) — closed by a new Invitation-context copy variant threaded through §2.0 step 4 and §3.2a, reused verbatim at every screen that sub-flow reaches. **M2** (§3.2a's "nowhere to return to" claim is false when reached via the Invitation-offer path, since §3.10 legitimately precedes it) — closed with an explicit caveat on §3.2a. **M3** (§10's "resolves by recency, no picker" bullet was left unmarked despite being directly superseded elsewhere in the same document) — closed with a `[Superseded …]` marker matching this document's own established convention. **M4** (token survival through an ordinary in-flow detour, e.g. cancelling Google's consent screen, was asserted only by analogy to §3.8's interruption-resume guarantee, which covers a different case) — closed by stating the pre-auth token context as its own guarantee, scoped to the whole §3.2a–§3.2f sub-flow's in-app duration, separate from and in addition to §3.8.
+
+### `reviewer`'s document-level pass and a spec-authorization gap it surfaced indirectly (same day)
+
+`reviewer` ran a document-level Foundation-consistency pass against this amendment (ubiquitous-language accuracy, decision-log citation accuracy, internal consistency, sibling-document composition) and found 2 Important + 2 Suggestions, all closed: an unmarked stale §10 bullet from the retired 2026-09-06 phone-match mechanism (line 1203, "Pending-Invitation check runs first...") — marked `[Superseded 2026-09-14, RFC 0013/D64]`, noting §2.0 step 1's link-detection now plays this role; a minor internal-consistency wording fix in §3.10d's `already_member` example (dropped the impossible "she already accepted this... Invitation" phrasing, since accepting this exact token twice would fail the write's own CAS first); two naming-clarity Suggestions (the `accept_invitation`/`peek_invitation` snake_case backend-RPC citations vs. `domain-model.md`'s camelCase `acceptInvitation` invariant name; `peek_invitation` not being a name RFC 0013 itself literally uses). Both closed directly by Main.
+
+A separate `reviewer` instance, re-verifying a Blocker fix in the built React code (`InvitationFlow.tsx`), surfaced a real spec-authorization gap this way: the fix it verified (reusing §3.7e in place for a device already holding a verified-but-unconfirmed credential) wasn't actually described anywhere in this document's own text — §2.0 step 4/§3.10 had exactly two branches (valid session / no session), with no accounting for a session sitting on an unconfirmed §3.7e gate. See the separate entry below for the full resolution.
+
+*(cite as `authentication.changelog.md#2026-09-14-ux-critic-and-reviewer-closure`)*
+
+---
+
+## 2026-09-14 — §2.0 step 4 / §3.10 / §3.7e: a third branch for an
+already-verified-but-unconfirmed device opening an Invitation link
+
+**Root finding:** `reviewer`, re-verifying `ui-designer`'s fix for a real
+Blocker in the Team Invitations rebuild (the code was skipping the §3.7e
+gate entirely, letting an unconfirmed identity mint a real
+`BusinessMembership`), found that the fix it built — reusing
+`PhoneMismatchConfirm.tsx` (§3.7e) inline, gating the accept write behind
+it, no session drop — was not what §2.0 step 4 / §3.10's literal text
+described (routing to §3.2a on any "NO"). The code disclosed this honestly
+in its own comments but never routed the gap back through `ux-designer`
+for authorization, per this folder's own governance.
+
+**Why §3.2a's literal routing was rejected, not the code:** the device in
+this state already holds a fully verified, first-time-anywhere
+`AuthIdentity` row (that's *why* §3.7e is pending). Routing to §3.2a fresh
+would force a full re-verification of that same credential — a direct
+"never ask twice" violation — and, on that second verification, §2.2 case
+1's own "never verified before, anywhere" test would fail (the row already
+exists), meaning the device-history check that gates §3.7e would never
+re-fire on the retry. That's not merely more friction than the built fix;
+it silently defeats the exact safety gate this whole mechanism (originally
+a Slice 12 `merchant-user-tester` defect fix) exists to enforce.
+
+**Resolution:** the built composition is authorized as correct. §2.0 step
+4 and §3.10's own Behavior block both gain a third, explicit branch:
+resume §3.7e in place (a second entry point on the already-Approved
+screen, no new wireframe), stacking the Invitation-context line (§2.0
+step 4's own M1 mechanism) on top of its existing copy. "Sí, es mío/mía"
+proceeds directly to §2.2a's write; "No, elegir otro" reverts the
+verification and returns to this same offer flow's own authentication
+step (§3.2a/§3.3/§3.2e, Invitation context intact) — never to
+`AppRouter`'s ordinary, context-less flow.
+
+*(cite as `authentication.changelog.md#2026-09-14-mismatch-confirm-invitation-gap`)*

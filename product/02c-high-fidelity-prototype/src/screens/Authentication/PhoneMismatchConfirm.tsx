@@ -1,6 +1,7 @@
 import { BrandMark } from '../../components/BrandMark/BrandMark';
 import { Button } from '../../components/Button/Button';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
+import { InvitationContextLine, type InvitationContext } from './InvitationContextLine';
 import styles from './PhoneMismatchConfirm.module.css';
 
 /**
@@ -27,6 +28,7 @@ export function PhoneMismatchConfirm({
   displayValue,
   onConfirm,
   onCorrect,
+  invitationContext,
 }: {
   /** Which credential type just verified — resolves the one noun that
    * varies in this screen's copy (§3.7e's own bracketed "[número / correo /
@@ -55,6 +57,16 @@ export function PhoneMismatchConfirm({
    * pre-fill behavior "← Cambiar [número / correo]" (§3.6) already
    * establishes, resolved by `AppRouter.tsx`, not this component. */
   onCorrect: () => void;
+  /** RFC 0013, added 2026-09-14 (`reviewer` Blocker B1 fix) — set only by
+   * `InvitationFlow.tsx`'s own inline mounting of this screen (a device
+   * sitting on an unconfirmed §3.7e gate that opened an `/invite/<token>`
+   * link), so the Invitation-context line (`InvitationContextLine.tsx`'s
+   * own doc comment, `authentication.md` §2.0 step 4/M1) stays visible
+   * through this gate too, exactly as every other §3.2a-§3.2f/§3.3-§3.7d
+   * screen this flow carries the token through already does. `undefined` for
+   * `AppRouter.tsx`'s own ordinary mounting of this screen — an ordinary
+   * device-history mismatch, with no Invitation in play. */
+  invitationContext?: InvitationContext;
 }) {
   // Demonstrative baked in per-option ("Este número" / "Este correo" /
   // "Esta cuenta de Google" / "Esta cuenta"), not a single shared "Este "
@@ -81,6 +93,7 @@ export function PhoneMismatchConfirm({
           <BrandMark />
         </div>
         <div className={styles.copy}>
+          {invitationContext && <InvitationContextLine businessName={invitationContext.businessName} />}
           <p className={styles.eyebrow}>Nahui</p>
           <h1 className={styles.heading}>Confirma tu identidad</h1>
           <p className={styles.body}>{demonstrativeNoun} todavía no tiene un negocio en Nahui:</p>

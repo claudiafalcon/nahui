@@ -99,16 +99,39 @@ export function invitationDisplayStatus(invitation: Invitation): 'pending' | 'ex
   return invitation.status;
 }
 
-/** `settings.md` §3.11 "Tu equipo" — one row per active/pending/revoked
- * SELLER, in a discriminated shape the screen can switch on directly. */
+/** `settings.md` §3.11 "Tu equipo" — one row per active/revoked SELLER
+ * Membership, or per pending/expired/cancelled Invitation, in a
+ * discriminated shape the screen can switch on directly. **Widened
+ * 2026-09-14 (RFC 0013/D64) from three kinds to five** — §3.11's own text:
+ * "Five row states now, each a pure read, never a merchant choice (widened
+ * from three...)." `Invitation.status = 'accepted'` deliberately produces no
+ * row of its own (§3.11's own text) — the accepting person simply appears
+ * as a fresh `'active'` Membership row instead, so no filter here ever
+ * matches `'accepted'` directly. */
 export type TeamRow =
-  | { kind: 'active' | 'revoked'; membership: BusinessMembership; phone: string }
-  | { kind: 'pending'; invitation: Invitation };
+  | { kind: 'active'; membership: BusinessMembership; phone: string }
+  | { kind: 'revoked'; membership: BusinessMembership; phone: string }
+  | { kind: 'pending'; invitation: Invitation }
+  | { kind: 'expired'; invitation: Invitation }
+  | { kind: 'cancelled'; invitation: Invitation };
 
 /** `settings.md` §2.7/§3.11 "Tu equipo" — every Invitation/Membership row
- * for this Business, in the document's own stated display order (active →
- * pending → revoked, by date within each group). Membership rows exclude
- * OWNER (there is exactly one, never listed alongside her own team). */
+ * for this Business, in the document's own stated display order: "active
+ * Memberships, then pending Invitations, then expired Invitations, then
+ * revoked Memberships, then cancelled Invitations... Both terminal groups
+ * (revoked Memberships, cancelled Invitations) sit last, since neither
+ * offers an action; the two still-actionable groups (pending, expired) sit
+ * ahead of them." Deterministic, by date within each group — never
+ * Ana-sorted. Membership rows exclude OWNER (there is exactly one, never
+ * listed alongside her own team). `pending`/`expired` are both read through
+ * `invitationDisplayStatus` (never `.status` directly) — `expired` is a
+ * read-time derivation, never itself stored (§2.7a). A `revoked` Invitation
+ * (cancelled by Ana, §3.12d, or the identical read on an Invitation that
+ * expired without ever being explicitly cancelled — both share `.status =
+ * 'revoked'` once cancelled; an expired-but-never-cancelled row stays
+ * `'pending'` in storage and is read as `'expired'` here, never conflated
+ * with a cancelled one) always reads as `'cancelled'`, regardless of
+ * `expiresAt`. */
 export function teamRows(state: AppState, businessId: ID): TeamRow[] {
   const memberRows = state.memberships
     .filter((m) => m.businessId === businessId && m.role === 'SELLER')
@@ -117,13 +140,29 @@ export function teamRows(state: AppState, businessId: ID): TeamRow[] {
       membership,
       phone: phoneIdentifierFor(state, membership.userId),
     }));
-  const active = memberRows.filter((r) => r.kind === 'active').sort((a, b) => a.membership.createdAt - b.membership.createdAt);
-  const revoked = memberRows.filter((r) => r.kind === 'revoked').sort((a, b) => a.membership.createdAt - b.membership.createdAt);
-  const pending: TeamRow[] = state.invitations
-    .filter((inv) => inv.businessId === businessId && inv.status === 'pending')
-    .sort((a, b) => a.createdAt - b.createdAt)
+  const active = memberRows
+    .filter((r) => r.kind === 'active')
+    .sort((a, b) => a.membership.createdAt - b.membership.createdAt);
+  const revokedMemberships = memberRows
+    .filter((r) => r.kind === 'revoked')
+    .sort((a, b) => a.membership.createdAt - b.membership.createdAt);
+
+  const invitationsForBusiness = state.invitations.filter((inv) => inv.businessId === businessId);
+  const byCreatedAt = (a: Invitation, b: Invitation) => a.createdAt - b.createdAt;
+  const pending: TeamRow[] = invitationsForBusiness
+    .filter((inv) => invitationDisplayStatus(inv) === 'pending')
+    .sort(byCreatedAt)
     .map((invitation) => ({ kind: 'pending', invitation }));
-  return [...active, ...pending, ...revoked];
+  const expired: TeamRow[] = invitationsForBusiness
+    .filter((inv) => invitationDisplayStatus(inv) === 'expired')
+    .sort(byCreatedAt)
+    .map((invitation) => ({ kind: 'expired', invitation }));
+  const cancelled: TeamRow[] = invitationsForBusiness
+    .filter((inv) => inv.status === 'revoked')
+    .sort(byCreatedAt)
+    .map((invitation) => ({ kind: 'cancelled', invitation }));
+
+  return [...active, ...pending, ...expired, ...revokedMemberships, ...cancelled];
 }
 
 /** `settings.md` §3.3a — "N personas vendiendo contigo," `active`-status

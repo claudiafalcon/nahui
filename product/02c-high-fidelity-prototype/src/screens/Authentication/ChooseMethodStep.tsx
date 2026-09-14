@@ -1,12 +1,14 @@
 import { BrandMark } from '../../components/BrandMark/BrandMark';
 import { Button } from '../../components/Button/Button';
+import type { InvitationContext } from './InvitationContextLine';
 import styles from './ChooseMethodStep.module.css';
 
 /**
  * authentication.md §3.2a "Elegir cómo entrar" (new, 2026-09-13,
  * `decision-log.md` D62/D63) — the true first-run entry point, replacing
  * §3.3 ("Número celular") in that role. No back arrow — "this is now the one
- * screen in the whole product with nowhere to return to" (§3.2a's own text).
+ * screen in the whole product with nowhere to return to" (§3.2a's own text,
+ * caveated for the Invitation-offer entry point below).
  *
  * All three options carry the same visual weight — same size, same variant,
  * stacked — deliberately not primary/secondary/tertiary the way
@@ -15,15 +17,24 @@ import styles from './ChooseMethodStep.module.css';
  * judgment call, not a priority ranking — see §3.2a's own reasoning (phone
  * listed last so a phone-reluctant merchant, the exact population this
  * activation exists for, never has to visually pass it first).
+ *
+ * `invitationContext` (RFC 0013, added 2026-09-14, closes `ux-critic` M1) —
+ * when present, the ordinary "Para empezar," opening is replaced outright
+ * (never stacked alongside) by "Para aceptar la invitación de
+ * [Business.name]" / "Elige cómo quieres entrar." — §3.2a's own
+ * Invitation-context wireframe variant, illustrated here and reused verbatim
+ * (via `InvitationContextLine`) at every other screen this sub-flow reaches.
  */
 export function ChooseMethodStep({
   onGoogle,
   onEmail,
   onPhone,
+  invitationContext,
 }: {
   onGoogle: () => void;
   onEmail: () => void;
   onPhone: () => void;
+  invitationContext?: InvitationContext;
 }) {
   return (
     <div className={styles.wrap}>
@@ -33,7 +44,14 @@ export function ChooseMethodStep({
       <div className={styles.copy}>
         <p className={styles.eyebrow}>Nahui</p>
         <h1 className={styles.heading}>Elegir cómo entrar</h1>
-        <p className={styles.body}>Para empezar, elige cómo quieres entrar.</p>
+        {invitationContext ? (
+          <>
+            <p className={styles.body}>Para aceptar la invitación de {invitationContext.businessName}</p>
+            <p className={styles.body}>Elige cómo quieres entrar.</p>
+          </>
+        ) : (
+          <p className={styles.body}>Para empezar, elige cómo quieres entrar.</p>
+        )}
       </div>
 
       <div className={styles.ctaStack}>

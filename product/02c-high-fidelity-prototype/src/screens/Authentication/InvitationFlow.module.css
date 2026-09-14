@@ -35,10 +35,22 @@
   gap: 10px;
 }
 
+/* Nahui brand caption — a true typographic "eyebrow" (small, uppercase,
+   letter-spaced) sitting above the screen's real heading, not the heading
+   itself (`ux-critic` MAJ2 fix, 2026-09-14 — this file previously used
+   "Nahui" as its only `<h1>` on all five screens, identical text
+   everywhere, breaking heading navigation for a screen-reader user; matches
+   `PhoneStep.module.css`/`PhoneMismatchConfirm.module.css`'s own already-
+   established treatment). */
 .eyebrow {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 26px;
+  font: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8A8177;
+}
+
+.heading {
+  font: var(--text-display-md);
   color: var(--color-obsidian);
 }
 

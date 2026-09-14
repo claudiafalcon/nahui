@@ -326,6 +326,8 @@ clean. Not yet `reviewer`-verified.
 
 **Superseded in part by `20260914032000_invitation_token_no_raw_cache.sql`** — this migration's own "replays the raw token on a retry, since it's never persisted anywhere but that retry cache" design, described above as a deliberate exception, was an `architect`-found Blocker against D64's real threat model (a DB dump, not an RLS bypass). See checklist item 29 below for the fix: `idempotency_keys.result` no longer carries the raw token at all, `regenerate_invitation`'s precondition loosened to any still-`pending` row (not only expired), and `store.tsx`'s two return types now honestly reflect `token: string | null`.
 
+**`accept_invitation` membership-conflict fix (`20260914040000_accept_invitation_membership_conflict_fix.sql`, `architect`-designed, `builder`-implemented)** — a second, separate `architect`-found Blocker on `accept_invitation` itself (untouched by every prior pass above): `already_member`/`membership_revoked` were never actually raised, since a pre-existing `BusinessMembership` row for `(user_id, business_id)` made the membership insert's `on conflict do nothing` silently no-op, with the fallback `select` then returning that row's id as an ordinary success. Fixed by looking up the pre-existing row's own `status` on conflict and raising the exact exception name `store.tsx`'s `acceptInvitation` already string-matches against, instead of silently succeeding. No client-side change needed — see checklist item 30 and `context/team-invitations-real-wiring.md` for full detail, including a separate, named-not-fixed open item (the `idempotency_keys` cached-error-replay branch is structurally unreachable for a rollback reason, in this function and `regenerate_invitation`).
+
 ## What's here
 
 ```
@@ -655,6 +657,47 @@ supabase/
                                                              expired-only).
                                                              PUSHED
                                                              2026-09-14.
+    20260914040000_accept_invitation_membership_conflict_fix.sql — architect-
+                                                             found Blocker
+                                                             fix:
+                                                             accept_invitation's
+                                                             membership
+                                                             insert
+                                                             conflict
+                                                             (a
+                                                             pre-existing
+                                                             active or
+                                                             revoked
+                                                             row for
+                                                             (user_id,
+                                                             business_id))
+                                                             silently
+                                                             no-op'd and
+                                                             returned
+                                                             success
+                                                             instead of
+                                                             raising
+                                                             already_member/
+                                                             membership_revoked.
+                                                             On conflict,
+                                                             now looks up
+                                                             the
+                                                             pre-existing
+                                                             row's status
+                                                             and raises the
+                                                             exact
+                                                             exception name
+                                                             store.tsx
+                                                             already checks
+                                                             for, rolling
+                                                             back the whole
+                                                             transaction
+                                                             (including the
+                                                             CAS's own
+                                                             accept). No
+                                                             client change
+                                                             needed. PUSHED
+                                                             2026-09-14.
   functions/
     send-otp/index.ts                — generates + WhatsApp-sends a code
     verify-otp/index.ts              — checks a submitted code, single-use
@@ -946,6 +989,32 @@ supabase/
     clean except `TeamScreen.tsx`/`InvitationFlow.tsx` (expected — same two
     screens item 25's entry above already named as a separate, not-yet-run
     `ui-designer` rebuild). Not yet `reviewer`-verified.
+30. ~~**Push the `accept_invitation_membership_conflict_fix` migration**~~
+    **DONE** 2026-09-14 —
+    `20260914040000_accept_invitation_membership_conflict_fix.sql` applied
+    to the real hosted project via `supabase db push`. Closes an
+    `architect`-found Blocker in the original `20260913000000`
+    `accept_invitation`: `already_member`/`membership_revoked` (RFC 0013/
+    D64, `authentication.md` §2.2a, `store.tsx`'s `acceptInvitation`) were
+    never actually raised — a pre-existing `BusinessMembership` row (active
+    OR revoked) for `(user_id, business_id)` made the membership `insert
+    ... on conflict do nothing` silently no-op, and the fallback `select`
+    then returned that row's id as an ordinary success. Fix: on conflict,
+    look up the pre-existing row's own `status` and raise the exact
+    exception name `store.tsx` already hard-codes a string match against
+    (`membership_revoked` if `status = 'revoked'`, `already_member`
+    otherwise), instead of silently returning success — both branches
+    abort the whole transaction, rolling back the CAS's own `status =
+    'accepted'` update, so the Invitation stays exactly `pending`. No
+    client-side change needed (`store.tsx`'s `acceptInvitation` already
+    checked for both error strings; `InvitationFlow.tsx`'s §3.10d/§3.10e
+    screens were already built and correctly routed). `tsc -b`/
+    `npm run build` both clean. See
+    `context/team-invitations-real-wiring.md` for the full detail,
+    including a separate, out-of-scope open item found along the way (the
+    `idempotency_keys` cached-error-replay branch is structurally
+    unreachable for the same rollback reason, in this function and its
+    `regenerate_invitation` twin).
 
 ## Judgment calls made building this (tune freely, not escalated)
 

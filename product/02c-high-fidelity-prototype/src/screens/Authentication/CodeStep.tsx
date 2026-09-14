@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../domain/store';
 import { Button } from '../../components/Button/Button';
+import { InvitationContextLine, type InvitationContext } from './InvitationContextLine';
 import styles from './CodeStep.module.css';
 
 const RESEND_COOLDOWN_MS = 30_000; // §3.6, judgment call
@@ -37,10 +38,14 @@ export function CodeStep({
   channel,
   identifier,
   onBack,
+  invitationContext,
 }: {
   channel: 'phone' | 'email';
   identifier: string;
   onBack: () => void;
+  /** RFC 0013, added 2026-09-14 — see `InvitationContextLine.tsx`'s own doc
+   * comment for the full reasoning. */
+  invitationContext?: InvitationContext;
 }) {
   const { verifyOtp, requestOtp, verifyEmailOtp, requestEmailOtp } = useStore();
   const [raw, setRaw] = useState('');
@@ -113,6 +118,7 @@ export function CodeStep({
     // §3.7d — never actually reached in this build (disclosed above).
     return (
       <div className={styles.wrap}>
+        {invitationContext && <InvitationContextLine businessName={invitationContext.businessName} />}
         <p className={styles.body}>No pudimos confirmar tu código. Sigue aquí, intenta de nuevo.</p>
         <Button className={styles.cta} onClick={() => setVerifyState('entry')}>
           Reintentar
@@ -134,6 +140,7 @@ export function CodeStep({
         <button className={styles.back} onClick={onBack}>
           {backLabel}
         </button>
+        {invitationContext && <InvitationContextLine businessName={invitationContext.businessName} />}
         <h1 className={styles.heading}>Ingresa el código</h1>
         <p className={styles.body}>
           Después de varios intentos, este código ya no es válido. Pide uno nuevo y con gusto lo
@@ -151,6 +158,7 @@ export function CodeStep({
       <button className={styles.back} onClick={onBack}>
         {backLabel}
       </button>
+      {invitationContext && <InvitationContextLine businessName={invitationContext.businessName} />}
       <h1 className={styles.heading}>Ingresa el código</h1>
       <p className={styles.body}>{destinationLine}</p>
 

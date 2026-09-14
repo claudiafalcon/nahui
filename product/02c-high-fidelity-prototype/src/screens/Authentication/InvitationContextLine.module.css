@@ -1,0 +1,9 @@
+/* authentication.md §2.0 step 4 / §3.2a's own text — a small, secondary
+   acknowledgement line, deliberately less prominent than the screen's own
+   heading/body (it's context she already committed to, not the thing this
+   screen is asking her to do right now). */
+.line {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-coral-aa);
+}

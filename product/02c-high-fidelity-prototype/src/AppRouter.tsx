@@ -2,12 +2,13 @@ import { useState } from 'react';
 import App from './App';
 import { useStore } from './domain/store';
 import { currentUser, findMembership } from './domain/selectors';
-import { businessForCurrentUser, isOnboardingComplete } from './domain/onboardingResolution';
+import { isOnboardingComplete } from './domain/onboardingResolution';
+import { phoneMismatchConfirmationTarget, mismatchDisplayValue } from './domain/authResolution';
 import { AuthenticationFlow } from './screens/Authentication/AuthenticationFlow';
 import { AuthResolving } from './screens/Authentication/AuthResolving';
+import { InvitationFlow } from './screens/Authentication/InvitationFlow';
 import { PhoneMismatchConfirm } from './screens/Authentication/PhoneMismatchConfirm';
 import { OnboardingFlow } from './screens/Onboarding/OnboardingFlow';
-import type { AuthIdentity } from './domain/types';
 
 /**
  * The top-level resolution layer, mounted above the existing tab-shell
@@ -40,37 +41,55 @@ import type { AuthIdentity } from './domain/types';
  * `User` no longer carries `phoneVerifiedAt`, or `phone`, directly (see
  * `AuthIdentity`'s own doc comment, `types.ts`). Every read that used to go
  * through `user.phone` now resolves through `phoneIdentifierFor` instead
- * (`''` for a Google/Email-only merchant — `Invitation` stays phone-scoped
- * by design, RFC 0012 §3, so that population simply never matches a pending
- * Invitation or `needsPhoneMismatchConfirmation`'s own phone-shaped display,
- * the expected consequence of that ruling, not a gap this file needs to
- * close).
+ * (`''` for a Google/Email-only merchant — `needsPhoneMismatchConfirmation`'s
+ * own display resolves per credential type, never assumes a phone exists,
+ * `mismatchDisplayValue` below). **Superseded 2026-09-14, RFC 0013/D64:**
+ * this paragraph previously also noted `Invitation` staying phone-scoped by
+ * RFC 0012 §3 — no longer true; `Invitation` is token-keyed now, and every
+ * one of the three authentication methods is equally available acceptance-
+ * side, per `InvitationFlow.tsx`'s own doc comment.
  *
  * **Slice 12's `InvitationFlow` auto-offer mechanism (phone-match against
  * `Invitation.phone`, mounted here as a fourth stage between Authentication
- * and Onboarding) is retired, not merely superseded — RFC 0013/`decision-log.md`
- * D64.** `Invitation` no longer carries `phone` at all (its canonical
- * identity is now a `token`, resolvable only by explicitly opening
- * `nahui.app/invite/<token>` — RFC 0013 §2 names this an explicit structural
- * simplification: "the new mechanism never auto-surfaces anything... an
- * Invitation is only ever seen by explicitly opening its link"). This isn't
- * a UI redesign choice made here — it's the direct, already-Accepted
- * Foundation consequence of that RFC; the implicit-session-match code this
- * component used to run is now both non-functional (no `phone` field left
- * to match against) and dead by design. The real pre-auth offer screen this
- * new mechanism needs (reading the token below, resolving it via
- * `peekInvitation`, threading it through authentication) is not yet built —
- * `authentication.md`'s own pre-auth acceptance-flow amendment is a
- * separate, parallel `ux-designer` dispatch (see
- * `context/team-invitations-real-wiring.md`) — this file only adds the
- * plumbing that makes the token available once that spec lands.
+ * and Onboarding) was retired outright, not merely superseded — RFC
+ * 0013/`decision-log.md` D64.** `Invitation` no longer carries `phone` at
+ * all (its canonical identity is now a `token`, resolvable only by
+ * explicitly opening `/invite/<token>` — RFC 0013 §2 names this an explicit
+ * structural simplification: "the new mechanism never auto-surfaces
+ * anything... an Invitation is only ever seen by explicitly opening its
+ * link").
  *
- * **`inviteToken` — minimal path-based routing (Stage 7 Backend Integration,
- * this pass).** This app has no other need for a routing library
- * (`architecture-principles.md` #5 restraint) — a single `window.location
- * .pathname` read against `/invite/<token>`, captured once at initial
- * mount, is the entire mechanism. Not yet consumed by any screen; it exists
- * so the token isn't lost before the consuming flow is built.
+ * **`inviteToken` / `invitationGateActive` — the real token-based gate
+ * (`authentication.md` §2.0/§2.2a's own `InvitationFlow.tsx`, rebuilt in
+ * full 2026-09-14 against RFC 0013).** `inviteToken` is minimal path-based
+ * routing (`architecture-principles.md` #5 restraint — a single
+ * `window.location.pathname` read, captured once at initial mount, not a
+ * routing library). `invitationGateActive` is what actually decides whether
+ * `InvitationFlow` renders — derived once from `inviteToken` at mount, then
+ * cleared (`false`) only by that component's own `onDone` callback, once
+ * she's fully resolved the offer one way or another (accepted through to
+ * "Ir a Hoy," declined, or landed on a defensive "no longer available"/
+ * "already a member"/"access revoked" state and tapped through it). Kept
+ * separate from `inviteToken` itself (rather than nulling that) so the two
+ * concerns stay distinct: "was a token present at all" vs. "is the gate this
+ * token opens still the thing in control of the screen right now." §2.0's
+ * own "checked before every other check in §2" sequencing is what this
+ * file's render below implements: while `invitationGateActive` is true,
+ * every other branch below (authenticated, hydration, phone-mismatch,
+ * seller, onboarding) is fully preempted — `InvitationFlow` is the sole
+ * renderer, including through its own inline `AuthenticationFlow` mounting
+ * for a session-less device (§2.0 step 4's "no session" branch) — never a
+ * second, competing render path.
+ *
+ * `onDone` also clears the URL back to `/` (`window.history.replaceState`) —
+ * without this, a reload after resolving the Invitation would re-derive the
+ * identical `inviteToken` from `window.location.pathname` on the next mount
+ * and re-open the same offer forever, since the path itself never changes
+ * merely by resolving what it named. This is the concrete answer to this
+ * file's own previously-open question ("confirm this actually still works
+ * once you wire consumption, since the pathname itself doesn't change
+ * during the flow") — it does, but only because `onDone` now actively
+ * rewrites it, not because persistence alone would have been sufficient.
  */
 export function AppRouter() {
   const { state, hydrationStatus, retryHydration, confirmPhoneMismatch, retractMistypedVerification } = useStore();
@@ -82,6 +101,10 @@ export function AppRouter() {
     const match = window.location.pathname.match(/^\/invite\/(.+)$/);
     return match ? decodeURIComponent(match[1]) : null;
   });
+  // See this component's own doc comment above — the real switch that
+  // decides whether `InvitationFlow` (authentication.md §2.0/§2.2a) is the
+  // sole renderer right now.
+  const [invitationGateActive, setInvitationGateActive] = useState<boolean>(() => inviteToken != null);
   // authentication.md §3.7e (Slice 12 `merchant-user-tester` defect fix,
   // 2026-09-07; **generalized 2026-09-13, `decision-log.md` D62/D63** — was
   // phone-only, now covers whichever of the two typed channels "No, elegir
@@ -106,13 +129,6 @@ export function AppRouter() {
   const user = currentUser(state);
   const authenticated = state.currentUserId != null;
 
-  // Used by `needsPhoneMismatchConfirmation` below — the "zero Membership
-  // anywhere AND zero Business anywhere for this User" test `authentication.md`
-  // §2.2 case 1 opens with (previously shared with the now-retired pending-
-  // Invitation derivation — see this component's own doc comment above).
-  const hasAnyMembership = authenticated && user ? state.memberships.some((m) => m.userId === user.id) : false;
-  const hasOwnBusiness = authenticated && user ? businessForCurrentUser(state) != null : false;
-
   // authentication.md §2.2 case 1's device-history check / §3.7e (Slice 12
   // `merchant-user-tester` defect fix, 2026-09-07; generalized 2026-09-13).
   // **[Corrected 2026-09-13, `reviewer`-caught Important finding.]** This
@@ -130,39 +146,19 @@ export function AppRouter() {
   // that ordinary logic. The prior ordering let a pending Invitation that
   // appeared during that exact window win, letting her accept it without
   // ever passing the identity-confirmation gate the spec requires take
-  // priority there. `user.phoneMismatchConfirmationPending` alone would
-  // already be correct (it can only ever be true for a User with zero
-  // Membership/Business, `resolveAuthIdentity`'s own invariant), but the
-  // explicit `!hasAnyMembership && !hasOwnBusiness` guard is kept for the
-  // same defensive-redundancy style this file's other derivations already
-  // use.
-  const needsPhoneMismatchConfirmation =
-    authenticated && !!user && user.phoneMismatchConfirmationPending && !hasAnyMembership && !hasOwnBusiness;
-
-  // §3.7e's own display copy needs to know *which* credential type just
-  // verified — by construction, a User this screen fires for holds exactly
-  // one `AuthIdentity` row (the one just minted, `resolveAuthIdentity`'s own
-  // `'new-user'` branch — nothing else could have been linked yet, since
-  // zero Membership/Business also means this User has never gotten far
-  // enough to link a second method through any built UI).
-  const mismatchIdentity: AuthIdentity | undefined = needsPhoneMismatchConfirmation
-    ? state.authIdentities.find((a) => a.userId === user!.id)
-    : undefined;
-  const mismatchDisplayValue = (() => {
-    if (!mismatchIdentity) return '';
-    if (mismatchIdentity.type === 'phone') {
-      const p = mismatchIdentity.identifier;
-      return `+52 ${p.slice(0, 2)} ${p.slice(2, 6)} ${p.slice(6)}`;
-    }
-    if (mismatchIdentity.type === 'email') return mismatchIdentity.identifier;
-    if (mismatchIdentity.type === 'google') return googleDisplayLabel ?? 'tu cuenta de Google';
-    return mismatchIdentity.identifier; // 'apple' — schema-modeled, not activated, defensively unreachable
-  })();
+  // priority there.
+  //
+  // **Extracted to `domain/authResolution.ts` 2026-09-14 (`reviewer` Blocker
+  // B1 fix)** — `InvitationFlow.tsx`'s own accept-time session test needs
+  // this identical rule; see that module's own doc comment for the full
+  // reasoning.
+  const mismatchTarget = phoneMismatchConfirmationTarget(state);
+  const needsPhoneMismatchConfirmation = mismatchTarget != null;
+  const mismatchIdentity = mismatchTarget?.identity;
 
   // `onboarding.md` is an OWNER-only flow, structurally — a SELLER never
   // runs it (her membership arrives entirely through Invitation-acceptance,
-  // mechanism currently being reworked — see this component's own doc
-  // comment above). `isOnboardingComplete` reads `businessForCurrentUser`,
+  // `InvitationFlow.tsx`, above). `isOnboardingComplete` reads `businessForCurrentUser`,
   // which is deliberately OWNER-scoped (`onboardingResolution.ts`'s own doc
   // comment) and would therefore read `false` for a SELLER, incorrectly
   // routing her into Onboarding if left unguarded. A SELLER Membership (any
@@ -192,7 +188,23 @@ export function AppRouter() {
   // a second coarser-grained transition layered on top.
   return (
     <div className="app-shell">
-      {!authenticated ? (
+      {invitationGateActive && inviteToken ? (
+        // authentication.md §2.0 — "checked before every other check in
+        // §2," including `!authenticated` itself: a pending Invitation-link
+        // offer is shown before any of the ordinary branches below ever run,
+        // regardless of whether this device already holds a session. See
+        // `InvitationFlow.tsx`'s own doc comment for the full reasoning,
+        // including why its own inline `AuthenticationFlow` mounting (for a
+        // session-less device accepting the offer) never falls through to
+        // any branch below either, until it calls `onDone`.
+        <InvitationFlow
+          token={inviteToken}
+          onDone={() => {
+            window.history.replaceState(null, '', '/');
+            setInvitationGateActive(false);
+          }}
+        />
+      ) : !authenticated ? (
         // authentication.md §2.2: a first-ever verification hands off
         // silently and directly into onboarding.md §3.3 — no interstitial
         // "¡verificado!" screen (§10). Nothing further to do here: once a
@@ -208,12 +220,15 @@ export function AppRouter() {
         // this device's own local mirror holds no Business yet, and the
         // real one (if any) hasn't finished resolving from the backend.
         // Checked before every other post-auth branch below — none of them
-        // (PhoneMismatch, Invitation, Onboarding-vs-App) can be answered
-        // honestly yet, since all of them read `state.business`/
-        // `state.memberships`, which may still be about to be
-        // wholesale-replaced by `hydrateFromBackend`. See `AuthResolving.tsx`
-        // for the full reasoning, including its own disclosed deviation from
-        // `home.md` §3.1/§3.2/§3.14's nav-bar-present wireframes.
+        // (PhoneMismatch, Onboarding-vs-App) can be answered honestly yet,
+        // since all of them read `state.business`/`state.memberships`,
+        // which may still be about to be wholesale-replaced by
+        // `hydrateFromBackend`. (Invitation resolution no longer lives in
+        // this chain at all, RFC 0013 — it's fully resolved, one way or
+        // another, by the `invitationGateActive` branch above before this
+        // point is ever reached.) See `AuthResolving.tsx` for the full
+        // reasoning, including its own disclosed deviation from `home.md`
+        // §3.1/§3.2/§3.14's nav-bar-present wireframes.
         <AuthResolving status={hydrationStatus === 'error' ? 'error' : 'loading'} onRetry={retryHydration} />
       ) : needsPhoneMismatchConfirmation && user && mismatchIdentity ? (
         // authentication.md §3.7e (Slice 12 `merchant-user-tester` defect
@@ -229,7 +244,7 @@ export function AppRouter() {
         // whenever `needsPhoneMismatchConfirmation` is `true`.
         <PhoneMismatchConfirm
           channel={mismatchIdentity.type}
-          displayValue={mismatchDisplayValue}
+          displayValue={mismatchDisplayValue(mismatchIdentity, googleDisplayLabel)}
           onConfirm={() => confirmPhoneMismatch()}
           onCorrect={() => {
             // Preserve the just-typed value for the freshly-remounted
