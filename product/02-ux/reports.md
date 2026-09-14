@@ -52,6 +52,18 @@ decision, or pointing to a now-retired `settings.md` action, is corrected;
 §3.13's zero-Claims empty state no longer ties emptiness to a toggle. **[see
 reports.changelog.md#status-2026-08-09-d40-loyalty-enabled-retired]**
 
+**Amended 2026-09-14 (documentation-only — Stage 7 Backend Integration
+Phase 3 gap analysis, `architect`-confirmed):** this document's own text
+never stated that Resultados is OWNER-only, the one gap left after
+`home.md`/`events.md`/`settings.md` each received their own
+SELLER-role-scoping note during the Q24/Q25 pass. The underlying behavior
+was already correct and unchanged — `App.tsx` gates `activeTab ===
+'resultados'` on `role === 'OWNER'`, and the SELLER-facing `NavBar` never
+renders a Resultados entry at all (`home.md` §3.16). No screen, flow,
+figure, or gating logic in this document changes; only the
+previously-missing scope statement is added (new paragraph, Scope). **[see
+reports.changelog.md#status-2026-09-14-owner-only-scope-note]**
+
 Scope: `Resultados`, the fourth and last of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers Journey 5
 (Review). Picks up exactly what `product/02-ux/events.md` §3.16 deliberately
@@ -60,6 +72,15 @@ deferred per Q7's resolution (`architect-questions.md`, Resolved):
 to Resultados; Eventos only ever shows a thin ambient indicator and hands off
 ("Ver resumen en Resultados"). Implementation-independent — low-fidelity
 only, no visual design.
+
+**Resultados is OWNER-only.** No SELLER-facing view of this tab exists
+anywhere in this document, and the SELLER-facing `NavBar` never shows a
+Resultados entry at all — the same role-scoped nav rendering `home.md`
+§3.16 establishes, and the same framing `events.md` §3.21-§3.25/§3.26
+already use for their own OWNER-only surfaces (`product-decisions.md`
+Q24/Q25's settled permission table). A SELLER's own read needs — her own
+current-Session activity — are already covered elsewhere, by `home.md`
+§3.7c's "Mi actividad de hoy," never duplicated or reinterpreted here.
 
 Out of scope by explicit instruction:
 - **No bazaar-recommendation logic** (`company/backlog.md` #3, "Blocked by:

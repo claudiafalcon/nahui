@@ -149,6 +149,26 @@ simply hasn't had a customer complete one yet. §1/§8's preamble, §2,
 §3.15–§3.18 (the Loyalty Participation view) verified clean — built after D34,
 no stale references found.
 
+### status-2026-09-14-owner-only-scope-note
+**Amended 2026-09-14 (documentation-only — Stage 7 Backend Integration
+Phase 3 gap analysis, `architect`-confirmed):** this document's own text
+never explicitly stated that Resultados is OWNER-only — `home.md`,
+`events.md`, and `settings.md` each already carry their own
+SELLER-role-scoping note (added during the Q24/Q25 pass), and this was the
+one document in that family left without one. `builder` independently
+confirmed the built code was already correct throughout (`App.tsx`'s
+`activeTab === 'resultados' && role === 'OWNER'` gate; the SELLER-facing
+`NavBar` never renders a Resultados entry, `home.md` §3.16) — nothing in
+this document's actual content, screens, or figures changes. A new
+sentence is added to the Scope paragraph (front matter) stating the
+OWNER-only boundary plainly, cross-referencing `home.md` §3.16's nav
+rendering and `events.md`'s own OWNER-only framing for its
+allocation/personnel screens (§3.21-§3.25/§3.26), and noting that a
+SELLER's own read needs are already served by `home.md` §3.7c's "Mi
+actividad de hoy," not by any view in this document. No
+`ux-critic`/`reviewer`/`brand-guardian` consultation needed — additive
+documentation only, no new interaction, state, or behavior introduced.
+
 ---
 
 ## §10 "Decisions made" — full decision history
