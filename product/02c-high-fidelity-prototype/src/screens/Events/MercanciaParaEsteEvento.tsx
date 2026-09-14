@@ -1,10 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
 import { disponibleEnGeneral, eventAllocationFor, quantityRemaining } from '../../domain/selectors';
 import { Button } from '../../components/Button/Button';
 import styles from './MercanciaParaEsteEvento.module.css';
-
-const SAVE_DELAY_MS = 260;
 
 /**
  * events.md §3.21/§3.23 "Mercancía para este evento" — the shared screen
@@ -21,6 +19,15 @@ const SAVE_DELAY_MS = 260;
  * otherwise offer a Paid/tagged Business. "Mover a otro evento" (§3.24) is
  * also out of scope this slice and is omitted entirely, never a dead link
  * to an unbuilt destination.
+ *
+ * Stage 7 Backend Integration, Phase 2b — `handleSave` now awaits a real
+ * `save_event_allocations` call (`saveEventAllocations`, `store.tsx`)
+ * instead of a synchronous local write; `saveState='error'` is now a really
+ * reachable outcome (a rejected/failed RPC call), not merely a disclosed,
+ * never-triggered branch. `commitIdempotencyKeyRef` mirrors
+ * `RegisterMerchandise.tsx`'s own per-attempt key ref — generated once per
+ * "Guardar cambios" attempt, reused unchanged across a Reintentar retry of
+ * that same attempt, cleared only on success.
  */
 export function MercanciaParaEsteEvento({
   eventId,
@@ -61,6 +68,11 @@ export function MercanciaParaEsteEvento({
   // so it can never produce a `raw` above the ceiling in the first place —
   // this flag is only ever true after a real typed overflow.
   const [clamped, setClamped] = useState<Record<string, boolean>>({});
+  // Stage 7 Backend Integration, Phase 2b — one idempotency key per logical
+  // "Guardar cambios" attempt, mirroring `RegisterMerchandise.tsx`'s own
+  // `commitIdempotencyKeyRef`. Cleared on success; left in place on failure
+  // so Reintentar replays the exact same attempt.
+  const saveIdempotencyKeyRef = useRef<string | null>(null);
 
   const ceilings = useMemo(() => {
     const map: Record<string, number> = {};
@@ -81,15 +93,22 @@ export function MercanciaParaEsteEvento({
     setClamped((prev) => (prev[productId] === overflowed ? prev : { ...prev, [productId]: overflowed }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     setSaveState('saving');
-    window.setTimeout(() => {
-      const changes = state.products.map((p) => ({ productId: p.id, quantity: staged[p.id] ?? 0 }));
-      saveEventAllocations(eventId, changes);
-      setSaveState('idle');
-      setConfirmation(true);
-      window.setTimeout(() => setConfirmation(false), 2400);
-    }, SAVE_DELAY_MS);
+    if (!saveIdempotencyKeyRef.current) {
+      saveIdempotencyKeyRef.current = crypto.randomUUID();
+    }
+    const changes = state.products.map((p) => ({ productId: p.id, quantity: staged[p.id] ?? 0 }));
+    const saved = await saveEventAllocations(eventId, changes, saveIdempotencyKeyRef.current);
+    if (!saved) {
+      console.error('[MercanciaParaEsteEvento] saveEventAllocations failed');
+      setSaveState('error');
+      return;
+    }
+    saveIdempotencyKeyRef.current = null; // this attempt is over; a future save mints its own key
+    setSaveState('idle');
+    setConfirmation(true);
+    window.setTimeout(() => setConfirmation(false), 2400);
   }
 
   if (state.products.length === 0) {
@@ -113,9 +132,9 @@ export function MercanciaParaEsteEvento({
     return <p className={styles.savingLine}>Guardando…</p>;
   }
   if (saveState === 'error') {
-    // §3.23's own write-failure branch — never actually triggered in this
-    // build (the local mock write never fails), same disclosed-not-wired
-    // convention as every other write in this codebase.
+    // §3.23's own write-failure branch — Stage 7 Backend Integration, Phase
+    // 2b: a real, reachable outcome now (a rejected/failed
+    // `save_event_allocations` call), not merely disclosed-not-wired.
     return (
       <div className={styles.errorWrap}>
         <p className={styles.errorBody}>No se pudo guardar. Tus cambios siguen aquí, intenta de nuevo.</p>

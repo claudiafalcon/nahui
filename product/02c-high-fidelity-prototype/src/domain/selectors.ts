@@ -1,16 +1,16 @@
 import { addDaysToKey, dateKey } from './dates';
 import type {
-  AllocationMovement,
   AppState,
   BusinessMembership,
   Event,
   EventAllocation,
+  EventAllocationUnit,
   EventAssignment,
   ID,
   Invitation,
   InventoryUnit,
-  InventoryUnitStatus,
   Product,
+  SaleItem,
   Session,
   User,
   Venue,
@@ -921,29 +921,104 @@ export function salesTrend(state: AppState, now: number = Date.now()): { thisWee
   return { thisWeek, lastWeek };
 }
 
-/** Slice 12 (`events.md` §3.21, `product-decisions.md` Q24/Q25) — this
- * Event's `open` EventAllocation for one Product, if any. Absence means "no
- * allocation exists for this pair" — the plain Business-wide pool applies,
- * unaffected (`home.md` §3.8a's own "a Product with no EventAllocation
- * still resolves from the general pool exactly as today" rule). */
+/** `events.md` §3.21, `product-decisions.md` Q24/Q25 — this Event's `open`
+ * EventAllocation for one Product, if any. Absence means "no allocation
+ * exists for this pair" — the plain Business-wide pool applies, unaffected
+ * (`home.md` §3.8a's own "a Product with no EventAllocation still resolves
+ * from the general pool exactly as today" rule). */
 export function eventAllocationFor(state: AppState, eventId: ID, productId: ID): EventAllocation | undefined {
   return state.eventAllocations.find((a) => a.eventId === eventId && a.productId === productId && a.status === 'open');
 }
 
+/** Stage 7 Backend Integration, Phase 2b — every `EventAllocationUnit` row
+ * mirroring this one allocation's real, row-level committed set (the server's
+ * own `event_allocation_units` table, joined by `eventAllocationId`). */
+export function eventAllocationUnitsFor(state: AppState, eventAllocationId: ID): EventAllocationUnit[] {
+  return state.eventAllocationUnits.filter((u) => u.eventAllocationId === eventAllocationId);
+}
+
+/** Stage 7 Backend Integration, Phase 2b/D67 — mirrors the server's own
+ * `remove_sale_item`/`cancel_sale` revert-target rule
+ * (`20260913063000_sale_item_event_allocation_id.sql`): a `SaleItem`'s own
+ * `eventAllocationId`, captured once at write time by `add_item_to_sale`/
+ * `add_item_to_sale_by_tag`, decides directly whether its unit reverts to
+ * `'reserved'` (still allocation-committed) or `'available'` (the plain-pool
+ * case) when unclaimed from a Sale. **Superseded, not merely renamed** — the
+ * prior version of this check tested `state.eventAllocationUnits` for *any*
+ * row referencing the unit, regardless of that specific commitment's current
+ * standing; `event_allocation_units` is append-only, so that check stayed
+ * `true` forever, long after a unit's own commitment had been reconciled
+ * back to general stock (the exact defect D67 fixes server-side). Reading
+ * the row-level value captured once on the `SaleItem` itself, instead of
+ * re-deriving it from data that structurally can't support the derivation,
+ * is what makes this selector's prediction actually match the server's own
+ * decision rather than merely usually matching it. Used only for the local
+ * mirror update after the real RPC confirms — the server is the
+ * authoritative decision-maker. */
+export function saleItemHasEventAllocationCommitment(item: SaleItem): boolean {
+  return item.eventAllocationId != null;
+}
+
+/** Stage 7 Backend Integration, Phase 2b — a committed unit still counts
+ * toward "remaining" only while it's genuinely still held by *this specific*
+ * `EventAllocationUnit` row and not yet claimed by any Sale. Three
+ * conditions, all required:
+ *
+ * 1. `status='reserved'` on the referenced `InventoryUnit`.
+ * 2. No `SaleItem` anywhere references it — new as of Phase 2b: once
+ *    allocated stock became directly sellable (the extended `addItemToSale`/
+ *    `addItemToSaleByTag`), a unit claimed by a still-open Sale is
+ *    `status='reserved'` for *two* simultaneously-true reasons (held by its
+ *    allocation, and mid-Sale) — it must stop counting as remaining stock
+ *    the moment a Sale claims it, matching the server's own extended
+ *    `add_item_to_sale` candidate query.
+ * 3. **This is the *current custody* record for its `unitId`** — no *later*
+ *    `EventAllocationUnit` row exists for the same `unitId` (self-caught
+ *    correctness fix, `20260913062000_event_allocation_persistence_layer_
+ *    fixes.sql`'s own header comment). `EventAllocationUnit` is append-only,
+ *    and reallocation is the one write that ever produces a *second* row for
+ *    the same `unitId` (the destination's own commit) — without this check,
+ *    the *source* allocation's now-stale row would still count the unit
+ *    toward its own "remaining," double-counting stock that's actually moved
+ *    elsewhere. */
+function isCommittedUnitStillOutstanding(state: AppState, row: EventAllocationUnit): boolean {
+  const unit = state.units.find((u) => u.id === row.unitId);
+  if (!unit || unit.status !== 'reserved') return false;
+  if (state.sales.some((sa) => sa.items.some((i) => i.unitId === row.unitId))) return false;
+  return !state.eventAllocationUnits.some((other) => other.unitId === row.unitId && other.committedAt > row.committedAt);
+}
+
 /** RFC 0010/D59 §3 — the read-time derivation that replaces the old, now-
  * retired *stored* `EventAllocation.quantityRemaining` field: the count of
- * this allocation's `allocatedUnitIds` entries whose referenced
- * `InventoryUnit` is currently still `status='reserved'`. Always correct by
- * construction — there is no longer a second, independently-writable number
- * that can drift from the real committed set (the exact confirmed defect
- * this RFC closes). The identical candidate-selection logic
- * `store.tsx`'s `releaseAllocation()` performs to find its own release
- * pool — this selector and that pool are the same query, read-only here. */
+ * this allocation's `EventAllocationUnit` rows whose referenced
+ * `InventoryUnit` is still genuinely outstanding (see
+ * `isCommittedUnitStillOutstanding` above). Always correct by construction —
+ * there is no longer a second, independently-writable number that can drift
+ * from the real committed set (the exact confirmed defect RFC 0010 closes).
+ * Counts *both* `unitSource` values together — "Para este evento" is the
+ * combined total across manual and NFC-scan commitment, which compose on the
+ * same Product row (never a forced choice, RFC 0009's own ubiquitous-
+ * language entry); see `quantityRemainingBySource` below for the per-source
+ * breakdown a mixed row's own display needs. */
 export function quantityRemaining(state: AppState, allocation: EventAllocation): number {
-  return allocation.allocatedUnitIds.filter((id) => {
-    const unit = state.units.find((u) => u.id === id);
-    return unit?.status === 'reserved';
-  }).length;
+  return state.eventAllocationUnits.filter(
+    (u) => u.eventAllocationId === allocation.id && isCommittedUnitStillOutstanding(state, u),
+  ).length;
+}
+
+/** Stage 7 Backend Integration, Phase 2b — `quantityRemaining` above, scoped
+ * to one `unitSource` — the "sin tag · con tag" split `events.md` §3.21's
+ * expanded row shows, and the per-source candidate-pool size
+ * `reconcile_manual_allocation`/`return_scanned_units_to_general` each
+ * derive server-side. */
+export function quantityRemainingBySource(
+  state: AppState,
+  allocation: EventAllocation,
+  unitSource: 'scan' | 'fifo_assignment',
+): number {
+  return state.eventAllocationUnits.filter(
+    (u) => u.eventAllocationId === allocation.id && u.unitSource === unitSource && isCommittedUnitStillOutstanding(state, u),
+  ).length;
 }
 
 /** `events.md` §3.16's closed-Event reconciliation section — every `open`
@@ -966,62 +1041,14 @@ export function hasPriorFifoReconciliation(state: AppState, eventAllocationId: I
   );
 }
 
-/** RFC 0010/D59 — `reviewer`-caught Blocker fix (`cancelSale`/`removeSaleItem`
- * previously reverted a unit to `reserved` on the basis of bare
- * `allocatedUnitIds` array membership alone, which can't distinguish
- * "genuinely still committed to this allocation" from "was committed once,
- * released, and is now free again" — `allocatedUnitIds` is append-only and
- * never pruned, §11). The sound derivation is the most recent
- * `AllocationMovement` — across every `EventAllocation`, in write order —
- * whose `unitIds` includes this unit. `state.allocationMovements` is
- * append-only (`store.tsx`'s `commitAllocation`/`releaseAllocation` only
- * ever append, never reorder or remove a row), so array order already *is*
- * chronological write order — reading from the end and taking the first
- * match is exact, no `createdAt` tie-breaking needed. `undefined` means this
- * unit never went through allocation machinery at all (never committed via
- * `commitAllocation`, e.g. plain Business-wide FIFO/Quick-Sale stock). */
-export function mostRecentAllocationMovementForUnit(state: AppState, unitId: ID): AllocationMovement | undefined {
-  for (let i = state.allocationMovements.length - 1; i >= 0; i -= 1) {
-    const movement = state.allocationMovements[i];
-    if (movement.unitIds.includes(unitId)) return movement;
-  }
-  return undefined;
-}
-
-const COMMIT_MOVEMENT_TYPES: ReadonlyArray<AllocationMovement['type']> = [
-  'initial_allocation',
-  'replenish',
-  'reallocate_in',
-];
-
-/** RFC 0010/D59 — the corrected `cancelSale`/`removeSaleItem` revert target
- * for one Sale-item unit, built on `mostRecentAllocationMovementForUnit`
- * above. `'reserved'` only when this unit's most recent allocation-ledger
- * movement is commit-typed (`initial_allocation`/`replenish`/`reallocate_in`
- * — its most recent allocation-related action was a commitment) *and* that
- * movement's own `EventAllocation` is still `status='open'` (genuinely still
- * committed to that specific allocation, not one already reconciled out from
- * under it). `'available'` in every other case: a release-typed most-recent
- * movement (`adjustment`/`return_to_general`/`reallocate_out` — this unit's
- * most recent action was a release, regardless of stale `allocatedUnitIds`
- * membership elsewhere), a commit-typed movement whose allocation is no
- * longer `open`, or no ledger movement at all (never went through allocation
- * machinery — unaffected, the same `'available'` outcome this file always
- * produced before RFC 0010/D59). */
-export function saleCancelRevertStatus(state: AppState, unitId: ID): InventoryUnitStatus {
-  const movement = mostRecentAllocationMovementForUnit(state, unitId);
-  if (!movement || !COMMIT_MOVEMENT_TYPES.includes(movement.type)) return 'available';
-  const allocation = state.eventAllocations.find((a) => a.id === movement.eventAllocationId);
-  return allocation && allocation.status === 'open' ? 'reserved' : 'available';
-}
-
 /** `events.md` §3.21 — "Disponible en general": Business-wide `available`
  * stock for this Product, plus this Event's own already-committed units
  * (hers to freely reassign within this screen, "not elsewhere," §3.21's own
  * annotation) — which is what makes the manual stepper's ceiling exactly
  * equal to this figure. **Corrected, RFC 0010/D59:** no longer subtracts
- * every *other* open EventAllocation's committed count — once
- * `commitAllocation()` genuinely flips committed units to `reserved`,
+ * every *other* open EventAllocation's committed count — once a commit
+ * genuinely flips committed units to `reserved` (server-side,
+ * `_fifo_commit_to_allocation`, Stage 7 Backend Integration Phase 2b),
  * `availableCount()` already excludes every committed unit, from any Event;
  * subtracting again would double-subtract and silently undercount the
  * merchant-facing ceiling. Adds back only *this* Event's own currently-

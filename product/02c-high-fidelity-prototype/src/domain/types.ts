@@ -51,27 +51,43 @@
  * `currentUserId: ID | null` (the Architecture Gap Analysis's own
  * foundational unblocker); `Invitation`, `BusinessMembership.status`/
  * `revokedAt`, `Sale.performedByMembershipId`, `EventAllocation`
- * (manual-mode fields only this slice), and one disclosed prototype-only
- * addition beyond the settled architecture, `Session.openedByMembershipId`
- * (see that field's own doc comment for the full reasoning). NFC-mode
- * allocation (a live scan writing into `allocatedUnitIds`) remains
- * deliberately unmodeled this slice — out of scope.
+ * (manual-mode fields only, at the time of this Slice 12 addition), and one
+ * disclosed prototype-only addition beyond the settled architecture,
+ * `Session.openedByMembershipId` (see that field's own doc comment for the
+ * full reasoning). NFC-mode allocation was deliberately unmodeled at the
+ * time of this addition — since made real, Stage 7 Backend Integration
+ * Phase 2b (below).
  *
  * RFC 0010/`decision-log.md` D59 (commitment-lifecycle correction) —
  * `EventAllocation.quantityRemaining` is retired as a *stored* field
  * (closes a confirmed, reproduced defect: the old counter never touched
  * `InventoryUnit.status`, so a same-day Quick Sale or another Event's own
  * allocation could silently consume stock a merchant believed reserved).
- * `EventAllocation` gains `quantityPlanned` (soft intent, no pool effect)
- * and a real, row-level `allocatedUnitIds` set, populated by
- * `commitAllocation()`'s FIFO conditional flip — the same class of write
- * NFC allocation already performs, generalized to manual mode.
+ * `EventAllocation` gains `quantityPlanned` (soft intent, no pool effect).
  * `AllocationMovement`, previously deferred as having no UI surface until
  * reconciliation was built, is now modeled — `events.md` §3.16's
  * Approved reconciliation UI requires it (`quantityExpected`/`unitSource`
- * are read directly by that screen). See `store.tsx`'s
- * `commitAllocation`/`releaseAllocation` for the write paths and
- * `selectors.ts`'s `quantityRemaining` for the read-time derivation.
+ * are read directly by that screen).
+ *
+ * Stage 7 Backend Integration, Phase 2b (`context/stage-7-backend-
+ * integration.md`'s "Phase 2b design summary") — the real
+ * `event_allocations`/`event_allocation_units`/`allocation_movements`
+ * tables and their `save_event_allocations`/`scan_unit_into_event_allocation`/
+ * `reallocate_event_allocation`/`return_scanned_units_to_general`/
+ * `reconcile_manual_allocation` RPCs replace this slice's local-only mock.
+ * **`EventAllocation.allocatedUnitIds` is retired** — the real row-level
+ * committed set now lives in its own mirrored table, `EventAllocationUnit`
+ * (below), matching the server's own `event_allocation_units` 1:1 (D59's own
+ * "needs an indexed, lockable `SELECT ... FOR UPDATE`, which an array column
+ * can't support" reasoning, now realized as a real join table on both sides).
+ * **NFC-scan allocation is no longer unmodeled** — `scan_unit_into_event_
+ * allocation` is real, so `EventAllocationUnit.unitSource` can now genuinely
+ * be `'scan'`, not only `'fifo_assignment'`. See `store.tsx`'s
+ * `saveEventAllocations`/`scanUnitIntoEventAllocation`/
+ * `reallocateEventAllocation`/`returnScannedUnitsToGeneral`/
+ * `reconcileManualAllocation` for the write paths and `selectors.ts`'s
+ * `quantityRemaining` for the read-time derivation, now sourced from
+ * `state.eventAllocationUnits` instead of the retired array field.
  */
 
 export type ID = string;
@@ -356,18 +372,18 @@ export interface PriceOverride {
 }
 
 /**
- * Root, Selling context (RFC 0009/D57, corrected by RFC 0010/D59, Slice 12)
- * — how much of a Product Ana has decided to bring/reserve for one specific
- * Event, out of the Business-wide shared pool. Not nested inside Event or
- * Product — resolving "what's allocated to this Event" and "what's
- * allocated to this Product, across every Event" are both real, independent
- * query axes (`events.md` §3.21's own "Disponible en general" figure needs
- * the second). Unique on `(eventId, productId)`.
- *
- * **Manual/FIFO mode only, this slice** — NFC-scan allocation
- * (`events.md` §3.22) and its own exclusivity mechanism (a) remain out of
- * this slice's scope (`context/q24-q25-first-slice.md`); every populated
- * `allocatedUnitIds` entry in this build is `fifo_assignment`-sourced.
+ * Root, Selling context (RFC 0009/D57, corrected by RFC 0010/D59) — how much
+ * of a Product Ana has decided to bring/reserve for one specific Event, out
+ * of the Business-wide shared pool. Not nested inside Event or Product —
+ * resolving "what's allocated to this Event" and "what's allocated to this
+ * Product, across every Event" are both real, independent query axes
+ * (`events.md` §3.21's own "Disponible en general" figure needs the
+ * second). Unique on `(eventId, productId)` — real, plain SQL uniqueness
+ * server-side, not merely a client-side filter (`save_event_allocations`,
+ * `scan_unit_into_event_allocation`, `reallocate_event_allocation` all
+ * mint-or-find by `(eventId, productId)` alone, never additionally filtering
+ * on `status`, since a row's identity for this pair never changes across
+ * its `open`/`reconciled` lifecycle).
  *
  * **`quantityRemaining` is retired as a stored field (RFC 0010/D59)** — the
  * old counter (`quantityRemaining > 0` compare-and-swap) never touched
@@ -375,21 +391,25 @@ export interface PriceOverride {
  * check it (Quick Sale's FIFO, another Event's own commitment) could still
  * consume stock a merchant believed reserved — a confirmed, reproduced
  * defect. The actual selling gate is now the ordinary `available`-status
- * filter every consumption path already applies: `commitAllocation()`
- * (`store.tsx`) performs a real, row-level FIFO conditional flip
- * (`available AND untagged` → `reserved`) into `allocatedUnitIds`, the same
- * class of write NFC allocation already performs — so a committed unit
- * genuinely stops being `available` the moment it's committed.
- * `quantityRemaining` is now a read-time derivation only (`selectors.ts`):
- * the count of `allocatedUnitIds` entries whose unit is still `reserved`.
+ * filter every consumption path already applies: the server's private
+ * `_fifo_commit_to_allocation` helper performs a real, row-level conditional
+ * flip (`available` [`AND untagged` for FIFO mode] → `reserved`) into a real
+ * join table, `EventAllocationUnit` (below) — so a committed unit genuinely
+ * stops being `available` the moment it's committed. `quantityRemaining` is
+ * a read-time derivation only (`selectors.ts`): the count of this
+ * allocation's `EventAllocationUnit` rows whose unit is still `reserved`
+ * *and* not yet claimed by any open Sale (`SaleItem`) — the second
+ * condition is what makes allocated stock genuinely sellable, Phase 2b's own
+ * extension to `add_item_to_sale`/`add_item_to_sale_by_tag`.
  *
- * `quantityAllocated` is a monotonic, hard-committed lifetime total —
- * incremented only by `commitAllocation()`'s actual flipped count, never
- * decremented by `releaseAllocation()` (RFC 0010 §11) — not a live count.
+ * `quantityAllocated` is a monotonic, hard-committed lifetime total for
+ * `unitSource='fifo_assignment'` commitments only (RFC 0009's own
+ * ubiquitous-language: "manual mode... the running total ever allocated") —
+ * incremented only by a FIFO commit, never decremented by a release.
  *
  * `quantityPlanned` (RFC 0010 §2) is soft intent only — freely settable,
  * zero effect on the shared pool, never read by any gate. Not yet surfaced
- * in this slice's UI (Slice B, deferred) — defaults to `0` and stays there.
+ * in any built UI (Slice B, deferred) — defaults to `0` and stays there.
  */
 export interface EventAllocation {
   id: ID;
@@ -397,41 +417,53 @@ export interface EventAllocation {
   productId: ID;
   quantityPlanned: number;
   quantityAllocated: number;
-  /** RFC 0010/D59 — the real, row-level committed set (both NFC-scan and
-   * manual/FIFO commitment populate this array in the settled architecture;
-   * NFC-scan allocation itself is unmodeled this slice, so every entry here
-   * is currently `fifo_assignment`-sourced, written by `commitAllocation()`).
-   * Append-only — `releaseAllocation()` never prunes an id out of this
-   * array, only flips the referenced `InventoryUnit.status` back to
-   * `available` (RFC 0010 §11's own "the array remains the cumulative
-   * record of every unit ever committed" rule) — which is exactly why
-   * `quantityRemaining` must be a live-status derivation, never a bare
-   * array length. */
-  allocatedUnitIds: ID[];
   status: 'open' | 'reconciled';
   createdAt: number;
 }
 
 /**
+ * Internal-only entity owned by `EventAllocation` (Stage 7 Backend
+ * Integration, Phase 2b) — the real, row-level mirror of the server's
+ * `event_allocation_units` table, and the D59-mandated replacement for this
+ * type's own earlier `EventAllocation.allocatedUnitIds` array field (retired
+ * — an array column can't support the indexed, lockable `SELECT ... FOR
+ * UPDATE` the server's own release/compare-and-swap logic needs).
+ * **Append-only, both server- and client-side** — a release only ever
+ * changes the referenced `InventoryUnit.status`, never removes or mutates a
+ * row here. `unitSource` records how the unit entered this allocation
+ * (`'scan'` — NFC allocation-time exclusivity, `events.md` §3.22; or
+ * `'fifo_assignment'` — manual/FIFO commitment, `events.md` §3.21/§3.23) —
+ * both are real and populated as of Phase 2b, unlike the pre-Phase-2b build
+ * where NFC-scan allocation was entirely unmodeled.
+ */
+export interface EventAllocationUnit {
+  id: ID;
+  eventAllocationId: ID;
+  unitId: ID;
+  unitSource: 'scan' | 'fifo_assignment';
+  committedAt: number;
+}
+
+/**
  * Internal-only entity owned by `EventAllocation` (RFC 0009 §2, corrected
  * RFC 0010/D59) — one row per discrete write action against an
- * `EventAllocation`'s committed set, written unconditionally by
- * `commitAllocation()`/`releaseAllocation()` (`store.tsx`). Previously
- * deferred as having no UI surface — `events.md` §3.16's Approved
- * reconciliation UI now reads `unitSource`/`quantityExpected` directly (the
- * "Ya revisaste esto" ledger existence-check, the confirmed/expected split
- * in the ambient confirmation copy), so this is now modeled.
+ * `EventAllocation`'s committed set, written unconditionally by the server's
+ * private `_fifo_commit_to_allocation`/`_release_from_allocation` helpers.
+ * Mirrored client-side (read-only — this build never writes to it directly)
+ * from each RPC's own returned movement fields. `events.md` §3.16's Approved
+ * reconciliation UI reads `unitSource`/`quantityExpected` directly (the "Ya
+ * revisaste esto" ledger existence-check, the confirmed/expected split in
+ * the ambient confirmation copy).
  *
- * `unitSource` records how each unit entered `allocatedUnitIds` via this
- * movement — every row this build ever writes carries `'fifo_assignment'`,
- * since NFC-scan allocation (`unitSource = 'scan'`) remains unmodeled.
- * `quantityExpected` is populated only on a manual-mode reconciliation write
- * (`type = 'return_to_general'`, called from `events.md` §3.16's closed-Event
- * reconciliation section) — `null` on every other movement, including an
- * ordinary mid-Event `adjustment`. `counterpartEventAllocationId` is carried
- * for Foundation-schema fidelity (reallocation pairs, `events.md` §3.24) —
- * always `null` in this build, since the reallocation transaction itself
- * (`reallocate_in`/`reallocate_out`) is out of this slice's scope.
+ * `unitSource` records how the units this movement affected relate to
+ * `EventAllocationUnit.unitSource` above — both `'scan'` and
+ * `'fifo_assignment'` movements are real as of Phase 2b. `quantityExpected`
+ * is populated only on a manual-mode reconciliation write
+ * (`type = 'return_to_general'`, `unitSource = 'fifo_assignment'`,
+ * `reconcile_manual_allocation`) — `null` on every other movement, including
+ * NFC's own `return_to_general` rows and an ordinary mid-Event `adjustment`.
+ * `counterpartEventAllocationId` is populated on `reallocate_in`/
+ * `reallocate_out` pairs (`reallocate_event_allocation`), `null` otherwise.
  */
 export interface AllocationMovement {
   id: ID;
@@ -627,6 +659,15 @@ export interface SaleItem {
   productId: ID;
   unitId: ID;
   pricePaid: number; // resolved automatically at write time (D33) — never asked
+  /** `decision-log.md` D67 — which open `EventAllocation`, if any, this unit
+   * was consumed from, captured once by `add_item_to_sale`/
+   * `add_item_to_sale_by_tag`'s own allocation-aware branch (the one moment
+   * this fact is actually and unambiguously known). `undefined` for a plain-
+   * pool sale. Read back unchanged by `removeSaleItem`/`cancelSale` to decide
+   * the released unit's revert target — never re-derived from
+   * `eventAllocationUnits`, which is append-only and can't distinguish a
+   * still-live commitment from a long-reconciled one. */
+  eventAllocationId?: ID;
 }
 
 export interface Sale {
@@ -679,9 +720,13 @@ export interface AppState {
   venues: Venue[];
   events: Event[];
   priceOverrides: PriceOverride[];
-  /** RFC 0009/D57, corrected RFC 0010/D59, Slice 12 — see
-   * `EventAllocation`'s own doc comment above. */
+  /** RFC 0009/D57, corrected RFC 0010/D59 — see `EventAllocation`'s own doc
+   * comment above. */
   eventAllocations: EventAllocation[];
+  /** Stage 7 Backend Integration, Phase 2b — see `EventAllocationUnit`'s own
+   * doc comment above. Replaces the retired `EventAllocation.allocatedUnitIds`
+   * array field. */
+  eventAllocationUnits: EventAllocationUnit[];
   /** RFC 0010/D59 — see `AllocationMovement`'s own doc comment above. */
   allocationMovements: AllocationMovement[];
   /** RFC 0011/D60 — see `EventAssignment`'s own doc comment above. */

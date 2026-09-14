@@ -11,6 +11,7 @@ import {
   nfcCapable,
   nfcReadiness,
   quantityRemaining,
+  saleItemHasEventAllocationCommitment,
 } from './selectors';
 import type {
   AllocationMovement,
@@ -20,6 +21,7 @@ import type {
   BusinessMembership,
   Event,
   EventAllocation,
+  EventAllocationUnit,
   EventAssignment,
   EventType,
   ID,
@@ -72,6 +74,7 @@ function initialState(): AppState {
     events: [],
     priceOverrides: [],
     eventAllocations: [],
+    eventAllocationUnits: [],
     allocationMovements: [],
     eventAssignments: [],
   };
@@ -94,6 +97,7 @@ interface LegacyAppStateShape
     | 'currentUserId'
     | 'invitations'
     | 'eventAllocations'
+    | 'eventAllocationUnits'
     | 'allocationMovements'
     | 'eventAssignments'
   > {
@@ -102,15 +106,22 @@ interface LegacyAppStateShape
   authIdentities?: AuthIdentity[];
   currentUserId?: ID | null;
   invitations?: Invitation[];
-  /** RFC 0010/D59 — an old saved row predates `quantityPlanned`/
-   * `allocatedUnitIds` (it may still carry the now-retired stored
-   * `quantityRemaining` key, harmlessly ignored) — see `loadState`'s own
+  /** RFC 0010/D59 — an old saved row predates `quantityPlanned` (it may
+   * still carry the now-retired stored `quantityRemaining`/`allocatedUnitIds`
+   * keys, harmlessly ignored — Phase 2b's own real `event_allocation_units`
+   * table, mirrored client-side as `eventAllocationUnits` below, is what
+   * `allocatedUnitIds` was retired in favor of) — see `loadState`'s own
    * migration below. Typed loosely (`EventAllocation`, not a variant
    * omitting the new fields) matching every other legacy field in this
    * interface's own established "cast loosely, default with `??` at read
    * time" convention (`memberships.status`/`sessions.openedByMembershipId`
    * below). */
   eventAllocations?: EventAllocation[];
+  /** Stage 7 Backend Integration, Phase 2b — an older saved state (before
+   * this pass) has no `eventAllocationUnits` key at all; defaulted to `[]`
+   * below, same backward-compat treatment every other Slice-12+ array field
+   * already gets. */
+  eventAllocationUnits?: EventAllocationUnit[];
   allocationMovements?: AllocationMovement[];
   eventAssignments?: EventAssignment[];
 }
@@ -221,19 +232,25 @@ function loadState(): AppState {
         const priceOverrides = Array.isArray(parsed.priceOverrides) ? parsed.priceOverrides : [];
         const invitations = Array.isArray(parsed.invitations) ? parsed.invitations : [];
         // RFC 0010/D59 — an older saved `EventAllocation` row (before this
-        // pass) has no `quantityPlanned`/`allocatedUnitIds` at all; defaulted
-        // to `0`/`[]`, the same honest "nothing committed via the new
-        // mechanism yet" starting shape `commitAllocation` now writes for a
-        // brand-new row. Its old, now-retired `quantityRemaining` key (if
-        // present) is simply never read again — `quantityRemaining` is a
-        // derived selector now, not a stored field.
+        // pass) has no `quantityPlanned` at all; defaulted to `0`, the same
+        // honest "nothing planned yet" starting shape a brand-new row gets.
+        // Its old, now-retired `quantityRemaining`/`allocatedUnitIds` keys
+        // (if present) are simply never read again — `quantityRemaining` is
+        // a derived selector, and the real committed set now lives in its
+        // own mirrored table, `eventAllocationUnits` (below).
         const eventAllocations: EventAllocation[] = (
           Array.isArray(parsed.eventAllocations) ? parsed.eventAllocations : []
         ).map((a) => ({
           ...a,
           quantityPlanned: a.quantityPlanned ?? 0,
-          allocatedUnitIds: a.allocatedUnitIds ?? [],
         }));
+        // Stage 7 Backend Integration, Phase 2b — an older saved state (before
+        // this pass) has no `eventAllocationUnits` key at all; defaulted to
+        // `[]` — an existing walkthrough resumes with its allocation history
+        // intact (real `EventAllocation`/`AllocationMovement` rows), just
+        // without a locally-mirrored committed-unit set until she next visits
+        // an allocation screen and this build's own RPC calls repopulate it.
+        const eventAllocationUnits = Array.isArray(parsed.eventAllocationUnits) ? parsed.eventAllocationUnits : [];
         // RFC 0010/D59 — an older saved state (before this pass) has no
         // `allocationMovements` key at all; defaulted to `[]`, the same
         // backward-compat treatment every other Slice-12+ array field here
@@ -282,6 +299,7 @@ function loadState(): AppState {
           events,
           priceOverrides,
           eventAllocations,
+          eventAllocationUnits,
           allocationMovements,
           eventAssignments,
           // Backward-compat with localStorage written before the Asignar
@@ -642,17 +660,18 @@ interface StoreValue {
    * LOCKED`, the same concurrency-safety mechanism
    * `assignTagToNextPendingUnit` already established in Phase 1), stamping
    * the Sale's own `performedByMembershipId` the moment its first item is
-   * appended (`decision-log.md` D58). **Plain Business-wide FIFO only —
-   * `EventAllocation`-aware selection (RFC 0010/D59's own local-only
-   * mechanism) is no longer consulted here; Phase 2b's own not-yet-built
-   * compare-and-swap is what will eventually reconcile the two (confirmed
-   * out of this phase's scope, three independent ways).** `idempotencyKey`
-   * is supplied by the caller (`Selling.tsx`'s own per-product idempotency-
-   * key ref, mirroring `commitLot`'s fix — the single highest-frequency
-   * write in the whole product, so this is where that retry discipline
-   * matters most). Resolves `false` on any rejected/failed outcome (no
-   * local state change happens in that case). */
-  addItemToSale: (productId: ID, idempotencyKey: string) => Promise<boolean>;
+   * appended (`decision-log.md` D58). **Phase 2b — `EventAllocation`-aware
+   * selection is now real**: when an open `EventAllocation` exists for this
+   * Session's own Event/Product, the RPC consumes exclusively from its
+   * committed pool, never falling back to the plain pool — `'exhausted'` is
+   * that pool's own terminal, non-retriable compare-and-swap failure
+   * (`home.md` §3.8a's ⊗ pattern's real trigger); `'failed'` is every other
+   * rejected/failed outcome (no local state change happens in either case).
+   * `idempotencyKey` is supplied by the caller (`Selling.tsx`'s own
+   * per-product idempotency-key ref, mirroring `commitLot`'s fix — the
+   * single highest-frequency write in the whole product, so this is where
+   * that retry discipline matters most). */
+  addItemToSale: (productId: ID, idempotencyKey: string) => Promise<'added' | 'exhausted' | 'failed'>;
   /** home.md §3.10 — the nfc-mode counterpart to `addItemToSale` above.
    * Stage 7 Backend Integration, Phase 2: a real call to
    * `add_item_to_sale_by_tag`, sharing `add_item_to_sale`'s own server-side
@@ -860,61 +879,94 @@ interface StoreValue {
    * commit: one write, every row's staged manual quantity at once, per
    * `product-decisions.md` Q24/Q25's own "she only ever sees a number
    * change... never picks or is told which underlying movement type wrote"
-   * rule. **Rewritten as a thin dispatcher, RFC 0010/D59:** for each
-   * `(productId, quantity)` pair, resolves (creating if needed) this Event's
-   * own `EventAllocation`, computes the signed delta between the requested
-   * quantity and that allocation's current live-remaining count
-   * (`quantityRemaining`, `selectors.ts` — never the monotonic
-   * `quantityAllocated` lifetime total, which never decreases), and calls
-   * `commitAllocation()` (delta > 0) or `releaseAllocation(..., 'adjustment')`
-   * (delta < 0) to do the actual FIFO/ledger work — a delta of 0 is a no-op.
-   * She still only ever sees "Para este evento" go up or down; which of
-   * `initial_allocation`/`replenish`/`adjustment` actually wrote is resolved
-   * entirely underneath, invisibly, exactly as before. Manual/FIFO mode
-   * only, this slice — NFC-scan allocation (`events.md` §3.22) is out of
-   * scope. No idempotency key is currently generated for this write, or for
-   * the `commitAllocation()`/`releaseAllocation()` writes it dispatches to.
-   * RFC 0010 §8/§11 names a stable idempotency key as a write-mechanics
-   * requirement; same pre-existing gap as `commitLot()`/`editPrice()`/
-   * `setProductPhoto()` (`BACKLOG.md` §F) — a stated
-   * `architecture-principles.md` #7 guarantee this implementation doesn't
-   * yet satisfy, not fixed here — Stage 7 (Backend Integration) owns it. */
-  saveEventAllocations: (eventId: ID, changes: { productId: ID; quantity: number }[]) => void;
-  /** RFC 0010/D59 §8/§11 — the symmetric decrease/reconciliation operation.
-   * Candidates are `eventAllocation.allocatedUnitIds` entries whose unit is
-   * currently `status='reserved'`, ordered most-recently-committed-first
-   * (by originating `AllocationMovement.createdAt` descending, resolved via
-   * this `EventAllocation`'s own ledger — never commit's own oldest-first
-   * order, a different question with a different answer, §11). Flips up to
-   * `quantity` of them `reserved → available` (fewer if the candidate pool
-   * is smaller — the same partial-fulfillment tolerance `commitAllocation`
-   * already has), writes one `AllocationMovement` row (`type`, the actual
-   * released `unitIds`, `unitSource='fifo_assignment'`, `quantityExpected`
-   * when given), and flips `EventAllocation.status` to `'reconciled'` when
-   * `type='return_to_general'` leaves zero `reserved` units remaining —
-   * never on an ordinary `'adjustment'`. Two call sites, same operation:
-   * `saveEventAllocations`'s own mid-Event decrease (`type='adjustment'`,
-   * no `quantityExpected`) and `events.md` §3.16's closed-Event
-   * reconciliation section (`type='return_to_general'`, `quantityExpected`
-   * = the live-derived expected count at the moment she confirmed).
-   * **`quantity=0` is a legitimate, real call, not a no-op** — §3.16's
-   * N=1 "No regresó" and a stepper confirmed at 0 both mean it, and still
-   * need their own zero-delta ledger row written (for the ambient
-   * "Confirmaste que 0 de N..." copy, and so a later visit's "Ya revisaste
-   * esto" check can find this attempt) — only `quantity > 0` with an empty
-   * candidate pool is treated as a genuine no-op. No idempotency key is
-   * currently generated for this write, despite RFC 0010 §8/§11 naming one
-   * as a write-mechanics requirement. Same pre-existing gap as
-   * `commitLot()`/`editPrice()`/`setProductPhoto()` (`BACKLOG.md` §F); a
-   * stated `architecture-principles.md` #7 guarantee this implementation
-   * doesn't yet satisfy, not fixed here — Stage 7 (Backend Integration)
-   * owns it. */
-  releaseAllocation: (
+   * rule. Stage 7 Backend Integration, Phase 2b — a real, idempotency-keyed
+   * call to `save_event_allocations`
+   * (`20260913060000_event_allocation_persistence_layer.sql`): for each
+   * `(productId, quantity)` pair, the server mint-or-finds this Event's own
+   * `EventAllocation`, computes the signed delta against that allocation's
+   * current live-remaining `fifo_assignment`-sourced count, and dispatches
+   * to its own private `_fifo_commit_to_allocation`/`_release_from_allocation`
+   * helpers — the same FIFO/ledger mechanics `commitAllocation`/
+   * `releaseAllocation` (this build's earlier, now-retired local mock)
+   * performed client-side, now real and server-authoritative. `idempotencyKey`
+   * is caller-supplied (full cache-and-replay, matching `commitLot`'s own
+   * shape) — one key per logical "Guardar cambios" attempt, reused unchanged
+   * across a retry of that same attempt. Resolves `true` on success, `false`
+   * on any rejected/failed outcome (no local state change happens in that
+   * case). */
+  saveEventAllocations: (
+    eventId: ID,
+    changes: { productId: ID; quantity: number }[],
+    idempotencyKey: string,
+  ) => Promise<boolean>;
+  /** events.md §3.22 "Escaneando: [Producto]," NFC-mode's live, immediate
+   * per-scan allocation write. Stage 7 Backend Integration, Phase 2b — a
+   * real call to `scan_unit_into_event_allocation`, resolving the physical
+   * tag to its already-tagged `InventoryUnit` and committing it to this
+   * Event's own `EventAllocation` for that Unit's Product. A fresh
+   * idempotency key per scan, generated inline — matches
+   * `assignTagToNextPendingUnit`'s own precedent (each physical scan is a
+   * genuinely new logical attempt, never a retry of a prior one). Not yet
+   * called by any built screen — §3.22 isn't built in this slice — but a
+   * real, ready function per the Phase 2b design summary's own scope. */
+  scanUnitIntoEventAllocation: (
+    eventId: ID,
+    productId: ID,
+    tagIdentifier: string,
+  ) => Promise<
+    | { ok: true; unitId: ID }
+    | { ok: false; reason: 'already-committed' | 'tag-not-found' | 'wrong-product' | 'platform-error' }
+  >;
+  /** events.md §3.24 "Mover a otro evento," D57's single-transaction move of
+   * allocated stock between two simultaneously-open Events. Stage 7 Backend
+   * Integration, Phase 2b — a real call to `reallocate_event_allocation`.
+   * Selects exactly one pool to move per call (never a mixed manual+scan
+   * single move — matches the Approved UX, §3.16's mixed-row buttons acting
+   * independently): `unitSource='fifo_assignment'` moves `quantity` of the
+   * source allocation's own most-recently-committed manual units;
+   * `unitSource='scan'` moves the specific known-tagged `unitIds` given.
+   * `idempotencyKey` is caller-supplied (full cache-and-replay — a
+   * client-initiated retry on a write with real merchant-facing consequence,
+   * §3.24's own "one save state, one confirmation" framing). Not yet called
+   * by any built screen — §3.24 isn't built in this slice (the client's own
+   * `AllocationMovement.type` enum previously carried `reallocate_in`/
+   * `reallocate_out` only defensively, per the Architecture Gap Analysis's
+   * own finding) — but a real, ready function per the Phase 2b design
+   * summary's own explicit ask. */
+  reallocateEventAllocation: (
+    sourceEventId: ID,
+    destEventId: ID,
+    productId: ID,
+    unitSource: 'scan' | 'fifo_assignment',
+    quantityOrUnitIds: number | ID[],
+    idempotencyKey: string,
+  ) => Promise<boolean>;
+  /** events.md §3.16/§3.25 "Regresar a inventario general," NFC-tagged
+   * rows' own full-known-set reconciliation. Stage 7 Backend Integration,
+   * Phase 2b — a real call to `return_scanned_units_to_general`. No quantity
+   * argument, by design (RFC 0010 §8) — always releases every currently
+   * `reserved`-and-unclaimed `scan`-sourced unit for the given allocation in
+   * one call. `idempotencyKey` is caller-supplied (full cache-and-replay). */
+  returnScannedUnitsToGeneral: (eventAllocationId: ID, idempotencyKey: string) => Promise<boolean>;
+  /** events.md §3.16 closed-Event reconciliation for manual/untagged rows
+   * ("Sí, regresaron las N" / "No regresó" / Ajustar cantidad's "Confirmar"),
+   * RFC 0010 §8/§11's own quantity-based reconciliation action. Stage 7
+   * Backend Integration, Phase 2b — a real call to
+   * `reconcile_manual_allocation`, replacing this build's earlier, now-
+   * retired local `releaseAllocation(..., 'return_to_general', ...)` call
+   * site. `quantityExpected` is the live-derived ceiling the caller already
+   * displayed to Ana (`quantityRemainingBySource`, `selectors.ts`) — carried
+   * through purely for this function's own local-mirror bookkeeping (the
+   * server independently, authoritatively re-derives its own copy at write
+   * time, never trusting this one for the write itself — see the RPC's own
+   * doc comment). `idempotencyKey` is caller-supplied (full cache-and-
+   * replay). */
+  reconcileManualAllocation: (
     eventAllocationId: ID,
     quantity: number,
-    type: 'adjustment' | 'return_to_general',
-    quantityExpected?: number | null,
-  ) => void;
+    quantityExpected: number,
+    idempotencyKey: string,
+  ) => Promise<boolean>;
   /** `product/99-rfc/0011-event-assignment.md`/`decision-log.md` D60 — the
    * atomic `EventAssignment`-creation write. Called directly by the
    * OWNER-side "assign staff to an Event" screen,
@@ -1471,16 +1523,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * posture `commitLot`/`completeOnboarding` already established) — find-or-
    * create the local `Sale` row by its real `sale_id` (mint-or-find can
    * legitimately replay an already-mirrored Sale on a retried tap), append
-   * the new `SaleItem` by its real `sale_item_id`/`unit_id`, and flip that
-   * unit's local mirror to `'reserved'`. Pure, given `s` — called from
-   * inside each caller's own `setState` updater, never calling `setState`
-   * itself.
+   * the new `SaleItem` by its real `sale_item_id`/`unit_id`/
+   * `event_allocation_id` (D67 — the server's own authoritative allocation
+   * decision, never re-derived client-side), and flip that unit's local
+   * mirror to `'reserved'`. Pure, given `s` — called from inside each
+   * caller's own `setState` updater, never calling `setState` itself.
    */
   function mirrorAddedSaleItem(
     s: AppState,
     sessionId: ID,
     productId: ID,
-    row: { sale_id: ID; sale_item_id: ID; unit_id: ID; price_paid: number },
+    row: { sale_id: ID; sale_item_id: ID; unit_id: ID; price_paid: number; event_allocation_id: ID | null },
     performedByMembershipId: ID,
   ): AppState {
     let sales = s.sales;
@@ -1492,7 +1545,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (sale.items.some((i) => i.id === row.sale_item_id)) {
       return s; // already mirrored (a replayed idempotent result)
     }
-    const item: SaleItem = { id: row.sale_item_id, productId, unitId: row.unit_id, pricePaid: row.price_paid };
+    const item: SaleItem = {
+      id: row.sale_item_id,
+      productId,
+      unitId: row.unit_id,
+      pricePaid: row.price_paid,
+      eventAllocationId: row.event_allocation_id ?? undefined,
+    };
     sales = sales.map((sa) => (sa.id === sale!.id ? { ...sa, items: [...sa.items, item] } : sa));
     const units = s.units.map((u) => (u.id === row.unit_id ? { ...u, status: 'reserved' as InventoryUnitStatus } : u));
     return { ...s, sales, units };
@@ -1835,32 +1894,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * replacing this function's previous client-side FIFO scan/price
    * resolution/local Sale-append logic entirely.
    *
-   * **`EventAllocation`-aware selection is no longer consulted here.** The
-   * RPC performs plain Business-wide FIFO only (Phase 2's own explicit scope
-   * boundary — EventAllocation/AllocationMovement are Phase 2b, confirmed
-   * out of scope three independent ways). `EventAllocation`'s own "Para este
-   * evento" bookkeeping (`commitAllocation`/`releaseAllocation`/
-   * `saveEventAllocations`, the Events screens that read it) remains an
-   * entirely local, display/planning-only concept in this build — not yet
-   * enforced by the real selling write, exactly as Phase 2b's own not-yet-
-   * built compare-and-swap is what will eventually reconcile the two.
+   * **Stage 7 Backend Integration, Phase 2b — `EventAllocation`-aware
+   * selection is now real** (`20260913061000_event_allocation_selling_
+   * integration.sql`): when an open `EventAllocation` exists for this
+   * Session's own `(eventId, productId)`, the RPC consumes exclusively from
+   * that allocation's own committed-and-unclaimed pool, never falling back
+   * to the plain Business-wide pool — its exhaustion is a distinct,
+   * terminal `event_allocation_exhausted` error (`home.md` §3.8a's ⊗
+   * pattern's actual real-backend trigger), never retriable the way a
+   * generic failure is. A Product with no open allocation for this Event is
+   * completely unaffected — plain FIFO, exactly as Phase 2 shipped it.
    *
    * `idempotencyKey` is supplied by the caller (`Selling.tsx`'s own
    * per-product idempotency-key ref, mirroring `commitLot`'s own fix) — one
-   * key per logical tap, reused unchanged across a retry of that same tap.
-   * Resolves `true` on success, `false` on any rejected/failed outcome (no
-   * local state change happens in that case).
+   * key per logical tap, reused unchanged across a retry of that same tap
+   * (never retried by this function itself on `'exhausted'` — see above).
    */
-  async function addItemToSale(productId: ID, idempotencyKey: string): Promise<boolean> {
-    if (!state.business) return false; // defensive — Selling only mounts once onboarding is complete
+  async function addItemToSale(productId: ID, idempotencyKey: string): Promise<'added' | 'exhausted' | 'failed'> {
+    if (!state.business) return 'failed'; // defensive — Selling only mounts once onboarding is complete
     const membership = actingMembership(state);
-    if (!membership) return false; // defensive — Selling only mounts once a valid acting Membership resolves
+    if (!membership) return 'failed'; // defensive — Selling only mounts once a valid acting Membership resolves
     const session = myActiveSession(state, membership.id);
-    if (!session) return false;
+    if (!session) return 'failed';
     const supabase = getSupabaseClient();
     if (!supabase) {
       console.error('[store] addItemToSale: Supabase not configured. See supabase/README.md.');
-      return false;
+      return 'failed';
     }
     const { data, error } = await supabase
       .rpc('add_item_to_sale', {
@@ -1871,13 +1930,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (error || !data) {
+      if (error?.message === 'event_allocation_exhausted') return 'exhausted';
       console.error('[store] add_item_to_sale failed', error);
-      return false;
+      return 'failed';
     }
 
-    const row = data as { sale_id: ID; sale_item_id: ID; unit_id: ID; price_paid: number };
+    const row = data as { sale_id: ID; sale_item_id: ID; unit_id: ID; price_paid: number; event_allocation_id: ID | null };
     setState((s) => mirrorAddedSaleItem(s, session.id, productId, row, membership.id));
-    return true;
+    return 'added';
   }
 
   /**
@@ -1929,20 +1989,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return { ok: false, reason: 'no-match' };
     }
 
-    const row = data as { sale_id: ID; sale_item_id: ID; unit_id: ID; product_id: ID; price_paid: number };
+    const row = data as {
+      sale_id: ID;
+      sale_item_id: ID;
+      unit_id: ID;
+      product_id: ID;
+      price_paid: number;
+      event_allocation_id: ID | null;
+    };
     setState((s) => mirrorAddedSaleItem(s, session.id, row.product_id, row, membership.id));
     return { ok: true, unitId: row.unit_id, productId: row.product_id };
   }
 
   /** home.md §3.8a's "Quitar de la venta." Stage 7 Backend Integration,
    * Phase 2: a real call to `remove_sale_item` (naturally idempotent by id
-   * — no client-supplied key needed). Plain reserved->available revert —
-   * `EventAllocation`'s own "still genuinely committed, revert to
-   * `reserved`" distinction (RFC 0010/D59, the client's pre-Phase-2 local
-   * mock) is no longer consulted here, for the same reason
-   * `addItemToSale`'s own doc comment above names — Phase 2b's own
-   * compare-and-swap, not built yet, is what will eventually reconcile the
-   * two. */
+   * — no client-supplied key needed). **Phase 2b/D67:** the server's own
+   * `remove_sale_item` now reverts a unit to `'reserved'` (still genuinely
+   * committed to its `EventAllocation`, only unclaimed from this Sale) or
+   * `'available'` (the plain-pool case, unchanged) by reading the removed
+   * `SaleItem`'s own `eventAllocationId` back unchanged — mirrored here via
+   * `saleItemHasEventAllocationCommitment`, the identical row-level check
+   * against the same already-mirrored `SaleItem` the server itself just
+   * read. */
   async function removeSaleItem(saleItemId: ID): Promise<void> {
     if (!state.business) return;
     const supabase = getSupabaseClient();
@@ -1965,7 +2033,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const sales = s.sales.map((sa) =>
         sa.id === sale.id ? { ...sa, items: sa.items.filter((i) => i.id !== saleItemId) } : sa,
       );
-      const units = s.units.map((u) => (u.id === item.unitId ? { ...u, status: 'available' as InventoryUnitStatus } : u));
+      const revertStatus: InventoryUnitStatus = saleItemHasEventAllocationCommitment(item) ? 'reserved' : 'available';
+      const units = s.units.map((u) => (u.id === item.unitId ? { ...u, status: revertStatus } : u));
       return { ...s, sales, units };
     });
   }
@@ -1973,8 +2042,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   /** home.md §3.8a "Cancelar" — the whole open Sale, all at once. Stage 7
    * Backend Integration, Phase 2: a real call to `cancel_sale` (naturally
    * idempotent — no open Sale on this Session is a no-op — no client-
-   * supplied key needed). Plain reserved->available revert for every item,
-   * same scope boundary as `removeSaleItem` above.
+   * supplied key needed). **Phase 2b/D67:** per-item revert target
+   * (`'reserved'` if allocation-committed, `'available'` otherwise), same
+   * mirrored check as `removeSaleItem` above.
    *
    * `saleId` is captured by the caller (`Selling.tsx`) at the moment
    * "Cancelar" is actually tapped, not re-resolved here — `reviewer`
@@ -2000,8 +2070,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return;
     }
     setState((s) => {
-      const unitIds = new Set(openSale.items.map((i) => i.unitId));
-      const units = s.units.map((u) => (unitIds.has(u.id) ? { ...u, status: 'available' as InventoryUnitStatus } : u));
+      const units = s.units.map((u) => {
+        const item = openSale.items.find((i) => i.unitId === u.id);
+        if (!item) return u;
+        const revertStatus: InventoryUnitStatus = saleItemHasEventAllocationCommitment(item) ? 'reserved' : 'available';
+        return { ...u, status: revertStatus };
+      });
       const sales = s.sales.filter((sa) => sa.id !== openSale.id);
       return { ...s, sales, units };
     });
@@ -2508,222 +2582,415 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * RFC 0010/D59 §2/§8/§11 — the FIFO-commit half of the Physical-location-
-   * exclusivity invariant's mechanism (b), generalizing NFC allocation's own
-   * conditional `available → reserved` write (RFC 0009 §3(a)) to manual
-   * mode. FIFO-selects `min(quantity, available-and-untagged count)`
-   * `InventoryUnit` rows (`status='available' && tagId==null`, oldest
-   * `receivedAt` first — D5's own ordering), flips each to `reserved`,
-   * appends the flipped ids to `allocatedUnitIds` (deduplicated — see this
-   * function's own inline note), increments `quantityAllocated` by the
-   * actual count flipped (monotonic — never decremented by
-   * `releaseAllocation`, §11), and writes one `AllocationMovement` row
-   * (`type='initial_allocation'` on this allocation's first-ever commit,
-   * else `'replenish'` — resolved from whether `allocatedUnitIds` was empty
-   * *before* this call, the same live-state check `quantityRemaining`'s own
-   * retirement established elsewhere in this RFC, never a separately
-   * tracked flag). A no-op if no candidate is available at all (the
-   * partial-fulfillment case — fewer than `quantity` flipped — still writes
-   * a movement for whatever *was* flipped, same tolerance ordinary FIFO
-   * consumption already has). Private to this module — only
-   * `saveEventAllocations` below calls it; no UI surface calls it directly,
-   * matching `events.md` §3.21's "she only ever sees a number change" rule.
-   * No idempotency key is currently generated for this write, despite RFC
-   * 0010 §8/§11 naming one as a write-mechanics requirement. Same
-   * pre-existing gap as `commitLot()`/`editPrice()`/`setProductPhoto()`
-   * (`BACKLOG.md` §F); a stated `architecture-principles.md` #7 guarantee
-   * this implementation doesn't yet satisfy, not fixed here — Stage 7
-   * (Backend Integration) owns it.
+   * Stage 7 Backend Integration, Phase 2b — shared local-mirror helper: a
+   * real, server-confirmed `AllocationMovement` folded into the local
+   * mirror every allocation screen reads from. `movement.id` is checked
+   * against `s.allocationMovements` first (already-mirrored guard, the same
+   * "a replayed idempotent result" posture `mirrorAddedSaleItem` already
+   * holds) — a lost-response retry that replays a cached RPC result must
+   * never double-apply its side effects locally.
+   *
+   * A commit-typed movement (`initial_allocation`/`replenish`/
+   * `reallocate_in`) flips every affected unit to `reserved` and appends the
+   * corresponding `EventAllocationUnit` rows (deduplicated against this
+   * allocation's own existing rows — the local mirror of the server's own
+   * `(event_allocation_id, unit_id)` uniqueness). A release-typed movement
+   * (`adjustment`/`return_to_general`/`reallocate_out`) flips every affected
+   * unit back to `available` — `EventAllocationUnit` itself is never pruned
+   * (append-only, matching the server's own table).
    */
-  function commitAllocation(eventAllocationId: ID, quantity: number) {
-    if (quantity <= 0) return;
-    setState((s) => {
-      const allocation = s.eventAllocations.find((a) => a.id === eventAllocationId);
-      if (!allocation) return s;
+  function mirrorAllocationMovement(
+    s: AppState,
+    eventAllocationId: ID,
+    movement: {
+      id: ID;
+      type: AllocationMovement['type'];
+      unitIds: ID[];
+      quantityDelta: number;
+      unitSource: 'scan' | 'fifo_assignment';
+      quantityExpected: number | null;
+      counterpartEventAllocationId: ID | null;
+    } | null,
+  ): AppState {
+    if (!movement) return s;
+    if (s.allocationMovements.some((m) => m.id === movement.id)) return s;
 
-      const candidates = s.units
-        .filter((u) => u.productId === allocation.productId && u.status === 'available' && u.tagId == null)
-        .sort((a, b) => a.receivedAt - b.receivedAt)
-        .slice(0, quantity);
-      if (candidates.length === 0) return s;
+    const isCommit = movement.type === 'initial_allocation' || movement.type === 'replenish' || movement.type === 'reallocate_in';
+    const affected = new Set(movement.unitIds);
+    const units = s.units.map((u) =>
+      affected.has(u.id) ? { ...u, status: (isCommit ? 'reserved' : 'available') as InventoryUnitStatus } : u,
+    );
 
-      const flippedIds = candidates.map((u) => u.id);
-      const flippedSet = new Set(flippedIds);
-      const units = s.units.map((u) => (flippedSet.has(u.id) ? { ...u, status: 'reserved' as InventoryUnitStatus } : u));
+    let eventAllocationUnits = s.eventAllocationUnits;
+    if (isCommit) {
+      const already = new Set(
+        eventAllocationUnits.filter((u) => u.eventAllocationId === eventAllocationId).map((u) => u.unitId),
+      );
+      const newRows: EventAllocationUnit[] = movement.unitIds
+        .filter((id) => !already.has(id))
+        .map((id) => ({
+          id: makeId('eau'),
+          eventAllocationId,
+          unitId: id,
+          unitSource: movement.unitSource,
+          committedAt: Date.now(),
+        }));
+      eventAllocationUnits = [...eventAllocationUnits, ...newRows];
+    }
 
-      const isFirstEverCommit = allocation.allocatedUnitIds.length === 0;
-      const movement: AllocationMovement = {
-        id: makeId('movement'),
-        eventAllocationId,
-        type: isFirstEverCommit ? 'initial_allocation' : 'replenish',
-        unitIds: flippedIds,
-        quantityDelta: flippedIds.length,
-        unitSource: 'fifo_assignment',
-        quantityExpected: null,
-        counterpartEventAllocationId: null,
-        createdAt: Date.now(),
-      };
+    const mirrored: AllocationMovement = {
+      id: movement.id,
+      eventAllocationId,
+      type: movement.type,
+      unitIds: movement.unitIds,
+      quantityDelta: movement.quantityDelta,
+      unitSource: movement.unitSource,
+      quantityExpected: movement.quantityExpected,
+      counterpartEventAllocationId: movement.counterpartEventAllocationId,
+      createdAt: Date.now(),
+    };
 
-      const eventAllocations = s.eventAllocations.map((a) => {
-        if (a.id !== eventAllocationId) return a;
-        // Defensive dedupe — RFC 0010 §11's own append-only rule means a
-        // unit released earlier (still present in `allocatedUnitIds`, no
-        // longer `reserved`) could in principle be FIFO-reselected by a
-        // later commit against the *same* allocation; without this guard
-        // that would push a duplicate id into the array and silently
-        // double-count it in the derived `quantityRemaining` selector.
-        const newIds = flippedIds.filter((id) => !a.allocatedUnitIds.includes(id));
-        return {
-          ...a,
-          allocatedUnitIds: [...a.allocatedUnitIds, ...newIds],
-          quantityAllocated: a.quantityAllocated + flippedIds.length,
-        };
-      });
-
-      return { ...s, units, eventAllocations, allocationMovements: [...s.allocationMovements, movement] };
-    });
+    return { ...s, units, eventAllocationUnits, allocationMovements: [...s.allocationMovements, mirrored] };
   }
 
-  /** RFC 0010/D59 §11 (mid-Event decrease) / §8 (Event-close reconciliation)
-   * — see this function's own `StoreValue` doc comment for the full
-   * reasoning. */
-  function releaseAllocation(
+  /** Stage 7 Backend Integration, Phase 2b — shared local-mirror helper:
+   * upserts the `EventAllocation` row itself (the server's own
+   * mint-or-find-by-`(event_id, product_id)` result) — find-by-id first
+   * (mint-or-find can legitimately replay an already-mirrored row on a
+   * retried call, the same posture `mirrorAddedSaleItem` holds for `Sale`),
+   * creating a fresh local row only if none exists yet. */
+  function mirrorAllocationUpsert(
+    s: AppState,
+    eventId: ID,
+    productId: ID,
     eventAllocationId: ID,
-    quantity: number,
-    type: 'adjustment' | 'return_to_general',
-    quantityExpected: number | null = null,
-  ) {
-    if (quantity < 0) return; // defensive — never a negative request
-    setState((s) => {
-      const allocation = s.eventAllocations.find((a) => a.id === eventAllocationId);
-      if (!allocation) return s;
-
-      // Resolve each `allocatedUnitIds` entry's originating movement
-      // `createdAt` — "most-recently-committed-first," not commit's own
-      // FIFO-forward order (RFC 0010 §11). Only the "adding" movement types
-      // ever originate a unit's membership in this array; a unit is looked
-      // up against the *first* such movement it appears in (chronological
-      // array order), which — given `commitAllocation`'s own dedupe above —
-      // is always its one true originating write.
-      const originatingCreatedAt = new Map<ID, number>();
-      for (const m of s.allocationMovements) {
-        if (m.eventAllocationId !== eventAllocationId) continue;
-        if (m.type !== 'initial_allocation' && m.type !== 'replenish' && m.type !== 'reallocate_in') continue;
-        for (const unitId of m.unitIds) {
-          if (!originatingCreatedAt.has(unitId)) originatingCreatedAt.set(unitId, m.createdAt);
-        }
-      }
-
-      const unitsById = new Map(s.units.map((u) => [u.id, u]));
-      // Candidates: `allocatedUnitIds` entries whose unit is currently
-      // `reserved`. Every populated entry in this build is
-      // `fifo_assignment`-sourced (NFC allocation is unmodeled this slice),
-      // so no separate `unitSource` filter is needed beyond what
-      // `commitAllocation` ever wrote here.
-      const reservedIds = allocation.allocatedUnitIds.filter((id) => unitsById.get(id)?.status === 'reserved');
-      const candidates = reservedIds
-        .slice()
-        .sort((a, b) => (originatingCreatedAt.get(b) ?? 0) - (originatingCreatedAt.get(a) ?? 0))
-        .slice(0, quantity);
-      // A genuine no-op only when she asked for something (`quantity > 0`)
-      // but nothing was actually available to release (a stale/raced read —
-      // the same partial-fulfillment tolerance `commitAllocation` has, at
-      // its own zero end). **`quantity === 0` is itself a legitimate,
-      // real confirmation, not a no-op** — RFC 0010 §8's "No regresó" (N=1)
-      // and a stepper confirmed at 0 (N>1) both call this with
-      // `quantity=0` and still need their own `AllocationMovement` row (
-      // `quantityDelta=0`) written, both for the ambient "Confirmaste que 0
-      // de N..." copy and so §3.16's "Ya revisaste esto" existence check can
-      // ever find this reconciliation attempt on a later visit.
-      if (quantity > 0 && candidates.length === 0) return s;
-
-      const candidateSet = new Set(candidates);
-      const units =
-        candidates.length > 0
-          ? s.units.map((u) => (candidateSet.has(u.id) ? { ...u, status: 'available' as InventoryUnitStatus } : u))
-          : s.units;
-
-      const movement: AllocationMovement = {
-        id: makeId('movement'),
-        eventAllocationId,
-        type,
-        unitIds: candidates,
-        quantityDelta: -candidates.length,
-        unitSource: 'fifo_assignment',
-        quantityExpected,
-        counterpartEventAllocationId: null,
-        createdAt: Date.now(),
-      };
-
-      // `EventAllocation.status` flips to `'reconciled'` only as a
-      // consequence of a `return_to_general` write leaving zero `reserved`
-      // units remaining (RFC 0010 §8) — never on an ordinary `'adjustment'`.
-      // `allocatedUnitIds` is never pruned (§11) — only the referenced
-      // unit's own `status` changes.
-      const remainingAfter = reservedIds.length - candidates.length;
-      const nextStatus: EventAllocation['status'] =
-        type === 'return_to_general' && remainingAfter === 0 ? 'reconciled' : allocation.status;
-
-      const eventAllocations = s.eventAllocations.map((a) =>
-        a.id === eventAllocationId ? { ...a, status: nextStatus } : a,
-      );
-
-      return {
-        ...s,
-        units,
-        eventAllocations,
-        allocationMovements: [...s.allocationMovements, movement],
-      };
-    });
+    quantityAllocated: number,
+    status: EventAllocation['status'],
+  ): AppState {
+    const exists = s.eventAllocations.some((a) => a.id === eventAllocationId);
+    const eventAllocations = exists
+      ? s.eventAllocations.map((a) => (a.id === eventAllocationId ? { ...a, quantityAllocated, status } : a))
+      : [
+          ...s.eventAllocations,
+          {
+            id: eventAllocationId,
+            eventId,
+            productId,
+            quantityPlanned: 0,
+            quantityAllocated,
+            status,
+            createdAt: Date.now(),
+          },
+        ];
+    return { ...s, eventAllocations };
   }
 
   /** events.md §3.21/§3.23 "Guardar cambios" — see this function's own
-   * `StoreValue` doc comment for the full reasoning. **Rewritten as a thin
-   * dispatcher, RFC 0010/D59** — the actual FIFO/ledger work lives entirely
-   * in `commitAllocation`/`releaseAllocation` above; this function only
-   * resolves (or creates) each pair's `EventAllocation` row and the signed
-   * delta between the requested quantity and that allocation's current
-   * live-remaining count. Preserves the existing bulk "one save moment" UX
-   * — every row's change is dispatched from this one call, even though the
-   * underlying writes are no longer literally one `setState` (each
-   * `commitAllocation`/`releaseAllocation` call is its own functional
-   * `setState` update, chained correctly since React queues successive
-   * functional updates against the previous one's result within the same
-   * synchronous call). */
-  function saveEventAllocations(eventId: ID, changes: { productId: ID; quantity: number }[]) {
-    for (const change of changes) {
-      const existing = state.eventAllocations.find(
-        (a) => a.eventId === eventId && a.productId === change.productId && a.status === 'open',
-      );
-      if (!existing) {
-        if (change.quantity <= 0) continue; // nothing to create for a still-zero row
-        const newAllocation: EventAllocation = {
-          id: makeId('alloc'),
-          eventId,
-          productId: change.productId,
-          quantityPlanned: 0,
-          quantityAllocated: 0,
-          allocatedUnitIds: [],
-          status: 'open',
-          createdAt: Date.now(),
-        };
-        setState((s) => ({ ...s, eventAllocations: [...s.eventAllocations, newAllocation] }));
-        commitAllocation(newAllocation.id, change.quantity);
-        continue;
-      }
-      // Delta against the *live-remaining* committed count — never the
-      // monotonic `quantityAllocated` lifetime total (RFC 0010 §11), which
-      // never decreases and would double-release/double-commit against any
-      // prior mid-Event decrease. Safe to read from the outer `state`
-      // closure rather than a fresh functional-update read: each `change`
-      // in this loop targets a distinct `(eventId, productId)` pair, so no
-      // iteration's write ever affects another iteration's own target row.
-      const remaining = quantityRemaining(state, existing);
-      const delta = change.quantity - remaining;
-      if (delta > 0) commitAllocation(existing.id, delta);
-      else if (delta < 0) releaseAllocation(existing.id, -delta, 'adjustment');
-      // delta === 0 → no-op, nothing changed for this row
+   * `StoreValue` doc comment for the full reasoning. A real call to
+   * `save_event_allocations`, folding each returned row into the local
+   * mirror via `mirrorAllocationUpsert`/`mirrorAllocationMovement` above. */
+  async function saveEventAllocations(
+    eventId: ID,
+    changes: { productId: ID; quantity: number }[],
+    idempotencyKey: string,
+  ): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] saveEventAllocations: Supabase not configured. See supabase/README.md.');
+      return false;
     }
+    const { data, error } = await supabase.rpc('save_event_allocations', {
+      p_business_id: state.business.id,
+      p_event_id: eventId,
+      p_idempotency_key: idempotencyKey,
+      p_changes: changes.map((c) => ({ product_id: c.productId, quantity: c.quantity })),
+    });
+
+    if (error || !data) {
+      console.error('[store] save_event_allocations failed', error);
+      return false;
+    }
+
+    const rows = data as {
+      product_id: ID;
+      event_allocation_id: ID;
+      quantity_allocated: number;
+      status: EventAllocation['status'];
+      movement_id: ID | null;
+      movement_type: AllocationMovement['type'] | null;
+      movement_unit_ids: ID[] | null;
+      movement_quantity_delta: number | null;
+    }[];
+
+    setState((s) => {
+      let next = s;
+      for (const row of rows) {
+        next = mirrorAllocationUpsert(next, eventId, row.product_id, row.event_allocation_id, row.quantity_allocated, row.status);
+        if (row.movement_id && row.movement_type && row.movement_unit_ids) {
+          next = mirrorAllocationMovement(next, row.event_allocation_id, {
+            id: row.movement_id,
+            type: row.movement_type,
+            unitIds: row.movement_unit_ids,
+            quantityDelta: row.movement_quantity_delta ?? 0,
+            unitSource: 'fifo_assignment',
+            quantityExpected: null,
+            counterpartEventAllocationId: null,
+          });
+        }
+      }
+      return next;
+    });
+    return true;
+  }
+
+  /** events.md §3.22 — see this function's own `StoreValue` doc comment for
+   * the full reasoning. A real call to `scan_unit_into_event_allocation`.
+   * The commit's own `type` (`initial_allocation` vs `replenish`) isn't
+   * returned by the RPC — resolved locally from whether this allocation's
+   * `scan`-sourced pool was empty before this call, the same live-state
+   * inference `_fifo_commit_to_allocation` performs server-side (no UI
+   * currently reads a `scan`-sourced movement's exact `type`, so this is a
+   * safe, disclosed local approximation, not a load-bearing security or
+   * write-correctness concern — the server's own ledger is authoritative). */
+  async function scanUnitIntoEventAllocation(
+    eventId: ID,
+    productId: ID,
+    tagIdentifier: string,
+  ): Promise<
+    | { ok: true; unitId: ID }
+    | { ok: false; reason: 'already-committed' | 'tag-not-found' | 'wrong-product' | 'platform-error' }
+  > {
+    if (!state.business) return { ok: false, reason: 'platform-error' };
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] scanUnitIntoEventAllocation: Supabase not configured. See supabase/README.md.');
+      return { ok: false, reason: 'platform-error' };
+    }
+    const { data, error } = await supabase
+      .rpc('scan_unit_into_event_allocation', {
+        p_business_id: state.business.id,
+        p_event_id: eventId,
+        p_product_id: productId,
+        p_tag_identifier: tagIdentifier,
+        p_idempotency_key: crypto.randomUUID(),
+      })
+      .single();
+
+    if (error || !data) {
+      if (error?.message === 'unit_already_committed') return { ok: false, reason: 'already-committed' };
+      if (error?.message === 'tag_not_found') return { ok: false, reason: 'tag-not-found' };
+      if (error?.message === 'tag_wrong_product') return { ok: false, reason: 'wrong-product' };
+      console.error('[store] scan_unit_into_event_allocation failed', error);
+      return { ok: false, reason: 'platform-error' };
+    }
+
+    const row = data as { event_allocation_id: ID; unit_id: ID; movement_id: ID };
+    const existingAllocation = state.eventAllocations.find((a) => a.id === row.event_allocation_id);
+    const wasEmptyBefore = !state.eventAllocationUnits.some(
+      (u) => u.eventAllocationId === row.event_allocation_id && u.unitSource === 'scan',
+    );
+
+    setState((s) => {
+      let next = mirrorAllocationUpsert(
+        s,
+        eventId,
+        productId,
+        row.event_allocation_id,
+        existingAllocation?.quantityAllocated ?? 0,
+        'open',
+      );
+      next = mirrorAllocationMovement(next, row.event_allocation_id, {
+        id: row.movement_id,
+        type: wasEmptyBefore ? 'initial_allocation' : 'replenish',
+        unitIds: [row.unit_id],
+        quantityDelta: 1,
+        unitSource: 'scan',
+        quantityExpected: null,
+        counterpartEventAllocationId: null,
+      });
+      return next;
+    });
+    return { ok: true, unitId: row.unit_id };
+  }
+
+  /** events.md §3.24 — see this function's own `StoreValue` doc comment for
+   * the full reasoning. A real call to `reallocate_event_allocation`,
+   * folding both sides of the single-transaction move into the local
+   * mirror — the source's own `reallocate_out` movement, then the
+   * destination's `reallocate_in` movement (mint-or-find, and
+   * `quantityAllocated` incremented locally only for `unitSource=
+   * 'fifo_assignment'`, mirroring `_fifo_commit_to_allocation`'s own
+   * server-side rule). The source `EventAllocation`'s own status is
+   * untouched by this operation, matching the server's own scoping
+   * decision (`_release_from_allocation`'s `'reconciled'` flip applies only
+   * to `'return_to_general'`, never `'reallocate_out'` — see that
+   * migration's own header comment). */
+  async function reallocateEventAllocation(
+    sourceEventId: ID,
+    destEventId: ID,
+    productId: ID,
+    unitSource: 'scan' | 'fifo_assignment',
+    quantityOrUnitIds: number | ID[],
+    idempotencyKey: string,
+  ): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] reallocateEventAllocation: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const isQuantity = typeof quantityOrUnitIds === 'number';
+    const { data, error } = await supabase
+      .rpc('reallocate_event_allocation', {
+        p_business_id: state.business.id,
+        p_idempotency_key: idempotencyKey,
+        p_source_event_id: sourceEventId,
+        p_dest_event_id: destEventId,
+        p_product_id: productId,
+        p_unit_source: unitSource,
+        p_quantity: isQuantity ? quantityOrUnitIds : null,
+        p_unit_ids: isQuantity ? null : quantityOrUnitIds,
+      })
+      .single();
+
+    if (error || !data) {
+      console.error('[store] reallocate_event_allocation failed', error);
+      return false;
+    }
+
+    const row = data as {
+      source_event_allocation_id: ID;
+      dest_event_allocation_id: ID;
+      moved_unit_ids: ID[];
+      source_movement_id: ID;
+      dest_movement_id: ID;
+    };
+    const existingDestAllocation = state.eventAllocations.find((a) => a.id === row.dest_event_allocation_id);
+    const destQuantityAllocated =
+      (existingDestAllocation?.quantityAllocated ?? 0) + (unitSource === 'fifo_assignment' ? row.moved_unit_ids.length : 0);
+
+    setState((s) => {
+      let next = mirrorAllocationMovement(s, row.source_event_allocation_id, {
+        id: row.source_movement_id,
+        type: 'reallocate_out',
+        unitIds: row.moved_unit_ids,
+        quantityDelta: -row.moved_unit_ids.length,
+        unitSource,
+        quantityExpected: null,
+        counterpartEventAllocationId: row.dest_event_allocation_id,
+      });
+      next = mirrorAllocationUpsert(next, destEventId, productId, row.dest_event_allocation_id, destQuantityAllocated, 'open');
+      next = mirrorAllocationMovement(next, row.dest_event_allocation_id, {
+        id: row.dest_movement_id,
+        type: 'reallocate_in',
+        unitIds: row.moved_unit_ids,
+        quantityDelta: row.moved_unit_ids.length,
+        unitSource,
+        quantityExpected: null,
+        counterpartEventAllocationId: row.source_event_allocation_id,
+      });
+      return next;
+    });
+    return true;
+  }
+
+  /** events.md §3.16/§3.25 "Regresar a inventario general" (NFC rows) — see
+   * this function's own `StoreValue` doc comment for the full reasoning. A
+   * real call to `return_scanned_units_to_general`. */
+  async function returnScannedUnitsToGeneral(eventAllocationId: ID, idempotencyKey: string): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] returnScannedUnitsToGeneral: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { data, error } = await supabase
+      .rpc('return_scanned_units_to_general', {
+        p_business_id: state.business.id,
+        p_event_allocation_id: eventAllocationId,
+        p_idempotency_key: idempotencyKey,
+      })
+      .single();
+
+    if (error || !data) {
+      console.error('[store] return_scanned_units_to_general failed', error);
+      return false;
+    }
+
+    const row = data as { released_unit_ids: ID[]; movement_id: ID };
+    setState((s) => {
+      let next = mirrorAllocationMovement(s, eventAllocationId, {
+        id: row.movement_id,
+        type: 'return_to_general',
+        unitIds: row.released_unit_ids,
+        quantityDelta: -row.released_unit_ids.length,
+        unitSource: 'scan',
+        quantityExpected: null,
+        counterpartEventAllocationId: null,
+      });
+      const allocation = next.eventAllocations.find((a) => a.id === eventAllocationId);
+      if (allocation && quantityRemaining(next, allocation) === 0) {
+        next = {
+          ...next,
+          eventAllocations: next.eventAllocations.map((a) => (a.id === eventAllocationId ? { ...a, status: 'reconciled' } : a)),
+        };
+      }
+      return next;
+    });
+    return true;
+  }
+
+  /** events.md §3.16 closed-Event reconciliation for manual/untagged rows —
+   * see this function's own `StoreValue` doc comment for the full
+   * reasoning. A real call to `reconcile_manual_allocation`. */
+  async function reconcileManualAllocation(
+    eventAllocationId: ID,
+    quantity: number,
+    quantityExpected: number,
+    idempotencyKey: string,
+  ): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] reconcileManualAllocation: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { data, error } = await supabase
+      .rpc('reconcile_manual_allocation', {
+        p_business_id: state.business.id,
+        p_event_allocation_id: eventAllocationId,
+        p_idempotency_key: idempotencyKey,
+        p_quantity: quantity,
+      })
+      .single();
+
+    if (error || !data) {
+      console.error('[store] reconcile_manual_allocation failed', error);
+      return false;
+    }
+
+    const row = data as { released_unit_ids: ID[]; movement_id: ID };
+    setState((s) => {
+      let next = mirrorAllocationMovement(s, eventAllocationId, {
+        id: row.movement_id,
+        type: 'return_to_general',
+        unitIds: row.released_unit_ids,
+        quantityDelta: -row.released_unit_ids.length,
+        unitSource: 'fifo_assignment',
+        quantityExpected,
+        counterpartEventAllocationId: null,
+      });
+      const allocation = next.eventAllocations.find((a) => a.id === eventAllocationId);
+      if (allocation && quantityRemaining(next, allocation) === 0) {
+        next = {
+          ...next,
+          eventAllocations: next.eventAllocations.map((a) => (a.id === eventAllocationId ? { ...a, status: 'reconciled' } : a)),
+        };
+      }
+      return next;
+    });
+    return true;
   }
 
   function resetPrototype() {
@@ -2769,7 +3036,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     declineInvitation,
     revokeMembership,
     saveEventAllocations,
-    releaseAllocation,
+    scanUnitIntoEventAllocation,
+    reallocateEventAllocation,
+    returnScannedUnitsToGeneral,
+    reconcileManualAllocation,
     createEventAssignment,
     removeEventAssignment,
     resetPrototype,

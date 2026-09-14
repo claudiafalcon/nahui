@@ -94,6 +94,32 @@ export function Selling({
   const addItemKeysRef = useRef<Map<string, string>>(new Map());
   const addItemPendingRef = useRef<Set<string>>(new Set());
 
+  /**
+   * Stage 7 Backend Integration, Phase 2b — `addItemToSale` now distinguishes
+   * a genuine, terminal `'exhausted'` outcome (this Session's own Event has
+   * an open `EventAllocation` for this Product and its committed pool is
+   * spent, `home.md` §3.8a's "lost the race" mechanism) from an ordinary
+   * `'failed'` one. This function's own external contract stays a plain
+   * boolean (every existing caller below already expects one) — `'exhausted'`
+   * surfaces via the same ambient `stockHint` mechanism §3.9's own disabled-
+   * tile tap already uses, never silently folded into the identical
+   * generic-failure `console.error` path a network/platform failure gets.
+   *
+   * **Known, disclosed scope boundary:** `home.md` §3.8a's full design is an
+   * *optimistic* add (the item appears in "Venta actual" instantly, a
+   * background sync reconciles after, and only a still-unconfirmed item
+   * later gets marked with the terminal ⊗ glyph) — this function still
+   * awaits the write before ever touching local state at all, the same
+   * synchronous-await shape `commitLot`/`addItemToSaleByTag` already hold.
+   * Wiring the full optimistic/⊗ pattern this exact terminal outcome is
+   * *meant* to drive (`conflictedItemIds`, above) is a genuine UI-architecture
+   * change to this screen's own add-item flow — out of this Stage 7 Backend
+   * Integration dispatch's scope (a data-layer/RPC-wiring pass, not a UX
+   * rebuild of an already-reviewed, `<3s`-critical screen) — and is not
+   * attempted here. `event_allocation_exhausted` is real and observable
+   * end-to-end as of this pass; the ambient-hint surfacing below is the
+   * appropriately-scoped interim treatment, not the final one.
+   */
   async function handleAddItem(productId: string): Promise<boolean> {
     if (addItemPendingRef.current.has(productId)) {
       // This exact tile's own add is still in flight — ignore the tap
@@ -109,13 +135,22 @@ export function Selling({
     }
     addItemPendingRef.current.add(productId);
     try {
-      const added = await addItemToSale(productId, key);
-      if (added) {
+      const outcome = await addItemToSale(productId, key);
+      if (outcome === 'added') {
         addItemKeysRef.current.delete(productId); // this attempt is over; a genuinely new tap mints its own key
-      } else {
-        console.error('[Selling] addItemToSale failed for product', productId);
+        return true;
       }
-      return added;
+      if (outcome === 'exhausted') {
+        // Terminal, not retriable (`home.md` §3.8a) — this attempt is over;
+        // a later tap on this same tile is a genuinely new attempt, not a
+        // retry of one that structurally cannot succeed.
+        addItemKeysRef.current.delete(productId);
+        const productName = findProduct(state, productId)?.name ?? '';
+        showHint(`${productName} ya no está disponible — otro vendedor la vendió.`);
+        return false;
+      }
+      console.error('[Selling] addItemToSale failed for product', productId);
+      return false;
     } finally {
       addItemPendingRef.current.delete(productId);
     }

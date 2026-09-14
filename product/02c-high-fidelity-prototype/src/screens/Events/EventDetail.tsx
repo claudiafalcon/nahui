@@ -282,22 +282,20 @@ function RollupLine({ eventId, days }: { eventId: string; days: number }) {
  * mercancía reconciliation section: manual/untagged sub-block only. NFC's
  * own two-button "Regresar a inventario general"/"Mover a otro evento"
  * mechanism, and a mixed-row composition of the two, are both correctly
- * unreachable in this build — NFC-scan allocation itself is unmodeled this
- * slice (`MercanciaParaEsteEvento.tsx`'s own scope note), so every
- * `allocatedUnitIds` entry that can ever exist here is `fifo_assignment`-
- * sourced. "Mover a otro evento" is likewise omitted for the manual
- * sub-block (§3.24's reallocation transaction is out of this slice's scope
- * — the same boundary `MercanciaParaEsteEvento.tsx` already draws), never a
- * dead link to an unbuilt destination.
+ * unreachable in this build — this screen never surfaces an NFC-scan-sourced
+ * row, so every row it renders here is `fifo_assignment`-sourced. "Mover a
+ * otro evento" is likewise omitted for the manual sub-block (§3.24's
+ * reallocation screen itself isn't built), never a dead link to an unbuilt
+ * destination.
+ *
+ * Stage 7 Backend Integration, Phase 2b — `performRelease` now awaits a real
+ * `reconcile_manual_allocation` call (`reconcileManualAllocation`,
+ * `store.tsx`) instead of a synchronous local write; `saving`/`error` are
+ * now really reachable outcomes, not merely disclosed, never-triggered
+ * branches.
  */
-// §3.16's own explicit instruction: "Saving/error/ambient-confirmation shape
-// reuses §3.23 verbatim... No new save-state pattern invented for this
-// action." Same constant, same value, as `MercanciaParaEsteEvento.tsx`'s own
-// §3.23 scaffold (`ui-designer` Important-finding fix, `reviewer`).
-const SAVE_DELAY_MS = 260;
-
 function ManualReconciliationSection({ eventId }: { eventId: string }) {
-  const { state, releaseAllocation } = useStore();
+  const { state, reconcileManualAllocation } = useStore();
   const [adjustingIds, setAdjustingIds] = useState<Set<string>>(new Set());
   const [stepperValues, setStepperValues] = useState<Record<string, number>>({});
   // §3.16/§3.23 — one row's write is independent of every other row's, so
@@ -353,27 +351,32 @@ function ManualReconciliationSection({ eventId }: { eventId: string }) {
   }
 
   // §3.16/§3.23 — the shared save/error scaffold every reconciliation write
-  // (full return, "No regresó," Ajustar-cantidad Confirmar) goes through:
-  // a `'saving'` transient (`SAVE_DELAY_MS`, the exact same simulated-delay
-  // pattern `MercanciaParaEsteEvento.tsx`'s own `handleSave` already uses),
-  // the real `releaseAllocation` write only committed after that delay
-  // resolves, then `'idle'` + `onSuccess` (the row's own ambient
-  // confirmation, and — for Ajustar cantidad — collapsing the stepper). The
-  // `'error'` branch (never actually triggered by this build's local mock
-  // write, same disclosed-not-wired convention as
-  // `MercanciaParaEsteEvento.tsx`'s own error branch) is a real, rendering
-  // state whose Reintentar re-invokes this exact bound attempt again.
+  // (full return, "No regresó," Ajustar-cantidad Confirmar) goes through: a
+  // `'saving'` transient covering the real `reconcile_manual_allocation`
+  // network round trip, then `'idle'` + `onSuccess` (the row's own ambient
+  // confirmation, and — for Ajustar cantidad — collapsing the stepper) on
+  // success, or `'error'` (Stage 7 Backend Integration, Phase 2b: a really
+  // reachable outcome now, not merely disclosed-not-wired) whose Reintentar
+  // re-invokes this exact bound attempt again. One idempotency key per
+  // logical attempt, generated fresh each time `performRelease` is called
+  // (a distinct tap — "Sí, regresaron las N," "No regresó," Confirmar — is
+  // always a genuinely new logical attempt) and reused unchanged across a
+  // Reintentar retry of that same attempt.
   function performRelease(allocationId: string, quantity: number, quantityExpected: number, onSuccess: () => void) {
-    const attempt = () => {
+    const idempotencyKey = crypto.randomUUID();
+    const attempt = async () => {
       setSaveState((prev) => ({ ...prev, [allocationId]: 'saving' }));
-      window.setTimeout(() => {
-        releaseAllocation(allocationId, quantity, 'return_to_general', quantityExpected);
-        setSaveState((prev) => ({ ...prev, [allocationId]: 'idle' }));
-        onSuccess();
-      }, SAVE_DELAY_MS);
+      const released = await reconcileManualAllocation(allocationId, quantity, quantityExpected, idempotencyKey);
+      if (!released) {
+        console.error('[EventDetail] reconcileManualAllocation failed');
+        setSaveState((prev) => ({ ...prev, [allocationId]: 'error' }));
+        return;
+      }
+      setSaveState((prev) => ({ ...prev, [allocationId]: 'idle' }));
+      onSuccess();
     };
     setRetryAttempts((prev) => ({ ...prev, [allocationId]: attempt }));
-    attempt();
+    void attempt();
   }
 
   function retrySave(allocationId: string) {

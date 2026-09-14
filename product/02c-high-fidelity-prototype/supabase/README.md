@@ -69,8 +69,95 @@ Stage 7 Backend Integration. Three passes so far:
   Event. The scheduling-conflict warning (`hasSchedulingConflict`,
   `selectors.ts`) needed no new RPC at all — a pure client-side computation
   over data the RLS design already grants. Does not touch
-  `EventAllocation`/`AllocationMovement` (Phase 2b, separate, not-yet-
-  designed phase).
+  `EventAllocation`/`AllocationMovement` (Phase 2b, below).
+- **EventAllocation/AllocationMovement persistence layer, Phase 2b**
+  (`context/stage-7-backend-integration.md`'s "Phase 2b design summary,"
+  `architect`, 2026-09-13, RFC 0009/D57 + RFC 0010/D59) — real
+  `event_allocations`/`event_allocation_units`/`allocation_movements`
+  tables + RLS + two private SQL helpers
+  (`_fifo_commit_to_allocation`/`_release_from_allocation`, not granted to
+  `authenticated`) + five public SECURITY DEFINER RPCs:
+  `save_event_allocations`/`scan_unit_into_event_allocation`/
+  `reallocate_event_allocation`/`return_scanned_units_to_general`/
+  `reconcile_manual_allocation`. `store.tsx`'s `saveEventAllocations` now
+  calls `save_event_allocations` for real (replacing the previous
+  client-side-only `commitAllocation`/`releaseAllocation` local mock,
+  retired); four new functions — `scanUnitIntoEventAllocation`/
+  `reallocateEventAllocation`/`returnScannedUnitsToGeneral`/
+  `reconcileManualAllocation` — are real and ready, though only the last is
+  called by a built screen (`EventDetail.tsx`'s manual-reconciliation
+  section) as of this pass; the other three have no built UI caller yet
+  (`events.md` §3.22/§3.24, NFC-scan allocation and the reallocation screen,
+  aren't built in this slice) but are real, callable, reviewable functions
+  per the design summary's own explicit ask. **Also extends four
+  already-shipped Phase 2 functions** — `add_item_to_sale`/
+  `add_item_to_sale_by_tag`/`remove_sale_item`/`cancel_sale` — in a separate
+  migration (`20260913061000`, since these are `CREATE OR REPLACE`
+  redefinitions of existing functions, not new objects): an open
+  `EventAllocation` now gates Sale-time consumption exclusively to its own
+  committed pool (never falling back to the plain pool), its exhaustion
+  raising a distinct, terminal `event_allocation_exhausted` error — the
+  actual server-side "lost the race" signal `home.md` §3.8a's ⊗ pattern
+  depends on; `remove_sale_item`/`cancel_sale` now revert an
+  allocation-committed unit to `reserved` (not `available`) so removing it
+  from a Sale never silently releases it from its Event's own allocation
+  too. **Self-caught correctness fix, found while writing the client-side
+  mirror** (`20260913062000`): every "is this unit still genuinely
+  outstanding for this allocation" query gained a "current custody" filter
+  — `event_allocation_units` is append-only, and reallocation is the one
+  write that produces a *second* row for the same unit (the destination's
+  own commit); without the filter, the *source* allocation's now-stale row
+  would still count that unit, double-counting stock that's actually moved
+  elsewhere. Client mirror: `EventAllocation.allocatedUnitIds` (the old
+  local-mock array) is retired — replaced by a real, row-level mirrored
+  table, `AppState.eventAllocationUnits` (`EventAllocationUnit[]`), matching
+  the server's own `event_allocation_units` 1:1. `quantityRemaining`/
+  `quantityRemainingBySource`/`disponibleEnGeneral`/`eventScopedRemaining`
+  (`selectors.ts`) all now derive from that real mirrored data (never a
+  stored column, matching D59's own rule) instead of the retired array
+  field — including the same current-custody filter and the new
+  "not yet claimed by an open Sale" exclusion Phase 2b's own selling
+  integration requires.
+- **`SaleItem.eventAllocationId` (`decision-log.md` D67)** — `reviewer`-
+  confirmed Blocker fix, `architect`-designed, `20260913063000_sale_item_
+  event_allocation_id.sql`. `remove_sale_item`'s/`cancel_sale`'s revert-
+  target check (`exists (select 1 from event_allocation_units where
+  unit_id = ...)`, `20260913061000`) returns `true` forever for any unit
+  ever committed to any allocation — `event_allocation_units` is append-
+  only, so it can't distinguish a still-live commitment from one long since
+  reconciled back to general stock, stranding a unit in the wrong status
+  under a routine allocate→reconcile→(later, unrelated sale)→cancel
+  sequence. Fixed by capturing `event_allocation_id` once, at write time, on
+  `sale_items` itself (`add_item_to_sale`/`add_item_to_sale_by_tag` — the
+  currently-live `20260913062000` versions, extended here — already resolve
+  or can resolve this value in their own allocation-aware branch), and
+  reading it back unchanged rather than re-deriving it. `add_item_to_sale`/
+  `add_item_to_sale_by_tag` both gained a new `event_allocation_id` output
+  column (a return-type change, so both are `drop function`+`create`, not
+  `create or replace`, in this migration) so the client mirror never has to
+  re-derive it either. Client: `types.ts`'s `SaleItem` gains
+  `eventAllocationId?: ID`; `store.tsx`'s `mirrorAddedSaleItem` threads it
+  through; `selectors.ts`'s `unitHasEventAllocationCommitment` (the same
+  re-derivation-from-append-only-data bug pattern, client-side) is retired,
+  replaced by `saleItemHasEventAllocationCommitment(item)` — a direct read
+  of the already-mirrored `SaleItem`'s own field, no longer a query over
+  `eventAllocationUnits`.
+- **`add_item_to_sale_by_tag`'s own `v_alloc_id` mis-attribution
+  (`decision-log.md` D67, `architect`-designed fix)** —
+  `20260913064000_add_item_to_sale_by_tag_fix.sql`. Found already deployed
+  in `20260913063000` above: that migration's `add_item_to_sale_by_tag`
+  resolved `v_unit_id` via one query (matching on `iu.status = 'available'
+  or (iu.status = 'reserved' and exists(...))`), then resolved `v_alloc_id`
+  via a second, decoupled query that never checked `inventory_units.status`
+  at all — so it could find a stale "current custody" `event_allocation_units`
+  row and set a non-null `v_alloc_id` even when the unit actually matched
+  through the plain `available` disjunct, mis-attributing a plain-pool sale
+  to a stale allocation (a later cancellation would then incorrectly
+  re-reserve the unit). Fixed by merging both queries into one, via
+  `left join lateral`, so the disjunct-match and the allocation-id capture
+  are structurally the same expression and can never disagree. Signature/
+  return shape unchanged, so this is a plain `create or replace` — no
+  drop/re-grant needed. No client-side change required.
 
 **Status as of 2026-09-13:** phone/OTP path — real Supabase project
 created, linked, migration pushed, and both Edge Functions deployed and
@@ -108,6 +195,45 @@ real hosted project via `supabase db push` (checklist item 17), client
 wiring complete (`store.tsx`, one call site,
 `PersonalParaEsteEvento.tsx`), `tsc -b`/`npm run build` both clean. Not yet
 `reviewer`-verified.
+EventAllocation/AllocationMovement persistence layer (Phase 2b) — all three
+migrations (`20260913060000` new tables/RLS/helpers/five RPCs,
+`20260913061000` the four-function selling-integration extension,
+`20260913062000` the self-caught current-custody fix) applied to the real
+hosted project via `supabase db push` (checklist items 19-21), client
+wiring complete (`store.tsx`: `saveEventAllocations` rewritten,
+`scanUnitIntoEventAllocation`/`reallocateEventAllocation`/
+`returnScannedUnitsToGeneral`/`reconcileManualAllocation` added;
+`selectors.ts`: `quantityRemaining`/`quantityRemainingBySource` rewritten
+against the new `eventAllocationUnits` mirror,
+`unitHasEventAllocationCommitment` added, `mostRecentAllocationMovementForUnit`/
+`saleCancelRevertStatus` retired; `types.ts`: `EventAllocationUnit` added,
+`EventAllocation.allocatedUnitIds` retired; two call sites updated,
+`MercanciaParaEsteEvento.tsx`/`EventDetail.tsx`), `tsc -b`/`npm run build`
+both clean. `reviewer`-verified — 1 Blocker (`remove_sale_item`/`cancel_sale`'s
+revert-status check permanently stuck once `event_allocation_units`' append-
+only nature is accounted for), closed by `decision-log.md` D67 +
+`20260913063000_sale_item_event_allocation_id.sql`: `SaleItem.event_allocation_id`
+(nullable) added, captured once at write time by `add_item_to_sale`/
+`add_item_to_sale_by_tag` (the currently-live `20260913062000` versions,
+extended — both gained a new `event_allocation_id` output column, a
+return-type change requiring `drop function`+`create`), read back unchanged
+by `remove_sale_item`/`cancel_sale` (plain `create or replace`, return type
+unchanged). Client: `types.ts`'s `SaleItem.eventAllocationId` added;
+`store.tsx`'s `mirrorAddedSaleItem` threads it through both RPC call sites;
+`selectors.ts`'s `unitHasEventAllocationCommitment` retired, replaced by
+`saleItemHasEventAllocationCommitment(item)`. Migration applied to the real
+hosted project via `supabase db push` (checklist item 23). `tsc -b`/
+`npm run build` both clean after the fix.
+**Follow-up fix, found already deployed:** `add_item_to_sale_by_tag`'s own
+body (as deployed by `20260913063000` above) still mis-attributed
+`v_alloc_id` via a decoupled second query that never checked
+`inventory_units.status`, so it could disagree with the disjunct that
+actually matched the unit — closed by
+`20260913064000_add_item_to_sale_by_tag_fix.sql` (`left join lateral`
+merges the two into one expression that can never disagree). `tsc -b`/
+`npm run build` both clean (SQL-only fix, no client change needed);
+migration pushed to the real hosted project via `supabase db push`
+(checklist item 24).
 
 ## What's here
 
@@ -189,6 +315,100 @@ supabase/
                                                              assign_to_event/
                                                              unassign_from_event.
                                                              PUSHED 2026-09-13.
+    20260913060000_event_allocation_persistence_layer.sql  — event_allocations/
+                                                             event_allocation_units/
+                                                             allocation_movements + RLS +
+                                                             _fifo_commit_to_allocation/
+                                                             _release_from_allocation
+                                                             (private) +
+                                                             save_event_allocations/
+                                                             scan_unit_into_event_allocation/
+                                                             reallocate_event_allocation/
+                                                             return_scanned_units_to_general/
+                                                             reconcile_manual_allocation.
+                                                             PUSHED 2026-09-13.
+    20260913061000_event_allocation_selling_integration.sql — extends
+                                                             add_item_to_sale/
+                                                             add_item_to_sale_by_tag/
+                                                             remove_sale_item/cancel_sale
+                                                             (Phase 2) to consume from/
+                                                             release back to an open
+                                                             EventAllocation's own pool —
+                                                             the server-side "lost the
+                                                             race" mechanism
+                                                             (event_allocation_exhausted).
+                                                             PUSHED 2026-09-13.
+    20260913062000_event_allocation_persistence_layer_fixes.sql — self-caught
+                                                             correctness fix (own-pass
+                                                             correction, not a reviewer
+                                                             finding — see its own
+                                                             header): adds a "current
+                                                             custody" filter to every
+                                                             "is this unit still
+                                                             outstanding for this
+                                                             allocation" query, closing a
+                                                             double-counting gap
+                                                             reallocation would otherwise
+                                                             leave at the source
+                                                             allocation's own stale row.
+                                                             PUSHED 2026-09-13.
+    20260913063000_sale_item_event_allocation_id.sql        — reviewer-found
+                                                             Blocker fix
+                                                             (D67):
+                                                             sale_items.event_allocation_id
+                                                             (nullable),
+                                                             captured once at
+                                                             write time by
+                                                             add_item_to_sale/
+                                                             add_item_to_sale_by_tag,
+                                                             read back
+                                                             unchanged by
+                                                             remove_sale_item/
+                                                             cancel_sale
+                                                             instead of
+                                                             re-derived from
+                                                             the append-only
+                                                             event_allocation_units
+                                                             table. PUSHED
+                                                             2026-09-14.
+    20260913064000_add_item_to_sale_by_tag_fix.sql           — follow-up
+                                                             Blocker fix
+                                                             (D67, found
+                                                             already
+                                                             deployed in
+                                                             `063000`
+                                                             above):
+                                                             add_item_to_sale_by_tag's
+                                                             own v_alloc_id
+                                                             was still
+                                                             resolved by a
+                                                             decoupled
+                                                             second query
+                                                             that never
+                                                             checked
+                                                             inventory_units.status,
+                                                             so it could
+                                                             mis-attribute
+                                                             a plain-pool
+                                                             sale to a
+                                                             stale
+                                                             allocation.
+                                                             Merges the
+                                                             unit-match and
+                                                             allocation-id
+                                                             capture into
+                                                             one `left join
+                                                             lateral` query
+                                                             so they can
+                                                             never
+                                                             disagree.
+                                                             `create or
+                                                             replace`
+                                                             (signature/
+                                                             return shape
+                                                             unchanged).
+                                                             PUSHED
+                                                             2026-09-14.
   functions/
     send-otp/index.ts                — generates + WhatsApp-sends a code
     verify-otp/index.ts              — checks a submitted code, single-use
@@ -327,6 +547,43 @@ supabase/
     applied to the real hosted project via `supabase db push` (same
     credential as every prior push this session).
 18. **`reviewer`'s security pass** — **NOT YET DONE** for Phase 2c.
+19. ~~**Push the EventAllocation/AllocationMovement persistence layer
+    migration**~~ **DONE** 2026-09-13 —
+    `20260913060000_event_allocation_persistence_layer.sql` applied to the
+    real hosted project via `supabase db push` (same credential as every
+    prior push this session).
+20. ~~**Push the selling-integration extension migration**~~ **DONE**
+    2026-09-13 — `20260913061000_event_allocation_selling_integration.sql`
+    applied to the real hosted project via `supabase db push`.
+21. ~~**Push the self-caught correctness-fix migration**~~ **DONE**
+    2026-09-13 — `20260913062000_event_allocation_persistence_layer_fixes.sql`
+    applied to the real hosted project via `supabase db push` — found and
+    fixed in the same build session, before any `reviewer` round (see that
+    migration's own header for the full defect trace: a missing "current
+    custody" filter that would let a reallocated unit double-count against
+    its stale source allocation).
+22. ~~**`reviewer`'s security pass**~~ **DONE** for Phase 2b — found 1
+    Blocker (`remove_sale_item`/`cancel_sale`'s revert-status check against
+    the append-only `event_allocation_units` table permanently sticking a
+    unit's status once any prior commitment to any allocation, ever
+    reconciled or not, existed for it). `architect` designed the fix;
+    closed by `decision-log.md` D67 +
+    `20260913063000_sale_item_event_allocation_id.sql` — see item 23.
+23. ~~**Push the `SaleItem.event_allocation_id` fix migration**~~ **DONE**
+    2026-09-14 — `20260913063000_sale_item_event_allocation_id.sql` applied
+    to the real hosted project via `supabase db push` (same credential as
+    every prior push).
+24. ~~**Push the `add_item_to_sale_by_tag` follow-up fix migration**~~
+    **DONE** 2026-09-14 — `20260913064000_add_item_to_sale_by_tag_fix.sql`
+    (`architect`-designed, D67) applied to the real hosted project via
+    `supabase db push` (same credential as every prior push). Fixes a
+    Blocker found already deployed in `20260913063000` above:
+    `add_item_to_sale_by_tag`'s `v_alloc_id` was resolved via a decoupled
+    second query that never checked `inventory_units.status`, so it could
+    disagree with the disjunct that actually matched the unit and
+    mis-attribute a plain-pool sale to a stale allocation. Merged into a
+    single `left join lateral` query so the two can never disagree.
+    `tsc -b`/`npm run build` both clean (SQL-only fix, no client change).
 
 ## Judgment calls made building this (tune freely, not escalated)
 
