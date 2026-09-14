@@ -918,29 +918,39 @@ interface StoreValue {
   /** `product/99-rfc/0011-event-assignment.md`/`decision-log.md` D60 — the
    * atomic `EventAssignment`-creation write. Called directly by the
    * OWNER-side "assign staff to an Event" screen,
-   * `src/screens/Events/PersonalParaEsteEvento.tsx`. Upsert-shaped: a no-op
-   * against the already-existing row if one exists for this exact
-   * `(eventId, membershipId)` pair (unique on that pair, RFC 0011 §1) —
-   * never a duplicate, the same "find-or-no-op" idiom
-   * `createInvitation`/`setPriceOverride` already use for their own
-   * uniqueness rules. **Gated on `membership.status === 'active'`** (RFC
-   * 0011 Open Item 4, resolved by the Architecture Gap Analysis directly
-   * from the existing D55/D56 authorization-gate precedent) — defensively
-   * re-checked here, at write time, never trusting a UI-computed value, the
-   * same posture `revokeMembership`/`cancelEvent` already hold themselves to
-   * elsewhere in this file. A no-op (not a thrown error) whenever either
-   * precondition fails, matching this file's existing defensive-guard style
-   * throughout. Never checks `hasSchedulingConflict` (`selectors.ts`) itself
-   * — RFC 0011 §2's "warn, never block" rule means a conflict is surfaced by
-   * `PersonalParaEsteEvento.tsx` itself, never enforced at the write. */
-  createEventAssignment: (businessId: ID, eventId: ID, membershipId: ID) => void;
+   * `src/screens/Events/PersonalParaEsteEvento.tsx`. Stage 7 Backend
+   * Integration, Phase 2c: a real call to `assign_to_event`
+   * (`supabase/migrations/20260913050000_event_assignment_persistence_layer.sql`),
+   * naturally idempotent server-side (`ON CONFLICT DO NOTHING` against the
+   * table's own `(event_id, membership_id)` uniqueness) — no
+   * client-supplied idempotency key needed, matching `revokeMembership`'s
+   * own precedent. `membership.status === 'active'` and "already assigned"
+   * are both re-checked here, client-side, only as a cheap local fast-path
+   * (skipping the network round trip for an already-known outcome) — the
+   * RPC itself re-verifies both this and that `eventId` belongs to this
+   * Business, authoritatively, server-side, never trusting the client-side
+   * check alone. Resolves to `true` on success (including the already-
+   * assigned no-op case), `false` on failure (a network drop, a genuine
+   * platform error) — the caller (`runWrite`, `PersonalParaEsteEvento.tsx`)
+   * surfaces a real, now-reachable `'error'`/"Reintentar" state on `false`,
+   * no longer disclosed-not-wired. Never checks `hasSchedulingConflict`
+   * (`selectors.ts`) itself — RFC 0011 §2's "warn, never block" rule means a
+   * conflict is surfaced by `PersonalParaEsteEvento.tsx` itself, never
+   * enforced at the write. */
+  createEventAssignment: (businessId: ID, eventId: ID, membershipId: ID) => Promise<boolean>;
   /** `product/99-rfc/0011-event-assignment.md`/`decision-log.md` D60 — plain
    * delete, no soft-state (RFC 0011 §1: "no downstream write ever
-   * references an `EventAssignment` row directly"). Unassigning removes the
-   * row outright — the correct, minimal shape for a join with no historical
-   * dependent, unlike `revokeMembership`/`cancelEvent`'s own soft-state
-   * writes above. */
-  removeEventAssignment: (id: ID) => void;
+   * references an `EventAssignment` row directly"). Stage 7 Backend
+   * Integration, Phase 2c: a real call to `unassign_from_event`, naturally
+   * idempotent server-side (a no-op delete on an already-unassigned pair is
+   * already correct) — no client-supplied idempotency key needed. Takes the
+   * same `(businessId, eventId, membershipId)` triple `createEventAssignment`
+   * above does, rather than a local `EventAssignment.id` — a real shape
+   * change from this function's pre-backend-integration signature, since
+   * the server resolves the target row by the same unique pair, not by a
+   * client-remembered local id. Resolves to `true`/`false`, same convention
+   * as `createEventAssignment` above. */
+  removeEventAssignment: (businessId: ID, eventId: ID, membershipId: ID) => Promise<boolean>;
   resetPrototype: () => void;
 }
 
@@ -2427,27 +2437,74 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   /** `product/99-rfc/0011-event-assignment.md`/`decision-log.md` D60 — see
    * this function's own `StoreValue` doc comment for the full reasoning. */
-  function createEventAssignment(businessId: ID, eventId: ID, membershipId: ID) {
+  async function createEventAssignment(businessId: ID, eventId: ID, membershipId: ID): Promise<boolean> {
+    if (!state.business) return false;
+    const membership = state.memberships.find((m) => m.id === membershipId);
+    if (!membership || membership.status !== 'active') return false; // D55/D56 authorization gate — cheap local fast-path
+    const exists = state.eventAssignments.some((a) => a.eventId === eventId && a.membershipId === membershipId);
+    if (exists) return true; // already assigned — cheap local fast-path, matches the RPC's own find-or-no-op
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] createEventAssignment: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { data, error } = await supabase
+      .rpc('assign_to_event', {
+        p_business_id: businessId,
+        p_event_id: eventId,
+        p_membership_id: membershipId,
+      })
+      .single();
+
+    if (error || !data) {
+      console.error('[store] assign_to_event failed', error);
+      return false;
+    }
+
+    const { assignment_id: assignmentId, created_at: createdAtRaw } = data as {
+      assignment_id: ID;
+      created_at: string;
+    };
     setState((s) => {
-      const membership = s.memberships.find((m) => m.id === membershipId);
-      if (!membership || membership.status !== 'active') return s; // D55/D56 authorization gate
-      const exists = s.eventAssignments.some((a) => a.eventId === eventId && a.membershipId === membershipId);
-      if (exists) return s; // find-or-no-op — unique on (eventId, membershipId), never a duplicate
+      if (s.eventAssignments.some((a) => a.id === assignmentId)) return s;
       const assignment: EventAssignment = {
-        id: makeId('assign'),
+        id: assignmentId,
         businessId,
         eventId,
         membershipId,
-        createdAt: Date.now(),
+        createdAt: new Date(createdAtRaw).getTime(),
       };
       return { ...s, eventAssignments: [...s.eventAssignments, assignment] };
     });
+    return true;
   }
 
   /** `product/99-rfc/0011-event-assignment.md`/`decision-log.md` D60 — see
    * this function's own `StoreValue` doc comment for the full reasoning. */
-  function removeEventAssignment(id: ID) {
-    setState((s) => ({ ...s, eventAssignments: s.eventAssignments.filter((a) => a.id !== id) }));
+  async function removeEventAssignment(businessId: ID, eventId: ID, membershipId: ID): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] removeEventAssignment: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('unassign_from_event', {
+      p_business_id: businessId,
+      p_event_id: eventId,
+      p_membership_id: membershipId,
+    });
+    if (error) {
+      console.error('[store] unassign_from_event failed', error);
+      return false;
+    }
+    setState((s) => ({
+      ...s,
+      eventAssignments: s.eventAssignments.filter(
+        (a) => !(a.eventId === eventId && a.membershipId === membershipId),
+      ),
+    }));
+    return true;
   }
 
   /**

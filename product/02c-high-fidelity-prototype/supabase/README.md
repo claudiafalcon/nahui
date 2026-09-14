@@ -58,6 +58,19 @@ Stage 7 Backend Integration. Three passes so far:
   with `EventAllocation`-aware selection deliberately not consulted here
   (Phase 2b, confirmed out of scope three independent ways). `EventAllocation`/
   `AllocationMovement`/`EventAssignment` code is untouched.
+- **EventAssignment persistence layer, Phase 2c** (`context/stage-7-backend-
+  integration.md`'s "Phase 2c design summary," `architect`, 2026-09-13,
+  `product/99-rfc/0011-event-assignment.md`/`decision-log.md` D60) — real
+  `event_assignments` table + RLS + the `assign_to_event`/
+  `unassign_from_event` SECURITY DEFINER RPCs. `store.tsx`'s
+  `createEventAssignment`/`removeEventAssignment` now call these for real,
+  replacing the previous client-side-only writes — staff-to-Event
+  scheduling, letting an OWNER assign/unassign a SELLER to a specific
+  Event. The scheduling-conflict warning (`hasSchedulingConflict`,
+  `selectors.ts`) needed no new RPC at all — a pure client-side computation
+  over data the RLS design already grants. Does not touch
+  `EventAllocation`/`AllocationMovement` (Phase 2b, separate, not-yet-
+  designed phase).
 
 **Status as of 2026-09-13:** phone/OTP path — real Supabase project
 created, linked, migration pushed, and both Edge Functions deployed and
@@ -90,6 +103,11 @@ complete (`store.tsx`, ten call sites across `Selling.tsx`/`NuevoEvento.tsx`/
 findings, all closed by `20260913041000_selling_persistence_layer_fixes.sql`
 (SQL) and `Selling.tsx`/`store.tsx` (client). `tsc -b`/`npm run build` both
 clean after the fix round; migration pushed (checklist item 16).
+EventAssignment persistence layer (Phase 2c) — migration SQL applied to the
+real hosted project via `supabase db push` (checklist item 17), client
+wiring complete (`store.tsx`, one call site,
+`PersonalParaEsteEvento.tsx`), `tsc -b`/`npm run build` both clean. Not yet
+`reviewer`-verified.
 
 ## What's here
 
@@ -167,6 +185,10 @@ supabase/
                                                              fix, see Selling.tsx's
                                                              addItemPendingRef). PUSHED
                                                              2026-09-13.
+    20260913050000_event_assignment_persistence_layer.sql  — event_assignments + RLS +
+                                                             assign_to_event/
+                                                             unassign_from_event.
+                                                             PUSHED 2026-09-13.
   functions/
     send-otp/index.ts                — generates + WhatsApp-sends a code
     verify-otp/index.ts              — checks a submitted code, single-use
@@ -300,6 +322,11 @@ supabase/
     `20260913041000_selling_persistence_layer_fixes.sql` applied to the real
     hosted project via `supabase db push` (same credential as every prior
     push this session).
+17. ~~**Push the EventAssignment persistence layer migration**~~ **DONE**
+    2026-09-13 — `20260913050000_event_assignment_persistence_layer.sql`
+    applied to the real hosted project via `supabase db push` (same
+    credential as every prior push this session).
+18. **`reviewer`'s security pass** — **NOT YET DONE** for Phase 2c.
 
 ## Judgment calls made building this (tune freely, not escalated)
 
@@ -528,3 +555,42 @@ supabase/
   resolution bug reachable by omission. Both old single-parameter functions
   are dropped outright in the fix migration, forcing every call site
   (`Selling.tsx`'s only two) to supply the explicit target.
+
+## Judgment calls made building the EventAssignment persistence layer (Phase 2c)
+
+- **`removeEventAssignment` (`store.tsx`) changed signature from a single
+  local `EventAssignment.id` to the same `(businessId, eventId,
+  membershipId)` triple `createEventAssignment` already takes** — a real
+  shape change, not cosmetic. `unassign_from_event` resolves its target row
+  by the table's own `(event_id, membership_id)` uniqueness, the same way
+  the RPC itself never needed a server-generated id handed back to the
+  client for `assign_to_event` to remain idempotent — there was no honest
+  reason to keep threading a client-remembered local id through the RPC
+  boundary once the server stopped needing it. `PersonalParaEsteEvento.tsx`'s
+  `handleUnassign` simplified accordingly — it no longer needs to look up
+  the `EventAssignment` row first just to extract its `id`.
+- **Both RPCs raise a named exception (`event_not_found`/
+  `membership_not_found`) rather than silently no-op on a failed ownership
+  check**, matching `start_session`/`set_price_override`'s established
+  precedent for a write that mints/targets a row by a client-supplied
+  foreign id, not `revoke_membership`/`cancel_event`'s own "no-op via
+  WHERE-scoping" shape (which applies to a write with no separate foreign-id
+  validity question — the row it targets is already fully identified by the
+  primary key/caller-identity it resolves against). `revoke_membership` is
+  cited by this migration's own header only for its "no idempotency key
+  needed" precedent, not for its error-reporting shape.
+- **`unassign_from_event` re-checks `membership_id` is still `active`
+  before deleting, per the design summary's own instruction, even though
+  this makes it impossible to unassign a Membership after it's been
+  revoked.** Consistent with the design's own explicitly-named open item
+  (orphaned `event_assignments` rows after a revocation) staying
+  unresolved rather than silently half-addressed here — the live UI can
+  never actually trigger this case anyway (the roster only ever lists
+  active SELLER Memberships, so a row shown as assigned already implies
+  `active` at render time).
+- **`PersonalParaEsteEvento.tsx`'s per-row `runWrite` error state is now
+  genuinely reachable, matching `NuevoEvento.tsx`'s own "no longer
+  disclosed-not-wired" correction above** — the artificial `SAVE_DELAY_MS`
+  timeout this screen used before backend integration is removed outright;
+  the real network round trip now provides whatever perceived latency the
+  `saving`/`slow` states exist to communicate.

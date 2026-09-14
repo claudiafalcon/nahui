@@ -6,11 +6,6 @@ import { Button } from '../../components/Button/Button';
 import type { AppState, BusinessMembership, Event, ID } from '../../domain/types';
 import styles from './PersonalParaEsteEvento.module.css';
 
-// Matches this codebase's own established save-delay convention
-// (`MercanciaParaEsteEvento.tsx`, `TeamScreen.tsx`) — applied per-row here
-// rather than per-screen, since §3.26 explicitly allows independent,
-// any-order taps across multiple rows in a single visit.
-const SAVE_DELAY_MS = 260;
 const SLOW_THRESHOLD_MS = 1500; // events.md §3.9's own "slow (>~1.5s)" boundary, per-row
 const SETTLE_HIGHLIGHT_MS = 1100; // "briefly stays visually distinguished for a moment" (EVT-MIN1)
 
@@ -87,36 +82,39 @@ export function PersonalParaEsteEvento({
     }, SETTLE_HIGHLIGHT_MS);
   }
 
-  // §3.26's own per-row save/error shape, adapted from this codebase's
-  // established §3.9/§3.23 near-instant/slow/error convention (see
-  // `MercanciaParaEsteEvento.tsx`) to a per-row grain — each row's tap is
-  // independent, so she may assign/unassign several rows in one visit
-  // without waiting on any other row's write.
+  // §3.26's own per-row save/slow/error shape, per-row grain — each row's
+  // tap is independent, so she may assign/unassign several rows in one
+  // visit without waiting on any other row's write.
   //
   // **Idempotency:** `createEventAssignment`/`removeEventAssignment`
-  // (`store.tsx`) are both idempotent by construction already — upsert-
-  // shaped find-or-no-op for the former, a plain array-filter (a no-op
-  // against an already-removed id) for the latter — the same guarantee
-  // `architecture-principles.md` #7 asks for, achieved here by the write's
-  // own shape rather than a separately generated request key. A retried
-  // "Reintentar" tap can never double-create or double-remove the same
-  // `EventAssignment` row.
-  function runWrite(membershipId: ID, action: RowAction, commit: () => void) {
+  // (`store.tsx`) are both idempotent by construction already — a real,
+  // network-backed call to `assign_to_event`/`unassign_from_event`
+  // (Stage 7 Backend Integration, Phase 2c), each naturally idempotent
+  // server-side (upsert-shaped find-or-no-op for the former, a no-op delete
+  // for the latter) — the same guarantee `architecture-principles.md` #7
+  // asks for, achieved by the write's own shape rather than a separately
+  // generated request key. A retried "Reintentar" tap can never
+  // double-create or double-remove the same `EventAssignment` row.
+  function runWrite(membershipId: ID, action: RowAction, commit: () => Promise<boolean>) {
     setRowStates((prev) => ({ ...prev, [membershipId]: { kind: 'saving', action } }));
     const slowTimer = window.setTimeout(() => {
       setSlowIds((prev) => new Set(prev).add(membershipId));
     }, SLOW_THRESHOLD_MS);
-    window.setTimeout(() => {
+    void commit().then((ok) => {
       window.clearTimeout(slowTimer);
       setSlowIds((prev) => {
         const next = new Set(prev);
         next.delete(membershipId);
         return next;
       });
-      commit();
-      setRowStates((prev) => ({ ...prev, [membershipId]: { kind: 'idle' } }));
-      markSettled(membershipId);
-    }, SAVE_DELAY_MS);
+      if (ok) {
+        setRowStates((prev) => ({ ...prev, [membershipId]: { kind: 'idle' } }));
+        markSettled(membershipId);
+      } else {
+        console.error(`[PersonalParaEsteEvento] ${action} failed for membership`, membershipId);
+        setRowStates((prev) => ({ ...prev, [membershipId]: { kind: 'error', action } }));
+      }
+    });
   }
 
   function handleAssign(membershipId: ID) {
@@ -124,12 +122,7 @@ export function PersonalParaEsteEvento({
   }
 
   function handleUnassign(membershipId: ID) {
-    // Captured now, at tap time, never inside the deferred write — the same
-    // "resolve the exact row before scheduling the write" posture every
-    // other per-row action in this codebase already holds itself to.
-    const assignment = state.eventAssignments.find((a) => a.eventId === eventId && a.membershipId === membershipId);
-    if (!assignment) return; // defensive — button only renders for an already-assigned row
-    runWrite(membershipId, 'unassign', () => removeEventAssignment(assignment.id));
+    runWrite(membershipId, 'unassign', () => removeEventAssignment(businessId, eventId, membershipId));
   }
 
   // Zero-active-SELLER-Membership branches (EVT-M5) — checked only once,
@@ -286,10 +279,13 @@ function PersonalRow({
         </div>
       )}
 
-      {/* §3.26's own per-row write-failure branch — never actually triggered
-          in this build (the local mock write never fails), the same
-          disclosed-not-wired convention as every other write in this
-          codebase (`MercanciaParaEsteEvento.tsx`, `TeamScreen.tsx`). */}
+      {/* §3.26's own per-row write-failure branch — Stage 7 Backend
+          Integration, Phase 2c: `createEventAssignment`/
+          `removeEventAssignment` are now real, network-backed RPC calls
+          that can genuinely fail (a network drop, a platform error), so
+          this branch is real and reachable, no longer disclosed-not-wired
+          (`MercanciaParaEsteEvento.tsx`'s own equivalent branch stays
+          disclosed-not-wired until its own backend phase, 2b). */}
       {error && (
         <div className={styles.errorActions}>
           <p className={styles.errorLine}>
