@@ -39,6 +39,68 @@
   align-content: start;
 }
 
+/* home.md §3.9's second, always-available way to add a Product to "Venta
+   actual" (`decision-log.md` D65) — sits directly above the tile grid,
+   inside the same registration zone. Plain/conventional per
+   DESIGN-SYSTEM.md §8 (not one of the five Swing Tag scales) — a control,
+   not a Product or a price. */
+.scanBtn {
+  width: 100%;
+  text-align: center;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  padding: 12px 14px;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+  cursor: pointer;
+  margin-bottom: var(--space-3);
+}
+
+/* home.md §3.9b — the one genuine dead end this scan affordance can reach,
+   its own full content-area takeover once the camera has already closed
+   (never shown alongside it) — same absolute/inset-0/z-30 technique
+   BarcodeScanner's own .screen uses, so the nav bar stays drawn underneath. */
+.scanDeadEnd {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: var(--color-paper);
+  display: flex;
+  flex-direction: column;
+}
+
+.scanDeadEndTopbar {
+  padding: var(--space-4) var(--space-4) var(--space-1);
+}
+
+.scanDeadEndBack {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
+.scanDeadEndBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.scanDeadEndText {
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
+
 /* home.md §3.10 — the nfc-mode registration surface: no product grid at
    all, replaced entirely by the shared NFCScanPrompt (Asignar Tags' own
    component, inventory.md §3.14), centered in the same flexible region

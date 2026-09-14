@@ -1,6 +1,6 @@
-# Supabase — real WhatsApp OTP delivery + Identity persistence layer
+# Supabase — real WhatsApp OTP delivery + Identity/Inventory persistence layers
 
-Stage 7 Backend Integration. Two independent passes so far:
+Stage 7 Backend Integration. Three passes so far:
 - **Phone/OTP authentication** (see `company/business-decisions.md` Q14/Q15,
   `product/00-foundation/decision-log.md` D44) — replaces the client-side
   "any 6-digit code works" mock previously in `src/domain/store.tsx`'s
@@ -18,21 +18,53 @@ Stage 7 Backend Integration. Two independent passes so far:
   for why (the prototype's current Invitation UI/domain type is still
   phone-keyed, RFC 0013's own token-keyed redesign hasn't had its UI
   Migration-Workflow pass yet).
+- **Inventory persistence layer, Phase 1** (`context/stage-7-backend-
+  integration.md`'s "Phase 1 design summary," `architect`, 2026-09-13) —
+  real `suppliers`/`products`/`lots`/`inventory_entries`/`inventory_units`/
+  `nfc_tags` tables + RLS + the `commit_lot`/`update_product_price`/
+  `update_product_photo`/`assign_tag_to_next_pending_unit` SECURITY DEFINER
+  RPCs. `store.tsx`'s `commitLot`/`editPrice`/`setProductPhoto`/
+  `assignTagToNextPendingUnit` now call these for real, closing the
+  idempotency-key gap `BACKLOG.md` §F previously named for all four.
+  Selling/Session/Sale/EventAllocation (Phase 2/2b/2c) are untouched —
+  `inventory_units` deliberately gets no UPDATE policy at all in this phase.
+- **Inventory persistence layer, Phase 1 follow-up — barcode write**
+  (`decision-log.md` D65, `ui-designer`, 2026-09-13) — closes Phase 1's own
+  open item 4. `20260913030000`/`20260913031000` added the `barcode` column
+  and its partial unique index but never actually wrote it on `commit_lot`'s
+  `new`-line insert; `20260913032000_inventory_barcode_write.sql` fixes
+  that (writes `barcode` when present, catches a genuine collision and
+  re-raises it as `barcode_already_registered`). Found and fixed while
+  building `inventory.md` §3.8b-§3.8e / `home.md` §3.9-§3.9c's UI —
+  disclosed here rather than silently assumed working, per this project's
+  own "check directly, don't assume" discipline. **Not yet pushed to the
+  real hosted project** — see the checklist's new item 12 below; this
+  environment has no `SUPABASE_ACCESS_TOKEN`/CLI-auth credential (same
+  legacy-token workaround ID018 already documents for every prior push in
+  this file), so `supabase db push` could not be run here.
 
-**Status as of 2026-09-13 (corrected — this paragraph was stale/self-
-contradictory against the checklist below, `reviewer`-caught):** phone/OTP
-path — real Supabase project created, linked, migration pushed, and both
-Edge Functions deployed and ACTIVE (see checklist below). Not yet
-live-tested end to end — still blocked on Twilio/WhatsApp sender setup
-(steps 2-3); WhatsApp production verification is separately non-blocking
-for the pilot as a whole now (`company/business-decisions.md` Q19), since
-Google/Email cover the working sign-up paths in the meantime. Google and
-Email sign-in — **live and confirmed working in production** on
-`nahui.app` (Vercel env vars set, Resend SMTP configured, Google OAuth
-Client configured). Identity persistence layer — migration SQL applied to
-the real hosted project via `supabase db push` (checklist items 8-10),
-`reviewer`-verified across two rounds of fixes; not yet committed to git
-pending this same review pass closing.
+**Status as of 2026-09-13:** phone/OTP path — real Supabase project
+created, linked, migration pushed, and both Edge Functions deployed and
+ACTIVE (see checklist below). Not yet live-tested end to end — still
+blocked on Twilio/WhatsApp sender setup (steps 2-3); WhatsApp production
+verification is separately non-blocking for the pilot as a whole now
+(`company/business-decisions.md` Q19), since Google/Email cover the working
+sign-up paths in the meantime. Google and Email sign-in — **live and
+confirmed working in production** on `nahui.app` (Vercel env vars set,
+Resend SMTP configured, Google OAuth Client configured). Identity
+persistence layer (Phase 0) — migration SQL applied to the real hosted
+project via `supabase db push` (checklist items 8-10), `reviewer`-verified
+across two rounds of fixes. Inventory persistence layer (Phase 1) —
+migration SQL applied to the real hosted project via `supabase db push`
+(checklist item 10), client wiring complete (`store.tsx`), `tsc -b`/
+`vite build` both clean; `reviewer`-verified (checklist item 11) — 1 Blocker
+closed client-side, 2 Important findings closed by
+`20260913033000_inventory_persistence_layer_fixes.sql`, **not yet pushed**
+(checklist item 13).
+Inventory persistence layer, Phase 1 barcode-write follow-up —
+migration SQL written (`20260913032000_inventory_barcode_write.sql`),
+client wiring complete, `tsc -b`/`vite build` both clean; **not yet pushed**
+to the real hosted project (checklist item 12) or `reviewer`-verified.
 
 ## What's here
 
@@ -44,6 +76,40 @@ supabase/
     20260913000000_identity_persistence_layer.sql       — businesses/business_memberships/
                                                             auth_identities/invitations + RLS +
                                                             create_business_with_owner/accept_invitation
+    20260913010000_identity_persistence_layer_fixes.sql — reviewer round-1 fixes (Phase 0)
+    20260913020000_identity_persistence_layer_fixes2.sql — reviewer round-2 fixes (Phase 0)
+    20260913030000_inventory_persistence_layer.sql      — suppliers/products/lots/inventory_entries/
+                                                            inventory_units/nfc_tags + RLS +
+                                                            commit_lot/update_product_price/
+                                                            update_product_photo/
+                                                            assign_tag_to_next_pending_unit
+    20260913031000_inventory_persistence_layer_fixes.sql — commit_lot return-shape fix (Phase 1,
+                                                             own-pass correction, not a reviewer
+                                                             finding — see its own header)
+    20260913032000_inventory_barcode_write.sql            — commit_lot now actually writes
+                                                             products.barcode + collision
+                                                             handling (D65, ui-designer,
+                                                             own-pass correction — see its
+                                                             own header). NOT YET PUSHED.
+    20260913033000_inventory_persistence_layer_fixes.sql — reviewer fix round 1 (Phase 1):
+                                                             Important findings 1-2 — a
+                                                             partial index matching
+                                                             assign_tag_to_next_pending_unit's
+                                                             actual query shape (business_id +
+                                                             status='available' + received_at),
+                                                             and correcting the products.photo
+                                                             column comment to "provisionally
+                                                             deferred, pending architect
+                                                             reconfirmation" (the accompanying
+                                                             Blocker finding — commitLot()'s
+                                                             client wiring never preserving a
+                                                             stable idempotency key across a
+                                                             retry — was a client-only fix, see
+                                                             store.tsx/RegisterMerchandise.tsx/
+                                                             OnboardingFlow.tsx). NOT YET PUSHED
+                                                             (same sandboxed-environment
+                                                             credential gap as the barcode-write
+                                                             migration above).
   functions/
     send-otp/index.ts                — generates + WhatsApp-sends a code
     verify-otp/index.ts              — checks a submitted code, single-use
@@ -113,6 +179,62 @@ supabase/
    false when an already-active member reopens a stale invite link) —
    closed by `20260913020000_identity_persistence_layer_fixes2.sql`. All
    three migrations applied to the real hosted project.
+10. ~~**Push the Inventory persistence layer migration**~~ **DONE**
+    2026-09-13 — `20260913030000_inventory_persistence_layer.sql` and its
+    own-pass follow-up `20260913031000_inventory_persistence_layer_fixes.sql`
+    (a `commit_lot` return-shape correction found and fixed before this
+    migration was ever reviewed — see that file's own header, not a
+    `reviewer` finding) applied to the real hosted project via
+    `supabase db push` (same CLI-auth workaround as step 6).
+11. ~~**`reviewer`'s security pass**~~ **DONE** 2026-09-13 — found 1 Blocker
+    (`commitLot()`'s client wiring never preserved a stable idempotency key
+    across a retry, defeating `commit_lot`'s own replay-on-conflict
+    guarantee — a lost-response retry could mint a duplicate Lot/Products/
+    InventoryUnits) + 2 Important findings (the FIFO index not matching
+    `assign_tag_to_next_pending_unit`'s actual query shape; `products.photo`
+    staying a data-URL column presented as a settled deferral rather than
+    routed back through Decision Ownership against `architect`'s explicit
+    Supabase Storage recommendation). Blocker closed client-side
+    (`src/domain/store.tsx`/`RegisterMerchandise.tsx`/`OnboardingFlow.tsx`).
+    Important findings closed by `20260913033000_inventory_persistence_layer_fixes.sql`
+    (index fix + corrected column comment) — see item 13 below for its push
+    status, and `context/stage-7-backend-integration.md`'s open items for
+    `products.photo`'s still-open go/no-go.
+12. **Push the barcode-write follow-up migration**
+    (`20260913032000_inventory_barcode_write.sql`, `decision-log.md` D65) —
+    **NOT YET DONE.** `ui-designer` found, while building
+    `inventory.md` §3.8b-§3.8e/`home.md` §3.9-§3.9c, that the Phase 1
+    migrations never actually wrote `products.barcode` on `commit_lot`'s
+    `new`-line insert (the column/index existed, the write didn't — Phase
+    1's own header flagged this as its open item 4, "in progress, doesn't
+    block this schema"). This migration closes it. Not pushed here — this
+    sandboxed environment has no `SUPABASE_ACCESS_TOKEN`/legacy-token
+    credential (same CLI-auth workaround ID018 documents for every prior
+    push in this file); `npx supabase projects list` confirms no access
+    token is configured. **Until this is pushed, a real device scanning a
+    genuinely new barcode and completing "Guardar mercancía" will silently
+    lose that barcode** — the Product is still created correctly (name/
+    price/photo), it just won't carry `barcode`, so a later re-scan of the
+    same item won't resolve to it (falls through to the "sin coincidencia"
+    creation path again instead of §3.8c's confirm). The client-side
+    behavior (camera, confirm-on-scan, no-match creation, Selling's
+    read-only scan-to-add) is fully built and correct against whatever
+    `commit_lot` actually returns/writes — this is purely the one remaining
+    "make the already-applied schema's own column actually get written"
+    step.
+13. **Push the reviewer-fix-round migration**
+    (`20260913033000_inventory_persistence_layer_fixes.sql`, item 11's
+    findings) — **NOT YET DONE.** Same sandboxed-environment credential gap
+    as item 12 (`npx supabase projects list` confirms no access token is
+    configured here). Until this is pushed, `assign_tag_to_next_pending_unit`
+    keeps running its FIFO scan against `inventory_units_fifo_idx` alone (a
+    correctness-neutral but real performance gap on real Business-scale data
+    — the query still returns the right row, just via a fuller scan than a
+    correctly-shaped index would need) and `products.photo`'s column comment
+    in the live database still reads as the original, settled-sounding
+    language rather than the corrected "provisionally deferred, pending
+    architect reconfirmation" — a documentation-only gap client-side, not a
+    behavioral one.
 
 ## Judgment calls made building this (tune freely, not escalated)
 
@@ -174,3 +296,71 @@ supabase/
   designed here") — flagged here as the same still-open gap, not a new one.
   The migration SQL/RLS/RPC for `invitations` are built and correct
   regardless; only the client wiring for these three functions is deferred.
+
+## Judgment calls made building the Inventory persistence layer (Phase 1)
+
+- **`suppliers`/`lots`/`inventory_entries` get OWNER-only SELECT; `products`/
+  `inventory_units`/`nfc_tags` get any-active-member SELECT.** `architect`'s
+  own design summary named the second group explicitly (matching the
+  confirmed Q24/Q25 permission table's "SELLER: read sellable Products/
+  prices, ungated" plus Selling's own read-only tag→unit resolution
+  dependency on `nfc_tags`); the first group wasn't explicitly named, but
+  follows the same permission table's "OWNER: ... Lot receiving/tagging" by
+  direct inference — a SELLER never needs to read receiving-workflow
+  bookkeeping to do her own job (open her Session, register a Sale).
+- **No client INSERT/UPDATE/DELETE grant on any of the six tables, at all.**
+  Every write goes through one of the four SECURITY DEFINER RPCs — matches
+  `products`/`inventory_units`/`nfc_tags`'s own comment on the base
+  migration ("no direct client... grant... every write goes through the
+  SECURITY DEFINER RPCs below") and Phase 0's own `businesses`/
+  `business_memberships` precedent.
+- **`update_product_price`/`update_product_photo` are idempotency-keyed but
+  have no cached-result replay branch**, unlike `commit_lot`/
+  `accept_invitation`. A plain single-column `UPDATE` has no duplicate-
+  creation side effect to guard against — re-applying the identical value on
+  a retry is harmless — so the idempotency_keys row is written for audit-
+  trail consistency, but the actual retry-safety comes from the write's own
+  natural idempotence, not a stored/replayed result. See each function's own
+  header comment.
+- **`assign_tag_to_next_pending_unit` raises named exceptions
+  (`tag_already_assigned`/`tag_queue_empty`) rather than returning a
+  discriminated result row** — matches `accept_invitation`'s own established
+  convention (Phase 0) over a table-returning discriminated union; the
+  client matches on `error.message`. Neither failure branch attempts an
+  idempotency-key cache write before raising, applying Phase 0's own fix-
+  round-1 lesson (`20260913010000_identity_persistence_layer_fixes.sql`)
+  from the start rather than repeating and later re-fixing the same mistake:
+  such a write never survives the `RAISE EXCEPTION` that follows it in the
+  same transaction, so a retry simply re-derives the identical outcome by
+  re-running the same checks.
+- **`commit_lot`'s return shape was corrected before this migration was ever
+  reviewed** (`20260913031000_inventory_persistence_layer_fixes.sql`, applied
+  as a new migration rather than editing the already-live base file — same
+  "never edit an applied migration" discipline Phase 0's own fix migrations
+  established) — from `product_id` alone to `(product_id, lot_id,
+  unit_ids)` per input line. The client's local `AppState` mirror needs the
+  real, server-assigned `InventoryUnit` ids, not locally-fabricated ones, so
+  a later `assign_tag_to_next_pending_unit` result can be recognized back
+  against `state.units` — see that migration file's own header for the full
+  reasoning.
+- **`products.photo` stays a plain nullable `text` column**, storage-
+  mechanism-agnostic — the client still writes a data-URL string into it
+  directly, unchanged from the mock's own shape. **Corrected 2026-09-13
+  (`reviewer` finding, closed by `20260913033000_inventory_persistence_layer_fixes.sql`):**
+  this was presented above as if it were a settled, disclosed-and-done
+  deferral per `architect`'s own open item 2 — it isn't. `architect`
+  explicitly recommended real Supabase Storage (a bucket + this column
+  holding a path/URL) instead, citing real costs (row bloat, no CDN,
+  Postgres text-column limits under load) given `Product.photo`/D54 is
+  already live and merchant-facing for 2 real pilot merchants; keeping the
+  data-URL shape was a real deviation from that recommendation, made
+  unilaterally rather than routed back for reconfirmation. Now tracked
+  honestly as **provisionally deferred, pending architect reconfirmation** —
+  see `context/stage-7-backend-integration.md`'s open items list. Building
+  real Supabase Storage wiring itself remains separate, unscoped work either
+  way.
+- **`Product.active` (`product-decisions.md` Q21) is not in this schema at
+  all** — `architect`'s own Architecture Decision (not this pass's call):
+  Q21 was never promoted into the Foundation (no decision-log entry, no
+  `domain-model.md` update, no UX spec), so it doesn't belong in a permanent
+  table yet.

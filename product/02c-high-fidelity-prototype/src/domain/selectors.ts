@@ -308,6 +308,39 @@ export function findProduct(state: AppState, productId: ID): Product | undefined
   return state.products.find((p) => p.id === productId);
 }
 
+/**
+ * `decision-log.md` D65 — the actual matching predicate behind
+ * `productByBarcode` below, pulled out as its own pure function (not
+ * `AppState`-shaped) so a caller that only has a `Product[]` in hand — not
+ * full `AppState` — can still resolve a scanned code through the identical
+ * rule instead of re-deriving it inline. Trimmed only (whitespace a decoder
+ * might pad/trail with) — deliberately **not** case-folded the way
+ * `inventory.md` §3.8's typed-name matching is: a barcode is a fact a
+ * manufacturer/packager printed, not one Ana types, so there's no "BOLSAS
+ * vs. bolsas" human-typing variance to normalize away here.
+ */
+export function matchProductByBarcode(products: Product[], code: string): Product | undefined {
+  const normalized = code.trim();
+  if (!normalized) return undefined;
+  return products.find((p) => p.barcode != null && p.barcode.trim() === normalized);
+}
+
+/**
+ * `decision-log.md` D65 — resolves a scanned barcode against this
+ * Business's Catalog. One shared implementation for both consumers that
+ * ever resolve a barcode against the Catalog — Inventory's own confirm-on-
+ * scan (`inventory.md` §3.8c) and Selling's silent scan-to-add (`home.md`
+ * §3.9a/§3.9a-i/§3.9b) — so the two never drift into two independently-
+ * maintained matching rules. `ProductPicker`'s own scan-no-match resolution
+ * (`inventory.md` §3.8a's scan variant) doesn't hold `AppState` at all —
+ * only the `Product[]` its `rows` prop already carries — so it calls
+ * `matchProductByBarcode` directly instead of this wrapper; both routes run
+ * the identical predicate either way.
+ */
+export function productByBarcode(state: AppState, code: string): Product | undefined {
+  return matchProductByBarcode(state.products, code);
+}
+
 /** Eventos (`events.md`, `decision-log.md` D8/D15/D17/D20). */
 
 export type EventStatus = 'scheduled' | 'active' | 'closed' | 'cancelled';

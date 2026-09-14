@@ -13,6 +13,80 @@
   margin-bottom: var(--space-3);
 }
 
+/* §3.8's second, always-available way to resolve Producto (`decision-log.md`
+   D65) — sits directly beneath the typed-search field, never replacing it. */
+.scanBtn {
+  width: 100%;
+  text-align: left;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  padding: 12px 14px;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+  cursor: pointer;
+  margin-bottom: var(--space-3);
+}
+
+/* §3.8d — camera permission denied/unavailable. A dedicated, minimal
+   full-screen fallback (not the general search sheet) — reuses this
+   codebase's established light "back + content" push-in shape
+   (`MiActividadDeHoy.module.css`'s own precedent), never the dark
+   `BarcodeScanner.module.css` camera theme, since this isn't a camera
+   view. Positioned exactly like `BarcodeScanner`'s own `.screen` (absolute/
+   inset-0, relying on `App.module.css`'s `.main { position: relative }`),
+   setting this picker's dimmed-backdrop `<Sheet>` chrome aside the same way
+   the live camera view already does. */
+.cameraFailureScreen {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: var(--color-white);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4) var(--space-6) var(--space-8);
+  overflow-y: auto;
+}
+
+.cameraFailureBack {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+  margin-bottom: var(--space-4);
+}
+
+.cameraFailureText {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+  margin-bottom: var(--space-3);
+}
+
+/* §3.8c — confirm-on-scan's found-Product row, the same marker/caption
+   shape CatalogRow already renders, reused rather than redrawn. */
+.confirmProductRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.confirmProductName {
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.confirmProductCaption {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
 .addNew {
   width: 100%;
   text-align: left;

@@ -378,8 +378,12 @@ export interface CommitLotLine {
      * a to-be-minted Product; an `existing` line never carries one, since an
      * already-real Product's photo is managed separately via
      * `setProductPhoto` (`inventory.md` §3.4b), never re-asked at receiving
-     * time. */
-    | { kind: 'new'; name: string; defaultPrice: number; photo?: string };
+     * time. `barcode` (`decision-log.md` D65) — same posture: only
+     * meaningful for a to-be-minted Product, set exactly once, only when
+     * this line was resolved via the picker's "vía escaneo, sin
+     * coincidencia" path (`inventory.md` §3.8a's scan variant); the typed
+     * path never sets it. */
+    | { kind: 'new'; name: string; defaultPrice: number; photo?: string; barcode?: string };
 }
 
 /**
@@ -507,43 +511,71 @@ interface StoreValue {
    * together. Onboarding's "Define lo que vendes" step used to call a
    * separate, Product-only `createProducts` write (no stock); Q20 retired
    * that mechanism in favor of this one, since a first-run Catalog's lines
-   * are always to-be-minted Products, never an `existing` match. Returns
-   * the resolved productId for each line, same order as input — a
-   * freshly-minted id for `new` lines, the given id for `existing` ones. */
-  commitLot: (lines: CommitLotLine[]) => ID[];
+   * are always to-be-minted Products, never an `existing` match.
+   *
+   * Stage 7 Backend Integration, Phase 1 (`supabase/migrations/
+   * 20260913030000_inventory_persistence_layer.sql`,
+   * `20260913031000_inventory_persistence_layer_fixes.sql`,
+   * `20260913033000_inventory_persistence_layer_fixes.sql`): a real call to
+   * the `commit_lot` SECURITY DEFINER RPC, closing the idempotency-key gap
+   * `BACKLOG.md` §F previously named. **`reviewer` Blocker fix (2026-09-13):**
+   * the idempotency key is now supplied by the caller, not minted fresh
+   * inside this function on every invocation — the earlier shape defeated
+   * `commit_lot`'s own replay-on-conflict guarantee, since a retry after a
+   * lost response would mint a brand-new key and the RPC would treat it as a
+   * genuinely new attempt, silently doubling the Lot/Products/InventoryUnits.
+   * `commit_lot` has multiple, structurally independent call sites
+   * (RegisterMerchandise.tsx, SellingGroups.tsx via OnboardingFlow.tsx, the
+   * demo seed in OnboardingFlow.tsx) — each one owns its own logical
+   * attempt/retry surface, so each caller manages its own stable key (the
+   * same `useRef<string | null>`, generate-once-if-null,
+   * reused-across-retry, cleared-on-success shape `completeOnboarding`'s own
+   * `onboardingIdempotencyKeyRef` already established above — mirrored, not
+   * shared, since a single store-level ref would incorrectly leak one
+   * caller's in-flight key into an unrelated caller's own attempt).
+   * Resolves to the resolved productId for each line, same order as input —
+   * a freshly-minted id for `new` lines, the given id for `existing` ones —
+   * or `null` on any rejected/failed outcome (no Business, no Supabase
+   * configured, a genuine platform error). */
+  commitLot: (lines: CommitLotLine[], idempotencyKey: string) => Promise<ID[] | null>;
   /** inventory.md §3.4a "Editar precio" — the Catalog-row-level
-   * `Product.defaultPrice` write. No idempotency key is currently generated
-   * for this write, despite `inventory.md` §3.4a's own prose previously
-   * (inaccurately) claiming otherwise. Same pre-existing gap as
-   * `commitLot()`/`setProductPhoto` (`BACKLOG.md` §F); a stated
-   * `architecture-principles.md` #7 guarantee this implementation doesn't
-   * yet satisfy, not fixed here — Stage 7 (Backend Integration) owns it. */
-  editPrice: (productId: ID, newPrice: number) => void;
+   * `Product.defaultPrice` write. Stage 7 Backend Integration, Phase 1: a
+   * real, idempotency-keyed call to the `update_product_price` RPC, closing
+   * the gap `BACKLOG.md` §F previously named. Resolves `true` on success,
+   * `false` on any rejected/failed outcome (no local state change happens
+   * in that case — `CatalogView.tsx`'s sheet stays open so she can retry). */
+  editPrice: (productId: ID, newPrice: number) => Promise<boolean>;
   /** inventory.md §3.4b "Guardar foto" (`product-decisions.md` Q23) — the
    * Catalog-row-level `Product.photo` write, same shape as `editPrice`
    * immediately above. `undefined` writes a removal ("Quitar" staged, then
-   * committed). No idempotency key is currently generated for this write —
-   * a doc comment here previously (inaccurately, copied from `editPrice`'s
-   * own now-corrected claim) said otherwise. Same pre-existing gap as
-   * `commitLot()`/`editPrice` (`BACKLOG.md` §F); a stated
-   * `architecture-principles.md` #7 guarantee this implementation doesn't
-   * yet satisfy, not fixed here — Stage 7 (Backend Integration) owns it. */
-  setProductPhoto: (productId: ID, photo: string | undefined) => void;
+   * committed). Stage 7 Backend Integration, Phase 1: a real,
+   * idempotency-keyed call to the `update_product_photo` RPC, closing the
+   * gap `BACKLOG.md` §F previously named. Resolves `true` on success,
+   * `false` on any rejected/failed outcome. */
+  setProductPhoto: (productId: ID, photo: string | undefined) => Promise<boolean>;
   /** inventory.md §3.14 — Asignar Tags' own write, one scan at a time
    * (`addItemToSale`'s per-event-write shape, not `commitLot`'s batch
-   * shape). "Next pending unit" = first entry in `state.units` (existing
-   * array order — already matches §3.14's "in the order she entered them")
-   * where `status === 'available' && tagId == null`. Global across every
-   * Lot/Product (`inventory.md` §2 step 2's own business-wide gate), never
-   * scoped to the Lot that was just registered. `already-assigned` is
-   * checked before `queue-empty` — a business-logic conflict (§3.15) is
-   * distinct from there being nothing left to tag (§2 step 4/§3.13). */
+   * shape). "Next pending unit" = FIFO-first (oldest `receivedAt`) unit,
+   * global across every Lot/Product (`inventory.md` §2 step 2's own
+   * business-wide gate), never scoped to the Lot that was just registered
+   * — resolved server-side now, not by scanning the local `state.units`
+   * array. `already-assigned` is checked before `queue-empty` — a
+   * business-logic conflict (§3.15) is distinct from there being nothing
+   * left to tag (§2 step 4/§3.13).
+   *
+   * Stage 7 Backend Integration, Phase 1: a real, idempotency-keyed call
+   * (fresh key per scan — each scan is its own logical attempt) to the
+   * `assign_tag_to_next_pending_unit` RPC. `platform-error` is a new
+   * outcome a purely-client-side mock never had — a genuine network/RPC
+   * failure, distinct from the two named business-logic outcomes above. */
   assignTagToNextPendingUnit: (
     tagId: string,
-  ) =>
+  ) => Promise<
     | { ok: true; unitId: ID; productId: ID }
     | { ok: false; reason: 'already-assigned' }
-    | { ok: false; reason: 'queue-empty' };
+    | { ok: false; reason: 'queue-empty' }
+    | { ok: false; reason: 'platform-error' }
+  >;
   /** events.md §3.6 "Guardar evento" — the atomic Event-creation write.
    * Resolves `venue` (mint-or-find, `resolveVenue`'s own logic) inside the
    * same transaction. **The D17 overlap check this write once re-ran
@@ -904,8 +936,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   /**
    * RFC 0012 §4 — the `AuthIdentity` resolution invariant, shared by every
    * credential-verification write path (`verifyOtp`, `verifyEmailOtp`,
-   * `resolveGoogleSignIn`) the exact same way `mintProduct`/`resolveVenue`
-   * below are shared by their own multiple callers — one mechanism, never
+   * `resolveGoogleSignIn`) the exact same way `resolveVenue`
+   * below is shared by its own multiple callers — one mechanism, never
    * copy-pasted per channel. Three outcomes:
    *
    * - `'existing'` — a plain read: this exact `(type, identifier)` already
@@ -933,7 +965,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * now generalized to any credential type rather than phone specifically.
    *
    * Pure, given `s` — never calls `setState` itself, mirroring
-   * `mintProduct`/`resolveVenue`'s own "resolution helper, not a writer"
+   * `resolveVenue`'s own "resolution helper, not a writer"
    * shape immediately below.
    */
   function resolveAuthIdentity(
@@ -980,21 +1012,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * Shared new-Product minting/resolution logic — extracted so `commitLot`
-   * (inventory.md §3.8a/§3.9, and — as of `product-decisions.md` Q20 —
-   * onboarding.md §2.2a's "Define lo que vendes" as well) resolves a
-   * not-yet-real `{name, defaultPrice}` identity into a real, ID-bearing
-   * `Product` through exactly one mechanism — never two independently-built
-   * creation paths (onboarding.md §2.2a's own explicit instruction to
-   * `builder`/`ui-designer`).
-   */
-  function mintProduct(name: string, defaultPrice: number, createdAt: number, photo?: string): Product {
-    return { id: makeId('prod'), name: name.trim(), defaultPrice, photo, createdAt };
-  }
-
-  /**
    * events.md §3.7 — mint-or-find resolution for a Venue picked/typed in
-   * Elegir lugar, mirroring `mintProduct` above: given a `VenueRef`, either
+   * Elegir lugar: given a `VenueRef`, either
    * resolve it to an already-real Venue's id, or mint a brand-new one.
    * `existing` is trusted as-is (the picker already resolved which Venue
    * she tapped). `new` re-applies the same case-insensitive/trimmed match
@@ -1030,19 +1049,108 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * match to make there), composing onto this one write mechanism rather
    * than a second, parallel one.
    */
-  function commitLot(lines: CommitLotLine[]): ID[] {
+  /**
+   * Stage 7 Backend Integration, Phase 1 (`supabase/migrations/
+   * 20260913030000_inventory_persistence_layer.sql`,
+   * `20260913031000_inventory_persistence_layer_fixes.sql`,
+   * `20260913033000_inventory_persistence_layer_fixes.sql`) — real call to
+   * `commit_lot`, replacing the previous client-side-only write. Mirrors
+   * `completeOnboarding`'s own "server is truth, fold the result into the
+   * local `AppState` mirror" posture (Phase 0): every other screen in this
+   * build still reads Inventory state from `AppState`, not from Supabase
+   * directly (that broader "replace local reads with live queries" pass is
+   * out of this Phase 1 dispatch's scope, same as it was for Phase 0).
+   *
+   * The RPC returns one row per input line — `productId` (real or
+   * freshly-minted), the shared `lotId`, and `unitIds` (every newly-created
+   * InventoryUnit for that line) — so the local mirror is built entirely
+   * from real server-assigned ids, never `makeId()`-fabricated ones. This
+   * is load-bearing, not cosmetic: `assignTagToNextPendingUnit` below
+   * resolves and returns a real unit id, server-side, FIFO-first — the
+   * local mirror can only recognize that id back inside `state.units` if
+   * this function built that array from the same real ids to begin with.
+   *
+   * `idempotencyKey` — **`reviewer` Blocker fix:** now supplied by the
+   * caller (see the `StoreValue.commitLot` doc comment above for the full
+   * reasoning) rather than minted fresh here on every call. This function
+   * stays a thin, trusting pass-through of whatever key its caller supplies
+   * — it has no way to know, from inside a single call, whether that key
+   * represents a first attempt or a retry of one; only the caller (which
+   * owns the actual retry loop) can know that.
+   */
+  async function commitLot(lines: CommitLotLine[], idempotencyKey: string): Promise<ID[] | null> {
     if (lines.length === 0) return [];
-    const lotId = makeId('lot');
-    const receivedAt = Date.now();
+    if (!state.business) return null;
 
-    const newProducts: Product[] = [];
-    const resolvedProductIds: ID[] = lines.map((line) => {
-      if (line.product.kind === 'existing') return line.product.productId;
-      const product = mintProduct(line.product.name, line.product.defaultPrice, receivedAt, line.product.photo);
-      newProducts.push(product);
-      return product.id;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] commitLot: Supabase not configured. See supabase/README.md.');
+      return null;
+    }
+
+    const payload = lines.map((line) => ({
+      kind: line.product.kind,
+      ...(line.product.kind === 'existing'
+        ? { product_id: line.product.productId }
+        : {
+            name: line.product.name,
+            default_price: line.product.defaultPrice,
+            photo: line.product.photo ?? null,
+            // D65 — silently attached, never a field she sees or confirms
+            // (inventory.md §3.8a's scan variant); `null` for the typed
+            // path, exactly like `photo` above when none was selected.
+            barcode: line.product.barcode ?? null,
+          }),
+      quantity: line.quantity,
+    }));
+
+    const { data, error } = await supabase.rpc('commit_lot', {
+      p_business_id: state.business.id,
+      p_idempotency_key: idempotencyKey,
+      p_lines: payload,
     });
 
+    if (error || !data) {
+      // D65 — a genuine barcode collision (`products_barcode_unique_idx`,
+      // 20260913032000_inventory_barcode_write.sql) surfaces here as an
+      // ordinary commit_lot failure, same as any other save error — no
+      // dedicated UI state exists for it (or is called for): inventory.md
+      // never designs a distinguishable message for this case, since the
+      // write only ever reaches this point *after* §3.8c's own confirm-on-
+      // scan step already resolved the identity question once; a collision
+      // this late is a genuinely rare race (two devices, two near-
+      // simultaneous first-scans of the same never-before-seen barcode),
+      // not a state she needs a special explanation for — §3.11's existing
+      // "No se pudo guardar... intenta de nuevo" retry already covers it
+      // correctly (her typed data, including the not-yet-created Product's
+      // name/price/photo, is preserved, exactly as §3.11 already promises).
+      console.error('[store] commit_lot failed', error);
+      return null;
+    }
+
+    const rows = data as { product_id: ID; lot_id: ID; unit_ids: ID[] }[];
+    const resolvedProductIds = rows.map((row) => row.product_id);
+    if (rows.length === 0) return resolvedProductIds;
+
+    const lotId = rows[0].lot_id;
+    const receivedAt = Date.now();
+    // Identity (id) comes from the RPC's own resolved productId — never
+    // `mintProduct`'s local `makeId('prod')`, which would drift from the
+    // real server row this Product now actually is.
+    const newProducts: Product[] = lines.flatMap((line, i) =>
+      line.product.kind === 'new'
+        ? [
+            {
+              id: resolvedProductIds[i],
+              name: line.product.name.trim(),
+              defaultPrice: line.product.defaultPrice,
+              photo: line.product.photo,
+              barcode: line.product.barcode,
+              createdAt: receivedAt,
+            },
+          ]
+        : [],
+    );
     const entries = lines.map((line, i) => ({
       id: makeId('entry'),
       lotId,
@@ -1050,18 +1158,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       quantity: line.quantity,
     }));
     const units: InventoryUnit[] = [];
-    lines.forEach((line, i) => {
-      for (let u = 0; u < line.quantity; u += 1) {
-        units.push({
-          id: makeId('unit'),
-          productId: resolvedProductIds[i],
-          lotId,
-          status: 'available',
-          receivedAt,
-          tagId: null,
-        });
-      }
+    rows.forEach((row) => {
+      row.unit_ids.forEach((unitId) => {
+        units.push({ id: unitId, productId: row.product_id, lotId: row.lot_id, status: 'available', receivedAt, tagId: null });
+      });
     });
+
     setState((s) => ({
       ...s,
       products: [...s.products, ...newProducts],
@@ -1339,7 +1441,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * Shared Price resolution (D33, domain-model.md "Price resolution") —
    * extracted so `addItemToSale` (Buttons mode) and `addItemToSaleByTag`
    * (nfc mode) resolve "what does this Sale item cost" through exactly one
-   * mechanism, mirroring the `mintProduct`/`resolveVenue` extraction pattern
+   * mechanism, mirroring the `resolveVenue` extraction pattern
    * above rather than two independently-built, copy-pasted implementations
    * of the same domain rule (fix round, `docs/passes/slice-7-nfc-selling.md`
    * — a `reviewer`-caught Important finding: the two write paths previously
@@ -1362,7 +1464,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * mark the sold InventoryUnit reserved" write — the other half of the
    * `addItemToSale`/`addItemToSaleByTag` extraction (see
    * `resolvePricePaid` above for the full rationale). Pure, given the
-   * current state `s` — same shape as `mintProduct`/`resolveVenue`: called
+   * current state `s` — same shape as `resolveVenue`: called
    * from inside each caller's own `setState` updater, never calling
    * `setState` itself, so both write paths still go through exactly one
    * `setState` call each (no behavior change to when/how state actually
@@ -1404,19 +1506,68 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return { sales, units };
   }
 
-  function editPrice(productId: ID, newPrice: number) {
+  /**
+   * Stage 7 Backend Integration, Phase 1 — real call to
+   * `update_product_price` (`supabase/migrations/
+   * 20260913030000_inventory_persistence_layer.sql`), replacing the
+   * previous client-side-only write. Local `AppState` is only ever updated
+   * once the server confirms the write — no optimistic update — so a
+   * rejected/failed call leaves `Product.defaultPrice` exactly as it was,
+   * and the caller (`CatalogView.tsx`) can tell the two apart via the
+   * resolved boolean.
+   */
+  async function editPrice(productId: ID, newPrice: number): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] editPrice: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('update_product_price', {
+      p_business_id: state.business.id,
+      p_product_id: productId,
+      p_idempotency_key: crypto.randomUUID(),
+      p_new_price: newPrice,
+    });
+    if (error) {
+      console.error('[store] update_product_price failed', error);
+      return false;
+    }
     setState((s) => ({
       ...s,
       products: s.products.map((p) => (p.id === productId ? { ...p, defaultPrice: newPrice } : p)),
     }));
+    return true;
   }
 
-  /** inventory.md §3.4b "Guardar foto" — writes or clears `Product.photo`. */
-  function setProductPhoto(productId: ID, photo: string | undefined) {
+  /**
+   * inventory.md §3.4b "Guardar foto" — writes or clears `Product.photo`.
+   * Stage 7 Backend Integration, Phase 1 — real call to
+   * `update_product_photo`, same "server-confirmed, then local mirror"
+   * shape as `editPrice` above.
+   */
+  async function setProductPhoto(productId: ID, photo: string | undefined): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] setProductPhoto: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('update_product_photo', {
+      p_business_id: state.business.id,
+      p_product_id: productId,
+      p_idempotency_key: crypto.randomUUID(),
+      p_photo: photo ?? null,
+    });
+    if (error) {
+      console.error('[store] update_product_photo failed', error);
+      return false;
+    }
     setState((s) => ({
       ...s,
       products: s.products.map((p) => (p.id === productId ? { ...p, photo } : p)),
     }));
+    return true;
   }
 
   /**
@@ -1425,24 +1576,49 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * it's simulated entirely client-side in `AssignTags.tsx`, the same
    * "mock the physical mechanism, keep the domain layer honest" posture
    * this codebase's phone-OTP mock already established. This function only
-   * ever sees a tag that *did* read successfully, and decides the one real
-   * business-logic question: is it already spoken for (§3.15)?
+   * ever sees a tag that *did* read successfully, and decides the two real
+   * business-logic questions (already spoken for? anything left to tag?) —
+   * now resolved server-side, FIFO-ordered, `FOR UPDATE SKIP LOCKED`
+   * (`assign_tag_to_next_pending_unit`, `supabase/migrations/
+   * 20260913030000_inventory_persistence_layer.sql`), replacing the
+   * previous client-side scan of `state.units`.
    */
-  function assignTagToNextPendingUnit(
+  async function assignTagToNextPendingUnit(
     tagId: ID,
-  ): { ok: true; unitId: ID; productId: ID } | { ok: false; reason: 'already-assigned' } | { ok: false; reason: 'queue-empty' } {
-    if (state.units.some((u) => u.tagId === tagId)) {
-      return { ok: false, reason: 'already-assigned' };
+  ): Promise<
+    | { ok: true; unitId: ID; productId: ID }
+    | { ok: false; reason: 'already-assigned' }
+    | { ok: false; reason: 'queue-empty' }
+    | { ok: false; reason: 'platform-error' }
+  > {
+    if (!state.business) return { ok: false, reason: 'platform-error' };
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] assignTagToNextPendingUnit: Supabase not configured. See supabase/README.md.');
+      return { ok: false, reason: 'platform-error' };
     }
-    const next = state.units.find((u) => u.status === 'available' && u.tagId == null);
-    if (!next) {
-      return { ok: false, reason: 'queue-empty' };
+    const { data, error } = await supabase
+      .rpc('assign_tag_to_next_pending_unit', {
+        p_business_id: state.business.id,
+        p_tag_identifier: tagId,
+        p_idempotency_key: crypto.randomUUID(),
+      })
+      .single();
+
+    if (error) {
+      if (error.message === 'tag_already_assigned') return { ok: false, reason: 'already-assigned' };
+      if (error.message === 'tag_queue_empty') return { ok: false, reason: 'queue-empty' };
+      console.error('[store] assign_tag_to_next_pending_unit failed', error);
+      return { ok: false, reason: 'platform-error' };
     }
+    if (!data) return { ok: false, reason: 'platform-error' };
+
+    const { unit_id: unitId, product_id: productId } = data as { unit_id: ID; product_id: ID };
     setState((s) => ({
       ...s,
-      units: s.units.map((u) => (u.id === next.id ? { ...u, tagId } : u)),
+      units: s.units.map((u) => (u.id === unitId ? { ...u, tagId } : u)),
     }));
-    return { ok: true, unitId: next.id, productId: next.productId };
+    return { ok: true, unitId, productId };
   }
 
   /**

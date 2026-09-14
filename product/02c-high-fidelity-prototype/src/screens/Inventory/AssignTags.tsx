@@ -168,7 +168,7 @@ export function AssignTags({
           .join(' · ')
       : null;
 
-  function handleScan() {
+  async function handleScan() {
     if (Math.random() < SCAN_FAIL_CHANCE) {
       // §3.16 — never touches the domain layer; queue state is unchanged.
       setFeedback({ kind: 'scan-failed' });
@@ -181,12 +181,22 @@ export function AssignTags({
       ? assignedTagIds[Math.floor(Math.random() * assignedTagIds.length)]
       : makeId('tag');
 
-    const result = assignTagToNextPendingUnit(tagId);
+    // Stage 7 Backend Integration, Phase 1 — assignTagToNextPendingUnit is
+    // now a real, awaitable Supabase RPC call.
+    const result = await assignTagToNextPendingUnit(tagId);
     if (!result.ok) {
+      if (result.reason === 'already-assigned') {
+        setFeedback({ kind: 'already-assigned' });
+        return;
+      }
       // `queue-empty` is defensively unreachable here — `current` above
-      // already guarantees ≥1 pending unit this render; only
-      // `already-assigned` (§3.15) can actually occur.
-      setFeedback({ kind: 'already-assigned' });
+      // already guarantees ≥1 pending unit this render. `platform-error`
+      // (a genuine network/RPC failure, no designed §3.14-§3.16 state for
+      // it) folds into the closest existing copy — "no se pudo leer el
+      // tag, acércalo de nuevo" — the same "fold into an existing branch
+      // rather than invent new merchant-facing copy" posture `verifyOtp`'s
+      // own malformed-request outcomes already established.
+      setFeedback({ kind: 'scan-failed' });
       return;
     }
     // A successful scan (or a different conflict) clears any prior message

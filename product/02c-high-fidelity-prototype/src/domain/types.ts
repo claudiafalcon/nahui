@@ -523,6 +523,22 @@ export interface Product {
    * deliberately untouched). One photo per Product, no gallery.
    */
   photo?: string;
+  /**
+   * Optional manufacturer/packaging barcode (`decision-log.md` D65,
+   * `inventory.md` §3.8b-§3.8e). Unique per Business (enforced server-side
+   * by `products_barcode_unique_idx`, a partial unique index so multiple
+   * `null`s never collide) — never globally unique, since two different
+   * Businesses' own stock is never meant to conflict. **Only ever written
+   * from this document's own Registrar Mercancía flow** (`inventory.md`
+   * §3.8b's "vía escaneo" path, via `commitLot`) — Selling reads it
+   * read-only (`home.md` §3.9a/§3.9b, `architecture-principles.md` #6).
+   * Captured once, silently, the first time a barcode resolves to a new
+   * Product identity; never shown as its own editable field anywhere
+   * (there is no "Editar código de barras" affordance — D65 names no such
+   * UI, unlike `defaultPrice`/`photo`, which both get explicit Catalog-row
+   * edit sheets).
+   */
+  barcode?: string;
   createdAt: number;
 }
 

@@ -47,11 +47,11 @@ interface CommittedLine {
  * do); it's always valid at its own default the instant a row exists.
  *
  * §3.5e's save error/retry is wired (`WritingState`'s `error`/`errorLabel`/
- * `onRetry`, identical shape to §3.5a in `OnboardingFlow.tsx`) — a real,
- * correctly-rendering branch, never triggered in this build since the local
- * mock write never fails, the same disclosed-not-wired convention
- * `BACKLOG.md`'s migration inventory already documents for §3.5a. Retrying
- * replays `handleContinue`, which recomputes the identical committed lines
+ * `onRetry`, identical shape to §3.5a in `OnboardingFlow.tsx`) — genuinely
+ * reachable as of Stage 7 Backend Integration, Phase 1 (`onSaved` now calls
+ * a real Supabase RPC that can fail over the network, not the old local
+ * mock write that never failed). Retrying replays `handleContinue`, which
+ * recomputes the identical committed lines
  * plus active-row draft from unchanged component state — nothing typed is
  * ever lost or re-asked-for. Previously a genuine regression (`BACKLOG.md`
  * migration inventory §B) — closed. The error preview itself (`previewLines`)
@@ -68,11 +68,17 @@ interface CommittedLine {
  * Product+Lot+InventoryEntry+InventoryUnit write `inventory.md`'s own
  * "Registrar mercancía" already uses, replacing the old Product-only
  * `createProducts()` write this step used before Q20.
+ *
+ * Stage 7 Backend Integration, Phase 1 — `onSaved` now resolves a boolean
+ * (`commitLot`'s own real RPC call can genuinely fail over the network),
+ * closing the "never actually reached" gap this file's own §3.5e comment
+ * used to describe: `handleContinue` below awaits it and only enters
+ * `saveState: 'error'` on an honest `false`.
  */
 export function SellingGroups({
   onSaved,
 }: {
-  onSaved: (lines: { name: string; defaultPrice: number; quantity: number; photo?: string }[]) => void;
+  onSaved: (lines: { name: string; defaultPrice: number; quantity: number; photo?: string }[]) => Promise<boolean>;
 }) {
   const [committed, setCommitted] = useState<CommittedLine[]>([]);
   const [draftName, setDraftName] = useState('');
@@ -162,7 +168,7 @@ export function SellingGroups({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [committed, draftValid, draftName, draftPriceValue, draftQuantity, draftPhoto]);
 
-  function handleContinue() {
+  async function handleContinue() {
     if (draftValid && isDuplicate(draftName)) {
       setDupError(`Ya agregaste '${draftName.trim()}' — bórrala con [✕] si quieres cambiar el precio`);
       return;
@@ -178,7 +184,15 @@ export function SellingGroups({
     }));
     if (lines.length === 0) return;
     setSaveState('saving');
-    window.setTimeout(() => onSaved(lines), 260);
+    // Stage 7 Backend Integration, Phase 1 — `onSaved` is now a real,
+    // awaitable Supabase RPC call (see this component's own doc comment
+    // above); the previous artificial 260ms delay is retired, no longer
+    // needed to simulate network latency the real call now genuinely has.
+    const ok = await onSaved(lines);
+    if (!ok) setSaveState('error');
+    // On success, `state.products.length > 0` becomes true and
+    // `OnboardingFlow.tsx` moves past this step on its own next render —
+    // no local state transition needed here.
   }
 
   function removeCommitted(key: string) {
@@ -224,9 +238,9 @@ export function SellingGroups({
   }
 
   if (saveState === 'error') {
-    // §3.5e — never actually reached in this build (this prototype's local
-    // write never fails), the same disclosed-not-wired convention already
-    // established for §3.5a. `previewLines` is the exact set `handleContinue`
+    // §3.5e — genuinely reachable as of Stage 7 Backend Integration, Phase 1
+    // (a real Supabase RPC call can fail over the network). `previewLines`
+    // is the exact set `handleContinue`
     // is about to retry-write — every already-committed Selling Group plus
     // the still-uncommitted active row, when it holds a valid Producto +
     // Precio (§3.5b's own "Continuar" gate) — so this preview is never blank

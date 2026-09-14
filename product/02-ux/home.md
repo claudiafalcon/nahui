@@ -2145,12 +2145,25 @@ Three elements only — confirmation, total, business identity. No future-regist
   for a first-time merchant — a tile that visually invites a tap but gives
   zero response reads as broken, not as "nothing to respond to." The tile
   stays dimmed and never adds to the Sale; a brief, self-dismissing ambient
-  message ("Necesitas registrar stock de [Producto]") now confirms the tap
-  registered and names the reason, reusing this codebase's existing
-  ambient-confirmation pattern (`home.md` §3.8e's own "Venta finalizada ✓"),
-  not a new mechanism. The underlying non-add-to-sale behavior is unchanged
-  — this corrects only the "no message needed" assumption. Not RFC-worthy,
-  same category as this document's other 2026-08-13 wording-precision fixes.
+  message now confirms the tap registered and names the reason, reusing
+  this codebase's existing ambient-confirmation pattern (`home.md` §3.8e's
+  own "Venta finalizada ✓"), not a new mechanism. The underlying
+  non-add-to-sale behavior is unchanged — this corrects only the "no
+  message needed" assumption. Not RFC-worthy, same category as this
+  document's other 2026-08-13 wording-precision fixes. **Message text
+  corrected 2026-09-13 (`ux-critic` finding, D65 build) — this bullet
+  previously stated the message as a single, undifferentiated string
+  ("Necesitas registrar stock de [Producto]"), but the actual cause can be
+  either a genuine Business-wide zero or an Event-scoped `EventAllocation`
+  exhaustion (see the "0 en este evento" bullet below) — telling her to
+  register stock that already exists elsewhere, just not allocated to this
+  Event, would send her to the wrong real fix.** The message names
+  whichever cause actually applies: "Necesitas registrar stock de
+  [Producto]" for the genuine Business-wide case, "[Producto] tiene
+  mercancía, pero no está asignada a este evento" for the Event-scoped
+  case — the same distinction the caption below already draws between "0
+  disponibles" and "0 en este evento," extended to the tap-response
+  message itself.
 - **A tile carries a second, Event-scoped remaining-stock line whenever
   this Session's Event has an `EventAllocation` (`status = open`) for that
   Product — new, `product-decisions.md` Q24/Q25** (a pre-emptive signal,
@@ -2278,18 +2291,29 @@ in "Venta actual" exactly as if she'd tapped its tile:
 ```
 Camera view closes; grid (already rendering, unchanged) briefly shows the
 same self-dismissing ambient message §3.9's own dimmed-tile tap already
-gives, atop the tile grid that never stopped rendering:
-"Necesitas registrar stock de [Producto]."
+gives for this Product's specific zero-stock cause, atop the tile grid
+that never stopped rendering:
+
+Business-wide zero: "Necesitas registrar stock de [Producto]."
+Event-scoped allocation exhaustion: "[Producto] tiene mercancía, pero no
+está asignada a este evento."
 ```
 - Reached when a scanned barcode resolves to a Product this Business's
   Catalog already knows — the identical match §3.9a resolves — but that
   Product already has zero available stock at the exact moment of the
   scan: either Business-wide ("0 disponibles") or, for an Event-linked
   Session, Event-scoped ("0 en este evento," §3.9's own
-  `EventAllocation`-exhaustion case). Both causes are named identically
-  here, the same way §3.9's own dimmed tile never distinguishes the two
-  causes in its tap-response message either — only the tile's own caption
-  differs between them (§3.9), never this message.
+  `EventAllocation`-exhaustion case). **The ambient message names
+  whichever cause actually applies, reusing §3.9's own dimmed-tile-tap
+  differentiation verbatim** — "Necesitas registrar stock de [Producto]"
+  for the genuine Business-wide case, "[Producto] tiene mercancía, pero no
+  está asignada a este evento" for the Event-scoped case — the same
+  distinction §3.9's own caption already draws between "0 disponibles" and
+  "0 en este evento," extended here to the message a scan (rather than a
+  tap) fires. Naming the wrong cause would send her to the wrong real fix
+  — Inventario for a genuine stockout, "Llevar mercancía" for stock that
+  exists but isn't allocated to this Event — the same reasoning that
+  already justifies the caption's own split.
 - **The one branch a barcode scan can reach that a tile tap structurally
   cannot.** A dimmed tile is inert before any tap — there's no moment
   where tapping it could discover it's "already zero," since the app
@@ -2301,8 +2325,10 @@ gives, atop the tile grid that never stopped rendering:
 - Resolves exactly like a tap on that Product's own already-dimmed tile
   would (§3.9): nothing is added to "Venta actual," the camera view closes
   back to this same selling screen, and the identical ambient,
-  self-dismissing message fires — "Necesitas registrar stock de
-  [Producto]" — reused verbatim, not a new mechanism.
+  self-dismissing message fires — whichever of §3.9's own two
+  cause-specific messages matches this Product's actual zero-stock cause
+  at the moment of the scan — reused verbatim, not a new mechanism and not
+  a third message invented for this branch.
 - Grid stays fully tappable and visible underneath throughout — same
   non-blocking posture as every other ambient failure state in this
   document (§3.8a's sync-failure marker, §3.9b, §3.9c).
@@ -2734,10 +2760,11 @@ Inside selling (3.7-3.10):
         identical outcome to a tile tap (3.9a) — no confirm step, see 3.9a
         for why this differs from Inventory's own confirm-on-scan
       → barcode matches a known Product already at zero available stock
-        (Business-wide or Event-scoped) → nothing added, same ambient
-        "Necesitas registrar stock de [Producto]" message the dimmed
-        tile's own tap already gives (3.9a-i) → grid untouched, fully
-        tappable throughout
+        (Business-wide or Event-scoped) → nothing added, same ambient,
+        cause-specific message the dimmed tile's own tap already gives —
+        "Necesitas registrar stock de [Producto]" or "[Producto] tiene
+        mercancía, pero no está asignada a este evento" (3.9a-i) → grid
+        untouched, fully tappable throughout
       → barcode matches no Product → dead end (3.9b) → "Entendido" → back
         to this same selling screen, Venta actual untouched — never an
         inline-creation prompt, never a forced navigation to Inventario

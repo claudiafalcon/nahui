@@ -8,6 +8,7 @@ import {
   findVenue,
   myActiveSession,
   openSaleForSession,
+  productByBarcode,
   sellingGridRows,
   sessionTotals,
   todaySalesSummary,
@@ -17,6 +18,7 @@ import { SessionHeader } from '../../components/SessionHeader/SessionHeader';
 import { VentaActualTray } from '../../components/VentaActualTray/VentaActualTray';
 import { ProductTile } from '../../components/ProductTile/ProductTile';
 import { NFCScanPrompt } from '../../components/NFCScanPrompt/NFCScanPrompt';
+import { BarcodeScanner } from '../../components/BarcodeScanner/BarcodeScanner';
 import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
 import type { Receipt } from '../../domain/store';
@@ -104,6 +106,16 @@ export function Selling({
     null,
   );
   const stockHintTimeout = useRef<number | undefined>(undefined);
+
+  // home.md §3.9/§3.9a/§3.9a-i/§3.9b/§3.9c (`decision-log.md` D65) —
+  // "Escanear código de barras," `buttons`-mode-only, layered on top of the
+  // existing tile-tap mechanics rather than a new operating mode. 'active'
+  // mounts the shared camera (`BarcodeScanner.tsx`, real `getUserMedia`);
+  // 'no-match' is its own terminal dead-end screen (§3.9b) reached only
+  // once the camera has already closed. Deliberately does not exist at all
+  // in `nfc` mode (§3.10, unchanged) — that surface has its own, different
+  // hardware capability.
+  const [scannerMode, setScannerMode] = useState<'closed' | 'active' | 'no-match'>('closed');
 
   const membership = actingMembership(state);
   if (!membership) return null; // defensive — HomeScreen only mounts this once a valid acting Membership resolves
@@ -288,6 +300,46 @@ export function Selling({
     }
   }
 
+  /**
+   * home.md §3.9a/§3.9a-i/§3.9b (`decision-log.md` D65) — resolves a
+   * decoded barcode exactly the way a tile tap already would, since a scan
+   * "identifies which Product, never which physical unit, exactly like a
+   * tile tap" — reuses `addItemToSale`'s own FIFO/EventAllocation-aware
+   * write, never a second write path. **Deliberately silent on a match —
+   * no confirm step, unlike `inventory.md` §3.8c's own confirm-on-scan for
+   * the identical underlying fact.** The barcode→Product identity trust
+   * decision was already made once, upstream, the first time this barcode
+   * was resolved in Inventory (§3.8c) — re-confirming it here, on every
+   * Sale-time scan, would add exactly the kind of mid-flow question
+   * `company/backlog.md` #1's <3-second bar exists to eliminate (§3.9a's
+   * own reasoning, §10).
+   */
+  function handleBarcodeResult(code: string) {
+    const product = productByBarcode(state, code);
+    if (!product) {
+      setScannerMode('no-match');
+      return;
+    }
+    setScannerMode('closed');
+    const added = addItemToSale(product.id);
+    if (added) return;
+    // §3.9a-i — the one branch a scan can reach that a tile tap
+    // structurally can't (a dimmed tile already told her "0" before she
+    // ever tapped it). Same ambient message, same eventDepletedOnly
+    // distinction §3.9's own tile tap already computes.
+    const gridRow = grid.find((g) => g.product.id === product.id);
+    // Optional chaining, not a bare `session.eventId` — `session` is
+    // guaranteed non-null at runtime (this function is only ever invoked
+    // after this component's own top-of-body guard already returned early
+    // otherwise), but TS's control-flow narrowing of that outer `const`
+    // doesn't carry into a separately-declared nested function the way it
+    // does for an inline JSX callback (see the other `session.eventId`
+    // reads a few lines below, inside `grid.map`'s own inline arrow).
+    const eventRemaining = session?.eventId ? eventScopedRemaining(state, session.eventId, product.id) : null;
+    const eventDepletedOnly = eventRemaining != null && eventRemaining <= 0 && (gridRow?.available ?? 0) > 0;
+    handleDisabledTap(product.name, eventDepletedOnly);
+  }
+
   function handleCloseSessionRequest() {
     if (items.length > 0) {
       setCloseBlockedOpen(true);
@@ -393,6 +445,9 @@ export function Selling({
             </div>
           ) : (
             <div className={styles.gridScroll}>
+              <button className={styles.scanBtn} onClick={() => setScannerMode('active')}>
+                Escanear código de barras
+              </button>
               {grid.length === 0 ? (
                 <p className={styles.emptyGrid}>Todavía no tienes productos registrados.</p>
               ) : (
@@ -431,6 +486,49 @@ export function Selling({
             </div>
           )}
         </>
+      )}
+
+      {/* home.md §3.9's own cross-reference: "reuses the same camera-
+          viewfinder shape inventory.md §3.8b already defines... except the
+          header." Mounted as a sibling of the header/tray/grid above —
+          never nested inside the buttons-mode branch — so the grid stays
+          mounted (and, per §3.9c, visibly untouched) underneath it the
+          entire time a permission-denial resolves near-instantly. */}
+      {scannerMode === 'active' && (
+        <BarcodeScanner
+          backLabel="Escanear código"
+          fallbackLabel="Usar los botones"
+          onBack={() => setScannerMode('closed')}
+          onResult={handleBarcodeResult}
+          onPermissionDenied={() => {
+            setScannerMode('closed');
+            // §3.9c, first variant — ambient, self-dismissing, reuses the
+            // identical mechanism already established for the sold-out-
+            // tile-tap message (`showHint`, no link — auto-dismiss stays
+            // the default for a passive, glance-only fact).
+            showHint('No pudimos usar la cámara. Usa los botones para agregar el producto.');
+          }}
+        />
+      )}
+
+      {/* home.md §3.9b — a genuine dead end toward Inventario, reached only
+          once the camera has already closed (never shown alongside it). */}
+      {scannerMode === 'no-match' && (
+        <div className={styles.scanDeadEnd}>
+          <div className={styles.scanDeadEndTopbar}>
+            <button className={styles.scanDeadEndBack} onClick={() => setScannerMode('closed')}>
+              ← Escanear código
+            </button>
+          </div>
+          <div className={styles.scanDeadEndBody}>
+            <p className={styles.scanDeadEndText}>
+              No encontramos este código.
+              <br />
+              Revísalo en Inventario.
+            </p>
+            <Button onClick={() => setScannerMode('closed')}>Entendido</Button>
+          </div>
+        </div>
       )}
 
       {cancelConfirmOpen && (

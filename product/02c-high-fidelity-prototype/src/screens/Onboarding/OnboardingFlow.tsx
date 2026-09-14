@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore, type OnboardingPath } from '../../domain/store';
 import { businessForCurrentUser, pathFromCapabilities } from '../../domain/onboardingResolution';
 import { DEMO_BUSINESS_DESCRIPTION, DEMO_BUSINESS_NAME, DEMO_SEED_LINES } from '../../domain/demoSeed';
@@ -55,6 +55,20 @@ export function OnboardingFlow() {
   const { state, completeOnboarding, setBusinessIdentity, acknowledgeOnboarding, commitLot } = useStore();
   const [preWrite, setPreWrite] = useState<PreWriteStep>({ kind: 'welcome' });
 
+  /** `reviewer` Blocker fix (2026-09-13) — the stable idempotency key for
+   * `SellingGroups`' own "Continuar" commitLot attempt, same
+   * generate-once-if-null/reused-on-retry/cleared-on-success shape as
+   * `RegisterMerchandise.tsx`'s `commitIdempotencyKeyRef`. Lives here, not
+   * inside `SellingGroups.tsx`, since the actual `commitLot` call happens in
+   * this `onSaved` callback — `SellingGroups.tsx` only ever replays
+   * `handleContinue` (which calls this same `onSaved` again) on retry, and
+   * its own UI locks out every editing action while a save is retryable
+   * (`saveState === 'error'` renders only a passive preview + "Reintentar,"
+   * no `[✕]`/inputs — see that component's own doc comment), so there is no
+   * "she changed the draft" case to detect here, unlike RegisterMerchandise's
+   * own always-editable screen. */
+  const sellingGroupsIdempotencyKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (preWrite.kind !== 'creating') return;
     let cancelled = false;
@@ -75,7 +89,22 @@ export function OnboardingFlow() {
         // see demoSeed.ts): identity + a real, stocked Catalog, no Event,
         // no Customer/Claim.
         setBusinessIdentity({ name: DEMO_BUSINESS_NAME, description: DEMO_BUSINESS_DESCRIPTION });
-        commitLot(DEMO_SEED_LINES);
+        // Stage 7 Backend Integration, Phase 1 — commitLot is now a real,
+        // awaitable Supabase RPC call. A failure here leaves the demo
+        // Business created with an empty Catalog (Phase 0's own write
+        // already succeeded, and `businessId` is truthy at this point) —
+        // no dedicated retry surface exists for this specific seed write,
+        // same "not this dispatch's UX to invent" posture as everywhere
+        // else in this pass; logged so it's visible, not silently dropped.
+        // A plain fresh key is correct here (no `useRef` needed, unlike
+        // `sellingGroupsIdempotencyKeyRef` above) — this call is never
+        // itself retried: it only ever runs once, after `completeOnboarding`
+        // has already resolved a `businessId` for this same effect run, and
+        // no user-facing action re-invokes it a second time for the same
+        // attempt (`reviewer` Blocker fix, 2026-09-13 — see `store.tsx`'s
+        // own `commitLot` doc comment for the full reasoning).
+        const seeded = await commitLot(DEMO_SEED_LINES, crypto.randomUUID());
+        if (!seeded) console.error('[OnboardingFlow] demo commitLot failed');
       }
       // No further transition needed here — once `state.business` exists,
       // the branch below takes over on the next render.
@@ -119,14 +148,28 @@ export function OnboardingFlow() {
       return (
         <ScreenTransition transitionKey="selling-groups">
           <SellingGroups
-            onSaved={(lines) =>
-              commitLot(
+            onSaved={async (lines) => {
+              // Stage 7 Backend Integration, Phase 1 — commitLot is now a
+              // real, awaitable Supabase RPC call; SellingGroups.tsx's own
+              // §3.5e save-error/retry state, previously wired but
+              // unreachable (the old local mock write never failed), is now
+              // a real, reachable outcome on a genuine network/platform
+              // failure. `reviewer` Blocker fix — reuses
+              // `sellingGroupsIdempotencyKeyRef` across every retry of this
+              // same attempt (see its own doc comment above).
+              if (!sellingGroupsIdempotencyKeyRef.current) {
+                sellingGroupsIdempotencyKeyRef.current = crypto.randomUUID();
+              }
+              const resolved = await commitLot(
                 lines.map((l) => ({
                   quantity: l.quantity,
                   product: { kind: 'new' as const, name: l.name, defaultPrice: l.defaultPrice, photo: l.photo },
                 })),
-              )
-            }
+                sellingGroupsIdempotencyKeyRef.current,
+              );
+              if (resolved) sellingGroupsIdempotencyKeyRef.current = null;
+              return resolved !== null;
+            }}
           />
         </ScreenTransition>
       );

@@ -1,0 +1,103 @@
+/* Full content-area takeover, same absolute/inset-0 technique
+   `ReceiptTicket.module.css` already established (`--z-index: 30`, below
+   NavBar's own 40) — the nav bar stays visibly on top the whole time
+   (`inventory.md` §3.8b / `home.md` §3.9's own wireframes both keep the
+   nav row drawn underneath the camera view), never redrawn. Relies on
+   `App.module.css`'s `.main { position: relative }`, the same ancestor
+   ReceiptTicket already depends on. */
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: var(--color-obsidian);
+  display: flex;
+  flex-direction: column;
+  /* Invisible and non-interactive until the camera stream actually attaches
+     (BarcodeScanner.tsx's own `ready` flag) — the connecting/negotiating
+     window never covers or swallows taps on whatever's mounted underneath
+     (Selling.tsx's grid, most consequentially: a permission-denied outcome
+     must never flash a dead camera box over it, `inventory.md` §3.8d). */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.screenReady {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen {
+    transition: none;
+  }
+}
+
+.topbar {
+  padding: var(--space-4) var(--space-4) var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.back {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-white);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
+.viewfinderWrap {
+  flex: 1;
+  position: relative;
+  margin: 0 var(--space-4);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #000;
+  min-height: 0;
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A plain framing guide, not a device-drawn overlay — helps her aim
+   without implying any real detection-box tracking this build doesn't do. */
+.frame {
+  position: absolute;
+  inset: 14%;
+  border: 2px solid color-mix(in srgb, var(--color-white) 70%, transparent);
+  border-radius: var(--radius-md);
+  pointer-events: none;
+}
+
+.guidance {
+  text-align: center;
+  color: var(--color-white);
+  font: var(--text-body);
+  font-weight: 600;
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+
+.fallback {
+  align-self: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  /* `--color-blush` is documented as "tints, badge fills — never body
+     text" (tokens.css) — white, underlined, is this system's own way of
+     marking a link against a dark surface without reaching for a token
+     reserved for fills. */
+  color: var(--color-white);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+  margin-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+}

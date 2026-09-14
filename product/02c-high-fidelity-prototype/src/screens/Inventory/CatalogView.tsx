@@ -134,7 +134,7 @@ export function CatalogView({
     reader.readAsDataURL(file);
   }
 
-  function handleGuardarFoto() {
+  async function handleGuardarFoto() {
     // A real write only happened if `stagedPhoto` actually differs from the
     // photo the sheet opened with — covers both a new/changed photo and a
     // removal (`Quitar` → `Guardar foto` on a product that had a photo).
@@ -143,7 +143,18 @@ export function CatalogView({
     // save, which is exactly the case this fix targets — so the diff is
     // taken here, against `openedPhotoRef`, before the write.
     const photoChanged = stagedPhoto !== openedPhotoRef.current;
-    if (editingPhotoId) setProductPhoto(editingPhotoId, stagedPhoto);
+    if (!editingPhotoId) return;
+    // Stage 7 Backend Integration, Phase 1 — setProductPhoto is now a real,
+    // awaitable Supabase RPC call. On a genuine network/platform failure
+    // (no designed error state for this sheet in inventory.md §3.4b), the
+    // sheet stays open with her staged photo intact rather than closing on
+    // a write that didn't actually happen — logged so the failure is
+    // visible, never silently dropped.
+    const ok = await setProductPhoto(editingPhotoId, stagedPhoto);
+    if (!ok) {
+      console.error('[CatalogView] setProductPhoto failed');
+      return;
+    }
     closePhotoSheet();
     if (!photoChanged) return;
     // Same ambient near-instant confirmation convention as every other write
@@ -233,9 +244,17 @@ export function CatalogView({
             </Button>
             <Button
               disabled={!draftPriceValid}
-              onClick={() => {
-                editPrice(editingProduct.id, draftPriceValue);
-                setEditingId(null);
+              onClick={async () => {
+                // Stage 7 Backend Integration, Phase 1 — editPrice is now a
+                // real, awaitable Supabase RPC call. On a genuine
+                // network/platform failure (no designed error state for
+                // this sheet in inventory.md §3.4a), the sheet simply stays
+                // open with her typed value intact so tapping "Guardar
+                // precio" again retries — logged so the failure is visible,
+                // never silently dropped.
+                const ok = await editPrice(editingProduct.id, draftPriceValue);
+                if (ok) setEditingId(null);
+                else console.error('[CatalogView] editPrice failed');
               }}
             >
               Guardar precio
