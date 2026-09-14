@@ -30,12 +30,9 @@ Product Owner-directed: move the actual core product (Inventory, Selling/Session
 
 **`reviewer` runs after every phase, no exception** — cheap (reads code/schema/RLS directly, no live interaction needed) and the security stakes (RLS mistakes mean one Business's data leaking into another's) make skipping it never worth the time saved.
 
-**`merchant-user-tester` does NOT run after every phase** — unlike `reviewer`, its value depends on there being a real, walkable journey; running it against a partially-backend-integrated app mostly just hits intentional "not built yet" walls, not real defects. Scoped to exactly two checkpoints instead of one-per-phase:
+**`merchant-user-tester` does NOT run after every phase** — unlike `reviewer`, its value depends on there being a real, walkable journey; running it against a partially-backend-integrated app mostly just hits intentional "not built yet" walls, not real defects. Originally scoped to two checkpoints (after Phase 1+2; after Phase 2b/2c+3) instead of one-per-phase.
 
-1. **After Phase 1 (Inventory) + Phase 2 (Selling) are both done** — the moment a merchant can do the actual core journey (register a Sale against real inventory) for real, which is `company/CLAUDE.md`'s own Core Thesis, priority #1. First real checkpoint.
-2. **After Phase 2b/2c (Events) + Phase 3 (Results) are also done** — the complete, full journey, once, at the end.
-
-Not run after Phase 0 alone (too narrow — nothing to meaningfully walk beyond sign-up, which was already covered by today's own real Google/Email sign-in build). Not deferred to "only once everything is 100% done" either — waiting the full five phases risks stacking bugs on an unvalidated foundation, the same lesson `company/CLAUDE.md`'s own Experience Validation section ("Coverage is a gate, not a queue") already encodes for UX work generally, applied here to backend-integration risk specifically.
+**Superseded 2026-09-13, at the first checkpoint itself — real authentication makes the automated tester structurally unable to run at all, not just lower-value.** `merchant-user-tester` is deliberately knowledge-isolated (browser automation only, no credentials of its own) — that worked while a low-friction demo/bypass auth path existed, but that path was explicitly retired (`decision-log.md` D61) once real WhatsApp OTP shipped, and Google/Email are now real too. The tester cannot receive a real email OTP code or complete a real Google login, so it cannot reach Home/Selling at all, regardless of backend readiness. **Product Owner decision: she will do the full live walkthrough herself, once, after every phase (0 through 3, plus 2b/2c) is complete — not the automated tester at intermediate checkpoints.** The `reviewer`-every-phase discipline above is unaffected; only the `merchant-user-tester` checkpoints are superseded by this decision.
 
 ## Phase 1 design summary (`architect`, 2026-09-13 — full detail in the agent's own report, not restated here)
 
