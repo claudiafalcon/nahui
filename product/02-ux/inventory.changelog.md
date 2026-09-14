@@ -554,3 +554,40 @@ a second screen.
 
 Full reasoning lives inline at `status-2026-09-06-q23-product-photo`
 above — this decision was recorded there in full, not restated here.
+
+### status-2026-09-13-d65-barcode-scanning
+**Applies to:** `inventory.md` front matter, §3.8/§3.8a–§3.8e, §4, §5, §6,
+§7, §9, §10.
+
+Phone-camera barcode scanning added as a second way to resolve Producto in
+Elegir producto (`decision-log.md` D65) — internal-only mapping, no
+external barcode lookup. New §3.8b (camera view), §3.8c (confirm-on-scan
+for a matched barcode — a deliberate, narrow exception to this document's
+own "never ask twice" resolution, fires on every Inventory-side scan
+including repeat restocks), §3.8d (camera permission denied), §3.8e (scan
+failed to read); §3.8a gains a "vía escaneo, sin coincidencia" variant.
+`Product.barcode` may only ever be written from this document's own
+Registrar Mercancía flow — Selling reads it read-only.
+
+`ux-critic` found 2 Major + 3 Minor on the first pass: (1) `home.md` had no
+defined outcome for a barcode scan resolving to a Product already at zero
+available stock — fixed via a new `home.md` §3.9a-i; (2) this document's
+own §3.8c/§10 self-contradicted on whether confirm-on-scan repeats on a
+restock scan (one passage claimed silent, another and the already-correct
+§6/§9 claimed it repeats every time) — fixed, confirm-on-scan now
+consistently fires on every Inventory-side scan, only the downstream
+`home.md` Sale-time scan is silent; (3) the `[ visor de cámara ]` camera
+placeholder was bracketed despite being a passive element, violating this
+document's own `[ ] = tappable` convention (shared with `home.md` §3.9c) —
+fixed, all three instances unbracketed; (4)/(5) were `home.md`-scoped
+(header cross-reference note, High-Fidelity legibility flag). All five
+fixed in one remediation round; `ux-critic` re-verification confirmed
+clean, no regression, one further trivial documentation-hygiene note
+(these dangling changelog anchors, closed by adding this entry). Pending
+`reviewer`.
+
+### decisions-d65-barcode-scanning
+**Applies to:** `inventory.md` §10.
+
+Full reasoning lives inline at `status-2026-09-13-d65-barcode-scanning`
+above — this decision was recorded there in full, not restated here.

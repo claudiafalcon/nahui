@@ -73,6 +73,28 @@ inventory.changelog.md#status-2026-08-14-d46-addendum-dependency-cycle-fix]**
 
 **Amended 2026-09-06 (`product/02-ux/product-decisions.md` Q23, Product Owner decision — optional `Product.photo`):** a new optional Foto field added to "nuevo producto" (§3.8a); a new Catalog-row-level "Editar foto" sheet (§3.4b) lets her add, change, remove, or inspect an existing Product's photo at a larger size; the Catalog row's per-Product marker (§3.4) now renders a photo thumbnail in place of the initial letter whenever one is set, and the row's three tap zones (marker, body, price) are now explicitly disambiguated. `ux-critic` found 2 Major (this document's own tap-zone ambiguity; no fallback for a photo failing to render later) + 5 Minor, all remediated in one round; verification pass found 2 further trivial Minor (unbracketed markers in §3.5/§3.12/§3.13/§3.17, closed directly by Main) — `ux-critic` clean. `reviewer` found 1 Important (missing `decision-log.md` D54 entry for `Product.photo`, closed). Folded back into Approved — see `inventory.changelog.md#status-2026-09-06-q23-product-photo`.
 
+**Amended 2026-09-13 (`decision-log.md` D65 — phone-camera barcode
+scanning, `Product.barcode`):** a second way to resolve Producto added to
+Elegir producto (§3.8) — "Escanear código de barras," alongside the
+existing typed-name search, never replacing it. New §3.8b (camera view),
+§3.8c (confirm-on-scan when a barcode matches an existing Product —
+deliberate, reasoned exception to this picker's own "never ask twice"
+resolution, see §10), §3.8d (camera permission denied), §3.8e (scan
+failed to read). §3.8a gains a "vía escaneo, sin coincidencia" variant —
+the scanned barcode is captured silently, attached to the same
+Product-creation write, never asked for separately; she still types the
+Product's name herself, since a barcode carries no name and Nahui does no
+external lookup (D65). `Product.barcode` may only ever be written from
+this document's own Registrar Mercancía flow — Selling reads it read-only
+(`home.md` §3.9a/§3.9b, `architecture-principles.md` #6). `ux-critic`
+found 2 Major + 3 Minor (fixed in one round, re-verified clean — see
+`ux-critic-findings.md`). `reviewer` found 0 Blockers (2 Important
+documentation-persistence gaps — this missing `ux-critic-findings.md`
+entry, and §3.9's now-stale "only two confirmations" count — both closed
+directly by Main; 1 Suggestion, the Free/Paid-tier open item logged to
+`company/business-decisions.md`). Folded back into Approved. **[see
+inventory.changelog.md#status-2026-09-13-d65-barcode-scanning]**
+
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -908,6 +930,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  ¿Qué llegó?                    │
 │  [ Buscar o escribir… ]          │
+│  [ Escanear código de barras ]   │  opens la cámara — §3.8b
 │  ─────────────────────────      │
 │  [ + Agregar "Chalecos" como      │  only shown once typed text doesn't
 │    producto nuevo ]              │  match an existing Product (see rule below)
@@ -946,6 +969,161 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   `defaultPrice` was already set, once, the first time it was created
   (§3.8a) — reused automatically here, matching the same "never ask
   twice" discipline this rule already applies to Product identity itself.
+- **A second, always-available way to resolve Producto: "Escanear código
+  de barras" (new, `decision-log.md` D65).** Sits directly beneath the
+  typed-search field, never replacing it — typing stays the primary,
+  always-present path, and every rule above (case-insensitive/trimmed
+  matching, "never asked if it's new") is completely unchanged for a
+  typed name. Scanning is a faster alternative specifically for
+  merchandise that already carries a manufacturer barcode — most useful
+  on a first pass through a stack of packaged toys. Tapping it opens the
+  camera viewfinder (§3.8b) and resolves exactly one of four ways: a
+  barcode already known to this Business's Catalog (§3.8c, confirm-on-
+  scan, then the identical outcome as typing an exact matching name); a
+  barcode with no match anywhere in the Catalog (routes into a scan-aware
+  variant of "nuevo producto," §3.8a); camera access denied (§3.8d); or a
+  failed read (§3.8e). Every branch keeps the typed-search field one tap
+  away, never a dead end.
+
+### 3.8b Elegir producto — escanear código de barras, cámara activa (`decision-log.md` D65)
+```
+┌───────────────────────────────┐
+│ ← Elegir producto                 │
+│                                │
+│                                │
+│         visor de cámara          │
+│                                │
+│    Apunta al código de barras    │
+│                                │
+│  [ Escribir en su lugar ]        │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- Full-view live camera, no per-frame confirmation tap — a successful read
+  resolves automatically, the same "point and it just works" posture NFC's
+  own scan surfaces already establish (`home.md` §3.10, this document's
+  own §3.14), applied here to a camera read instead of an NFC tap.
+  *global-principles.md*, "technology should disappear."
+- No manual shutter/capture tap: a real barcode read is a discrete,
+  machine-verifiable event, not a framing judgment Ana has to make — unlike
+  a photo capture (§3.4b's device-upload mechanism), which is composing an
+  image, not reading data.
+- "Escribir en su lugar" is always visible and always one tap back to §3.8's
+  typed-search field, with whatever she'd already typed (if anything)
+  preserved untouched — scanning is additive, never a one-way door.
+- Back arrow returns to §3.8 unchanged — nothing committed by opening the
+  camera and backing out.
+- **Implementation-independent by design — no claim made here about
+  camera APIs, device permission mechanics, scan latency, or which
+  barcode symbologies are read.** Build-time concerns for `ui-designer`/
+  `architect` once this spec is approved.
+
+### 3.8c Elegir producto — escaneo, coincidencia encontrada (confirmar) (`decision-log.md` D65)
+```
+┌───────────────────────────────┐
+│ ← Elegir producto                 │  dimmed, visible underneath
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Encontramos este producto:      │
+│  [B] Bolsas                       │  same marker/photo as the Catalog row
+│  12 disponibles                   │
+│                                │
+│  [ No es este ]  [ Sí, es este ] │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- **One deliberate, reasoned exception to this picker's own "never ask
+  twice" resolution for a typed name (§3.8).** A typed name is a fact Ana
+  authors and controls; a barcode is a fact printed by a manufacturer or
+  packager, which she doesn't control and can't proofread the way she can
+  her own typing. `decision-log.md` D65's own named risk — two unrelated
+  Products, more likely off-brand/informal-market goods, could
+  coincidentally share a barcode, since Nahui does no external lookup —
+  means a silent resolution here could misattribute freshly received
+  stock to the wrong Product without her ever noticing. Same class of
+  rare-but-consequential exception this document already carries (§3.9's
+  Descartar confirmation) — not a violation of "never ask twice," a
+  deliberate, narrow departure from it, justified because Inventario's own
+  §1 already treats a few extra seconds here as an acceptable cost for
+  correctness, unlike Home's live-customer speed bar. Full reasoning in
+  §10.
+- **Scoped deliberately narrow: only this screen, only Inventory.** Every
+  later Sale-time scan of this same barcode (`home.md` §3.9a) resolves
+  fully silently, exactly like a typed exact-name match already does. The
+  barcode→Product identity trust decision is made exactly once, upstream,
+  here — the same "capabilities resolved once, upstream, never asked
+  mid-flow" discipline `architecture-principles.md` #1 already applies
+  elsewhere in this Foundation, applied to an identity-resolution fact
+  instead of a capability flag; what's resolved once, upstream, is
+  *Selling's* trust of Inventory's own already-confirmed match — not
+  Inventory's own act of confirming it, which is deliberately not a
+  "resolved once, upstream" fact the same way, since a barcode never earns
+  a typed name's self-authored standing no matter how many times it's
+  scanned here. A merchant restocking the same toy every week sees this
+  confirm every time she scans it here — the deliberate cost of catching a
+  genuine mismatch at the one point it's cheap to catch, not an oversight.
+- "Sí, es este" proceeds exactly as if she'd typed the matching name and
+  tapped it from the list (§3.8) — back to §3.6/§3.7 with Producto
+  resolved, Cantidad defaulting to 1.
+- "No es este" returns to §3.8b's camera view (not the typed field), so she
+  can re-attempt the scan or back out to typing from there — nothing about
+  the rejected match is written anywhere.
+- Shows the same marker (photo or initial letter) and the same
+  "disponibles"/"sin registrar" caption the Catalog row already carries
+  (§3.4) — reused, not redesigned — giving her a real, recognizable glance
+  rather than a bare name she'd have to read carefully to catch a mistake.
+
+### 3.8d Elegir producto — escanear, permiso de cámara denegado (`decision-log.md` D65)
+```
+┌───────────────────────────────┐
+│ ← Elegir producto                 │
+│                                │
+│  No pudimos usar la cámara.       │
+│  Escribe el nombre del producto    │
+│  o revisa los permisos de cámara   │
+│  de tu teléfono.                   │
+│                                │
+│  [ Buscar o escribir… ]          │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- Reached the instant camera access is denied or unavailable — never a
+  blank camera view with no explanation. *global-principles.md*,
+  "business language before technical language": no "permission denied,"
+  no browser/OS error string, ever.
+- **Falls straight back onto §3.8's own typed-search field, already
+  focused and ready to type** — never a dead end, since typing was always
+  the primary path this affordance sits beside. Same shape as §3.4b's "No
+  pudimos mostrar ese archivo" treatment for a different device-capability
+  soft-failure — reused, not reinvented: name the failure plainly, land
+  her back on the path that still works.
+- No retry loop or repeated permission prompt designed here — this
+  document specifies behavior, not a permission-request mechanism.
+
+### 3.8e Elegir producto — escanear, no se pudo leer el código (`decision-log.md` D65)
+```
+┌───────────────────────────────┐
+│ ← Elegir producto                 │
+│         visor de cámara          │
+│  No pudimos leer el código.       │
+│  Intenta de nuevo.                 │
+│  [ Escribir en su lugar ]        │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- Stays on the live camera view — a failed read (blur, poor light, damaged
+  barcode) is a single missed attempt, not a terminal state, the identical
+  non-blocking posture §3.16's "No se pudo leer el tag" already
+  establishes for a comparable physical-read failure, adapted from an NFC
+  tag to a barcode. *global-principles.md*, "business language before
+  technical language": no symbology name, no error code, ever named.
+- Message clears automatically on the next attempt — no tap to dismiss,
+  same as §3.16.
+- "Escribir en su lugar" stays reachable exactly as in §3.8b — a failing
+  scan never traps her in the camera view.
 
 ### 3.8a Elegir producto — nuevo producto, precio inicial (`decision-log.md` D33)
 ```
@@ -999,6 +1177,55 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   "Chalecos," Cantidad defaulting to 1, and Foto (if selected) carried into
   the draft, exactly as the existing-Product path already behaves.
 
+**Vía escaneo, sin coincidencia (`decision-log.md` D65):**
+```
+┌───────────────────────────────┐
+│ ← Inventario                     │  dimmed, visible underneath
+│  Registro de mercancía            │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Código escaneado — no lo          │
+│  tenemos registrado todavía        │
+│  Nombre del producto              │
+│   [ ___ ]                        │
+│  Precio                          │
+│   [ $ ___ ]                      │
+│  Foto (opcional)                 │
+│   [ Agregar foto ]               │
+│  [   Agregar producto    ]        │  disabled until Nombre AND Precio
+│                                │  both have a value
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- **Reached instead of §3.8's typed-no-match path whenever a scanned
+  barcode matches no existing `Product.barcode` in this Business's
+  Catalog** (§3.8b) — the identical sheet, the identical atomic
+  Product-creation write as the typed path, with one real difference: a
+  scanned barcode carries no human-readable name (D65 explicitly rules out
+  any external barcode-lookup database), so unlike the typed path — where
+  her already-typed text is the resolved candidate name, shown read-only —
+  this variant asks her to type the Nombre herself, the one fact a scan
+  structurally cannot supply. This is not a second identity question and
+  doesn't reopen "is this new?" (already answered, no match exists) — it's
+  the one genuinely missing fact.
+- **The scanned barcode itself is captured silently, attached to this same
+  creation write, never shown as a field and never asked for separately**
+  (D65's own instruction) — she never sees, confirms, or re-enters the
+  barcode value anywhere in this sheet. "Agregar producto" gates on Nombre
+  **and** Precio both holding a value — Nombre is a new required gate
+  specific to this variant only; the existing Precio-required rule (D33)
+  is unchanged.
+- Foto stays optional, identical to the typed path — never gates the
+  button.
+- Same in-progress-draft persistence, same failed-save guarantee, same
+  outcome on success (back to §3.6/§3.7, Producto resolved, Cantidad
+  defaulting to 1) as the typed path — only the entry heading and the
+  Nombre field differ.
+- **If she backs out without completing it**, the same silent-draft-
+  preservation guarantee already covering Producto/Cantidad/Foto (§3.7)
+  extends to the scanned barcode value — never dropped by an interruption
+  any more than anything else on this draft.
+
 ### 3.9 Descartar confirmation
 ```
 ┌───────────────────────────────┐
@@ -1015,10 +1242,16 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
-- One of only two deliberate confirmations in this entire spec (the other is
-  §3.12). Justified the same way Home justifies its single confirmation
-  (`home.md` §3.11, §10): rare, and genuinely destructive of real counted
-  work — an intentional exception to "never ask twice," not a violation of it.
+- One of the deliberate, blocking confirmations in this entire spec —
+  alongside §3.8c (new, `decision-log.md` D65), the other genuine
+  "ask-before-proceeding" gate this document now carries. **Corrected
+  2026-09-13 (`reviewer` finding)** — this bullet previously named §3.12
+  as the only other one; §3.12 is an ambient, auto-fading post-save
+  confirmation, not a blocking gate requiring a decision, so it was never
+  actually a second instance of this pattern even before D65. Justified
+  the same way Home justifies its single confirmation (`home.md` §3.11,
+  §10): rare, and genuinely destructive of real counted work — an
+  intentional exception to "never ask twice," not a violation of it.
 - **"Cancelar" returns instantly to the form (§3.6/§3.7, whichever was
   current) exactly as it was** — every committed line and the in-progress row
   untouched — the same decline treatment `home.md` §3.11 gives its own
@@ -1283,6 +1516,24 @@ Registrar mercancía (3.6/3.7):
           D33) → tap "Agregar '...'" (disabled until Precio has a value)
           → back to 3.6/3.7, Producto resolved to the new name, Cantidad
           defaulting to 1, exactly as the existing-Product path
+      within Elegir producto (3.8), new (`decision-log.md` D65): tap
+      "Escanear código de barras" → camera view (3.8b)
+        → barcode matches an existing Product.barcode → confirm-on-scan
+          (3.8c) → "Sí, es este" → back to 3.6/3.7, Producto resolved,
+          Cantidad defaulting to 1, identical outcome to a typed exact-name
+          match → "No es este" → back to camera view (3.8b), nothing
+          written
+        → barcode matches no existing Product.barcode → scan variant of
+          "nuevo producto" (3.8a) → type Nombre + Precio (barcode already
+          attached silently) → tap "Agregar producto" (disabled until
+          Nombre and Precio both have a value) → back to 3.6/3.7, Producto
+          resolved to the new name, Cantidad defaulting to 1
+        → camera permission denied/unavailable → 3.8d → back to 3.8's
+          typed-search field, focused
+        → scan fails to read → 3.8e → stays on camera view, retry, or
+          "Escribir en su lugar" → 3.8's typed-search field
+      → [any point in 3.8b/3.8c/3.8d/3.8e] "Escribir en su lugar" / back
+        arrow → 3.8, typed-search field, nothing committed
   → tap "+ Agregar otro producto" → commits row, opens next blank row → repeat
   → tap "Guardar mercancía"
       → saving (3.10)
@@ -1339,7 +1590,11 @@ D46 Addendum):
 6. Registrar mercancía — entry (blank or shortcut-prefilled)
 7. Registrar mercancía — with committed lines, editing the next
 8. Elegir producto — picker sheet
-8a. Elegir producto — nuevo producto, precio inicial (D33)
+8a. Elegir producto — nuevo producto, precio inicial (D33; gains a "vía escaneo, sin coincidencia" variant, D65)
+8b. Elegir producto — escanear código de barras, cámara activa (D65)
+8c. Elegir producto — escaneo, coincidencia encontrada, confirmar (D65)
+8d. Elegir producto — escanear, permiso de cámara denegado (D65)
+8e. Elegir producto — escanear, no se pudo leer el código (D65)
 9. Descartar confirmation
 10. Guardar mercancía — saving (near-instant / slow)
 11. Guardar mercancía — error
@@ -1362,6 +1617,8 @@ D46 Addendum):
 | Restock an already-known, sold-out Product at quantity 1 (tap Catalog row) | 1 (row, prefills Producto + Cantidad defaults to 1) + 1 (Guardar) | Shortest possible — Product identity reused instead of re-searched, and the default removes the previously-required typed quantity for the common 1-unit-restock case. *global-principles.md*, "capture business truth once, reuse it forever." |
 | Same, `defaultSellingMode = 'nfc'` Business, U total units in the Lot | + U scans, 1 per physical unit | Per-unit tagging is a domain requirement (`decision-log.md` D4), not a UX choice — one tag, one unit, no shortcut exists that preserves traceability. A failed read (§3.16) costs zero extra taps — she simply re-presents the same tag. |
 | Ajustar el precio de un Producto ya existente, fuera de Registrar mercancía (Editar precio, §3.4a) | 1 (tocar el precio en la fila del Catálogo) + 1 (Guardar precio) = 2 | Shortest possible — the price figure is its own tap target directly on the Catalog row (§3.4); no need to open Registrar mercancía at all for a pure price change (`decision-log.md` D33). |
+| Restock an already-known Product via barcode scan, quantity 1 (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto → escanear código) + 1 (confirmar "Sí, es este") + 1 (Guardar) = 4 | One deliberate extra tap vs. the typed-name baseline (3) — the confirm-on-scan tap (§3.8c) is intentional, not an oversight; see §10 for why a barcode, unlike a typed name, gets this one extra tap every time it resolves to an existing Product. |
+| Register 1 brand-new Product via barcode scan, no match, quantity 1 (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto → escanear código, sin coincidencia) + 1 typed Nombre + 1 typed Precio + 1 ("Agregar producto") + 1 (Guardar) = 6 | One fewer action than the typed-new-Product path (7) — the scan itself both searches and confirms "not found, create new" in a single motion, skipping the separate "+ Agregar... como producto nuevo" tap the typed path needs. |
 | Browse the Catalog only | 0 taps | Opening the tab is itself the answer; nothing to register. |
 
 Unlike Home's <3s-per-item bar (`company/backlog.md` #1, which is specifically
@@ -1408,6 +1665,17 @@ comparable hard speed requirement — the floor above is about not adding
   restock, never asked at Session/Sale time (`home.md`), never a
   per-Event decision unless she deliberately opens `events.md`'s Price
   Override entry point.
+- Barcode → Product resolution (`decision-log.md` D65) — a scanned barcode
+  already known to the Catalog never re-asks Nombre, Precio, or Foto;
+  those were already captured once, at the barcode's first scan, and are
+  reused exactly like a typed exact-name match already reuses them (§3.8,
+  D33).
+- The scanned barcode value itself is captured invisibly, attached to the
+  same atomic Product-creation write as Nombre/Precio/Foto, at the exact
+  moment a genuinely new Product is created via scan — never asked for or
+  shown as its own field, the identical "capture business truth once"
+  discipline `decision-log.md` D3 already applies to InventoryUnit
+  generation.
 
 ## 8. Open questions
 
@@ -1475,6 +1743,26 @@ comparable hard speed requirement — the floor above is about not adding
   asking "were you still tagging?" (§3.5/§3.17);
   the picker never asks "is this new?" — inferred via the case-insensitive,
   trimmed matching rule (§3.8).
+- *"Never ask twice" (further amendment, D65)* — a barcode scan matching an
+  already-known `Product.barcode` reuses the exact identity/price/photo
+  resolution a typed exact-name match already gets (§3.8), with one
+  deliberate, narrow, explicitly-reasoned exception: the confirm-on-scan
+  tap itself (§3.8c), since a barcode is a fact she doesn't author or
+  control the way a typed name is (§10). Cantidad, Precio, and Foto are
+  never re-asked once a scan resolves, exactly as before.
+- *architecture-principles.md #1 (capabilities resolved once, upstream),
+  extended (D65)* — the barcode→Product identity trust decision is made
+  exactly once, here in Inventory (§3.8c), and never re-made downstream — a
+  Sale-time scan of the same barcode (`home.md` §3.9a) inherits that
+  already-established trust and resolves silently, the same "decide once,
+  let everything downstream inherit it" discipline this principle already
+  states for `Session.operatingMode`.
+- *architecture-principles.md #6 (one-way dependency direction), extended
+  (D65)* — `Product.barcode` is only ever written from Inventory's own
+  Product-creation/-matching path (§3.8b–§3.8e); Selling (`home.md`
+  §3.9a/§3.9b) only ever reads it, matching the unchanged one-way edge this
+  principle already establishes and D65's own "Selling reads Inventory
+  read-only, full stop" ruling.
 - *"Technology should disappear"* — InventoryUnit generation is fully
   invisible (§3.7 closing note, D3); loading states stay silent unless
   genuinely slow, both for opening the tab itself (§3.1/§3.2) and for Guardar
@@ -1654,6 +1942,35 @@ comparable hard speed requirement — the floor above is about not adding
   Ready"), which now carries a one-time ambient acknowledgment for this
   entry marker. **[see
   inventory.changelog.md#decisions-2026-08-14-d46-addendum-dependency-cycle-corrected]**
+
+- **Phone-camera barcode scanning added as a second way to resolve
+  Producto in Elegir producto (`decision-log.md` D65, 2026-09-13).** New
+  §3.8b–§3.8e; §3.8a gains a scan variant. **The one named, unresolved risk
+  D65 left for this design pass — whether a scan resolving to an existing
+  Product should show a lightweight confirm, or resolve silently like a
+  typed exact-name match — is resolved here as: confirm, every time, in
+  Inventory only (§3.8c).** Reasoning: a typed name is a fact Ana authors
+  and controls; a barcode is a fact a manufacturer/packager printed, which
+  she doesn't. D65's own risk — two unrelated Products, more likely
+  off-brand/informal-market goods, coincidentally sharing a barcode, since
+  Nahui does no external lookup — could silently misattribute received
+  stock without her ever noticing if resolved fully silently. Inventario's
+  own §1 already treats a few extra seconds per line as an acceptable cost
+  for correctness (unlike Home's live-customer speed bar), and a wrong
+  match here is the more consequential failure — it corrupts two Catalog
+  entries' stock counts invisibly, going forward. This is the identical
+  class of deliberate, narrow "never ask twice" exception §3.9's Descartar
+  confirmation already establishes, not a new kind of friction. **Scoped
+  deliberately narrow — only Inventory, never Selling:** the trust
+  decision is made exactly once, here — and it's *that* decision, not the
+  confirm step itself, that a later Sale-time scan of the same barcode
+  (`home.md` §3.9a) inherits silently, the same "resolved once, upstream"
+  discipline `architecture-principles.md` #1 already applies elsewhere.
+  Confirm-on-scan itself fires on every scan inside Inventory, including a
+  later restock of the same item — a typed name is self-authored and
+  trusted going forward the moment she types it; a barcode never earns
+  that same standing here, no matter how many times she scans it.
+  **[see inventory.changelog.md#decisions-d65-barcode-scanning]**
 
 ## 11. Future considerations
 

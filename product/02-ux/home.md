@@ -175,6 +175,29 @@ home.changelog.md#status-2026-08-15-non-session-gear-direct-affordance]**
 
 **Further amended 2026-09-10 (`merchant-user-tester`-found defect, `architect`-confirmed as completing `product/99-rfc/0011-event-assignment.md`'s own SELLER-narrowing pattern — not a new product decision):** a SELLER assigned to a `scheduled` (not yet `active`) Event previously saw zero indication of that assignment anywhere on Home — RFC 0011's Open Item 1 only ever narrowed the `active`-Event case (§2 step 2), leaving the upcoming-Event card (§3.5), sourced Business-wide for both roles, silently misaligned with the SELLER-narrowing the rest of this document already applies (flagged, not resolved, at this document's own §8). §2 step 3's card-rendering check is now role-scoped the same way step 2 already is: **OWNER unchanged, Business-wide, no `EventAssignment` gate.** **SELLER: a new selector, `upcomingQualifyingEventForMembership` — the soonest `scheduled` Event she holds an `EventAssignment` for.** Card (§3.5, sourced from her own assignment, non-tappable — she has no Eventos tab, §3.16, per this document's own "unreachable destination is never shown as a live link" discipline) and a new passive line ("Hay eventos programados y no estás asignada a ninguno. Pídele a quien te invitó que te asigne a uno.," §3.4) are mutually exclusive alternates of the same top-position slot — never both, never neither unless genuinely neither condition holds. Composes with, never replaces, the existing RFC-0011 "active elsewhere, not assigned" line (§3.4/§3.5, beneath the CTA) — two independent facts that can both hold at once (no active assignment right now and no upcoming assignment can both be true simultaneously). Extends to §3.3 (cold start) the same way the active-state line already was — awareness-line only, no card invented there (no precedent, matches the OWNER's own cold-start, which never shows a card either). A SELLER with 2+ qualifying upcoming assignments sees only the single soonest one, matching the OWNER card's own already-unresolved multiplicity behavior — reasoned in full in §10, not left open. `ux-critic` found 2 Major (the card's copy never stated the Event was hers, fixed with a new leading "Asignada" label; this line's own stacking order with the rest of §3.4 was left unspecified, fixed with an explicit order + worked example) + 3 Minor + 1 Suggestion — all fixed in this same pass, and confirmed closed on `ux-critic` re-verification (0 remaining, 2 new documentation-process observations reconciled below rather than re-litigated as UX findings). Implemented in `product/02c-high-fidelity-prototype/` (`selectors.ts`, `HomeScreen.tsx`, `ColdStart.tsx`, `Idle.tsx`, including the "Asignada" label); `reviewer` found 0 Blockers/Important against the built code. **[see home.changelog.md#status-2026-09-10-scheduled-event-assignment-gap]**
 
+**Amended 2026-09-13 (`decision-log.md` D65 — phone-camera barcode
+scanning, `Product.barcode`):** a second way to add a Product to "Venta
+actual" in `buttons` mode — "Escanear código de barras" — sits inside the
+"zona de registro" §3.9 already defines, so every screen state that
+cross-references it inherits the affordance automatically. New §3.9a (scan
+resolves to a known Product — fully silent add, deliberately different
+from `inventory.md` §3.8c's confirm-on-scan, reasoned here), §3.9a-i (scan
+resolves to a known Product already at zero available stock — reuses the
+existing dimmed-tile ambient message), §3.9b (scan resolves to no Product
+— a genuine dead end toward Inventario, never inline creation, per D65),
+§3.9c (camera permission denied / scan failed). Absent entirely from
+`nfc`-mode (§3.10) — a different hardware capability, untouched. New §8
+item names a pre-existing gap this surfaces more visibly (no per-item
+removal from "Venta actual" short of cancelling the whole Sale).
+`ux-critic` found 2 Major + 3 Minor (fixed in one round, re-verified
+clean — see `ux-critic-findings.md`). `reviewer` found 0 Blockers (2
+Important documentation-persistence gaps — this missing
+`ux-critic-findings.md` entry, and `inventory.md`'s own stale "only two
+confirmations" count — both closed directly by Main; 1 Suggestion, the
+Free/Paid-tier open item logged to `company/business-decisions.md`).
+Folded back into Approved. **[see
+home.changelog.md#status-2026-09-13-d65-barcode-scanning]**
+
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -2044,6 +2067,7 @@ Three elements only — confirmation, total, business identity. No future-regist
 │ Hoy: $850 · 6 ventas  [ Cerrar jornada de venta ] │
 ├───────────────────────────────┤
 │ Venta actual: (vacía)            │
+│  [ Escanear código de barras ]   │  second way to add a Product — §3.9a
 │  ┌─────────┐  ┌─────────┐       │
 │  │(B)      │  │(A)      │       │  per-Product marker — first letter of
 │  │ Bolsas  │  │Accesorios│       │  Product.name, uppercased
@@ -2065,6 +2089,36 @@ Three elements only — confirmation, total, business identity. No future-regist
   resolved once, silently in the common case, at the Session-start action
   that opened this Session (§2, §3.6a for the rare visible exception); never
   re-evaluated mid-Session.
+- **"Escanear código de barras" — a second, always-available way to add a
+  Product to "Venta actual," new (`decision-log.md` D65).** Sits directly
+  above the tile grid, inside the same "zona de registro" this section
+  already defines for `buttons` mode — every other screen state that
+  cross-references "zona de registro, según Session.operatingMode" (§3.7,
+  §3.8, §3.8a–§3.8d-ii, §3.8b, §3.11/§3.11a's dimmed backdrop, §3.13's
+  interruption variants) already inherits this affordance automatically,
+  no separate amendment needed at each. Resolves through the identical
+  `buttons`-mode FIFO consumption a tile tap already triggers
+  (`decision-log.md` D65 — "no new operating mode"); it identifies which
+  Product, never which physical unit, exactly like a tile tap. Absent
+  entirely from the `nfc`-mode surface (§3.10) — that surface already has
+  its own, different scan mechanism (an NFC tag read, a wholly separate
+  hardware capability), and D65 introduces nothing there. **Flagged for
+  High-Fidelity attention, not resolved here** — the same class of
+  verification this section's own Event-scoped remaining-stock line
+  already requires below: this is a new, permanent element sitting above
+  the tile grid on Selling's own <3-second screen (`company/backlog.md`
+  #1); `ui-designer` must confirm it renders legibly, doesn't crowd the
+  grid's first row, and doesn't cost the screen any of its existing
+  scan-and-tap speed on an actual phone screen — not resolved by this
+  Low-Fidelity text description.
+- Tapping it opens the same camera-viewfinder shape `inventory.md` §3.8b
+  already defines (cross-referenced, not redrawn) — except the header,
+  which reads "← Escanear código" here instead of §3.8b's own "← Elegir
+  producto" (a concept that doesn't exist in Selling), matching §3.9c's
+  own failure-state wireframes below — with outcomes specific to this
+  context (§3.9a, §3.9a-i, §3.9b) and the same two device-capability
+  failure states, cross-referenced rather than redesigned but landing on
+  this screen's own grid instead of Inventory's typed field (§3.9c).
 - Large, equally-weighted 2-column grid, scrollable — reuses the layout
   already validated with Ana in `product/01-validation/registro.html`, in
   service of the <3s bar (`company/backlog.md` #1). The grid scales to
@@ -2170,6 +2224,164 @@ Three elements only — confirmation, total, business identity. No future-regist
   *global-principles.md*, "the fastest interaction is the one that never
   happens" — no tile without a real, defined action behind it.
 - No mode indicator or toggle drawn anywhere. *architecture-principles.md* #1.
+
+### 3.9a Escanear código — coincidencia encontrada (`decision-log.md` D65)
+```
+Resolves instantly, no confirm screen — camera view closes, item appears
+in "Venta actual" exactly as if she'd tapped its tile:
+┌───────────────────────────────┐
+│ Plaza Norte · Día 2         ⚙  │
+│ Hoy: $850 · 6 ventas  [ Cerrar jornada de venta ] │
+├───────────────────────────────┤
+│ Venta actual: 1 artículo    Cancelar│
+│ Bolsas                          │
+│  [ Escanear código de barras ]   │
+│  ┌─────────┐  ┌─────────┐       │
+│  │(B)      │  │(A)      │       │
+...(grid unchanged)
+```
+- **Deliberately silent — no confirm-on-scan step, unlike `inventory.md`
+  §3.8c's own confirm for the identical underlying fact (a barcode matched
+  to a Product).** Reasoned explicitly, not inherited by default: the
+  barcode→Product identity trust decision was already made once, upstream,
+  the first time this barcode was resolved in Inventory (§3.8c) —
+  `architecture-principles.md` #1's "capabilities resolved once, upstream,
+  never asked mid-flow" applies to that trust decision the same way it
+  applies to `Session.operatingMode`. Re-confirming it here, on every
+  Sale-time scan, would add exactly the kind of mid-flow question
+  `company/backlog.md` #1's <3-second registration bar exists to
+  eliminate — D65 itself frames barcode scanning as "layered on `buttons`
+  mode's existing mechanics," the same speed as a tile tap, never slower.
+- **If the resolved barcode does turn out misattributed** (D65's own named
+  risk), the failure surfaces here exactly the way a wrong tile tap
+  already could: the wrong Product's name appears in "Venta actual,"
+  plainly visible, correctable before Finalizar Venta. This is a
+  materially safer failure mode than the same mismatch in Inventory
+  (§3.8c's own reasoning) — a wrong item mid-Sale is visible and
+  correctable; a wrong Product silently receiving stock in Inventory
+  corrupts two Catalog entries' counts, unnoticed. That asymmetry is what
+  justifies spending the one extra tap there and not here.
+- Consumes stock through the identical `buttons`-mode FIFO mechanism a
+  tile tap already triggers (`decision-log.md` D5) — no unit-level
+  distinction, exactly per D65.
+- Every existing tap-to-add behavior applies unchanged: instant optimistic
+  add (§3.8a), silent background sync retry, the non-blocking ⚠ marker on
+  persistent failure, and the lost-race ⊗ terminal marker if this Product
+  has an open `EventAllocation` and loses the race — a scanned add is not
+  a second code path, it's the identical write §3.8/§3.8a already defines,
+  reached through a second input method.
+- **A scan resolving to a Product already at zero available stock
+  (Business-wide or Event-scoped) is a distinct outcome, not covered by
+  the four behaviors above — see new §3.9a-i.**
+
+### 3.9a-i Escanear código — coincidencia encontrada, cero disponibles (`decision-log.md` D65)
+```
+Camera view closes; grid (already rendering, unchanged) briefly shows the
+same self-dismissing ambient message §3.9's own dimmed-tile tap already
+gives, atop the tile grid that never stopped rendering:
+"Necesitas registrar stock de [Producto]."
+```
+- Reached when a scanned barcode resolves to a Product this Business's
+  Catalog already knows — the identical match §3.9a resolves — but that
+  Product already has zero available stock at the exact moment of the
+  scan: either Business-wide ("0 disponibles") or, for an Event-linked
+  Session, Event-scoped ("0 en este evento," §3.9's own
+  `EventAllocation`-exhaustion case). Both causes are named identically
+  here, the same way §3.9's own dimmed tile never distinguishes the two
+  causes in its tap-response message either — only the tile's own caption
+  differs between them (§3.9), never this message.
+- **The one branch a barcode scan can reach that a tile tap structurally
+  cannot.** A dimmed tile is inert before any tap — there's no moment
+  where tapping it could discover it's "already zero," since the app
+  already told her that before she touched it (§3.9's caption). A barcode
+  scan carries no such pre-flight visibility: Ana can scan an
+  already-sold-out toy's packaging just as easily as a fully-stocked
+  one's, since the read happens before Nahui has any chance to show her
+  the corresponding tile's own dimmed state.
+- Resolves exactly like a tap on that Product's own already-dimmed tile
+  would (§3.9): nothing is added to "Venta actual," the camera view closes
+  back to this same selling screen, and the identical ambient,
+  self-dismissing message fires — "Necesitas registrar stock de
+  [Producto]" — reused verbatim, not a new mechanism.
+- Grid stays fully tappable and visible underneath throughout — same
+  non-blocking posture as every other ambient failure state in this
+  document (§3.8a's sync-failure marker, §3.9b, §3.9c).
+- **Not a confirm-on-scan step, and not in tension with §3.9a's own
+  "deliberately silent" reasoning.** This isn't a second identity-trust
+  question — the barcode→Product match itself is exactly as trusted and
+  silent as it is in §3.9a; what's different here is a plain
+  stock-availability fact, the same fact a tile tap already checks
+  silently before deciding whether to add anything. No merchant-facing
+  "are you sure" moment is added by this branch.
+
+### 3.9b Escanear código — sin coincidencia (`decision-log.md` D65)
+```
+┌───────────────────────────────┐
+│ ← Escanear código                 │
+│                                │
+│  No encontramos este código.      │
+│  Revísalo en Inventario.           │
+│                                │
+│  [   Entendido   ]               │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+- **Deliberately not an inline "create this Product" prompt —
+  `decision-log.md` D65's own explicit instruction.** Selling only ever
+  reads Inventory, never writes to it (`architecture-principles.md` #6); a
+  Product that doesn't exist yet has zero `InventoryUnit`s to sell
+  regardless of what's typed here, so an inline-creation shortcut would
+  either be a dead promise or a second, parallel creation path this
+  Foundation never sanctions.
+- **"Entendido" returns to this same active-Session selling screen,
+  untouched — never a forced navigation away from a live customer
+  interaction.** "Selling is a state, not a navigation destination"
+  (`global-principles.md`) applies exactly here: even a dead end never
+  hijacks her out of serving someone. She stays free to tap a tile
+  instead, try scanning a different item, or move on — the message names
+  where the real fix lives without forcing her there mid-Sale.
+- "Venta actual" is completely unaffected — nothing added, nothing
+  removed, exactly as if the scan attempt never happened.
+- Copy mirrors this document family's existing plain-fact register for a
+  "nothing to do here" state (`inventory.md` §3.4's "sin registrar," this
+  section's own sold-out-tile message) — states the fact, names the one
+  real next step, never framed as her mistake.
+
+### 3.9c Escanear código — cámara no disponible / no se pudo leer (`decision-log.md` D65)
+```
+Permiso de cámara denegado — ambient, self-dismissing, reuses the identical
+mechanism already established for the sold-out-tile-tap message and "Venta
+finalizada ✓" (§3.9/§3.8f), atop the tile grid that never stopped rendering:
+"No pudimos usar la cámara. Usa los botones para agregar el producto."
+
+Scan fails to read — camera view stays open, inline retry, identical shape
+to `inventory.md` §3.8e, adapted destination only:
+┌───────────────────────────────┐
+│ ← Escanear código                 │
+│         visor de cámara          │
+│  No pudimos leer el código.       │
+│  Intenta de nuevo.                 │
+│  [ Usar los botones ]            │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+- Camera-permission-denied never opens a camera view at all — it fails at
+  the moment of the tap itself, so the ambient-message treatment (rather
+  than a full screen) is the correct fit: nothing was ever obscuring the
+  grid.
+- A failed read stays on the live camera exactly like `inventory.md`
+  §3.8e — a missed attempt, not a terminal state; message clears
+  automatically on the next attempt.
+- "Usar los botones" returns to this screen's own tile grid — the actual
+  fallback a merchant reaches for mid-Sale, not a typed-search field which
+  doesn't exist here. The grid stays fully tappable the entire time either
+  failure is showing — never blocks selling, same non-blocking posture as
+  every other failure state already in this document (§3.8a's sync-failure
+  marker, §3.9's sold-out-tile message).
+- No claim made about camera APIs, permission-request mechanics, or
+  barcode-symbology support — build-time concerns, out of this spec.
 
 ### 3.10 Session active — `Session.operatingMode = nfc` surface
 ```
@@ -2516,6 +2728,24 @@ with one extra line, not separate states:
 
 Inside selling (3.7-3.10):
   tap/scan product → item added instantly to (implicitly opened) current sale (3.8)
+  → [buttons mode only, new — `decision-log.md` D65] tap "Escanear código
+    de barras" → camera view (reuses inventory.md §3.8b's shape)
+      → barcode matches a known Product → item added instantly, silent,
+        identical outcome to a tile tap (3.9a) — no confirm step, see 3.9a
+        for why this differs from Inventory's own confirm-on-scan
+      → barcode matches a known Product already at zero available stock
+        (Business-wide or Event-scoped) → nothing added, same ambient
+        "Necesitas registrar stock de [Producto]" message the dimmed
+        tile's own tap already gives (3.9a-i) → grid untouched, fully
+        tappable throughout
+      → barcode matches no Product → dead end (3.9b) → "Entendido" → back
+        to this same selling screen, Venta actual untouched — never an
+        inline-creation prompt, never a forced navigation to Inventario
+        (D65)
+      → camera permission denied → ambient message (3.9c) → grid
+        untouched, fully tappable throughout
+      → scan fails to read → inline retry on the live camera (3.9c) →
+        "Usar los botones" → back to the grid
       → sync happens silently in the background (3.8a)
       → [rare] persistent sync failure → non-blocking marker on that item (3.8a)
         → inline Reintentar
@@ -2674,6 +2904,13 @@ and back to Hoy):
     own upcoming-assignment card variant (§3.5), mutually exclusive
     alternates of the same slot (`product/99-rfc/0011-event-assignment.md`,
     extended 2026-09-10 to the `scheduled` case)
+40. Session active, `buttons` mode — "Escanear código de barras" affordance in the registration zone (§3.9, D65)
+41. Session active, `buttons` mode — scan resolves to a known Product, silent add (§3.9a, D65)
+42. Session active, `buttons` mode — scan resolves to no Product, dead end toward Inventario (§3.9b, D65)
+43. Session active, `buttons` mode — camera permission denied / scan failed (§3.9c, D65)
+44. Session active, `buttons` mode — scan resolves to a known Product
+    already at zero available stock, ambient non-add message (§3.9a-i,
+    D65)
 
 ## 6. Minimum step count
 
@@ -2682,6 +2919,7 @@ and back to Hoy):
 | Nothing scheduled, ready (3.4) | 2* | 1 deliberate "start selling" commitment (protects Session-history integrity, prevents accidental first sale from a stray tap) + 1 to register the item. |
 | Event active, no session today (3.6) | 2* | Same reasoning — an existing Event doesn't remove the need for a deliberate day-start moment. |
 | Session already open, mid-selling (3.7-3.10) | **1** | The "start" decision was already made earlier; this is the target state for most of the selling day. |
+| Add an item via barcode scan, buttons mode, known Product | **1** (Escanear código de barras) | Identical floor to a tile tap — the scan itself is the one action; resolution is instant and silent by design (§9/§10) — the one deliberately silent half of the barcode-scanning feature, precisely because Selling's <3s bar tolerates zero added steps. |
 | Cold start, no sellable inventory (3.3) | n/a — routes to Inventario | Cannot register a sale of nothing; a genuine prerequisite, not a repeated friction. |
 | Resuming an unclosed session, either variant (3.13) | **1** | Treated identically to the normal ready/in-progress state — no extra step for having been interrupted, regardless of whether items survived. |
 
@@ -2768,6 +3006,12 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - The Event-scoped remaining-stock line's presence/absence (§3.9) — a pure read of whether an `EventAllocation` exists for that Product at that Event, never something Ana toggles per tile.
 - Whether a tap-to-add item is later flagged as a lost-race conflict — entirely automatic, discovered by background sync, never something she checks for manually.
 - `upcomingQualifyingEventForMembership` (the SELLER-scoped soonest scheduled-Event card source, §2 step 3) — a pure, automatic read-side derivation from `EventAssignment` + `Event.status` + `Event.startDate`, never a merchant-configured setting or a manual sort; the OWNER's own Business-wide equivalent is unchanged (2026-09-10).
+- Barcode → Product resolution at Sale time (`decision-log.md` D65) — fully
+  automatic and silent, the identity trust decision having already been
+  made once, upstream, in Inventory (`inventory.md` §3.8c) — never
+  re-confirmed here, matching this section's own existing
+  `Session.operatingMode`/price-resolution precedent for "decide once, let
+  everything downstream inherit it."
 
 ## 8. Open questions
 
@@ -2826,6 +3070,19 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **Whether "Mi actividad de hoy" should ever surface anything beyond a flat chronological list (a per-Product breakdown, e.g.)** — not designed now, no evidence of need; would risk this becoming "a cut-down Resultados variant," exactly what `product-decisions.md` Q24/Q25 explicitly warned against building.
 - **Resolved 2026-09-10 (`merchant-user-tester`-found defect, `architect`-confirmed) — was: "§3.5's upcoming (not-yet-active) Event card is not addressed by `product/99-rfc/0011-event-assignment.md`."** RFC 0011's own Open Item 1 scoped the SELLER narrowing strictly to Events with `status = active`; a SELLER assigned to a `scheduled`, not-yet-active Event showed zero indication of that assignment anywhere on Home — identical to a SELLER with no assignments at all. §2 step 3's card-rendering check is now role-scoped the same way step 2 already is: OWNER unchanged, Business-wide; SELLER sourced from a new selector, `upcomingQualifyingEventForMembership`, with a passive-line alternate (§3.4) when she holds no qualifying `scheduled` assignment but the Business has 1+ elsewhere. See §2 step 3, §3.3/§3.4/§3.5, §10 for the full design.
 - **`product/99-rfc/0011-event-assignment.md` is Proposed, not yet Accepted**, at the time this amendment was designed — the Product Owner confirmed its design as settled for UX-design purposes, but this document's own Approval should be understood as contingent on that RFC actually reaching Accepted. Its Open Items #3 (the scheduling-conflict warning UI) and #4 (whether `EventAssignment` creation gates on `BusinessMembership.status=active`) are both explicitly out of Home's scope — neither surfaces on any Home screen; both belong to a future OWNER-side roster/assignment surface not yet designed anywhere (RFC 0011's own "Sequencing" section).
+- **A barcode scan makes an existing, pre-dating gap more likely to
+  matter, not a new one (`decision-log.md` D65).** Mis-scanning a barcode
+  (a neighboring Product's packaging, or a rare barcode collision, D65's
+  own named risk) adds the wrong Product to "Venta actual" exactly the way
+  a mistaken tile tap already could — and today's only correction
+  mechanism is cancelling the entire Sale (§3.8b), not removing a single
+  item; only the unrelated lost-race ⊗ case (§3.8a) has a per-item removal
+  action, scoped narrowly to that one conflict. This limitation already
+  existed for an ordinary mistaken tile tap and isn't introduced by this
+  amendment, but scanning surfaces it more visibly. Not designed here —
+  named honestly rather than worked around silently; worth revisiting if
+  real usage shows mis-adds (tap or scan) are common enough to need a
+  lighter-weight per-item removal, independent of how the item was added.
 
 ## 9. Principle justification
 
@@ -2928,6 +3185,21 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - *`architecture-principles.md`* #1 (capabilities resolved once, upstream) — `upcomingQualifyingEventForMembership` is resolved once per Home open, in the same automatic resolution pass as every other §2 check, never re-asked mid-flow. **(2026-09-10 — extends the `scheduled` case)**
 - *`global-principles.md`*, "every repeated decision should become automation" — the card-or-line alternation and its non-tappable-for-SELLER rendering are both pure, automatic consequences of role + `EventAssignment` data, never a merchant-configured setting. **(2026-09-10 — extends the `scheduled` case)**
 - *`global-principles.md`*, "the fastest interaction is the one that never happens" — grounds shipping a minimal soonest-only card for a SELLER with 2+ qualifying upcoming assignments now, rather than building a new list-affordance she has no evidence of needing (§10). **(2026-09-10 — extends the `scheduled` case)**
+
+**Barcode scanning additions (`decision-log.md` D65):**
+- *architecture-principles.md #1 (capabilities resolved once, upstream),
+  extended (D65)* — a barcode-to-Product match is trusted and resolved
+  exactly once, in Inventory; a Sale-time scan of the same barcode
+  inherits that trust silently, never re-asking, the identical discipline
+  this principle already establishes for `Session.operatingMode`.
+- *architecture-principles.md #6 (one-way dependency), extended (D65)* — a
+  Sale-time barcode scan only ever reads `Product.barcode`, exactly like it
+  already reads `Product.name`/`defaultPrice`/stock; it never writes to
+  Inventory, and a no-match scan is a true dead end here, never an inline
+  Product-creation shortcut (`decision-log.md` D65's explicit ruling).
+- *"Selling is a state, not a navigation destination"* — a no-match scan
+  (§3.9b) names where the fix lives without ever forcing her out of an
+  active Sale to go there.
 
 ## 10. Decisions made
 
@@ -3113,6 +3385,29 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **The SELLER's own upcoming-assignment card is non-tappable, unlike the OWNER's** — she has no Eventos tab (§3.16) for it to route into; applying this document's own "an unreachable destination is never shown as a live link" discipline (already established at §3.6a) to the card, not only to next-step links.
 - **The new "scheduled elsewhere, not assigned" line (§3.4) composes with, never replaces, the existing "active elsewhere, not assigned" line** — two independent facts (nothing assigned right now, and nothing upcoming either) that can both hold at once; §3.5's stacking order is corrected to state the card-or-line slot explicitly (2026-09-10). Extends to §3.3 (cold start) the same way the active-state line already was — awareness-line only; no card variant invented at cold start, since there was never a card there for either role to begin with.
 - **A SELLER with 2+ qualifying `upcomingQualifyingEventForMembership` rows sees only the single soonest one — a deliberate, reasoned decision, not left open (`architect`-flagged, 2026-09-10).** Reasoning: (1) the card is purely informational — unlike the `active`-Event case (§3.6b's "Elegir evento"), nothing here commits her to a choice or gates an action, so there's no forced-decision moment that would make hiding a second row consequential the way it would be for an actual picker; (2) nothing is permanently hidden — once her soonest qualifying Event's status advances past `scheduled`, it stops satisfying `upcomingQualifyingEventForMembership`'s own condition, and the next-soonest one surfaces in its place on the very next Home open, a rolling, self-correcting view rather than a one-time snapshot; (3) the OWNER's own card has carried this identical unresolved multiplicity behavior since before this amendment (§2 step 3's original text never specified what a Business-wide 2+-scheduled-Event OWNER sees, beyond "an Event," singular) — extending the same behavior to the SELLER case is consistency with an existing, accepted product gap, not a new one; (4) she has no Eventos tab to fall back on for a fuller list even if one were designed (§3.16), so any real fix here would need a new affordance, not a copy change — not justified without evidence of real need, matching this document's own "defer until evidence" posture for comparable low-frequency scale questions (§11, e.g. 3+ simultaneous active Events, buttons-mode grid search). Row order, if this is ever revisited, would follow §3.6b's own `Event.startDate`-ascending, deterministic tiebreak precedent, not a new sorting rule. Flagged in §11 for revisit if real usage shows this hides a genuinely common case.
+- **Phone-camera barcode scanning added as a second way to add a Product
+  to "Venta actual," `buttons` mode only (`decision-log.md` D65,
+  2026-09-13).** New §3.9a/§3.9a-i/§3.9b/§3.9c. Resolves through the
+  identical `buttons`-mode FIFO consumption a tile tap already triggers —
+  no new operating mode, no unit-level distinction. A matched scan
+  resolves fully silently — deliberately different from Inventory's own
+  confirm-on-scan (`inventory.md` §3.8c) — since the barcode→Product trust
+  decision is made exactly once, upstream, in Inventory, and Selling's
+  <3-second registration bar (`company/backlog.md` #1) tolerates zero
+  added steps once that trust is established; see `inventory.md` §10 for
+  the fuller two-sided reasoning. **A matched scan resolving to a Product
+  already at zero available stock (Business-wide or Event-scoped) is a
+  distinct branch (§3.9a-i), not a second confirm step** — it's the
+  identical ambient, non-add message a dimmed tile's own tap already gives
+  (§3.9), reused verbatim; a barcode scan has no pre-flight visibility
+  into stock level the way an already-dimmed tile does, so this is the one
+  outcome a scan can reach that a tap structurally cannot. An unmatched
+  scan is a genuine dead end pointing toward Inventario, never an inline
+  Product-creation shortcut — Selling reads Inventory read-only, and a
+  not-yet-created Product has no stock to sell regardless of what's typed
+  mid-Sale (`decision-log.md` D65, `architecture-principles.md` #6). Never
+  forces navigation away from an active Sale. **[see
+  home.changelog.md#decisions-d65-barcode-scanning]**
 
 ## 11. Future considerations
 

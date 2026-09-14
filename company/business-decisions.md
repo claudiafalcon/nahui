@@ -8,6 +8,13 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
+### Q20 — Should phone-camera barcode scanning be a Free-tier or Paid-tier capability?
+
+- **Raised by:** `product/00-foundation/decision-log.md` D65 (2026-09-13) — barcode scanning was added for a prospective client selling toys with pre-existing manufacturer barcodes. D65 explicitly named this as unresolved: "nothing in the domain model requires gating it... whether Nahui *chooses* to offer it universally or use it as a paid differentiator is pricing/positioning."
+- **Question:** should barcode scanning (Inventory's Registrar Mercancía picker, and Selling's "Venta actual" add-item affordance, `product/02-ux/inventory.md` §3.8/`home.md` §3.9) be available to every merchant regardless of `subscriptionTier`, or reserved as a Paid-tier differentiator — matching the gating class already applied to NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18)?
+- **Not resolved here — Product Owner's call, no urgency.** Doesn't block current UX design or build work: neither `inventory.md` nor `home.md`'s D65 amendment gates on `subscriptionTier`, so the feature currently reads as universally available by default; gating it later (if the Product Owner chooses to) is a copy/conditional-render change, not a redesign.
+- **Status:** Open.
+
 ### Q19 — Should Nahui formally incorporate (or otherwise complete full Meta Business Verification) to unlock production WhatsApp OTP delivery?
 
 - **Raised by:** real-time infrastructure provisioning, 2026-09-12/13, while setting up the production WhatsApp Business Sender for the pilot (`product/02c-high-fidelity-prototype/supabase/README.md` checklist steps 2-3; see `decision-log.md` D44/Q14 and RFC 0012 for the WhatsApp-OTP decision this blocks).

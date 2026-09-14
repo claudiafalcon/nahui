@@ -1407,3 +1407,45 @@ non-blocking Suggestions: a small shared-helper dedup opportunity between
 the two `qualifyingEventsForMembership`/`upcomingQualifyingEventForMembership`
 selectors, and `decision-log.md` D60's own "Applied" line needing this
 extension noted — both addressed). Folded back into Approved.
+
+### status-2026-09-13-d65-barcode-scanning
+**Applies to:** `home.md` front matter, §3.9, §4, §5, §6, §7, §8, §9, §10.
+
+Phone-camera barcode scanning added as a second way to add a Product to
+"Venta actual" in `buttons` mode (`decision-log.md` D65) — a new
+"Escanear código de barras" affordance inside the existing "zona de
+registro." New §3.9a (scan resolves to a known Product — fully silent
+add, deliberately different from `inventory.md` §3.8c's confirm-on-scan,
+since the identity trust decision was already made once, upstream, in
+Inventory), §3.9a-i (scan resolves to a known Product already at zero
+available stock — reuses the existing dimmed-tile ambient message), §3.9b
+(scan resolves to no Product — a genuine dead end toward Inventario,
+never inline creation, per D65), §3.9c (camera permission denied / scan
+failed). Absent from `nfc` mode (§3.10) — a different hardware
+capability, untouched.
+
+`ux-critic` found 2 Major + 3 Minor on the first pass: (1) this document
+had no defined outcome for a barcode scan resolving to a Product already
+at zero available stock — a genuinely new branch D65 introduces (a tile
+tap can't reach this state, since a dimmed tile is inert before any tap,
+but a scan has no pre-flight stock visibility) — fixed via new §3.9a-i,
+reusing §3.9's existing "Necesitas registrar stock de [Producto]" ambient
+message, threaded through §4/§5/§10; (2) was `inventory.md`-scoped
+(§3.8c/§10 self-contradiction on confirm-on-scan repetition); (3) the
+`[ visor de cámara ]` camera placeholder was bracketed despite being
+passive, violating the `[ ] = tappable` convention shared with
+`inventory.md` — fixed, unbracketed; (4) §3.9's cross-reference to
+`inventory.md` §3.8b's camera shape didn't note the header substitutes
+"← Escanear código" here — fixed; (5) the new scan-button element lacked
+the same High-Fidelity legibility/real-estate flag already given to the
+Event-scoped remaining-stock line — fixed. All five fixed in one
+remediation round; `ux-critic` re-verification confirmed clean, no
+regression, one further trivial documentation-hygiene note (these
+dangling changelog anchors, closed by adding this entry). Pending
+`reviewer`.
+
+### decisions-d65-barcode-scanning
+**Applies to:** `home.md` §10.
+
+Full reasoning lives inline at `status-2026-09-13-d65-barcode-scanning`
+above — this decision was recorded there in full, not restated here.
