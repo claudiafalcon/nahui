@@ -1,0 +1,48 @@
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6);
+}
+
+.blockLg,
+.blockSm {
+  border-radius: var(--radius-sm);
+  background: var(--color-hilo);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.blockLg {
+  width: 180px;
+  height: 14px;
+}
+
+.blockSm {
+  width: 130px;
+  height: 14px;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blockLg,
+  .blockSm {
+    animation: none;
+  }
+}
+
+.slowText {
+  font: var(--text-body);
+  color: #6b6259;
+}

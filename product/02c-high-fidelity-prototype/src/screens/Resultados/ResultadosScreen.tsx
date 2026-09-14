@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { useStore } from '../../domain/store';
 import { findEvent, findVenue, hasAnyClosedSession } from '../../domain/selectors';
 import type { ID } from '../../domain/types';
 import { ResultadosColdStart } from './ResultadosColdStart';
+import { ResultadosLoadError } from './ResultadosLoadError';
 import { ResultadosMain } from './ResultadosMain';
 import { SessionDetail } from './SessionDetail';
 import { ResultadosEventDetail } from './ResultadosEventDetail';
@@ -9,6 +11,7 @@ import { RendimientoPorBazar } from './RendimientoPorBazar';
 import { VenueDetail } from './VenueDetail';
 import { TusClientes } from './TusClientes';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
+import { ResolvingState } from '../../components/ResolvingState/ResolvingState';
 
 /** reports.md §3.8's own "back navigation follows whatever path she
  * actually took to arrive" rule — Event detail's parent is either the main
@@ -61,7 +64,33 @@ export function ResultadosScreen({
   onNavigateToHoy: () => void;
   onNavigateToEventos: () => void;
 }) {
-  const { state } = useStore();
+  const { state, hydrateFromBackend } = useStore();
+
+  // reports.md §2's own mount trigger (Stage 7 Backend Integration's "Read-
+  // side data hydration design", third of its three named triggers) —
+  // App.tsx remounts this screen fresh on every Resultados tab switch, so
+  // this fires once per visit, not once per app lifetime. `'ready'` when no
+  // Business has resolved yet at all — nothing this screen's own cycle can
+  // hydrate; the shared `AppRouter`-level cycle owns that case instead
+  // (`AuthResolving.tsx`). A local, independent status rather than the
+  // global `hydrationStatus`: this screen's own §3.1/§3.2/§3.14 states
+  // (`reports.md`) describe *this* read attempt specifically, not whichever
+  // trigger last touched the shared one.
+  const [ownHydration, setOwnHydration] = useState<'loading' | 'ready' | 'error'>(state.business ? 'loading' : 'ready');
+
+  function runOwnHydration() {
+    if (!state.business) return;
+    setOwnHydration('loading');
+    void hydrateFromBackend(state.business.id).then((result) => setOwnHydration(result === 'error' ? 'error' : 'ready'));
+  }
+
+  useEffect(() => {
+    runOwnHydration();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires once per
+    // mount of this screen only (reports.md §2's own trigger), never
+    // re-derived from `state.business` itself, which is exactly what this
+    // call may go on to replace.
+  }, []);
 
   // §2 step 4 / §3.6 — "rendimiento"/"venue-detail"/"tus-clientes" are
   // Paid-tier-only subviews. `ResultadosMain`'s own teaser buttons already
@@ -154,6 +183,27 @@ export function ResultadosScreen({
     return (
       <ScreenTransition transitionKey="tus-clientes">
         <TusClientes onBack={() => onChangeView({ mode: 'main' })} />
+      </ScreenTransition>
+    );
+  }
+
+  // reports.md §3.1/§3.2/§3.14 — this screen's own mount-triggered hydration
+  // cycle (above), gating only the default `'main'` resolution below (every
+  // other `view.mode` branch above already returned) — a hand-off arriving
+  // directly at a sub-view (e.g. `home.md` §3.12's "Ver detalle") already
+  // has its own real, already-mirrored data locally and is never blocked by
+  // this.
+  if (ownHydration === 'loading') {
+    return (
+      <ScreenTransition transitionKey="resolving">
+        <ResolvingState />
+      </ScreenTransition>
+    );
+  }
+  if (ownHydration === 'error') {
+    return (
+      <ScreenTransition transitionKey="load-error">
+        <ResultadosLoadError onRetry={runOwnHydration} />
       </ScreenTransition>
     );
   }

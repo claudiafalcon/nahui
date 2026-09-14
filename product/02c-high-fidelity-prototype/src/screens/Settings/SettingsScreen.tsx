@@ -134,7 +134,9 @@ export function SettingsScreen({
   // every store-function identity change — see reconcilePendingSubscriptionTier's
   // own doc comment in store.tsx for the full two-phase reasoning.
   useEffect(() => {
-    const result = reconcilePendingSubscriptionTier();
+    const result = reconcilePendingSubscriptionTier((landed) => {
+      if (!landed) setLanded(null);
+    });
     if (result.justLanded && result.tier && result.effectiveDate) {
       setLanded({ tier: result.tier, effectiveDate: result.effectiveDate });
     }
@@ -145,41 +147,52 @@ export function SettingsScreen({
 
   if (!business) return null; // defensive — HomeScreen only mounts this once onboarding is complete
 
-  function runWrite(action: ActionKind) {
+  async function runWrite(action: ActionKind) {
     setSubView({ kind: 'saving', action });
-    window.setTimeout(() => {
-      switch (action) {
-        case 'activate-paid':
-          activatePaidPlan();
-          break;
-        case 'tags-on':
-          changeDefaultSellingMode('nfc');
-          break;
-        case 'tags-off':
-          changeDefaultSellingMode('buttons');
-          break;
-        case 'downgrade':
-          requestDowngradeToFree();
-          break;
-        case 'cancel-pending':
-          cancelPendingSubscriptionTierChange();
-          break;
-      }
+    await new Promise((resolve) => window.setTimeout(resolve, SAVE_DELAY_MS));
 
-      // settings.md §2.6 (`decision-log.md` D46, corrected per its own
-      // Addendum) — "Cambiar a vender con tags" doesn't return to this
-      // screen's own vista principal like every other action above; the
-      // instant the write succeeds it unconditionally hands off navigation
-      // into `inventory.md` §2's own resolution, carrying nothing more than
-      // a bare entry marker. No `InventoryUnit`/Catalog fact is read here —
-      // see this component's own `onSwitchedToTags` doc comment.
-      if (action === 'tags-on') {
-        onSwitchedToTags();
-        return;
-      }
+    let ok: boolean;
+    switch (action) {
+      case 'activate-paid':
+        ok = await activatePaidPlan();
+        break;
+      case 'tags-on':
+        ok = await changeDefaultSellingMode('nfc');
+        break;
+      case 'tags-off':
+        ok = await changeDefaultSellingMode('buttons');
+        break;
+      case 'downgrade':
+        // Same deterministic rule `confirmCopy`'s own `downgrade` branch
+        // just showed her — computed fresh here rather than threaded through
+        // as component state, so the preview and the written value always
+        // agree as long as both happen the same day (always true within one
+        // interaction).
+        ok = await requestDowngradeToFree(addDaysToKey(todayKey(), 30));
+        break;
+      case 'cancel-pending':
+        ok = await cancelPendingSubscriptionTierChange();
+        break;
+    }
 
-      setSubView({ kind: 'main' });
-    }, SAVE_DELAY_MS);
+    if (!ok) {
+      setSubView({ kind: 'saving-error', action });
+      return;
+    }
+
+    // settings.md §2.6 (`decision-log.md` D46, corrected per its own
+    // Addendum) — "Cambiar a vender con tags" doesn't return to this
+    // screen's own vista principal like every other action above; the
+    // instant the write succeeds it unconditionally hands off navigation
+    // into `inventory.md` §2's own resolution, carrying nothing more than
+    // a bare entry marker. No `InventoryUnit`/Catalog fact is read here —
+    // see this component's own `onSwitchedToTags` doc comment.
+    if (action === 'tags-on') {
+      onSwitchedToTags();
+      return;
+    }
+
+    setSubView({ kind: 'main' });
   }
 
   function handleSignOutConfirm() {
@@ -231,7 +244,7 @@ export function SettingsScreen({
         <WritingState
           error
           errorLabel="No pudimos guardar tu cambio. Intenta de nuevo."
-          onRetry={() => runWrite(action)}
+          onRetry={() => void runWrite(action)}
         />
       </ScreenTransition>
     );
@@ -246,7 +259,7 @@ export function SettingsScreen({
           title={copy.title}
           body={copy.body}
           ctaLabel={copy.ctaLabel}
-          onConfirm={() => runWrite(subView.action)}
+          onConfirm={() => void runWrite(subView.action)}
           onBack={() => setSubView({ kind: 'main' })}
         />
       </ScreenTransition>
@@ -280,7 +293,7 @@ export function SettingsScreen({
         onCancelPendingDismiss={() => setCancelPendingOpen(false)}
         onCancelPendingConfirm={() => {
           setCancelPendingOpen(false);
-          runWrite('cancel-pending');
+          void runWrite('cancel-pending');
         }}
         signOutConfirmOpen={signOutStep === 'confirm'}
         onSignOutTap={() => setSignOutStep('confirm')}
@@ -343,15 +356,17 @@ function SettingsMain({
 }) {
   const tierLabel = business.subscriptionTier === 'paid' ? 'Pago' : 'Gratis';
   // A genuinely *active* pending change — not yet acknowledged. Deliberately
-  // distinct from a bare "pendingSubscriptionTier != null" check: the moment
-  // `reconcilePendingSubscriptionTier` lands a change, it flips the tier and
-  // marks `pendingSubscriptionTierAcknowledged = true` but keeps the triple's
-  // other two fields around for exactly one more render, so the ack line
-  // above can still read the landed value/date. Without this `!acknowledged`
-  // gate, that same render would incorrectly keep showing "Cancelar cambio"
-  // and a stale "(cambia a X el Y)" note for a change that already landed —
-  // a real bug caught during this pass's own verification walkthrough (a
-  // simulated already-past effective date), fixed here rather than shipped.
+  // distinct from a bare "pendingSubscriptionTier != null" check: once
+  // `reconcilePendingSubscriptionTier`'s background `land_pending_subscription_tier`
+  // RPC actually resolves, it clears the whole pending triple (including
+  // `pendingSubscriptionTierAcknowledged`) in one atomic mirror, so this
+  // `!acknowledged` condition and a bare non-null check agree from that
+  // point on. The one honest gap this doesn't (and structurally can't)
+  // close: on the very mount that detects landing, there's a brief window —
+  // the RPC's own network round trip — where this row can still show
+  // "Cancelar cambio" with a now-stale "(cambia a X el Y)" note until the
+  // mirror lands a moment later. Acceptable for a once-per-billing-cycle
+  // event with no real stakes attached to the flash itself.
   const pending =
     business.pendingSubscriptionTier != null &&
     business.pendingSubscriptionTierEffectiveDate != null &&

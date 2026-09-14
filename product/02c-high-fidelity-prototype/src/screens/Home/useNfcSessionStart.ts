@@ -80,7 +80,7 @@ export function useNfcSessionStart(): NfcSessionStartState {
   // store action itself (same convention `SettingsScreen.tsx`'s own
   // `reconcilePendingSubscriptionTier` effect already documents).
   useEffect(() => {
-    if (variant === 'ready-buttons-nudge') markNfcAvailabilityNudgeShown();
+    if (variant === 'ready-buttons-nudge') void markNfcAvailabilityNudgeShown();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -4,6 +4,7 @@ import { useStore } from './domain/store';
 import { currentUser, findMembership, pendingInvitationsForPhone, phoneIdentifierFor } from './domain/selectors';
 import { businessForCurrentUser, isOnboardingComplete } from './domain/onboardingResolution';
 import { AuthenticationFlow } from './screens/Authentication/AuthenticationFlow';
+import { AuthResolving } from './screens/Authentication/AuthResolving';
 import { InvitationFlow } from './screens/Authentication/InvitationFlow';
 import { PhoneMismatchConfirm } from './screens/Authentication/PhoneMismatchConfirm';
 import { OnboardingFlow } from './screens/Onboarding/OnboardingFlow';
@@ -98,7 +99,8 @@ import type { AuthIdentity } from './domain/types';
  * (§3.10c's own "Ir a Hoy" tap) or `onDeclined` ever clears it.
  */
 export function AppRouter() {
-  const { state, declineInvitation, confirmPhoneMismatch, retractMistypedVerification } = useStore();
+  const { state, hydrationStatus, retryHydration, declineInvitation, confirmPhoneMismatch, retractMistypedVerification } =
+    useStore();
   const [lockedInvitation, setLockedInvitation] = useState<ReturnType<typeof pendingInvitationsForPhone>[number] | null>(
     null,
   );
@@ -252,6 +254,19 @@ export function AppRouter() {
         // below — an ordinary fresh open, a genuine account sign-out, or a
         // Google-channel rejection never sets it.
         <AuthenticationFlow initialPrefill={retractedPrefill} onGoogleResolved={setGoogleDisplayLabel} />
+      ) : !state.business && hydrationStatus !== 'ready' ? (
+        // Stage 7 Backend Integration — the second-device/cleared-browser
+        // case this whole pass exists to fix: a live session exists, but
+        // this device's own local mirror holds no Business yet, and the
+        // real one (if any) hasn't finished resolving from the backend.
+        // Checked before every other post-auth branch below — none of them
+        // (PhoneMismatch, Invitation, Onboarding-vs-App) can be answered
+        // honestly yet, since all of them read `state.business`/
+        // `state.memberships`, which may still be about to be
+        // wholesale-replaced by `hydrateFromBackend`. See `AuthResolving.tsx`
+        // for the full reasoning, including its own disclosed deviation from
+        // `home.md` §3.1/§3.2/§3.14's nav-bar-present wireframes.
+        <AuthResolving status={hydrationStatus === 'error' ? 'error' : 'loading'} onRetry={retryHydration} />
       ) : needsPhoneMismatchConfirmation && user && mismatchIdentity ? (
         // authentication.md §3.7e (Slice 12 `merchant-user-tester` defect
         // fix, 2026-09-07; generalized 2026-09-13) — see

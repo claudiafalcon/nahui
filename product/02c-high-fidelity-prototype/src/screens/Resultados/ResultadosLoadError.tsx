@@ -2,17 +2,14 @@ import { Button } from '../../components/Button/Button';
 import styles from '../Home/ColdStart.module.css';
 
 /**
- * reports.md §3.14 — defensive fallback / load error. Built for
- * completeness (the dispatching task's own explicit scope item) but, like
- * every other screen in this codebase that reads exclusively from
- * synchronous, localStorage-backed `AppState` (no network, no real async
- * load), it has no reachable trigger today — there is no failure mode this
- * build can genuinely produce. Not wired into `ResultadosScreen.tsx`'s
- * resolution for that reason, the same disclosed-as-structurally-present-
- * but-unexercised treatment this codebase already gives other defensive
- * branches (e.g. `if (!event) return null` guards throughout Eventos/
- * Resultados). Kept ready for Backend Integration (Stage 7), when a real
- * network load can actually fail this way.
+ * reports.md §3.14 — defensive fallback / load error. Wired, as of Stage 7
+ * Backend Integration's Read-side data hydration pass:
+ * `ResultadosScreen.tsx`'s own mount-triggered `hydrateFromBackend()` call
+ * (reports.md §2's own trigger) resolves to this screen whenever that read
+ * genuinely fails, with "Reintentar" re-running the identical hydration
+ * call. Previously built for completeness only, with no reachable trigger
+ * (every read was synchronous, localStorage-backed `AppState`) — that
+ * disclosure no longer applies now that a real async read exists.
  */
 export function ResultadosLoadError({ onRetry }: { onRetry: () => void }) {
   return (

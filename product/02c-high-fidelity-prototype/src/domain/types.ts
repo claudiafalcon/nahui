@@ -289,12 +289,12 @@ export interface Business {
    * ('YYYY-MM-DD') is when it lands, `pendingSubscriptionTierAcknowledged`
    * tracks whether the one-time landing acknowledgment (§2.4) has already
    * been shown once. All three are set together (`requestDowngradeToFree`)
-   * and cleared together (`cancelPendingSubscriptionTierChange`, or the
-   * second Configuración open after landing, `reconcilePendingSubscriptionTier`
-   * in store.tsx) — never independently. `null`/`false` when no change is
-   * pending, the common case. `defaultSellingMode` carries no equivalent
-   * pending pair at all (§2.3, D27) — both its directions are immediate,
-   * with nothing to defer.
+   * and cleared together (`cancelPendingSubscriptionTierChange`, or the real
+   * `land_pending_subscription_tier` RPC landing the change,
+   * `reconcilePendingSubscriptionTier` in store.tsx) — never independently.
+   * `null`/`false` when no change is pending, the common case.
+   * `defaultSellingMode` carries no equivalent pending pair at all (§2.3,
+   * D27) — both its directions are immediate, with nothing to defer.
    */
   pendingSubscriptionTier: 'free' | 'paid' | null;
   pendingSubscriptionTierEffectiveDate: string | null;

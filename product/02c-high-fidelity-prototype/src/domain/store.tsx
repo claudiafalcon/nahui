@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { makeId } from './id';
-import { addDaysToKey, dateKey, todayKey } from './dates';
+import { dateKey, todayKey } from './dates';
 import { sendOtp, verifyOtpCode } from './otpClient';
 import {
   actingMembership,
@@ -37,6 +37,24 @@ import type {
   Venue,
 } from './types';
 import { getSupabaseClient, resolveGoogleSession, sendEmailCode, signInWithGoogle, verifyEmailCode } from './authProviders';
+import {
+  mapAllocationMovementRow,
+  mapEntryRow,
+  mapEventAllocationRow,
+  mapEventAllocationUnitRow,
+  mapEventAssignmentRow,
+  mapEventRow,
+  mapLotRow,
+  mapMembershipRow,
+  mapPriceOverrideRow,
+  mapProductRow,
+  mapSaleItemRow,
+  mapSaleRow,
+  mapSessionRow,
+  mapUnitRow,
+  mapVenueRow,
+  mapBusinessRow,
+} from './hydrationMapping';
 
 /**
  * Exported (demo-mode.md §8 item 8) so `restartDemo.ts`'s own "clear both
@@ -440,6 +458,55 @@ export type RequestOtpOutcome = { ok: true } | { ok: false; reason: 'rate-limite
 
 interface StoreValue {
   state: AppState;
+  /**
+   * Stage 7 Backend Integration — Read-side data hydration
+   * (`context/stage-7-backend-integration.md`'s "Read-side data hydration
+   * design"). Transient — never persisted to `localStorage`/`AppState`,
+   * since it describes this device's own in-flight read activity, not
+   * domain data. `'idle'` before the first resolution attempt has even
+   * started (the instant after mount, before the auth-resolution `useEffect`
+   * below has run); `'loading'` while `resolveActiveBusinessFromAuth`/
+   * `hydrateFromBackend` are in flight; `'ready'` once a cycle has resolved
+   * — including the honest "no real Supabase Auth session/Business to
+   * hydrate yet" case (a fresh phone-OTP-only session, or a genuinely new
+   * merchant who hasn't finished Onboarding), which is a successful
+   * resolution, not an error; `'error'` only for a genuine platform/network
+   * failure. `AppRouter.tsx` is this value's one load-bearing consumer — see
+   * its own `AuthResolving` gate for why.
+   */
+  hydrationStatus: 'idle' | 'loading' | 'ready' | 'error';
+  /** Re-runs the exact same resolution cycle the mount `useEffect` below
+   * runs — `AppRouter.tsx`'s own "Reintentar" affordance on `AuthResolving`'s
+   * error state. */
+  retryHydration: () => void;
+  /**
+   * Stage 7 Backend Integration — Read-side data hydration. `Promise.all` of
+   * one `.select('*')` per domain table (every `AppState` array slice this
+   * cycle owns gets a matching query — see `hydrationMapping.ts`'s own doc
+   * comment for the full table list and what's deliberately excluded:
+   * `users`/`authIdentities`/`invitations`, and, as a hard guardrail,
+   * Loyalty-claim's `customers`/`claims`, never queried anywhere in this
+   * codebase), scoped to `businessId` server-side (RLS) and again client-side
+   * (`.eq('business_id', ...)`, matching every existing `.rpc()` call site's
+   * own business-scoping convention) for determinism/query efficiency.
+   *
+   * Race-safety against the existing write-mirror pattern
+   * (`writeGenerationRef`/`applyWriteMirror` below): captures the current
+   * write generation before issuing any reads, and re-checks it after they
+   * resolve — a mismatch means a write landed mid-cycle, so this cycle's
+   * results are discarded outright (never merged with `AppState`), retried
+   * up to twice (`attempt < 2`), then abandoned (`'stale'`) for the next
+   * natural trigger (mount, `visibilitychange`, or Resultados' own mount).
+   * On success, wholesale-replaces every corresponding `AppState` array
+   * slice — never a per-row merge (no `updated_at`/version columns exist to
+   * support one, and this domain model has no real-time subscription
+   * pushing incremental deltas either).
+   *
+   * Exposed on `StoreValue` (not just an internal `store.tsx` function)
+   * because Resultados' own screen-mount calls this directly, per the design
+   * summary's own third trigger.
+   */
+  hydrateFromBackend: (businessId: ID, attempt?: number) => Promise<'ok' | 'error' | 'stale'>;
   /** authentication.md §3.5 "Enviar código" — Stage 7 Backend Integration:
    * a real call to the `send-otp` Supabase Edge Function
    * (`supabase/functions/send-otp/`, via `otpClient.ts`), which generates
@@ -509,17 +576,24 @@ interface StoreValue {
    * Supabase configured, a genuine platform error) — `OnboardingFlow.tsx`
    * routes a `null` result to its own `'creating-error'` retry state.
    * `Business.name` starts `''` (see types.ts) — identity is a separate,
-   * later write (`setBusinessIdentity`, still a local-only mock write, not
-   * yet part of this Phase 0 pass — see this pass's own build report). */
+   * later write (`setBusinessIdentity`, wired to the real
+   * `update_business_identity` RPC, see that function's own doc comment). */
   completeOnboarding: (path: OnboardingPath) => Promise<ID | null>;
   /** onboarding.md §3.10 "Guardando tu negocio" — additive identity fields
    * on the already-existing Business (§2.2b), a separate write from
    * `completeOnboarding`'s own capabilities write, per that section's own
-   * reasoning (own idempotency key, own retry surface). */
-  setBusinessIdentity: (fields: { name: string; logo?: string; description?: string }) => void;
+   * reasoning (own idempotency key, own retry surface). Stage 7 Backend
+   * Integration — real, idempotency-keyed call to `update_business_identity`,
+   * closing the read-side hydration wholesale-replace gap `reviewer` flagged
+   * as a Blocker (`20260914000000_business_settings_writes.sql`). Resolves
+   * `true` on success, `false` on any rejected/failed outcome — same
+   * "server-confirmed, then local mirror" shape as `editPrice`. */
+  setBusinessIdentity: (fields: { name: string; logo?: string; description?: string }) => Promise<boolean>;
   /** onboarding.md §3.6 "Todo listo" — marks the milestone dismissed
-   * (tapped "Entrar," or auto-continued). See `Business.onboardingAcknowledged`. */
-  acknowledgeOnboarding: () => void;
+   * (tapped "Entrar," or auto-continued). See `Business.onboardingAcknowledged`.
+   * Stage 7 Backend Integration — real call to `acknowledge_onboarding`,
+   * same shape as `setBusinessIdentity` above. */
+  acknowledgeOnboarding: () => Promise<boolean>;
   /** inventory.md §3.8a/§3.9 "Guardar mercancía," and — as of
    * `product-decisions.md` Q20 — onboarding.md §2.2a/§3.5b–§3.5e "Guardando
    * lo que vendes" as well: the one atomic write that mints any genuinely
@@ -749,48 +823,73 @@ interface StoreValue {
    * there), so this never needs to touch the pending triple. Never touches
    * `defaultSellingMode` — `nfc` becomes available only as a read-time
    * derivation from the new `subscriptionTier` value (D27), never written
-   * here directly. */
-  activatePaidPlan: () => void;
+   * here directly. Stage 7 Backend Integration — real call to
+   * `activate_paid_plan`, same "server-confirmed, then local mirror" shape
+   * as `editPrice`. */
+  activatePaidPlan: () => Promise<boolean>;
   /** settings.md §2.2/§3.5 "Volver al plan gratis" — deferred: sets the
    * pending-change triple (§2.4/D25/D29's own shape). Does **not** touch
    * `subscriptionTier` yet — it stays `'paid'` until the effective date
    * actually lands (`reconcilePendingSubscriptionTier`). The illustrative
    * effective date (Q11 open, `dates.ts`'s own disclosed judgment call) is
-   * computed here, once, at request time — never re-computed on every read. */
-  requestDowngradeToFree: () => void;
+   * computed by the caller and passed in, rather than re-derived
+   * server-side — Stage 7 Backend Integration — real call to
+   * `request_downgrade_to_free`. */
+  requestDowngradeToFree: (effectiveDate: string) => Promise<boolean>;
   /** settings.md §2.2/§3.7 "Cancelar cambio pendiente" — clears the pending
    * triple entirely; `subscriptionTier` is untouched (still `'paid'`), since
-   * the pending write never touched it either. */
-  cancelPendingSubscriptionTierChange: () => void;
+   * the pending write never touched it either. Stage 7 Backend Integration —
+   * real call to `cancel_pending_subscription_tier_change`. */
+  cancelPendingSubscriptionTierChange: () => Promise<boolean>;
   /** settings.md §2.3 "Cambiar a vender con tags/con botones" — immediate,
    * no pending-value/effective-date pair at all (D27: this field carries no
    * billing-cycle implication in either direction). Per §2.3's own explicit
    * invariant, this is the *only* write path that may ever touch
    * `defaultSellingMode` — never written as a side effect of any
-   * `subscriptionTier` action, in either direction. */
-  changeDefaultSellingMode: (mode: SessionOperatingMode) => void;
+   * `subscriptionTier` action, in either direction. Stage 7 Backend
+   * Integration — real call to `change_default_selling_mode`. */
+  changeDefaultSellingMode: (mode: SessionOperatingMode) => Promise<boolean>;
   /** home.md §3.6a's fourth variant (Ready-but-`buttons`, shown once ever) —
    * sets `Business.nfcAvailabilityNudgeShown = true`, permanently. Fired
    * once, via a `useEffect`, the first time that variant actually renders
    * (`useNfcSessionStart.ts`) — mirrors `reconcilePendingSubscriptionTier`'s
    * own one-time-acknowledgment write pattern above, at the field-write
    * level (no two-phase landing logic needed here, since this flag has only
-   * one direction and no effective date to wait on). */
-  markNfcAvailabilityNudgeShown: () => void;
-  /** settings.md §2.4 — simulates a pending `subscriptionTier` change
-   * "landing" with no real scheduled job (D25 leaves the actual billing
-   * mechanism external): called once whenever Configuración's own vista
-   * principal (§3.3a) mounts. Two-phase, driven by the persisted
-   * `pendingSubscriptionTierAcknowledged` flag (not local component state)
-   * so the "shown exactly once" guarantee survives a reload between the
-   * landing open and the next one: the first open on/after the effective
-   * date flips `subscriptionTier` and marks `acknowledged=true`, returning
-   * the landed value so the caller can render §2.4's one-time acknowledgment
-   * line; the *next* open (already acknowledged) clears the pending triple
-   * entirely and returns `justLanded: false`. A no-op (and `justLanded:
-   * false`) whenever no pending change exists yet, or its effective date is
-   * still in the future. */
-  reconcilePendingSubscriptionTier: () => { justLanded: boolean; tier?: 'free' | 'paid'; effectiveDate?: string };
+   * one direction and no effective date to wait on). Stage 7 Backend
+   * Integration — real call to `acknowledge_nfc_availability_nudge`. */
+  markNfcAvailabilityNudgeShown: () => Promise<boolean>;
+  /** settings.md §2.4 — detects a pending `subscriptionTier` change's
+   * effective date arriving, with no real scheduled job (D25 leaves the
+   * actual billing mechanism external): called once whenever Configuración's
+   * own vista principal (§3.3a) mounts. A no-op (`justLanded: false`)
+   * whenever no pending change exists, or its effective date is still in the
+   * future. Otherwise it's the landing moment: the pre-write tier/date are
+   * captured and returned synchronously so the caller can render §2.4's
+   * one-time acknowledgment line immediately, while the real
+   * `land_pending_subscription_tier` RPC (Stage 7 Backend Integration) fires
+   * in the background and returns `boolean` — `true` only when its own
+   * conditional UPDATE actually matched a row, `false` on a harmless no-op
+   * (e.g. a concurrent `cancel_pending_subscription_tier_change` call
+   * already won the race). Only on `true` does the client
+   * `applyWriteMirror` the full flip — `subscriptionTier` set, the pending
+   * triple cleared to null/null/false — in one atomic step, matching the
+   * RPC's own all-or-nothing write. Because the RPC clears the pending
+   * triple server-side the moment it lands, the "shown exactly once"
+   * guarantee survives a reload for free: any later mount's own guard
+   * clause (`pendingSubscriptionTier == null`) already returns
+   * `justLanded: false` once the real row reflects the landed state — no
+   * separate persisted "acknowledged, not yet cleared" intermediate is
+   * needed or written. A failed RPC attempt, or a `false` no-op result, is
+   * logged (the error case only), never surfaced to any UI (no direct user
+   * action to attach an error state to) and never locally mirrored — the
+   * pending triple stays intact locally either way, so only the next
+   * Configuración mount retries the same detection (hydration does not
+   * re-trigger this function). */
+  reconcilePendingSubscriptionTier: (onSettled?: (landed: boolean) => void) => {
+    justLanded: boolean;
+    tier?: 'free' | 'paid';
+    effectiveDate?: string;
+  };
   /** settings.md §2.5/§2.5a, authentication.md §2.2 case 2, RFC 0007 §1 —
    * ends this device's verified-phone session without touching the Business
    * or any of its data. **Critical correctness point:** sets this User row's
@@ -1010,6 +1109,326 @@ const StoreContext = createContext<StoreValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(loadState);
+
+  /**
+   * Stage 7 Backend Integration — Read-side data hydration's own race-safety
+   * mechanism (`context/stage-7-backend-integration.md`'s design summary,
+   * "Composition with the existing write-mirror pattern"). Monotonic —
+   * incremented by `applyWriteMirror` below on every one of the 22 existing
+   * write-mirror `setState` calls, never reset. `hydrateFromBackend` reads
+   * this before and after its own reads to detect a write that landed
+   * mid-cycle (in either direction: a write starting before hydration, or a
+   * write starting *during* an already-in-flight hydration and finishing
+   * first) — a `ref`, not `state`, since it must be readable synchronously
+   * inside an async function's own closure without itself triggering a
+   * re-render.
+   */
+  const writeGenerationRef = useRef(0);
+
+  /**
+   * The shared replacement for every one of the 22 existing `.rpc()` call
+   * sites' final `setState((s) => {...})` mirror call — mechanical, the same
+   * updater body every site already had, with exactly one substitution
+   * (`setState` → `applyWriteMirror`). Increments `writeGenerationRef` before
+   * applying the update, so `hydrateFromBackend`'s own generation check can
+   * always tell "did a write land since I started reading."
+   */
+  function applyWriteMirror(updater: (s: AppState) => AppState) {
+    writeGenerationRef.current += 1;
+    setState(updater);
+  }
+
+  /**
+   * Stage 7 Backend Integration — Read-side data hydration. See
+   * `StoreValue.hydrationStatus`'s own doc comment above for the four-value
+   * meaning; the mount/`visibilitychange`/Resultados-mount triggers below are
+   * this value's only writers besides `retryHydration`.
+   */
+  const [hydrationStatus, setHydrationStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  /** The last businessId a hydration cycle actually resolved — what the
+   * `visibilitychange` trigger below re-hydrates against (it never has its
+   * own independent resolution step; re-running `resolveActiveBusinessFromAuth`
+   * on every tab-refocus would be real, avoidable Supabase Auth traffic for a
+   * fact that doesn't change mid-session). A `ref`, not `state`: read inside
+   * an event listener registered once at mount, never itself a render input. */
+  const hydratedBusinessIdRef = useRef<ID | null>(null);
+
+  /**
+   * Stage 7 Backend Integration — Read-side data hydration
+   * (`context/stage-7-backend-integration.md`'s design summary). See
+   * `StoreValue.hydrateFromBackend`'s own doc comment above for the full
+   * race-safety/wholesale-replace reasoning — this is the implementation.
+   *
+   * Every query is scoped to `businessId` both server-side (RLS — every
+   * table below either is `businesses` itself or carries a denormalized
+   * `business_id` column, per each Phase's own design summary) and
+   * client-side (`.eq('business_id', businessId)`), matching the existing
+   * `.rpc()` call sites' own business-scoping convention. `businesses`
+   * itself is scoped by `.eq('id', businessId)` instead, being the row
+   * itself rather than a child of it.
+   */
+  async function hydrateFromBackend(businessId: ID, attempt = 0): Promise<'ok' | 'error' | 'stale'> {
+    const supabase = getSupabaseClient();
+    if (!supabase) return 'error';
+
+    const startGeneration = writeGenerationRef.current;
+
+    const [
+      businessesRes,
+      membershipsRes,
+      productsRes,
+      lotsRes,
+      entriesRes,
+      unitsRes,
+      tagsRes,
+      venuesRes,
+      eventsRes,
+      priceOverridesRes,
+      sessionsRes,
+      salesRes,
+      saleItemsRes,
+      eventAllocationsRes,
+      eventAllocationUnitsRes,
+      allocationMovementsRes,
+      eventAssignmentsRes,
+    ] = await Promise.all([
+      supabase.from('businesses').select('*').eq('id', businessId),
+      supabase.from('business_memberships').select('*').eq('business_id', businessId),
+      supabase.from('products').select('*').eq('business_id', businessId),
+      supabase.from('lots').select('*').eq('business_id', businessId),
+      supabase.from('inventory_entries').select('*').eq('business_id', businessId),
+      supabase.from('inventory_units').select('*').eq('business_id', businessId),
+      supabase.from('nfc_tags').select('*').eq('business_id', businessId),
+      supabase.from('venues').select('*').eq('business_id', businessId),
+      supabase.from('events').select('*').eq('business_id', businessId),
+      supabase.from('price_overrides').select('*').eq('business_id', businessId),
+      supabase.from('sessions').select('*').eq('business_id', businessId),
+      supabase.from('sales').select('*').eq('business_id', businessId),
+      supabase.from('sale_items').select('*').eq('business_id', businessId),
+      supabase.from('event_allocations').select('*').eq('business_id', businessId),
+      supabase.from('event_allocation_units').select('*').eq('business_id', businessId),
+      supabase.from('allocation_movements').select('*').eq('business_id', businessId),
+      supabase.from('event_assignments').select('*').eq('business_id', businessId),
+    ]);
+
+    const allResults = [
+      businessesRes,
+      membershipsRes,
+      productsRes,
+      lotsRes,
+      entriesRes,
+      unitsRes,
+      tagsRes,
+      venuesRes,
+      eventsRes,
+      priceOverridesRes,
+      sessionsRes,
+      salesRes,
+      saleItemsRes,
+      eventAllocationsRes,
+      eventAllocationUnitsRes,
+      allocationMovementsRes,
+      eventAssignmentsRes,
+    ];
+    const failed = allResults.find((r) => r.error);
+    if (failed) {
+      console.error('[store] hydrateFromBackend: a read failed', failed.error);
+      return 'error';
+    }
+
+    // A write landed mid-cycle (in either direction — one that started
+    // before this cycle's reads, or one that started during them and
+    // finished first) — this cycle's snapshot is discarded outright, never
+    // merged, per the design's own race-safety mechanism. The write's own
+    // already-applied `applyWriteMirror` mirror is untouched either way.
+    if (writeGenerationRef.current !== startGeneration) {
+      if (attempt < 2) return hydrateFromBackend(businessId, attempt + 1);
+      return 'stale';
+    }
+
+    // `tagId` is a join, not a column, on the client-side `InventoryUnit`
+    // shape (Phase 1's `nfc_tags` table refinement — see
+    // `hydrationMapping.ts`'s own `mapUnitRow` doc comment).
+    const tagByUnitId = new Map<ID, string>(
+      (tagsRes.data ?? []).map((row: Record<string, unknown>) => [row.unit_id as ID, row.tag_identifier as string]),
+    );
+    const units: InventoryUnit[] = (unitsRes.data ?? []).map((row: Record<string, unknown>) => {
+      const unit = mapUnitRow(row);
+      return { ...unit, tagId: tagByUnitId.get(unit.id) ?? null };
+    });
+
+    // `items[]` is a join, not a column, on the client-side `Sale` shape
+    // (`sale_items` is its own table, internal-only, owned by `Sale`).
+    const itemsBySaleId = new Map<ID, SaleItem[]>();
+    for (const row of saleItemsRes.data ?? []) {
+      const { saleId, ...item } = mapSaleItemRow(row as Record<string, unknown>);
+      const existing = itemsBySaleId.get(saleId) ?? [];
+      existing.push(item);
+      itemsBySaleId.set(saleId, existing);
+    }
+    const sales: Sale[] = (salesRes.data ?? []).map((row: Record<string, unknown>) => {
+      const sale = mapSaleRow(row);
+      return { ...sale, items: itemsBySaleId.get(sale.id) ?? [] };
+    });
+
+    // A plain `setState`, deliberately never `applyWriteMirror` — a
+    // hydration cycle is a read, not a merchant write, and must never bump
+    // `writeGenerationRef` itself (doing so would give every future
+    // hydration cycle a moving target to compare against, for no protective
+    // purpose the design calls for).
+    const businessRow = (businessesRes.data ?? [])[0] as Record<string, unknown> | undefined;
+    setState((s) => ({
+      ...s,
+      // Defensive — a `businessId` this function was actually called with
+      // (`resolveActiveBusinessFromAuth`'s own resolved id, or Resultados'
+      // own already-mirrored `state.business.id`) should always return
+      // exactly one row here; if RLS or a transient read ever returns none,
+      // this keeps whatever local `business` mirror already existed rather
+      // than wiping a known-good value on a partial-result edge case.
+      business: businessRow ? mapBusinessRow(businessRow) : s.business,
+      memberships: (membershipsRes.data ?? []).map(mapMembershipRow),
+      products: (productsRes.data ?? []).map(mapProductRow),
+      lots: (lotsRes.data ?? []).map(mapLotRow),
+      entries: (entriesRes.data ?? []).map(mapEntryRow),
+      units,
+      venues: (venuesRes.data ?? []).map(mapVenueRow),
+      events: (eventsRes.data ?? []).map(mapEventRow),
+      priceOverrides: (priceOverridesRes.data ?? []).map(mapPriceOverrideRow),
+      sessions: (sessionsRes.data ?? []).map(mapSessionRow),
+      sales,
+      eventAllocations: (eventAllocationsRes.data ?? []).map(mapEventAllocationRow),
+      eventAllocationUnits: (eventAllocationUnitsRes.data ?? []).map(mapEventAllocationUnitRow),
+      allocationMovements: (allocationMovementsRes.data ?? []).map(mapAllocationMovementRow),
+      eventAssignments: (eventAssignmentsRes.data ?? []).map(mapEventAssignmentRow),
+    }));
+
+    return 'ok';
+  }
+
+  /**
+   * Stage 7 Backend Integration — Read-side data hydration. Resolves this
+   * device's own real Supabase Auth session (Email/Google — phone-OTP
+   * sessions never bridge to a real Supabase Auth session, per this
+   * initiative's own disclosed, non-blocking open item;
+   * `context/stage-7-backend-integration.md`'s "Open items") to the
+   * `business_memberships` row it holds, if any. `null` covers two
+   * genuinely different situations alike (no real Supabase Auth session on
+   * this device; a genuine query failure or no Membership row at all — a
+   * brand-new merchant mid-Onboarding) — the caller only ever needs "is
+   * there a real Business to hydrate," never which of these this was, per
+   * this function's own declared return shape.
+   *
+   * **`reviewer` Blocker fix (2026-09-14):** deliberately does **not** filter
+   * on `status = 'active'` any more. The earlier `.eq('status', 'active')`
+   * meant a revoked Membership always resolved `null` here — same as a
+   * genuinely new merchant — so `hydrateFromBackend` was never called for a
+   * revoked user, and a device with pre-revocation cached `AppState` kept
+   * showing her the stale, still-`active` local mirror forever (`AppRouter.tsx`'s
+   * pre-shell gate never even runs `AuthResolving` once `state.business` is
+   * already truthy from that cache). `business_memberships_select`'s own RLS
+   * policy (`supabase/migrations/20260913000000_identity_persistence_layer.sql`)
+   * already lets a user read her own row regardless of status — the fix is
+   * simply to stop discarding it client-side. Resolving against *any* row for
+   * this user, active or revoked, lets `hydrateFromBackend` run against that
+   * real `businessId`; every actual business-data table stays gated on
+   * `status='active'` via `is_active_member_of`/`is_active_owner_of` (so a
+   * revoked user's `products`/`sales`/etc. queries correctly come back
+   * empty), but `business_memberships` itself comes back with her true,
+   * current `status: 'revoked'` row, wholesale-replacing the stale local
+   * mirror — `App.tsx`'s existing `AccesoRevocado` check then fires
+   * correctly off that fresh data, no new screen or logic needed.
+   *
+   * **Multi-Membership resolution.** A User's relationship to a Business is
+   * structurally N:M (`domain-model.md`'s own `User` entry, `decision-log.md`
+   * D44) — she can hold more than one `business_memberships` row, one per
+   * Business. Fetches every row for this user, most-recently-created first,
+   * and resolves to her active one if she has one (there's at most one
+   * `active` row per Business, and in practice a User acts in one Business
+   * at a time today); only when none of her rows is `active` does this fall
+   * back to the most recently created row overall, so a revoked Membership
+   * still surfaces even for a user who's since accumulated other, older
+   * rows.
+   */
+  async function resolveActiveBusinessFromAuth(): Promise<{ businessId: ID; membershipId: ID } | null> {
+    const supabase = getSupabaseClient();
+    if (!supabase) return null;
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) return null;
+    const userId = sessionData.session.user.id;
+    const { data, error } = await supabase
+      .from('business_memberships')
+      .select('id, business_id, status')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error || !data || data.length === 0) return null;
+    const resolved = data.find((row) => row.status === 'active') ?? data[0];
+    return { businessId: resolved.business_id as ID, membershipId: resolved.id as ID };
+  }
+
+  /**
+   * Stage 7 Backend Integration — the shared resolution cycle both the
+   * mount/session-resolve trigger below and `AppRouter.tsx`'s own
+   * "Reintentar" (`retryHydration`) run. Not itself part of the design
+   * summary's own three named triggers — a thin, deliberate factoring so
+   * those two callers (an automatic effect, a manual retry tap) never drift
+   * out of sync with each other.
+   */
+  async function runHydrationResolution(): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase || state.currentUserId == null) {
+      setHydrationStatus('ready'); // nothing to hydrate — local-only/dev mode, or no live session yet
+      return;
+    }
+    setHydrationStatus('loading');
+    const resolved = await resolveActiveBusinessFromAuth();
+    if (!resolved) {
+      setHydrationStatus('ready'); // no real Supabase Auth session bound yet, or genuinely no Business yet — both honest, non-error resolutions
+      return;
+    }
+    hydratedBusinessIdRef.current = resolved.businessId;
+    const result = await hydrateFromBackend(resolved.businessId);
+    setHydrationStatus(result === 'error' ? 'error' : 'ready');
+  }
+
+  /**
+   * Stage 7 Backend Integration — trigger 1 of 3 (design summary): "once on
+   * mount when auth resolves to a real business_id/membership_id." Keyed on
+   * `state.currentUserId` rather than a one-time mount — this is what makes
+   * it also cover the ordinary "session already persisted, app just opened"
+   * case (the ref's initial render already has a non-null `currentUserId`,
+   * so this fires on the very first render too) without a second, separately
+   * -maintained effect for that case.
+   */
+  useEffect(() => {
+    void runHydrationResolution();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires once per
+    // `currentUserId` transition (a fresh sign-in, a sign-out → sign-in, or
+    // the initial mount if a session already persisted) — `runHydrationResolution`
+    // itself is a fresh closure every render, but re-running this effect on
+    // every unrelated state change it happens to close over would defeat the
+    // "once per session becoming available" trigger this design specifies.
+  }, [state.currentUserId]);
+
+  /**
+   * Stage 7 Backend Integration — trigger 2 of 3 (design summary): "again on
+   * `visibilitychange` → visible (tab regains focus)," only if a `businessId`
+   * is already known (`hydratedBusinessIdRef`) — never re-runs
+   * `resolveActiveBusinessFromAuth` itself, matching that ref's own doc
+   * comment above.
+   */
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible' && hydratedBusinessIdRef.current) {
+        void hydrateFromBackend(hydratedBusinessIdRef.current);
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- registered once
+    // at mount; `hydrateFromBackend` itself closes over `setState`/
+    // `writeGenerationRef` only (both stable across renders), never over
+    // `state` directly, so a stale closure here is safe by construction.
+  }, []);
 
   /** `architecture-principles.md` #7/D30 — the stable idempotency key for
    * one logical `completeOnboarding` attempt, generated once and reused
@@ -1238,7 +1657,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       });
     });
 
-    setState((s) => ({
+    applyWriteMirror((s) => ({
       ...s,
       products: [...s.products, ...newProducts],
       lots: [...s.lots, { id: lotId, receivedAt }],
@@ -1485,30 +1904,67 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       revokedAt: null,
       createdAt: now,
     };
-    setState((s) => ({ ...s, business, memberships: [...s.memberships, membership] }));
+    applyWriteMirror((s) => ({ ...s, business, memberships: [...s.memberships, membership] }));
     return data.business_id;
   }
 
   /** onboarding.md §3.10 "Guardando tu negocio" — additive identity fields
-   * on the already-existing Business (§2.2b). */
-  function setBusinessIdentity(fields: { name: string; logo?: string; description?: string }) {
-    setState((s) => {
-      if (!s.business) return s; // defensive — unreachable via the real flow, §3.5 always runs first
-      return {
-        ...s,
-        business: {
-          ...s.business,
-          name: fields.name.trim(),
-          logo: fields.logo,
-          description: fields.description,
-        },
-      };
+   * on the already-existing Business (§2.2b). Stage 7 Backend Integration —
+   * real call to `update_business_identity`, same "server-confirmed, then
+   * local mirror" shape as `editPrice`. */
+  async function setBusinessIdentity(fields: {
+    name: string;
+    logo?: string;
+    description?: string;
+  }): Promise<boolean> {
+    if (!state.business) return false; // defensive — unreachable via the real flow, §3.5 always runs first
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] setBusinessIdentity: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('update_business_identity', {
+      p_business_id: state.business.id,
+      p_idempotency_key: crypto.randomUUID(),
+      p_name: fields.name.trim(),
+      p_logo: fields.logo ?? null,
+      p_description: fields.description ?? null,
     });
+    if (error) {
+      console.error('[store] update_business_identity failed', error);
+      return false;
+    }
+    applyWriteMirror((s) =>
+      s.business
+        ? {
+            ...s,
+            business: { ...s.business, name: fields.name.trim(), logo: fields.logo, description: fields.description },
+          }
+        : s,
+    );
+    return true;
   }
 
-  /** onboarding.md §3.6 — "Entrar" tapped, or auto-continued. */
-  function acknowledgeOnboarding() {
-    setState((s) => (s.business ? { ...s, business: { ...s.business, onboardingAcknowledged: true } } : s));
+  /** onboarding.md §3.6 — "Entrar" tapped, or auto-continued. Stage 7
+   * Backend Integration — real call to `acknowledge_onboarding`, same shape
+   * as `setBusinessIdentity` above. */
+  async function acknowledgeOnboarding(): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] acknowledgeOnboarding: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('acknowledge_onboarding', {
+      p_business_id: state.business.id,
+      p_idempotency_key: crypto.randomUUID(),
+    });
+    if (error) {
+      console.error('[store] acknowledge_onboarding failed', error);
+      return false;
+    }
+    applyWriteMirror((s) => (s.business ? { ...s, business: { ...s.business, onboardingAcknowledged: true } } : s));
+    return true;
   }
 
   /**
@@ -1584,7 +2040,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.error('[store] update_product_price failed', error);
       return false;
     }
-    setState((s) => ({
+    applyWriteMirror((s) => ({
       ...s,
       products: s.products.map((p) => (p.id === productId ? { ...p, defaultPrice: newPrice } : p)),
     }));
@@ -1614,7 +2070,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.error('[store] update_product_photo failed', error);
       return false;
     }
-    setState((s) => ({
+    applyWriteMirror((s) => ({
       ...s,
       products: s.products.map((p) => (p.id === productId ? { ...p, photo } : p)),
     }));
@@ -1665,7 +2121,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!data) return { ok: false, reason: 'platform-error' };
 
     const { unit_id: unitId, product_id: productId } = data as { unit_id: ID; product_id: ID };
-    setState((s) => ({
+    applyWriteMirror((s) => ({
       ...s,
       units: s.units.map((u) => (u.id === unitId ? { ...u, tagId } : u)),
     }));
@@ -1729,7 +2185,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       bazaarCost: fields.bazaarCost,
       cancelledAt: null,
     };
-    setState((s) => ({
+    applyWriteMirror((s) => ({
       ...s,
       venues: s.venues.some((v) => v.id === venueId)
         ? s.venues
@@ -1765,7 +2221,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.error('[store] cancel_event failed', error);
       return;
     }
-    setState((s) => ({
+    applyWriteMirror((s) => ({
       ...s,
       events: s.events.map((e) => (e.id === eventId ? { ...e, cancelledAt: Date.now() } : e)),
     }));
@@ -1798,7 +2254,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.error('[store] set_price_override failed', error);
       return;
     }
-    setState((s) => {
+    applyWriteMirror((s) => {
       const exists = s.priceOverrides.some((po) => po.eventId === eventId && po.productId === productId);
       const priceOverrides = exists
         ? s.priceOverrides.map((po) =>
@@ -1869,7 +2325,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     const row = data as { session_id: ID; event_id: ID | null; operating_mode: SessionOperatingMode; opened_at: string };
-    setState((s) => {
+    applyWriteMirror((s) => {
       if (s.sessions.some((sess) => sess.id === row.session_id)) return s; // already mirrored (a replayed mint-or-find)
       const session: Session = {
         id: row.session_id,
@@ -1936,7 +2392,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     const row = data as { sale_id: ID; sale_item_id: ID; unit_id: ID; price_paid: number; event_allocation_id: ID | null };
-    setState((s) => mirrorAddedSaleItem(s, session.id, productId, row, membership.id));
+    applyWriteMirror((s) => mirrorAddedSaleItem(s, session.id, productId, row, membership.id));
     return 'added';
   }
 
@@ -1997,7 +2453,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       price_paid: number;
       event_allocation_id: ID | null;
     };
-    setState((s) => mirrorAddedSaleItem(s, session.id, row.product_id, row, membership.id));
+    applyWriteMirror((s) => mirrorAddedSaleItem(s, session.id, row.product_id, row, membership.id));
     return { ok: true, unitId: row.unit_id, productId: row.product_id };
   }
 
@@ -2026,7 +2482,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.error('[store] remove_sale_item failed', error);
       return;
     }
-    setState((s) => {
+    applyWriteMirror((s) => {
       const sale = s.sales.find((sa) => sa.status === 'open' && sa.items.some((i) => i.id === saleItemId));
       if (!sale) return s;
       const item = sale.items.find((i) => i.id === saleItemId)!;
@@ -2069,7 +2525,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.error('[store] cancel_sale failed', error);
       return;
     }
-    setState((s) => {
+    applyWriteMirror((s) => {
       const units = s.units.map((u) => {
         const item = openSale.items.find((i) => i.unitId === u.id);
         if (!item) return u;
@@ -2118,7 +2574,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const total = openSale.items.reduce((sum, i) => sum + i.pricePaid, 0);
     const itemCount = openSale.items.length;
 
-    setState((s) => {
+    applyWriteMirror((s) => {
       const unitIds = new Set(openSale.items.map((i) => i.unitId));
       const units = s.units.map((u) =>
         unitIds.has(u.id) ? { ...u, status: 'sold' as InventoryUnitStatus } : u,
@@ -2196,7 +2652,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.error('[store] close_session failed', error);
       return;
     }
-    setState((s) => ({
+    applyWriteMirror((s) => ({
       ...s,
       sessions: s.sessions.map((sess) =>
         sess.id === sessionId ? { ...sess, status: 'closed' as const, closedAt: Date.now() } : sess,
@@ -2209,14 +2665,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * see this function's own `StoreValue` doc comment), so under normal play
    * the pending triple is already empty here. Defensively clears it anyway
    * (same shape `cancelPendingSubscriptionTierChange` already writes)
-   * to close a latent, currently-unreachable edge: if a downgrade just landed
-   * this same mount (`reconcilePendingSubscriptionTier` flips the tier and
-   * sets `acknowledged=true` but deliberately keeps the other two pending
-   * fields for one render, §2.4's own design) and Ana immediately activates
-   * paid again before the next Settings mount would otherwise clear them,
-   * those stale fields never get a chance to linger. */
-  function activatePaidPlan() {
-    setState((s) =>
+   * to close a latent, currently-unreachable edge: `reconcilePendingSubscriptionTier`
+   * fires its own landing RPC in the background rather than awaiting it, so
+   * there's a brief window, right after a downgrade lands this same mount,
+   * where the pending triple is still locally populated while that RPC is
+   * in flight — if Ana activates paid again inside that window, this
+   * defensive clear (plus `activate_paid_plan`'s own server-side overwrite)
+   * keeps those stale fields from lingering either way. */
+  async function activatePaidPlan(): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] activatePaidPlan: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('activate_paid_plan', {
+      p_business_id: state.business.id,
+      p_idempotency_key: crypto.randomUUID(),
+    });
+    if (error) {
+      console.error('[store] activate_paid_plan failed', error);
+      return false;
+    }
+    applyWriteMirror((s) =>
       s.business
         ? {
             ...s,
@@ -2230,30 +2701,63 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
         : s,
     );
+    return true;
   }
 
   /** settings.md §2.2/§3.5 "Volver al plan gratis" — deferred; writes the
-   * pending triple only, `subscriptionTier` stays `'paid'` until it lands. */
-  function requestDowngradeToFree() {
-    setState((s) => {
-      if (!s.business) return s;
-      const effectiveDate = addDaysToKey(todayKey(), 30); // see dates.ts's own disclosed judgment call
-      return {
-        ...s,
-        business: {
-          ...s.business,
-          pendingSubscriptionTier: 'free',
-          pendingSubscriptionTierEffectiveDate: effectiveDate,
-          pendingSubscriptionTierAcknowledged: false,
-        },
-      };
+   * pending triple only, `subscriptionTier` stays `'paid'` until it lands.
+   * Stage 7 Backend Integration — real call to `request_downgrade_to_free`. */
+  async function requestDowngradeToFree(effectiveDate: string): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] requestDowngradeToFree: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('request_downgrade_to_free', {
+      p_business_id: state.business.id,
+      p_idempotency_key: crypto.randomUUID(),
+      p_effective_date: effectiveDate,
     });
+    if (error) {
+      console.error('[store] request_downgrade_to_free failed', error);
+      return false;
+    }
+    applyWriteMirror((s) =>
+      s.business
+        ? {
+            ...s,
+            business: {
+              ...s.business,
+              pendingSubscriptionTier: 'free',
+              pendingSubscriptionTierEffectiveDate: effectiveDate,
+              pendingSubscriptionTierAcknowledged: false,
+            },
+          }
+        : s,
+    );
+    return true;
   }
 
   /** settings.md §2.2/§3.7 "Cancelar cambio pendiente" — clears the pending
-   * triple; `subscriptionTier` untouched. */
-  function cancelPendingSubscriptionTierChange() {
-    setState((s) =>
+   * triple; `subscriptionTier` untouched. Stage 7 Backend Integration — real
+   * call to `cancel_pending_subscription_tier_change`. */
+  async function cancelPendingSubscriptionTierChange(): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] cancelPendingSubscriptionTierChange: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('cancel_pending_subscription_tier_change', {
+      p_business_id: state.business.id,
+      p_idempotency_key: crypto.randomUUID(),
+    });
+    if (error) {
+      console.error('[store] cancel_pending_subscription_tier_change failed', error);
+      return false;
+    }
+    applyWriteMirror((s) =>
       s.business
         ? {
             ...s,
@@ -2266,31 +2770,75 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
         : s,
     );
+    return true;
   }
 
   /** settings.md §2.3 "Cambiar a vender con tags/con botones" — immediate,
    * the *only* write path allowed to touch `defaultSellingMode` (§2.3's own
    * "never written by any other action" invariant — never called as a side
    * effect of any `subscriptionTier` action, and this function itself never
-   * reads or writes `subscriptionTier`). */
-  function changeDefaultSellingMode(mode: SessionOperatingMode) {
-    setState((s) => (s.business ? { ...s, business: { ...s.business, defaultSellingMode: mode } } : s));
+   * reads or writes `subscriptionTier`). Stage 7 Backend Integration — real
+   * call to `change_default_selling_mode`. */
+  async function changeDefaultSellingMode(mode: SessionOperatingMode): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] changeDefaultSellingMode: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('change_default_selling_mode', {
+      p_business_id: state.business.id,
+      p_idempotency_key: crypto.randomUUID(),
+      p_mode: mode,
+    });
+    if (error) {
+      console.error('[store] change_default_selling_mode failed', error);
+      return false;
+    }
+    applyWriteMirror((s) => (s.business ? { ...s, business: { ...s.business, defaultSellingMode: mode } } : s));
+    return true;
   }
 
   /** home.md §3.6a's fourth variant — see this function's own `StoreValue`
    * doc comment above. Idempotent — a second call (defensively unreachable
    * once `useNfcSessionStart.ts`'s own effect has fired once) is a no-op in
-   * effect, since it only ever sets the flag to `true`. */
-  function markNfcAvailabilityNudgeShown() {
-    setState((s) => (s.business ? { ...s, business: { ...s.business, nfcAvailabilityNudgeShown: true } } : s));
+   * effect, since it only ever sets the flag to `true`. Stage 7 Backend
+   * Integration — real call to `acknowledge_nfc_availability_nudge`. */
+  async function markNfcAvailabilityNudgeShown(): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] markNfcAvailabilityNudgeShown: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('acknowledge_nfc_availability_nudge', {
+      p_business_id: state.business.id,
+      p_idempotency_key: crypto.randomUUID(),
+    });
+    if (error) {
+      console.error('[store] acknowledge_nfc_availability_nudge failed', error);
+      return false;
+    }
+    applyWriteMirror((s) => (s.business ? { ...s, business: { ...s.business, nfcAvailabilityNudgeShown: true } } : s));
+    return true;
   }
 
   /** settings.md §2.4 — see the `StoreValue` interface doc comment above for
-   * the full two-phase reasoning. Reads/writes only `state.business`'s own
-   * pending-change fields; never touches `defaultSellingMode` (§2.3's
+   * the full reasoning. Reads only `state.business`'s own pending-change
+   * fields to detect landing; never touches `defaultSellingMode` (§2.3's
    * invariant applies here too — this function has no reason to touch it and
-   * doesn't). */
-  function reconcilePendingSubscriptionTier(): {
+   * doesn't). Stage 7 Backend Integration — the actual land is a real call
+   * to `land_pending_subscription_tier`, fired here but not awaited by the
+   * caller (this function keeps its synchronous `justLanded` return contract
+   * so `SettingsScreen.tsx`'s own `useEffect` can render the acknowledgment
+   * line on the same mount, without waiting on the network round trip).
+   * `onSettled` reports the RPC's real, eventual outcome once it resolves —
+   * `true` only in the same branch that applies `applyWriteMirror`, `false`
+   * on the no-op branch and on error — so the caller can self-correct its
+   * own optimistic local state if the real outcome turns out not to match
+   * the synchronous guess (settings.md §2.4 requires acknowledging a change
+   * that actually happened). */
+  function reconcilePendingSubscriptionTier(onSettled?: (landed: boolean) => void): {
     justLanded: boolean;
     tier?: 'free' | 'paid';
     effectiveDate?: string;
@@ -2302,37 +2850,63 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (b.pendingSubscriptionTierEffectiveDate > todayKey()) {
       return { justLanded: false }; // not yet landed
     }
-    if (!b.pendingSubscriptionTierAcknowledged) {
-      // Landing moment — flip the tier, mark acknowledged, but keep the
-      // pending fields themselves for this one render so the caller can
-      // still read `pendingSubscriptionTierEffectiveDate` for the
-      // acknowledgment line's own date.
-      const tier = b.pendingSubscriptionTier;
-      const effectiveDate = b.pendingSubscriptionTierEffectiveDate;
-      setState((s) =>
-        s.business
-          ? { ...s, business: { ...s.business, subscriptionTier: tier, pendingSubscriptionTierAcknowledged: true } }
-          : s,
-      );
+
+    // Landing moment. Capture the pre-write values for the caller's
+    // one-time acknowledgment line, then land the change server-side —
+    // the server re-checks the same effective-date condition itself
+    // (never trusted from the client), so this is safe to fire even if
+    // called again before the previous attempt's response comes back.
+    const tier = b.pendingSubscriptionTier;
+    const effectiveDate = b.pendingSubscriptionTierEffectiveDate;
+    const businessId = b.id;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] reconcilePendingSubscriptionTier: Supabase not configured. See supabase/README.md.');
       return { justLanded: true, tier, effectiveDate };
     }
-    // Already acknowledged once, on an earlier open — this is the "next
-    // Configuración open" §2.4 says renders as an ordinary row: clear the
-    // pending triple entirely now.
-    setState((s) =>
-      s.business
-        ? {
-            ...s,
-            business: {
-              ...s.business,
-              pendingSubscriptionTier: null,
-              pendingSubscriptionTierEffectiveDate: null,
-              pendingSubscriptionTierAcknowledged: false,
-            },
-          }
-        : s,
-    );
-    return { justLanded: false };
+    void supabase
+      .rpc('land_pending_subscription_tier', {
+        p_business_id: businessId,
+        p_idempotency_key: crypto.randomUUID(),
+      })
+      .then(({ data, error }) => {
+        if (error) {
+          // Automatically triggered, no direct user action to attach an
+          // error state to — logged and left for the next natural trigger
+          // (the next Configuración mount) to retry. The pending triple
+          // stays intact locally either way, so this isn't harmful in the
+          // meantime.
+          console.error('[store] land_pending_subscription_tier failed', error);
+          onSettled?.(false);
+          return;
+        }
+        if (data !== true) {
+          // A genuine no-op: the landing condition no longer held (most
+          // likely a concurrent `cancel_pending_subscription_tier_change`
+          // call won the race). Don't apply the optimistic mirror update —
+          // the next hydration cycle will correctly reflect whatever the
+          // real state actually is (cancelled, or still pending).
+          onSettled?.(false);
+          return;
+        }
+        applyWriteMirror((s) =>
+          s.business
+            ? {
+                ...s,
+                business: {
+                  ...s.business,
+                  subscriptionTier: tier,
+                  pendingSubscriptionTier: null,
+                  pendingSubscriptionTierEffectiveDate: null,
+                  pendingSubscriptionTierAcknowledged: false,
+                },
+              }
+            : s,
+        );
+        onSettled?.(true);
+      });
+
+    return { justLanded: true, tier, effectiveDate };
   }
 
   /**
@@ -2540,7 +3114,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       assignment_id: ID;
       created_at: string;
     };
-    setState((s) => {
+    applyWriteMirror((s) => {
       if (s.eventAssignments.some((a) => a.id === assignmentId)) return s;
       const assignment: EventAssignment = {
         id: assignmentId,
@@ -2572,7 +3146,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.error('[store] unassign_from_event failed', error);
       return false;
     }
-    setState((s) => ({
+    applyWriteMirror((s) => ({
       ...s,
       eventAssignments: s.eventAssignments.filter(
         (a) => !(a.eventId === eventId && a.membershipId === membershipId),
@@ -2723,7 +3297,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       movement_quantity_delta: number | null;
     }[];
 
-    setState((s) => {
+    applyWriteMirror((s) => {
       let next = s;
       for (const row of rows) {
         next = mirrorAllocationUpsert(next, eventId, row.product_id, row.event_allocation_id, row.quantity_allocated, row.status);
@@ -2791,7 +3365,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       (u) => u.eventAllocationId === row.event_allocation_id && u.unitSource === 'scan',
     );
 
-    setState((s) => {
+    applyWriteMirror((s) => {
       let next = mirrorAllocationUpsert(
         s,
         eventId,
@@ -2870,7 +3444,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const destQuantityAllocated =
       (existingDestAllocation?.quantityAllocated ?? 0) + (unitSource === 'fifo_assignment' ? row.moved_unit_ids.length : 0);
 
-    setState((s) => {
+    applyWriteMirror((s) => {
       let next = mirrorAllocationMovement(s, row.source_event_allocation_id, {
         id: row.source_movement_id,
         type: 'reallocate_out',
@@ -2919,7 +3493,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     const row = data as { released_unit_ids: ID[]; movement_id: ID };
-    setState((s) => {
+    applyWriteMirror((s) => {
       let next = mirrorAllocationMovement(s, eventAllocationId, {
         id: row.movement_id,
         type: 'return_to_general',
@@ -2971,7 +3545,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     const row = data as { released_unit_ids: ID[]; movement_id: ID };
-    setState((s) => {
+    applyWriteMirror((s) => {
       let next = mirrorAllocationMovement(s, eventAllocationId, {
         id: row.movement_id,
         type: 'return_to_general',
@@ -2999,6 +3573,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value: StoreValue = {
     state,
+    hydrationStatus,
+    retryHydration: () => void runHydrationResolution(),
+    hydrateFromBackend,
     requestOtp,
     verifyOtp,
     requestEmailOtp,

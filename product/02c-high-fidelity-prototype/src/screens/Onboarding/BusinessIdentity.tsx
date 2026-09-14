@@ -17,15 +17,14 @@ const SAVE_DELAY_MS = 260;
  *
  * §3.10a's save error/retry is now wired (`WritingState`'s `error`/
  * `errorLabel`/`onRetry`, identical shape to §3.5a in `OnboardingFlow.tsx`) —
- * a real, correctly-rendering branch, never triggered in this build since
- * the local mock write never fails, the same disclosed-not-wired convention
- * `BACKLOG.md`'s migration inventory already documents for §3.5a. Previously
- * a genuine regression (`BACKLOG.md` migration inventory §B) — closed.
+ * and, as of Stage 7 Backend Integration's real `update_business_identity`
+ * call, genuinely reachable: a rejected/failed RPC call lands here for real,
+ * not just a disclosed-but-unreachable branch.
  */
 export function BusinessIdentity({
   onSaved,
 }: {
-  onSaved: (fields: { name: string; logo?: string; description?: string }) => void;
+  onSaved: (fields: { name: string; logo?: string; description?: string }) => Promise<boolean>;
 }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -56,8 +55,9 @@ export function BusinessIdentity({
   function handleContinue() {
     if (!canContinue) return;
     setSaveState('saving');
-    window.setTimeout(() => {
-      onSaved({ name: name.trim(), logo, description: description.trim() || undefined });
+    window.setTimeout(async () => {
+      const ok = await onSaved({ name: name.trim(), logo, description: description.trim() || undefined });
+      if (!ok) setSaveState('error');
     }, SAVE_DELAY_MS);
   }
 
@@ -66,12 +66,12 @@ export function BusinessIdentity({
   }
 
   if (saveState === 'error') {
-    // §3.10a — never actually reached in this build (this prototype's local
-    // write never fails), the same disclosed-not-wired convention already
-    // established for §3.5a. Retrying replays the exact already-typed
-    // Nombre/Descripción and already-selected Logo, since this is the same
-    // component instance and none of that state was ever cleared — and per
-    // §3.10a's own wireframe, that preservation is shown, not just true:
+    // §3.10a — Stage 7 Backend Integration: a genuinely reachable branch now,
+    // reached when the real `update_business_identity` RPC call fails.
+    // Retrying replays the exact already-typed Nombre/Descripción and
+    // already-selected Logo, since this is the same component instance and
+    // none of that state was ever cleared — and per §3.10a's own wireframe,
+    // that preservation is shown, not just true:
     // Nombre/logo/Descripción render above "Reintentar," reusing the exact
     // logo-preview markup (`.logoPreview`) the non-error screen already uses.
     return (

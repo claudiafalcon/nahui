@@ -87,8 +87,16 @@ export function OnboardingFlow() {
       if (preWrite.path === 'demo') {
         // onboarding.md §11 (narrowed per this pass's own scope decision —
         // see demoSeed.ts): identity + a real, stocked Catalog, no Event,
-        // no Customer/Claim.
-        setBusinessIdentity({ name: DEMO_BUSINESS_NAME, description: DEMO_BUSINESS_DESCRIPTION });
+        // no Customer/Claim. Stage 7 Backend Integration — setBusinessIdentity
+        // is now a real, awaitable Supabase RPC call; same "no dedicated
+        // retry surface for this specific seed write, logged so it's
+        // visible, not silently dropped" posture as the commitLot seed call
+        // immediately below.
+        const identitySaved = await setBusinessIdentity({
+          name: DEMO_BUSINESS_NAME,
+          description: DEMO_BUSINESS_DESCRIPTION,
+        });
+        if (!identitySaved) console.error('[OnboardingFlow] demo setBusinessIdentity failed');
         // Stage 7 Backend Integration, Phase 1 — commitLot is now a real,
         // awaitable Supabase RPC call. A failure here leaves the demo
         // Business created with an empty Catalog (Phase 0's own write

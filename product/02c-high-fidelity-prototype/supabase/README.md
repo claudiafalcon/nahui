@@ -234,6 +234,92 @@ merges the two into one expression that can never disagree). `tsc -b`/
 `npm run build` both clean (SQL-only fix, no client change needed);
 migration pushed to the real hosted project via `supabase db push`
 (checklist item 24).
+**Read-side data hydration (`context/stage-7-backend-integration.md`'s "Read-
+side data hydration design", `architect`, 2026-09-14)** — closes the
+cross-cutting gap found the same day: all 22 write RPCs above were wired,
+but nothing ever re-fetched real backend data on load — every screen only
+ever showed locally-mirrored write results plus `localStorage`, so a second
+device or a cleared browser saw none of the real, correctly-persisted data.
+Pure client-side change, **no new migration** — reuses every table's
+existing RLS (SELECT already granted to any active member per each Phase's
+own design summary) and every `AppState` shape already established.
+`store.tsx` gained: `writeGenerationRef`/`applyWriteMirror` (the shared
+race-safety mechanism, substituted into all 22 existing write-mirror
+`setState` calls, no logic change); `hydrateFromBackend(businessId)` (one
+`.select('*')` per domain table — `businesses`, `business_memberships`,
+`products`, `lots`, `inventory_entries`, `inventory_units`, `nfc_tags`,
+`venues`, `events`, `price_overrides`, `sessions`, `sales`, `sale_items`,
+`event_allocations`, `event_allocation_units`, `allocation_movements`,
+`event_assignments` — never `customers`/`claims`, the hard guardrail);
+`resolveActiveBusinessFromAuth()` (resolves this device's real Supabase Auth
+session, Email/Google only, to its `business_memberships` row); a new
+`src/domain/hydrationMapping.ts` (pure snake_case-row → camelCase-entity
+mappers, one per table, kept separate from `store.tsx`'s own orchestration);
+a new transient `hydrationStatus` (`'idle'|'loading'|'ready'|'error'`, never
+persisted). Three triggers: once on mount/session-resolve
+(`state.currentUserId` transition), again on `visibilitychange` → visible,
+again on Resultados' own screen-mount. New UI: `AuthResolving.tsx`
+(`AppRouter.tsx`'s own pre-shell gate for the second-device/cleared-browser
+case — the actual bug this pass exists to fix) and the shared
+`ResolvingState.tsx` (the §3.1/§3.2 near-instant-skeleton/slow-"Un
+momento…" convention every tab's Approved spec already specifies
+identically), wired into `ResultadosScreen.tsx` alongside the
+previously-built-but-unwired `ResultadosLoadError.tsx`. `tsc -b`/
+`npm run build` both clean. Not yet `reviewer`-verified.
+**Business settings persistence layer (`20260914000000_business_settings_writes.sql`,
+`architect`-designed)** — closes the Blocker `reviewer` flagged against the
+read-side hydration pass immediately above: `hydrateFromBackend` wholesale-
+replaces `state.business` from the real `businesses` row on every hydration
+cycle, but seven client-side write functions (`setBusinessIdentity`,
+`acknowledgeOnboarding`, `activatePaidPlan`, `requestDowngradeToFree`,
+`cancelPendingSubscriptionTierChange`, `changeDefaultSellingMode`,
+`markNfcAvailabilityNudgeShown`) still only ever mutated the local mirror,
+so every hydration cycle silently reverted these fields back to their
+`create_business_with_owner`-time defaults. Seven new OWNER-only,
+idempotency-keyed RPCs, same shape as `update_product_price`/
+`update_product_photo`. Client: all seven `store.tsx` functions now return
+`Promise<boolean>` and call the real RPC, applying `applyWriteMirror` only on
+success (`editPrice`/`setProductPhoto`'s own "server-confirmed, then local
+mirror" shape); `requestDowngradeToFree` gained an `effectiveDate: string`
+param, now computed by the caller (`SettingsScreen.tsx`'s `runWrite`) instead
+of inside the store. Call sites updated: `OnboardingFlow.tsx` (demo-path
+`setBusinessIdentity` now awaited and failure-logged;
+`TodoListo`'s `onEnter` was fire-and-forget at this point — corrected in the
+next fix round below); `BusinessIdentity.tsx`
+(`onSaved` now `Promise<boolean>`, a `false` result routes to the already-
+built `saveState('error')` retry branch — genuinely reachable now, not just
+disclosed-but-unwired); `SettingsScreen.tsx` (`runWrite` now async, a `false`
+result routes to the existing `'saving-error'` `SubView` instead of
+unconditionally returning to `'main'`); `useNfcSessionStart.ts`
+(`markNfcAvailabilityNudgeShown` now fire-and-forget, no dedicated retry
+surface for this one-time nudge). `acceptInvitation`/`createInvitation`
+deliberately untouched — a separate, larger gap (no real `create_invitation`
+RPC exists at all) that needs RFC 0013's own token design, out of scope
+here. `tsc -b`/`npm run build` both clean. Not yet `reviewer`-verified.
+**Fix round (`20260914010000_land_pending_subscription_tier.sql`,
+`architect`-designed) — two more issues found in the same hydration-layer
+review:** (1) Blocker — `reconcilePendingSubscriptionTier` (`store.tsx`), the
+mechanism that lands a deferred `subscriptionTier` change once its effective
+date arrives, was still two plain `setState` calls with no RPC at all, so a
+merchant's downgrade never actually took effect in the real database; every
+hydration cycle re-asserted the stale, un-landed row. A new eighth
+OWNER-only, idempotency-keyed RPC, `land_pending_subscription_tier`,
+re-checks the landing condition server-side (never trusted from the client)
+and, if met, atomically flips `subscription_tier` and clears the pending
+triple in one `update` — a harmless no-op otherwise. Client:
+`reconcilePendingSubscriptionTier` keeps its synchronous `justLanded` return
+contract (so the caller can still render §2.4's acknowledgment line on the
+same mount) but now fires the real RPC in the background and
+`applyWriteMirror`s the full flip on success; a failure is logged and left
+for the next natural trigger (the next Configuración mount, or hydration) to
+retry, matching the rest of this hydration layer's own posture. (2)
+Important — `TodoListo`'s "Entrar" tap fired the real
+`acknowledgeOnboarding` RPC with no error/retry state (it had no way to fail
+when this was a synchronous local mock); now gets the same `saving`/error-
+with-retry shape `BusinessIdentity.tsx`'s §3.10a treatment already
+establishes, applied to both trigger paths (the auto-continue timer and the
+manual tap) through one shared `handleEnter`. `tsc -b`/`npm run build` both
+clean. Not yet `reviewer`-verified.
 
 ## What's here
 
@@ -407,6 +493,58 @@ supabase/
                                                              (signature/
                                                              return shape
                                                              unchanged).
+                                                             PUSHED
+                                                             2026-09-14.
+    20260914000000_business_settings_writes.sql              — seven new
+                                                             OWNER-only RPCs
+                                                             closing the
+                                                             read-side
+                                                             hydration
+                                                             wholesale-
+                                                             replace gap
+                                                             (`reviewer`
+                                                             Blocker):
+                                                             update_business_identity/
+                                                             acknowledge_onboarding/
+                                                             activate_paid_plan/
+                                                             request_downgrade_to_free/
+                                                             cancel_pending_subscription_tier_change/
+                                                             change_default_selling_mode/
+                                                             acknowledge_nfc_availability_nudge.
+                                                             PUSHED
+                                                             2026-09-14.
+    20260914010000_land_pending_subscription_tier.sql         — eighth OWNER-only
+                                                             RPC, same fix
+                                                             round: lands a
+                                                             deferred
+                                                             subscriptionTier
+                                                             change once its
+                                                             effective date
+                                                             arrives
+                                                             (server-checked,
+                                                             no-op otherwise).
+                                                             PUSHED
+                                                             2026-09-14.
+    20260914020000_land_pending_subscription_tier_fix.sql     — reviewer
+                                                             hydration-layer
+                                                             fix round 2
+                                                             (Blocker):
+                                                             land_pending_subscription_tier
+                                                             now `returns
+                                                             boolean` (`true`
+                                                             only when its
+                                                             UPDATE actually
+                                                             matched a row)
+                                                             instead of
+                                                             `void`, so the
+                                                             client can tell
+                                                             a genuine land
+                                                             apart from a
+                                                             harmless no-op
+                                                             (e.g. a
+                                                             concurrent
+                                                             cancel already
+                                                             won the race).
                                                              PUSHED
                                                              2026-09-14.
   functions/
@@ -584,6 +722,88 @@ supabase/
     mis-attribute a plain-pool sale to a stale allocation. Merged into a
     single `left join lateral` query so the two can never disagree.
     `tsc -b`/`npm run build` both clean (SQL-only fix, no client change).
+25. ~~**Push the Business settings persistence layer migration**~~ **DONE**
+    2026-09-14 — `20260914000000_business_settings_writes.sql`
+    (`architect`-designed, closing the read-side hydration wholesale-replace
+    gap `reviewer` flagged as a Blocker) applied to the real hosted project
+    via `supabase db push` (same credential as every prior push). Seven new
+    OWNER-only RPCs, same idempotency-keyed shape as
+    `update_product_price`/`update_product_photo`:
+    `update_business_identity`, `acknowledge_onboarding`,
+    `activate_paid_plan`, `request_downgrade_to_free`,
+    `cancel_pending_subscription_tier_change`, `change_default_selling_mode`,
+    `acknowledge_nfc_availability_nudge`. Client wiring complete
+    (`store.tsx`'s seven corresponding write functions now call the real
+    RPCs instead of a local-only mock write; call sites updated in
+    `OnboardingFlow.tsx`, `BusinessIdentity.tsx`, `SettingsScreen.tsx`,
+    `useNfcSessionStart.ts`). `tsc -b`/`npm run build` both clean. Not yet
+    `reviewer`-verified.
+26. ~~**Push the `land_pending_subscription_tier` migration**~~ **DONE**
+    2026-09-14 — `20260914010000_land_pending_subscription_tier.sql`
+    (`architect`-designed, an eighth RPC closing the second hydration-layer
+    gap found in the same fix round as item 25) applied to the real hosted
+    project via `supabase db push` (same credential as every prior push).
+    OWNER-only, idempotency-keyed, same shape as
+    `update_product_price`/`update_product_photo`: re-checks the landing
+    condition (`pending_subscription_tier_effective_date <= current_date`
+    and `pending_subscription_tier is not null`) server-side and, if met,
+    atomically flips `subscription_tier` and clears the pending triple in
+    one `update` — a harmless no-op otherwise. Client:
+    `reconcilePendingSubscriptionTier` (`store.tsx`) now calls this real RPC
+    in the background and `applyWriteMirror`s the flip on success, instead
+    of the two plain `setState` calls it used before; `TodoListo.tsx`'s
+    "Entrar" tap also gained a `saving`/error-with-retry state
+    (`BusinessIdentity.tsx`'s own §3.10a shape), since the
+    `acknowledgeOnboarding` RPC it fires can now genuinely fail. `tsc -b`/
+    `npm run build` both clean. Not yet `reviewer`-verified.
+27. ~~**Push the `land_pending_subscription_tier` return-type fix
+    migration**~~ **DONE** 2026-09-14 —
+    `20260914020000_land_pending_subscription_tier_fix.sql` applied to the
+    real hosted project via `supabase db push`. Closes a real Blocker
+    `reviewer` found in item 26's own RPC: it returned `void`, so
+    `reconcilePendingSubscriptionTier` (`store.tsx`) could not tell "my call
+    actually landed the change" apart from "my call was a harmless no-op
+    because a concurrent `cancel_pending_subscription_tier_change` call
+    already won the race" — on any non-error response it unconditionally
+    applied its own pre-captured tier/effectiveDate to the local mirror, a
+    false-positive about the merchant's own subscription if the cancel
+    actually won. The RPC now `returns boolean` (auth/idempotency-key logic
+    unchanged; the old `void` signature is dropped first, since Postgres
+    won't let `create or replace function` change a return type) — `true`
+    only when its conditional `update` actually matched a row. Client:
+    `reconcilePendingSubscriptionTier` now destructures `data` alongside
+    `error` from the RPC response and only `applyWriteMirror`s the flip when
+    `data === true`; a `false` no-op leaves local state untouched, since the
+    next Configuración mount will re-detect whatever the real state actually
+    is. Also corrected two stale doc comments found in the same pass:
+    `completeOnboarding`'s doc comment describing `setBusinessIdentity` as
+    "still a local-only mock write" (untrue since item 25), and
+    `reconcilePendingSubscriptionTier`'s own doc comment claiming hydration
+    also retries a failed land (it doesn't — only the next Configuración
+    mount does). `tsc -b`/`npm run build` both clean. Not yet
+    `reviewer`-verified.
+28. **UI-layer fix, no migration** — `reviewer`-found Blocker, the fifth in
+    this same hydration-layer area across five review rounds. Item 27 fixed
+    `reconcilePendingSubscriptionTier`'s (`store.tsx`) own domain-state write
+    to gate on the RPC's real `data === true` outcome, but never touched
+    `SettingsScreen.tsx`'s separate local `landed` state, which drives the
+    "Tu plan cambió a {tier} el {date}" banner (settings.md §2.4) and was
+    still set unconditionally off the function's synchronous, optimistic
+    `justLanded` return — before the real RPC outcome was known. If that
+    outcome later resolved `false` (a concurrent "Cancelar cambio pendiente"
+    tap winning the race, or a failed network call — realistic given the
+    target merchants' bazaar connectivity), the banner kept falsely claiming
+    a change that never happened, for the rest of that screen visit. Fix:
+    `reconcilePendingSubscriptionTier` now takes an optional
+    `onSettled?: (landed: boolean) => void`, called with `true` in the same
+    branch that applies `applyWriteMirror` and with `false` in both the
+    no-op branch and the error branch (existing `console.error` logging
+    untouched). `SettingsScreen.tsx`'s call site passes
+    `(landed) => { if (!landed) setLanded(null); }`, preserving the
+    documented same-mount optimistic render for the common (`true`) case
+    while self-correcting within the round-trip window otherwise. No SQL/RPC
+    change — pure client-side fix. `tsc -b`/`npm run build` both clean. Not
+    yet `reviewer`-verified.
 
 ## Judgment calls made building this (tune freely, not escalated)
 
