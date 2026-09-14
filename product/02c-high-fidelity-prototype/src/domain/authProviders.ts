@@ -50,6 +50,22 @@ function getClient(): SupabaseClient | null {
   return cachedClient;
 }
 
+/**
+ * Stage 7 Backend Integration, Phase 0 (Identity persistence layer,
+ * `supabase/migrations/20260913000000_identity_persistence_layer.sql`) —
+ * exported so `store.tsx`'s own real-backend write paths
+ * (`create_business_with_owner`/`accept_invitation` RPC calls) reuse this
+ * one cached client instance rather than constructing a second
+ * `createClient()` against the same Supabase project. Two independent
+ * clients against the same project would each maintain their own GoTrue
+ * auth-state/localStorage handling and risk drifting out of sync with each
+ * other — there is exactly one authenticated session this app ever needs to
+ * track, so there must be exactly one client instance tracking it.
+ */
+export function getSupabaseClient(): SupabaseClient | null {
+  return getClient();
+}
+
 export type ProviderOtpResult = { ok: true } | { ok: false; reason: 'rate-limited' | 'platform-error' };
 
 export type ProviderVerifyResult =

@@ -57,8 +57,19 @@ export function OnboardingFlow() {
 
   useEffect(() => {
     if (preWrite.kind !== 'creating') return;
-    const t = window.setTimeout(() => {
-      completeOnboarding(preWrite.path);
+    let cancelled = false;
+    const t = window.setTimeout(async () => {
+      // Stage 7 Backend Integration, Phase 0 — `completeOnboarding` is now a
+      // real, awaitable Supabase RPC call, not a synchronous local write.
+      // `creating-error` (§3.5a) is no longer a disclosed-but-unreachable
+      // state — a real network/platform failure now lands here for real,
+      // via the same "creating-error" retry the UI already offered.
+      const businessId = await completeOnboarding(preWrite.path);
+      if (cancelled) return;
+      if (!businessId) {
+        setPreWrite({ kind: 'creating-error', path: preWrite.path });
+        return;
+      }
       if (preWrite.path === 'demo') {
         // onboarding.md §11 (narrowed per this pass's own scope decision —
         // see demoSeed.ts): identity + a real, stocked Catalog, no Event,
@@ -69,7 +80,10 @@ export function OnboardingFlow() {
       // No further transition needed here — once `state.business` exists,
       // the branch below takes over on the next render.
     }, CREATE_DELAY_MS);
-    return () => window.clearTimeout(t);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- store actions
     // are recreated every render; gating on `preWrite`'s own identity is
     // what actually controls when this effect re-runs, not those refs.
@@ -168,9 +182,10 @@ export function OnboardingFlow() {
         </ScreenTransition>
       );
     case 'creating-error':
-      // §3.5a — never actually reached in this build (this prototype's
-      // local writes never fail), the same disclosed-not-wired convention
-      // already established for this codebase's other sync-failure states.
+      // §3.5a — Stage 7 Backend Integration, Phase 0: reachable for real now
+      // that `completeOnboarding` is a real Supabase RPC call (a genuine
+      // network failure, an unconfigured Supabase client, or a rejected
+      // Owner-creation precondition all land here).
       return (
         <ScreenTransition transitionKey="creating-error">
           <WritingState

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { makeId } from './id';
 import { addDaysToKey, dateKey, todayKey } from './dates';
 import { sendOtp, verifyOtpCode } from './otpClient';
@@ -36,7 +36,7 @@ import type {
   User,
   Venue,
 } from './types';
-import { resolveGoogleSession, sendEmailCode, signInWithGoogle, verifyEmailCode } from './authProviders';
+import { getSupabaseClient, resolveGoogleSession, sendEmailCode, signInWithGoogle, verifyEmailCode } from './authProviders';
 
 /**
  * Exported (demo-mode.md §8 item 8) so `restartDemo.ts`'s own "clear both
@@ -475,18 +475,23 @@ interface StoreValue {
   resolveGoogleSignIn: () => Promise<
     { status: 'success'; user: User; displayLabel: string | null } | { status: 'cancelled' } | { status: 'error' }
   >;
-  /** onboarding.md §3.5 "Creando tu negocio" — the atomic Owner-creation
-   * write (RFC 0007/D44): creates the Business (capabilities per `path`,
-   * §2.2's table) and an OWNER BusinessMembership in the same state update,
+  /** onboarding.md §3.5 "Creando tu negocio" — Stage 7 Backend Integration,
+   * Phase 0 (`supabase/migrations/20260913000000_identity_persistence_layer.sql`):
+   * a real call to the `create_business_with_owner` SECURITY DEFINER RPC,
+   * which re-implements the Owner-creation invariant server-side (RFC
+   * 0007/D44, amended RFC 0012/D62-63) — creates the Business (capabilities
+   * per `path`, §2.2's table) and an OWNER BusinessMembership atomically,
    * gated on this User holding at least one verified `AuthIdentity`, of any
-   * type (`decision-log.md` D44, amended RFC 0012/D62-63 — was
-   * `currentUser.phoneVerifiedAt != null`, phone-specific, before this
-   * amendment). Returns the new Business's id, or `null` if the
-   * precondition isn't met (defensive — unreachable through the real UI
-   * flow, which never calls this before verification succeeds).
+   * type. Idempotency-keyed: the same client-generated key is reused across
+   * every retry of one logical onboarding attempt (`architecture-principles.md`
+   * #7/D30), never regenerated per call. Resolves to the new Business's id,
+   * or `null` on any rejected/failed outcome (no verified identity, no
+   * Supabase configured, a genuine platform error) — `OnboardingFlow.tsx`
+   * routes a `null` result to its own `'creating-error'` retry state.
    * `Business.name` starts `''` (see types.ts) — identity is a separate,
-   * later write (`setBusinessIdentity`). */
-  completeOnboarding: (path: OnboardingPath) => ID | null;
+   * later write (`setBusinessIdentity`, still a local-only mock write, not
+   * yet part of this Phase 0 pass — see this pass's own build report). */
+  completeOnboarding: (path: OnboardingPath) => Promise<ID | null>;
   /** onboarding.md §3.10 "Guardando tu negocio" — additive identity fields
    * on the already-existing Business (§2.2b), a separate write from
    * `completeOnboarding`'s own capabilities write, per that section's own
@@ -876,6 +881,17 @@ const StoreContext = createContext<StoreValue | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(loadState);
 
+  /** `architecture-principles.md` #7/D30 — the stable idempotency key for
+   * one logical `completeOnboarding` attempt, generated once and reused
+   * unchanged across every retry of that same attempt (`OnboardingFlow.tsx`'s
+   * own `'creating-error'` retry button re-invokes `completeOnboarding` with
+   * no new user action in between). A `ref`, not `state`, since it must
+   * survive re-renders without itself triggering one, and must NOT survive
+   * a genuinely new attempt (cleared to `null` on success, below, so a
+   * later distinct attempt — a different device/session — mints a fresh
+   * key rather than replaying a stale one). */
+  const onboardingIdempotencyKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -1196,24 +1212,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * onboarding.md §3.5 "Creando tu negocio" — the atomic Owner-creation
-   * write (RFC 0007/D44). Gated on a verified `currentUser`, per D44's own
-   * structural invariant: "no Business row can exist without a
-   * corresponding OWNER Membership... enforced by there being exactly one
-   * write path capable of creating a Business at all." `Business.name`
-   * starts `''` (see types.ts) — identity is §3.10's own, separate write.
+   * onboarding.md §3.5 "Creando tu negocio" — Stage 7 Backend Integration,
+   * Phase 0: the atomic Owner-creation write (RFC 0007/D44, amended RFC
+   * 0012/D62-63) now happens server-side, via `create_business_with_owner`
+   * (`supabase/migrations/20260913000000_identity_persistence_layer.sql`),
+   * which re-implements the exact same invariant as its own first
+   * statements (SECURITY DEFINER bypasses RLS by default — the RPC cannot
+   * rely on RLS alone). This function is now a **thin client wrapper**: it
+   * still short-circuits locally when this device's own cached `AppState`
+   * already reflects an owned Business (the identical fast path the old
+   * local-only write already had — no reason to hit the network for a case
+   * already known), calls the RPC otherwise, and folds the *server's*
+   * returned ids into local `AppState` as a client-side mirror — every
+   * other screen in this build still reads Business/Membership state from
+   * `AppState`, not from Supabase directly (that broader "replace local
+   * reads with live queries" pass is out of this Phase 0 dispatch's scope,
+   * named explicitly in this pass's own build report).
    *
-   * Idempotency guard (RFC 0007 §4 / decision-log.md D44): a retry of this
-   * write (e.g. `OnboardingFlow.tsx`'s `'creating-error'` retry button) must
-   * never mint a second `Business`+`OWNER Membership` pair for the same
-   * user — same "never ask twice" posture `startSession` already applies
-   * above. If the current user already has a Business (found via their own
-   * OWNER Membership), short-circuit and hand back that existing id instead
-   * of minting a fresh one.
+   * Idempotency (`architecture-principles.md` #7/D30): reuses one stable
+   * key across every retry of this same logical attempt
+   * (`onboardingIdempotencyKeyRef`, above) — never a fresh key per call,
+   * which would defeat the RPC's own replay-on-conflict guarantee.
    */
-  function completeOnboarding(path: OnboardingPath): ID | null {
+  async function completeOnboarding(path: OnboardingPath): Promise<ID | null> {
     const user = currentUser(state);
-    // RFC 0012/D62-63 — the Owner-creation gate is now "holds at least one
+    // RFC 0012/D62-63 — the Owner-creation gate is "holds at least one
     // verified AuthIdentity, of any type," not phone-specifically. In
     // practice this is never reachable false through the real UI: `user`
     // only resolves at all via `currentUser`/`currentUserId`, which is only
@@ -1227,8 +1250,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (existingMembership && state.business && state.business.id === existingMembership.businessId) {
       return state.business.id;
     }
-    const businessId = makeId('biz');
-    const now = Date.now();
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] completeOnboarding: Supabase not configured. See supabase/README.md.');
+      return null;
+    }
+
+    if (!onboardingIdempotencyKeyRef.current) {
+      onboardingIdempotencyKeyRef.current = crypto.randomUUID();
+    }
+    const idempotencyKey = onboardingIdempotencyKeyRef.current;
+
     // onboarding.md §2.2's capability table — the only three combinations
     // any Onboarding path may ever produce.
     const capabilities: Pick<Business, 'subscriptionTier' | 'defaultSellingMode'> =
@@ -1237,8 +1270,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         : path === 'paid'
           ? { subscriptionTier: 'paid', defaultSellingMode: 'buttons' }
           : { subscriptionTier: 'paid', defaultSellingMode: 'nfc' }; // demo — §2.2's richest combination
+
+    const { data: rawData, error } = await supabase
+      .rpc('create_business_with_owner', {
+        p_idempotency_key: idempotencyKey,
+        p_subscription_tier: capabilities.subscriptionTier,
+        p_default_selling_mode: capabilities.defaultSellingMode,
+      })
+      .single();
+
+    if (error || !rawData) {
+      console.error('[store] create_business_with_owner failed', error);
+      return null;
+    }
+    const data = rawData as { business_id: ID; membership_id: ID };
+    // This logical attempt succeeded — a future, genuinely distinct attempt
+    // (a different device/session) must mint its own fresh key, never
+    // replay this one.
+    onboardingIdempotencyKeyRef.current = null;
+
+    const now = Date.now();
     const business: Business = {
-      id: businessId,
+      id: data.business_id,
       name: '',
       ...capabilities,
       onboardingAcknowledged: false,
@@ -1248,16 +1301,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       nfcAvailabilityNudgeShown: false,
     };
     const membership: BusinessMembership = {
-      id: makeId('mem'),
+      id: data.membership_id,
       userId: user.id,
-      businessId,
+      businessId: data.business_id,
       role: 'OWNER',
       status: 'active',
       revokedAt: null,
       createdAt: now,
     };
     setState((s) => ({ ...s, business, memberships: [...s.memberships, membership] }));
-    return businessId;
+    return data.business_id;
   }
 
   /** onboarding.md §3.10 "Guardando tu negocio" — additive identity fields
