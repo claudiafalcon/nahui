@@ -13,13 +13,15 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
+## Resolved
+
 ### Q20 — Does NFC Readiness's existing "sellable tagged inventory" count need to account for units held by an open `EventAllocation`?
 
 - **Raised by:** `architect`, drafting `product/99-rfc/0009-event-scoped-inventory-allocation.md`'s Open Items, self-identified during the RFC's own analysis rather than found reactively.
 - **Question:** `domain-model.md`'s existing NFC Readiness Key Mechanism (D23) defines its business-wide "sellable tagged inventory" count over `available`-status tagged `InventoryUnit`s. Once `EventAllocation` legitimately holds allocated-but-unsold tagged units in `reserved` status (RFC 0009's own physical-location-exclusivity mechanism), an Event with a large NFC allocation could understate NFC Readiness's own count during that Event's life — even though those units are actively sellable via scan, just scoped to that Event rather than the general pool. NFC Readiness's definition predates `EventAllocation`'s existence and was never evaluated against it.
-- **Status:** Open — not resolved by RFC 0009, not yet evaluated by `architect` as a standalone question. Flagged for a proper `architect` pass once RFC 0009 is Accepted and promoted, rather than left living only inside the RFC's own prose where it risks being lost.
-
-## Resolved
+- **Resolution (2026-09-13, `architect`, re-evaluated during Stage 7 Phase 2b's real schema design, once this stopped being hypothetical):** Resolved by construction, no design change needed. `domain-model.md`'s NFC Readiness Key Mechanism filters strictly on `InventoryUnit.status = available` and is "computed fresh at every Session start and never persisted" — a live read, not a cached/derived count. D59's "Physical-location-exclusivity invariant" confirms both `EventAllocation` commit paths (NFC scan, manual-mode `commitAllocation()`) flip the committed unit's `InventoryUnit.status` from `available` to `reserved` via the existing conditional write, with **no new field or status value added to Inventory's schema** (D57: "the reason a unit is `reserved` is recorded only in Selling's `EventAllocation.allocatedUnitIds`"; `InventoryUnit`'s lifecycle comment was only broadened to name a second legitimate cause of the same `reserved` value). Since NFC Readiness reads the same live `status` field the commit writes to, any unit committed to an open `EventAllocation` is automatically excluded from the count the moment it's committed — regardless of which Membership or physical location opens a subsequent Session. Manual-mode commitment is additionally scoped to `available AND untagged` units only, so it never removes a tagged unit from Readiness's pool in a way Readiness itself wouldn't already reflect. No coordination logic, no cache invalidation, and no cross-context write is needed between Selling and Inventory for this to hold.
+- **Applied:** Documentation-only closure — `domain-model.md`'s existing NFC Readiness and D57/D59 text already fully support this reading; no change to `domain-model.md` itself was needed, only this entry's own resolution.
+- **Status:** Resolved — Architect Decision, no RFC (confirms two already-Accepted mechanisms compose correctly as written; no aggregate boundary, bounded context, or ubiquitous-language term touched).
 
 ### Q19 — Does a same-day "ya vendiste $X hoy" ambient signal (no ambient trust signal for already-recorded sales on a same-day resume) fall inside Q7's existing "thin, ambient, in-progress indicator" allowance?
 
