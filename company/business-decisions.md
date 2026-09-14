@@ -13,8 +13,8 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 - **Raised by:** `product/00-foundation/decision-log.md` D65 (2026-09-13) — barcode scanning was added for a prospective client selling toys with pre-existing manufacturer barcodes. D65 explicitly named this as unresolved: "nothing in the domain model requires gating it... whether Nahui *chooses* to offer it universally or use it as a paid differentiator is pricing/positioning."
 - **Question:** should barcode scanning (Inventory's Registrar Mercancía picker, and Selling's "Venta actual" add-item affordance, `product/02-ux/inventory.md` §3.8/`home.md` §3.9) be available to every merchant regardless of `subscriptionTier`, or reserved as a Paid-tier differentiator — matching the gating class already applied to NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18)?
 - **Resolution (Product Owner, 2026-09-13): Paid-tier only** — same gating class as NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18).
-- **Not yet applied.** Neither `inventory.md` nor `home.md`'s D65 amendment currently gates the "Escanear código de barras" affordance on `subscriptionTier` — both read as universally available today. Applying this resolution needs: a UX amendment (both documents' §3.8/§3.9 sections gain a `subscriptionTier=paid` condition around the scan affordance, matching the existing pattern D27 established for NFC) and a corresponding client-side conditional-render change — not a redesign, but real follow-on work, not yet dispatched.
-- **Status:** Resolved (gating decision); implementation pending.
+- **Resolved and designed** — see `product/02-ux/inventory.md` §2/§3.8/§10 and `product/02-ux/home.md` §2/§3.9/§10 (2026-09-13 amendment). Pending `ux-critic`/`reviewer`, then the corresponding client-side conditional-render change (not yet dispatched).
+- **Status:** Resolved and designed; client-side implementation pending.
 
 ### Q19 — Should Nahui formally incorporate (or otherwise complete full Meta Business Verification) to unlock production WhatsApp OTP delivery?
 

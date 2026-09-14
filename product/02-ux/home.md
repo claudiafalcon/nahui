@@ -198,6 +198,8 @@ Free/Paid-tier open item logged to `company/business-decisions.md`).
 Folded back into Approved. **[see
 home.changelog.md#status-2026-09-13-d65-barcode-scanning]**
 
+**Amended 2026-09-13 (`company/business-decisions.md` Q20 resolved, Product Owner) — barcode scanning gated Paid-tier only, same gating class as NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18).** §2 gains a new capability-derivation paragraph gating §3.9's "Escanear código de barras" row, and its full sub-flow (§3.9a/§3.9a-i/§3.9b/§3.9c), on `Business.subscriptionTier = paid`, resolved once as part of Home's own ambient state load — never per-scan, and independent of `Session.operatingMode`/NFC Readiness (an orthogonal Paid-tier capability, not a Session-mode fact). §3.9 gains a Free-tier wireframe variant (grid minus the scan row); §3.9a/§3.9a-i/§3.9b/§3.9c headers marked Paid-tier-only; §4/§5/§10 corrected to match. No upsell/discoverability copy designed for Free tier — same reasoning as `inventory.md`'s own matching amendment; see that document's §10 for the fuller precedent analysis, not restated twice here. Closes the "Free/Paid-tier open item" this document's own D65 review round logged to `company/business-decisions.md`. Pending `ux-critic`/`reviewer`. **[see home.changelog.md#status-2026-09-13-q20-barcode-scanning-paid-tier-gate]**
+
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -475,6 +477,28 @@ plus the Business's stored `defaultSellingMode` and Selling Mode Capability
 Step 1 (an already-open Session) never re-runs any of this — the resolved
 `Session.operatingMode` is immutable for the remainder of that Session's
 `active` lifecycle.
+
+**Barcode-scanning capability, resolved once, upstream, ambiently — same
+discipline as NFC Readiness above, but a materially simpler check: a pure
+Business-level fact, not a Session-committed one
+(`company/business-decisions.md` Q20, 2026-09-13).** `Business.subscriptionTier
+= paid` gates whether the buttons-mode surface's "Escanear código de
+barras" row (§3.9) exists at all, read once as part of the same ambient
+state load Home already performs on every open — never re-evaluated per
+scan attempt, never a per-tap check. Unlike NFC Readiness, this gate
+writes nothing onto `Session.operatingMode` and needs no separate
+"evaluated ambiently / committed at the tap" split — the affordance
+either renders or it doesn't, for the Session's entire `active`
+lifecycle, the same way the row itself never toggles mid-Session. Same
+gating class as NFC/Frequent Customers/multi-staff SELLER accounts
+(`decision-log.md` D27, D34, `company/business-decisions.md` Q18) —
+orthogonal to `nfc ∈ registrationMode`'s own gate (a Free-tier Business
+fails both derivations, a Paid-tier one passes both, but they gate
+unrelated surfaces: NFC mode vs. barcode scanning inside `buttons` mode).
+A Free-tier Business's §3.9 surface renders with no "Escanear código de
+barras" row at all — not disabled, simply absent, the entire
+§3.9a/§3.9a-i/§3.9b/§3.9c sub-flow unreachable for her, exactly as
+`inventory.md` §2's matching amendment specifies for Elegir producto.
 
 **Price resolution (folded into every tap/scan, `decision-log.md` D33):**
 every time an item is added to "Venta actual" (§3.8/§3.8a — a buttons-mode
@@ -2085,13 +2109,41 @@ Three elements only — confirmation, total, business identity. No future-regist
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
 ```
+
+**Free tier (`Business.subscriptionTier = free`):**
+```
+┌───────────────────────────────┐
+│ Plaza Norte · Día 2         ⚙  │
+│ Hoy: $850 · 6 ventas  [ Cerrar jornada de venta ] │
+├───────────────────────────────┤
+│ Venta actual: (vacía)            │
+│  ┌─────────┐  ┌─────────┐       │
+│  │(B)      │  │(A)      │       │
+│  │ Bolsas  │  │Accesorios│       │
+│  │         │  │         │       │
+│  └─────────┘  └─────────┘       │
+│  ┌─────────┐  ┌─────────┐       │
+│  │   …     │  │   …     │       │
+│  └─────────┘  └─────────┘       │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+Identical to the Paid-tier surface above, minus the "Escanear código de
+barras" row — the tile grid begins immediately below "Venta actual," no
+gap, no placeholder, no upsell copy. §3.9a, §3.9a-i, §3.9b, and §3.9c are
+all unreachable for a Free-tier Business.
+
 - This surface renders whenever `Session.operatingMode = buttons` —
   resolved once, silently in the common case, at the Session-start action
   that opened this Session (§2, §3.6a for the rare visible exception); never
   re-evaluated mid-Session.
-- **"Escanear código de barras" — a second, always-available way to add a
-  Product to "Venta actual," new (`decision-log.md` D65).** Sits directly
-  above the tile grid, inside the same "zona de registro" this section
+- **"Escanear código de barras" — a second way to add a Product to "Venta
+  actual," Paid tier only (new, `decision-log.md` D65; gated
+  `company/business-decisions.md` Q20, 2026-09-13 — see §2).** Available
+  and always-present within a Paid-tier Business's grid; absent entirely,
+  never shown, for a Free-tier Business (see the Free-tier variant above).
+  Sits directly above the tile grid, inside the same "zona de registro" this section
   already defines for `buttons` mode — every other screen state that
   cross-references "zona de registro, según Session.operatingMode" (§3.7,
   §3.8, §3.8a–§3.8d-ii, §3.8b, §3.11/§3.11a's dimmed backdrop, §3.13's
@@ -2238,7 +2290,7 @@ Three elements only — confirmation, total, business identity. No future-regist
   happens" — no tile without a real, defined action behind it.
 - No mode indicator or toggle drawn anywhere. *architecture-principles.md* #1.
 
-### 3.9a Escanear código — coincidencia encontrada (`decision-log.md` D65)
+### 3.9a Escanear código — coincidencia encontrada (`decision-log.md` D65, Paid tier only)
 ```
 Resolves instantly, no confirm screen — camera view closes, item appears
 in "Venta actual" exactly as if she'd tapped its tile:
@@ -2287,7 +2339,7 @@ in "Venta actual" exactly as if she'd tapped its tile:
   (Business-wide or Event-scoped) is a distinct outcome, not covered by
   the four behaviors above — see new §3.9a-i.**
 
-### 3.9a-i Escanear código — coincidencia encontrada, cero disponibles (`decision-log.md` D65)
+### 3.9a-i Escanear código — coincidencia encontrada, cero disponibles (`decision-log.md` D65, Paid tier only)
 ```
 Camera view closes; grid (already rendering, unchanged) briefly shows the
 same self-dismissing ambient message §3.9's own dimmed-tile tap already
@@ -2340,7 +2392,7 @@ está asignada a este evento."
   silently before deciding whether to add anything. No merchant-facing
   "are you sure" moment is added by this branch.
 
-### 3.9b Escanear código — sin coincidencia (`decision-log.md` D65)
+### 3.9b Escanear código — sin coincidencia (`decision-log.md` D65, Paid tier only)
 ```
 ┌───────────────────────────────┐
 │ ← Escanear código                 │
@@ -2374,7 +2426,7 @@ está asignada a este evento."
   section's own sold-out-tile message) — states the fact, names the one
   real next step, never framed as her mistake.
 
-### 3.9c Escanear código — cámara no disponible / no se pudo leer (`decision-log.md` D65)
+### 3.9c Escanear código — cámara no disponible / no se pudo leer (`decision-log.md` D65, Paid tier only)
 ```
 Permiso de cámara denegado — ambient, self-dismissing, reuses the identical
 mechanism already established for the sold-out-tile-tap message and "Venta
@@ -2754,8 +2806,10 @@ with one extra line, not separate states:
 
 Inside selling (3.7-3.10):
   tap/scan product → item added instantly to (implicitly opened) current sale (3.8)
-  → [buttons mode only, new — `decision-log.md` D65] tap "Escanear código
-    de barras" → camera view (reuses inventory.md §3.8b's shape)
+  → [buttons mode only, Paid tier only — row absent entirely for a
+    Free-tier Business, §2/§3.9 — new, `decision-log.md` D65] tap
+    "Escanear código de barras" → camera view (reuses inventory.md
+    §3.8b's shape)
       → barcode matches a known Product → item added instantly, silent,
         identical outcome to a tile tap (3.9a) — no confirm step, see 3.9a
         for why this differs from Inventory's own confirm-on-scan
@@ -2931,13 +2985,13 @@ and back to Hoy):
     own upcoming-assignment card variant (§3.5), mutually exclusive
     alternates of the same slot (`product/99-rfc/0011-event-assignment.md`,
     extended 2026-09-10 to the `scheduled` case)
-40. Session active, `buttons` mode — "Escanear código de barras" affordance in the registration zone (§3.9, D65)
-41. Session active, `buttons` mode — scan resolves to a known Product, silent add (§3.9a, D65)
-42. Session active, `buttons` mode — scan resolves to no Product, dead end toward Inventario (§3.9b, D65)
-43. Session active, `buttons` mode — camera permission denied / scan failed (§3.9c, D65)
+40. Session active, `buttons` mode — "Escanear código de barras" affordance in the registration zone (§3.9, D65, Paid tier only)
+41. Session active, `buttons` mode — scan resolves to a known Product, silent add (§3.9a, D65, Paid tier only)
+42. Session active, `buttons` mode — scan resolves to no Product, dead end toward Inventario (§3.9b, D65, Paid tier only)
+43. Session active, `buttons` mode — camera permission denied / scan failed (§3.9c, D65, Paid tier only)
 44. Session active, `buttons` mode — scan resolves to a known Product
     already at zero available stock, ambient non-add message (§3.9a-i,
-    D65)
+    D65, Paid tier only)
 
 ## 6. Minimum step count
 
@@ -3435,6 +3489,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
   mid-Sale (`decision-log.md` D65, `architecture-principles.md` #6). Never
   forces navigation away from an active Sale. **[see
   home.changelog.md#decisions-d65-barcode-scanning]**
+- **Barcode scanning gated Paid-tier only, resolving `company/business-decisions.md` Q20 (Product Owner, 2026-09-13) — same gating class as NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18).** `Business.subscriptionTier = paid` is checked once, ambiently, as part of Home's own state load (§2) — independent of `Session.operatingMode`, never per-scan. A Free-tier merchant's buttons-mode grid (§3.9) shows no "Escanear código de barras" row; §3.9a/§3.9a-i/§3.9b/§3.9c are unreachable for her. **Chosen posture: gone entirely, no upsell/discoverability copy** — same reasoning `inventory.md` §10's matching decision states in full (this document's own precedent check found nothing to add beyond it: no Home screen state has ever paired a gated capability's missing affordance with an inline upsell — the closest analogue, `reports.md`'s passive "con el plan de pago vas a ver..." card, exists inside a data-summary context this screen doesn't share). D27's own "Ready-but-still-on-botones" discoverability mention (§3.6a) stays scoped to a Paid-tier merchant who already holds `nfc` but hasn't switched to it — it sets no precedent for a Free-tier merchant lacking a capability outright, and none is invented here. **[see home.changelog.md#decisions-q20-barcode-scanning-paid-tier-gate]**
 
 ## 11. Future considerations
 

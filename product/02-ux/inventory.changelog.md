@@ -591,3 +591,28 @@ clean, no regression, one further trivial documentation-hygiene note
 
 Full reasoning lives inline at `status-2026-09-13-d65-barcode-scanning`
 above — this decision was recorded there in full, not restated here.
+
+### status-2026-09-13-q20-barcode-scanning-paid-tier-gate
+**Applies to:** `inventory.md` front matter, §2, §3.8, §3.8a–§3.8e, §4, §5, §10.
+
+Barcode scanning gated Paid-tier only, resolving `company/business-decisions.md`
+Q20 (Product Owner, 2026-09-13) — same gating class as NFC/Frequent
+Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18). §2
+gains a new capability-derivation paragraph: `Business.subscriptionTier =
+paid` gates "Escanear código de barras" (§3.8) and its full sub-flow (§3.8a's
+scan variant, §3.8b–§3.8e), read once as part of the tab's own existing
+state-load list — never per-scan. Chosen posture, grounded in this document
+family's own precedent (`settings.md` §2.7's "Tu equipo," this document's own
+Assign-Tags gate): gone entirely for a Free-tier Business, no upsell/
+discoverability copy — not the different `reports.md` "con el plan de pago
+vas a ver..." pattern, which serves a data-summary context this picker
+doesn't share. §3.8 gains a Free-tier wireframe variant (picker minus the
+scan row); §3.8a/§3.8b/§3.8c/§3.8d/§3.8e headers gain a "(Paid tier only)"
+marker; §4/§5 corrected to match.
+
+### decisions-q20-barcode-scanning-paid-tier-gate
+**Applies to:** `inventory.md` §10.
+
+Full reasoning lives inline at
+`status-2026-09-13-q20-barcode-scanning-paid-tier-gate` above — this
+decision was recorded there in full, not restated here.

@@ -1449,3 +1449,28 @@ dangling changelog anchors, closed by adding this entry). Pending
 
 Full reasoning lives inline at `status-2026-09-13-d65-barcode-scanning`
 above — this decision was recorded there in full, not restated here.
+
+### status-2026-09-13-q20-barcode-scanning-paid-tier-gate
+**Applies to:** `home.md` front matter, §2, §3.9, §3.9a, §3.9a-i, §3.9b,
+§3.9c, §4, §5, §10.
+
+Barcode scanning gated Paid-tier only, resolving `company/business-decisions.md`
+Q20 (Product Owner, 2026-09-13) — same gating class as NFC/Frequent
+Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18). §2
+gains a new capability-derivation paragraph, placed alongside the NFC
+Readiness sub-step: `Business.subscriptionTier = paid` gates §3.9's
+"Escanear código de barras" row and its full sub-flow (§3.9a/§3.9a-i/§3.9b/
+§3.9c), resolved once as part of Home's own ambient state load — never
+per-scan, and independent of `Session.operatingMode`. Chosen posture,
+grounded in `inventory.md`'s own matching amendment and this document
+family's wider precedent: gone entirely for a Free-tier Business, no
+upsell/discoverability copy. §3.9 gains a Free-tier wireframe variant (grid
+minus the scan row); §3.9a/§3.9a-i/§3.9b/§3.9c headers gain a "(Paid tier
+only)" marker; §4/§5 corrected to match.
+
+### decisions-q20-barcode-scanning-paid-tier-gate
+**Applies to:** `home.md` §10.
+
+Full reasoning lives inline at
+`status-2026-09-13-q20-barcode-scanning-paid-tier-gate` above — this
+decision was recorded there in full, not restated here.

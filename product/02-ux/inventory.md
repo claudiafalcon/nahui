@@ -95,6 +95,8 @@ directly by Main; 1 Suggestion, the Free/Paid-tier open item logged to
 `company/business-decisions.md`). Folded back into Approved. **[see
 inventory.changelog.md#status-2026-09-13-d65-barcode-scanning]**
 
+**Amended 2026-09-13 (`company/business-decisions.md` Q20 resolved, Product Owner) — barcode scanning gated Paid-tier only, same gating class as NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18).** §2 gains a new capability-derivation paragraph gating "Escanear código de barras" (§3.8) and its full sub-flow (§3.8a's scan variant, §3.8b–§3.8e) on `Business.subscriptionTier = paid`, resolved once as part of Inventario's own tab-level state load — never per-scan. §3.8 gains a Free-tier wireframe variant (picker minus the scan row, nothing in its place); §3.8a/§3.8b/§3.8c/§3.8d/§3.8e headers marked Paid-tier-only; §4/§5/§10 corrected to match. No discoverability/upsell copy designed for Free tier — grounded directly in this document family's own precedent (`settings.md` §2.7's "Tu equipo," absent entirely on the Free-tier vista principal; this document's own Assign-Tags gate, absent entirely when `nfc ∉ registrationMode`), not the different `reports.md` "con el plan de pago vas a ver…" pattern, which serves a data-summary context this picker doesn't share. Closes the "Free/Paid-tier open item" this document's own D65 review round logged to `company/business-decisions.md`. Pending `ux-critic`/`reviewer`. **[see inventory.changelog.md#status-2026-09-13-q20-barcode-scanning-paid-tier-gate]**
+
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -153,8 +155,9 @@ app does.
 ## 2. Resolution / decision logic
 
 Before any of the following resolves, the tab itself must load its own state
-(Catalog membership, `nfc ∈ registrationMode`, `defaultSellingMode`, pending
-tag counts) — this can
+(Catalog membership, `nfc ∈ registrationMode`, `Business.subscriptionTier` —
+also gating barcode-scanning availability, see below — `defaultSellingMode`,
+pending tag counts) — this can
 fail or take longer than expected under real bazaar/car/between-stalls
 connectivity, same as every other tab. See §3.1/§3.2 for the near-instant/slow
 presentation of that load, and §3.18 for the defensive fallback if it doesn't
@@ -271,6 +274,24 @@ her into it. A Paid merchant with `defaultSellingMode = 'buttons'` still has
 Asignar Tags reachable in principle — she's simply never routed there
 automatically, and §3.5's pending nudge never fires for her, per the
 correction above.
+
+**Barcode-scanning capability gates whether "Escanear código de barras"
+exists at all in Elegir producto (§3.8) — resolved the same way,
+`company/business-decisions.md` Q20, 2026-09-13 Product Owner decision.**
+`Business.subscriptionTier = paid` is the entire gate — same gating class
+as NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md`
+D27, D34, `company/business-decisions.md` Q18) — read once, upstream, as
+part of this tab's own state load above, never re-checked per scan
+attempt or per line. A Free-tier Business never sees the "Escanear código
+de barras" row in §3.8's picker, and §3.8a's scan variant and §3.8b–§3.8e
+don't exist for her — not disabled, not shown-then-blocked, simply
+absent, the identical posture `settings.md` §2.7's "Tu equipo" already
+establishes for a Free-tier merchant and a Paid-only capability. This is
+a distinct fact from `nfc ∈ registrationMode`'s own gate immediately
+above — two independent Paid-tier capabilities, each derived from the
+same `subscriptionTier` field but gating unrelated surfaces (Assign Tags
+vs. barcode scanning); a Free-tier Business fails both, a Paid-tier one
+passes both, and nothing links them beyond sharing one upstream field.
 
 ## 3. Low-fidelity wireframes
 
@@ -942,6 +963,34 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
+
+**Free tier (`Business.subscriptionTier = free`):**
+```
+┌───────────────────────────────┐
+│ ← Inventario                     │  dimmed, visible underneath
+│  Registro de mercancía            │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  ¿Qué llegó?                    │
+│  [ Buscar o escribir… ]          │
+│  ─────────────────────────      │
+│  [ + Agregar "Chalecos" como      │
+│    producto nuevo ]              │
+│                                │
+│  Bolsas                          │
+│  Accesorios                   │
+│  Playeras                      │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+Identical to the Paid-tier picker above, minus the "Escanear código de
+barras" row — nothing replaces it, no gap left in its place, no upsell
+copy. Typed search stays the only way to resolve Producto. §3.8a's "vía
+escaneo, sin coincidencia" variant, §3.8b, §3.8c, §3.8d, and §3.8e are all
+unreachable for a Free-tier Business — not error states, simply
+destinations with no entry point (`company/business-decisions.md` Q20,
+gated the same way `decision-log.md` D27 already gates NFC).
+
 - One field resolves both "add stock of something I already sell" and "this
   is a new item" — no separate "create new Product" screen. Matches
   `decision-log.md` D2: Product is an independent identity that either already
@@ -969,10 +1018,13 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   `defaultPrice` was already set, once, the first time it was created
   (§3.8a) — reused automatically here, matching the same "never ask
   twice" discipline this rule already applies to Product identity itself.
-- **A second, always-available way to resolve Producto: "Escanear código
-  de barras" (new, `decision-log.md` D65).** Sits directly beneath the
-  typed-search field, never replacing it — typing stays the primary,
-  always-present path, and every rule above (case-insensitive/trimmed
+- **A second way to resolve Producto, Paid tier only: "Escanear código de
+  barras" (new, `decision-log.md` D65; gated `company/business-decisions.md`
+  Q20, 2026-09-13 — see §2).** Available and always-present within a
+  Paid-tier Business's picker; absent entirely, never shown, for a
+  Free-tier Business (see the Free-tier variant above). Sits directly
+  beneath the typed-search field, never replacing it — typing stays the
+  primary, always-present path, and every rule above (case-insensitive/trimmed
   matching, "never asked if it's new") is completely unchanged for a
   typed name. Scanning is a faster alternative specifically for
   merchandise that already carries a manufacturer barcode — most useful
@@ -985,7 +1037,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   failed read (§3.8e). Every branch keeps the typed-search field one tap
   away, never a dead end.
 
-### 3.8b Elegir producto — escanear código de barras, cámara activa (`decision-log.md` D65)
+### 3.8b Elegir producto — escanear código de barras, cámara activa (`decision-log.md` D65, Paid tier only)
 ```
 ┌───────────────────────────────┐
 │ ← Elegir producto                 │
@@ -1019,7 +1071,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   barcode symbologies are read.** Build-time concerns for `ui-designer`/
   `architect` once this spec is approved.
 
-### 3.8c Elegir producto — escaneo, coincidencia encontrada (confirmar) (`decision-log.md` D65)
+### 3.8c Elegir producto — escaneo, coincidencia encontrada (confirmar) (`decision-log.md` D65, Paid tier only)
 ```
 ┌───────────────────────────────┐
 │ ← Elegir producto                 │  dimmed, visible underneath
@@ -1074,7 +1126,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
   (§3.4) — reused, not redesigned — giving her a real, recognizable glance
   rather than a bare name she'd have to read carefully to catch a mistake.
 
-### 3.8d Elegir producto — escanear, permiso de cámara denegado (`decision-log.md` D65)
+### 3.8d Elegir producto — escanear, permiso de cámara denegado (`decision-log.md` D65, Paid tier only)
 ```
 ┌───────────────────────────────┐
 │ ← Elegir producto                 │
@@ -1102,7 +1154,7 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 - No retry loop or repeated permission prompt designed here — this
   document specifies behavior, not a permission-request mechanism.
 
-### 3.8e Elegir producto — escanear, no se pudo leer el código (`decision-log.md` D65)
+### 3.8e Elegir producto — escanear, no se pudo leer el código (`decision-log.md` D65, Paid tier only)
 ```
 ┌───────────────────────────────┐
 │ ← Elegir producto                 │
@@ -1197,6 +1249,9 @@ D3: "the merchant still just types a quantity, the platform expands it.")*
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
+- **Paid tier only** — unreachable when `subscriptionTier = free`; the
+  entry point this variant is reached from (§3.8's scan row) doesn't
+  exist for a Free-tier Business (§2).
 - **Reached instead of §3.8's typed-no-match path whenever a scanned
   barcode matches no existing `Product.barcode` in this Business's
   Catalog** (§3.8b) — the identical sheet, the identical atomic
@@ -1516,7 +1571,8 @@ Registrar mercancía (3.6/3.7):
           D33) → tap "Agregar '...'" (disabled until Precio has a value)
           → back to 3.6/3.7, Producto resolved to the new name, Cantidad
           defaulting to 1, exactly as the existing-Product path
-      within Elegir producto (3.8), new (`decision-log.md` D65): tap
+      within Elegir producto (3.8), new (`decision-log.md` D65, Paid tier
+      only — row absent entirely for a Free-tier Business, §2/§3.8): tap
       "Escanear código de barras" → camera view (3.8b)
         → barcode matches an existing Product.barcode → confirm-on-scan
           (3.8c) → "Sí, es este" → back to 3.6/3.7, Producto resolved,
@@ -1590,11 +1646,11 @@ D46 Addendum):
 6. Registrar mercancía — entry (blank or shortcut-prefilled)
 7. Registrar mercancía — with committed lines, editing the next
 8. Elegir producto — picker sheet
-8a. Elegir producto — nuevo producto, precio inicial (D33; gains a "vía escaneo, sin coincidencia" variant, D65)
-8b. Elegir producto — escanear código de barras, cámara activa (D65)
-8c. Elegir producto — escaneo, coincidencia encontrada, confirmar (D65)
-8d. Elegir producto — escanear, permiso de cámara denegado (D65)
-8e. Elegir producto — escanear, no se pudo leer el código (D65)
+8a. Elegir producto — nuevo producto, precio inicial (D33; gains a "vía escaneo, sin coincidencia" variant, D65, Paid tier only)
+8b. Elegir producto — escanear código de barras, cámara activa (D65, Paid tier only)
+8c. Elegir producto — escaneo, coincidencia encontrada, confirmar (D65, Paid tier only)
+8d. Elegir producto — escanear, permiso de cámara denegado (D65, Paid tier only)
+8e. Elegir producto — escanear, no se pudo leer el código (D65, Paid tier only)
 9. Descartar confirmation
 10. Guardar mercancía — saving (near-instant / slow)
 11. Guardar mercancía — error
@@ -1971,6 +2027,7 @@ comparable hard speed requirement — the floor above is about not adding
   trusted going forward the moment she types it; a barcode never earns
   that same standing here, no matter how many times she scans it.
   **[see inventory.changelog.md#decisions-d65-barcode-scanning]**
+- **Barcode scanning gated Paid-tier only, resolving `company/business-decisions.md` Q20 (Product Owner, 2026-09-13) — same gating class as NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18).** `Business.subscriptionTier = paid` is checked once, upstream, as part of this tab's own state load (§2) — never per-scan. A Free-tier merchant's Elegir producto picker (§3.8) shows no "Escanear código de barras" row at all; §3.8a's scan variant and §3.8b–§3.8e are unreachable for her. **Chosen posture: gone entirely, no upsell/discoverability copy** — matches this document family's own existing precedent for a Business capability that isn't relevant to a Free merchant (`settings.md` §2.7's "Tu equipo," absent entirely on the Free-tier vista principal; this document's own Assign-Tags mechanism, absent entirely when `nfc ∉ registrationMode`). **Checked against, and distinguished from, `settings.md` §2.2/§3.3a's own closer precedent for the same NFC/Paid-tier gate** — the "Cómo vendes normalmente" status line there *does* name the paid-only alternative to a Free-tier merchant ("Botones (vender con tags requiere el plan de pago)"), the opposite posture. That line is an always-rendering current-state fact ("how do you sell, right now"), with no analogue for an optional action row like "Escanear código de barras" — the distinction that keeps "gone entirely" correct here despite that closer counter-example existing. Not the different precedent `reports.md` §3.13 uses (a passive "con el plan de pago vas a ver..." card) — that pattern exists specifically to explain an otherwise-confusing missing number inside a data summary Ana is already looking at, not to replace an action affordance in a working list, which is what "Escanear código de barras" is. No proactive "why doesn't this exist" mention designed either: `decision-log.md` D27's own discoverability mention (`home.md` §3.6a's "Ready-but-still-on-botones") is scoped narrowly to a Paid-tier merchant who already holds a capability but hasn't activated it — it has no precedent for, and doesn't extend to, a Free-tier merchant who lacks the capability outright. **[see inventory.changelog.md#decisions-q20-barcode-scanning-paid-tier-gate]**
 
 ## 11. Future considerations
 
