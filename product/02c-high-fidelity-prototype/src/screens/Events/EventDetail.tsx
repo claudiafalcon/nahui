@@ -61,8 +61,13 @@ export function EventDetail({
   const status = eventStatus(event);
   const today = todayKey();
 
-  function handleContinue() {
-    startSession(event!.id); // safe no-op if a Session under this Event is already active
+  async function handleContinue() {
+    // Stage 7 Backend Integration, Phase 2 — startSession is now a real,
+    // awaitable Supabase RPC call; awaited here (unlike the mock's own
+    // always-immediate behavior) so the Session genuinely exists in the
+    // local mirror before navigating — otherwise Home would briefly
+    // re-render with no active Session before the RPC's own response lands.
+    await startSession(event!.id); // safe no-op if a Session under this Event is already active
     onNavigateToHoy();
   }
 
@@ -141,8 +146,8 @@ export function EventDetail({
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
-                cancelEvent(event!.id);
+              onClick={async () => {
+                await cancelEvent(event!.id);
                 onCancelled();
               }}
             >

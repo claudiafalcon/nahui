@@ -5,14 +5,12 @@ import { sendOtp, verifyOtpCode } from './otpClient';
 import {
   actingMembership,
   currentUser,
-  eventAllocationFor,
   eventStatus,
   findMembership,
   myActiveSession,
   nfcCapable,
   nfcReadiness,
   quantityRemaining,
-  saleCancelRevertStatus,
 } from './selectors';
 import type {
   AllocationMovement,
@@ -576,117 +574,155 @@ interface StoreValue {
     | { ok: false; reason: 'queue-empty' }
     | { ok: false; reason: 'platform-error' }
   >;
-  /** events.md §3.6 "Guardar evento" — the atomic Event-creation write.
-   * Resolves `venue` (mint-or-find, `resolveVenue`'s own logic) inside the
-   * same transaction. **The D17 overlap check this write once re-ran
-   * defensively is removed outright, not merely relaxed (`decision-log.md`
-   * D53, Slice 12) — simultaneous multi-Event operation is a real,
-   * supported case now; there is nothing left for this write to reject a
-   * save for.** Always succeeds — returns the new Event's id directly, the
-   * same unwrapped-return shape `commitLot` already uses for a write that
-   * structurally cannot fail in this mock. */
-  createEvent: (fields: {
-    venue: VenueRef;
-    type: EventType;
-    startDate: string;
-    endDate: string;
-    bazaarCost: number;
-  }) => ID;
-  /** events.md §3.12 — sets `cancelledAt`; only meaningful while the
-   * Event's *computed* status is still `scheduled` (§2, §3.11). */
-  cancelEvent: (eventId: ID) => void;
-  /** events.md §3.20 (D33) — writes/updates this Event's Price Override for
-   * one Product. Defensively re-checks the Event's computed status is still
+  /** events.md §3.6 "Guardar evento" — Stage 7 Backend Integration, Phase 2
+   * (`supabase/migrations/20260913040000_selling_persistence_layer.sql`): a
+   * real, idempotency-keyed call to `create_event`, which resolves `venue`
+   * (mint-or-find) and inserts the Event atomically, server-side. **The D17
+   * overlap check this write once re-ran defensively is removed outright,
+   * not merely relaxed (`decision-log.md` D53, Slice 12)** — the server
+   * schema itself carries no overlap/uniqueness constraint across Events.
+   * `idempotencyKey` is supplied by the caller (`NuevoEvento.tsx`'s own
+   * per-attempt ref, mirroring `commitLot`'s fix — the screen already has a
+   * real, disclosed "Reintentar" retry affordance, now genuinely wired).
+   * Resolves to the new Event's id, or `null` on any rejected/failed
+   * outcome. */
+  createEvent: (
+    fields: {
+      venue: VenueRef;
+      type: EventType;
+      startDate: string;
+      endDate: string;
+      bazaarCost: number;
+    },
+    idempotencyKey: string,
+  ) => Promise<ID | null>;
+  /** events.md §3.12 — Stage 7 Backend Integration, Phase 2: a real call to
+   * `cancel_event`, a naturally-idempotent status flip (no client-supplied
+   * key needed). Only meaningful while the Event's *computed* status is
+   * still `scheduled` (§2, §3.11) — re-checked client-side first (a cheap
+   * local no-op) and, authoritatively, again inside the RPC. */
+  cancelEvent: (eventId: ID) => Promise<void>;
+  /** events.md §3.20 (D33) — Stage 7 Backend Integration, Phase 2: a real,
+   * idempotency-keyed call to `set_price_override` (an upsert — "light
+   * idempotency," same posture `update_product_price` already established
+   * in Phase 1). Defensively re-checks the Event's computed status is still
    * `scheduled` at write time (§3.20: "unreachable at all once active, not
    * just hidden") — a no-op if it isn't, never a thrown error, matching this
-   * codebase's existing defensive-guard style (`startSession`, `finalizeSale`). */
-  setPriceOverride: (eventId: ID, productId: ID, overridePrice: number) => void;
-  /** home.md §2 / events.md §2 — `eventId` is optional; omitted (or `null`)
-   * for a Quick Session, exactly as before. **Corrected for Slice 12's
-   * multi-staff scope:** the guard is no longer "any active Session,
-   * Business-wide, blocks a new one" — it's scoped to this device's own
-   * acting Membership (`actingMembership`, `selectors.ts`), since two
-   * different Memberships now genuinely can each hold their own
-   * concurrently-open Session (`product-decisions.md` Q24/Q25). Writes
+   * codebase's existing defensive-guard style (`startSession`, `finalizeSale`),
+   * checked client-side first and, authoritatively, again inside the RPC. */
+  setPriceOverride: (eventId: ID, productId: ID, overridePrice: number) => Promise<void>;
+  /** home.md §2 / events.md §2 — Stage 7 Backend Integration, Phase 2: a
+   * real call to `start_session`, naturally safe under concurrent double-
+   * submission via `ON CONFLICT` against the server's own partial unique
+   * index (D66) — no client-supplied idempotency key needed. `eventId` is
+   * optional; omitted (or `null`) for a Quick Session, exactly as before.
+   * **Slice 12's multi-staff scope:** scoped to this device's own acting
+   * Membership (`actingMembership`, `selectors.ts`), since two different
+   * Memberships now genuinely can each hold their own concurrently-open
+   * Session (`product-decisions.md` Q24/Q25) — writes
    * `Session.openedByMembershipId` (see that field's own `types.ts` doc
-   * comment). **NFC Selling pass (D43):** `overrideToNfc` is Ana's own Limited Ready
+   * comment), a real, permanent column as of D66, not the disclosed
+   * prototype-only crutch that field's own doc comment previously described.
+   * **NFC Selling pass (D43):** `overrideToNfc` is Ana's own Limited Ready
    * override choice (§3.6a's "Usar tags de todos modos"), resolved locally
    * in the UI *before* this tap (`useNfcSessionStart.ts`) and threaded
    * through here — it can't be derived from stored state, since it's a
    * one-off, per-tap choice, never persisted. Defaults to `false` (no
    * override) so every other existing call site stays correct with no
-   * change. `Session.operatingMode` itself is now resolved for real inside
-   * this function (see its own body) rather than hardcoded — the same
-   * "never trust a UI-computed value, recheck defensively at the write"
-   * posture `setPriceOverride` above already establishes. */
-  startSession: (eventId?: ID | null, overrideToNfc?: boolean) => void;
-  /** home.md §3.8a/§3.9 — FIFO tap-to-add (Buttons mode). **Slice 12
-   * additions:** resolves this device's own acting Membership's Session
-   * (`myActiveSession`, never the bare "any active Session" read), stamps
+   * change. `Session.operatingMode` itself is resolved client-side (never
+   * trusting a UI-computed value alone, same posture `setPriceOverride`
+   * above already establishes) and passed to the RPC already-resolved; the
+   * RPC re-checks the one entitlement-relevant boundary server-side ('nfc'
+   * requires `subscriptionTier='paid'`, D27). */
+  startSession: (eventId?: ID | null, overrideToNfc?: boolean) => Promise<void>;
+  /** home.md §3.8a/§3.9 — FIFO tap-to-add (Buttons mode). Stage 7 Backend
+   * Integration, Phase 2: a real, idempotency-keyed call to `add_item_to_sale`
+   * — the FIFO pick (D5), price resolution (D33), Sale mint-or-find, and
+   * SaleItem write all happen atomically server-side now (`FOR UPDATE SKIP
+   * LOCKED`, the same concurrency-safety mechanism
+   * `assignTagToNextPendingUnit` already established in Phase 1), stamping
    * the Sale's own `performedByMembershipId` the moment its first item is
-   * appended (`decision-log.md` D58). **Corrected, RFC 0010/D59:** whenever
-   * this Session's Event has an `open` `EventAllocation` for this Product,
-   * the Physical-location-exclusivity invariant's mechanism (b) is now a
-   * real, row-level `InventoryUnit` reservation, the same class of write NFC
-   * allocation already performs — the sellable candidate is drawn from that
-   * allocation's own `allocatedUnitIds` (oldest-`receivedAt`-first, filtered
-   * to `status='reserved'`), never the plain Business-wide `available` pool,
-   * since a genuinely committed unit is correctly no longer `available` at
-   * all. A Product with no `open` EventAllocation for this Session's Event
-   * still resolves from the plain Business-wide pool exactly as before,
-   * unaffected. Returns `false` (no-op) exactly when no candidate resolves
-   * either way — the identical shape "no FIFO candidate" already returns —
-   * defensively unreachable through the real UI, since the tile itself
-   * already dims to "0 en este evento" at that exact threshold (`home.md`
-   * §3.9), same posture every other guard in this file already applies. */
-  addItemToSale: (productId: ID) => boolean;
-  /** home.md §3.10 — the nfc-mode counterpart to `addItemToSale` above:
-   * resolves the *specific* scanned unit (`tagId` match) rather than
-   * `addItemToSale`'s FIFO oldest-unit selection, reusing its identical
-   * price-resolution/Sale-creation logic otherwise. Mirrors
-   * `assignTagToNextPendingUnit`'s discriminated-result shape. `'no-match'`
-   * covers the genuinely open gap `product/02-ux/product-decisions.md` Q2
-   * names (a scan that matches no `available` tagged unit) — this build
-   * never invents a resolution UI for it (see `Selling.tsx`'s own caller),
-   * only guarantees the write path itself never silently does the wrong
-   * thing. */
+   * appended (`decision-log.md` D58). **Plain Business-wide FIFO only —
+   * `EventAllocation`-aware selection (RFC 0010/D59's own local-only
+   * mechanism) is no longer consulted here; Phase 2b's own not-yet-built
+   * compare-and-swap is what will eventually reconcile the two (confirmed
+   * out of this phase's scope, three independent ways).** `idempotencyKey`
+   * is supplied by the caller (`Selling.tsx`'s own per-product idempotency-
+   * key ref, mirroring `commitLot`'s fix — the single highest-frequency
+   * write in the whole product, so this is where that retry discipline
+   * matters most). Resolves `false` on any rejected/failed outcome (no
+   * local state change happens in that case). */
+  addItemToSale: (productId: ID, idempotencyKey: string) => Promise<boolean>;
+  /** home.md §3.10 — the nfc-mode counterpart to `addItemToSale` above.
+   * Stage 7 Backend Integration, Phase 2: a real call to
+   * `add_item_to_sale_by_tag`, sharing `add_item_to_sale`'s own server-side
+   * logic with one swap: the unit is resolved by the *specific* scanned
+   * `tagId` rather than a FIFO scan. Mirrors `assignTagToNextPendingUnit`'s
+   * discriminated-result shape, and its own fresh-key-per-scan idempotency
+   * treatment (a distinct physical scan is a genuinely new logical attempt,
+   * never a retry of a prior one). `'no-match'` covers the genuinely open
+   * gap `product/02-ux/product-decisions.md` Q2 names (a scan that matches
+   * no `available` tagged unit) — this build never invents a resolution UI
+   * for it (see `Selling.tsx`'s own caller), only guarantees the write path
+   * itself never silently does the wrong thing. */
   addItemToSaleByTag: (
     tagId: string,
-  ) =>
+  ) => Promise<
     | { ok: true; unitId: ID; productId: ID }
     | { ok: false; reason: 'no-active-session' }
-    | { ok: false; reason: 'no-match' };
+    | { ok: false; reason: 'no-match' }
+  >;
   /** home.md §3.8a's "Quitar de la venta" — the single, always-offered tap
    * that resolves a lost-race conflict marker (§3.8a extended, §3.8d-i,
    * §3.8d-ii, `product-decisions.md` Q24/Q25), and the only per-item
    * removal path in this file (`cancelSale` below still clears the whole
-   * open Sale at once — a different, pre-existing action). **Corrected,
-   * RFC 0010/D59:** a unit genuinely still committed to an open
-   * `EventAllocation` (`addItemToSale`'s allocation-linked branch) reverts
-   * to `reserved`, not `available` — it was never released from the Event,
-   * only mid-Sale; flipping it to `available` here would silently reopen
-   * the exact phantom-commitment class of bug this correction exists to
-   * close, via a second write path. A unit that never went through
-   * allocation machinery at all reverts to `available` exactly as before,
-   * unaffected. **Blocker fix (`reviewer`):** "genuinely still committed" is
-   * resolved via `saleCancelRevertStatus`'s most-recent-`AllocationMovement`
-   * derivation (`selectors.ts`), never bare `allocatedUnitIds` array
-   * membership — that array is append-only and never pruned (§11), so a
-   * released-then-legitimately-reconsumed unit would otherwise wrongly
-   * match forever; see that selector's own doc comment for the full
-   * reasoning. Since `quantityRemaining` is now a read-time derivation (RFC
-   * 0010/D59), there is no longer a stored counter to restore or withhold
-   * here — the correct unit-status outcome is the whole story.
-   * **Disclosed:** the condition that ever flags an item this way is itself
-   * never organically produced in this no-backend prototype (see
-   * `addItemToSale`'s own doc comment, and `Selling.tsx`) — a real,
-   * correctly-rendering, disclosed-not-wired branch, the same posture this
-   * codebase already holds for every other state a genuine backend
-   * concurrency mechanism alone can trigger. */
-  removeSaleItem: (saleItemId: ID) => void;
-  cancelSale: () => void;
-  finalizeSale: () => Receipt | null;
-  closeSession: () => void;
+   * open Sale at once — a different, pre-existing action). Stage 7 Backend
+   * Integration, Phase 2: a real call to `remove_sale_item` (naturally
+   * idempotent by id — no client-supplied key needed). **Plain
+   * reserved->available revert only** — RFC 0010/D59's own "still
+   * genuinely committed to an open EventAllocation, revert to `reserved`"
+   * distinction is no longer consulted here, the same Phase 2b scope
+   * boundary `addItemToSale` above now holds. **Disclosed:** the condition
+   * that ever flags an item with the lost-race marker in the first place
+   * is still never organically produced through the real UI (`add_item_to_sale`'s
+   * own `FOR UPDATE SKIP LOCKED` mechanism means two concurrent taps for
+   * the same Product each resolve a genuinely different unit, or a
+   * structurally distinct `out_of_stock` outcome — never a "lost the race
+   * after already added" outcome this marker's own shape expects) — a
+   * real, correctly-rendering, disclosed-not-organically-reachable branch,
+   * the same posture this codebase already holds for every other state a
+   * genuine Phase 2b/2c mechanism alone could eventually trigger. */
+  removeSaleItem: (saleItemId: ID) => Promise<void>;
+  /** home.md §3.8a "Cancelar" — Stage 7 Backend Integration, Phase 2: a real
+   * call to `cancel_sale` (naturally idempotent — no open Sale on this
+   * Session is a no-op — no client-supplied key needed). Same plain
+   * reserved->available revert scope boundary as `removeSaleItem` above.
+   * `saleId` is the specific open Sale the caller captured at the moment
+   * "Cancelar" was tapped (`reviewer` Important finding, fix round 1) —
+   * `cancel_sale` scopes its write to this exact id rather than resolving
+   * "whatever is open right now" server-side, matching `cancelEvent`'s own
+   * explicit-target precedent. */
+  cancelSale: (saleId: ID) => Promise<void>;
+  /** home.md §3.8c/§3.8f "Finalizar Venta" — Stage 7 Backend Integration,
+   * Phase 2: a real, idempotency-keyed call to `finalize_sale` (marks every
+   * sold unit `status='sold'` and the Sale `'finalized'`, atomically,
+   * server-side). `idempotencyKey` is supplied by the caller (`Selling.tsx`'s
+   * own per-attempt ref, mirroring `commitLot`'s fix). `total`/`itemCount`/
+   * the Digital Receipt's own claim-token logic stay a client-side
+   * computation over the already-mirrored `Sale.items`, unchanged. Resolves
+   * `null` on any rejected/failed outcome, same as before. */
+  finalizeSale: (idempotencyKey: string) => Promise<Receipt | null>;
+  /** home.md §3.7 "Cerrar jornada de venta" — Stage 7 Backend Integration,
+   * Phase 2: a real call to `close_session`, a naturally-idempotent status
+   * flip (no client-supplied key needed, matching `cancelEvent`'s own
+   * precedent above). Deliberately does not independently block on an open
+   * Sale — that guarantee lives in the UI flow (`Selling.tsx`'s own
+   * blocked-close sheet), not a new server-side check an approved spec
+   * never called for. `sessionId` is the specific active Session the caller
+   * captured at the moment "Cerrar jornada de venta" was tapped (`reviewer`
+   * Important finding, fix round 1) — same explicit-target scoping as
+   * `cancelSale` above. */
+  closeSession: (sessionId: ID) => Promise<void>;
   /** settings.md §2.2/§3.4 "Activar plan de pago" — immediate: sets
    * `subscriptionTier='paid'` directly, per Q11's own today-illustrative
    * assignment ("she's confirming a payment already arranged"). Reachable
@@ -936,9 +972,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   /**
    * RFC 0012 §4 — the `AuthIdentity` resolution invariant, shared by every
    * credential-verification write path (`verifyOtp`, `verifyEmailOtp`,
-   * `resolveGoogleSignIn`) the exact same way `resolveVenue`
-   * below is shared by its own multiple callers — one mechanism, never
-   * copy-pasted per channel. Three outcomes:
+   * `resolveGoogleSignIn`) — one mechanism, never copy-pasted per channel.
+   * Three outcomes:
    *
    * - `'existing'` — a plain read: this exact `(type, identifier)` already
    *   has an `AuthIdentity` row. Resolves its `userId`, mints nothing.
@@ -964,9 +999,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * decidable, no separate 'last known identity' field needed" reasoning,
    * now generalized to any credential type rather than phone specifically.
    *
-   * Pure, given `s` — never calls `setState` itself, mirroring
-   * `resolveVenue`'s own "resolution helper, not a writer"
-   * shape immediately below.
+   * Pure, given `s` — never calls `setState` itself.
    */
   function resolveAuthIdentity(
     s: AppState,
@@ -1009,27 +1042,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       createdAt: now,
     };
     return { kind: 'new-user', user, identity };
-  }
-
-  /**
-   * events.md §3.7 — mint-or-find resolution for a Venue picked/typed in
-   * Elegir lugar: given a `VenueRef`, either
-   * resolve it to an already-real Venue's id, or mint a brand-new one.
-   * `existing` is trusted as-is (the picker already resolved which Venue
-   * she tapped). `new` re-applies the same case-insensitive/trimmed match
-   * the picker's own UI already used to decide to show "+ Agregar... como
-   * lugar nuevo" in the first place (§3.7's matching rule) — a second,
-   * defensive check here rather than trusting the UI layer's classification
-   * alone, so two callers can never mint two different Venues for what's
-   * actually the same trimmed name typed a second time.
-   */
-  function resolveVenue(ref: VenueRef, existingVenues: Venue[]): { venueId: ID; newVenue: Venue | null } {
-    if (ref.kind === 'existing') return { venueId: ref.venueId, newVenue: null };
-    const trimmed = ref.displayName.trim();
-    const match = existingVenues.find((v) => v.displayName.trim().toLowerCase() === trimmed.toLowerCase());
-    if (match) return { venueId: match.id, newVenue: null };
-    const venue: Venue = { id: makeId('venue'), displayName: trimmed };
-    return { venueId: venue.id, newVenue: venue };
   }
 
   /**
@@ -1438,72 +1450,42 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * Shared Price resolution (D33, domain-model.md "Price resolution") —
-   * extracted so `addItemToSale` (Buttons mode) and `addItemToSaleByTag`
-   * (nfc mode) resolve "what does this Sale item cost" through exactly one
-   * mechanism, mirroring the `resolveVenue` extraction pattern
-   * above rather than two independently-built, copy-pasted implementations
-   * of the same domain rule (fix round, `docs/passes/slice-7-nfc-selling.md`
-   * — a `reviewer`-caught Important finding: the two write paths previously
-   * each reimplemented this lookup separately, despite doc comments already
-   * describing it as "reuse"). Returns `null` only when `productId` doesn't
-   * resolve to a real Product — defensively unreachable through the real UI,
-   * same posture every other guard in this file already applies.
+   * Stage 7 Backend Integration, Phase 2 — shared local-mirror update for
+   * `addItemToSale`/`addItemToSaleByTag`, both of which now resolve the
+   * actual FIFO/tag pick, price, Sale mint-or-find, and SaleItem write
+   * entirely server-side (`add_item_to_sale`/`add_item_to_sale_by_tag`).
+   * This is the one remaining piece those two functions still own
+   * client-side: folding the RPC's own real, server-assigned ids into the
+   * local `AppState` mirror every other screen in this build still reads
+   * from (the same "server is truth, fold the result into the local mirror"
+   * posture `commitLot`/`completeOnboarding` already established) — find-or-
+   * create the local `Sale` row by its real `sale_id` (mint-or-find can
+   * legitimately replay an already-mirrored Sale on a retried tap), append
+   * the new `SaleItem` by its real `sale_item_id`/`unit_id`, and flip that
+   * unit's local mirror to `'reserved'`. Pure, given `s` — called from
+   * inside each caller's own `setState` updater, never calling `setState`
+   * itself.
    */
-  function resolvePricePaid(s: AppState, session: Session, productId: ID): number | null {
-    const product = s.products.find((p) => p.id === productId);
-    if (!product) return null;
-    const override = session.eventId
-      ? s.priceOverrides.find((po) => po.eventId === session.eventId && po.productId === productId)
-      : undefined;
-    return override?.overridePrice ?? product.defaultPrice;
-  }
-
-  /**
-   * Shared "find-or-create this Session's open Sale, append one SaleItem,
-   * mark the sold InventoryUnit reserved" write — the other half of the
-   * `addItemToSale`/`addItemToSaleByTag` extraction (see
-   * `resolvePricePaid` above for the full rationale). Pure, given the
-   * current state `s` — same shape as `resolveVenue`: called
-   * from inside each caller's own `setState` updater, never calling
-   * `setState` itself, so both write paths still go through exactly one
-   * `setState` call each (no behavior change to when/how state actually
-   * commits).
-   *
-   * `performedByMembershipId` (`decision-log.md` D58, Slice 12) stamps a
-   * newly-created open Sale's own attribution — never touched again once
-   * set, since every item a Sale ever accumulates is added by whichever
-   * Membership opened its own Session (`Session.openedByMembershipId`'s own
-   * doc comment, `types.ts`).
-   *
-   * **Corrected, RFC 0010/D59:** no longer touches `EventAllocation` at
-   * all. Under the old, now-retired counter mechanism, this function
-   * decremented `EventAllocation.quantityRemaining` by one whenever the
-   * caller supplied a `consumeEventAllocationId`. `quantityRemaining` is now
-   * a read-time derivation (`selectors.ts`) — flipping this unit's own
-   * `status` to `'reserved'` below (a no-op when it's already `'reserved'`
-   * because `addItemToSale`'s allocation-linked branch already drew it from
-   * a committed, `'reserved'` unit) is what makes the derived count fall by
-   * exactly one, for free, with nothing else to write.
-   */
-  function appendItemToOpenSale(
+  function mirrorAddedSaleItem(
     s: AppState,
     sessionId: ID,
     productId: ID,
-    unitId: ID,
-    pricePaid: number,
+    row: { sale_id: ID; sale_item_id: ID; unit_id: ID; price_paid: number },
     performedByMembershipId: ID,
-  ): Pick<AppState, 'sales' | 'units'> {
+  ): AppState {
     let sales = s.sales;
-    let sale = sales.find((sa) => sa.sessionId === sessionId && sa.status === 'open');
+    let sale = sales.find((sa) => sa.id === row.sale_id);
     if (!sale) {
-      sale = { id: makeId('sale'), sessionId, items: [], status: 'open', performedByMembershipId };
+      sale = { id: row.sale_id, sessionId, items: [], status: 'open', performedByMembershipId };
       sales = [...sales, sale];
     }
-    const item: SaleItem = { id: makeId('item'), productId, unitId, pricePaid };
+    if (sale.items.some((i) => i.id === row.sale_item_id)) {
+      return s; // already mirrored (a replayed idempotent result)
+    }
+    const item: SaleItem = { id: row.sale_item_id, productId, unitId: row.unit_id, pricePaid: row.price_paid };
     sales = sales.map((sa) => (sa.id === sale!.id ? { ...sa, items: [...sa.items, item] } : sa));
-    const units = s.units.map((u) => (u.id === unitId ? { ...u, status: 'reserved' as InventoryUnitStatus } : u));
-    return { sales, units };
+    const units = s.units.map((u) => (u.id === row.unit_id ? { ...u, status: 'reserved' as InventoryUnitStatus } : u));
+    return { ...s, sales, units };
   }
 
   /**
@@ -1622,26 +1604,55 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * events.md §3.6 "Guardar evento" — the atomic Event-creation write:
-   * resolves the pending Venue selection (mint-or-find, `resolveVenue`)
-   * inside the same transaction. **D17's own overlap rule, once re-checked
-   * defensively here, is removed outright (`decision-log.md` D53, Slice
-   * 12) — pure code-debt deletion, not new design work: D53 confirmed the
-   * restriction was never a business-capacity rule, only a now-obsolete
-   * single-actor `home.md` resolution safeguard, and simultaneous
-   * multi-Event operation is a real, supported case now.** Always
-   * succeeds — returns the new Event's id directly.
+   * events.md §3.6 "Guardar evento" — Stage 7 Backend Integration, Phase 2
+   * (`supabase/migrations/20260913040000_selling_persistence_layer.sql`): a
+   * real, idempotency-keyed call to `create_event`, which resolves the
+   * pending Venue selection (mint-or-find, server-side, replacing the
+   * previous client-side `resolveVenue`) and inserts the Event atomically.
+   * **D17's own overlap rule, once re-checked defensively here, is removed
+   * outright (`decision-log.md` D53, Slice 12)** — the server schema itself
+   * carries no overlap/uniqueness constraint across Events, matching that
+   * same, already-settled call. Resolves to the new Event's id, or `null`
+   * on any rejected/failed outcome (`NuevoEvento.tsx` routes a `null` result
+   * to its own, previously-disclosed-not-wired `'error'` retry state).
    */
-  function createEvent(fields: {
-    venue: VenueRef;
-    type: EventType;
-    startDate: string;
-    endDate: string;
-    bazaarCost: number;
-  }): ID {
-    const { venueId, newVenue } = resolveVenue(fields.venue, state.venues);
+  async function createEvent(
+    fields: {
+      venue: VenueRef;
+      type: EventType;
+      startDate: string;
+      endDate: string;
+      bazaarCost: number;
+    },
+    idempotencyKey: string,
+  ): Promise<ID | null> {
+    if (!state.business) return null;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] createEvent: Supabase not configured. See supabase/README.md.');
+      return null;
+    }
+    const { data, error } = await supabase
+      .rpc('create_event', {
+        p_business_id: state.business.id,
+        p_idempotency_key: idempotencyKey,
+        p_venue_id: fields.venue.kind === 'existing' ? fields.venue.venueId : null,
+        p_venue_display_name: fields.venue.kind === 'new' ? fields.venue.displayName : null,
+        p_type: fields.type,
+        p_start_date: fields.startDate,
+        p_end_date: fields.endDate,
+        p_bazaar_cost: fields.bazaarCost,
+      })
+      .single();
+
+    if (error || !data) {
+      console.error('[store] create_event failed', error);
+      return null;
+    }
+
+    const { event_id: eventId, venue_id: venueId } = data as { event_id: ID; venue_id: ID };
     const event: Event = {
-      id: makeId('event'),
+      id: eventId,
       venueId,
       type: fields.type,
       startDate: fields.startDate,
@@ -1651,37 +1662,74 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
     setState((s) => ({
       ...s,
-      venues: newVenue ? [...s.venues, newVenue] : s.venues,
+      venues: s.venues.some((v) => v.id === venueId)
+        ? s.venues
+        : [...s.venues, { id: venueId, displayName: fields.venue.kind === 'new' ? fields.venue.displayName.trim() : '' }],
       events: [...s.events, event],
     }));
     return event.id;
   }
 
   /** events.md §3.12/§2 — the only merchant-initiated Event transition.
-   * Meaningful only while the Event's computed status is still `scheduled`
-   * (§3.11: "Cancelar evento" is offered only on that detail screen) — a
-   * defensive no-op otherwise, never a thrown error, matching this
-   * codebase's existing guard style. */
-  function cancelEvent(eventId: ID) {
-    setState((s) => {
-      const event = s.events.find((e) => e.id === eventId);
-      if (!event || eventStatus(event, Date.now()) !== 'scheduled') return s;
-      return { ...s, events: s.events.map((e) => (e.id === eventId ? { ...e, cancelledAt: Date.now() } : e)) };
+   * Stage 7 Backend Integration, Phase 2: a real call to `cancel_event`, a
+   * naturally-idempotent status flip (no client-supplied idempotency key
+   * needed, matching `revoke_membership`'s own precedent). Meaningful only
+   * while the Event's computed status is still `scheduled` — re-checked
+   * client-side first (a cheap local no-op, skipping the network round trip
+   * for the unreachable-through-the-real-UI case) and, authoritatively,
+   * again inside the RPC itself, which never trusts this client-side check
+   * alone. */
+  async function cancelEvent(eventId: ID): Promise<void> {
+    if (!state.business) return;
+    const event = state.events.find((e) => e.id === eventId);
+    if (!event || eventStatus(event, Date.now()) !== 'scheduled') return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] cancelEvent: Supabase not configured. See supabase/README.md.');
+      return;
+    }
+    const { error } = await supabase.rpc('cancel_event', {
+      p_business_id: state.business.id,
+      p_event_id: eventId,
     });
+    if (error) {
+      console.error('[store] cancel_event failed', error);
+      return;
+    }
+    setState((s) => ({
+      ...s,
+      events: s.events.map((e) => (e.id === eventId ? { ...e, cancelledAt: Date.now() } : e)),
+    }));
   }
 
   /** events.md §3.20 (D33) — writes/updates one Product's Price Override for
-   * one Event. Defensively re-checks the Event's computed status is still
-   * `scheduled` at write time — "Ajustar precios" is offered only on the
-   * scheduled detail screen (§3.11), and §3.20 is explicit that this
-   * capability is "unreachable at all once active, not just hidden," so the
-   * write path itself must not trust that the UI never got there some other
-   * way. Upserts: replaces this (eventId, productId) pair's row if one
-   * exists, else appends — never two rows for the same pair. */
-  function setPriceOverride(eventId: ID, productId: ID, overridePrice: number) {
+   * one Event. Stage 7 Backend Integration, Phase 2: a real, idempotency-
+   * keyed call to `set_price_override` (an upsert — "light idempotency,"
+   * same posture `update_product_price` already established in Phase 1, no
+   * cached-result replay branch). Defensively re-checks the Event's computed
+   * status is still `scheduled` client-side first, and again, authoritatively,
+   * inside the RPC. */
+  async function setPriceOverride(eventId: ID, productId: ID, overridePrice: number): Promise<void> {
+    if (!state.business) return;
+    const event = state.events.find((e) => e.id === eventId);
+    if (!event || eventStatus(event, Date.now()) !== 'scheduled') return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] setPriceOverride: Supabase not configured. See supabase/README.md.');
+      return;
+    }
+    const { error } = await supabase.rpc('set_price_override', {
+      p_business_id: state.business.id,
+      p_event_id: eventId,
+      p_product_id: productId,
+      p_idempotency_key: crypto.randomUUID(),
+      p_override_price: overridePrice,
+    });
+    if (error) {
+      console.error('[store] set_price_override failed', error);
+      return;
+    }
     setState((s) => {
-      const event = s.events.find((e) => e.id === eventId);
-      if (!event || eventStatus(event, Date.now()) !== 'scheduled') return s;
       const exists = s.priceOverrides.some((po) => po.eventId === eventId && po.productId === productId);
       const priceOverrides = exists
         ? s.priceOverrides.map((po) =>
@@ -1692,222 +1740,270 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function startSession(eventId: ID | null = null, overrideToNfc: boolean = false) {
+  /**
+   * home.md §2 — Stage 7 Backend Integration, Phase 2: a real call to
+   * `start_session`, naturally safe under concurrent double-submission via
+   * `ON CONFLICT` against the server's own `sessions_one_active_per_
+   * membership_idx` (D66) — no client-supplied idempotency key needed. NFC
+   * Readiness/Session-start resolution (home.md §2, `decision-log.md` D23)
+   * stays a client-side computation (unchanged) — `operatingMode` is
+   * resolved here, defensively, from the current local `state` (never
+   * trusting a UI-computed value, same posture this function always held)
+   * and passed to the RPC already-resolved; the RPC itself re-checks the one
+   * entitlement-relevant boundary server-side (`'nfc'` requires
+   * `subscriptionTier='paid'`, D27), correcting silently if the local mirror
+   * were ever stale. `overrideToNfc` is Ana's own per-tap choice, threaded
+   * through unchanged (no other honest source, see this function's own
+   * `StoreValue` doc comment).
+   */
+  async function startSession(eventId: ID | null = null, overrideToNfc: boolean = false): Promise<void> {
+    if (!state.business) return; // defensive — Home only mounts once onboarding is complete
+    const membership = actingMembership(state);
+    if (!membership) return; // defensive — Home only mounts once a valid acting Membership resolves
+    // "Never ask twice" — a cheap local fast-path, skipping the network
+    // round trip entirely when this device already knows its own Session is
+    // open; the server's own partial unique index is the real, authoritative
+    // guarantee regardless (see `start_session`'s own comment).
+    if (state.sessions.some((sess) => sess.status === 'active' && sess.openedByMembershipId === membership.id)) {
+      return;
+    }
+
+    const capability = nfcCapable(state);
+    const readiness = nfcReadiness(state);
+    const defaultMode = state.business.defaultSellingMode;
+
+    let operatingMode: SessionOperatingMode = 'buttons';
+    if (defaultMode === 'nfc' && capability) {
+      if (readiness === 'ready') operatingMode = 'nfc';
+      else if (readiness === 'limited' && overrideToNfc) operatingMode = 'nfc';
+      // 'not-ready', or 'limited' without an override, both stay 'buttons'
+      // — an operational impossibility/a recommendation she didn't
+      // override, never a merchant-facing error (home.md §3.6a).
+    }
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] startSession: Supabase not configured. See supabase/README.md.');
+      return;
+    }
+    const { data, error } = await supabase
+      .rpc('start_session', {
+        p_business_id: state.business.id,
+        p_event_id: eventId,
+        p_operating_mode: operatingMode,
+      })
+      .single();
+
+    if (error || !data) {
+      console.error('[store] start_session failed', error);
+      return;
+    }
+
+    const row = data as { session_id: ID; event_id: ID | null; operating_mode: SessionOperatingMode; opened_at: string };
     setState((s) => {
-      if (!s.business) return s; // defensive — Home only mounts once onboarding is complete
-      const membership = actingMembership(s);
-      if (!membership) return s; // defensive — Home only mounts once a valid acting Membership resolves
-      // Slice 12 — scoped to this acting Membership, never "any active
-      // Session, Business-wide" (see this function's own StoreValue doc
-      // comment): two different Memberships now genuinely can each hold
-      // their own concurrently-open Session.
-      if (s.sessions.some((sess) => sess.status === 'active' && sess.openedByMembershipId === membership.id)) {
-        return s; // never ask twice
-      }
-
-      // NFC Readiness / Session-start resolution (home.md §2, decision-log.md
-      // D23) — committed only here, at the Session-start tap, since
-      // `Session` doesn't exist to write it onto any earlier. Computed
-      // defensively from `s` (never trusting a UI-computed value, same
-      // posture `setPriceOverride` above already establishes) rather than
-      // any value passed in — the one exception is `overrideToNfc` itself,
-      // which is genuinely a per-tap merchant choice with no other honest
-      // source (see this function's own `StoreValue` doc comment).
-      const capability = nfcCapable(s);
-      const readiness = nfcReadiness(s);
-      const defaultMode = s.business.defaultSellingMode;
-
-      let operatingMode: SessionOperatingMode = 'buttons';
-      if (defaultMode === 'nfc' && capability) {
-        if (readiness === 'ready') operatingMode = 'nfc';
-        else if (readiness === 'limited' && overrideToNfc) operatingMode = 'nfc';
-        // 'not-ready', or 'limited' without an override, both stay 'buttons'
-        // — an operational impossibility/a recommendation she didn't
-        // override, never a merchant-facing error (home.md §3.6a).
-      }
-
+      if (s.sessions.some((sess) => sess.id === row.session_id)) return s; // already mirrored (a replayed mint-or-find)
       const session: Session = {
-        id: makeId('sess'),
-        eventId,
-        operatingMode,
+        id: row.session_id,
+        eventId: row.event_id,
+        operatingMode: row.operating_mode,
         status: 'active',
-        openedAt: Date.now(),
+        openedAt: new Date(row.opened_at).getTime(),
         openedByMembershipId: membership.id,
       };
       return { ...s, sessions: [...s.sessions, session] };
     });
   }
 
-  function addItemToSale(productId: ID): boolean {
+  /**
+   * home.md §3.8a/§3.9 — FIFO tap-to-add (Buttons mode). Stage 7 Backend
+   * Integration, Phase 2 (`supabase/migrations/
+   * 20260913040000_selling_persistence_layer.sql`): a real, idempotency-
+   * keyed call to `add_item_to_sale` — the FIFO pick, price resolution, Sale
+   * mint-or-find, and SaleItem write all happen atomically server-side now
+   * (`FOR UPDATE SKIP LOCKED`, the same concurrency-safety mechanism
+   * `assign_tag_to_next_pending_unit` already established in Phase 1),
+   * replacing this function's previous client-side FIFO scan/price
+   * resolution/local Sale-append logic entirely.
+   *
+   * **`EventAllocation`-aware selection is no longer consulted here.** The
+   * RPC performs plain Business-wide FIFO only (Phase 2's own explicit scope
+   * boundary — EventAllocation/AllocationMovement are Phase 2b, confirmed
+   * out of scope three independent ways). `EventAllocation`'s own "Para este
+   * evento" bookkeeping (`commitAllocation`/`releaseAllocation`/
+   * `saveEventAllocations`, the Events screens that read it) remains an
+   * entirely local, display/planning-only concept in this build — not yet
+   * enforced by the real selling write, exactly as Phase 2b's own not-yet-
+   * built compare-and-swap is what will eventually reconcile the two.
+   *
+   * `idempotencyKey` is supplied by the caller (`Selling.tsx`'s own
+   * per-product idempotency-key ref, mirroring `commitLot`'s own fix) — one
+   * key per logical tap, reused unchanged across a retry of that same tap.
+   * Resolves `true` on success, `false` on any rejected/failed outcome (no
+   * local state change happens in that case).
+   */
+  async function addItemToSale(productId: ID, idempotencyKey: string): Promise<boolean> {
+    if (!state.business) return false; // defensive — Selling only mounts once onboarding is complete
     const membership = actingMembership(state);
     if (!membership) return false; // defensive — Selling only mounts once a valid acting Membership resolves
     const session = myActiveSession(state, membership.id);
     if (!session) return false;
-    // Defensive re-check (fix round, `docs/passes/slice-7-nfc-selling.md`,
-    // reviewer Suggestion) — the `'buttons'` grid is only ever rendered
-    // while `Session.operatingMode === 'buttons'` (`Selling.tsx`'s own
-    // exclusive-zone branch), so this is unreachable through the real UI,
-    // but never trust a UI-computed value alone, same posture
-    // `setPriceOverride`/`startSession` already apply elsewhere in this file.
-    if (session.operatingMode !== 'buttons') return false;
-
-    // Physical-location-exclusivity invariant, mechanism (b) — corrected,
-    // RFC 0010/D59: a committed unit is now a real, row-level
-    // `InventoryUnit` reservation, the same class of write NFC allocation
-    // already performs — not a disconnected counter compare-and-swap. A
-    // Product with no `open` EventAllocation for this Session's Event
-    // resolves from the plain Business-wide pool exactly as before,
-    // unaffected — `eventAllocation` is `undefined` in that case.
-    const eventAllocation = session.eventId ? eventAllocationFor(state, session.eventId, productId) : undefined;
-
-    let candidate: InventoryUnit | undefined;
-    if (eventAllocation) {
-      // The sellable candidate is drawn from this allocation's own
-      // committed set — never the plain Business-wide `available` filter
-      // below, since a genuinely committed unit is correctly no longer
-      // `available` at all (it was already flipped to `reserved` by
-      // `commitAllocation`). Oldest-`receivedAt`-first, same FIFO ordering
-      // as the uncommitted general pool.
-      const unitsById = new Map(state.units.map((u) => [u.id, u]));
-      candidate = eventAllocation.allocatedUnitIds
-        .map((id) => unitsById.get(id))
-        .filter((u): u is InventoryUnit => u != null && u.status === 'reserved')
-        .sort((a, b) => a.receivedAt - b.receivedAt)[0];
-    } else {
-      // FIFO allocation, Buttons mode (decision-log.md D5): oldest available
-      // InventoryUnit for this Product, automatically, no merchant decision.
-      candidate = state.units
-        .filter((u) => u.productId === productId && u.status === 'available')
-        .sort((a, b) => a.receivedAt - b.receivedAt)[0];
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] addItemToSale: Supabase not configured. See supabase/README.md.');
+      return false;
     }
-    if (!candidate) return false;
+    const { data, error } = await supabase
+      .rpc('add_item_to_sale', {
+        p_business_id: state.business.id,
+        p_product_id: productId,
+        p_idempotency_key: idempotencyKey,
+      })
+      .single();
 
-    // Price resolution (D33, domain-model.md "Price resolution") — shared
-    // with `addItemToSaleByTag` via `resolvePricePaid` (see that function's
-    // own doc comment for why this is now one implementation, not two).
-    const pricePaid = resolvePricePaid(state, session, productId);
-    if (pricePaid == null) return false;
+    if (error || !data) {
+      console.error('[store] add_item_to_sale failed', error);
+      return false;
+    }
 
-    const resolvedCandidate = candidate;
-    setState((s) => ({
-      ...s,
-      ...appendItemToOpenSale(s, session.id, productId, resolvedCandidate.id, pricePaid, membership.id),
-    }));
+    const row = data as { sale_id: ID; sale_item_id: ID; unit_id: ID; price_paid: number };
+    setState((s) => mirrorAddedSaleItem(s, session.id, productId, row, membership.id));
     return true;
   }
 
   /**
-   * home.md §3.10 — nfc-mode's own registration write, sharing
-   * `addItemToSale` above's price-resolution/Sale-creation logic through the
-   * `resolvePricePaid`/`appendItemToOpenSale` helpers (fix round,
-   * `docs/passes/slice-7-nfc-selling.md` — see those helpers' own doc
-   * comments; this was previously a second, independently-written copy of
-   * the same logic, not an actual shared code path) with one swap: the unit
-   * is resolved by the *specific* scanned `tagId`
-   * (`u.tagId === tagId && u.status === 'available'`) rather than FIFO's
-   * oldest-available-for-this-Product selection — there is no Product to
-   * select by here, only a physical tag already tied to exactly one unit.
+   * home.md §3.10 — nfc-mode's own registration write. Stage 7 Backend
+   * Integration, Phase 2: a real call to `add_item_to_sale_by_tag`, sharing
+   * `add_item_to_sale`'s own server-side logic with one swap: the unit is
+   * resolved by the *specific* scanned `tagId` rather than a FIFO scan.
    * `'no-match'` is `product/02-ux/product-decisions.md` Q2's own genuinely
    * open gap (a scan matching no `available` tagged unit) — this function
    * only guarantees that case is never silently mishandled; it does not
    * invent a resolution UI for it (see `Selling.tsx`'s own caller/disclosure).
+   * A fresh idempotency key per scan (not reused across separate scans —
+   * generated inline here, same posture `assignTagToNextPendingUnit`
+   * already holds for its own per-scan key), since a distinct physical scan
+   * is a genuinely new logical attempt, never a retry of a prior one.
    */
-  function addItemToSaleByTag(
+  async function addItemToSaleByTag(
     tagId: ID,
-  ):
+  ): Promise<
     | { ok: true; unitId: ID; productId: ID }
     | { ok: false; reason: 'no-active-session' }
-    | { ok: false; reason: 'no-match' } {
+    | { ok: false; reason: 'no-match' }
+  > {
+    if (!state.business) return { ok: false, reason: 'no-active-session' };
     const membership = actingMembership(state);
     if (!membership) return { ok: false, reason: 'no-active-session' };
     const session = myActiveSession(state, membership.id);
     if (!session) return { ok: false, reason: 'no-active-session' };
-    // Defensive re-check (fix round, reviewer Suggestion — same posture as
-    // `addItemToSale`'s own re-check above): the `NFCScanPrompt` surface is
-    // only ever rendered while `Session.operatingMode === 'nfc'`
-    // (`Selling.tsx`'s own exclusive-zone branch), so this is unreachable
-    // through the real UI. No dedicated reason code exists for "wrong mode"
-    // — `'no-match'` already reads correctly here ("this scan can't resolve
-    // to a sellable item right now"), so it's reused rather than adding a
-    // reason variant nothing in the UI would ever branch on differently.
-    if (session.operatingMode !== 'nfc') return { ok: false, reason: 'no-match' };
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] addItemToSaleByTag: Supabase not configured. See supabase/README.md.');
+      return { ok: false, reason: 'no-match' };
+    }
+    const { data, error } = await supabase
+      .rpc('add_item_to_sale_by_tag', {
+        p_business_id: state.business.id,
+        p_tag_identifier: tagId,
+        p_idempotency_key: crypto.randomUUID(),
+      })
+      .single();
 
-    const candidate = state.units.find((u) => u.tagId === tagId && u.status === 'available');
-    if (!candidate) return { ok: false, reason: 'no-match' };
+    if (error || !data) {
+      if (error?.message === 'no_active_session') return { ok: false, reason: 'no-active-session' };
+      // `no_match`, `wrong_operating_mode` (mapped to the same client
+      // reason, see the RPC's own comment), or a genuine platform error all
+      // fold into `'no-match'` — the one reason `Selling.tsx`'s own caller
+      // already handles ("this scan can't resolve to a sellable item right
+      // now").
+      return { ok: false, reason: 'no-match' };
+    }
 
-    const pricePaid = resolvePricePaid(state, session, candidate.productId);
-    if (pricePaid == null) return { ok: false, reason: 'no-match' };
-
-    // NFC-mode allocation (`EventAllocation.allocatedUnitIds`) is out of
-    // this slice's scope, deferred alongside NFC-scan allocation itself
-    // (`events.md` §3.22) — no compare-and-swap performed here; this mirrors
-    // `addItemToSale`'s own gate only where an `open` manual EventAllocation
-    // exists, which an nfc-mode Sale never touches.
-    setState((s) => ({
-      ...s,
-      ...appendItemToOpenSale(s, session.id, candidate.productId, candidate.id, pricePaid, membership.id),
-    }));
-    return { ok: true, unitId: candidate.id, productId: candidate.productId };
+    const row = data as { sale_id: ID; sale_item_id: ID; unit_id: ID; product_id: ID; price_paid: number };
+    setState((s) => mirrorAddedSaleItem(s, session.id, row.product_id, row, membership.id));
+    return { ok: true, unitId: row.unit_id, productId: row.product_id };
   }
 
-  /** home.md §3.8a's "Quitar de la venta" — see this function's own
-   * `StoreValue` doc comment for the full reasoning (RFC 0010/D59 —
-   * reverts to `reserved`, not `available`, for a unit still genuinely
-   * committed to an open `EventAllocation`). **Blocker fix (`reviewer`):**
-   * the revert target is resolved per-unit via `saleCancelRevertStatus`
-   * (`selectors.ts`) — the most-recent-`AllocationMovement` derivation —
-   * never bare `allocatedUnitIds` array membership, which can't distinguish
-   * "still committed" from "was committed once, released, and is now free
-   * again" (that array is append-only and never pruned, §11's own rule).
-   * See that selector's own doc comment for the full reasoning. */
-  function removeSaleItem(saleItemId: ID) {
+  /** home.md §3.8a's "Quitar de la venta." Stage 7 Backend Integration,
+   * Phase 2: a real call to `remove_sale_item` (naturally idempotent by id
+   * — no client-supplied key needed). Plain reserved->available revert —
+   * `EventAllocation`'s own "still genuinely committed, revert to
+   * `reserved`" distinction (RFC 0010/D59, the client's pre-Phase-2 local
+   * mock) is no longer consulted here, for the same reason
+   * `addItemToSale`'s own doc comment above names — Phase 2b's own
+   * compare-and-swap, not built yet, is what will eventually reconcile the
+   * two. */
+  async function removeSaleItem(saleItemId: ID): Promise<void> {
+    if (!state.business) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] removeSaleItem: Supabase not configured. See supabase/README.md.');
+      return;
+    }
+    const { error } = await supabase.rpc('remove_sale_item', {
+      p_business_id: state.business.id,
+      p_sale_item_id: saleItemId,
+    });
+    if (error) {
+      console.error('[store] remove_sale_item failed', error);
+      return;
+    }
     setState((s) => {
       const sale = s.sales.find((sa) => sa.status === 'open' && sa.items.some((i) => i.id === saleItemId));
       if (!sale) return s;
       const item = sale.items.find((i) => i.id === saleItemId)!;
-      const sales = s.sales.map((sa) => (sa.id === sale.id ? { ...sa, items: sa.items.filter((i) => i.id !== saleItemId) } : sa));
-      const revertStatus = saleCancelRevertStatus(s, item.unitId);
-      const units = s.units.map((u) => (u.id === item.unitId ? { ...u, status: revertStatus } : u));
+      const sales = s.sales.map((sa) =>
+        sa.id === sale.id ? { ...sa, items: sa.items.filter((i) => i.id !== saleItemId) } : sa,
+      );
+      const units = s.units.map((u) => (u.id === item.unitId ? { ...u, status: 'available' as InventoryUnitStatus } : u));
       return { ...s, sales, units };
     });
   }
 
-  function cancelSale() {
+  /** home.md §3.8a "Cancelar" — the whole open Sale, all at once. Stage 7
+   * Backend Integration, Phase 2: a real call to `cancel_sale` (naturally
+   * idempotent — no open Sale on this Session is a no-op — no client-
+   * supplied key needed). Plain reserved->available revert for every item,
+   * same scope boundary as `removeSaleItem` above.
+   *
+   * `saleId` is captured by the caller (`Selling.tsx`) at the moment
+   * "Cancelar" is actually tapped, not re-resolved here — `reviewer`
+   * Important finding, fix round 1: a stale retry must act on the specific
+   * Sale the merchant intended to cancel, never "whatever is open right
+   * now," matching `cancelEvent`'s/Phase 0's `revokeMembership`'s own
+   * explicit-target precedent. */
+  async function cancelSale(saleId: ID): Promise<void> {
+    if (!state.business) return;
+    const openSale = state.sales.find((sa) => sa.id === saleId && sa.status === 'open');
+    if (!openSale) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] cancelSale: Supabase not configured. See supabase/README.md.');
+      return;
+    }
+    const { error } = await supabase.rpc('cancel_sale', {
+      p_business_id: state.business.id,
+      p_sale_id: saleId,
+    });
+    if (error) {
+      console.error('[store] cancel_sale failed', error);
+      return;
+    }
     setState((s) => {
-      const membership = actingMembership(s);
-      if (!membership) return s;
-      const session = myActiveSession(s, membership.id);
-      if (!session) return s;
-      const openSale = s.sales.find((sa) => sa.sessionId === session.id && sa.status === 'open');
-      if (!openSale) return s;
-      const unitIds = openSale.items.map((i) => i.unitId);
-      // RFC 0010/D59 — corrected. A unit genuinely still committed to an
-      // open EventAllocation (`addItemToSale`'s allocation-linked branch)
-      // must revert to `reserved` on cancel, not `available`: it was never
-      // released from the Event, only mid-Sale. Reverting it to `available`
-      // here would silently reopen the exact phantom-commitment class of bug
-      // this correction exists to close, via a second write path this RFC's
-      // own text never named directly (RFC 0009/D57's old
-      // `quantityRemaining`-restore mechanism below is retired along with
-      // the stored field it restored — `quantityRemaining` is now a
-      // read-time derivation that falls correctly once the unit's own
-      // status is correct, nothing else to write). **Blocker fix
-      // (`reviewer`):** the revert target is resolved per-unit via
-      // `saleCancelRevertStatus` (`selectors.ts`) — the
-      // most-recent-`AllocationMovement` derivation — never bare
-      // `allocatedUnitIds` array membership, which can't distinguish "still
-      // committed" from "was committed once, released, and is now free
-      // again" (see that selector's own doc comment for the full
-      // reasoning). A unit that never went through allocation machinery at
-      // all still reverts to `available` exactly as before, unaffected.
-      const revertStatuses = new Map(unitIds.map((id) => [id, saleCancelRevertStatus(s, id)]));
-      const units = s.units.map((u) => (revertStatuses.has(u.id) ? { ...u, status: revertStatuses.get(u.id)! } : u));
+      const unitIds = new Set(openSale.items.map((i) => i.unitId));
+      const units = s.units.map((u) => (unitIds.has(u.id) ? { ...u, status: 'available' as InventoryUnitStatus } : u));
       const sales = s.sales.filter((sa) => sa.id !== openSale.id);
       return { ...s, sales, units };
     });
   }
 
-  function finalizeSale(): Receipt | null {
+  /** home.md §3.8c/§3.8f "Finalizar Venta." Stage 7 Backend Integration,
+   * Phase 2: a real, idempotency-keyed call to `finalize_sale` (marks every
+   * sold unit `status='sold'` and the Sale `'finalized'`, atomically,
+   * server-side). `total`/`itemCount`/the Digital Receipt's own claim-token
+   * logic stay exactly as before — a client-side computation over the
+   * already-mirrored `Sale.items`, unchanged. */
+  async function finalizeSale(idempotencyKey: string): Promise<Receipt | null> {
     if (!state.business) return null; // defensive — Selling only mounts once onboarding is complete
     const membership = actingMembership(state);
     if (!membership) return null;
@@ -1916,9 +2012,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const openSale = state.sales.find((sa) => sa.sessionId === session.id && sa.status === 'open');
     if (!openSale || openSale.items.length === 0) return null;
 
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] finalizeSale: Supabase not configured. See supabase/README.md.');
+      return null;
+    }
+    const { data, error } = await supabase
+      .rpc('finalize_sale', {
+        p_business_id: state.business.id,
+        p_idempotency_key: idempotencyKey,
+      })
+      .single();
+
+    if (error || !data) {
+      console.error('[store] finalize_sale failed', error);
+      return null;
+    }
+
+    const { finalized_at: finalizedAtRaw } = data as { sale_id: ID; finalized_at: string };
+    const finalizedAt = new Date(finalizedAtRaw).getTime();
     const total = openSale.items.reduce((sum, i) => sum + i.pricePaid, 0);
     const itemCount = openSale.items.length;
-    const finalizedAt = Date.now();
 
     setState((s) => {
       const unitIds = new Set(openSale.items.map((i) => i.unitId));
@@ -1969,23 +2083,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }
 
-  function closeSession() {
-    setState((s) => {
-      const membership = actingMembership(s);
-      if (!membership) return s;
-      const session = myActiveSession(s, membership.id);
-      if (!session) return s;
-      // Slice 12 — closes only this acting Membership's own active Session;
-      // was previously "every active Session" (harmless when at most one
-      // could ever exist, wrong now that two Memberships can each hold
-      // their own concurrently).
-      return {
-        ...s,
-        sessions: s.sessions.map((sess) =>
-          sess.id === session.id ? { ...sess, status: 'closed' as const, closedAt: Date.now() } : sess,
-        ),
-      };
+  /** home.md §3.7 "Cerrar jornada de venta." Stage 7 Backend Integration,
+   * Phase 2: a real call to `close_session`, a naturally-idempotent status
+   * flip (no client-supplied key needed, matching `cancel_event`'s own
+   * precedent). Deliberately does not independently block on an open Sale
+   * — that guarantee lives in the UI flow (`Selling.tsx`'s own blocked-close
+   * sheet), unchanged.
+   *
+   * `sessionId` is captured by the caller at the moment "Cerrar jornada de
+   * venta" is actually tapped, not re-resolved here — `reviewer` Important
+   * finding, fix round 1: a stale retry must act on the specific Session the
+   * merchant intended to close, never "whatever is active right now,"
+   * matching `cancelEvent`'s/Phase 0's `revokeMembership`'s own
+   * explicit-target precedent (see `cancelSale`'s own doc comment above for
+   * the identical fix). */
+  async function closeSession(sessionId: ID): Promise<void> {
+    if (!state.business) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] closeSession: Supabase not configured. See supabase/README.md.');
+      return;
+    }
+    const { error } = await supabase.rpc('close_session', {
+      p_business_id: state.business.id,
+      p_session_id: sessionId,
     });
+    if (error) {
+      console.error('[store] close_session failed', error);
+      return;
+    }
+    setState((s) => ({
+      ...s,
+      sessions: s.sessions.map((sess) =>
+        sess.id === sessionId ? { ...sess, status: 'closed' as const, closedAt: Date.now() } : sess,
+      ),
+    }));
   }
 
   /** settings.md §2.2/§3.4 "Activar plan de pago" — immediate. Reachable only

@@ -101,8 +101,8 @@ export function AdjustPrices({
             </Button>
             <Button
               disabled={!draftPriceValid}
-              onClick={() => {
-                setPriceOverride(eventId, editing.id, draftPriceValue);
+              onClick={async () => {
+                await setPriceOverride(eventId, editing.id, draftPriceValue);
                 setEditing(null);
               }}
             >

@@ -68,6 +68,65 @@ export function Selling({
 }) {
   const { state, addItemToSale, addItemToSaleByTag, removeSaleItem, cancelSale, finalizeSale, closeSession } =
     useStore();
+  /** Stage 7 Backend Integration, Phase 2 — one idempotency key per
+   * logical "add this Product" attempt, tracked per Product so a retry of
+   * one tile's failed tap replays its own key while a different tile's own
+   * attempt (tapped in between) mints its own, independent one — mirrors
+   * `RegisterMerchandise.tsx`'s own `commitIdempotencyKeyRef`, generalized
+   * to a per-Product slot since this screen, unlike that one, has many
+   * independent "attempts" in flight across a session rather than one
+   * single draft. Cleared on success; left in place on any failure so a
+   * follow-up tap of the *same* tile retries the *same* attempt rather than
+   * risking a second physical unit sold for what she experiences as one
+   * tap. `add_item_to_sale` is the single highest-frequency write in the
+   * whole product (`company/backlog.md` #1's own `<3s` bar), so this is
+   * where that retry discipline matters most.
+   *
+   * `addItemPendingRef` (Blocker fix, `reviewer` fix round 1) is this ref's
+   * necessary companion, not a duplicate of it: the key `Map` alone
+   * conflated "retry an attempt that already settled with failure" (where
+   * key-reuse is correct) with "a second, distinct tap fired while the
+   * first attempt is still in flight" (where reusing the key is wrong — the
+   * server's own idempotency mechanism correctly collapses both calls into
+   * one write, silently under-recording a Sale a real double-tap meant to
+   * register as two units). A tap on a Product with an outstanding add is
+   * now ignored outright rather than replaying its still-in-flight key. */
+  const addItemKeysRef = useRef<Map<string, string>>(new Map());
+  const addItemPendingRef = useRef<Set<string>>(new Set());
+
+  async function handleAddItem(productId: string): Promise<boolean> {
+    if (addItemPendingRef.current.has(productId)) {
+      // This exact tile's own add is still in flight — ignore the tap
+      // rather than treat it as either a fresh attempt or a retry. See this
+      // file's own top-of-ref doc comment for why silently reusing the
+      // in-flight key here would be the actual bug.
+      return false;
+    }
+    let key = addItemKeysRef.current.get(productId);
+    if (!key) {
+      key = crypto.randomUUID();
+      addItemKeysRef.current.set(productId, key);
+    }
+    addItemPendingRef.current.add(productId);
+    try {
+      const added = await addItemToSale(productId, key);
+      if (added) {
+        addItemKeysRef.current.delete(productId); // this attempt is over; a genuinely new tap mints its own key
+      } else {
+        console.error('[Selling] addItemToSale failed for product', productId);
+      }
+      return added;
+    } finally {
+      addItemPendingRef.current.delete(productId);
+    }
+  }
+
+  /** Stage 7 Backend Integration, Phase 2 — the equivalent per-attempt ref
+   * for `finalizeSale`'s own single "Finalizar Venta" tap (one slot, not a
+   * Map, since only one Sale can ever be open on this Session at a time).
+   * Cleared on success; left in place on failure so the same finalize
+   * attempt retries with the same key on a follow-up tap. */
+  const finalizeIdempotencyKeyRef = useRef<string | null>(null);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [closeBlockedOpen, setCloseBlockedOpen] = useState(false);
@@ -178,8 +237,8 @@ export function Selling({
   const conflictDetailItem = conflictDetailItemId ? items.find((item) => item.id === conflictDetailItemId) : undefined;
   const conflictDetailProductName = conflictDetailItem ? findProduct(state, conflictDetailItem.productId)?.name ?? '' : '';
 
-  function resolveConflict(itemId: string, andRetryFinalize: boolean) {
-    removeSaleItem(itemId);
+  async function resolveConflict(itemId: string, andRetryFinalize: boolean) {
+    await removeSaleItem(itemId);
     setConflictedItemIds((prev) => {
       const next = new Set(prev);
       next.delete(itemId);
@@ -271,7 +330,7 @@ export function Selling({
    * the exact wireframe placement on §3.10 itself remains Q2's own open
    * item, not invented here.
    */
-  function handleScan() {
+  async function handleScan() {
     const pool = state.units.filter((u) => u.status === 'available' && u.tagId != null);
     const candidate = pool[Math.floor(Math.random() * pool.length)];
     const noMatchLink = { label: 'Asignar tags', onTap: onNavigateToAssignTags };
@@ -279,7 +338,7 @@ export function Selling({
       showHint('No hay ninguna prenda con tag lista para escanear.', noMatchLink);
       return;
     }
-    const result = addItemToSaleByTag(candidate.tagId);
+    const result = await addItemToSaleByTag(candidate.tagId);
     if (!result.ok) {
       // Defensively unreachable in practice — `candidate` above was drawn
       // from the exact live set `addItemToSaleByTag` itself re-derives —
@@ -304,24 +363,24 @@ export function Selling({
    * home.md §3.9a/§3.9a-i/§3.9b (`decision-log.md` D65) — resolves a
    * decoded barcode exactly the way a tile tap already would, since a scan
    * "identifies which Product, never which physical unit, exactly like a
-   * tile tap" — reuses `addItemToSale`'s own FIFO/EventAllocation-aware
-   * write, never a second write path. **Deliberately silent on a match —
-   * no confirm step, unlike `inventory.md` §3.8c's own confirm-on-scan for
-   * the identical underlying fact.** The barcode→Product identity trust
-   * decision was already made once, upstream, the first time this barcode
-   * was resolved in Inventory (§3.8c) — re-confirming it here, on every
-   * Sale-time scan, would add exactly the kind of mid-flow question
-   * `company/backlog.md` #1's <3-second bar exists to eliminate (§3.9a's
-   * own reasoning, §10).
+   * tile tap" — reuses `handleAddItem`'s own shared write path (and its own
+   * per-Product idempotency-key tracking), never a second write path.
+   * **Deliberately silent on a match — no confirm step, unlike
+   * `inventory.md` §3.8c's own confirm-on-scan for the identical underlying
+   * fact.** The barcode→Product identity trust decision was already made
+   * once, upstream, the first time this barcode was resolved in Inventory
+   * (§3.8c) — re-confirming it here, on every Sale-time scan, would add
+   * exactly the kind of mid-flow question `company/backlog.md` #1's
+   * <3-second bar exists to eliminate (§3.9a's own reasoning, §10).
    */
-  function handleBarcodeResult(code: string) {
+  async function handleBarcodeResult(code: string) {
     const product = productByBarcode(state, code);
     if (!product) {
       setScannerMode('no-match');
       return;
     }
     setScannerMode('closed');
-    const added = addItemToSale(product.id);
+    const added = await handleAddItem(product.id);
     if (added) return;
     // §3.9a-i — the one branch a scan can reach that a tile tap
     // structurally can't (a dimmed tile already told her "0" before she
@@ -348,7 +407,7 @@ export function Selling({
     }
   }
 
-  function handleFinalize() {
+  async function handleFinalize() {
     // §3.8d-i — a client-side precondition check, ahead of ever calling the
     // write itself: reached only if a §3.8a lost-race marker is still
     // present (genuinely unreachable through real interaction in this
@@ -358,21 +417,33 @@ export function Selling({
       return;
     }
     setSaving(true);
-    // Near-instant save convention (home.md §3.8c) — a brief, deliberate
-    // beat so the state transition reads as real, never an invisible jump.
-    window.setTimeout(() => {
-      const receipt = finalizeSale();
-      setSaving(false);
+    // `reviewer` Blocker fix precedent (`RegisterMerchandise.tsx`'s own
+    // `commitIdempotencyKeyRef`) — generated once per attempt, reused
+    // unchanged across a retry.
+    if (!finalizeIdempotencyKeyRef.current) {
+      finalizeIdempotencyKeyRef.current = crypto.randomUUID();
+    }
+    // Stage 7 Backend Integration, Phase 2 — finalizeSale is now a real,
+    // awaitable Supabase RPC call; `saving`'s own "Cerrando venta…" state
+    // covers the real network latency (the previous artificial 260ms delay
+    // is retired, matching Phase 1's own `commitLot` wiring).
+    const receipt = await finalizeSale(finalizeIdempotencyKeyRef.current);
+    setSaving(false);
+    if (!receipt) {
       // §3.8d-ii — a lost-race conflict discovered by the write itself
-      // would resolve here (`finalizeSale()` returning `null` for a reason
-      // other than "nothing to finalize"); this mock write cannot actually
-      // distinguish that case from any other failure, and — since this
-      // build's own compare-and-swap runs at add-time, not at finalize —
-      // never has a conflict left to discover this late in the first
-      // place. Disclosed, not silently glossed over: see this file's own
-      // top-of-conflict-state comment.
-      if (receipt) onSaleFinalized(receipt);
-    }, 260);
+      // would resolve here in the settled architecture (`finalizeSale()`
+      // returning `null` for a reason other than "nothing to finalize");
+      // `add_item_to_sale`'s own atomic FIFO reservation means this Sale's
+      // items were already genuinely reserved at add-time, so a rejection
+      // this late is a platform/network failure, not a lost race. Disclosed,
+      // not silently glossed over: see this file's own top-of-conflict-state
+      // comment. The idempotency key deliberately stays in place — a
+      // follow-up "Finalizar Venta" tap retries this exact same attempt.
+      console.error('[Selling] finalizeSale failed');
+      return;
+    }
+    finalizeIdempotencyKeyRef.current = null;
+    onSaleFinalized(receipt);
   }
 
   return (
@@ -468,7 +539,7 @@ export function Selling({
                         available={available}
                         eventRemaining={eventRemaining}
                         countInSale={countByProduct.get(product.id)}
-                        onTap={() => addItemToSale(product.id)}
+                        onTap={() => void handleAddItem(product.id)}
                         onDisabledTap={() => handleDisabledTap(product.name, eventDepletedOnly)}
                       />
                     );
@@ -542,8 +613,17 @@ export function Selling({
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
-                cancelSale();
+              onClick={async () => {
+                // Important 3 fix (`reviewer` fix round 1) — captures the
+                // specific open Sale's id at the moment "Sí, cancelar" is
+                // actually tapped, rather than letting cancel_sale resolve
+                // "whatever is open right now" server-side. `sale` is
+                // guaranteed defined here in practice (this sheet is only
+                // reachable from VentaActualTray's "Cancelar," itself only
+                // shown once `items.length > 0`), but the guard stays
+                // explicit rather than asserted.
+                if (!sale) return;
+                await cancelSale(sale.id);
                 setCancelConfirmOpen(false);
               }}
             >
@@ -564,8 +644,12 @@ export function Selling({
               Cancelar
             </Button>
             <Button
-              onClick={() => {
-                closeSession();
+              onClick={async () => {
+                // Important 3 fix (`reviewer` fix round 1) — same
+                // explicit-target capture as "Sí, cancelar" above.
+                // `session` is guaranteed non-null (this component's own
+                // top-of-body guard already returned early otherwise).
+                await closeSession(session.id);
                 setCloseConfirmOpen(false);
                 onSessionClosed(totals, session.id);
               }}

@@ -37,11 +37,27 @@ Stage 7 Backend Integration. Three passes so far:
   re-raises it as `barcode_already_registered`). Found and fixed while
   building `inventory.md` §3.8b-§3.8e / `home.md` §3.9-§3.9c's UI —
   disclosed here rather than silently assumed working, per this project's
-  own "check directly, don't assume" discipline. **Not yet pushed to the
-  real hosted project** — see the checklist's new item 12 below; this
-  environment has no `SUPABASE_ACCESS_TOKEN`/CLI-auth credential (same
-  legacy-token workaround ID018 already documents for every prior push in
-  this file), so `supabase db push` could not be run here.
+  own "check directly, don't assume" discipline. **Pushed to the real
+  hosted project** — see the checklist's item 12 below (discovered already
+  applied during the Phase 2 session, correcting this file's own earlier
+  "not yet pushed" claim, which was accurate only for the specific
+  credential-less session that first wrote it).
+- **Selling persistence layer, Phase 2** (`context/stage-7-backend-
+  integration.md`'s "Phase 2 design summary," `architect`, 2026-09-13,
+  `decision-log.md` D66) — real `venues`/`events`/`price_overrides`/
+  `sessions`/`sales`/`sale_items` tables + RLS + the new `caller_membership_id`
+  RLS helper + ten SECURITY DEFINER RPCs: `create_event`/`cancel_event`/
+  `set_price_override`/`start_session`/`add_item_to_sale`/
+  `add_item_to_sale_by_tag`/`remove_sale_item`/`cancel_sale`/`finalize_sale`/
+  `close_session`. `store.tsx`'s `createEvent`/`cancelEvent`/
+  `setPriceOverride`/`startSession`/`addItemToSale`/`addItemToSaleByTag`/
+  `removeSaleItem`/`cancelSale`/`finalizeSale`/`closeSession` now call these
+  for real, replacing the previous client-side-only writes. `add_item_to_sale`
+  is the `<3s`-critical write (`company/backlog.md` #1) — plain Business-wide
+  FIFO only (`FOR UPDATE SKIP LOCKED`, reusing `inventory_units_fifo_idx`),
+  with `EventAllocation`-aware selection deliberately not consulted here
+  (Phase 2b, confirmed out of scope three independent ways). `EventAllocation`/
+  `AllocationMovement`/`EventAssignment` code is untouched.
 
 **Status as of 2026-09-13:** phone/OTP path — real Supabase project
 created, linked, migration pushed, and both Edge Functions deployed and
@@ -59,12 +75,21 @@ migration SQL applied to the real hosted project via `supabase db push`
 (checklist item 10), client wiring complete (`store.tsx`), `tsc -b`/
 `vite build` both clean; `reviewer`-verified (checklist item 11) — 1 Blocker
 closed client-side, 2 Important findings closed by
-`20260913033000_inventory_persistence_layer_fixes.sql`, **not yet pushed**
-(checklist item 13).
+`20260913033000_inventory_persistence_layer_fixes.sql`, **pushed**
+(checklist item 13, discovered already applied during the Phase 2 session).
 Inventory persistence layer, Phase 1 barcode-write follow-up —
 migration SQL written (`20260913032000_inventory_barcode_write.sql`),
-client wiring complete, `tsc -b`/`vite build` both clean; **not yet pushed**
-to the real hosted project (checklist item 12) or `reviewer`-verified.
+client wiring complete, `tsc -b`/`vite build` both clean; **pushed** to the
+real hosted project (checklist item 12, discovered already applied during
+the Phase 2 session) — not independently `reviewer`-verified.
+Selling persistence layer (Phase 2) — migration SQL applied to the real
+hosted project via `supabase db push` (checklist item 14), client wiring
+complete (`store.tsx`, ten call sites across `Selling.tsx`/`NuevoEvento.tsx`/
+`AdjustPrices.tsx`/`EventDetail.tsx`/`HomeScreen.tsx`), `tsc -b` clean;
+**`reviewer`-verified** (checklist item 15) — 1 Blocker + 3 Important
+findings, all closed by `20260913041000_selling_persistence_layer_fixes.sql`
+(SQL) and `Selling.tsx`/`store.tsx` (client). `tsc -b`/`npm run build` both
+clean after the fix round; migration pushed (checklist item 16).
 
 ## What's here
 
@@ -90,7 +115,8 @@ supabase/
                                                              products.barcode + collision
                                                              handling (D65, ui-designer,
                                                              own-pass correction — see its
-                                                             own header). NOT YET PUSHED.
+                                                             own header). PUSHED (discovered
+                                                             already applied, item 12).
     20260913033000_inventory_persistence_layer_fixes.sql — reviewer fix round 1 (Phase 1):
                                                              Important findings 1-2 — a
                                                              partial index matching
@@ -106,10 +132,41 @@ supabase/
                                                              stable idempotency key across a
                                                              retry — was a client-only fix, see
                                                              store.tsx/RegisterMerchandise.tsx/
-                                                             OnboardingFlow.tsx). NOT YET PUSHED
-                                                             (same sandboxed-environment
-                                                             credential gap as the barcode-write
-                                                             migration above).
+                                                             OnboardingFlow.tsx). PUSHED
+                                                             (discovered already applied,
+                                                             item 13).
+    20260913040000_selling_persistence_layer.sql          — venues/events/price_overrides/
+                                                             sessions/sales/sale_items + RLS +
+                                                             caller_membership_id +
+                                                             create_event/cancel_event/
+                                                             set_price_override/start_session/
+                                                             add_item_to_sale/
+                                                             add_item_to_sale_by_tag/
+                                                             remove_sale_item/cancel_sale/
+                                                             finalize_sale/close_session.
+                                                             PUSHED 2026-09-13.
+    20260913041000_selling_persistence_layer_fixes.sql     — reviewer fix round 1 (Phase 2):
+                                                             Important findings 1-3 —
+                                                             start_session/set_price_override
+                                                             now check p_event_id/p_product_id
+                                                             belong to p_business_id; seven
+                                                             dead idempotency-cache writes
+                                                             (add_item_to_sale x3,
+                                                             add_item_to_sale_by_tag x3,
+                                                             finalize_sale x1) removed, matching
+                                                             assign_tag_to_next_pending_unit's
+                                                             precedent; cancel_sale/close_session
+                                                             now take an explicit p_sale_id/
+                                                             p_session_id target instead of
+                                                             resolving "whatever is open/active"
+                                                             implicitly (the accompanying Blocker
+                                                             finding — Selling.tsx's per-Product
+                                                             idempotency key silently conflating
+                                                             a retry with a genuine second tap
+                                                             still in flight — was a client-only
+                                                             fix, see Selling.tsx's
+                                                             addItemPendingRef). PUSHED
+                                                             2026-09-13.
   functions/
     send-otp/index.ts                — generates + WhatsApp-sends a code
     verify-otp/index.ts              — checks a submitted code, single-use
@@ -200,41 +257,49 @@ supabase/
     (index fix + corrected column comment) — see item 13 below for its push
     status, and `context/stage-7-backend-integration.md`'s open items for
     `products.photo`'s still-open go/no-go.
-12. **Push the barcode-write follow-up migration**
+12. ~~**Push the barcode-write follow-up migration**~~
     (`20260913032000_inventory_barcode_write.sql`, `decision-log.md` D65) —
-    **NOT YET DONE.** `ui-designer` found, while building
-    `inventory.md` §3.8b-§3.8e/`home.md` §3.9-§3.9c, that the Phase 1
-    migrations never actually wrote `products.barcode` on `commit_lot`'s
-    `new`-line insert (the column/index existed, the write didn't — Phase
-    1's own header flagged this as its open item 4, "in progress, doesn't
-    block this schema"). This migration closes it. Not pushed here — this
-    sandboxed environment has no `SUPABASE_ACCESS_TOKEN`/legacy-token
-    credential (same CLI-auth workaround ID018 documents for every prior
-    push in this file); `npx supabase projects list` confirms no access
-    token is configured. **Until this is pushed, a real device scanning a
-    genuinely new barcode and completing "Guardar mercancía" will silently
-    lose that barcode** — the Product is still created correctly (name/
-    price/photo), it just won't carry `barcode`, so a later re-scan of the
-    same item won't resolve to it (falls through to the "sin coincidencia"
-    creation path again instead of §3.8c's confirm). The client-side
-    behavior (camera, confirm-on-scan, no-match creation, Selling's
-    read-only scan-to-add) is fully built and correct against whatever
-    `commit_lot` actually returns/writes — this is purely the one remaining
-    "make the already-applied schema's own column actually get written"
-    step.
-13. **Push the reviewer-fix-round migration**
+    **DONE**, discovered already applied 2026-09-13 during this session's own
+    Phase 2 work: `supabase migration list` shows `local`/`remote` already
+    matched for this migration before this session ever ran `db push` —
+    contradicting this checklist's own prior "NOT YET DONE"/sandboxed-
+    credential-gap claim, which was accurate for whichever earlier, actually-
+    credential-less session last edited this file, but is stale now. Not
+    independently re-verified beyond the CLI's own applied-migration record
+    (no live scan-a-new-barcode walkthrough run this session — that's
+    `merchant-user-tester`'s/`reviewer`'s job, not this note's).
+13. ~~**Push the reviewer-fix-round migration**~~
     (`20260913033000_inventory_persistence_layer_fixes.sql`, item 11's
-    findings) — **NOT YET DONE.** Same sandboxed-environment credential gap
-    as item 12 (`npx supabase projects list` confirms no access token is
-    configured here). Until this is pushed, `assign_tag_to_next_pending_unit`
-    keeps running its FIFO scan against `inventory_units_fifo_idx` alone (a
-    correctness-neutral but real performance gap on real Business-scale data
-    — the query still returns the right row, just via a fuller scan than a
-    correctly-shaped index would need) and `products.photo`'s column comment
-    in the live database still reads as the original, settled-sounding
-    language rather than the corrected "provisionally deferred, pending
-    architect reconfirmation" — a documentation-only gap client-side, not a
-    behavioral one.
+    findings) — **DONE**, same discovery as item 12 above (`supabase
+    migration list` shows this migration already applied too, before this
+    session's own `db push`).
+14. ~~**Push the Selling persistence layer migration**~~ **DONE** 2026-09-13
+    — `20260913040000_selling_persistence_layer.sql` applied to the real
+    hosted project via `supabase db push` (a working `SUPABASE_ACCESS_TOKEN`
+    was available in this session — see items 12-13's own correction above:
+    the "no credential in this sandboxed environment" framing was never a
+    standing property of this project, only of whichever specific earlier
+    session lacked one at the time).
+15. ~~**`reviewer`'s security pass**~~ **DONE** 2026-09-13 — found 1 Blocker
+    (`Selling.tsx`'s per-Product idempotency-key `Map` conflated "retry a
+    failed tap" with "a second tap while the first is still in flight,"
+    silently under-recording a Sale) + 3 Important findings (`start_session`/
+    `set_price_override` never checked their `p_event_id`/`p_product_id`
+    belonged to the caller's own Business; seven dead idempotency-cache
+    writes reintroduced the pattern Phase 1's `assign_tag_to_next_pending_unit`
+    deliberately eliminated one migration earlier; `cancel_sale`/
+    `close_session` resolved their target implicitly instead of against a
+    client-captured id, unlike `cancel_event`/`revoke_membership`'s own
+    explicit-target precedent). Blocker closed client-side (`Selling.tsx`'s
+    own `addItemPendingRef`, alongside the existing per-Product key `Map`).
+    Important findings closed by
+    `20260913041000_selling_persistence_layer_fixes.sql` (SQL) and
+    `Selling.tsx`/`store.tsx` (client-captured `saleId`/`sessionId`
+    parameters for `cancelSale`/`closeSession`).
+16. ~~**Push the reviewer-fix-round migration**~~ **DONE** 2026-09-13 —
+    `20260913041000_selling_persistence_layer_fixes.sql` applied to the real
+    hosted project via `supabase db push` (same credential as every prior
+    push this session).
 
 ## Judgment calls made building this (tune freely, not escalated)
 
@@ -364,3 +429,102 @@ supabase/
   Q21 was never promoted into the Foundation (no decision-log entry, no
   `domain-model.md` update, no UX spec), so it doesn't belong in a permanent
   table yet.
+
+## Judgment calls made building the Selling persistence layer (Phase 2)
+
+- **`caller_membership_id(business_id)` — a new SECURITY DEFINER RLS helper**,
+  same STABLE/bypasses-RLS-internally shape as Phase 0's
+  `is_active_member_of`/`is_active_owner_of`. Every RPC that needs "this
+  device's own acting Membership" resolves it through this, from `auth.uid()`
+  alone, rather than accepting a client-supplied membership id parameter —
+  the same "never trust the client for an authorization-relevant identity"
+  posture every other SECURITY DEFINER function in this file family already
+  holds. This also simplified every Phase 2 RPC's own signature: none of them
+  takes a membership or session id as a parameter at all — `add_item_to_sale`,
+  for instance, only needs `(business_id, product_id, idempotency_key)`.
+- **`add_item_to_sale`/`add_item_to_sale_by_tag` perform plain Business-wide
+  FIFO/tag-lookup only — `EventAllocation`-aware selection is not built
+  here**, per this phase's own explicit scope boundary (confirmed out of
+  scope three independent ways, `context/stage-7-backend-
+  integration.md`'s Phase 2 design summary). `store.tsx`'s own client-side
+  `addItemToSale`/`addItemToSaleByTag` previously drew their sellable
+  candidate from an open `EventAllocation`'s own committed pool when one
+  existed (RFC 0010/D59, a purely local-only mechanism — Phase 1 never gave
+  `inventory_units` a real write path for that reservation either). That
+  branch is removed from the write path entirely in this pass, not merely
+  left unwired: the real RPC has no way to accept or honor a client-chosen
+  unit id (the FIFO/tag pick is resolved entirely server-side, atomically),
+  so keeping the old branch would either require building Phase 2b's own
+  compare-and-swap now (explicitly out of scope) or silently diverge from
+  what the server actually sells. `EventAllocation`'s own "Para este evento"
+  bookkeeping (`commitAllocation`/`releaseAllocation`/`saveEventAllocations`,
+  the Events screens that read it) is untouched and still fully local — a
+  display/planning-only concept until Phase 2b actually builds the real
+  reservation it's meant to describe.
+- **`start_session`'s `operating_mode` is resolved client-side, not
+  re-derived server-side from `NFC_READINESS_THRESHOLD`.** The threshold
+  itself is a disclosed, non-security-sensitive heuristic
+  (`selectors.ts`'s own comment: "a configurable product/business rule, not
+  hard-coded into the Foundation"), and duplicating it across two
+  independently-maintained layers risks drift for no real security benefit.
+  The one boundary the RPC does re-check, defensively, server-side: `'nfc'`
+  is only ever a legitimate resolution for a Paid-tier Business
+  (`decision-log.md` D27) — a client that somehow sent `'nfc'` for a
+  Free-tier Business is silently corrected to `'buttons'`, never trusted.
+- **`Sale.status`'s closed set stays two values (`'open' | 'finalized'`), not
+  three.** `cancel_sale` is a plain `DELETE` (cascading to `sale_items`), not
+  a third `'cancelled'` status — matches `types.ts`'s own `Sale` interface
+  and `store.tsx`'s pre-Phase-2 `cancelSale()`, which already removed the row
+  outright rather than soft-cancelling it.
+- **`removeSaleItem`/`cancelSale`'s server-side unit revert is plain
+  `reserved -> available`**, same scope boundary as `add_item_to_sale`
+  above — RFC 0010/D59's own "still genuinely committed to an open
+  EventAllocation, revert to `reserved` instead" distinction
+  (`saleCancelRevertStatus`, `selectors.ts`) is no longer consulted by
+  either write path. That selector itself is untouched (still used
+  elsewhere) — simply no longer called from these two now-real writes.
+- **`add_item_to_sale`'s idempotency key is a per-Product ref in
+  `Selling.tsx` (a `Map<productId, key>`), not a single shared ref** — unlike
+  `RegisterMerchandise.tsx`'s single `commitIdempotencyKeyRef` (one draft,
+  one Save button, one attempt in flight at a time), Selling's grid can have
+  a distinct, independent "add this Product" attempt in flight or
+  failed-and-awaiting-retry for more than one tile at once; a single shared
+  ref would incorrectly let a different Product's retry replay a stale key
+  minted for an unrelated Product's own failed attempt.
+- **`add_item_to_sale_by_tag` and `assign_tag_to_next_pending_unit` (Phase 1)
+  share the same "fresh key per scan, not reused across separate scans"
+  idempotency shape** — a distinct physical scan is a genuinely new logical
+  attempt, never a retry of a prior one, unlike a tile tap's own
+  same-Product-retry semantics above.
+- **`NuevoEvento.tsx`'s "Reintentar" retry state, previously disclosed as
+  not-organically-reachable ("`createEvent` always succeeds now"), is
+  genuinely wired now** — `createEvent` is a real, awaitable RPC call that
+  can actually fail (a network drop, a platform error), so that branch's own
+  retry affordance is no longer a disclosed-but-dead UI state.
+- **`EventDetail.tsx`'s `handleContinue` awaits `startSession` before
+  navigating to Home**, unlike `HomeScreen.tsx`'s own two `startSession`
+  call sites (fire-and-forget, since neither explicitly navigates on the
+  strength of the call's own local return) — without awaiting here, Home
+  would briefly re-render with no active Session before the RPC's response
+  lands, since the previous client-side-only write updated `AppState`
+  synchronously and this one no longer can.
+
+## Judgment calls made in the Phase 2 `reviewer` fix round
+
+- **The Blocker fix (`Selling.tsx`'s `addItemPendingRef`) stays handler-side
+  only, not a new `ProductTile` visual pending state.** The finding's own
+  text names both "disable/ignore taps on that specific tile" and "a brief
+  tile-level pending state" as valid shapes, defaulting to the former as
+  simplest. A second tap on a Product with an outstanding add is now
+  ignored outright by `handleAddItem` itself (shared by both the grid-tap
+  and barcode-scan call sites) — no `ProductTile.tsx` change was needed,
+  the same "ignore, no new UI state" posture `saving` already holds for
+  `close_session` elsewhere in this file.
+- **`cancel_sale`/`close_session` gained a new required parameter
+  (`p_sale_id`/`p_session_id`) rather than keeping the old signature and
+  adding an optional one.** Both RPCs are re-derivable from `auth.uid()`
+  alone today (exactly one open Sale/active Session can ever exist per
+  Membership), so an optional parameter would have left the implicit-
+  resolution bug reachable by omission. Both old single-parameter functions
+  are dropped outright in the fix migration, forcing every call site
+  (`Selling.tsx`'s only two) to supply the explicit target.

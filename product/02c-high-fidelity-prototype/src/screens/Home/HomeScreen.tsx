@@ -300,7 +300,7 @@ export function HomeScreen({
         upcomingEventStartDate={upcomingEvent?.startDate}
         onTapUpcomingEvent={upcomingEvent && role === 'OWNER' ? () => onNavigateToEvent(upcomingEvent.id) : undefined}
         todaySales={todaySalesSummary(state, null)}
-        onStartSession={(overrideToNfc) => startSession(undefined, overrideToNfc)}
+        onStartSession={(overrideToNfc) => void startSession(undefined, overrideToNfc)}
         onOpenAccountSurface={openAccountSurface}
         onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
         sellerEventsElsewhere={sellerEventsElsewhere}
@@ -327,7 +327,7 @@ export function HomeScreen({
           venueName={venueName}
           dayNumber={dayNumber}
           todaySales={todaySalesSummary(state, eventId)}
-          onContinue={(overrideToNfc) => startSession(eventId, overrideToNfc)}
+          onContinue={(overrideToNfc) => void startSession(eventId, overrideToNfc)}
           onOpenAccountSurface={openAccountSurface}
           onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
         />

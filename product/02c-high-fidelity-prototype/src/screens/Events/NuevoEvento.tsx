@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
 import type { VenueRef } from '../../domain/store';
 import { formatDateRange, todayKey } from '../../domain/dates';
@@ -40,6 +40,15 @@ export function NuevoEvento({ onSaved, onBack }: { onSaved: (eventId: string) =>
   const [picker, setPicker] = useState<'venue' | 'type' | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
 
+  /** Stage 7 Backend Integration, Phase 2 — one idempotency key per logical
+   * "Guardar evento" attempt, generated once and reused unchanged across a
+   * retry of that same attempt (the "Reintentar" tap below, previously a
+   * disclosed-not-wired state — now a real retry of a real, awaitable RPC
+   * call). Cleared on success; a genuinely new attempt (a fresh event saved
+   * after this one) mints its own key — mirrors `RegisterMerchandise.tsx`'s
+   * own `commitIdempotencyKeyRef`. */
+  const createEventIdempotencyKeyRef = useRef<string | null>(null);
+
   const canSave = venueRef !== null && type !== null && endDate >= startDate && saveState !== 'saving';
 
   function handleStartDateChange(next: string) {
@@ -52,27 +61,40 @@ export function NuevoEvento({ onSaved, onBack }: { onSaved: (eventId: string) =>
     setEndDateEdited(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!canSave || !venueRef || !type) return;
     setSaveState('saving');
-    // Near-instant save convention (events.md §3.9) — the same deliberate
-    // beat every other write in this codebase uses. `createEvent` always
-    // succeeds now (D53 removed the one save-rejection case it ever had) —
-    // the `error` branch below is kept as a real, correctly-rendering,
-    // disclosed-not-wired state, matching this codebase's own convention
-    // for a write that structurally cannot fail in this mock (see
-    // docs/passes/slice-3-eventos.md's disclosure section).
-    window.setTimeout(() => {
-      const eventId = createEvent({
+    // `reviewer` Blocker fix precedent (`RegisterMerchandise.tsx`) —
+    // generated once per attempt, reused unchanged across a retry.
+    if (!createEventIdempotencyKeyRef.current) {
+      createEventIdempotencyKeyRef.current = crypto.randomUUID();
+    }
+    const idempotencyKey = createEventIdempotencyKeyRef.current;
+    // Stage 7 Backend Integration, Phase 2 — createEvent is now a real,
+    // awaitable Supabase RPC call; `saveState === 'saving'`'s own copy
+    // covers the real network latency (the previous artificial 260ms delay
+    // is retired). A rejected/failed outcome (`null`) leaves the form's own
+    // local draft untouched and genuinely routes to the `'error'` retry
+    // state — no longer disclosed-not-wired, since `createEvent` can now
+    // actually fail (a network drop, a platform error).
+    const eventId = await createEvent(
+      {
         venue: venueRef,
         type,
         startDate,
         endDate,
         bazaarCost: parseFloat(bazaarCost) || 0,
-      });
-      setSaveState('idle');
-      onSaved(eventId);
-    }, 260);
+      },
+      idempotencyKey,
+    );
+    if (!eventId) {
+      console.error('[NuevoEvento] createEvent failed');
+      setSaveState('error');
+      return;
+    }
+    createEventIdempotencyKeyRef.current = null;
+    setSaveState('idle');
+    onSaved(eventId);
   }
 
   if (saveState === 'error') {
