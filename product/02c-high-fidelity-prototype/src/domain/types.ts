@@ -228,26 +228,32 @@ export interface BusinessMembership {
   createdAt: number;
 }
 
-/** Identity context (RFC 0008/D56, Slice 12) — a not-yet-accepted offer to
- * join a Business as a SELLER. Root, not an entity nested inside Business
- * (`settings.md` §2.7's own "does this verified phone hold a pending
- * Invitation" query must run before any single Business is in context, at
- * OTP-verification time, `authentication.md` §2.2 case 0). `role` is a
- * closed set of one value (`'SELLER'`) — inviting a second OWNER isn't a
- * capability this Foundation describes anywhere, so no picker is ever shown
- * for it (`settings.md` §2.7). Unique on `(businessId, phone)` while
- * `pending` — a resolved Invitation never blocks a fresh reinvite to the
- * same number. `expired` is included in the closed set for Foundation
- * fidelity, but this build never writes it — `settings.md §8` item 12 names
- * its trigger/timing as genuinely undesigned anywhere in the settled
- * architecture.
+/** Identity context, token-keyed (RFC 0013/`decision-log.md` D64 —
+ * supersedes RFC 0008/D56's phone-keyed design) — a not-yet-accepted offer
+ * to join a Business as a SELLER. Root, not an entity nested inside Business
+ * — resolvable by `token` alone, before either a Business or a User is in
+ * context, at link-open time (`peek_invitation`, before authentication even
+ * runs). `role` is a closed set of one value (`'SELLER'`) — inviting a
+ * second OWNER isn't a capability this Foundation describes anywhere, so no
+ * picker is ever shown for it (`settings.md` §2.7). Unique on `token`,
+ * globally. **The raw token itself is never a field on this type** — the
+ * server mints and returns it once (`createInvitation`/`regenerateInvitation`
+ * in `store.tsx`); only its hash is ever persisted, matching the backend's
+ * own `token_hash`-only storage. `status`'s closed set narrows to
+ * `pending | accepted | revoked` — `expired` is a read-time derivation
+ * (`status === 'pending' && Date.now() > expiresAt`, `selectors.ts`'s
+ * `invitationDisplayStatus`), never itself written.
  */
 export interface Invitation {
   id: ID;
   businessId: ID;
-  phone: string;
   role: 'SELLER';
-  status: 'pending' | 'accepted' | 'revoked' | 'expired';
+  status: 'pending' | 'accepted' | 'revoked';
+  expiresAt: number;
+  /** OWNER-entered delivery/addressing aid only (RFC 0013 §1) — never
+   * matched against the accepting User's identity. */
+  targetHint?: { type: 'email'; value: string };
+  acceptedByUserId?: ID | null;
   createdAt: number;
 }
 

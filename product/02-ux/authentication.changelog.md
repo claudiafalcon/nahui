@@ -179,3 +179,52 @@ Marked Resolved by this amendment — see the current §11 text, and `settings.m
 **Two remediation rounds, both closed.** `ux-critic` round 1 found a genuine Blocker: §2.1 (the actual device-level gating logic, distinct from §4's own summary) hadn't been generalized alongside everything else — its step 3 still routed a fresh device straight to §3.3 (phone-only), meaning Google/Email would never actually be reachable by a real first-time merchant despite the rest of the document claiming they exist. Fixed. That same fix round's extension of §3.8's resumability range (to cover the new §3.2a–§3.2f/§3.7e screens) introduced a second, narrower defect a follow-up trace caught: claiming §3.7e resumes correctly without checking whether §2.1's own step-priority logic actually supported it — it didn't, since a bare successful verification already satisfies §2.1 step 1's "valid session" test on its own, so an interruption landing exactly between verification success and her §3.7e tap would have silently fallen through past the confirmation screen. Closed by a new §2.1 step 0 (checked before step 1, the same "outranks the ordinary branches" pattern §2.2's own step 0 already uses for the Invitation check). One Major — §3.7e's device-history check doesn't cover Google's actual realistic error mode (picking the wrong already-signed-in account from Google's own picker, reachable on a device with zero prior Nahui history) — was left as a deliberately accepted, honestly-documented gap (§8 item 14) rather than fixed in this pass; a future fix would need a Google-specific confirmation step independent of device history.
 
 **A new Product Decision surfaced and logged:** `product/02-ux/product-decisions.md` Q26 — whether Nahui should ever offer account linking, given RFC 0012 §5 Invariant C's duplicate-User risk is now live (the same real person signing up cold via two different methods produces two disconnected `User` rows). Named, not resolved — D63 explicitly accepted this as a deferred risk at current pilot scale.
+
+---
+
+## 2026-09-14 — RFC 0013: `Invitation` acceptance reworked from phone-keyed to token-keyed
+
+**Root decision:** `product/99-rfc/0013-invitation-token-based.md` (Accepted, `decision-log.md` D64, 2026-09-13) reworked `Invitation`'s canonical identity from `phone` to a cryptographically random `token`, and explicitly found (§6) that `authentication.md`'s §2.2a/§3.10–§3.13a do not compose cleanly against the new model — a genuine follow-on, not a field-path correction, flagged and routed rather than fixed at RFC-acceptance time. `product/02c-high-fidelity-prototype/context/team-invitations-real-wiring.md` (2026-09-14) confirmed this as the one real blocking gap for `TeamScreen.tsx`/`InvitationFlow.tsx`'s own rebuild and named the new `peek_invitation` RPC this amendment designs against. Dispatched to `ux-designer` the same day.
+
+**Why this document needed correcting:** the entire prior mechanism discovered a pending Invitation as a side effect of a phone verifying (`Invitation.phone` matching the just-verified number) — either at a fresh OTP confirm (old §2.2 case 0) or at ordinary session-resume (old §2.1's 2026-09-07 addition). RFC 0013 inverts the sequencing entirely: the Invitation is now discovered by opening its own `/invite/<token>` link, before any authentication runs at all, and the offer is shown pre-auth rather than post-auth. Two writes replace what was implicitly one resolution: `peek_invitation` (read-only, zero auth) and `accept_invitation` (authenticated, atomic, CAS-guarded).
+
+### Front matter / §1 / Out-of-scope bullets
+*(cite as `authentication.changelog.md#2026-09-14-rfc0013-token-invitation`)*
+
+Superseded outright by the new banner, the new "Out of scope" Invitations bullet, and the new §1 acceptance-criteria bullet — see the document's own current text; the phone-scoped originals aren't reproduced here since this whole amendment replaces them, not a single field path within them.
+
+### §2.0 (new)
+
+The entire pre-auth resolution mechanism — did not exist before this amendment. See the document's own current §2.0 for the full text.
+
+### §2.1 step 1
+
+Original text (the 2026-09-07 sub-check, itself already logged in this changelog's own 2026-09-07 entry above), superseded outright — RFC 0013 §6 confirms Invitations are no longer discoverable via any implicit session/phone match, only by opening their own link (new §2.0). §2.1 step 1 is restored to its simpler, pre-2026-09-07 form — see the document's own current text.
+
+### §2.2 case 0
+
+Original text (the phone-match four-way-branch gate, unchanged since 2026-09-06/07):
+
+> 0. [Checked FIRST, before 1–3 below — this ordering matters] Does this phone have a pending Invitation (`Invitation.status = pending`, `Invitation.phone` = this verified number) AND does this User hold zero `BusinessMembership` anywhere and zero Business (complete or in-progress) anywhere? [...] → YES → Invitation-acceptance branch. See §2.2a. Never `onboarding.md §3.3`'s Business-creation handoff. → NO → fall through to cases 1–3 below, entirely unchanged from the Approved text.
+
+Replaced with a condition testing whether this verification carries a token from the new §2.0 flow, rather than testing any Invitation field directly — Invitation resolution itself happens entirely in §2.0/§2.2a now, before authentication. See the document's own current §2.2 case 0 text.
+
+### §2.2a
+
+Original text: the full phone-keyed resolution logic (re-check status, multi-pending tie-break, atomic accept write, decline-does-nothing, success handoff, per-device decline-memory marker) — preserved in full in this document's own git history / prior Approved revision, not reproduced here given its length. Replaced in full by the token-based write-and-outcome-resolution logic (§2.2a's current text) — same core shape (re-check status fresh, atomic accept, decline touches nothing), but keyed by `token` not `phone`, and with two structurally new outcomes (`already_member`, `membership_revoked`) the phone-keyed model never distinguished. The multi-pending tie-break and decline-memory marker are eliminated outright, per RFC 0013 §2's own reasoning — not carried forward.
+
+### §3.9a/§3.9b, §3.10d/§3.10e (new)
+
+Four new screen states, none of which existed before this amendment — see the document's own current text for each.
+
+### §3.10, §3.10a, §3.10b, §3.10c, §3.13a
+
+Content largely preserved (offer copy, welcome copy, error-retry shapes) per RFC 0013 §6's own instruction that this content is "largely reusable" — only the "reached via" framing, the accept/decline behavior branches (now session-state-aware, since authentication is no longer guaranteed to have already happened by the time these screens are reached), and §3.13a's "Continuar" destination logic changed. See the document's own current text for each section's exact wording.
+
+### §4/§5/§6/§7/§8/§9/§10/§11
+
+All updated to match — see the document's own current text; no historical text reproduced here beyond what's already captured above, per this file's own discipline of anchoring reasoning at the point of change rather than duplicating every touched section's full before-state.
+
+### `ux-critic` closure round (same day, folded into this entry rather than a separate one)
+
+`ux-critic` reviewed the amendment above and found 4 Major findings, no Blockers, all closed the same day: **M1** (the offer-before-authentication sequencing left no visible trace of the commitment across §3.2a–§3.7e's screens, risking her losing confidence her "Aceptar" tap registered) — closed by a new Invitation-context copy variant threaded through §2.0 step 4 and §3.2a, reused verbatim at every screen that sub-flow reaches. **M2** (§3.2a's "nowhere to return to" claim is false when reached via the Invitation-offer path, since §3.10 legitimately precedes it) — closed with an explicit caveat on §3.2a. **M3** (§10's "resolves by recency, no picker" bullet was left unmarked despite being directly superseded elsewhere in the same document) — closed with a `[Superseded …]` marker matching this document's own established convention. **M4** (token survival through an ordinary in-flow detour, e.g. cancelling Google's consent screen, was asserted only by analogy to §3.8's interruption-resume guarantee, which covers a different case) — closed by stating the pre-auth token context as its own guarantee, scoped to the whole §3.2a–§3.2f sub-flow's in-app duration, separate from and in addition to §3.8.

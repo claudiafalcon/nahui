@@ -87,14 +87,16 @@ export function sessionsOpenedBy(state: AppState, membershipId: ID): Session[] {
   return state.sessions.filter((s) => s.openedByMembershipId === membershipId);
 }
 
-/** `authentication.md` §2.2 case 0 / §2.2a step 2 — every `pending`
- * Invitation for a phone, most-recently-created first (the deterministic
- * tiebreak §2.2a step 2 itself specifies for "more than one pending
- * Invitation," rather than a picker). */
-export function pendingInvitationsForPhone(state: AppState, phone: string): Invitation[] {
-  return state.invitations
-    .filter((inv) => inv.phone === phone && inv.status === 'pending')
-    .sort((a, b) => b.createdAt - a.createdAt);
+/** RFC 0013/`decision-log.md` D64 — `Invitation.status`'s stored closed set
+ * is `pending | accepted | revoked`; `expired` is a read-time derivation,
+ * never itself written (matching `peek_invitation`'s own server-side
+ * computation of the identical condition). Every caller that needs to
+ * *display* an Invitation's status goes through this selector rather than
+ * reading `.status` directly, the same "derived, not stored" discipline
+ * `quantityRemaining` already holds for `EventAllocation`. */
+export function invitationDisplayStatus(invitation: Invitation): 'pending' | 'expired' | 'accepted' | 'revoked' {
+  if (invitation.status === 'pending' && Date.now() > invitation.expiresAt) return 'expired';
+  return invitation.status;
 }
 
 /** `settings.md` §3.11 "Tu equipo" — one row per active/pending/revoked

@@ -6,7 +6,6 @@ import {
   actingMembership,
   currentUser,
   eventStatus,
-  findMembership,
   myActiveSession,
   nfcCapable,
   nfcReadiness,
@@ -932,29 +931,69 @@ interface StoreValue {
    * automatically the instant `phoneVerifiedAt` clears, the identical
    * mechanism `signOut` already relies on. */
   retractMistypedVerification: () => void;
-  /** settings.md §2.7 "Invitar a alguien" — writes a new `Invitation`
-   * (`businessId`, `phone`, `role='SELLER'`, `status='pending'`), gated on
-   * `subscriptionTier=paid` (composing with the existing gate, never a new
-   * dimension — `company/business-decisions.md` Q18) and re-checked
-   * defensively against the same uniqueness rule the UI already validates
-   * inline (§3.12: "Ya invitaste a este número" / "Este número ya vende
-   * contigo") — a no-op, matching this file's existing defensive-guard
-   * style, if either precondition doesn't hold at write time. `role` is
-   * never asked — always `'SELLER'`, the only value the settled
-   * architecture describes. */
-  createInvitation: (phone: string) => void;
-  /** authentication.md §2.2a step 3 — the Invitation-acceptance invariant
-   * (RFC 0008/D56): atomically creates `BusinessMembership(userId,
-   * businessId, role='SELLER', status='active')` and flips
-   * `Invitation.status: pending → accepted`, gated on a verified
-   * `currentUser` and a still-`pending` Invitation, idempotency-guarded the
-   * same way `completeOnboarding` already guards a retried Owner-creation
-   * write (a User who already holds a Membership for this Business is
-   * handed back that existing row rather than minting a duplicate). Returns
-   * the resolved Membership's businessId, or `null` if the precondition
-   * isn't met (defensive — unreachable through the real UI, which only ever
-   * calls this from §3.10's own re-checked-pending offer). */
-  acceptInvitation: (invitationId: ID) => ID | null;
+  /** settings.md §2.7 "Invitar a alguien" (RFC 0013/D64, real backend write
+   * — Stage 7 Backend Integration, this pass) — calls `create_invitation`:
+   * OWNER-only and Paid-tier-gated server-side (re-checked, never trusted
+   * from the client), idempotency-keyed. Mints a fresh Invitation and
+   * returns its `token` **once** — the raw token is never persisted
+   * anywhere server-side either, not even in the idempotency replay cache
+   * (`20260914032000_invitation_token_no_raw_cache.sql`); the caller is
+   * responsible for displaying/sharing it immediately. `token` comes back
+   * `null` when this call was itself a replay of an already-completed
+   * request (the Invitation exists, but its one-time token display already
+   * happened on the original call and can't be recovered here) — the caller
+   * must fall back to `regenerateInvitation` to obtain a fresh, displayable
+   * token in that case. Returns `null` outright on any failure (not
+   * authorized, not Paid-tier, platform error). */
+  createInvitation: (
+    businessId: ID,
+    targetHint: { type: 'email'; value: string } | null,
+    idempotencyKey: string,
+  ) => Promise<{ invitationId: ID; token: string | null; expiresAt: number } | null>;
+  /** settings.md §4 "Generar otra" (RFC 0013/D64) — calls
+   * `regenerate_invitation`: OWNER-only, in-place token/expiry mutation on
+   * any Invitation the server itself re-confirms is still genuinely
+   * `pending` (loosened from "and expired" —
+   * `20260914032000_invitation_token_no_raw_cache.sql` — this is now also
+   * the recovery path for a dropped `createInvitation` response; the
+   * Approved UI still only surfaces the `[ Generar otra ]` button on
+   * expired rows, `settings.md` §3.11). Returns the new `token` **once**,
+   * same one-time-display posture as `createInvitation` — including the
+   * same `token: null` replay case, which the caller cannot recover from
+   * this call and would need to surface as "already regenerated, try
+   * again." `null` outright on any failure (not authorized, not pending,
+   * platform error). */
+  regenerateInvitation: (invitationId: ID, idempotencyKey: string) => Promise<{ token: string | null; expiresAt: number } | null>;
+  /** RFC 0013 §2 — calls `peek_invitation`: read-only, resolves an
+   * Invitation by `token` alone, before authentication runs at all (granted
+   * to `anon`, never gated on `state.currentUserId`). `status` already
+   * reflects the read-time `expired` derivation the server itself computes
+   * — never call `invitationDisplayStatus` on this result, it's already
+   * resolved. `null` if the token doesn't resolve to any Invitation, or on
+   * a platform error — the caller can't distinguish the two, matching what
+   * `peek_invitation` itself returns (an empty result set either way). */
+  peekInvitation: (
+    token: string,
+  ) => Promise<{ businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' } | null>;
+  /** authentication.md §2.2a step 3 (RFC 0013/D64, real backend write —
+   * Stage 7 Backend Integration, this pass) — calls the already-working
+   * `accept_invitation` RPC (unchanged by this pass): atomically creates
+   * `BusinessMembership(userId, businessId, role='SELLER', status='active')`
+   * and flips `Invitation.status: pending → accepted`, idempotency-keyed.
+   * Distinguishes the RPC's three named failure modes
+   * (`invitation_not_available` — already accepted/revoked/expired, or a
+   * losing actor in a same-token race; `already_member` — she already holds
+   * active access to this Business; `membership_revoked` — she held, and
+   * lost, access, D55's no-reactivation rule) from a generic platform error
+   * (`null`). */
+  acceptInvitation: (
+    token: string,
+    idempotencyKey: string,
+  ) => Promise<
+    | { businessId: ID; membershipId: ID }
+    | { error: 'invitation_not_available' | 'already_member' | 'membership_revoked' }
+    | null
+  >;
   /** authentication.md §2.2a step 4 / §10 "Ahora no" (ux-critic fix round,
    * Slice 12) — "declining never re-surfaces the same offer on the next
    * open." Appends `invitationId` to the current User's own
@@ -2989,71 +3028,151 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  /** settings.md §2.7 "Invitar a alguien" (§3.12) — see this function's own
-   * `StoreValue` doc comment for the full reasoning. Defensive re-check
-   * mirrors the UI's own inline validation (§3.12: a duplicate pending
-   * Invitation, or an existing active/revoked Membership for this phone,
-   * both leave the number unwritable) — never trusts the UI alone, same
-   * posture every other write in this file already holds itself to. */
-  function createInvitation(phone: string) {
-    setState((s) => {
-      if (!s.business || s.business.subscriptionTier !== 'paid') return s;
-      const alreadyPending = s.invitations.some(
-        (inv) => inv.businessId === s.business!.id && inv.phone === phone && inv.status === 'pending',
-      );
-      // RFC 0012/D62-63 — `User.phone` no longer exists; resolved through
-      // `AuthIdentity` instead (out-of-scope Invitation logic otherwise left
-      // untouched — this is the load-bearing domain-layer correction, not a
-      // redesign of this check's own meaning).
-      const alreadyMember = s.memberships.some(
-        (m) =>
-          m.businessId === s.business!.id &&
-          s.authIdentities.some((a) => a.userId === m.userId && a.type === 'phone' && a.identifier === phone),
-      );
-      if (alreadyPending || alreadyMember) return s;
-      const invitation: Invitation = {
-        id: makeId('inv'),
-        businessId: s.business.id,
-        phone,
-        role: 'SELLER',
-        status: 'pending',
-        createdAt: Date.now(),
-      };
-      return { ...s, invitations: [...s.invitations, invitation] };
-    });
-  }
+  /** settings.md §2.7 "Invitar a alguien" (RFC 0013/D64) — see this
+   * function's own `StoreValue` doc comment for the full reasoning. Real
+   * call to `create_invitation`; every precondition (OWNER, Paid tier) is
+   * re-checked server-side, this function never duplicates that check
+   * client-side (the same "server is the source of truth for its own
+   * authorization" posture every other real write in this file already
+   * holds). */
+  async function createInvitation(
+    businessId: ID,
+    targetHint: { type: 'email'; value: string } | null,
+    idempotencyKey: string,
+  ): Promise<{ invitationId: ID; token: string | null; expiresAt: number } | null> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] createInvitation: Supabase not configured. See supabase/README.md.');
+      return null;
+    }
+    const { data, error } = await supabase
+      .rpc('create_invitation', {
+        p_business_id: businessId,
+        p_idempotency_key: idempotencyKey,
+        p_target_hint: targetHint,
+      })
+      .single();
 
-  /** authentication.md §2.2a step 3 — the Invitation-acceptance invariant
-   * (RFC 0008/D56). See this function's own `StoreValue` doc comment for
-   * the full reasoning. */
-  function acceptInvitation(invitationId: ID): ID | null {
-    // RFC 0012/D62-63 — `user.phoneVerifiedAt == null` was the old
-    // authenticated-session gate; `currentUser` now only ever resolves a row
-    // at all when `currentUserId` is set, which itself only happens via a
-    // successful credential resolution, so `!user` alone is the identical
-    // check under the corrected model (out-of-scope Invitation logic
-    // otherwise left untouched).
-    const user = currentUser(state);
-    if (!user) return null;
-    const invitation = state.invitations.find((inv) => inv.id === invitationId);
-    if (!invitation || invitation.status !== 'pending') return null;
-    const existing = findMembership(state, user.id, invitation.businessId);
-    if (existing) return invitation.businessId; // idempotency guard — never mint a duplicate Membership
-    const membership: BusinessMembership = {
-      id: makeId('mem'),
-      userId: user.id,
-      businessId: invitation.businessId,
+    if (error || !data) {
+      console.error('[store] create_invitation failed', error);
+      return null;
+    }
+
+    const row = data as { invitation_id: ID; token: string | null; expires_at: string };
+    const expiresAt = new Date(row.expires_at).getTime();
+    const invitation: Invitation = {
+      id: row.invitation_id,
+      businessId,
       role: 'SELLER',
-      status: 'active',
-      revokedAt: null,
+      status: 'pending',
+      expiresAt,
+      targetHint: targetHint ?? undefined,
+      acceptedByUserId: null,
       createdAt: Date.now(),
     };
-    setState((s) => ({
+    applyWriteMirror((s) => ({ ...s, invitations: [...s.invitations, invitation] }));
+    return { invitationId: row.invitation_id, token: row.token, expiresAt };
+  }
+
+  /** settings.md §4 "Generar otra" (RFC 0013/D64) — see this function's own
+   * `StoreValue` doc comment for the full reasoning. Real call to
+   * `regenerate_invitation`; the server, not this function, re-confirms the
+   * row is still genuinely `pending` before mutating it. */
+  async function regenerateInvitation(
+    invitationId: ID,
+    idempotencyKey: string,
+  ): Promise<{ token: string | null; expiresAt: number } | null> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] regenerateInvitation: Supabase not configured. See supabase/README.md.');
+      return null;
+    }
+    const { data, error } = await supabase
+      .rpc('regenerate_invitation', { p_invitation_id: invitationId, p_idempotency_key: idempotencyKey })
+      .single();
+
+    if (error || !data) {
+      console.error('[store] regenerate_invitation failed', error);
+      return null;
+    }
+
+    const row = data as { token: string | null; expires_at: string };
+    const expiresAt = new Date(row.expires_at).getTime();
+    applyWriteMirror((s) => ({
       ...s,
-      memberships: [...s.memberships, membership],
-      invitations: s.invitations.map((inv) => (inv.id === invitationId ? { ...inv, status: 'accepted' } : inv)),
+      invitations: s.invitations.map((inv) => (inv.id === invitationId ? { ...inv, expiresAt } : inv)),
     }));
-    return invitation.businessId;
+    return { token: row.token, expiresAt };
+  }
+
+  /** RFC 0013 §2 — see this function's own `StoreValue` doc comment for the
+   * full reasoning. Read-only; never mirrors anything into `state`, since
+   * the caller may not even hold a `currentUserId` yet. */
+  async function peekInvitation(
+    token: string,
+  ): Promise<{ businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' } | null> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] peekInvitation: Supabase not configured. See supabase/README.md.');
+      return null;
+    }
+    const { data, error } = await supabase.rpc('peek_invitation', { p_token: token }).single();
+
+    if (error || !data) return null;
+
+    const row = data as { business_name: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' };
+    return { businessName: row.business_name, status: row.status };
+  }
+
+  /** authentication.md §2.2a step 3 (RFC 0013/D64) — see this function's
+   * own `StoreValue` doc comment for the full reasoning. Real call to the
+   * already-working `accept_invitation` RPC — this function only wires it
+   * up and mirrors its result, it never touches the RPC itself. */
+  async function acceptInvitation(
+    token: string,
+    idempotencyKey: string,
+  ): Promise<
+    | { businessId: ID; membershipId: ID }
+    | { error: 'invitation_not_available' | 'already_member' | 'membership_revoked' }
+    | null
+  > {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] acceptInvitation: Supabase not configured. See supabase/README.md.');
+      return null;
+    }
+    const { data, error } = await supabase
+      .rpc('accept_invitation', { p_token: token, p_idempotency_key: idempotencyKey })
+      .single();
+
+    if (error || !data) {
+      if (
+        error?.message === 'invitation_not_available' ||
+        error?.message === 'already_member' ||
+        error?.message === 'membership_revoked'
+      ) {
+        return { error: error.message };
+      }
+      console.error('[store] accept_invitation failed', error);
+      return null;
+    }
+
+    const row = data as { business_id: ID; membership_id: ID };
+    const user = currentUser(state);
+    applyWriteMirror((s) => {
+      if (s.memberships.some((m) => m.id === row.membership_id)) return s; // idempotent retry — already mirrored
+      const membership: BusinessMembership = {
+        id: row.membership_id,
+        userId: user?.id ?? s.currentUserId ?? '',
+        businessId: row.business_id,
+        role: 'SELLER',
+        status: 'active',
+        revokedAt: null,
+        createdAt: Date.now(),
+      };
+      return { ...s, memberships: [...s.memberships, membership] };
+    });
+    return { businessId: row.business_id, membershipId: row.membership_id };
   }
 
   /** authentication.md §2.2a step 4 / §10 "Ahora no" — see this function's
@@ -3609,6 +3728,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     confirmPhoneMismatch,
     retractMistypedVerification,
     createInvitation,
+    regenerateInvitation,
+    peekInvitation,
     acceptInvitation,
     declineInvitation,
     revokeMembership,

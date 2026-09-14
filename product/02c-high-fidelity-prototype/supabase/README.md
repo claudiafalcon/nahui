@@ -320,6 +320,11 @@ with-retry shape `BusinessIdentity.tsx`'s §3.10a treatment already
 establishes, applied to both trigger paths (the auto-continue timer and the
 manual tap) through one shared `handleEnter`. `tsc -b`/`npm run build` both
 clean. Not yet `reviewer`-verified.
+**Phase 3, Results/Resultados (2026-09-14, `architect`-designed, `context/stage-7-backend-integration.md`'s "Phase 3 design summary")** — verification-only, no new migration and no client code change. Confirmed directly: every Resultados screen/sub-screen already reads exclusively from `useStore()`'s real, now-hydrated `AppState` through the existing `src/domain/selectors.ts` pure functions — mock and hydrated data were always the same `AppState` shape, so nothing needed rewiring. Every $ figure traced to `SaleItem.pricePaid` only, never a re-read of `price_overrides`/`products.default_price`. `TusClientes.tsx` confirmed to query neither `customers` nor `claims` (tables don't exist; screen renders its unconditional zero-Claims empty state). Resultados' OWNER-only tab gating confirmed already correct in `App.tsx`/`NavBar` — the missing piece is `reports.md`'s own text never stating this scope, a documentation gap routed to `ux-designer`, not a code fix. `tsc -b`/`npm run build` both clean. Not yet `reviewer`-verified.
+
+**Team Invitations real write path (`20260914030000_invitation_token_write_path.sql`, RFC 0013/D64, `architect`-designed, `builder`-implemented — see `context/team-invitations-real-wiring.md`)** — closes the gap named in that RFC's own promotion: `createInvitation`/`acceptInvitation` were still 100% local-mock. Four new/wired functions: `_generate_invitation_token` (private helper — 256-bit `extensions.gen_random_bytes`, base64url-encoded, sha256/hex hash, 24h expiry), `create_invitation` (OWNER-only, Paid-tier-gated, idempotency-keyed — replays the raw token on a retry, since it's never persisted anywhere but that retry cache), `regenerate_invitation` (OWNER-only, in-place token/expiry mutation, server re-confirms the row is genuinely expired; a same-day fix round, `20260914031000_invitation_token_write_path_fix.sql`, added the same Paid-tier re-check `create_invitation` already had — the original version only re-verified OWNER-ship, not tier), `peek_invitation` (read-only, `stable`, granted to `anon`+`authenticated` — the pre-auth token-resolution RFC 0013 Section 2 needs; `status` computed at read time, `expired` never stored). `accept_invitation` itself untouched (already correct). Client: `types.ts`'s `Invitation` loses `phone`, gains `expiresAt`/`targetHint`/`acceptedByUserId`, `status` narrows to `pending | accepted | revoked`; `selectors.ts` gains `invitationDisplayStatus` (the `expired` read-time derivation), replacing the now-structurally-retired `pendingInvitationsForPhone`; `store.tsx`'s `createInvitation`/`acceptInvitation` rewritten as real async RPC calls, `regenerateInvitation`/`peekInvitation` added. `AppRouter.tsx` gains minimal path-based routing (`window.location.pathname` match on `/invite/<token>`, captured once at mount into a small piece of state, not yet consumed by any screen) and loses the phone-match auto-offer mechanism the RFC itself retires (no `phone` field left to match against — RFC 0013 Section 2: "the new mechanism never auto-surfaces anything"). `tsc -b`/`npm run build` clean except `TeamScreen.tsx`/`InvitationFlow.tsx` (expected — those two screens' own rebuild against the reworked `settings.md`/`authentication.md` is a separate, parallel `ui-designer` dispatch). Not yet `reviewer`-verified.
+
+**Superseded in part by `20260914032000_invitation_token_no_raw_cache.sql`** — this migration's own "replays the raw token on a retry, since it's never persisted anywhere but that retry cache" design, described above as a deliberate exception, was an `architect`-found Blocker against D64's real threat model (a DB dump, not an RLS bypass). See checklist item 29 below for the fix: `idempotency_keys.result` no longer carries the raw token at all, `regenerate_invitation`'s precondition loosened to any still-`pending` row (not only expired), and `store.tsx`'s two return types now honestly reflect `token: string | null`.
 
 ## What's here
 
@@ -545,6 +550,109 @@ supabase/
                                                              concurrent
                                                              cancel already
                                                              won the race).
+                                                             PUSHED
+                                                             2026-09-14.
+    20260914030000_invitation_token_write_path.sql            — Team
+                                                             Invitations real
+                                                             write path (RFC
+                                                             0013/D64):
+                                                             _generate_invitation_token
+                                                             (private helper,
+                                                             256-bit token,
+                                                             base64url,
+                                                             sha256/hex hash,
+                                                             24h expiry),
+                                                             create_invitation
+                                                             (OWNER-only,
+                                                             Paid-tier-gated,
+                                                             idempotency-keyed),
+                                                             regenerate_invitation
+                                                             (OWNER-only,
+                                                             in-place mutation
+                                                             on a server-
+                                                             reconfirmed-
+                                                             expired row),
+                                                             peek_invitation
+                                                             (read-only,
+                                                             stable, granted
+                                                             to anon +
+                                                             authenticated —
+                                                             the pre-auth
+                                                             token-resolution
+                                                             RFC 0013 Section 2
+                                                             needs).
+                                                             `accept_invitation`
+                                                             untouched. PUSHED
+                                                             2026-09-14.
+    20260914031000_invitation_token_write_path_fix.sql        — reviewer fix
+                                                             round 1
+                                                             (Important):
+                                                             regenerate_invitation
+                                                             never re-checked
+                                                             `businesses.
+                                                             subscription_tier
+                                                             = 'paid'`
+                                                             server-side
+                                                             (only OWNER-ship
+                                                             was re-verified),
+                                                             unlike its
+                                                             sibling
+                                                             create_invitation
+                                                             — a Business that
+                                                             downgraded to
+                                                             Free while
+                                                             holding an old
+                                                             expired pending
+                                                             Invitation could
+                                                             still mint a
+                                                             fresh working
+                                                             invite link.
+                                                             Added the
+                                                             identical tier
+                                                             check, keyed off
+                                                             the already-
+                                                             looked-up
+                                                             Invitation's own
+                                                             `business_id`,
+                                                             raising the same
+                                                             `paid_tier_required`
+                                                             (42501). PUSHED
+                                                             2026-09-14.
+    20260914032000_invitation_token_no_raw_cache.sql           — architect-
+                                                             found Blocker
+                                                             fix: stop
+                                                             caching the raw
+                                                             token in
+                                                             idempotency_keys.result
+                                                             on
+                                                             create_invitation/
+                                                             regenerate_invitation
+                                                             (D64's actual
+                                                             threat model is a
+                                                             DB dump, RLS
+                                                             never made the
+                                                             cache safe); a
+                                                             replay now
+                                                             returns
+                                                             token: null.
+                                                             regenerate_invitation's
+                                                             precondition
+                                                             loosened
+                                                             expired-only →
+                                                             still-pending
+                                                             (error renamed
+                                                             invitation_not_expired
+                                                             →
+                                                             invitation_not_pending),
+                                                             making it the
+                                                             recovery path for
+                                                             a lost
+                                                             create_invitation
+                                                             response; UI
+                                                             unaffected
+                                                             (settings.md
+                                                             §3.11 still
+                                                             expired-only).
                                                              PUSHED
                                                              2026-09-14.
   functions/
@@ -804,6 +912,40 @@ supabase/
     while self-correcting within the round-trip window otherwise. No SQL/RPC
     change — pure client-side fix. `tsc -b`/`npm run build` both clean. Not
     yet `reviewer`-verified.
+29. ~~**Push the `invitation_token_no_raw_cache` migration**~~ **DONE**
+    2026-09-14 — `20260914032000_invitation_token_no_raw_cache.sql` applied
+    to the real hosted project via `supabase db push`. Closes an
+    `architect`-found Blocker in item 25's/26's sibling migration
+    (`20260914030000`): `create_invitation`/`regenerate_invitation` both
+    cached the raw invitation token in `idempotency_keys.result` so a
+    dropped-response retry could recover it, framed at the time as a
+    "deliberate, narrow exception." `architect` found that framing wrong
+    against RFC 0013/D64's actual threat model (a full DB dump/leak, not an
+    application-layer RLS bypass — RLS never made the cache safe against a
+    dump). Fix, in a new additive migration (existing convention — never
+    editing an already-deployed migration in place): both functions
+    `create or replace`d to stop caching the raw token in
+    `idempotency_keys.result` at all (only `invitation_id`/`expires_at` now)
+    — a replay returns `token: null`, proof of completion but not the
+    secret. `regenerate_invitation`'s precondition loosened from "genuinely
+    expired" to "still `pending`" (error renamed
+    `invitation_not_expired` → `invitation_not_pending`), making it the
+    legitimate recovery path for a lost `create_invitation` response — the
+    Approved UI is unaffected, `settings.md` §3.11's `[ Generar otra ]`
+    button stays gated to expired rows only; only the backend precondition
+    loosened. The Paid-tier re-check landed in item 27
+    (`20260914031000_invitation_token_write_path_fix.sql`) was preserved,
+    not regressed, since this `create or replace` was written from that
+    migration's version, not the original. Client: `store.tsx`'s
+    `createInvitation`/`regenerateInvitation` return types corrected to
+    `token: string | null` (both the `StoreValue` interface and the
+    implementations' own row casts), matching that a replay now genuinely
+    returns no token; doc comments updated to describe the null-on-replay
+    case and the fallback to `regenerateInvitation`. `peek_invitation` and
+    `_generate_invitation_token` untouched. `tsc -b`/`npm run build` both
+    clean except `TeamScreen.tsx`/`InvitationFlow.tsx` (expected — same two
+    screens item 25's entry above already named as a separate, not-yet-run
+    `ui-designer` rebuild). Not yet `reviewer`-verified.
 
 ## Judgment calls made building this (tune freely, not escalated)
 

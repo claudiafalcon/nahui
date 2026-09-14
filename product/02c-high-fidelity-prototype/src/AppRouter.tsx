@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import App from './App';
 import { useStore } from './domain/store';
-import { currentUser, findMembership, pendingInvitationsForPhone, phoneIdentifierFor } from './domain/selectors';
+import { currentUser, findMembership } from './domain/selectors';
 import { businessForCurrentUser, isOnboardingComplete } from './domain/onboardingResolution';
 import { AuthenticationFlow } from './screens/Authentication/AuthenticationFlow';
 import { AuthResolving } from './screens/Authentication/AuthResolving';
-import { InvitationFlow } from './screens/Authentication/InvitationFlow';
 import { PhoneMismatchConfirm } from './screens/Authentication/PhoneMismatchConfirm';
 import { OnboardingFlow } from './screens/Onboarding/OnboardingFlow';
 import type { AuthIdentity } from './domain/types';
@@ -47,63 +46,42 @@ import type { AuthIdentity } from './domain/types';
  * the expected consequence of that ruling, not a gap this file needs to
  * close).
  *
- * **Slice 12 addition — `authentication.md` §2.1 / §2.2 case 0 / §2.2a
- * (`product-decisions.md` Q24/Q25, amended 2026-09-07): a fourth stage,
- * `InvitationFlow`, mounted between Authentication and Onboarding.** The
- * spec's own gate, as amended, is "does this User hold zero
- * `BusinessMembership` anywhere AND zero Business (complete or in-progress)
- * anywhere for them" — a fact that, unlike the original ("has this phone
- * never been verified before, anywhere") wording it replaced, is honestly
- * re-derivable from persisted `AppState` alone on every render, including a
- * later reload with no fresh verification involved at all. That's exactly
- * why the amendment exists: §2.1 now runs the identical check at ordinary
- * session-resume, not only at a fresh credential confirm (§2.2 case 0), so
- * a phone that verified once, never finished Onboarding, and is invited only
- * afterward is still reached. `derivedPendingInvitation` below implements
- * that corrected condition directly — `hasAnyMembership` /
- * `hasOwnBusiness` together are the "zero Membership anywhere AND zero
- * Business anywhere" test, checked on every render regardless of which
- * entry point (a fresh confirm or a resumed session) reached this
- * component, matching §2.2a's own framing of this as "two entry points
- * into one identical resolution." No approximation or divergence from the
- * spec remains — this is the literal, Approved text.
- * "Ahora no" (declining) touches no persisted fact on the `Invitation`
- * record itself (§2.2a step 4 — "does not touch the Invitation at all"),
- * but §2.2a step 6 (new, 2026-09-07) makes an explicit, durable promise:
- * declining is remembered locally, per device, per specific Invitation, so
- * the identical offer is never re-shown on a later app open — a completed
- * decision, not in-progress typing, and one a realistic phone-lock/
- * backgrounding interruption would otherwise violate outright (ux-critic
- * fix round, Slice 12). `derivedPendingInvitation` below therefore checks
- * `user.declinedInvitationIds` — a small, durable, local-only UI marker on
- * the `User` row itself (`declineInvitation`, `store.tsx`), the same
- * "shown once ever" persisted-flag shape `Business.nfcAvailabilityNudgeShown`
- * already uses — rather than a transient local-state flag that a reload
- * would silently clear.
+ * **Slice 12's `InvitationFlow` auto-offer mechanism (phone-match against
+ * `Invitation.phone`, mounted here as a fourth stage between Authentication
+ * and Onboarding) is retired, not merely superseded — RFC 0013/`decision-log.md`
+ * D64.** `Invitation` no longer carries `phone` at all (its canonical
+ * identity is now a `token`, resolvable only by explicitly opening
+ * `nahui.app/invite/<token>` — RFC 0013 §2 names this an explicit structural
+ * simplification: "the new mechanism never auto-surfaces anything... an
+ * Invitation is only ever seen by explicitly opening its link"). This isn't
+ * a UI redesign choice made here — it's the direct, already-Accepted
+ * Foundation consequence of that RFC; the implicit-session-match code this
+ * component used to run is now both non-functional (no `phone` field left
+ * to match against) and dead by design. The real pre-auth offer screen this
+ * new mechanism needs (reading the token below, resolving it via
+ * `peekInvitation`, threading it through authentication) is not yet built —
+ * `authentication.md`'s own pre-auth acceptance-flow amendment is a
+ * separate, parallel `ux-designer` dispatch (see
+ * `context/team-invitations-real-wiring.md`) — this file only adds the
+ * plumbing that makes the token available once that spec lands.
  *
- * **`lockedInvitation` — a second, load-bearing piece of local state, found
- * and fixed via live verification (`npm run dev`, a real accept
- * walkthrough), not merely reasoned about in the abstract.** Accepting
- * (§2.2a step 3) writes the SELLER `BusinessMembership` atomically — the
- * exact same write `pendingInvitation`'s own derivation below watches to
- * decide "is she still in case 0's territory." Without this latch, the
- * Membership write itself flips that derivation false on the very next
- * render, so this component would stop rendering `InvitationFlow` (and
- * silently fall through to `home.md §2`) *before* that child's own
- * `'accepting'`/`'welcome'` steps (§3.10a/§3.10c) ever had a chance to
- * render — the write would succeed, but she'd never see the confirmation
- * she just earned. Latching the invitation into local state the moment it's
- * first offered (`useEffect` below) means this component keeps rendering
- * `InvitationFlow` for the rest of that screen's own lifecycle regardless
- * of what the write does to `state.memberships` — only `onAccepted`
- * (§3.10c's own "Ir a Hoy" tap) or `onDeclined` ever clears it.
+ * **`inviteToken` — minimal path-based routing (Stage 7 Backend Integration,
+ * this pass).** This app has no other need for a routing library
+ * (`architecture-principles.md` #5 restraint) — a single `window.location
+ * .pathname` read against `/invite/<token>`, captured once at initial
+ * mount, is the entire mechanism. Not yet consumed by any screen; it exists
+ * so the token isn't lost before the consuming flow is built.
  */
 export function AppRouter() {
-  const { state, hydrationStatus, retryHydration, declineInvitation, confirmPhoneMismatch, retractMistypedVerification } =
-    useStore();
-  const [lockedInvitation, setLockedInvitation] = useState<ReturnType<typeof pendingInvitationsForPhone>[number] | null>(
-    null,
-  );
+  const { state, hydrationStatus, retryHydration, confirmPhoneMismatch, retractMistypedVerification } = useStore();
+  // Stage 7 Backend Integration, this pass — see this component's own doc
+  // comment above. Captured once, at mount, not re-derived on every render
+  // (a client-side navigation away from `/invite/<token>` never happens in
+  // this app — reload is the only way this path is ever left).
+  const [inviteToken] = useState<string | null>(() => {
+    const match = window.location.pathname.match(/^\/invite\/(.+)$/);
+    return match ? decodeURIComponent(match[1]) : null;
+  });
   // authentication.md §3.7e (Slice 12 `merchant-user-tester` defect fix,
   // 2026-09-07; **generalized 2026-09-13, `decision-log.md` D62/D63** — was
   // phone-only, now covers whichever of the two typed channels "No, elegir
@@ -128,38 +106,12 @@ export function AppRouter() {
   const user = currentUser(state);
   const authenticated = state.currentUserId != null;
 
-  // Reused by both the pending-Invitation derivation below and
-  // `needsPhoneMismatchConfirmation` further down — both are the identical
-  // "zero Membership anywhere AND zero Business anywhere for this User"
-  // test `authentication.md` §2.2 case 0/§2.2 case 1 each open with, just
-  // gated on a different second condition (a pending Invitation vs. a
-  // device-history mismatch).
+  // Used by `needsPhoneMismatchConfirmation` below — the "zero Membership
+  // anywhere AND zero Business anywhere for this User" test `authentication.md`
+  // §2.2 case 1 opens with (previously shared with the now-retired pending-
+  // Invitation derivation — see this component's own doc comment above).
   const hasAnyMembership = authenticated && user ? state.memberships.some((m) => m.userId === user.id) : false;
   const hasOwnBusiness = authenticated && user ? businessForCurrentUser(state) != null : false;
-
-  // `Invitation` stays phone-scoped by design (RFC 0012 §3) — `''` for a
-  // Google/Email-only merchant, which simply never matches a real
-  // Invitation.phone, the expected consequence of that ruling.
-  const ownPhone = user ? phoneIdentifierFor(state, user.id) : '';
-
-  let derivedPendingInvitation = undefined as ReturnType<typeof pendingInvitationsForPhone>[number] | undefined;
-  if (authenticated && user && !hasAnyMembership && !hasOwnBusiness) {
-    const candidate = pendingInvitationsForPhone(state, ownPhone)[0];
-    if (candidate && !user.declinedInvitationIds.includes(candidate.id)) {
-      derivedPendingInvitation = candidate;
-    }
-  }
-  // See this component's own doc comment for why a live derivation alone
-  // isn't enough here — `onAccepted`'s own eventual tap is what actually
-  // clears `lockedInvitation` (below), not a re-derivation.
-  const pendingInvitation = lockedInvitation ?? derivedPendingInvitation;
-  useEffect(() => {
-    if (derivedPendingInvitation && !lockedInvitation) setLockedInvitation(derivedPendingInvitation);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only needs to
-    // latch once, the first render `derivedPendingInvitation` is truthy;
-    // re-running on every subsequent identity change of that value would
-    // defeat the whole point of latching it.
-  }, [derivedPendingInvitation]);
 
   // authentication.md §2.2 case 1's device-history check / §3.7e (Slice 12
   // `merchant-user-tester` defect fix, 2026-09-07; generalized 2026-09-13).
@@ -207,20 +159,16 @@ export function AppRouter() {
     return mismatchIdentity.identifier; // 'apple' — schema-modeled, not activated, defensively unreachable
   })();
 
-  // This prototype models exactly one `Business` per running instance
-  // (`types.ts`'s own "the whole AppState is implicitly one Business"
-  // convention) — the only Business an Invitation could ever reference.
-  const invitationBusinessName = state.business?.name ?? '';
-
   // `onboarding.md` is an OWNER-only flow, structurally — a SELLER never
-  // runs it (her membership arrives entirely through `InvitationFlow`
-  // above). `isOnboardingComplete` reads `businessForCurrentUser`, which is
-  // deliberately OWNER-scoped (`onboardingResolution.ts`'s own doc comment)
-  // and would therefore read `false` for a SELLER, incorrectly routing her
-  // into Onboarding if left unguarded. A SELLER Membership (any status —
-  // `active` or `revoked`; `home.md` §2 step 0's own revoked-Membership gate
-  // lives one level deeper, inside `App.tsx`, not here) skips straight past
-  // both the Invitation-offer and Onboarding checks.
+  // runs it (her membership arrives entirely through Invitation-acceptance,
+  // mechanism currently being reworked — see this component's own doc
+  // comment above). `isOnboardingComplete` reads `businessForCurrentUser`,
+  // which is deliberately OWNER-scoped (`onboardingResolution.ts`'s own doc
+  // comment) and would therefore read `false` for a SELLER, incorrectly
+  // routing her into Onboarding if left unguarded. A SELLER Membership (any
+  // status — `active` or `revoked`; `home.md` §2 step 0's own
+  // revoked-Membership gate lives one level deeper, inside `App.tsx`, not
+  // here) skips straight past the Onboarding check.
   const membershipForThisBusiness =
     user && state.business ? findMembership(state, user.id, state.business.id) : undefined;
   const isSeller = membershipForThisBusiness?.role === 'SELLER';
@@ -296,23 +244,6 @@ export function AppRouter() {
               setRetractedPrefill(undefined);
             }
             retractMistypedVerification();
-          }}
-        />
-      ) : pendingInvitation ? (
-        <InvitationFlow
-          invitation={pendingInvitation}
-          businessName={invitationBusinessName}
-          onDeclined={() => {
-            declineInvitation(pendingInvitation.id);
-            setLockedInvitation(null);
-          }}
-          onAccepted={() => {
-            // §3.10c "Ir a Hoy" — clears the latch (see this component's own
-            // doc comment); the freshly-created SELLER Membership means the
-            // render below now falls straight through to `home.md §2`'s own
-            // resolution inside `<App />`. `isOnboardingComplete` is
-            // irrelevant to a SELLER — she never runs Onboarding at all.
-            setLockedInvitation(null);
           }}
         />
       ) : isSeller ? (
