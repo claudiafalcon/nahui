@@ -38,14 +38,18 @@ import { EVENT_TYPE_LABELS } from '../Events/eventTypeLabels';
  */
 const COLUMNS = ['Fecha', 'Lugar', 'Evento', 'Sesión', 'Vendedor', 'Producto', 'Cantidad', 'Precio', 'ID de venta'];
 
-function vendedorLabel(role: SalesExportRow['vendedorRole']): string {
-  // §2's own role-derivation, reused as-is ("Tú"/"Alguien de tu equipo") —
-  // `role === undefined` (an orphaned Membership reference, unreachable
-  // through any real write path in this codebase) falls back to the same
-  // "Alguien de tu equipo" copy rather than a blank cell or a crash, the
-  // same defensive-but-honest posture `membershipById`'s own callers
-  // already take elsewhere in this tab.
-  return role === 'OWNER' ? 'Tú' : 'Alguien de tu equipo';
+/** `decision-log.md` D69, `product-decisions.md` Q29 — `vendedorDisplayName`
+ * first, then the pre-existing role-derivation ("Tú"/"Alguien de tu
+ * equipo") — the identical two-tier rule `membershipDisplayName`/§3.4a
+ * already establish, reused rather than reimplemented for this export's own
+ * "Vendedor" column. `role === undefined` (an orphaned Membership
+ * reference, unreachable through any real write path in this codebase)
+ * still falls back to "Alguien de tu equipo," the same defensive-but-honest
+ * posture `membershipById`'s own callers already take elsewhere in this
+ * tab. */
+function vendedorLabel(row: Pick<SalesExportRow, 'vendedorRole' | 'vendedorDisplayName'>): string {
+  if (row.vendedorDisplayName) return row.vendedorDisplayName;
+  return row.vendedorRole === 'OWNER' ? 'Tú' : 'Alguien de tu equipo';
 }
 
 function sesionLabel(row: SalesExportRow): string {
@@ -73,7 +77,7 @@ export async function buildSalesExportWorkbook(rows: SalesExportRow[]): Promise<
       row.venue?.displayName ?? '',
       row.event ? EVENT_TYPE_LABELS[row.event.type] : '',
       sesionLabel(row),
-      vendedorLabel(row.vendedorRole),
+      vendedorLabel(row),
       row.product.name,
       row.cantidad,
       row.precio,

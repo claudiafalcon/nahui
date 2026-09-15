@@ -14,37 +14,58 @@ type SubView =
   | { kind: 'invite' }
   | { kind: 'invite-saving' }
   | { kind: 'invite-error' }
-  | { kind: 'invite-ready'; invitationId: ID; token: string; expiresAt: number }
+  | { kind: 'invite-ready'; invitationId: ID; token: string; expiresAt: number; targetHintEmail: string | null }
   | { kind: 'regenerate-saving'; invitationId: ID }
   | { kind: 'regenerate-error'; invitationId: ID }
   | { kind: 'cancel-confirm'; invitationId: ID }
   | { kind: 'cancel-saving'; invitationId: ID }
   | { kind: 'cancel-error'; invitationId: ID }
-  | { kind: 'remove-confirm'; membershipId: ID; phone: string }
-  | { kind: 'remove-saving'; membershipId: ID; phone: string }
-  | { kind: 'remove-error'; membershipId: ID; phone: string };
+  /** settings.md §3.12e "Editar correo"/"Agregar correo" (RFC 0014/D70) —
+   * same sheet either way, differing only in whether it opens pre-filled
+   * (an already-set `targetHint`) or blank (a legacy, hint-less row). No
+   * separate "saving" sub-state — this near-instant write shows no
+   * intermediate visual at all while in flight, the identical convention
+   * `SettingsScreen.tsx`'s "Tu nombre" sheet and `inventory.md` §3.4a's
+   * price-edit sheet (`CatalogView.tsx`) already establish; only a failed
+   * save has a visible consequence (an inline error, the sheet staying
+   * open). */
+  | { kind: 'edit-hint'; invitationId: ID }
+  | { kind: 'remove-confirm'; membershipId: ID; phone: string; displayName: string | null }
+  | { kind: 'remove-saving'; membershipId: ID; phone: string; displayName: string | null }
+  | { kind: 'remove-error'; membershipId: ID; phone: string; displayName: string | null };
 
-/** "Para {email} · creada el {date}" / "Creada el {date}" — settings.md
- * §3.11's own two row-meta shapes (with/without a `targetHint`), shared by
- * the pending/expired/cancelled row kinds alike (§3.11's own wireframe uses
- * the identical "Creada el 8 sep" shape for a cancelled row too). */
+/** settings.md §3.11's own two row-meta shapes — corrected 2026-09-15
+ * (RFC 0014/D70), no longer "with/without a `targetHint`" (every Invitation
+ * created after RFC 0014 shipped always carries one) but "ordinary vs.
+ * legacy, hint-less row," per §3.11's own corrected text. Shared by the
+ * pending/expired/cancelled row kinds alike (§3.11's own wireframe uses the
+ * plain "Creada el 8 sep" shape for a cancelled row too, which never
+ * distinguishes legacy). */
 function invitationMetaLine(invitation: Invitation): string {
   const created = formatShortDate(dateKey(invitation.createdAt));
   if (invitation.targetHint) return `Para ${invitation.targetHint.value} · creada el ${created}`;
   return `Creada el ${created}`;
 }
 
-/** Plain "55 1234 5678" display grouping — `settings.md` §2.7's own named
- * gap ("no personal display-name field yet") means a phone number is the
- * only identifier a Membership row can show; grouped the same way
+/** Plain "55 1234 5678" display grouping — grouped the same way
  * `CodeStep.tsx` already renders a confirmed phone back to her. Empty for a
  * Google/Email-only SELLER (`phoneIdentifierFor`'s own documented `''`
- * fallback, `authentication.md` §8 item 12's named, not-yet-designed gap) —
- * renders as an empty title line rather than crashing; not solved here,
- * out of this dispatch's own scope. */
+ * fallback, `authentication.md` §8 item 12's named, not-yet-designed gap). */
 function formatPhone(phone: string): string {
   if (phone.length !== 10) return phone;
   return `${phone.slice(0, 2)} ${phone.slice(2, 6)} ${phone.slice(6)}`;
+}
+
+/** `decision-log.md` D69, `product-decisions.md` Q29 — settings.md §2.7's
+ * own resolved, three-tier "Row display" order: `User.displayName` first,
+ * then the pre-existing phone display, then the last-resort role-only
+ * fallback for a `User` with neither (created cold via email or Google,
+ * D63). Shared by an `active` and a `revoked` row alike — the identity
+ * resolution itself never depends on which state the Membership is in. */
+function memberIdentityLabel(displayName: string | null, phone: string): string {
+  if (displayName) return displayName;
+  if (phone) return formatPhone(phone);
+  return 'Alguien de tu equipo';
 }
 
 /**
@@ -66,10 +87,24 @@ function formatPhone(phone: string): string {
  * requires.
  */
 export function TeamScreen({ onBack }: { onBack: () => void }) {
-  const { state, createInvitation, regenerateInvitation, cancelInvitation, revokeMembership } = useStore();
+  const {
+    state,
+    createInvitation,
+    regenerateInvitation,
+    cancelInvitation,
+    updateInvitationTargetHint,
+    revokeMembership,
+  } = useStore();
   const [subView, setSubView] = useState<SubView>({ kind: 'main' });
   const [email, setEmail] = useState('');
   const [ackTapped, setAckTapped] = useState(false);
+  // settings.md §3.12e — the "Editar correo"/"Agregar correo" sheet's own
+  // draft state, mirroring `SettingsScreen.tsx`'s "Tu nombre" sheet shape
+  // (`nameDraft`/`nameSaveError`) — a failed save leaves the sheet open
+  // with her typed value intact, same convention §3.3b already uses.
+  const [hintDraft, setHintDraft] = useState('');
+  const [hintSaveError, setHintSaveError] = useState(false);
+  const hintKeyRef = useRef<string | null>(null);
   // `knowledge-mentor` consultation fix, 2026-09-14 — a rejected
   // `navigator.clipboard.writeText` promise used to be silently swallowed,
   // giving her no signal either way on a secret that's gone forever once
@@ -109,8 +144,11 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
   const hasAtSign = trimmedEmail.includes('@');
   // Same deliberately loose structural check as `EmailStep.tsx`/
   // `authentication.md` §3.2e — catch the obviously-incomplete case, never
-  // full validation (this field isn't even required, §2.7/§3.12's own
-  // text).
+  // full validation. **Corrected 2026-09-15 (RFC 0014/D70, `decision-log.md`
+  // D70)** — this field is now required, not optional: "Generar invitación"
+  // stays disabled until `looksValidEmail` is true (below), reversing the
+  // pre-D70 "never gated on the optional field" posture this file's own
+  // JSX comment used to state.
   const looksValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
   const showFormatHint = trimmedEmail.length > 0 && hasAtSign && !looksValidEmail;
   const hasDuplicatePending =
@@ -129,6 +167,32 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
         // here.
         invitationDisplayStatus(inv) === 'pending',
     );
+
+  // settings.md §3.12e — same loose structural check §3.12 itself already
+  // uses; "Guardar" stays disabled until the typed value passes it.
+  const hintTrimmed = hintDraft.trim();
+  const hintHasAtSign = hintTrimmed.includes('@');
+  const hintLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hintTrimmed);
+  const showHintFormatError = hintTrimmed.length > 0 && hintHasAtSign && !hintLooksValid;
+
+  function openEditHint(invitationId: ID, currentValue: string | undefined) {
+    setHintDraft(currentValue ?? '');
+    setHintSaveError(false);
+    // `hintKeyRef` is shared across every "Editar correo"/"Agregar correo"
+    // row this screen ever opens, not scoped to one Invitation — reset here
+    // on every fresh open so a stale key from an earlier, abandoned (failed
+    // then cancelled, never retried) attempt on a *different* row can never
+    // be replayed against this genuinely new one (`architecture-principles.md`
+    // #7 — a client-supplied idempotency key must identify one logical
+    // attempt, never be reused across two different ones). An in-sheet
+    // retry after a failure (tapping "Guardar" again without closing the
+    // sheet) still correctly reuses the same key — `handleSaveTargetHint`
+    // only mints a fresh one when `hintKeyRef.current` is null, and this
+    // reset is the only place that ever nulls it before a successful save
+    // does.
+    hintKeyRef.current = null;
+    setSubView({ kind: 'edit-hint', invitationId });
+  }
 
   function buildInviteLink(token: string): string {
     // `settings.md` §3.12c's own text: "the link display shown here is
@@ -200,16 +264,27 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
     if (result?.token) {
       setEmail('');
       setAckTapped(false);
-      setSubView({ kind: 'invite-ready', invitationId, token: result.token, expiresAt: result.expiresAt });
+      // `regenerate_invitation` never touches `target_hint` (RFC 0014's own
+      // rule, `settings.md` §3.12e's own citation) — read the still-current
+      // value straight from `state.invitations` rather than assuming one
+      // exists. `null` only for a legacy row regenerated without ever being
+      // separately opted in via "Agregar correo" — §3.12c's own copy below
+      // branches for that honest case.
+      const targetHintEmail = state.invitations.find((inv) => inv.id === invitationId)?.targetHint?.value ?? null;
+      setSubView({ kind: 'invite-ready', invitationId, token: result.token, expiresAt: result.expiresAt, targetHintEmail });
     } else {
       setSubView({ kind: 'regenerate-error', invitationId });
     }
   }
 
   async function handleGenerate() {
+    // RFC 0014/D70 — `looksValidEmail` now gates this button itself (see
+    // §3.12's own JSX below); defensive guard kept here too, matching this
+    // file's own "never trust a stale disabled-button state alone" posture.
+    if (!looksValidEmail) return;
     if (!createKeyRef.current) createKeyRef.current = crypto.randomUUID();
     setSubView({ kind: 'invite-saving' });
-    const targetHint = looksValidEmail ? ({ type: 'email' as const, value: trimmedEmail }) : null;
+    const targetHint = { type: 'email' as const, value: trimmedEmail };
     const result = await createInvitation(business.id, targetHint, createKeyRef.current);
     if (!result) {
       setSubView({ kind: 'invite-error' }); // §3.12b — Reintentar replays with the same key
@@ -224,6 +299,7 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
         invitationId: result.invitationId,
         token: result.token,
         expiresAt: result.expiresAt,
+        targetHintEmail: trimmedEmail,
       });
       return;
     }
@@ -247,10 +323,33 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
     setSubView({ kind: 'main' });
   }
 
-  async function handleConfirmRemove(membershipId: ID, phoneLabel: string) {
-    setSubView({ kind: 'remove-saving', membershipId, phone: phoneLabel });
+  async function handleConfirmRemove(membershipId: ID, phoneLabel: string, displayName: string | null) {
+    setSubView({ kind: 'remove-saving', membershipId, phone: phoneLabel, displayName });
     const ok = await revokeMembership(membershipId);
-    setSubView(ok ? { kind: 'main' } : { kind: 'remove-error', membershipId, phone: phoneLabel });
+    setSubView(ok ? { kind: 'main' } : { kind: 'remove-error', membershipId, phone: phoneLabel, displayName });
+  }
+
+  /** settings.md §3.12e "Editar correo"/"Agregar correo" (RFC 0014/D70) —
+   * "Guardar" writes `Invitation.targetHint` directly on the same still-
+   * `pending` row — no token regeneration, no `expiresAt` reset. */
+  async function handleSaveTargetHint(invitationId: ID) {
+    if (!hintLooksValid) return;
+    if (!hintKeyRef.current) hintKeyRef.current = crypto.randomUUID();
+    setHintSaveError(false);
+    const result = await updateInvitationTargetHint(
+      invitationId,
+      { type: 'email', value: hintDraft.trim() },
+      hintKeyRef.current,
+    );
+    if (!result || 'error' in result) {
+      // A failed save leaves the sheet open with her typed value intact —
+      // same convention §3.3b already uses (`SettingsScreen.tsx`'s "Tu
+      // nombre" sheet).
+      setHintSaveError(true);
+      return;
+    }
+    hintKeyRef.current = null; // this logical attempt is settled — a future tap starts a fresh one
+    setSubView({ kind: 'main' });
   }
 
   if (subView.kind === 'invite-saving') {
@@ -324,7 +423,7 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
         <WritingState
           error
           errorLabel="No pudimos quitar a esta persona de tu equipo. Intenta de nuevo."
-          onRetry={() => handleConfirmRemove(subView.membershipId, subView.phone)}
+          onRetry={() => handleConfirmRemove(subView.membershipId, subView.phone, subView.displayName)}
         />
       </ScreenTransition>
     );
@@ -340,8 +439,19 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
           </button>
           <h1 className={styles.heading}>Invitación lista</h1>
           <p className={styles.body}>
-            Comparte este enlace con la persona que va a vender contigo. El enlace funciona para cualquiera que lo
-            abra — compártelo solo con la persona de tu confianza.
+            Comparte este enlace con la persona que va a vender contigo.{' '}
+            {/* `product/99-rfc/0014-invitation-target-hint-enforced.md`,
+                `decision-log.md` D70 — supersedes the pre-D70 "funciona para
+                cualquiera que lo abra" disclosure, which is no longer true
+                (§3.12c's own corrected text): D70 requires the exact
+                `targetHint` email to authenticate before acceptance
+                succeeds. A legacy row regenerated without ever being opted
+                in (`targetHintEmail === null`) has no email to state this
+                guarantee against — the original, still-accurate-for-that-
+                case disclosure is kept for that one branch only. */}
+            {subView.targetHintEmail
+              ? `Solo ${subView.targetHintEmail} va a poder aceptarlo, aunque alguien más llegue a tenerlo.`
+              : 'El enlace funciona para cualquiera que lo abra — compártelo solo con la persona de tu confianza.'}
           </p>
           <p className={styles.linkBox}>{link}</p>
           <div className={styles.ctaStack}>
@@ -381,7 +491,7 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
             usando tu mismo Catálogo y tus mismos precios.
           </p>
           <div className={styles.field}>
-            <span className={styles.label}>Correo electrónico (opcional)</span>
+            <span className={styles.label}>Correo electrónico</span>
             <input
               className={styles.input}
               type="email"
@@ -393,22 +503,28 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
               onChange={(e) => setEmail(e.target.value)}
             />
             {showFormatHint ? (
-              <p className={styles.hint}>Verifica tu correo — parece que le falta algo. Puedes dejarlo en blanco si prefieres.</p>
+              <p className={styles.hint}>Verifica el correo — parece que le falta algo.</p>
             ) : hasDuplicatePending ? (
               <p className={styles.hint}>
                 Ya tienes una invitación pendiente con este correo. Puedes crear otra invitación de todas formas si
                 quieres.
               </p>
             ) : (
-              <p className={styles.hint}>
-                Es solo para que tú recuerdes a quién es esta invitación — no hace falta para crear la invitación.
-              </p>
+              // `product/99-rfc/0014-invitation-target-hint-enforced.md`,
+              // `decision-log.md` D70 — corrected from the pre-D70 "es solo
+              // para que tú recuerdes... no hace falta para crear la
+              // invitación" line, which was true when this field was
+              // optional and is no longer accurate now that it's required
+              // and enforced at acceptance.
+              <p className={styles.hint}>Para que solo esa persona pueda aceptarla, aunque alguien más llegue a tener el enlace.</p>
             )}
           </div>
-          {/* Never gated on the optional field, in either direction — a
-              real, measurable simplification over the retired phone-entry
-              screen (§3.12's own text, §6). */}
-          <Button className={styles.cta} onClick={handleGenerate}>
+          {/* `product/99-rfc/0014-invitation-target-hint-enforced.md`,
+              `decision-log.md` D70 — the button is now gated on the field
+              (reversing the pre-D70 "never gated on the optional field"
+              posture), disabled until the typed value looks like a real
+              email. */}
+          <Button className={styles.cta} disabled={!looksValidEmail} onClick={handleGenerate}>
             Generar invitación
           </Button>
         </div>
@@ -434,9 +550,14 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
           <div className={styles.list}>
             {rows.map((row) => {
               if (row.kind === 'active' || row.kind === 'revoked') {
+                // `decision-log.md` D69, `product-decisions.md` Q29 —
+                // three-tier identity resolution (§2.7's own corrected
+                // "Row display" order): `User.displayName` → phone → the
+                // last-resort role-only fallback.
+                const identity = memberIdentityLabel(row.displayName, row.phone);
                 return (
                   <div key={row.membership.id} className={`${styles.row} stitchBottom`}>
-                    <span className={styles.rowTitle}>{formatPhone(row.phone)}</span>
+                    <span className={styles.rowTitle}>{identity}</span>
                     {row.kind === 'active' ? (
                       <div className={styles.rowActiveLine}>
                         <span className={styles.rowStatus}>Vendiendo contigo</span>
@@ -444,7 +565,12 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
                           variant="secondary"
                           inline
                           onClick={() =>
-                            setSubView({ kind: 'remove-confirm', membershipId: row.membership.id, phone: row.phone })
+                            setSubView({
+                              kind: 'remove-confirm',
+                              membershipId: row.membership.id,
+                              phone: row.phone,
+                              displayName: row.displayName,
+                            })
                           }
                         >
                           Quitar
@@ -465,14 +591,32 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
                 );
               }
               // row.kind === 'pending' | 'expired'
-              return (
-                <div key={row.invitation.id} className={`${styles.row} stitchBottom`}>
-                  <span className={styles.rowTitle}>
-                    {row.kind === 'pending' ? 'Invitación pendiente' : 'Invitación caducada'}
-                  </span>
-                  <div className={styles.rowActiveLine}>
-                    <span className={styles.rowStatus}>{invitationMetaLine(row.invitation)}</span>
-                    {row.kind === 'pending' ? (
+              if (row.kind === 'pending') {
+                // `product/99-rfc/0014-invitation-target-hint-enforced.md`,
+                // `decision-log.md` D70 — distinguishes an ordinary
+                // hint-bearing row (every Invitation created after D70
+                // shipped) from a legacy, hint-less one (RFC 0014's own
+                // backward-compatibility exemption), each with its own
+                // honest copy and its own edit affordance
+                // ("Editar correo"/"Agregar correo," same §3.12e sheet
+                // either way).
+                const hasHint = row.invitation.targetHint != null;
+                return (
+                  <div key={row.invitation.id} className={`${styles.row} stitchBottom`}>
+                    <span className={styles.rowTitle}>Invitación pendiente</span>
+                    <span className={styles.rowStatus}>
+                      {hasHint
+                        ? invitationMetaLine(row.invitation)
+                        : `Creada el ${formatShortDate(dateKey(row.invitation.createdAt))} · sin correo asignado — cualquiera que abra el enlace puede aceptarla.`}
+                    </span>
+                    <div className={styles.rowActiveLine}>
+                      <Button
+                        variant="secondary"
+                        inline
+                        onClick={() => openEditHint(row.invitation.id, row.invitation.targetHint?.value)}
+                      >
+                        {hasHint ? 'Editar correo' : 'Agregar correo'}
+                      </Button>
                       <Button
                         variant="secondary"
                         inline
@@ -480,11 +624,19 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
                       >
                         Cancelar
                       </Button>
-                    ) : (
-                      <Button variant="secondary" inline onClick={() => recoverToken(row.invitation.id)}>
-                        Generar otra
-                      </Button>
-                    )}
+                    </div>
+                  </div>
+                );
+              }
+              // row.kind === 'expired'
+              return (
+                <div key={row.invitation.id} className={`${styles.row} stitchBottom`}>
+                  <span className={styles.rowTitle}>Invitación caducada</span>
+                  <div className={styles.rowActiveLine}>
+                    <span className={styles.rowStatus}>{invitationMetaLine(row.invitation)}</span>
+                    <Button variant="secondary" inline onClick={() => recoverToken(row.invitation.id)}>
+                      Generar otra
+                    </Button>
                   </div>
                 </div>
               );
@@ -514,7 +666,9 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
 
       {subView.kind === 'remove-confirm' && (
         <Sheet onDismiss={() => setSubView({ kind: 'main' })}>
-          <p className={styles.confirmTitle}>¿Quitar a {formatPhone(subView.phone)} de tu equipo?</p>
+          <p className={styles.confirmTitle}>
+            ¿Quitar a {memberIdentityLabel(subView.displayName, subView.phone)} de tu equipo?
+          </p>
           <p className={styles.confirmBody}>
             Ya no va a poder abrir sesiones de venta ni registrar ventas desde su teléfono. Las ventas que ya
             registró siguen exactamente como están — no se pierde nada.
@@ -523,8 +677,47 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
             <Button variant="secondary" onClick={() => setSubView({ kind: 'main' })}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={() => handleConfirmRemove(subView.membershipId, subView.phone)}>
+            <Button
+              variant="destructive"
+              onClick={() => handleConfirmRemove(subView.membershipId, subView.phone, subView.displayName)}
+            >
               Sí, quitar
+            </Button>
+          </div>
+        </Sheet>
+      )}
+
+      {(subView.kind === 'edit-hint') && (
+        <Sheet onDismiss={() => setSubView({ kind: 'main' })}>
+          <p className={styles.confirmTitle}>Invitación pendiente</p>
+          <div className={styles.field}>
+            <span className={styles.label}>Correo electrónico</span>
+            <input
+              className={styles.input}
+              type="email"
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoFocus
+              placeholder="ana@correo.com"
+              value={hintDraft}
+              onChange={(e) => {
+                setHintDraft(e.target.value);
+                setHintSaveError(false);
+              }}
+            />
+            {showHintFormatError && <p className={styles.error}>Verifica el correo — parece que le falta algo.</p>}
+            {!showHintFormatError && (
+              <p className={styles.hint}>Para que solo esa persona pueda aceptar la invitación.</p>
+            )}
+            {hintSaveError && <p className={styles.error}>No pudimos guardar el correo. Intenta de nuevo.</p>}
+          </div>
+          <div className={styles.confirmRow}>
+            <Button variant="secondary" onClick={() => setSubView({ kind: 'main' })}>
+              Cancelar
+            </Button>
+            <Button disabled={!hintLooksValid} onClick={() => void handleSaveTargetHint(subView.invitationId)}>
+              Guardar
             </Button>
           </div>
         </Sheet>

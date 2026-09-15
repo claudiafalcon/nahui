@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../../domain/store';
+import { currentUser } from '../../domain/selectors';
 import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
 import { WritingState } from '../Settings/WritingState';
@@ -22,10 +23,43 @@ const SAVE_DELAY_MS = 260;
  * `SettingsScreen.tsx`'s own OWNER-facing sign-out already implements — a
  * local copy of that same small state machine, not a cross-feature import,
  * matching this codebase's own per-folder convention.
+ *
+ * **"Tu nombre" (added 2026-09-15, `decision-log.md` D69, `product-
+ * decisions.md` Q29) — load-bearing here, not merely mirrored.** `App.tsx`/
+ * `HomeScreen.tsx` route a SELLER to *this* screen, never to
+ * `SettingsScreen.tsx`'s own OWNER-facing Configuración — so without this
+ * addition, a SELLER would have no way to reach `settings.md` §2.5's own
+ * "Tu cuenta" section, or the self-service field D69 requires it carry,
+ * anywhere in the built app: `authentication.md` §3.10c's own new pointer
+ * line ("Cuando quieras, puedes agregar tu nombre en Tu cuenta") would name
+ * a destination that structurally doesn't exist for the exact role that
+ * line targets. Reuses `SettingsScreen.tsx`'s own §3.3b sheet shape
+ * verbatim — a local copy, not a cross-feature import, matching this
+ * folder's own established convention for the sign-out mechanism above.
  */
 export function SellerAccountScreen({ onBack }: { onBack: () => void }) {
-  const { signOut } = useStore();
+  const { state, signOut, setUserDisplayName } = useStore();
   const [step, setStep] = useState<'main' | 'confirm' | 'saving' | 'error'>('main');
+  const displayName = currentUser(state)?.displayName ?? null;
+  const [editNameOpen, setEditNameOpen] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [nameSaveError, setNameSaveError] = useState(false);
+
+  function openEditName() {
+    setNameDraft(displayName ?? '');
+    setNameSaveError(false);
+    setEditNameOpen(true);
+  }
+
+  async function handleSaveName() {
+    setNameSaveError(false);
+    const ok = await setUserDisplayName(nameDraft);
+    if (ok) {
+      setEditNameOpen(false);
+    } else {
+      setNameSaveError(true);
+    }
+  }
 
   function handleConfirm() {
     setStep('saving');
@@ -69,6 +103,23 @@ export function SellerAccountScreen({ onBack }: { onBack: () => void }) {
           ← Hoy
         </button>
         <h1 className={styles.heading}>Tu cuenta</h1>
+
+        {/* "Tu nombre" — new 2026-09-15, `decision-log.md` D69. Both states
+            open the identical §3.3b sheet. */}
+        <p className={styles.sectionLabel}>Tu nombre</p>
+        {displayName ? (
+          <div className={styles.nameRow}>
+            <span className={styles.nameValue}>{displayName}</span>
+            <Button variant="secondary" inline onClick={openEditName}>
+              Editar
+            </Button>
+          </div>
+        ) : (
+          <Button variant="secondary" onClick={openEditName}>
+            Agregar tu nombre
+          </Button>
+        )}
+
         <Button className={styles.cta} variant="secondary" onClick={() => setStep('confirm')}>
           Cerrar sesión
         </Button>
@@ -86,6 +137,30 @@ export function SellerAccountScreen({ onBack }: { onBack: () => void }) {
               Cancelar
             </Button>
             <Button onClick={handleConfirm}>Sí, cerrar sesión</Button>
+          </div>
+        </Sheet>
+      )}
+
+      {editNameOpen && (
+        <Sheet onDismiss={() => setEditNameOpen(false)}>
+          <p className={styles.confirmTitle}>Tu nombre</p>
+          <div className={styles.field}>
+            <input
+              className={styles.input}
+              type="text"
+              autoFocus
+              placeholder="Escribe tu nombre…"
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+            />
+          </div>
+          <p className={styles.confirmBody}>Así te van a reconocer en Resultados y en Tu equipo.</p>
+          {nameSaveError && <p className={styles.error}>No pudimos guardar tu nombre. Intenta de nuevo.</p>}
+          <div className={styles.confirmRow}>
+            <Button variant="secondary" onClick={() => setEditNameOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void handleSaveName()}>Guardar</Button>
           </div>
         </Sheet>
       )}

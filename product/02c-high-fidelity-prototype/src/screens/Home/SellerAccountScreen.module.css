@@ -45,3 +45,47 @@
   gap: 12px;
   margin-top: var(--space-4);
 }
+
+/* "Tu nombre" — new 2026-09-15, `decision-log.md` D69. Local copy of
+   `SettingsScreen.module.css`'s own `.sectionLabel`/`.nameRow`/`.field`/
+   `.input`/`.error` composition, per this folder's own established
+   convention. */
+.sectionLabel {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: #6B6259;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.nameValue {
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
+
+.field {
+  width: 100%;
+  text-align: left;
+  margin-bottom: var(--space-2);
+}
+
+.input {
+  width: 100%;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+  height: 52px;
+  background: var(--color-white);
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
+
+.error {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+}

@@ -112,6 +112,7 @@ export function SettingsScreen({
     changeDefaultSellingMode,
     reconcilePendingSubscriptionTier,
     signOut,
+    setUserDisplayName,
   } = useStore();
   const business = state.business;
   // RFC 0012/D62-63 — `User.phone` no longer exists; resolved through
@@ -122,11 +123,23 @@ export function SettingsScreen({
     const u = currentUser(state);
     return u ? phoneIdentifierFor(state, u.id) : '';
   })();
+  // `decision-log.md` D69, `product-decisions.md` Q29 — available
+  // identically regardless of role or `subscriptionTier` (§2.5's own text),
+  // the same unconditional treatment phone display/"Cerrar sesión" already
+  // get.
+  const ownDisplayName = currentUser(state)?.displayName ?? null;
 
   const [subView, setSubView] = useState<SubView>({ kind: 'main' });
   const [cancelPendingOpen, setCancelPendingOpen] = useState(false);
   const [signOutStep, setSignOutStep] = useState<'closed' | 'confirm' | 'saving' | 'error'>('closed');
   const [landed, setLanded] = useState<{ tier: 'free' | 'paid'; effectiveDate: string } | null>(null);
+  // settings.md §3.3b "Editar tu nombre" — the sheet's own local
+  // open/draft/save-error state, mirroring `inventory.md` §3.4a's price-edit
+  // sheet shape (`CatalogView.tsx`) — no full-screen `WritingState`, a
+  // failed save simply leaves the sheet open with her typed value intact.
+  const [editNameOpen, setEditNameOpen] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [nameSaveError, setNameSaveError] = useState(false);
 
   // settings.md §2.4 — "the first time Configuración's main view is opened
   // after a pending change's effective date has passed." Run exactly once
@@ -193,6 +206,37 @@ export function SettingsScreen({
     }
 
     setSubView({ kind: 'main' });
+  }
+
+  // settings.md §3.3b — opens pre-filled with the current `User.displayName`
+  // if one is set, blank otherwise. Reused identically for both "Tu nombre"
+  // row states (`[ Agregar tu nombre ]` and the already-set "Editar" row).
+  function openEditName() {
+    setNameDraft(ownDisplayName ?? '');
+    setNameSaveError(false);
+    setEditNameOpen(true);
+  }
+
+  function closeEditName() {
+    setEditNameOpen(false);
+    setNameSaveError(false);
+  }
+
+  async function handleSaveName() {
+    setNameSaveError(false);
+    // "Clearing the field to empty and tapping 'Guardar' removes the name"
+    // (§3.3b's own text) — `setUserDisplayName` itself already trims and
+    // treats an empty string as `null` (see its own doc comment), so no
+    // separate "Quitar" control is needed here.
+    const ok = await setUserDisplayName(nameDraft);
+    if (ok) {
+      closeEditName();
+    } else {
+      // A failed save leaves the sheet open with her typed value intact —
+      // same convention `inventory.md` §3.4a's price-edit sheet already
+      // uses (`CatalogView.tsx`).
+      setNameSaveError(true);
+    }
   }
 
   function handleSignOutConfirm() {
@@ -286,6 +330,14 @@ export function SettingsScreen({
         landed={landed}
         teamCount={activeTeamCount(state, business.id)}
         phone={ownPhone}
+        displayName={ownDisplayName}
+        editNameOpen={editNameOpen}
+        nameDraft={nameDraft}
+        nameSaveError={nameSaveError}
+        onEditNameTap={openEditName}
+        onNameDraftChange={setNameDraft}
+        onEditNameCancel={closeEditName}
+        onEditNameSave={() => void handleSaveName()}
         onBack={onBack}
         onActivatePaidTap={() => setSubView({ kind: 'confirm', action: 'activate-paid' })}
         onDowngradeTap={() => setSubView({ kind: 'confirm', action: 'downgrade' })}
@@ -317,6 +369,14 @@ function SettingsMain({
   landed,
   teamCount,
   phone,
+  displayName,
+  editNameOpen,
+  nameDraft,
+  nameSaveError,
+  onEditNameTap,
+  onNameDraftChange,
+  onEditNameCancel,
+  onEditNameSave,
   onBack,
   onActivatePaidTap,
   onDowngradeTap,
@@ -343,6 +403,17 @@ function SettingsMain({
    * screen only ever mounts once Onboarding is complete, which itself
    * requires a verified User). */
   phone: string;
+  /** `decision-log.md` D69, `product-decisions.md` Q29 — `User.displayName`
+   * for whichever User currently holds this device's own verified session.
+   * `null` = not set yet, the "[ Agregar tu nombre ]" row state. */
+  displayName: string | null;
+  editNameOpen: boolean;
+  nameDraft: string;
+  nameSaveError: boolean;
+  onEditNameTap: () => void;
+  onNameDraftChange: (value: string) => void;
+  onEditNameCancel: () => void;
+  onEditNameSave: () => void;
   onBack: () => void;
   onActivatePaidTap: () => void;
   onDowngradeTap: () => void;
@@ -481,6 +552,25 @@ function SettingsMain({
             number this device is verified under. */}
         <div className={`${styles.accountSection} stitchTop`}>
           <p className={styles.sectionLabel}>Tu cuenta</p>
+
+          {/* "Tu nombre" — new 2026-09-15, `decision-log.md` D69. Present
+              identically wherever "Tu cuenta" is, regardless of role or
+              `subscriptionTier` (§2.5's own text). Both states — not-yet-set
+              and already-set — open the identical §3.3b sheet. */}
+          <p className={styles.sectionLabel}>Tu nombre</p>
+          {displayName ? (
+            <div className={styles.nameRow}>
+              <span className={styles.planLine}>{displayName}</span>
+              <Button variant="secondary" inline onClick={onEditNameTap}>
+                Editar
+              </Button>
+            </div>
+          ) : (
+            <Button variant="secondary" onClick={onEditNameTap}>
+              Agregar tu nombre
+            </Button>
+          )}
+
           {phone && (
             <p className={styles.planLine}>
               +52 {phone.slice(0, 2)} {phone.slice(2, 6)} {phone.slice(6)}
@@ -491,6 +581,30 @@ function SettingsMain({
           </Button>
         </div>
       </div>
+
+      {editNameOpen && (
+        <Sheet onDismiss={onEditNameCancel}>
+          <p className={styles.confirmTitle}>Tu nombre</p>
+          <div className={styles.field}>
+            <input
+              className={styles.input}
+              type="text"
+              autoFocus
+              placeholder="Escribe tu nombre…"
+              value={nameDraft}
+              onChange={(e) => onNameDraftChange(e.target.value)}
+            />
+          </div>
+          <p className={styles.hint}>Así te van a reconocer en Resultados y en Tu equipo.</p>
+          {nameSaveError && <p className={styles.error}>No pudimos guardar tu nombre. Intenta de nuevo.</p>}
+          <div className={styles.confirmRow}>
+            <Button variant="secondary" onClick={onEditNameCancel}>
+              Cancelar
+            </Button>
+            <Button onClick={onEditNameSave}>Guardar</Button>
+          </div>
+        </Sheet>
+      )}
 
       {cancelPendingOpen && (
         <Sheet onDismiss={onCancelPendingDismiss}>

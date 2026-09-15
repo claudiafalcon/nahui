@@ -52,7 +52,8 @@ type PreWriteStep =
  *   docs/passes/slice-2-authentication-onboarding.md's fix disclosure).
  */
 export function OnboardingFlow() {
-  const { state, completeOnboarding, setBusinessIdentity, acknowledgeOnboarding, commitLot } = useStore();
+  const { state, completeOnboarding, setBusinessIdentity, setUserDisplayName, acknowledgeOnboarding, commitLot } =
+    useStore();
   const [preWrite, setPreWrite] = useState<PreWriteStep>({ kind: 'welcome' });
 
   /** `reviewer` Blocker fix (2026-09-13) — the stable idempotency key for
@@ -136,7 +137,23 @@ export function OnboardingFlow() {
       // on screen.
       return (
         <ScreenTransition transitionKey="identity">
-          <BusinessIdentity onSaved={(fields) => setBusinessIdentity(fields)} />
+          <BusinessIdentity
+            onSaved={(fields) => setBusinessIdentity(fields)}
+            onDisplayNameSaved={(displayName) => {
+              // `decision-log.md` D69/§2.2b — a second, independently-
+              // sequenced, best-effort write. Never awaited by this callback
+              // (this is the one deliberately fire-and-forget write in this
+              // whole flow), never blocks the identity screen from advancing
+              // (`BusinessIdentity.tsx` has already unconditionally moved
+              // past its own `saveState` by the time this fires), and its
+              // failure is never surfaced to her — logged only, the same
+              // "not this dispatch's UX to invent a retry surface for"
+              // restraint this file's own demo-seed writes already take.
+              void setUserDisplayName(displayName).then((ok) => {
+                if (!ok) console.error('[OnboardingFlow] setUserDisplayName failed');
+              });
+            }}
+          />
         </ScreenTransition>
       );
     }

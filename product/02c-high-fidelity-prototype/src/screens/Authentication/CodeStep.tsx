@@ -39,6 +39,7 @@ export function CodeStep({
   identifier,
   onBack,
   invitationContext,
+  backLabelOverride,
 }: {
   channel: 'phone' | 'email';
   identifier: string;
@@ -46,6 +47,14 @@ export function CodeStep({
   /** RFC 0013, added 2026-09-14 — see `InvitationContextLine.tsx`'s own doc
    * comment for the full reasoning. */
   invitationContext?: InvitationContext;
+  /** RFC 0014/D70, added 2026-09-15 — "§3.6's own escape hatch is
+   * parametrized a third way for this path": for the Invitation-locked
+   * email flow (§3.2g), "← Cambiar correo" would be wrong — there's
+   * nothing to change, the field is locked by design. Set to "← Atrás" by
+   * `AuthenticationFlow.tsx` only when this screen was reached via that
+   * locked flow; `undefined` (the computed `backLabel` below) everywhere
+   * else. */
+  backLabelOverride?: string;
 }) {
   const { verifyOtp, requestOtp, verifyEmailOtp, requestEmailOtp } = useStore();
   const [raw, setRaw] = useState('');
@@ -75,7 +84,7 @@ export function CodeStep({
   const remainingSeconds = Math.ceil(remainingMs / 1000);
   const countdownLabel = `0:${String(remainingSeconds).padStart(2, '0')}`;
 
-  const backLabel = channel === 'phone' ? '← Cambiar número' : '← Cambiar correo';
+  const backLabel = backLabelOverride ?? (channel === 'phone' ? '← Cambiar número' : '← Cambiar correo');
   const destinationLine =
     channel === 'phone'
       ? `Te mandamos un código a tu número, +52 ${identifier.slice(0, 2)} ${identifier.slice(2, 6)} ${identifier.slice(6)}.`

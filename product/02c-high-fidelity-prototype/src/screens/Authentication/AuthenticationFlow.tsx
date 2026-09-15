@@ -3,6 +3,7 @@ import { useStore } from '../../domain/store';
 import { ChooseMethodStep } from './ChooseMethodStep';
 import { PhoneStep } from './PhoneStep';
 import { EmailStep } from './EmailStep';
+import { LockedEmailStep } from './LockedEmailStep';
 import { GoogleProgress, GoogleError } from './GoogleStep';
 import { CodeStep } from './CodeStep';
 import type { InvitationContext } from './InvitationContextLine';
@@ -14,6 +15,10 @@ type AuthStep =
   | { kind: 'choose' }
   | { kind: 'phone'; prefill?: string }
   | { kind: 'email'; prefill?: string }
+  /** authentication.md §3.2g (RFC 0014/D70) — the Invitation-locked email
+   * entry point, reached only when `lockedInvitationEmail` is set. See this
+   * component's own doc comment below for the full reasoning. */
+  | { kind: 'invitation-email' }
   | { kind: 'code'; channel: Channel; identifier: string }
   | { kind: 'google-redirecting' }
   | { kind: 'google-verifying' }
@@ -33,8 +38,15 @@ type AuthStep =
  * §3.8's own text) — only the two merchant-visible outcomes this resolves
  * into (§3.2c success/cancel, or §3.2d error) matter to the spec.
  */
-function computeInitialStep(prefill?: { channel: Channel; value: string }): AuthStep {
+function computeInitialStep(prefill?: { channel: Channel; value: string }, lockedInvitationEmail?: string): AuthStep {
   if (prefill) return { kind: prefill.channel, prefill: prefill.value };
+  // RFC 0014/D70 — an Invitation-acceptance attempt with a known
+  // `targetHint` skips §3.2a's three-way choice (and, with it, the Google-
+  // redirect resumability check below, which existed only to resume a
+  // detour §3.2g never offers in the first place — Google is not reachable
+  // from this entry point at all, per D70's own "the method, not just the
+  // value, must be fixed to Email" ruling).
+  if (lockedInvitationEmail) return { kind: 'invitation-email' };
   if (typeof window !== 'undefined') {
     const { hash, search } = window.location;
     if (hash.includes('access_token') || hash.includes('error') || search.includes('error')) {
@@ -99,18 +111,36 @@ function computeInitialStep(prefill?: { channel: Channel; value: string }): Auth
  * §3.7e "No, elegir otro" retry via `AppRouter.tsx`), which is the entire
  * reason this is a plain optional prop rather than a context/global — most
  * callers have nothing to thread.
+ *
+ * `lockedInvitationEmail` / `onDeclineInvitation` (RFC 0014/D70, added
+ * 2026-09-15) — set only by `InvitationFlow.tsx`'s own "no session exists"
+ * branch (§2.0 step 4/§3.10), the identical narrow condition that already
+ * sets `invitationContext`, now further specialized. When set, this whole
+ * component skips §3.2a's three-way choice entirely and mounts only §3.2g
+ * (`LockedEmailStep`) → the shared `CodeStep`/§3.6 convergence — Google and
+ * phone are structurally unreachable through this component while this
+ * prop is set, per RFC 0014's own "the method must be fixed to Email"
+ * ruling. `undefined` for every other mounting of this component (an
+ * ordinary fresh open, a `settings.md §2.5` sign-out re-verification, a
+ * §3.7e "No, elegir otro" retry via `AppRouter.tsx`), which is why both are
+ * plain optional props rather than always-required ones — most callers
+ * have nothing to thread here either.
  */
 export function AuthenticationFlow({
   initialPrefill,
   onGoogleResolved,
   invitationContext,
+  lockedInvitationEmail,
+  onDeclineInvitation,
 }: {
   initialPrefill?: { channel: Channel; value: string };
   onGoogleResolved?: (displayLabel: string | null) => void;
   invitationContext?: InvitationContext;
+  lockedInvitationEmail?: string;
+  onDeclineInvitation?: () => void;
 } = {}) {
   const { startGoogleSignIn, resolveGoogleSignIn } = useStore();
-  const [step, setStep] = useState<AuthStep>(() => computeInitialStep(initialPrefill));
+  const [step, setStep] = useState<AuthStep>(() => computeInitialStep(initialPrefill, lockedInvitationEmail));
 
   useEffect(() => {
     if (step.kind !== 'google-verifying') return;
@@ -185,6 +215,19 @@ export function AuthenticationFlow({
     );
   }
 
+  if (step.kind === 'invitation-email') {
+    return (
+      <ScreenTransition transitionKey="invitation-email-locked">
+        <LockedEmailStep
+          email={lockedInvitationEmail!}
+          businessName={invitationContext?.businessName ?? ''}
+          onCodeSent={() => setStep({ kind: 'code', channel: 'email', identifier: lockedInvitationEmail! })}
+          onDecline={() => onDeclineInvitation?.()}
+        />
+      </ScreenTransition>
+    );
+  }
+
   if (step.kind === 'email') {
     return (
       <ScreenTransition transitionKey="email">
@@ -204,11 +247,14 @@ export function AuthenticationFlow({
         <CodeStep
           channel={step.channel}
           identifier={step.identifier}
+          backLabelOverride={lockedInvitationEmail ? '← Atrás' : undefined}
           onBack={() =>
             setStep(
-              step.channel === 'phone'
-                ? { kind: 'phone', prefill: step.identifier }
-                : { kind: 'email', prefill: step.identifier },
+              lockedInvitationEmail
+                ? { kind: 'invitation-email' }
+                : step.channel === 'phone'
+                  ? { kind: 'phone', prefill: step.identifier }
+                  : { kind: 'email', prefill: step.identifier },
             )
           }
           invitationContext={invitationContext}

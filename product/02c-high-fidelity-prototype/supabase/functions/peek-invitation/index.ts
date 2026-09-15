@@ -34,7 +34,8 @@
 // from Supabase's own documented platform behavior only.
 //
 // Request: POST { token: string }
-// Response: 200 { ok: true, businessName: string, status: 'pending' | 'expired' | 'accepted' | 'revoked', expiresAt: string }
+// Response: 200 { ok: true, businessName: string, status: 'pending' | 'expired' | 'accepted' | 'revoked', expiresAt: string, targetHint: { type: 'email', value: string } | null }
+//           (targetHint added RFC 0014/D70 — see this function's own body for the reasoning)
 //           200 { ok: false, reason: 'not-found' }   — token resolves to no Invitation
 //           400 { ok: false, reason: 'invalid-token' }
 //           429 { ok: false, reason: 'rate-limited' }
@@ -118,11 +119,21 @@ Deno.serve(async (req) => {
   }
   if (!data) return jsonResponse({ ok: false, reason: 'not-found' });
 
-  const row = data as { business_name: string; status: string; expires_at: string };
+  const row = data as {
+    business_name: string;
+    status: string;
+    expires_at: string;
+    target_hint: { type: 'email'; value: string } | null;
+  };
   return jsonResponse({
     ok: true,
     businessName: row.business_name,
     status: row.status,
     expiresAt: row.expires_at,
+    // RFC 0014/D70 — see this function's own header comment and
+    // `invitationClient.ts`'s `PeekInvitationResult` doc comment for why
+    // exposing this pre-auth isn't a new disclosure: §3.2g already shows
+    // this exact value, unlocked, before any authentication happens.
+    targetHint: row.target_hint ?? null,
   });
 });

@@ -111,6 +111,26 @@ export function membershipById(state: AppState, membershipId: ID): BusinessMembe
   return state.memberships.find((m) => m.id === membershipId);
 }
 
+/** `decision-log.md` D69, `product-decisions.md` Q29 — the two-tier
+ * resolution `reports.md` §3.4a ("Vendiendo ahorita") and §3.19 ("Exportar
+ * tus ventas," Vendedor column) both share, verbatim: `User.displayName` if
+ * set, else the pre-existing role-only fallback ("Tú" for OWNER, "Alguien de
+ * tu equipo" for SELLER) — a single resolution rule, not a role-specific
+ * branch, per D69's own framing ("'Tú' only works today because exactly one
+ * OWNER exists per Business... not because her identity was ever actually
+ * recorded"). `undefined` membership (an orphaned `performedByMembershipId`
+ * — unreachable through any real write path in this codebase) still
+ * degrades to "Alguien de tu equipo," the same defensive-but-honest posture
+ * every other caller of `membershipById` already takes. */
+export function membershipDisplayName(state: AppState, membershipId: ID): string {
+  const membership = membershipById(state, membershipId);
+  if (membership) {
+    const user = state.users.find((u) => u.id === membership.userId);
+    if (user?.displayName) return user.displayName;
+  }
+  return membership?.role === 'OWNER' ? 'Tú' : 'Alguien de tu equipo';
+}
+
 /** Every Session this Membership has ever opened — `home.md` §3.6b's own
  * "does this device already have a signal today" check, and §3.7c's own
  * per-Membership Sale attribution, both narrow from this same set rather
@@ -141,8 +161,8 @@ export function invitationDisplayStatus(invitation: Invitation): 'pending' | 'ex
  * as a fresh `'active'` Membership row instead, so no filter here ever
  * matches `'accepted'` directly. */
 export type TeamRow =
-  | { kind: 'active'; membership: BusinessMembership; phone: string }
-  | { kind: 'revoked'; membership: BusinessMembership; phone: string }
+  | { kind: 'active'; membership: BusinessMembership; phone: string; displayName: string | null }
+  | { kind: 'revoked'; membership: BusinessMembership; phone: string; displayName: string | null }
   | { kind: 'pending'; invitation: Invitation }
   | { kind: 'expired'; invitation: Invitation }
   | { kind: 'cancelled'; invitation: Invitation };
@@ -163,7 +183,18 @@ export type TeamRow =
  * 'revoked'` once cancelled; an expired-but-never-cancelled row stays
  * `'pending'` in storage and is read as `'expired'` here, never conflated
  * with a cancelled one) always reads as `'cancelled'`, regardless of
- * `expiresAt`. */
+ * `expiresAt`.
+ *
+ * **Row display, resolved 2026-09-15 (`decision-log.md` D69,
+ * `product-decisions.md` Q29): `displayName` first, then the pre-existing
+ * phone/role fallback.** An `active`/`revoked` row carries both `phone`
+ * (unchanged, may be `''` for a Google/Email-only SELLER) and the new
+ * `displayName` (`User.displayName`, `null` if not set) — `TeamScreen.tsx`
+ * itself resolves the final three-tier order (`displayName` → formatted
+ * `phone` → "Alguien de tu equipo," §2.7's own text), since that fallback
+ * chain is a presentation-layer concern (phone formatting), matching this
+ * file's own "hand back the fields, let the screen format the copy"
+ * discipline elsewhere (`historialRows`, `SalesExportRow`). */
 export function teamRows(state: AppState, businessId: ID): TeamRow[] {
   const memberRows = state.memberships
     .filter((m) => m.businessId === businessId && m.role === 'SELLER')
@@ -171,6 +202,7 @@ export function teamRows(state: AppState, businessId: ID): TeamRow[] {
       kind: membership.status,
       membership,
       phone: phoneIdentifierFor(state, membership.userId),
+      displayName: state.users.find((u) => u.id === membership.userId)?.displayName ?? null,
     }));
   const active = memberRows
     .filter((r) => r.kind === 'active')
@@ -1285,6 +1317,13 @@ export interface SalesExportRow {
    * unreachable through any real write path in this codebase, `Sale` always
    * carries a resolved acting Membership at finalization, D58). */
   vendedorRole?: MembershipRole;
+  /** `decision-log.md` D69, `product-decisions.md` Q29 — `User.displayName`
+   * for the Membership that performed this Sale, if set; `null` otherwise
+   * (falls back to `vendedorRole`'s own "Tú"/"Alguien de tu equipo" copy,
+   * `salesExportFile.ts`'s `vendedorLabel`). Resolved via the same
+   * `membershipDisplayName` two-tier rule `reports.md` §3.4a already uses —
+   * reused, not reimplemented. */
+  vendedorDisplayName: string | null;
   product: Product;
   /** Count of `SaleItem` rows for this `(Sale, Product)` pair — §2's own
    * "Row shape and grouping" rule. */
@@ -1316,7 +1355,15 @@ export function salesExportRows(state: AppState, desde: string, hasta: string): 
     const event = session.eventId ? findEvent(state, session.eventId) : undefined;
     const venue = event ? findVenue(state, event.venueId) : undefined;
     const dayNumber = event ? dayNumberForDate(state, event.id, dateKey(session.openedAt)) : undefined;
-    const vendedorRole = membershipById(state, sale.performedByMembershipId)?.role;
+    const vendedorMembership = membershipById(state, sale.performedByMembershipId);
+    const vendedorRole = vendedorMembership?.role;
+    // `decision-log.md` D69 — same two-tier resolution `membershipDisplayName`
+    // performs, inlined here since this loop already has the Membership row
+    // in hand and needs `vendedorRole` as its own separate field anyway
+    // (§3.19's disclosure line reads the two together).
+    const vendedorDisplayName = vendedorMembership
+      ? (state.users.find((u) => u.id === vendedorMembership.userId)?.displayName ?? null)
+      : null;
     const fecha = dateKey(session.closedAt ?? session.openedAt);
     // §2's own "(Sale, Product)" grouping — Cantidad is the count of
     // matching SaleItems, Precio their one shared pricePaid (D33).
@@ -1336,6 +1383,7 @@ export function salesExportRows(state: AppState, desde: string, hasta: string): 
         event,
         dayNumber,
         vendedorRole,
+        vendedorDisplayName,
         product,
         cantidad: count,
         precio: pricePaid,

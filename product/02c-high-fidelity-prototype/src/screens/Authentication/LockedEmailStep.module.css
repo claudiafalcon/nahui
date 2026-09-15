@@ -1,0 +1,96 @@
+/* authentication.md §3.2g — reuses EmailStep.module.css's own wrap/mark/
+   copy/eyebrow/heading/body composition verbatim, plus InvitationFlow.module.css's
+   own ctaStack shape (this codebase's own "each screen folder owns its own
+   CSS Modules" convention — a local copy, not a cross-file import). */
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-6);
+  padding: var(--space-12) var(--space-6) var(--space-8);
+  overflow: hidden;
+}
+
+.mark {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) 3px;
+  background: var(--color-blush);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4px 10px rgba(45, 45, 45, 0.14),
+    0 0 0 14px color-mix(in srgb, var(--color-blush) 14%, transparent),
+    0 0 0 32px color-mix(in srgb, var(--color-blush) 7%, transparent);
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eyebrow {
+  font: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8A8177;
+}
+
+.heading {
+  font: var(--text-display-md);
+  color: var(--color-obsidian);
+}
+
+.body {
+  font: var(--text-body);
+  color: #6B6259;
+  max-width: 34ch;
+}
+
+/* The locked, non-editable email itself — rendered with more visual weight
+   than plain body text (she needs to actually read and recognize it, the
+   one real committing fact on this screen) but not an `<input>` (there is
+   nothing to type or edit here, §3.2g's own "the field is locked by
+   design"). */
+.lockedEmail {
+  font: var(--text-body);
+  font-weight: 700;
+  color: var(--color-obsidian);
+}
+
+.ctaStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 320px;
+}
+
+.cta {
+  max-width: 320px;
+  width: 100%;
+}
+
+.hint {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  max-width: 34ch;
+}
+
+.error {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+}
+
+.savingLine {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B6259;
+  font: var(--text-body);
+}

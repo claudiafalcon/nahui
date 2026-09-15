@@ -150,3 +150,46 @@
   gap: 12px;
   margin-top: var(--space-4);
 }
+
+/* settings.md §3.3a — "Tu nombre," already-set state: the value and its
+   "[ Editar ]" affordance share one line, the identical `.rowActiveLine`
+   shape `TeamScreen.module.css` already uses for its own row + inline
+   action composition. */
+.nameRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* settings.md §3.3b "Editar tu nombre" — the sheet's own field, matching
+   `TeamScreen.module.css`'s own `.field`/`.input` composition for its
+   "Correo electrónico" field verbatim (this codebase's own "each screen
+   folder owns its own CSS Modules" convention — a local copy, not a
+   cross-file import). */
+.field {
+  width: 100%;
+  text-align: left;
+  margin-bottom: var(--space-2);
+}
+
+.input {
+  width: 100%;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+  height: 52px;
+  background: var(--color-white);
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
+
+.hint {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.error {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+}

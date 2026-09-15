@@ -18,7 +18,17 @@
  */
 
 export type PeekInvitationResult =
-  | { ok: true; businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked'; expiresAt: string }
+  | {
+      ok: true;
+      businessName: string;
+      status: 'pending' | 'expired' | 'accepted' | 'revoked';
+      expiresAt: string;
+      /** RFC 0014/D70 — `null` for a legacy, hint-less pending Invitation
+       * (RFC 0014's own backward-compatibility exemption). See
+       * `store.tsx`'s `peekInvitation` doc comment for why exposing this
+       * pre-auth is not a new disclosure. */
+      targetHint: { type: 'email'; value: string } | null;
+    }
   | { ok: false; reason: 'invalid-token' | 'not-found' | 'rate-limited' | 'platform-error' };
 
 /** RFC 0013 §2 / §4 / §7 — real call, replacing the previous direct

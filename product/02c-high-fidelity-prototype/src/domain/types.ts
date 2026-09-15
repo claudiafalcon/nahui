@@ -202,6 +202,35 @@ export interface User {
    * doc comment is the source of truth for what it actually now means.
    */
   phoneMismatchConfirmationPending: boolean;
+  /**
+   * `decision-log.md` D69, `product-decisions.md` Q29 — optional,
+   * self-service-editable, person-level (never per-`BusinessMembership`).
+   * Captured two ways, same field either way: the OWNER at Onboarding's "Tu
+   * negocio" screen (`onboarding.md` §2.2b/§3.9/§3.9a, a second,
+   * independently-sequenced, non-blocking write — see `store.tsx`'s
+   * `setUserDisplayName`), or a SELLER (or self-editing OWNER) via
+   * `settings.md` §2.5/§3.3a/§3.3b "Tu cuenta" → "Tu nombre". Display
+   * resolution reads this first, everywhere role-only copy used to render
+   * unconditionally — "Vendiendo ahorita" (`reports.md` §3.4a), the sales
+   * export's Vendedor column (§3.19), and "Tu equipo"'s team list
+   * (`settings.md` §2.7/§3.11) — falling back to the pre-existing
+   * role-only/phone copy only when unset. `null` = not set, the common case
+   * for any existing User and for any new one who skips it at capture.
+   * Real backend column: `public.users.display_name`
+   * (`supabase/migrations/20260915120000_user_display_name.sql`) —
+   * **disclosed limitation**: unlike every other Identity-context table in
+   * this schema, `public.users` has no FK to `auth.users` (a phone-verified
+   * User's `id` is a client-minted mock, never a real `auth.users` row —
+   * `resolveAuthIdentity`'s own `realUserId` doc comment), so a name
+   * written by a phone-verified merchant persists locally
+   * (`applyWriteMirror`) but the real RPC call requires a genuine
+   * `auth.uid()`, which phone auth doesn't yet produce
+   * (`supabase/README.md`'s own disclosed Twilio-not-configured gap) — the
+   * same pre-existing limitation every other real write in this file
+   * already has for the phone channel, not a new one this field
+   * introduces.
+   */
+  displayName: string | null;
 }
 
 export type MembershipRole = 'OWNER' | 'SELLER';
@@ -250,8 +279,23 @@ export interface Invitation {
   role: 'SELLER';
   status: 'pending' | 'accepted' | 'revoked';
   expiresAt: number;
-  /** OWNER-entered delivery/addressing aid only (RFC 0013 §1) — never
-   * matched against the accepting User's identity. */
+  /**
+   * OWNER-entered — originally a delivery/addressing aid only, "never
+   * matched against the accepting User's identity" (RFC 0013 §1). **That
+   * specific ruling is superseded by `product/99-rfc/0014-invitation-
+   * target-hint-enforced.md` (Accepted, `decision-log.md` D70,
+   * `product-decisions.md` Q30)** — required at `create_invitation()`
+   * going forward (this field stays optional at the TypeScript level only
+   * for a legacy, hint-less `pending` row created before D70 shipped, RFC
+   * 0014's own backward-compatibility exemption), and now checked at
+   * acceptance: the invited person authenticates specifically through the
+   * Email method, pre-filled and locked to this exact value
+   * (`authentication.md` §3.2g), and `accept_invitation()` rejects a
+   * mismatch before its status CAS (`invitation_identity_mismatch`,
+   * §3.10f). Still never promoted to `BusinessMembership`'s own canonical
+   * identity, which stays `userId` — RFC 0013's point on *that* narrower
+   * claim is unaffected.
+   */
   targetHint?: { type: 'email'; value: string };
   acceptedByUserId?: ID | null;
   createdAt: number;

@@ -4,7 +4,7 @@ import {
   dayNumberForDate,
   findEvent,
   findVenue,
-  membershipById,
+  membershipDisplayName,
   sessionTotals,
 } from '../../domain/selectors';
 import { dateKey } from '../../domain/dates';
@@ -61,14 +61,16 @@ export function VendiendoAhorita({ onTapSession }: { onTapSession: (sessionId: I
           const event = session.eventId ? findEvent(state, session.eventId) : undefined;
           const venueName = event ? findVenue(state, event.venueId)?.displayName : undefined;
           const dayNumber = event ? dayNumberForDate(state, event.id, dateKey(session.openedAt)) : undefined;
-          const membership = membershipById(state, session.openedByMembershipId);
-          // Role-derived identity, never a personal name — only one OWNER
-          // ever exists per Business (`settings.md` §2.7's "Invitar a
-          // alguien" only ever creates SELLER rows). No `User` display-name
-          // field exists to show anything more specific for a SELLER
-          // (already-documented Foundation gap, `settings.md` §2.7/§11;
-          // §3.4a's own disambiguation-limits bullet).
-          const identity = membership?.role === 'OWNER' ? 'Tú' : 'Alguien de tu equipo';
+          // `decision-log.md` D69, `product-decisions.md` Q29 —
+          // `User.displayName` first, role-derived copy only when it isn't
+          // set (`membershipDisplayName`'s own doc comment for the full
+          // resolution rule). Narrows, but doesn't fully close, the
+          // concurrent-same-role-card disambiguation gap: two SELLERs who
+          // have both left `displayName` unset both still read "Alguien de
+          // tu equipo" (`reports.md` §3.4a's own disclosed, honest
+          // degradation — nothing here fabricates a name for a User who
+          // hasn't set one).
+          const identity = membershipDisplayName(state, session.openedByMembershipId);
           const totals = sessionTotals(state, session.id);
           return (
             <button key={session.id} className={styles.liveCard} onClick={() => onTapSession(session.id)}>

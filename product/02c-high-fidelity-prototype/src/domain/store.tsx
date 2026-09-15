@@ -180,11 +180,16 @@ function loadState(): AppState {
           : parsed.currentUser
             ? [parsed.currentUser]
             : [];
+        // `decision-log.md` D69 — an older saved `User` row (before this
+        // field existed) has no `displayName` key at all; defaulted to
+        // `null`, the same honest "not set yet" starting value a brand-new
+        // row gets from `resolveAuthIdentity` below.
         const users: User[] = legacyUsers.map((u) => ({
           id: u.id,
           createdAt: u.createdAt,
           declinedInvitationIds: u.declinedInvitationIds ?? [],
           phoneMismatchConfirmationPending: u.phoneMismatchConfirmationPending ?? false,
+          displayName: u.displayName ?? null,
         }));
 
         // RFC 0012/D62-63 — `AuthIdentity` migration. A localStorage value
@@ -626,6 +631,28 @@ interface StoreValue {
    * `true` on success, `false` on any rejected/failed outcome — same
    * "server-confirmed, then local mirror" shape as `editPrice`. */
   setBusinessIdentity: (fields: { name: string; logo?: string; description?: string }) => Promise<boolean>;
+  /** `decision-log.md` D69, `product-decisions.md` Q29 — writes
+   * `User.displayName` for whichever User currently holds this device's own
+   * verified session. Two independent callers, two different failure
+   * postures, both this function's own caller's decision, not this
+   * function's: `onboarding.md` §2.2b/§3.10's OWNER capture is a second,
+   * independently-sequenced, best-effort write — never gates "Continuar,"
+   * never blocks progression, its failure is never shown to her
+   * (`BusinessIdentity.tsx`/`OnboardingFlow.tsx` fire this and ignore the
+   * result); `settings.md` §3.3b's self-service sheet is an ordinary
+   * blocking write — a failure keeps the sheet open with her typed value
+   * intact, same convention `inventory.md` §3.4a's price-edit sheet already
+   * uses. Real call to `update_user_display_name`
+   * (`supabase/migrations/20260915120000_user_display_name.sql`) — an
+   * idempotent upsert (overwriting a field has no duplicate-creation side
+   * effect to guard against, the identical reasoning `editPrice`/
+   * `setProductPhoto` already state for skipping a client-supplied
+   * idempotency key). `displayName: null` clears the field (§3.3b's "Cancelar"
+   * has a separate, non-clearing meaning — clearing the field to blank and
+   * tapping "Guardar" is what writes `null`, the caller's own decision, not
+   * this function's). Resolves `false` on any rejected/failed outcome —
+   * never throws. */
+  setUserDisplayName: (displayName: string | null) => Promise<boolean>;
   /** onboarding.md §3.6 "Todo listo" — marks the milestone dismissed
    * (tapped "Entrar," or auto-continued). See `Business.onboardingAcknowledged`.
    * Stage 7 Backend Integration — real call to `acknowledge_onboarding`,
@@ -1048,7 +1075,22 @@ interface StoreValue {
   peekInvitation: (
     token: string,
   ) => Promise<
-    | { businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' }
+    | {
+        businessName: string;
+        status: 'pending' | 'expired' | 'accepted' | 'revoked';
+        /** RFC 0014/D70 — carried alongside `businessName`/`status` so
+         * `authentication.md` §3.2g can show the locked, pre-filled address
+         * before any authentication runs, and so §3.10f can state the same
+         * value again if a mismatch is discovered later. `null` for a
+         * legacy, hint-less `pending` Invitation (RFC 0014's own
+         * backward-compatibility exemption) — the caller falls back to the
+         * ordinary three-way method choice in that case, since there's
+         * nothing to lock the flow to. Exposing this pre-auth is not a new
+         * disclosure: §3.2g already shows this exact value, unlocked, to
+         * anyone who opens the link and taps "Aceptar," before typing
+         * anything. */
+        targetHint: { type: 'email'; value: string } | null;
+      }
     | 'not-found'
     | null
   >;
@@ -1068,7 +1110,21 @@ interface StoreValue {
     idempotencyKey: string,
   ) => Promise<
     | { businessId: ID; membershipId: ID }
-    | { error: 'invitation_not_available' | 'already_member' | 'membership_revoked' }
+    | {
+        error:
+          | 'invitation_not_available'
+          | 'already_member'
+          | 'membership_revoked'
+          /** RFC 0014/D70, new — a defensive precondition checked before
+           * the status CAS: the authenticating User's own resolved,
+           * verified `AuthIdentity(type='email')` doesn't match
+           * `targetHint`'s value. The Invitation itself is perfectly
+           * valid — never `invitation_not_available` — it's this account
+           * that doesn't match it (`authentication.md` §3.10f). A legacy,
+           * hint-less `pending` row is exempt from this check by
+           * construction (server-side `null`-guard). */
+          | 'invitation_identity_mismatch'
+      }
     | null
   >;
   /** authentication.md §2.2a step 4 / §10 "Ahora no" (ux-critic fix round,
@@ -1105,6 +1161,32 @@ interface StoreValue {
     invitationId: ID,
     idempotencyKey: string,
   ) => Promise<{ invitationId: ID; status: 'revoked' } | { error: 'invitation_not_pending' } | null>;
+  /** settings.md §3.12e "Editar correo"/"Agregar correo" (RFC 0014/D70,
+   * `decision-log.md` D70) — corrects `Invitation.targetHint` on a
+   * still-`pending` row in place: no token regeneration, no `expiresAt`
+   * reset, the exact mechanism the RFC itself names ("an ordinary UPDATE...
+   * the existing OWNER-scoped `invitations_update` RLS policy already
+   * permits this"). Real call to `update_invitation_target_hint`
+   * (`supabase/migrations/20260915130000_invitation_target_hint_enforced.sql`)
+   * — a thin RPC wrapper around exactly that plain UPDATE, kept as an RPC
+   * (rather than a direct `supabase.from('invitations').update(...)` call)
+   * only to match this codebase's own uniform "every write is an RPC call"
+   * convention (`architecture-principles.md` #7's idempotency-key logging
+   * shape, reused here even though the underlying UPDATE is naturally
+   * idempotent on its own — overwriting a field to a specific value has no
+   * duplicate-creation side effect to guard against, same reasoning
+   * `editPrice`/`setUserDisplayName` above already state). Server re-checks
+   * OWNER-of-Business authorization and that the row is still genuinely
+   * `pending`, never trusting a stale client read — same discipline every
+   * other CAS-adjacent write in this codebase already holds itself to.
+   * Returns `{ error: 'invitation_not_pending' }` when that precondition
+   * fails (already accepted/revoked/expired elsewhere, a race), `null` on
+   * any other failure (not authorized, not found, platform error). */
+  updateInvitationTargetHint: (
+    invitationId: ID,
+    targetHint: { type: 'email'; value: string },
+    idempotencyKey: string,
+  ) => Promise<{ invitationId: ID } | { error: 'invitation_not_pending' } | null>;
   /** settings.md §2.7 "Quitar" (§3.13) — flips `BusinessMembership.status:
    * active → revoked`, sets `revokedAt`. **Never a delete** — every Sale
    * already attributed to this Membership keeps resolving through
@@ -1327,6 +1409,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             createdAt: Date.parse(session.user.created_at) || Date.now(),
             declinedInvitationIds: [],
             phoneMismatchConfirmationPending: false,
+            displayName: null,
           };
           return { ...s, users: existing ? s.users : [...s.users, user], currentUserId: realUserId };
         });
@@ -1409,6 +1492,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const [
       businessesRes,
       membershipsRes,
+      usersRes,
       productsRes,
       lotsRes,
       entriesRes,
@@ -1427,6 +1511,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     ] = await Promise.all([
       supabase.from('businesses').select('*').eq('id', businessId),
       supabase.from('business_memberships').select('*').eq('business_id', businessId),
+      // `decision-log.md` D69, `product-decisions.md` Q29 — no `business_id`
+      // filter (`public.users` carries none, unlike every other table
+      // hydrated here): RLS alone scopes what actually comes back (her own
+      // row always; every other row only when she's the active OWNER of a
+      // Business that row's own user holds a membership in,
+      // `users_select_as_owner`, `20260915120000_user_display_name.sql`) —
+      // exactly the population "Tu equipo"/"Vendiendo ahorita"/"Exportar
+      // tus ventas" need cross-device names for, and no more.
+      supabase.from('users').select('*'),
       supabase.from('products').select('*').eq('business_id', businessId),
       supabase.from('lots').select('*').eq('business_id', businessId),
       supabase.from('inventory_entries').select('*').eq('business_id', businessId),
@@ -1447,6 +1540,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const allResults = [
       businessesRes,
       membershipsRes,
+      usersRes,
       productsRes,
       lotsRes,
       entriesRes,
@@ -1510,30 +1604,58 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // hydration cycle a moving target to compare against, for no protective
     // purpose the design calls for).
     const businessRow = (businessesRes.data ?? [])[0] as Record<string, unknown> | undefined;
-    setState((s) => ({
-      ...s,
-      // Defensive — a `businessId` this function was actually called with
-      // (`resolveActiveBusinessFromAuth`'s own resolved id, or Resultados'
-      // own already-mirrored `state.business.id`) should always return
-      // exactly one row here; if RLS or a transient read ever returns none,
-      // this keeps whatever local `business` mirror already existed rather
-      // than wiping a known-good value on a partial-result edge case.
-      business: businessRow ? mapBusinessRow(businessRow) : s.business,
-      memberships: (membershipsRes.data ?? []).map(mapMembershipRow),
-      products: (productsRes.data ?? []).map(mapProductRow),
-      lots: (lotsRes.data ?? []).map(mapLotRow),
-      entries: (entriesRes.data ?? []).map(mapEntryRow),
-      units,
-      venues: (venuesRes.data ?? []).map(mapVenueRow),
-      events: (eventsRes.data ?? []).map(mapEventRow),
-      priceOverrides: (priceOverridesRes.data ?? []).map(mapPriceOverrideRow),
-      sessions: (sessionsRes.data ?? []).map(mapSessionRow),
-      sales,
-      eventAllocations: (eventAllocationsRes.data ?? []).map(mapEventAllocationRow),
-      eventAllocationUnits: (eventAllocationUnitsRes.data ?? []).map(mapEventAllocationUnitRow),
-      allocationMovements: (allocationMovementsRes.data ?? []).map(mapAllocationMovementRow),
-      eventAssignments: (eventAssignmentsRes.data ?? []).map(mapEventAssignmentRow),
-    }));
+    // `decision-log.md` D69, `product-decisions.md` Q29 — fold real,
+    // cross-device `display_name` values into the local `users` mirror.
+    // `state.users` otherwise only ever holds *this device's own* verified
+    // User row(s), minted locally by `resolveAuthIdentity` — this is the one
+    // place a hydration cycle also learns about *other* people (an OWNER
+    // reading her own team's names). Existing rows (including this device's
+    // own, still needing its own local-only `declinedInvitationIds`/
+    // `phoneMismatchConfirmationPending` markers preserved) get only their
+    // `displayName` updated; a hydrated row for a userId this device has
+    // never locally minted gets a new stub — those two local-only fields
+    // default honestly to "nothing to report" (`[]`/`false`), never read for
+    // a row that isn't this device's own current session anyway.
+    const usersRows = (usersRes.data ?? []) as { id: string; display_name: string | null }[];
+    const usersById = new Map(usersRows.map((r) => [r.id as ID, r.display_name]));
+    setState((s) => {
+      const existingIds = new Set(s.users.map((u) => u.id));
+      const mergedExisting = s.users.map((u) => (usersById.has(u.id) ? { ...u, displayName: usersById.get(u.id) ?? null } : u));
+      const newStubs: User[] = usersRows
+        .filter((r) => !existingIds.has(r.id as ID))
+        .map((r) => ({
+          id: r.id as ID,
+          createdAt: Date.now(), // real value unknown from this read; never consulted for a hydrated stand-in row
+          displayName: r.display_name,
+          declinedInvitationIds: [],
+          phoneMismatchConfirmationPending: false,
+        }));
+      return {
+        ...s,
+        users: [...mergedExisting, ...newStubs],
+        // Defensive — a `businessId` this function was actually called with
+        // (`resolveActiveBusinessFromAuth`'s own resolved id, or Resultados'
+        // own already-mirrored `state.business.id`) should always return
+        // exactly one row here; if RLS or a transient read ever returns none,
+        // this keeps whatever local `business` mirror already existed rather
+        // than wiping a known-good value on a partial-result edge case.
+        business: businessRow ? mapBusinessRow(businessRow) : s.business,
+        memberships: (membershipsRes.data ?? []).map(mapMembershipRow),
+        products: (productsRes.data ?? []).map(mapProductRow),
+        lots: (lotsRes.data ?? []).map(mapLotRow),
+        entries: (entriesRes.data ?? []).map(mapEntryRow),
+        units,
+        venues: (venuesRes.data ?? []).map(mapVenueRow),
+        events: (eventsRes.data ?? []).map(mapEventRow),
+        priceOverrides: (priceOverridesRes.data ?? []).map(mapPriceOverrideRow),
+        sessions: (sessionsRes.data ?? []).map(mapSessionRow),
+        sales,
+        eventAllocations: (eventAllocationsRes.data ?? []).map(mapEventAllocationRow),
+        eventAllocationUnits: (eventAllocationUnitsRes.data ?? []).map(mapEventAllocationUnitRow),
+        allocationMovements: (allocationMovementsRes.data ?? []).map(mapAllocationMovementRow),
+        eventAssignments: (eventAssignmentsRes.data ?? []).map(mapEventAssignmentRow),
+      };
+    });
 
     return 'ok';
   }
@@ -1760,6 +1882,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       createdAt: now,
       declinedInvitationIds: [],
       phoneMismatchConfirmationPending: s.users.length > 0,
+      // `decision-log.md` D69 — not set at credential-verification time,
+      // for either OWNER or SELLER; captured afterward, on her own terms
+      // (`onboarding.md` §2.2b's second, non-blocking write for an OWNER;
+      // `settings.md` §3.3b's self-service sheet for anyone).
+      displayName: null,
     };
     const identity: AuthIdentity = {
       id: makeId('authid'),
@@ -2195,6 +2322,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
         : s,
     );
+    return true;
+  }
+
+  /** `decision-log.md` D69, `product-decisions.md` Q29 — see the
+   * `StoreValue.setUserDisplayName` doc comment above for the full
+   * reasoning. Real call to `update_user_display_name`. */
+  async function setUserDisplayName(displayName: string | null): Promise<boolean> {
+    const user = currentUser(state);
+    if (!user) return false; // defensive — unreachable via the real flow, both callers require a verified session
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] setUserDisplayName: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const trimmed = displayName?.trim() || null;
+    const { error } = await supabase.rpc('update_user_display_name', {
+      p_display_name: trimmed,
+    });
+    if (error) {
+      console.error('[store] update_user_display_name failed', error);
+      return false;
+    }
+    applyWriteMirror((s) => ({
+      ...s,
+      users: s.users.map((u) => (u.id === user.id ? { ...u, displayName: trimmed } : u)),
+    }));
     return true;
   }
 
@@ -3381,12 +3534,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   async function peekInvitation(
     token: string,
   ): Promise<
-    | { businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' }
+    | { businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked'; targetHint: { type: 'email'; value: string } | null }
     | 'not-found'
     | null
   > {
     const result = await peekInvitationRemote(token);
-    if (result.ok) return { businessName: result.businessName, status: result.status };
+    if (result.ok) return { businessName: result.businessName, status: result.status, targetHint: result.targetHint ?? null };
     if (result.reason === 'not-found') return 'not-found';
     return null;
   }
@@ -3400,7 +3553,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     idempotencyKey: string,
   ): Promise<
     | { businessId: ID; membershipId: ID }
-    | { error: 'invitation_not_available' | 'already_member' | 'membership_revoked' }
+    | { error: 'invitation_not_available' | 'already_member' | 'membership_revoked' | 'invitation_identity_mismatch' }
     | null
   > {
     const supabase = getSupabaseClient();
@@ -3416,7 +3569,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (
         error?.message === 'invitation_not_available' ||
         error?.message === 'already_member' ||
-        error?.message === 'membership_revoked'
+        error?.message === 'membership_revoked' ||
+        error?.message === 'invitation_identity_mismatch'
       ) {
         return { error: error.message };
       }
@@ -3489,6 +3643,43 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ),
     }));
     return { invitationId: row.invitation_id, status: 'revoked' };
+  }
+
+  /** settings.md §3.12e "Editar correo"/"Agregar correo" (RFC 0014/D70) —
+   * see this function's own `StoreValue` doc comment for the full
+   * reasoning. Real call to `update_invitation_target_hint`. */
+  async function updateInvitationTargetHint(
+    invitationId: ID,
+    targetHint: { type: 'email'; value: string },
+    idempotencyKey: string,
+  ): Promise<{ invitationId: ID } | { error: 'invitation_not_pending' } | null> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] updateInvitationTargetHint: Supabase not configured. See supabase/README.md.');
+      return null;
+    }
+    const { data, error } = await supabase
+      .rpc('update_invitation_target_hint', {
+        p_invitation_id: invitationId,
+        p_idempotency_key: idempotencyKey,
+        p_target_hint: targetHint,
+      })
+      .single();
+
+    if (error || !data) {
+      if (error?.message === 'invitation_not_pending') {
+        return { error: 'invitation_not_pending' };
+      }
+      console.error('[store] update_invitation_target_hint failed', error);
+      return null;
+    }
+
+    const row = data as { invitation_id: ID };
+    applyWriteMirror((s) => ({
+      ...s,
+      invitations: s.invitations.map((inv) => (inv.id === row.invitation_id ? { ...inv, targetHint } : inv)),
+    }));
+    return { invitationId: row.invitation_id };
   }
 
   /** settings.md §2.7 "Quitar" (§3.13) — see this function's own `StoreValue`
@@ -4020,6 +4211,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     resolveGoogleSignIn,
     completeOnboarding,
     setBusinessIdentity,
+    setUserDisplayName,
     acknowledgeOnboarding,
     commitLot,
     editPrice,
@@ -4050,6 +4242,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     acceptInvitation,
     declineInvitation,
     cancelInvitation,
+    updateInvitationTargetHint,
     revokeMembership,
     saveEventAllocations,
     scanUnitIntoEventAllocation,

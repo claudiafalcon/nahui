@@ -168,8 +168,13 @@ export function ExportarVentas({ onBack }: { onBack: () => void }) {
           Columnas: Fecha, Lugar, Evento, Sesión, Vendedor, Producto, Cantidad, Precio, ID de venta
         </p>
 
+        {/* `decision-log.md` D69, `product-decisions.md` Q29 — corrected
+            from the pre-D69 absolute claim ("no muestra el nombre de la
+            persona") to the real, current two-tier behavior, per
+            `reports.md` §3.19's own updated wireframe text. */}
         <p className={styles.exportDisclosure}>
-          "Vendedor" solo distingue Tú de tu equipo — no muestra el nombre de la persona.
+          "Vendedor" muestra el nombre de quien vendió, si ya lo registró. Si no, aparece como "Tú" o "Alguien de tu
+          equipo."
         </p>
       </div>
 

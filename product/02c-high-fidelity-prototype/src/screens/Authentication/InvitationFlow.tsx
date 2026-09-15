@@ -15,41 +15,21 @@ type Step =
   | { kind: 'not-available' }
   | { kind: 'offer'; businessName: string }
   | { kind: 'mismatch-confirm'; businessName: string }
-  | {
-      kind: 'authenticating';
-      businessName: string;
-      /** Set only when this step is (re)entered from `'mismatch-confirm'`'s
-       * own "No, elegir otro" — the just-typed, just-rejected value
-       * preserved for editing, the identical pre-fill courtesy
-       * `AppRouter.tsx`'s own §3.7e mechanism already gives (`AuthenticationFlow`'s
-       * own `initialPrefill` prop, threaded through unchanged). `undefined`
-       * for every other way this step is entered. */
-      prefill?: { channel: 'phone' | 'email'; value: string };
-    }
+  | { kind: 'authenticating'; businessName: string }
   | { kind: 'accepting'; businessName: string }
   | { kind: 'accept-error'; businessName: string }
+  /** authentication.md §3.10f (new, RFC 0014/D70 — `accept_invitation`
+   * outcome: `invitation_identity_mismatch`). Reached identically whether
+   * the write ran off an already-valid, wrong-account session, or off a
+   * fresh verification through §3.2g that still resolved to a mismatched,
+   * already-linked-elsewhere account — this component has no reliable way
+   * to distinguish the two, and shouldn't guess, the identical restraint
+   * `'not-available'` already holds itself to for its own two entry
+   * points. */
+  | { kind: 'mismatch-account'; businessName: string }
   | { kind: 'welcome'; businessName: string }
   | { kind: 'already-member'; businessName: string }
   | { kind: 'revoked'; businessName: string };
-
-/**
- * `authentication.md` §3.8's own extended resumability range, mirrored from
- * `AuthenticationFlow.tsx`'s own `computeInitialStep` (`ux-critic` MAJ1 fix,
- * 2026-09-14) — the one signal available on a fresh mount that this is
- * actually a resumed Google-redirect return, not a genuinely fresh open.
- * Needed here specifically because `InvitationFlow` holds the *highest*
- * render precedence in `AppRouter.tsx` (`invitationGateActive`, checked
- * before `!authenticated`): on return from Google with `/invite/<token>`
- * still in the URL, this component remounts fresh — `AuthenticationFlow`'s
- * own hash-detection never gets a chance to run at all unless this
- * component's own `resolveToken` (below) explicitly routes into the
- * `'authenticating'` step for it, instead of defaulting to `'offer'`.
- */
-function hasGoogleRedirectSignal(): boolean {
-  if (typeof window === 'undefined') return false;
-  const { hash, search } = window.location;
-  return hash.includes('access_token') || hash.includes('error') || search.includes('error');
-}
 
 /**
  * authentication.md §2.0 / §2.2's new case 0 / §2.2a / §3.9a-§3.9b /
@@ -136,22 +116,71 @@ function hasGoogleRedirectSignal(): boolean {
  * threading the same `InvitationContextLine` M1 pattern through it via its
  * new `invitationContext` prop. Only once she confirms ("Sí, es mío/mía")
  * does the accept write actually run.
+ *
+ * **Further amended 2026-09-15 (RFC 0014/D70, `decision-log.md` D70,
+ * `product-decisions.md` Q30) — `targetHint` required and enforced at
+ * acceptance.** Three changes: (1) `resolveToken` now also captures
+ * `targetHint` from `peekInvitation`'s response, threading it into a fresh
+ * `'authenticating'` mount as `AuthenticationFlow`'s own
+ * `lockedInvitationEmail` prop — the session-less "no session" branch no
+ * longer mounts `AuthenticationFlow`'s ordinary three-way choice at all,
+ * per §2.0 step 4's own corrected text ("routes directly into §3.2g... a
+ * pre-filled, locked Email sub-flow, never the three-way choice"). A
+ * legacy, hint-less pending Invitation (`targetHint === null`) is the one
+ * disclosed, reasoned exception: with nothing to lock the flow to, this
+ * build falls back to the ordinary three-way choice rather than inventing
+ * a destination the spec's own acceptance-flow text doesn't walk through
+ * for that narrower case (the mismatch *check itself* is separately,
+ * explicitly exempt for a legacy row — RFC 0014's own backward-
+ * compatibility rule — this is a distinct, UI-level interpretation of an
+ * edge case that text doesn't fully spec, flagged here rather than
+ * silently assumed). (2) `runAccept` now handles a fifth real outcome,
+ * `invitation_identity_mismatch`, routing to the new `'mismatch-account'`
+ * step (§3.10f) — reached identically whether the write ran off an
+ * already-valid session or a fresh §3.2g verification. (3)
+ * `'mismatch-confirm'`'s own "No, elegir otro" no longer threads a
+ * phone/email prefill into the re-authentication attempt — corrected from
+ * routing back to an editable §3.3/§3.2e entry (with a typed value to
+ * preserve) to routing back to §3.2g instead, which has nothing to
+ * pre-fill or preserve in the first place (RFC 0014's own "this path is
+ * Email-only now, with nothing typed to preserve, since there was never
+ * anything to type"). The `hasGoogleRedirectSignal`/`resumedGoogleRedirect`
+ * mechanism this file used to carry is retired outright, not merely
+ * unused: it existed solely to resume a mid-Google-redirect detour from
+ * the old three-way "no session" path, and Google is no longer reachable
+ * from that path at all under this amendment.
  */
 export function InvitationFlow({ token, onDone }: { token: string; onDone: () => void }) {
-  const { state, peekInvitation, acceptInvitation, retryHydration, confirmPhoneMismatch, retractMistypedVerification } =
-    useStore();
+  const {
+    state,
+    peekInvitation,
+    acceptInvitation,
+    retryHydration,
+    confirmPhoneMismatch,
+    retractMistypedVerification,
+    signOut,
+  } = useStore();
   const [step, setStep] = useState<Step>({ kind: 'resolving' });
+  // RFC 0014/D70 — `targetHint`'s own stored value, captured once by
+  // `resolveToken` from `peekInvitation`'s response, read by both §3.2g (via
+  // `AuthenticationFlow`'s `lockedInvitationEmail` prop) and §3.10f's own
+  // "Esta invitación es para {targetHint}..." copy. `null` for a legacy,
+  // hint-less pending Invitation — see this component's own doc comment
+  // above for how that case degrades.
+  const [targetHintEmail, setTargetHintEmail] = useState<string | null>(null);
   // §3.7e's own display value for the Google channel specifically — read
-  // live from the OAuth session at the moment it resolved (this component's
-  // own inline `AuthenticationFlow`'s `onGoogleResolved` callback), never
-  // persisted anywhere (RFC 0012 §1). Mirrors `AppRouter.tsx`'s own identical
-  // state, needed here too now that this component can mount its own
-  // `'mismatch-confirm'` step (Blocker B1 fix).
-  const [googleDisplayLabel, setGoogleDisplayLabel] = useState<string | null>(null);
-  // MAJ1 fix — captured once, at mount: whether this fresh mount is actually
-  // a resumed Google-redirect return while `/invite/<token>` is still the
-  // active URL. See `hasGoogleRedirectSignal`'s own doc comment above.
-  const [resumedGoogleRedirect] = useState<boolean>(() => hasGoogleRedirectSignal());
+  // live from the OAuth session at the moment it resolved, never persisted
+  // anywhere (RFC 0012 §1). Still needed for `'mismatch-confirm'` (a device
+  // that already holds a *different*, previously-verified credential — which
+  // may itself be a Google account from an earlier, ordinary sign-in
+  // elsewhere in the app) — but, as of the RFC 0014 amendment above, this
+  // component's own inline authentication mount can no longer populate it
+  // itself (Google is unreachable through §3.2g by design), so it now stays
+  // permanently `null` here. Kept as a literal rather than a dead `useState`
+  // for the one real reason it might ever differ: `mismatchDisplayValue`'s
+  // own signature accepts it, and passing `null` here is the same honest
+  // "not available" value that function already falls back to correctly.
+  const googleDisplayLabel: string | null = null;
   // Reused across every retry of the *same* logical "Aceptar y empezar a
   // vender" attempt (`architecture-principles.md` #7) — cleared once that
   // attempt is genuinely settled, so a later, distinct attempt (a fresh
@@ -176,17 +205,10 @@ export function InvitationFlow({ token, onDone }: { token: string; onDone: () =>
       setStep({ kind: 'not-available' });
       return;
     }
-    if (resumedGoogleRedirect && state.currentUserId == null) {
-      // MAJ1 fix — she already tapped "Aceptar" and left for Google before
-      // this remount; skip the offer screen outright and mount the inline
-      // `AuthenticationFlow` directly, the same destination `handleAccept`
-      // below would have produced. `AuthenticationFlow`'s own
-      // `computeInitialStep` independently detects the identical hash signal
-      // on its own mount and resumes straight into `'google-verifying'`,
-      // consuming the credential without a second tap.
-      setStep({ kind: 'authenticating', businessName: result.businessName });
-      return;
-    }
+    // RFC 0014/D70 — captured once here, read by §3.2g and §3.10f alike
+    // (this component's own doc comment above for the full reasoning,
+    // including the legacy hint-less-row fallback).
+    setTargetHintEmail(result.targetHint?.value ?? null);
     setStep({ kind: 'offer', businessName: result.businessName });
   }
 
@@ -215,6 +237,13 @@ export function InvitationFlow({ token, onDone }: { token: string; onDone: () =>
       } else if (result.error === 'already_member') {
         void retryHydration(); // she may hold this Membership via a path this device never hydrated for yet
         setStep({ kind: 'already-member', businessName });
+      } else if (result.error === 'invitation_identity_mismatch') {
+        // RFC 0014/D70 — a defensive precondition, never
+        // `invitation_not_available`: the Invitation itself is perfectly
+        // valid, it's this account that doesn't match `targetHint`. No
+        // `retryHydration` call — nothing new to load, she still has no
+        // standing here under this account.
+        setStep({ kind: 'mismatch-account', businessName });
       } else {
         // membership_revoked — deliberately does not accept, no
         // `retryHydration` call: nothing new to load, she still has no
@@ -356,24 +385,17 @@ export function InvitationFlow({ token, onDone }: { token: string; onDone: () =>
           void runAccept(step.businessName);
         }}
         onCorrect={() => {
-          // Same "No, elegir otro" mechanism `AppRouter.tsx`'s own §3.7e
-          // branch uses — preserve the just-typed value for the
-          // freshly-remounted `AuthenticationFlow` below (phone/email only,
-          // §3.7e's own text), revert this User row's own verification, then
-          // return to this flow's own `'authenticating'` step (never
+          // **Corrected 2026-09-15, RFC 0014/D70** — no longer preserves a
+          // phone/email prefill: this path is Email-only now, and §3.2g has
+          // nothing typed to preserve in the first place (there was never
+          // anything to type — the email is locked to `targetHint`, RFC
+          // 0014's own text). Reverts this User row's own verification,
+          // then returns to this flow's own `'authenticating'` step (never
           // `AppRouter.tsx`'s ordinary `!authenticated` branch, which would
           // lose this screen's Invitation context — `invitationGateActive`
-          // keeps this component mounted throughout regardless).
-          const businessName = step.businessName;
-          if (target.identity.type === 'phone' || target.identity.type === 'email') {
-            setStep({
-              kind: 'authenticating',
-              businessName,
-              prefill: { channel: target.identity.type, value: target.identity.identifier },
-            });
-          } else {
-            setStep({ kind: 'authenticating', businessName });
-          }
+          // keeps this component mounted throughout regardless), which now
+          // always re-mounts §3.2g directly.
+          setStep({ kind: 'authenticating', businessName: step.businessName });
           // `retractMistypedVerification` is now `Promise<void>` (`reviewer`
           // Blocker fix, 2026-09-14) — fire-and-forget is still correct
           // here: `setStep` above already moved this flow to
@@ -386,11 +408,17 @@ export function InvitationFlow({ token, onDone }: { token: string; onDone: () =>
   }
 
   if (step.kind === 'authenticating') {
+    // RFC 0014/D70 — `lockedInvitationEmail` skips `AuthenticationFlow`'s
+    // ordinary three-way choice entirely, mounting only §3.2g. A legacy,
+    // hint-less pending Invitation (`targetHintEmail === null`) falls back
+    // to the ordinary three-way choice instead — this component's own doc
+    // comment above for why that's a reasoned, disclosed interpretation,
+    // not an oversight.
     return (
       <AuthenticationFlow
         invitationContext={{ businessName: step.businessName }}
-        initialPrefill={step.prefill}
-        onGoogleResolved={setGoogleDisplayLabel}
+        lockedInvitationEmail={targetHintEmail ?? undefined}
+        onDeclineInvitation={onDone}
       />
     );
   }
@@ -414,6 +442,52 @@ export function InvitationFlow({ token, onDone }: { token: string; onDone: () =>
     );
   }
 
+  if (step.kind === 'mismatch-account') {
+    // §3.10f (new, RFC 0014/D70) — never "esta invitación ya no está
+    // disponible"/"no es válida," per D70's own named register held
+    // literally: the Invitation is completely fine, it's this account that
+    // doesn't match it.
+    return (
+      <ScreenTransition transitionKey="invitation-mismatch-account">
+        <div className={styles.wrap}>
+          <div className={styles.copy}>
+            <p className={styles.eyebrow}>Nahui</p>
+            <h1 className={styles.heading}>
+              Esta invitación es para {targetHintEmail}, y esta cuenta es otra.
+            </h1>
+            <p className={styles.body}>Si tú eres {targetHintEmail}, cierra esta sesión y entra de nuevo con esa cuenta.</p>
+          </div>
+          <div className={styles.ctaStack}>
+            <Button
+              className={styles.cta}
+              onClick={async () => {
+                // "Cerrar sesión e intentar de nuevo" reuses `settings.md
+                // §2.5`'s exact sign-out mechanism and its own stated
+                // guarantee (Business/Catálogo/historial untouched — a
+                // different device's session fact, not a data-loss risk).
+                // Runs inline here, never sending her to Configuración
+                // first — no second confirming dialog, since she's already
+                // read the full explanation on this exact screen
+                // (`onboarding.md` §6's own "never zero, never two" standard,
+                // applied here to *not* doubling an already-deliberate tap).
+                await signOut();
+                // On success → §3.2g, fresh, the same token carried forward
+                // — this branch re-tests from the top the next time she
+                // confirms.
+                setStep({ kind: 'authenticating', businessName: step.businessName });
+              }}
+            >
+              Cerrar sesión e intentar de nuevo
+            </Button>
+            <Button className={styles.cta} variant="secondary" onClick={onDone}>
+              Entendido
+            </Button>
+          </div>
+        </div>
+      </ScreenTransition>
+    );
+  }
+
   if (step.kind === 'welcome') {
     return (
       <ScreenTransition transitionKey="invitation-welcome">
@@ -426,6 +500,15 @@ export function InvitationFlow({ token, onDone }: { token: string; onDone: () =>
             <h1 className={styles.heading}>Ya quedaste registrada</h1>
             <p className={styles.body}>Ya quedaste registrada con {step.businessName}.</p>
             <p className={styles.body}>Cuando quieras vender, abre tu sesión aquí.</p>
+            {/* `decision-log.md` D69/D70, `settings.md` §2.5 — a passive,
+                zero-required-tap line closing the discoverability gap a
+                SELLER onboarded this way would otherwise have: she never
+                sees "Tu equipo"/"Vendiendo ahorita"/"Exportar tus ventas"
+                (all OWNER-only), so nothing else in the app would ever tell
+                her that "Tu cuenta" exists as a place to add her own name.
+                Exact copy brand-reviewed — see `authentication.md` §3.10c's
+                own status header. */}
+            <p className={styles.body}>Cuando quieras, puedes agregar tu nombre en Tu cuenta.</p>
           </div>
           <Button className={styles.cta} onClick={onDone}>
             Ir a Hoy

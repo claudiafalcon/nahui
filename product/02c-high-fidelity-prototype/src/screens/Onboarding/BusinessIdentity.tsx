@@ -21,14 +21,38 @@ const SAVE_DELAY_MS = 260;
  * and, as of Stage 7 Backend Integration's real `update_business_identity`
  * call, genuinely reachable: a rejected/failed RPC call lands here for real,
  * not just a disclosed-but-unreachable branch.
+ *
+ * **"¿Cómo te llamas?" (added 2026-09-15, `decision-log.md` D69,
+ * `product-decisions.md` Q29) — `User.displayName`, a genuinely different
+ * fact from the other three fields, written by a second, independently-
+ * sequenced, best-effort write, never folded into `onSaved`'s own
+ * `Business`-identity write.** Never gates "Continuar" — the same
+ * zero-required-tap treatment Logo/Descripción already get. Its own write
+ * (`onDisplayNameSaved`, fired only after `onSaved` itself already
+ * succeeded, per §2.2b's own decided ordering) is fire-and-forget from this
+ * component's own point of view: this screen never blocks progression on
+ * it, and never surfaces its failure — `OnboardingFlow.tsx`'s own caller
+ * logs a failure to the console and nothing more, the same restraint the
+ * demo path's own seed-identity write already takes for a comparable
+ * "not this dispatch's UX to invent a retry surface for" write.
  */
 export function BusinessIdentity({
   onSaved,
+  onDisplayNameSaved,
 }: {
   onSaved: (fields: { name: string; logo?: string; description?: string }) => Promise<boolean>;
+  /** `decision-log.md` D69/§2.2b's own second, independently-sequenced
+   * write — fired only once `onSaved` above has already succeeded, never
+   * awaited by this component (best-effort, from her own point of view a
+   * fire-and-forget side effect of tapping "Continuar"). A no-op call when
+   * she left "¿Cómo te llamas?" blank — nothing to write, the identical
+   * "leaving it untouched is the entire skip mechanism" posture Logo/
+   * Descripción already get. */
+  onDisplayNameSaved: (displayName: string) => void;
 }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [logo, setLogo] = useState<string | undefined>(undefined);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
@@ -60,7 +84,17 @@ export function BusinessIdentity({
     setSaveState('saving');
     window.setTimeout(async () => {
       const ok = await onSaved({ name: name.trim(), logo, description: description.trim() || undefined });
-      if (!ok) setSaveState('error');
+      if (!ok) {
+        setSaveState('error');
+        return;
+      }
+      // `decision-log.md` D69/§2.2b — reached only once the Business-identity
+      // write above has already succeeded (the Product Owner's own decided
+      // ordering). Never awaited, never gates progression, its own failure
+      // is never shown to her — a genuinely independent, best-effort second
+      // write, not a second step of this same commit.
+      const trimmedDisplayName = displayName.trim();
+      if (trimmedDisplayName) onDisplayNameSaved(trimmedDisplayName);
     }, SAVE_DELAY_MS);
   }
 
@@ -111,6 +145,23 @@ export function BusinessIdentity({
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+      </div>
+
+      {/* "¿Cómo te llamas?" — new 2026-09-15, `decision-log.md` D69/§2.2b.
+          Deliberately not labeled "Tu nombre" (already committed on this
+          screen to mean `Business.name`, per the intro paragraph above) —
+          a direct, personal question instead, unmistakably distinct from
+          "Nombre de tu negocio." Never gates "Continuar." */}
+      <div className={styles.field}>
+        <span className={styles.label}>¿Cómo te llamas? (opcional)</span>
+        <input
+          className={styles.input}
+          type="text"
+          placeholder="Escribe tu nombre…"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+        />
+        <span className={styles.hint}>Así te reconocen en Resultados y en Tu equipo — nunca en tu recibo.</span>
       </div>
 
       <div className={styles.field}>
