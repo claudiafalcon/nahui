@@ -731,4 +731,4 @@ The Product Owner asked live, during production testing, for a date-range sales 
 
 ### Verification
 
-Pending — re-dispatching `ux-critic` for a verification pass on this fix round.
+`ux-critic` re-verification pass (2026-09-15): all five findings confirmed closed, nothing new introduced — §3.19's heading/CTA no longer collide; the Vendedor-limit disclosure renders as a real on-screen wireframe line, backed by consistent supporting text in front matter/§2/§8 item 13; "ID de venta" used consistently everywhere it's the actual column name, with the Product Owner's own original phrasing correctly left as direct quotation elsewhere; date fields match `events.md`'s numeric convention; §3.20's loading text now follows the doc's own near-instant/slow convention. The incidental `product-decisions.md` Q27 documentation-sync note also confirmed coherent, not self-contradictory. Ready for `reviewer`.
