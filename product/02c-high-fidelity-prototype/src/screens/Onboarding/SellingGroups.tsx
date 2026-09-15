@@ -360,7 +360,7 @@ export function SellingGroups({
           <input
             ref={photoFileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,android/allowCamera"
             capture="environment"
             className={styles.hiddenFileInput}
             onChange={handlePhotoFileChange}

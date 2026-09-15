@@ -146,7 +146,7 @@ export function BusinessIdentity({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,android/allowCamera"
           capture="environment"
           className={styles.hiddenFileInput}
           onChange={handleFileChange}
