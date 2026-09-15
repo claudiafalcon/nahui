@@ -2,6 +2,24 @@
 
 Chronological. Each entry: the decision, why it was made, and what it superseded if anything. Don't edit past entries when a decision changes later — add a new entry that supersedes it, so the reasoning trail stays intact.
 
+## D70 — `Invitation.targetHint` becomes required, and acceptance authenticates specifically through it (`product/99-rfc/0014-invitation-target-hint-enforced.md`, Accepted)
+
+**RFC promotion.** `Invitation.targetHint` (`{ type: 'email', value }`, RFC 0013/D64) moves from optional/advisory to required at `create_invitation()`, and the Invitation-acceptance flow now authenticates the invited person specifically through the Email method, pre-filled and locked to `targetHint`'s value, rather than letting her authenticate via any of the three methods and checking a match afterward. `accept_invitation()` gains a defensive precondition (the resolved `userId`'s `AuthIdentity(type='email', verifiedAt is not null)` must match `targetHint`, checked before the status CAS) — server-enforced regardless of what the client UI offers.
+
+**Trigger.** The Product Owner, live, 2026-09-15, testing the just-shipped "Tu equipo": today's bearer-token Invitation link (RFC 0013) lets *any* stranger who completes *any* supported auth method join as SELLER, regardless of who the OWNER meant to invite — a real exposure RFC 0013 §4 named and knowingly accepted at pilot scale ("zero live instances"). She asked directly whether the link should be bound to email or phone for security.
+
+**Phone ruled out directly, not weighed.** `decision-log.md` D63 already records her own explicit instruction that phone must never become the canonical identity of an Invitation or `BusinessMembership` — building phone-binding now would contradict an instruction she gave for this same feature. Email was the one channel she explicitly left room for in that same instruction ("useful for security/UX... please do not assume it must become the canonical identity").
+
+**Enforcement mechanism — email-locked authentication, not post-hoc matching, and this is a technical necessity, not a preference.** The Product Owner herself proposed both shapes (a post-acceptance match-or-reject check, or routing acceptance through Email specifically); the second was chosen because the first cannot work correctly against the existing schema: `AuthIdentity(type='google').identifier` is the provider's opaque subject ID, "deliberately not the OAuth-provider email" (`domain-model.md`) — Nahui never captures a Google sign-in's real email anywhere, so a Google-authenticated SELLER could never satisfy an email-match check even when her actual account email is exactly right. Locking Invitation-acceptance to a pre-filled Email sub-flow sidesteps this cross-type ambiguity entirely.
+
+**Tradeoff, accepted explicitly, not glossed over.** Reintroduces real (smaller than the retired phone-keyed design) friction — the OWNER must know and correctly enter the SELLER's email before she can join. Accepted in favor of closing the leaked-link exposure.
+
+**Supersedes RFC 0013 §1's ruling on `targetHint` specifically** ("never required, never treated as identity... structurally never matched") — the rest of RFC 0013 (token as canonical/discoverable identity, the two-write CAS sequencing, expiry, single-use, rejecting a type-picker on `Invitation` itself) is untouched and stays fully in force. Per this log's own non-deletion convention, RFC 0013 §1's text on this point is marked `Superseded by RFC 0014` rather than rewritten.
+
+**Full reasoning, the two mismatch states this surfaces, and backward-compatibility handling for already-pending/already-accepted Invitations live in the RFC itself** — this entry is the promotion record, not a restatement.
+
+**Applied:** `domain-model.md` (`Invitation.targetHint` entry, Invitation-acceptance invariant). `ubiquitous-language.md` (`Invitation` entry). Routed to `ux-designer` next for `authentication.md`'s two new states and `settings.md`'s invite-creation form.
+
 ## D69 — `User.displayName`: new field, same additive class as D33/D36/D54/D55/D58/D65/D67 — closes a real, twice-independently-rediscovered identification gap
 
 `architect` finding, raised by the Product Owner during live testing (2026-09-15): she can't tell her team members apart anywhere in the app — every place Nahui needs to show "who," it falls back to role-only copy ("Tú"/"Alguien de tu equipo," `reports.md` §3.4a and §3.19's just-built "Vendedor" export column, `settings.md`'s "Tu equipo" list). She then raised, unprompted, that this isn't only a SELLER problem — the OWNER herself has no name captured anywhere either; "Tú" only works today because exactly one OWNER exists per Business (role-derivable), not because her identity was ever actually captured.
