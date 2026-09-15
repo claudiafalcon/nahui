@@ -176,6 +176,12 @@
   margin-bottom: var(--space-4);
 }
 
+.error {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+  margin-bottom: var(--space-2);
+}
+
 .confirmRow {
   display: flex;
   gap: var(--space-3);

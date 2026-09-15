@@ -858,8 +858,14 @@ interface StoreValue {
    * never called for. `sessionId` is the specific active Session the caller
    * captured at the moment "Cerrar jornada de venta" was tapped (`reviewer`
    * Important finding, fix round 1) — same explicit-target scoping as
-   * `cancelSale` above. */
-  closeSession: (sessionId: ID) => Promise<void>;
+   * `cancelSale` above. Resolves `false` on any rejected/failed outcome
+   * (live-found gap, 2026-09-15 — this used to be a bare fire-and-forget
+   * `Promise<void>`, matching the same silent-failure class `startSession`/
+   * `finalizeSale` already had fixed the same day: the caller had no way to
+   * know a real backend failure happened, so "Cerrar jornada de venta"
+   * could report success in the UI while the Session stayed active
+   * server-side). `true` on success, same shape as `startSession`. */
+  closeSession: (sessionId: ID) => Promise<boolean>;
   /** settings.md §2.2/§3.4 "Activar plan de pago" — immediate: sets
    * `subscriptionTier='paid'` directly, per Q11's own today-illustrative
    * assignment ("she's confirming a payment already arranged"). Reachable
@@ -2885,12 +2891,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * matching `cancelEvent`'s/Phase 0's `revokeMembership`'s own
    * explicit-target precedent (see `cancelSale`'s own doc comment above for
    * the identical fix). */
-  async function closeSession(sessionId: ID): Promise<void> {
-    if (!state.business) return;
+  async function closeSession(sessionId: ID): Promise<boolean> {
+    if (!state.business) return false;
     const supabase = getSupabaseClient();
     if (!supabase) {
       console.error('[store] closeSession: Supabase not configured. See supabase/README.md.');
-      return;
+      return false;
     }
     const { error } = await supabase.rpc('close_session', {
       p_business_id: state.business.id,
@@ -2898,7 +2904,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
     if (error) {
       console.error('[store] close_session failed', error);
-      return;
+      return false;
     }
     applyWriteMirror((s) => ({
       ...s,
@@ -2906,6 +2912,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         sess.id === sessionId ? { ...sess, status: 'closed' as const, closedAt: Date.now() } : sess,
       ),
     }));
+    return true;
   }
 
   /** settings.md §2.2/§3.4 "Activar plan de pago" — immediate. Reachable only

@@ -172,6 +172,11 @@ export function Selling({
   // feedback of any kind. Same error/retry shape every other real write
   // in this codebase already uses (`WritingState`'s own error variant).
   const [finalizeError, setFinalizeError] = useState(false);
+  // Live-found gap (2026-09-15): `closeSession` had the identical
+  // fire-and-forget silent-failure shape — a rejected RPC left the real
+  // Session active server-side while the UI unconditionally proceeded to
+  // the "closed" summary screen as if it had succeeded.
+  const [closeError, setCloseError] = useState(false);
   // home.md §3.8a extended / §3.8d-i / §3.8d-ii (Slice 12, `product-
   // decisions.md` Q24/Q25) — the "lost the race" terminal marker. Local,
   // UI-only state (never part of the persisted `Sale`/`SaleItem` domain
@@ -687,6 +692,9 @@ export function Selling({
           <p className={styles.confirmBody}>
             Esta sesión: {totals.count} {pluralize(totals.count, 'venta', 'ventas')} · {pesos(totals.revenue)}
           </p>
+          {closeError && (
+            <p className={styles.error}>No pudimos cerrar tu jornada de venta. Intenta de nuevo.</p>
+          )}
           <div className={styles.confirmRow}>
             <Button variant="secondary" onClick={() => setCloseConfirmOpen(false)}>
               Cancelar
@@ -697,7 +705,12 @@ export function Selling({
                 // explicit-target capture as "Sí, cancelar" above.
                 // `session` is guaranteed non-null (this component's own
                 // top-of-body guard already returned early otherwise).
-                await closeSession(session.id);
+                setCloseError(false);
+                const ok = await closeSession(session.id);
+                if (!ok) {
+                  setCloseError(true);
+                  return;
+                }
                 setCloseConfirmOpen(false);
                 onSessionClosed(totals, session.id);
               }}
