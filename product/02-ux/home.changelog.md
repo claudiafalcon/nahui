@@ -433,6 +433,13 @@ matching correction (§2.1, §3.3, §4, §5, §6, §8, §10). `ux-critic` clean
 (no findings). `reviewer` clean (no Blockers, no Important findings).
 Folded back into Approved.
 
+### status-2026-09-15-quick-session-alongside-event
+**Applies to:** Product Owner decision, live-selling scenario.
+
+Full text of the front-matter entry is now inline in `home.md`'s own
+status header — see that entry directly (2026-09-15). Recorded here only
+as the anchor target, per this file's own convention.
+
 ---
 
 ## §10 "Decisions made" — full decision history
@@ -1474,3 +1481,33 @@ only)" marker; §4/§5 corrected to match.
 Full reasoning lives inline at
 `status-2026-09-13-q20-barcode-scanning-paid-tier-gate` above — this
 decision was recorded there in full, not restated here.
+
+### decisions-2026-09-15-quick-session-alongside-event
+**§3.6 ("Continuar Día N") and §3.6b ("Elegir evento") both gain a second,
+secondary, always-available "Iniciar Sesión Rápida" action, opening a
+Quick Session independent of whichever Event(s) are active.** Raised
+directly by the Product Owner during live production testing: she closes
+out selling at a bazaar (a multi-day Event), goes home, and a neighbor
+wants to buy something later the same day, away from the bazaar entirely
+— and there was no way to do that sale without either misattributing it to
+the Event's own Día N totals/allocation, or not selling at all. Confirmed
+against the codebase directly, not assumed: `HomeScreen.tsx`'s
+`qualifyingEvents.length === 1` branch mounts `EventResume.tsx`, which
+renders only the one CTA — this matches the spec gap found here exactly.
+§3.6b had an identical, second instance of the same gap, compounded by its
+own prose incorrectly claiming Quick Session already "stays reachable"
+there — confirmed false by direct wireframe inspection, not restated on
+report. Both fixed the same way: a secondary, always-available "Iniciar
+Sesión Rápida," reusing §3.4's own copy/mechanism/destination verbatim,
+cross-referenced rather than redefined. Visual weight stays unequal
+(primary action unchanged in each screen's common case) — reuses
+`inventory.md` §3.5/§3.17's own already-Approved primary/secondary-CTA
+composition rather than inventing a new pattern; no `knowledge-mentor`
+consultation needed as a result. Copy avoids any "salir del evento"/exit
+framing by direction — a `tianguis`-length Event (weeks/months) makes
+selling outside an active Event's own context routine for a real share of
+Nahui's merchants, not an exception, per the Product Owner's own added
+context. NFC Readiness (§3.6a) composition confirmed unchanged in content
+— a single, Business-wide, ambient computation already applied regardless
+of which Session-start action gets tapped, the same way it already
+composes with §3.4/§3.5's own single CTA.

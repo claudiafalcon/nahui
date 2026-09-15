@@ -200,6 +200,36 @@ home.changelog.md#status-2026-09-13-d65-barcode-scanning]**
 
 **Amended 2026-09-13 (`company/business-decisions.md` Q20 resolved, Product Owner) — barcode scanning gated Paid-tier only, same gating class as NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18).** §2 gains a new capability-derivation paragraph gating §3.9's "Escanear código de barras" row, and its full sub-flow (§3.9a/§3.9a-i/§3.9b/§3.9c), on `Business.subscriptionTier = paid`, resolved once as part of Home's own ambient state load — never per-scan, and independent of `Session.operatingMode`/NFC Readiness (an orthogonal Paid-tier capability, not a Session-mode fact). §3.9 gains a Free-tier wireframe variant (grid minus the scan row); §3.9a/§3.9a-i/§3.9b/§3.9c headers marked Paid-tier-only; §4/§5/§10 corrected to match. No upsell/discoverability copy designed for Free tier — same reasoning as `inventory.md`'s own matching amendment; see that document's §10 for the fuller precedent analysis, not restated twice here. Closes the "Free/Paid-tier open item" this document's own D65 review round logged to `company/business-decisions.md`. `ux-critic` found 0 Blockers/Major/Minor (1 Suggestion, applied directly). `reviewer` found 0 Blockers (3 Important documentation-persistence gaps — a missing `ux-critic-findings.md` entry, an underspecified precedent-deferral clause — all closed directly by Main). Folded back into Approved. **[see home.changelog.md#status-2026-09-13-q20-barcode-scanning-paid-tier-gate]**
 
+**Amended 2026-09-15 (Product Owner-raised, live-selling scenario — Quick
+Session alongside an active Event):** §3.6 ("Continuar Día N") and §3.6b
+("Elegir evento") both gain a second, secondary, always-available action —
+"Iniciar Sesión Rápida" — opening a Quick Session (`Session.eventId = null`)
+completely independent of whichever Event(s) are active. Closes a real gap
+(§3.6 previously offered no Quick Session path at all once a qualifying
+Event went `active`) and corrects a related documentation inaccuracy
+(§3.6b's own closing bullet claimed Quick Session "stays reachable...
+regardless of how many Events are active" without that action ever actually
+rendering on screen — unimplemented aspirational text, confirmed by direct
+inspection of the wireframe, not merely restated on report). Zero added
+taps/delay to the existing primary actions ("Continuar Día N," the Event
+picker rows) — `global-principles.md`, "the fastest interaction is the one
+that never happens." Grounded in `architecture-principles.md` #3 (Session's
+`eventId` stays genuinely optional, "not a UI shortcut bolted onto a
+required relationship") and the Product Owner's own observation that a
+`tianguis`-length Event (weeks/months, not a single bazaar day) makes
+selling outside an active Event's own context a routine merchant pattern,
+not an exception — copy deliberately avoids any "salir del evento" framing
+as a result, reusing §3.4's own already-known "Iniciar Sesión Rápida"
+vocabulary verbatim rather than inventing new "workaround" language.
+Composition reuses `inventory.md` §3.5/§3.17's own already-Approved
+primary/secondary-CTA-on-one-screen precedent — no new interaction pattern,
+no `knowledge-mentor` consultation needed. §3.6a's NFC Readiness composition
+confirmed unchanged in content, only widened in applicability (it's a single,
+Business-wide, ambient computation, not Event- or CTA-scoped). §2, §3.6a
+(applicability sentence only), §4, §5, §6, §9, §10, §11 updated to match.
+Pending `ux-critic`/`reviewer` review before folding back into Approved.
+**[see home.changelog.md#status-2026-09-15-quick-session-alongside-event]**
+
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -308,6 +338,13 @@ Home open) never silently reshapes a screen she's already looking at.
          it is the moment a new Session actually opens — see the
          folded-in sub-step below.
 
+         **Amended 2026-09-15 (Product Owner-raised):** "Continuar Día N"
+         now composes with a second, secondary, always-available action on
+         the same screen — "Iniciar Sesión Rápida," opening a Quick Session
+         (`eventId = null`), completely independent of this Event — see
+         §3.6. Zero added taps to "Continuar Día N" itself; the common case
+         (selling at the Event) stays exactly as fast as before.
+
      2b. More than one Event qualifies (role-scoped as above) → **new
          (§3.6b, "Elegir evento").** First check whether this device
          already has a signal for today: does 1+ Session (any status)
@@ -337,6 +374,14 @@ Home open) never silently reshapes a screen she's already looking at.
              2026-09-06 "no OWNER pre-assignment concept added"
              resolution — see that entry's own 2026-09-09 Amendment for
              the record of why this isn't silently superseded).**
+
+             **Amended 2026-09-15 (Product Owner-raised):** "Elegir evento"
+             (§3.6b) now also composes with the identical secondary
+             "Iniciar Sesión Rápida" action, beneath the Event row list —
+             corrected from this section's own earlier text, which
+             asserted Quick Session "stays reachable... regardless of how
+             many Events are active" without that action ever actually
+             rendering; see §3.6b's own correction note.
 
 3. Does at least one `available` InventoryUnit exist?
      → NO:  cold-start empty state → route to Inventario. Reached whenever
@@ -1022,6 +1067,8 @@ for the `scheduled` case; `merchant-user-tester`-found defect,
 │      Plaza Norte                │
 │      Hoy es tu Día 2             │
 │      [   Continuar Día 2     ]  │
+│      [  Iniciar Sesión Rápida ] │  secondary — an ordinary way to sell,
+│                                │  independent of this Event
 ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
@@ -1029,18 +1076,84 @@ for the `scheduled` case; `merchant-user-tester`-found defect,
 - "Día 2" stated as fact, not asked: computed automatically from existing
   Sessions under the `eventId` (*domain-model.md*, read-side query across
   Sessions sharing that ID). *global-principles.md*, "never ask twice."
-- Same NFC Readiness disagreement note as §3.4/§3.5 — see §3.6a.
+- Same NFC Readiness disagreement note as §3.4/§3.5 — see §3.6a. Applies
+  identically regardless of which of this screen's two actions she
+  eventually taps (widened 2026-09-15 — see §3.6a's own applicability note).
 - **Header's gear icon (⚙) routes directly into Configuración, no
   intermediate sheet, same as §3.3–§3.5 (amended 2026-08-15 — see status
   header; applies `settings.md` §2.1's amendment; icon relocated
   2026-08-09, glyph changed 2026-08-15).**
   An active Event with no Session yet still has nothing to close — "Cerrar
-  jornada de venta" doesn't apply until "Continuar Día 2" is actually
-  tapped, and never shared a trigger with Configuración regardless.
+  jornada de venta" doesn't apply until a Session is actually opened (either
+  action below), and never shared a trigger with Configuración regardless.
+
+**"Iniciar Sesión Rápida" as a second, always-available action (new,
+2026-09-15 — Product Owner-raised, a real live-selling scenario, not a
+hypothetical: closing out selling at a bazaar, going home, and a neighbor
+buying something later that same day, nowhere near the Event).** Identical
+in copy, mechanism, and destination to §3.4's own primary "Iniciar Sesión
+Rápida" — cross-referenced, not redefined (`product/02-ux/CLAUDE.md` §4's
+shared-state convention). Tapping it opens a Quick Session
+(`Session.eventId = null`) exactly as §3.4 already specifies, resolving
+`Session.operatingMode` the same NFC-Readiness way (§3.6a, unchanged),
+completely independent of whichever Event(s) are `active` right now.
+
+- **Why this exists at all.** Before this amendment, once a qualifying
+  Event went `active`, §3.6 offered exactly one path: "Continuar Día N." A
+  merchant who wants to register a sale genuinely unrelated to that
+  Event had no way to do that sale without either (a) tapping "Continuar
+  Día N," which would incorrectly attribute the sale to that Event's own
+  Día N totals and (in `nfc`-mode selling) its `EventAllocation`, or (b)
+  not selling at all. Neither is acceptable — `architecture-principles.md`
+  #3: "Session works with zero Event because selling must never require
+  scheduling first — this is modeled as a nullable `eventId`, not a UI
+  shortcut bolted onto a required relationship." An active Event existing
+  right now was never meant to be able to withdraw that optionality, and
+  until this amendment it silently did, at exactly this one screen.
+- **Not a rare edge case — a routine, expected pattern for a meaningful
+  share of real Nahui merchants (Product Owner-stated).** A `tianguis` (a
+  traditional Mexican street market Nahui already serves) commonly runs as
+  a single Event spanning weeks or months, not a single bazaar day. For a
+  merchant selling under an Event that long-lived, wanting to make an
+  ordinary sale *outside* that Event's own context isn't an exception to
+  plan around once in a while — it's simply how her selling actually
+  happens, for as long as that Event stays `active`. This is why the fix
+  is a second, coexisting way to sell, not a rare escape hatch.
+- **Framing, deliberately: two ordinary ways to sell that coexist, neither
+  a workaround for the other.** Selling *at* the Event ("Continuar Día N")
+  and selling *outside* it ("Iniciar Sesión Rápida") are both first-class.
+  Nothing about this screen's copy, order, or mechanism implies she's
+  "leaving" or "stepping outside" anything — no "salir del evento" framing
+  anywhere in this amendment, by design (`brand-guide.md`'s Tone, "warm,
+  direct, respects the vendor's intelligence"). The secondary CTA reuses
+  the exact label and destination Ana already knows from §3.4's own common
+  case, rather than inventing new "exception" vocabulary.
+- **Visual weight: unequal, deliberately — a UI hierarchy decision, not a
+  tonal one.** "Continuar Día N" stays primary, unchanged in size/position
+  from before this amendment — still the more common single action for a
+  merchant standing at her Event; two equally-weighted buttons would slow
+  the fastest path this document has always protected (below). "Iniciar
+  Sesión Rápida" renders secondary, smaller, immediately beneath it — the
+  identical primary/secondary composition `inventory.md` §3.5/§3.17 already
+  establishes for "Continuar etiquetando" (primary) / "Registrar
+  mercancía" (secondary): two genuinely independent, fully functional
+  actions on one screen, neither hidden behind a menu or a second screen.
+  This reuses an already-Approved precedent; no new interaction pattern
+  needed inventing, no `knowledge-mentor` consultation required.
+- **Zero added taps, zero added delay to "Continuar Día N" itself.** It
+  keeps its exact position, size, and destination from before this
+  amendment; a merchant who never needs the new action experiences no
+  change at all. *global-principles.md*, "the fastest interaction is the
+  one that never happens."
+- **Applies identically for either role — no role-gating needed.** Quick
+  Session has never been role-restricted (§3.4/§3.5 already offer it to
+  both OWNER and SELLER unconditionally); "opening" one is the same
+  unrestricted capability §3.15 already states for "closing" one ("a
+  SELLER opens and closes her own Session exactly like an OWNER does").
 
 **Same-day resume — a Session with finalized Sales already exists today
-under this `eventId` (new — closes `architect-questions.md` Q19,
-`experience-review-2026-08-13-eventos.md`):**
+under this `eventId` (unchanged condition, now composes with the new
+secondary action):**
 ```
 ┌───────────────────────────────┐
 │  Nahui                        ⚙ │
@@ -1048,37 +1161,45 @@ under this `eventId` (new — closes `architect-questions.md` Q19,
 │      Hoy es tu Día 1             │
 │      Ya vendiste $750 · 2 ventas hoy │
 │      [   Continuar Día 1     ]  │
+│      Ya vendiste $420 · 3 ventas hoy │
+│      [  Iniciar Sesión Rápida ] │
 ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
 ```
-- **Condition:** shown only when at least one Session (any status — active
-  or closed) under this `eventId` already has 1+ finalized Sales falling on
-  today's calendar date. Absent entirely otherwise, including the common
-  case (first Session of the day under this Event) — the base §3.6
-  wireframe renders pixel-identical, zero added line, zero added tap.
-- **Data source:** `SUM(SaleItem.pricePaid)` and `COUNT(Sale)` across every
-  Sale whose Session shares this `eventId` and whose calendar date is
-  today — the identical Session set `domain-model.md`'s "Día N" computation
-  already scopes to today's date, reused here rather than a second,
-  independently-defined query (`global-principles.md`, "capture business
-  truth once, reuse it forever").
-- **Why this is needed:** closes the gap
-  `product/02-ux/experience-review-2026-08-13-eventos.md` found — a
-  same-day resume (e.g. after closing a lunch-break Session) correctly
-  shows "Continuar Día 1" again per D15, but nothing told Ana a closed
-  Session with real sales already existed for today before she reopened
-  selling; she read the fresh $0 running total as her prior sales having
-  vanished. Classified Architect-resolvable directly from
-  `architect-questions.md` Q7's existing ruling — no new Product Owner
-  decision, a content amendment only (`architect-questions.md` Q19).
-- **Coexists with §3.6a's NFC Readiness/capability lines, independent
-  facts.** Both can appear at once — this line is about Sessions and money
-  already recorded today; §3.6a's lines are about which selling mode the
-  next Session will open in. When both hold, the order is: identity → Día N
-  → this same-day-sales line → primary CTA → §3.6a's recommendation/mention
-  line (if any) → §3.6a's own secondary action, if offered. Neither
-  suppresses or reflows the other.
+(second "Ya vendiste..." line shown only when its own condition holds — see
+below; the base variant, above, is reached whenever this Event's own
+same-day line holds but the Quick-Session one doesn't)
+
+- **Condition (this Event's own line, unchanged):** shown only when at
+  least one Session (any status) under this `eventId` already has 1+
+  finalized Sales today. `SUM(SaleItem.pricePaid)`/`COUNT(Sale)` across
+  every Sale whose Session shares this `eventId` and whose calendar date
+  is today — closes `architect-questions.md` Q19,
+  `experience-review-2026-08-13-eventos.md`.
+- **Condition (the new Quick-Session line): identical to §3.4's own
+  definition, cross-referenced not redefined** — shown only when at least
+  one Session with `eventId = null` already has 1+ finalized Sales today.
+  This is the exact real-world screen her own scenario lands on: she
+  closed a Session under this Event earlier today, went home, sold via
+  Quick Session, and comes back to Hoy — both facts (Event-scoped sales
+  today, Quick-Session sales today) are independently true at once, and
+  neither suppresses the other, the same non-suppression discipline this
+  document already applies everywhere two ambient facts can coexist.
+- **Stacking order, worked out explicitly for this screen's fullest
+  composition:** identity → Día N → Event-scoped same-day-sales line (if
+  it holds) → primary CTA "Continuar Día N" → Quick-Session same-day-sales
+  line (if it holds, mirroring §3.4's own fact-line-before-its-CTA order)
+  → secondary CTA "Iniciar Sesión Rápida" → §3.6a's recommendation/mention
+  line (if any — applies regardless of which CTA is eventually tapped, see
+  §3.6a) → §3.6a's own secondary action, if offered. A condition that
+  doesn't currently hold is skipped entirely, never left as blank space.
+- **Flagged for High-Fidelity attention, same class of flag §3.4/§3.5
+  already carry for their own multi-element compositions** — `ui-designer`
+  must confirm both CTAs, and up to two independent same-day-sales lines,
+  still read as two clearly distinct, unambiguous actions on an actual
+  phone screen at this screen's fullest composition, not simply assume the
+  Low-Fidelity text description proves it.
 
 ### 3.6a Session-start moment — NFC Readiness disagreement (new — folds in `decision-log.md` D23)
 
@@ -1098,6 +1219,21 @@ per Session-start occurrence (see its own bullets below for why). The common
 case (Ready, capability intact, matching default) shows none of this —
 pixel-identical to §3.4/§3.5/§3.6 as already specified, exactly as fast as
 today.
+
+**Widened 2026-09-15 (Product Owner-raised, no content change below):**
+also composes beneath §3.6's own new secondary "Iniciar Sesión Rápida"
+action, and §3.6b's matching secondary action (below) — the same single,
+ambient, once-per-Home-open NFC Readiness computation applies regardless
+of which Session-start action on a given screen is the one eventually
+tapped, since the check is Business-wide sellable tagged inventory, never
+Event-scoped or CTA-scoped (§2). Confirmed directly, not assumed: none of
+the four cases below need any content change — only their applicability
+widens to two more entry points, cross-referenced from §3.6/§3.6b rather
+than redefined here. The existing per-variant parentheticals below ("the
+same line attaches beneath 'Continuar Día 2' when reached via §3.6, and
+beneath 'Iniciar Sesión Rápida'... when reached via §3.5") are understood
+to extend identically to these two new entry points without needing
+individual restatement.
 
 **Header carries the gear icon (⚙) too, identically to §3.4/§3.5/§3.6 —
 every wireframe below shows it (amended 2026-08-15 — see status
@@ -1388,6 +1524,9 @@ Reached only via §2 step 2b. Not reached at all while at most one Event qualifi
 │                                   │
 │  [ Mercado de Toluca · Día 1   ] │
 │                                   │
+│      Ya vendiste $420 · 3 ventas hoy │
+│      [  Iniciar Sesión Rápida ] │  secondary — independent of either
+│                                │  Event above
 ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
@@ -1400,7 +1539,11 @@ Reached only via §2 step 2b. Not reached at all while at most one Event qualifi
 - **`Session.eventId` is immutable for that Session's lifecycle once opened** (unchanged, pre-existing rule) — this screen's only job is the initial pick, never revisited mid-Session.
 - No back arrow, no dismiss — a top-level Home resolution state, same category as §3.3–§3.6. Header's gear icon (⚙) routes directly into Configuración, no intermediate sheet, identically to §3.3–§3.6 (§2.1).
 - **Data source is role-scoped as of `product/99-rfc/0011-event-assignment.md` (2026-09-09) — wireframe and interaction unchanged.** For an OWNER, unchanged: every currently `active` Event, Business-wide. For a SELLER, this list is now only the Events she holds an `EventAssignment` for (§2's role-scoped step 2) — never the Business's full active-Event set. Nothing about this section's own wireframe, row content, tap behavior, or copy differs between the two cases; only which rows exist to render does.
-- **Not reached by a Quick Session** — `eventId = null` has no Event to disambiguate; "Iniciar Sesión Rápida" stays reachable and unaffected regardless of how many Events are active (`architecture-principles.md` #3).
+- **Corrected 2026-09-15 (Product Owner-raised) — this screen's own closing bullet previously asserted "Iniciar Sesión Rápida stays reachable and unaffected regardless of how many Events are active," but nothing on this screen's actual wireframe ever rendered it — the assertion was unimplemented aspirational text, never a real, tappable affordance. Confirmed by direct inspection of the wireframe, not restated on report.** The Product Owner caught the identical gap at §3.6 first (exactly one qualifying Event); on inspection here, this screen had the same gap, one level earlier in the same resolution branch (§2 step 2b — 2+ qualifying Events, no Session opened yet today). Fixed the same way §3.6 was: a secondary "Iniciar Sesión Rápida" action, identical copy/mechanism/destination to §3.4's own primary action, cross-referenced not redefined, rendered beneath the Event row list — see §3.6's own full reasoning (visual weight, tianguis framing, zero added cost to the primary flow), not restated twice here.
+- **Composes with the identical Quick-Session same-day-resume line §3.4 already defines** (condition: 1+ Session with `eventId = null` has 1+ finalized Sales today), cross-referenced not redefined, rendering directly above this new secondary CTA — absent entirely in the common case (zero added line, zero added tap).
+- **Same NFC Readiness composition as §3.6's own new secondary action** — see §3.6a's widened applicability note.
+- **Applies identically to both roles** — an OWNER's Business-wide picker and a SELLER's `EventAssignment`-scoped picker (§2 step 2b) both gain the identical secondary action; Quick Session has never been role-gated (§3.15).
+- Row order, tap behavior, and every other bullet above are otherwise unchanged by this amendment — it only adds the one secondary action beneath the existing list.
 
 ### 3.6c Session-controls sheet — retired (superseded 2026-08-15 — see status header)
 
@@ -2745,9 +2888,19 @@ Open app
             exactly one qualifying Event (role-scoped) → "Continuar Día N" (3.6) → tap
               (NFC Readiness resolves Session.operatingMode — silent, or
               §3.6a if it disagrees with defaultSellingMode) → selling
+            [new, 2026-09-15] same screen (3.6) also offers, always, a
+              secondary "Iniciar Sesión Rápida" → identical
+              destination/mechanism to 3.4's own primary action (NFC
+              Readiness resolves the same way, §3.6a if it disagrees) →
+              selling, Quick Session (eventId = null), completely
+              independent of the Event named above
             2+ qualifying Events (role-scoped), no same-day signal for this device →
               "Elegir evento" (3.6b) → tap a row → that Event's own
               "Continuar Día N" (3.6) → tap → selling, same as above
+            [new, 2026-09-15] "Elegir evento" (3.6b) also offers the
+              identical secondary "Iniciar Sesión Rápida" beneath the
+              Event row list → same destination/mechanism as above →
+              selling, Quick Session, independent of every listed Event
             2+ qualifying Events (role-scoped), but this device already has 1+ Session
               today under exactly one of them → skip 3.6b, straight to
               that Event's own "Continuar Día N" (3.6) → tap → selling
@@ -2919,7 +3072,9 @@ and back to Hoy):
    SELLER sourced from her own `EventAssignment`-scoped
    `upcomingQualifyingEventForMembership`, with a passive-line alternate
    when she holds none — see item 39, below)
-6. Event active, no Session opened today — "Continuar Día N"
+6. Event active, no Session opened today — "Continuar Día N," plus (new,
+   2026-09-15) a secondary, always-available "Iniciar Sesión Rápida"
+   opening a Quick Session, independent of this Event
 7. Session-start moment — Session-start mode disagreement or discoverability
    mention: Limited Ready recommendation, Not Ready mention, Selling Mode
    Capability revoked mention, or (new) Ready-but-still-on-botones tags-now-
@@ -2965,7 +3120,9 @@ and back to Hoy):
 23. Resuming a Session left open from an interruption/crash — empty-tray variant
 24. Resuming a Session left open from an interruption/crash — non-empty-tray variant
 25. Resolution error / defensive fallback
-26. Elegir evento — idle Membership, 2+ Events currently active (§3.6b)
+26. Elegir evento — idle Membership, 2+ Events currently active (§3.6b),
+    plus (new, 2026-09-15) the identical secondary "Iniciar Sesión Rápida"
+    action
 27. Acceso revocado — revoked Membership (reached via §2 step 0, defined in settings.md §3.14)
 28. Nav bar — role-scoped (§3.16), applied to every state above
 29. Header icon — role-scoped (§3.15); SELLER's own "Tu cuenta" minimal surface (§3.15a)
@@ -3016,6 +3173,12 @@ reason — mention only, no override to offer. The new Ready-but-
 never adds a tap — a mention and an optional "Ir a Configuración" link only,
 no override to offer, and shown just once ever rather than on every
 qualifying Session-start.
+
+**Amended 2026-09-15:** §3.6/§3.6b's row in the table above is unaffected
+by the new secondary "Iniciar Sesión Rápida" action — it's an equally-fast,
+2-tap *alternate* path to first registered item (deliberate Session-start
+commitment + item registration), not an addition to the existing path's own
+tap count. A merchant who never needs it sees no change to her own floor.
 
 | Recovery scenario | Taps | Why it can't be fewer |
 |---|---|---|
@@ -3217,6 +3380,11 @@ her actual top sellers within the first screenful regardless of Catalog size.
   blocks selling — it states the fact plainly rather than silently
   reassigning her mode without any explanation (§2/§3.6a, resolving
   HOME2-MAJ3).
+- *"The fastest interaction is the one that never happens"* — extended
+  2026-09-15: the new secondary "Iniciar Sesión Rápida" action at
+  §3.6/§3.6b adds zero taps and zero delay to "Continuar Día N"/"Elegir
+  evento" themselves; a merchant who never needs it experiences no change
+  at all.
 
 **architecture-principles.md:**
 - *#1 (capabilities resolved once, upstream)* — `Session.operatingMode` is
@@ -3249,6 +3417,28 @@ her actual top sellers within the first screenful regardless of Catalog size.
   bounded-context dependency edge — it reads only Inventory data Selling
   already reads (`decision-log.md` D23).
 - *"Never ask twice"* — §2 step 2b's same-day-signal check exists specifically so a device that already sold at one Event today is never re-asked which Event it's at.
+
+**Quick Session alongside an active Event (Product Owner-raised, 2026-09-15):**
+- *architecture-principles.md* #3 (optional relationships stay optional) —
+  the direct textual grounding for why an active Event can never withdraw
+  Quick Session's own reachability: "Session works with zero Event...
+  modeled as a nullable eventId, not a UI shortcut bolted onto a required
+  relationship." Before this amendment, §3.6 (exactly one qualifying
+  Event) and §3.6b (2+ qualifying Events) both violated this in practice —
+  §3.6b's own prose had already (incorrectly) claimed otherwise; see
+  §3.6b's own correction note.
+- *brand-guide.md*, "Tone" ("warm, direct, respects the vendor's
+  intelligence — never condescending about informal commerce") — grounds
+  the explicit decision not to frame the new secondary action as an
+  exception or an escape hatch ("salir del evento" or similar); the copy
+  is a verbatim reuse of vocabulary Ana already knows from §3.4, never new
+  "workaround" language.
+- *brand-guide.md*, "Logo meaning — the four pillars," Movimiento ("the
+  itinerant nature of the business itself: moving between bazares,
+  adapting, growing") — thematic grounding, not literal instruction: an
+  itinerant merchant's selling was never meant to be fully contained
+  inside any one Event's own boundary, and a long-running `tianguis` Event
+  makes that structurally visible rather than a rare exception.
 
 **SELLER-experience additions (`product-decisions.md` Q24/Q25):**
 - *global-principles.md*, "business language before technical language" — every SELLER-facing copy variant says "pídele a quien te invitó," "solo quien te invitó puede activar esto," never "role," "permission," "Membership," or "OWNER"/"SELLER" as literal on-screen terms.
@@ -3490,6 +3680,30 @@ her actual top sellers within the first screenful regardless of Catalog size.
   forces navigation away from an active Sale. **[see
   home.changelog.md#decisions-d65-barcode-scanning]**
 - **Barcode scanning gated Paid-tier only, resolving `company/business-decisions.md` Q20 (Product Owner, 2026-09-13) — same gating class as NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18).** `Business.subscriptionTier = paid` is checked once, ambiently, as part of Home's own state load (§2) — independent of `Session.operatingMode`, never per-scan. A Free-tier merchant's buttons-mode grid (§3.9) shows no "Escanear código de barras" row; §3.9a/§3.9a-i/§3.9b/§3.9c are unreachable for her. **Chosen posture: gone entirely, no upsell/discoverability copy** — same reasoning `inventory.md` §10's matching decision states in full (this document's own precedent check found nothing to add beyond it: no Home screen state has ever paired a gated capability's missing affordance with an inline upsell — the closest analogue, `reports.md`'s passive "con el plan de pago vas a ver..." card, exists inside a data-summary context this screen doesn't share. `inventory.md` §10's own newer counter-example — `settings.md`'s always-rendering "Cómo vendes normalmente" status line, which *does* name the paid alternative — has no candidate surface to apply to here either: no equivalent Session-scoped, always-rendering "how are you selling right now" status line exists anywhere on Home, checked directly, not assumed). D27's own "Ready-but-still-on-botones" discoverability mention (§3.6a) stays scoped to a Paid-tier merchant who already holds `nfc` but hasn't switched to it — it sets no precedent for a Free-tier merchant lacking a capability outright, and none is invented here. **[see home.changelog.md#decisions-q20-barcode-scanning-paid-tier-gate]**
+- **2026-09-15 (Product Owner-raised, live-selling scenario): §3.6
+  ("Continuar Día N") and §3.6b ("Elegir evento") each gain a second,
+  secondary, always-available action — "Iniciar Sesión Rápida" — opening a
+  Quick Session (`eventId = null`) completely independent of whichever
+  Event(s) are active.** Corrects a real gap (§3.6 never offered any Quick
+  Session path while a qualifying Event was active) and a related
+  documentation inaccuracy (§3.6b's own closing bullet asserted Quick
+  Session "stays reachable" without ever rendering the action — confirmed
+  false by direct wireframe inspection). Zero added taps/delay to the
+  existing primary actions; visual weight deliberately unequal (primary
+  stays "Continuar Día N"/the Event picker; the new action is secondary,
+  the identical primary/secondary composition `inventory.md` §3.5/§3.17
+  already establishes — no new interaction pattern, no `knowledge-mentor`
+  consultation needed). Copy is a verbatim reuse of §3.4's own "Iniciar
+  Sesión Rápida," deliberately avoiding any "salir del evento"/exit
+  framing per the Product Owner's own explicit direction — grounded in
+  `architecture-principles.md` #3 and the observation that a
+  `tianguis`-length Event (weeks/months) makes selling outside an active
+  Event's own context a routine, not exceptional, merchant pattern.
+  Composes with §3.6a's existing NFC Readiness resolution unchanged — a
+  single, Business-wide, ambient computation that already applies
+  regardless of which Session-start action is eventually tapped, confirmed
+  rather than assumed. **[see
+  home.changelog.md#decisions-2026-09-15-quick-session-alongside-event]**
 
 ## 11. Future considerations
 
