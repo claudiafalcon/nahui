@@ -8,6 +8,15 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
+### Q28 — Should "Vendiendo ahorita" (`reports.md` §3.4a/§3.4b) be free-tier or paid-tier?
+
+- **Raised by:** `ux-critic`, during the Blocker/Major/Minor remediation review of `reports.md`'s 2026-09-15 D68 amendment ("Vendiendo ahorita," a live cross-Session view of currently-active Sessions).
+- **Question:** `reports.md` §1's own stated motivation for this feature is an OWNER checking in on several SELLERs, each actively selling, without interrupting anyone — but should the feature itself be gated by `subscriptionTier`, given that motivation only ever applies to Paid-tier Businesses?
+- **Why this is a real gap, not settled by inference:** SELLER invitations are themselves a Paid-tier-gated capability (`product/02-ux/settings.md` §2.7 "Tu equipo"; `company/business-decisions.md` Q18, Resolved) — a Free-tier Business can never have a SELLER `BusinessMembership`, so the literal scenario "Vendiendo ahorita" exists to solve structurally cannot occur there. What a Free-tier merchant can see via this feature is only her own single active Session — information already visible live on Home's own running-total header the entire time she's selling (the same precedent `decision-log.md` D68 itself cites for why a live read of in-progress Selling data is architecturally sound). For that one population, Free-tier placement as currently shipped adds nothing beyond what already exists elsewhere in the app.
+- **Same shape as Q13 above (NFC adoption rate), not an architecture gap:** a plausible argument exists on both sides. This section's own family classification (`reports.md` §1 — "how's it going right now," the same always-available family as "how did I do," not the paid "what should I pay attention to going forward" family) argues for free tier, consistent with the rest of that family. The fact that its one differentiating use case (checking on multiple SELLERs) is structurally Paid-tier-only argues for paid tier. Neither argument settles it on its own.
+- **Not yet resolved; interim default:** unlike Q13, "Vendiendo ahorita" is already fully specified (`reports.md` §3.4a/§3.4b, wireframes and all), not left undesigned pending this call. It ships, for now, with its original default — free-tier and paid-tier alike — the same illustrative-default-while-genuinely-open pattern `reports.md` already uses elsewhere (§3.15's `loyaltyRewardThreshold`, §3.12's segmentation thresholds). Needs a Product Owner call before this default is treated as a settled decision.
+- **Status:** Open.
+
 ### Q27 — Should Resultados offer a date-range sales export (Excel/CSV) for the OWNER?
 
 - **Raised by:** a prospective client (five points of sale — "Sullivan 1/2/3," "San Cosme," "City" — sharing one Business-wide Catalog/inventory), 2026-09-13, while discussing her real operating shape with the Product Owner over WhatsApp.

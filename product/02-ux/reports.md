@@ -68,10 +68,21 @@ reports.changelog.md#status-2026-09-14-owner-only-scope-note]**
 currently-active Sessions):** new §3.4a "Vendiendo ahorita" (a
 Business-wide, cross-Session, cross-device read of every Session with
 `status = active` right now) plus its read-only detail screen §3.4b. New
-§2 Step 0 (independent of the existing closed-Session gate — this section
-can render even on the cold-start screen, §3.3). Free-tier, OWNER-only
-(already true tab-wide), never a selling entry point. **Pending
-`ux-critic`/`reviewer` review before folding back into Approved.** **[see
+§2 live-session check (independent of the existing closed-Session gate —
+this section can render even on the cold-start screen, §3.3, whose own
+copy now branches to stay factually accurate when it does). Shipped as
+free-tier and paid-tier alike for now, but tier placement is not settled
+— a genuinely open Product Decision (§8 item 11, `product-decisions.md`
+Q28). OWNER-only (already true tab-wide), never a selling entry point.
+**Remediation applied 2026-09-15 in response to `ux-critic`'s review: 1
+Blocker (cold start's own copy/CTA contradicted the live Session shown
+directly above it), 2 Major (a Free-tier eligibility claim justified by a
+scenario that's structurally Paid-tier-only; an incomplete disambiguation
+claim for concurrent same-role cards), 2 Minor (Step-0 numbering read as
+sequential; adjacent "third question"/"third element" wording) — all
+fixed in this one pass, see `reports.changelog.md`'s matching entry for
+the full record.** Pending `ux-critic` re-verification before folding
+back into Approved. **[see
 reports.changelog.md#status-2026-09-15-d68-live-sessions-view]**
 
 Scope: `Resultados`, the fourth and last of four top-level nav items per
@@ -172,18 +183,45 @@ altitudes:
   underlying Claims, a second, additive, narrower-but-identified view of
   them (`decision-log.md` D35), never a replacement.
 
-- **A third question, added 2026-09-15 (`decision-log.md` D68): "How's it
-  going right now?"** (live, always available, any tier) — neither
-  retrospective nor forward-looking: while one or more Sessions are
-  currently open, anywhere, on any device, under this Business — her own
-  or a SELLER's — she can see each one's running numbers without it
-  closing first. This directly answers the Product Owner's own
-  live-testing scenario: an OWNER at home with three SELLERs each actively
-  selling, wanting to check in without interrupting anyone. Free-tier
-  eligible, same family as "how did I do" (Total histórico/Historial/
-  Session detail) — not the paid "what should I pay attention to going
-  forward" family, since this is core operational visibility into her own
-  live activity, not a derived insight over history.
+- **A new question, added 2026-09-15 (`decision-log.md` D68): "How's it
+  going right now?"** (live, neither retrospective nor forward-looking) —
+  while one or more Sessions are currently open, anywhere, on any device,
+  under this Business — her own or a SELLER's — she can see each one's
+  running numbers without it closing first. This directly answers the
+  Product Owner's own live-testing scenario: an OWNER at home with three
+  SELLERs each actively selling, wanting to check in without interrupting
+  anyone. By its own nature this sits in the same family as "how did I
+  do" (Total histórico/Historial/Session detail) — always-available
+  operational visibility into her own live activity, not a derived
+  insight over history the way the paid "what should I pay attention to
+  going forward" family is — which is part of why Free-tier was this
+  section's original default.
+
+  **That classification alone doesn't resolve tier placement, though —
+  see §8, item 11 (`product-decisions.md` Q28), a genuinely open Product
+  Decision.** The motivating scenario above is structurally Paid-tier
+  only: SELLER invitations are themselves a Paid-tier-gated capability
+  (`settings.md` §2.7 "Tu equipo," `company/business-decisions.md` Q18,
+  Resolved) — a Free-tier Business can never have a SELLER Membership, so
+  the literal "OWNER checking in on several SELLERs" case this feature
+  exists to solve cannot occur there. What a Free-tier merchant can see
+  via "Vendiendo ahorita" is only her own single active Session —
+  information already visible live on Home's own running-total header
+  the entire time she's selling (the same precedent `decision-log.md`
+  D68 itself cites for why this kind of live read is architecturally
+  sound) — so for the one population Free-tier placement actually grants
+  this feature to, it adds nothing beyond what already exists elsewhere
+  in the app. Whether the whole section should instead be Paid-tier
+  gated, matching the scenario it was built for, is a genuine Product
+  Owner call this document doesn't make unilaterally — the same shape as
+  §8 item 8's still-open NFC-adoption-rate tier question (Q13): a
+  placement question with a plausible argument on both sides, not an
+  inference this document can responsibly settle on its own. **Shipped
+  default while this is open: unchanged — free-tier and paid-tier
+  alike**, the same illustrative-default-while-genuinely-open pattern
+  this document already uses elsewhere (§3.15's `loyaltyRewardThreshold`
+  default, §3.12's segmentation thresholds) rather than withholding an
+  already-fully-specified capability while the question is pending.
 
 Nothing in Resultados is time-critical the way Home's <3s bar is
 (`company/backlog.md` #1) — there's no customer waiting while she looks at a
@@ -200,29 +238,31 @@ rather than building a second selling mechanism inside this tab.
 
 ## 2. Resolution / decision logic
 
+**Live-session check — evaluated on every visit, independent of every
+step below, including the cold-start case in step 1** (`decision-log.md`
+D68): does this Business currently have any Session with status =
+`active`, right now, across any device or Membership?
+  → YES: "Vendiendo ahorita" (§3.4a) renders, stacked above whichever
+    state step 1 resolves to — including §3.3's own cold-start message,
+    whose own copy branches for this exact case (see §3.3's Variant B) —
+    since this condition is completely independent of whether any
+    Session has ever closed for this Business.
+  → NO:  "Vendiendo ahorita" is entirely absent — no placeholder line,
+    same restraint step 2's "En curso" already applies to its own
+    absence.
+
+A live Session's Sales are never counted toward "Total histórico," "Top
+productos," or any other aggregate defined below — those keep reading
+only closed/reviewed data, unchanged. The live card simply stops
+rendering the instant that Session closes, and its Sales graduate into
+Historial/Total histórico through the ordinary, unchanged mechanism.
+
 ```
-0. [Independent of every step below — evaluated on every visit,
-   including the cold-start case in step 1] Does this Business
-   currently have any Session with status = `active`, right now,
-   across any device or Membership (`decision-log.md` D68)?
-     → YES: "Vendiendo ahorita" (§3.4a) renders, stacked above
-       whichever state step 1 resolves to — including cold start
-       (§3.3), since this condition is completely independent of
-       whether any Session has ever closed for this Business.
-     → NO:  "Vendiendo ahorita" is entirely absent — no placeholder
-       line, same restraint step 2's "En curso" already applies to
-       its own absence.
-
-   A live Session's Sales are never counted toward "Total histórico,"
-   "Top productos," or any other aggregate defined below — those keep
-   reading only closed/reviewed data, unchanged. The live card simply
-   stops rendering the instant that Session closes, and its Sales
-   graduate into Historial/Total histórico through the ordinary,
-   unchanged mechanism.
-
 1. Has any Session ever reached status = closed (or later, reviewed) for
    this Business?
-     → NO:  empty state (§3.3) — nothing to review yet.
+     → NO:  empty state (§3.3) — nothing to review yet, though §3.3
+       itself may render its Variant B (live-Session copy) instead of
+       its default Variant A, per the live-session check above.
      → YES: main Resultados view (§3.4 / §3.5 / §3.6).
 
 2. [Main view] Build the history list, most-recent-first:
@@ -408,6 +448,11 @@ its own — same scoping choice as the other three docs.
 ```
 
 ### 3.3 Cold start — no Session ever closed
+
+Two variants, selected by §2's own live-session check (independent of
+this state, not sequential to it — see §2):
+
+**Variant A — no Session active right now (the ordinary case)**
 ```
 ┌───────────────────────────────┐
 │  Resultados                    │
@@ -419,26 +464,74 @@ its own — same scoping choice as the other three docs.
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
 ```
-- Routes to Hoy, an existing tab — not a new destination invented for this
-  one case, same pattern `home.md` §3.3 and `inventory.md` §3.3 already
-  established. Home resolves whatever's actually appropriate itself (idle,
-  cold start, or already-active-Event) — Resultados doesn't re-derive that
-  logic. *global-principles.md*, "the fastest interaction is the one that
-  never happens."
-- No fake "review" content shown for something that hasn't happened yet.
-- **Independent of "Vendiendo ahorita" (§3.4a, §2 Step 0).** If a Session
-  is currently `active` for this Business — including her very first one,
-  not yet closed — "Vendiendo ahorita" still renders above this cold-start
-  message. Seeing a live Session in progress and having nothing to review
-  *yet* are not contradictory: one is about right now, the other about
-  history that hasn't been written yet.
+
+**Variant B — a Session is active right now, including her very first
+one, not yet closed (§2's live-session check resolves YES)**
+```
+┌───────────────────────────────┐
+│  Resultados                    │
+│  Vendiendo ahorita                 │
+│  Los números todavía se están      │
+│  moviendo — van a quedar           │
+│  completos en cuanto cada quien     │
+│  cierre su sesión.                  │
+│  ┌───────────────────────────┐ │
+│  │ Plaza Norte · Día 2           │ │
+│  │ Alguien de tu equipo ·        │ │
+│  │ 5 ventas · $610 hasta ahorita  │ │
+│  └───────────────────────────┘ │
+│                                │
+│  En cuanto cierres, aquí vas a     │
+│  ver cómo te fue.                  │
+├───────────────────────────────┤
+│ Hoy  Inventario Eventos [Resultados] │
+└───────────────────────────────┘
+```
+
+- **Fixes a direct, in-the-moment contradiction Variant A would otherwise
+  create.** Composed exactly as this section originally specified,
+  Variant A's own body ("Aquí vas a ver cómo te fue, en cuanto cierres tu
+  primera sesión de venta") and its "[ Empezar a vender ]" CTA both assert
+  she hasn't started selling yet — true whenever §2's live-session check
+  resolves NO, but visibly false the moment it resolves YES, since
+  "Vendiendo ahorita" is rendering directly above, showing her actively
+  selling right now. Variant B corrects exactly this: the body copy no
+  longer implies starting is still ahead of her ("en cuanto cierres"
+  instead of "en cuanto cierres tu primera sesión"), and the CTA is
+  dropped entirely — not reworded — since "Empezar a vender" specifically
+  invites an action she is already in the middle of, which no rewording
+  of that button can make true.
+- **"Vendiendo ahorita" (§3.4a) itself is unchanged by this fix** — same
+  placement, same card content, same condition, shown here composed with
+  an example card purely for illustration (identical to §3.4a's own
+  example). Only Variant B's own cold-start text/CTA change; §3.4a's
+  design isn't touched.
+- Variant A routes to Hoy, an existing tab — not a new destination
+  invented for this one case, same pattern `home.md` §3.3 and
+  `inventory.md` §3.3 already established. Home resolves whatever's
+  actually appropriate itself (idle, cold start, or already-active-Event)
+  — Resultados doesn't re-derive that logic. *global-principles.md*, "the
+  fastest interaction is the one that never happens." Variant B has no
+  CTA at all, for the same reason — there's nothing to route her to that
+  she isn't already doing.
+- No fake "review" content shown for something that hasn't happened yet,
+  in either variant.
+- **Both variants still express "nothing to review yet."** Seeing a live
+  Session in progress (Variant B) and having no closed history to look
+  back on are not contradictory — one is about right now, the other about
+  history that hasn't been written yet. What was wrong in the original
+  design wasn't showing both facts together; it was Variant A's specific
+  wording asserting the first fact as though it weren't true.
 
 ### 3.4a Vendiendo ahorita — live Sessions, present (`decision-log.md` D68)
 
 Renders at the very top of every Resultados state — above "Total histórico"
-in §3.4/§3.5/§3.6, and above the cold-start message in §3.3 — whenever §2
-Step 0 resolves YES. Absent entirely otherwise (no zero-state line — see
-§2 Step 0). Free-tier and paid-tier alike (§1).
+in §3.4/§3.5/§3.6, and above §3.3's own cold-start message (its Variant B)
+— whenever §2's live-session check resolves YES. Absent entirely
+otherwise (no zero-state line — see §2's live-session check). Shipped as
+free-tier and paid-tier alike for now; tier placement is a genuinely open
+Product Decision, not a settled classification — see §1 and §8 item 11
+(`product-decisions.md` Q28).
 
 ```
 ┌───────────────────────────────┐
@@ -483,10 +576,26 @@ Step 0 resolves YES. Absent entirely otherwise (no zero-state line — see
   `BusinessMembership (role, status)` carry no name field at all, an
   already-documented Foundation gap (`settings.md` §2.7/§11: "still needs
   a real `User` display-name field"), inherited here, not newly
-  discovered. Two concurrent "Alguien de tu equipo" cards at the same
-  venue are told apart the same way §3.11 already tells repeat-venue
-  cards apart — by the context/numbers already on the card (venue,
-  running total), never by a fabricated identity.
+  discovered.
+- **Concurrent "Alguien de tu equipo" cards are never personally
+  identifiable — only numerically distinguishable, and only when their
+  numbers actually differ.** When two such cards happen to share a venue,
+  she can at least tell them apart by the context already on the card
+  (venue, running total), the same way §3.11 already tells repeat-venue
+  cards apart — but that's disambiguation by circumstance, not identity;
+  she still can't map either card to an actual person. **The harder,
+  equally-common case is two SELLERs each running a Quick Session (no
+  Event/venue at all)** — the feature's own headline scenario, checking
+  in on multiple team members, not an edge case: both cards read "Sesión
+  rápida / Alguien de tu equipo / N ventas · $X hasta ahorita," with
+  nothing but their own running totals to tell them apart, and even that
+  stops working the moment two SELLERs' totals happen to coincide — for
+  that moment, the two cards are genuinely indistinguishable on this
+  screen. Traced to the same Foundation gap named in the bullet above (no
+  `User` display-name field); the concrete failure case is restated here,
+  and cross-referenced from §8 item 10, because the abstract field gap
+  alone doesn't convey how completely it defeats disambiguation once
+  venue context isn't available.
 - **Running total is Session-scoped, not context-scoped** (unlike
   `home.md` §3.7's own header, which sums across every Session sharing an
   `eventId` — a deliberate difference: this section answers "how is each
@@ -730,10 +839,11 @@ number as live rather than final.
   have implied identity-level information this architecture deliberately
   never surfaces to the merchant (`decision-log.md` D22, `product/99-rfc/0002-loyalty-claim-complete-capability.md`).
 - **"Vendiendo ahorita" (§3.4a) renders above this screen's own content
-  whenever §2 Step 0 resolves YES** — not shown in this wireframe, which
-  illustrates the common case where nothing is currently active. See
-  §3.4a for the full design; not redrawn per variant since its content
-  and condition are identical across all three (§3.4/§3.5/§3.6).
+  whenever §2's live-session check resolves YES** — not shown in this
+  wireframe, which illustrates the common case where nothing is
+  currently active. See §3.4a for the full design; not redrawn per
+  variant since its content and condition are identical across all three
+  (§3.4/§3.5/§3.6).
 
 ### 3.5 Main view — free tier, no active Event (most common day-to-day)
 ```
@@ -783,8 +893,8 @@ number as live rather than final.
   graceful-omission rules. Not restated here; see §3.4's own bullets for
   the full reasoning.
 - **"Vendiendo ahorita" (§3.4a) renders above this screen's own content
-  whenever §2 Step 0 resolves YES** — same cross-reference as §3.4's own
-  bullet, not restated in full.
+  whenever §2's live-session check resolves YES** — same cross-reference
+  as §3.4's own bullet, not restated in full.
 
 ### 3.6 Main view — paid tier
 ```
@@ -898,8 +1008,8 @@ variant below for the other reachable state, zero Claims recorded yet,
   annotation under §3.4 and RPT2-MAJ1 (`ux-critic-findings.md`) for why
   this was corrected from an earlier "quiénes son" draft.
 - **"Vendiendo ahorita" (§3.4a) renders above this screen's own content
-  whenever §2 Step 0 resolves YES** — same cross-reference as §3.4's own
-  bullet, not restated in full.
+  whenever §2's live-session check resolves YES** — same cross-reference
+  as §3.4's own bullet, not restated in full.
 
 ### 3.7 Session detail
 ```
@@ -1547,8 +1657,10 @@ Open Resultados tab
       → Sessions exist ──────────────────→ main view (3.4/3.5, or 3.6 if paid)
 
 Every top-level state (cold start 3.3, main view 3.4/3.5/3.6):
-  [§2 Step 0] any Session active right now → "Vendiendo ahorita" (3.4a)
-    renders above this state's own content
+  [§2's live-session check] any Session active right now → "Vendiendo
+    ahorita" (3.4a) renders above this state's own content — for cold
+    start specifically, this also selects 3.3's Variant B copy (no CTA),
+    not 3.3's default Variant A
     tap a card → live detail (3.4b) → back only, no action
 
 Main view:
@@ -1609,7 +1721,7 @@ Elsewhere (entry points into this tab's screens, not from the tab itself):
 
 1. Resolving (near-instant)
 2. Resolving — slow
-3. Cold start — no Session ever closed
+3. Cold start — no Session ever closed (two copy variants, §3.3)
 4. Main view — free tier, with a still-active Event (En curso present)
 5. Main view — free tier, no active Event (most common day-to-day)
 6. Main view — paid tier (adds Rendimiento por bazar always; adds Tus
@@ -1895,6 +2007,47 @@ there; no urgency is invented where none exists.
     field, a gap `settings.md` §2.7/§11 already names. Not a new
     question; flagged here so a future agent doesn't treat it as newly
     discovered when this section eventually needs it resolved.
+    **Concrete, worked consequence, not just the abstract field gap:**
+    two SELLERs each running a Quick Session (no Event/venue at all) —
+    the feature's own headline "check in on multiple team members"
+    scenario, not an edge case — produce two cards distinguishable only
+    by their own running totals, and not even that once those totals
+    happen to coincide; Ana can never map either card to an actual
+    person in that case. See §3.4a's own corrected bullet for the full
+    statement of this failure case.
+
+11. **[Escalated as Q28, open, logged in `product/02-ux/product-decisions.md`
+    as a Product Decision] Should "Vendiendo ahorita" (§3.4a/§3.4b) be
+    free-tier or paid-tier?** Raised during `ux-critic`'s remediation
+    review of this amendment (2026-09-15). §1's own stated motivation for
+    this feature is an OWNER checking in on several SELLERs at once —
+    but SELLER invitations are themselves Paid-tier-gated
+    (`settings.md` §2.7 "Tu equipo," `company/business-decisions.md`
+    Q18, Resolved), so a Free-tier Business can never have a SELLER
+    Membership and the literal motivating scenario can't occur there.
+    What a Free-tier merchant sees via this feature is only her own
+    single active Session — already visible live on Home's own
+    running-total header the entire time she's selling, the same
+    precedent `decision-log.md` D68 itself cites — so Free-tier
+    placement, as currently shipped, grants the feature to a population
+    for whom it adds nothing beyond what already exists elsewhere in the
+    app. Same shape as item 8 above (Q13, NFC adoption rate): a
+    plausible argument either way (this section's own family
+    classification — "how's it going right now," same always-available
+    family as "how did I do," §1 — suggests free tier, consistent with
+    the rest of that family; the fact that its one differentiating use
+    case is structurally paid-only suggests paid tier), genuinely
+    undecided rather than an inference this document can responsibly
+    settle on its own.
+    **Not resolved here.** Unlike Q13, this feature is already fully
+    specified (§3.4a/§3.4b, wireframes and all) rather than undesigned,
+    so — pending this decision — it ships with its original default
+    (free-tier and paid-tier alike), the same illustrative-default-while-
+    open pattern this document already uses elsewhere (§3.15's
+    `loyaltyRewardThreshold` default, §3.12's segmentation thresholds)
+    rather than withholding an already-designed capability while the
+    question is pending.
+    **Status:** Open.
 
 ## 9. Principle justification
 
@@ -2140,8 +2293,10 @@ there; no urgency is invented where none exists.
   reports.changelog.md#decisions-d40-loyaltyenabled-retired-outright]**
 - **"Vendiendo ahorita" (§3.4a/§3.4b) added — a live, cross-Session,
   cross-device view of currently-active Sessions** (`decision-log.md`
-  D68), free-tier, read-only, positioned above every other Resultados
-  state. **[see
+  D68), read-only, positioned above every other Resultados state.
+  Shipped free-tier and paid-tier alike for now; tier placement is a
+  genuinely open Product Decision, not settled (§8 item 11,
+  `product-decisions.md` Q28). **[see
   reports.changelog.md#decisions-vendiendo-ahorita-added]**
 
 ## 11. Future considerations

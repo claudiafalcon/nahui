@@ -179,20 +179,44 @@ closed," and no path anywhere showed a currently-active Session's live
 numbers. `architect` ruled this additive, not a bounded-context violation
 (D68 — "read-only" governs write direction only, not data finality;
 `home.md`'s own live running total is existing precedent that in-progress
-Selling data is already read/displayed live). New §2 Step 0 (independent
-of the existing closed-Session gate, so this can render even on the
-cold-start screen), new §3.4a "Vendiendo ahorita" (one card per Session
-with `status = active` right now, Business-wide/cross-device,
+Selling data is already read/displayed live). New §2 live-session check
+(independent of the existing closed-Session gate, so this can render even
+on the cold-start screen), new §3.4a "Vendiendo ahorita" (one card per
+Session with `status = active` right now, Business-wide/cross-device,
 role-derived identity only — "Tú"/"Alguien de tu equipo," since
 `domain-model.md`'s `User`/`BusinessMembership` carry no name field, an
 already-documented gap per `settings.md` §2.7/§11), new §3.4b (read-only
 live detail, reusing §3.7's shape with "hasta ahorita" framing throughout
 to stay visually/copy-distinct from Historial's settled numbers per D68's
-second governing constraint). Free-tier, OWNER-only (already tab-wide),
-genuinely read-only — no tap anywhere resumes/enters/closes a Session,
-consistent with §1's existing "no selling entry point" rule. §1/§4/§5/§6/
-§7/§8/§9/§10/§11 all updated to match. **Pending `ux-critic`/`reviewer`
-review before folding back into Approved.**
+second governing constraint). Shipped free-tier and paid-tier alike,
+OWNER-only (already tab-wide), genuinely read-only — no tap anywhere
+resumes/enters/closes a Session, consistent with §1's existing "no
+selling entry point" rule. §1/§4/§5/§6/§7/§8/§9/§10/§11 all updated to
+match.
+
+**`ux-critic` review found 1 Blocker + 2 Major + 2 Minor, all fixed in
+one remediation pass (2026-09-15):** the cold-start screen (§3.3), shown
+directly beneath an active "Vendiendo ahorita" card whenever §2's
+live-session check resolves YES, had its own body copy/CTA still
+asserting "you haven't started selling" — a direct, in-the-moment
+contradiction (Blocker; fixed via §3.3's new Variant B, no CTA,
+"Vendiendo ahorita" itself untouched). §1's Free-tier eligibility claim
+was justified by a scenario (OWNER + several SELLERs) that's
+structurally Paid-tier-only, since SELLER invitations are themselves
+Paid-tier-gated (`settings.md` §2.7, `business-decisions.md` Q18) —
+logged as a genuinely open Product Decision instead of asserted as
+settled (Major; new `product-decisions.md` Q28, §8 item 11). §3.4a's
+disambiguation claim for concurrent same-role cards covered only the
+same-venue case, not the harder, equally-common no-venue/Quick-Session
+case, where two cards are numerically distinguishable at best —
+corrected and cross-referenced from §8 item 10 (Major). §2's "Step 0"
+numbering, prepended to a "1.–4." sequence, was moved out of the numbered
+list into its own labeled "live-session check" paragraph, and every
+cross-reference to "§2 Step 0" in this document renamed to match (Minor).
+§1's "a third question" wording, sitting close to the pre-existing "a
+third element" bullet, was reworded to "a new question" (Minor).
+**Pending `ux-critic` re-verification before folding back into
+Approved.**
 
 ---
 
@@ -482,8 +506,14 @@ exactly one honest explanation left: no customer has completed one yet.
 
 ### decisions-vendiendo-ahorita-added
 Placed above every other Resultados state (not folded into "En curso," a
-deliberately different, already-defined meaning); free-tier eligible per
-§1's new third question ("how's it going right now," same family as the
-always-available retrospective question, not the paid-tier forward-looking
-one); per-Session granularity, not per-Event (a live Event-level rollup is
-a named Future Consideration, §11, not designed now).
+deliberately different, already-defined meaning); shipped free-tier and
+paid-tier alike per §1's new question ("how's it going right now," same
+family as the always-available retrospective question, not the paid-tier
+forward-looking one) — but tier placement itself is a genuinely open
+Product Decision, not settled, since §1's own motivating scenario (an
+OWNER checking in on several SELLERs) is structurally Paid-tier-only
+(SELLER invitations are themselves Paid-tier-gated, `settings.md` §2.7,
+`business-decisions.md` Q18); tracked as `product-decisions.md` Q28
+(§8 item 11), current default unchanged pending that decision;
+per-Session granularity, not per-Event (a live Event-level rollup is a
+named Future Consideration, §11, not designed now).
