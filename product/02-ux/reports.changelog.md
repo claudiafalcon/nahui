@@ -169,6 +169,31 @@ actividad de hoy," not by any view in this document. No
 `ux-critic`/`reviewer`/`brand-guardian` consultation needed — additive
 documentation only, no new interaction, state, or behavior introduced.
 
+### status-2026-09-15-d68-live-sessions-view
+**Amended 2026-09-15 (`decision-log.md` D68, Product Owner-raised during
+live testing):** an OWNER at home with several SELLERs each actively
+selling on their own device wanted to open Resultados and see live
+numbers without any Session closing first — a real, confirmed gap: §2's
+own resolution logic gated the entire tab on "has any Session ever
+closed," and no path anywhere showed a currently-active Session's live
+numbers. `architect` ruled this additive, not a bounded-context violation
+(D68 — "read-only" governs write direction only, not data finality;
+`home.md`'s own live running total is existing precedent that in-progress
+Selling data is already read/displayed live). New §2 Step 0 (independent
+of the existing closed-Session gate, so this can render even on the
+cold-start screen), new §3.4a "Vendiendo ahorita" (one card per Session
+with `status = active` right now, Business-wide/cross-device,
+role-derived identity only — "Tú"/"Alguien de tu equipo," since
+`domain-model.md`'s `User`/`BusinessMembership` carry no name field, an
+already-documented gap per `settings.md` §2.7/§11), new §3.4b (read-only
+live detail, reusing §3.7's shape with "hasta ahorita" framing throughout
+to stay visually/copy-distinct from Historial's settled numbers per D68's
+second governing constraint). Free-tier, OWNER-only (already tab-wide),
+genuinely read-only — no tap anywhere resumes/enters/closes a Session,
+consistent with §1's existing "no selling entry point" rule. §1/§4/§5/§6/
+§7/§8/§9/§10/§11 all updated to match. **Pending `ux-critic`/`reviewer`
+review before folding back into Approved.**
+
 ---
 
 ## §10 "Decisions made" — full decision history
@@ -454,3 +479,11 @@ all). "Tus clientes"'s own visibility gate is unaffected — it already read
 `subscriptionTier=paid` alone since D34. What changes is that Claim
 *collection* now shares that identical gate too, so a zero-Claims state has
 exactly one honest explanation left: no customer has completed one yet.
+
+### decisions-vendiendo-ahorita-added
+Placed above every other Resultados state (not folded into "En curso," a
+deliberately different, already-defined meaning); free-tier eligible per
+§1's new third question ("how's it going right now," same family as the
+always-available retrospective question, not the paid-tier forward-looking
+one); per-Session granularity, not per-Event (a live Event-level rollup is
+a named Future Consideration, §11, not designed now).
