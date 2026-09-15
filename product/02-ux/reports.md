@@ -81,8 +81,16 @@ scenario that's structurally Paid-tier-only; an incomplete disambiguation
 claim for concurrent same-role cards), 2 Minor (Step-0 numbering read as
 sequential; adjacent "third question"/"third element" wording) — all
 fixed in this one pass, see `reports.changelog.md`'s matching entry for
-the full record.** Pending `ux-critic` re-verification before folding
-back into Approved. **[see
+the full record.** `ux-critic` re-verification confirmed all five
+findings closed, nothing new introduced. `reviewer` found 0 Blockers, 2
+Important (both closed directly by Main): §3.3 Variant B/§3.4a's new
+copy — "en cuanto cada quien cierre su sesión" — reproduced the exact
+`sesión`-collision terminology `home.md`'s own 2026-08-13 Product Owner
+decision retired from Selling-domain merchant-facing copy ("sesión" is
+reserved for the authenticated device/login context only; a selling day
+closing is "Cerrar jornada de venta"), reworded to "cierre su jornada"
+in both places; and a missing `ux-critic-findings.md` entry for this
+remediation round, added. Folded back into Approved. **[see
 reports.changelog.md#status-2026-09-15-d68-live-sessions-view]**
 
 Scope: `Resultados`, the fourth and last of four top-level nav items per
@@ -474,7 +482,7 @@ one, not yet closed (§2's live-session check resolves YES)**
 │  Los números todavía se están      │
 │  moviendo — van a quedar           │
 │  completos en cuanto cada quien     │
-│  cierre su sesión.                  │
+│  cierre su jornada.                 │
 │  ┌───────────────────────────┐ │
 │  │ Plaza Norte · Día 2           │ │
 │  │ Alguien de tu equipo ·        │ │
@@ -540,7 +548,7 @@ Product Decision, not a settled classification — see §1 and §8 item 11
 │  Los números todavía se están      │
 │  moviendo — van a quedar           │
 │  completos en cuanto cada quien     │
-│  cierre su sesión.                  │
+│  cierre su jornada.                 │
 │  ┌───────────────────────────┐ │
 │  │ Plaza Norte · Día 2           │ │
 │  │ Alguien de tu equipo ·        │ │
