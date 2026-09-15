@@ -475,10 +475,47 @@ interface StoreValue {
    * its own `AuthResolving` gate for why.
    */
   hydrationStatus: 'idle' | 'loading' | 'ready' | 'error';
+  /**
+   * Identity-reconciliation fix (`context/stage-7-backend-integration.md`) —
+   * mount-time session-restore reconciliation, distinct from
+   * `hydrationStatus` above: this checks whether Supabase's own client
+   * already holds a valid session that `AppState.currentUserId` simply
+   * forgot about (a real, non-expired session sitting in `localStorage`
+   * while `currentUserId` is `null` — a genuine, live-found gap, not a
+   * hypothetical). `'checking'` only for the one mount-time round-trip this
+   * reconciliation needs when no local session is already known; `'done'`
+   * immediately when `state.currentUserId != null` at mount (the ordinary
+   * warm-reload path never waits on this), and `'done'` once the check
+   * resolves successfully either way (a real session found, or honestly none
+   * at all). `AppRouter.tsx` gates its `!authenticated` branch on this,
+   * alongside `hydrationStatus`, so a device with a real, about-to-be-found
+   * session never flashes the login screen for the duration of the
+   * round-trip.
+   *
+   * **`reviewer` Important finding fix (2026-09-14):** `'error'` is a new
+   * third value — a genuine `getSession()` network/platform failure, kept
+   * distinct from `'checking'` so a device never gets stuck at
+   * `AppRouter.tsx`'s loading gate forever with no retry path. Every other
+   * Supabase call in this codebase already fails closed with a real error
+   * state (`authProviders.ts`'s `sendEmailCode`/`verifyEmailCode`/
+   * `signInWithGoogle`/`resolveGoogleSession`); this mount effect previously
+   * had no try/catch at all, so a thrown exception here would have left
+   * `sessionRestoreStatus` stuck at `'checking'` with nothing to recover it.
+   */
+  sessionRestoreStatus: 'checking' | 'done' | 'error';
   /** Re-runs the exact same resolution cycle the mount `useEffect` below
    * runs — `AppRouter.tsx`'s own "Reintentar" affordance on `AuthResolving`'s
    * error state. */
   retryHydration: () => void;
+  /** `reviewer` Important finding fix (2026-09-14) — the session-restore
+   * counterpart to `retryHydration` immediately above: re-runs the exact
+   * same check the mount `useEffect` below runs, for `AppRouter.tsx`'s own
+   * "Reintentar" affordance on `AuthResolving`'s error state when
+   * `sessionRestoreStatus === 'error'`. A separate function from
+   * `retryHydration` on purpose — the two check genuinely different things
+   * (`sessionRestoreStatus` vs. `hydrationStatus`) and can fail
+   * independently. */
+  retrySessionRestore: () => void;
   /**
    * Stage 7 Backend Integration — Read-side data hydration. `Promise.all` of
    * one `.select('*')` per domain table (every `AppState` array slice this
@@ -726,7 +763,14 @@ interface StoreValue {
    * above already establishes) and passed to the RPC already-resolved; the
    * RPC re-checks the one entitlement-relevant boundary server-side ('nfc'
    * requires `subscriptionTier='paid'`, D27). */
-  startSession: (eventId?: ID | null, overrideToNfc?: boolean) => Promise<void>;
+  /** Returns `true` on success (including "already active, resolved to the
+   * existing Session" — §2.1's own "never ask twice" fast-path) and `false`
+   * on a genuine platform/authorization failure, so a caller can show a
+   * real error/retry state instead of silently doing nothing — closes a
+   * real, live-found gap (2026-09-15): this was a bare fire-and-forget
+   * `Promise<void>` with no way for `HomeScreen.tsx` to know a failure
+   * happened at all. */
+  startSession: (eventId?: ID | null, overrideToNfc?: boolean) => Promise<boolean>;
   /** home.md §3.8a/§3.9 — FIFO tap-to-add (Buttons mode). Stage 7 Backend
    * Integration, Phase 2: a real, idempotency-keyed call to `add_item_to_sale`
    * — the FIFO pick (D5), price resolution (D33), Sale mint-or-find, and
@@ -904,8 +948,12 @@ interface StoreValue {
    * products/sessions/sales are structurally untouched (RFC 0007's own
    * guarantee, §2.5's "nothing is lost" copy). `AppRouter.tsx` falls back
    * to `AuthenticationFlow` automatically the instant `phoneVerifiedAt`
-   * clears — no further navigation call needed here. */
-  signOut: () => void;
+   * clears — no further navigation call needed here.
+   * `Promise<void>`, not `void` — the Blocker fix below (see the real
+   * implementation's own doc comment) requires awaiting Supabase's own
+   * `signOut()` network round-trip before local state clears, so this can no
+   * longer be a synchronous, fire-and-forget call. */
+  signOut: () => Promise<void>;
   /** authentication.md §3.7e "Sí, es mi número" (Slice 12
    * `merchant-user-tester` defect fix, 2026-09-07) — clears
    * `User.phoneMismatchConfirmationPending` permanently for the current
@@ -930,8 +978,10 @@ interface StoreValue {
    * situation from an ordinary account sign-out, even though both happen to
    * share one write. `AppRouter.tsx` falls back to `AuthenticationFlow`
    * automatically the instant `phoneVerifiedAt` clears, the identical
-   * mechanism `signOut` already relies on. */
-  retractMistypedVerification: () => void;
+   * mechanism `signOut` already relies on.
+   * `Promise<void>`, not `void` — same reasoning as `signOut` above: this
+   * must await Supabase's own `signOut()` before clearing local state. */
+  retractMistypedVerification: () => Promise<void>;
   /** settings.md §2.7 "Invitar a alguien" (RFC 0013/D64, real backend write
    * — Stage 7 Backend Integration, this pass) — calls `create_invitation`:
    * OWNER-only and Paid-tier-gated server-side (re-checked, never trusted
@@ -1205,6 +1255,87 @@ const StoreContext = createContext<StoreValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(loadState);
+
+  /**
+   * Identity-reconciliation fix (`context/stage-7-backend-integration.md`) —
+   * see `StoreValue.sessionRestoreStatus`'s own doc comment above for the
+   * full meaning. Initialized `'done'` immediately whenever this device's
+   * own cached `AppState` already knows a `currentUserId` — the ordinary
+   * warm-reload path must show nothing new, never wait on a round-trip it
+   * doesn't need.
+   */
+  const [sessionRestoreStatus, setSessionRestoreStatus] = useState<'checking' | 'done' | 'error'>(() =>
+    state.currentUserId != null ? 'done' : 'checking',
+  );
+
+  /**
+   * Identity-reconciliation fix (`context/stage-7-backend-integration.md`).
+   * `AppState.currentUserId` is this app's own local record of "does this
+   * device hold a live session," but nothing previously checked whether
+   * Supabase's own client already held a valid session `currentUserId`
+   * simply forgot about — confirmed live: a valid, non-expired Supabase
+   * session existed in `localStorage` while the app showed the fresh-login
+   * screen. Guarded on `state.currentUserId == null` so this never
+   * second-guesses an already-known local session; the body itself
+   * re-checks that guard inside `setState` (`s.currentUserId != null`) to
+   * respect an interactive login that wins the race against this check.
+   *
+   * Factored out of the mount `useEffect` below (`reviewer` Important
+   * finding fix, 2026-09-14) so `retrySessionRestore` on `StoreValue` can
+   * re-run the identical check rather than duplicating its body — the same
+   * "one function, two callers" shape `runHydrationResolution` already
+   * established for `retryHydration`. Wrapped in try/catch, unlike the
+   * version this replaces: every other Supabase call in this codebase
+   * already fails closed on a genuine network/platform error
+   * (`authProviders.ts`'s `sendEmailCode`/`verifyEmailCode`/
+   * `signInWithGoogle`/`resolveGoogleSession`) — a bare `getSession()` call
+   * here previously had no such guard, so a thrown exception would have left
+   * `sessionRestoreStatus` stuck at `'checking'` forever, with
+   * `AppRouter.tsx`'s loading gate showing no retry path at all.
+   */
+  async function runSessionRestoreCheck(): Promise<void> {
+    if (state.currentUserId != null) {
+      setSessionRestoreStatus('done');
+      return;
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setSessionRestoreStatus('done');
+      return;
+    }
+    setSessionRestoreStatus('checking');
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        setSessionRestoreStatus('error');
+        return;
+      }
+      const session = data.session;
+      if (session) {
+        setState((s) => {
+          if (s.currentUserId != null) return s; // an interactive login already won the race
+          const realUserId = session.user.id;
+          const existing = s.users.find((u) => u.id === realUserId);
+          const user: User = existing ?? {
+            id: realUserId,
+            createdAt: Date.parse(session.user.created_at) || Date.now(),
+            declinedInvitationIds: [],
+            phoneMismatchConfirmationPending: false,
+          };
+          return { ...s, users: existing ? s.users : [...s.users, user], currentUserId: realUserId };
+        });
+      }
+      setSessionRestoreStatus('done');
+    } catch (err) {
+      console.error('[store] runSessionRestoreCheck: getSession failed', err);
+      setSessionRestoreStatus('error');
+    }
+  }
+
+  useEffect(() => {
+    void runSessionRestoreCheck();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
+  }, []);
 
   /**
    * Stage 7 Backend Integration — Read-side data hydration's own race-safety
@@ -1577,12 +1708,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * now generalized to any credential type rather than phone specifically.
    *
    * Pure, given `s` — never calls `setState` itself.
+   *
+   * **Identity-reconciliation fix (`context/stage-7-backend-integration.md`):**
+   * `realUserId` is the
+   * real Supabase `auth.users.id` when the calling channel produced one
+   * (email/Google, both native Supabase Auth), `null` when it didn't (phone
+   * — minted entirely outside Supabase's own native auth via custom Twilio
+   * Edge Functions, a known, separate, disclosed gap). The `'new-user'`
+   * branch below uses it in place of always minting a local mock id, so a
+   * fresh sign-in on a cleared device correctly matches real, already-
+   * hydrated backend data (Business, Membership) tied to the real UUID
+   * instead of a `User` id nothing server-side has ever heard of. The
+   * `'existing'`/`'linked'` branches are unaffected — both already resolve
+   * against a real, previously-persisted `User` row.
    */
   function resolveAuthIdentity(
     s: AppState,
     type: AuthIdentity['type'],
     identifier: string,
     now: number,
+    realUserId: ID | null,
   ):
     | { kind: 'existing'; user: User; identity: AuthIdentity }
     | { kind: 'new-user'; user: User; identity: AuthIdentity }
@@ -1605,7 +1750,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return { kind: 'linked', user: authedUser, identity };
     }
     const user: User = {
-      id: makeId('user'),
+      id: realUserId ?? makeId('user'),
       createdAt: now,
       declinedInvitationIds: [],
       phoneMismatchConfirmationPending: s.users.length > 0,
@@ -1814,7 +1959,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return { ok: false, reason };
     }
     const now = Date.now();
-    const resolution = resolveAuthIdentity(state, 'phone', phone, now);
+    // Phone identities are minted entirely outside Supabase's own native
+    // auth (custom Twilio Edge Functions) and never produce a real Supabase
+    // session — `realUserId` is `null` here, a known, separate, already-
+    // disclosed gap (phone sign-up cannot complete real Onboarding today
+    // regardless of this fix; out of scope for the identity-reconciliation
+    // fix, `context/stage-7-backend-integration.md`).
+    const resolution = resolveAuthIdentity(state, 'phone', phone, now, null);
     setState((s) => ({
       ...s,
       users: resolution.kind === 'new-user' ? [...s.users, resolution.user] : s.users,
@@ -1846,7 +1997,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const result = await verifyEmailCode(email, code);
     if (!result.ok) return { ok: false, reason: result.reason };
     const now = Date.now();
-    const resolution = resolveAuthIdentity(state, 'email', result.identifier, now);
+    const resolution = resolveAuthIdentity(state, 'email', result.identifier, now, result.userId);
     setState((s) => ({
       ...s,
       users: resolution.kind === 'new-user' ? [...s.users, resolution.user] : s.users,
@@ -1892,7 +2043,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const session = await resolveGoogleSession();
     if (session.status !== 'success') return session;
     const now = Date.now();
-    const resolution = resolveAuthIdentity(state, 'google', session.subjectId, now);
+    const resolution = resolveAuthIdentity(state, 'google', session.subjectId, now, session.userId);
     setState((s) => ({
       ...s,
       users: resolution.kind === 'new-user' ? [...s.users, resolution.user] : s.users,
@@ -2377,16 +2528,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * through unchanged (no other honest source, see this function's own
    * `StoreValue` doc comment).
    */
-  async function startSession(eventId: ID | null = null, overrideToNfc: boolean = false): Promise<void> {
-    if (!state.business) return; // defensive — Home only mounts once onboarding is complete
+  async function startSession(eventId: ID | null = null, overrideToNfc: boolean = false): Promise<boolean> {
+    if (!state.business) return false; // defensive — Home only mounts once onboarding is complete
     const membership = actingMembership(state);
-    if (!membership) return; // defensive — Home only mounts once a valid acting Membership resolves
+    if (!membership) return false; // defensive — Home only mounts once a valid acting Membership resolves
     // "Never ask twice" — a cheap local fast-path, skipping the network
     // round trip entirely when this device already knows its own Session is
     // open; the server's own partial unique index is the real, authoritative
     // guarantee regardless (see `start_session`'s own comment).
     if (state.sessions.some((sess) => sess.status === 'active' && sess.openedByMembershipId === membership.id)) {
-      return;
+      return true;
     }
 
     const capability = nfcCapable(state);
@@ -2405,7 +2556,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabaseClient();
     if (!supabase) {
       console.error('[store] startSession: Supabase not configured. See supabase/README.md.');
-      return;
+      return false;
     }
     const { data, error } = await supabase
       .rpc('start_session', {
@@ -2417,7 +2568,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     if (error || !data) {
       console.error('[store] start_session failed', error);
-      return;
+      return false;
     }
 
     const row = data as { session_id: ID; event_id: ID | null; operating_mode: SessionOperatingMode; opened_at: string };
@@ -2433,6 +2584,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       };
       return { ...s, sessions: [...s.sessions, session] };
     });
+    return true;
   }
 
   /**
@@ -3025,8 +3177,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * `'existing'` branch, never minting a duplicate. `AppRouter.tsx` falls
    * back to `AuthenticationFlow` automatically the instant `currentUserId`
    * clears — no further navigation call needed here.
+   *
+   * **Identity-reconciliation fix (`context/stage-7-backend-integration.md`)
+   * — load-bearing companion to the mount-time session-restore
+   * reconciliation above.** Previously only cleared this app's own local
+   * `currentUserId`, leaving Supabase's own client silently holding a live
+   * session — combined with the restore effect, that session would
+   * otherwise be silently resurrected on her very next reload, exactly
+   * undoing the sign-out she just performed.
+   *
+   * **`reviewer` Blocker fix (2026-09-14), verified against the actual
+   * installed `@supabase/auth-js` source
+   * (`node_modules/@supabase/auth-js/dist/main/GoTrueClient.js`'s own
+   * `_signOut`):** this now genuinely `await`s `supabase.auth.signOut()`
+   * before clearing local state, rather than firing it and forgetting.
+   * `_signOut` performs a real server-side revoke round-trip *before*
+   * clearing the session from `localStorage` — a bare `void` call here left
+   * a real window, the full network round-trip, where local `currentUserId`
+   * was already `null` while Supabase's own session was still live in
+   * storage. A reload landing in that window (an ordinary mobile occurrence
+   * — backgrounding/reclaiming a tab, pull-to-refresh) would have let the
+   * mount-time restore effect above silently resurrect the very session she
+   * just signed out of.
    */
-  function signOut() {
+  async function signOut() {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('[store] signOut: Supabase signOut failed', err);
+      }
+    }
     setState((s) => (s.currentUserId ? { ...s, currentUserId: null } : s));
   }
 
@@ -3071,8 +3253,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * folded into `signOut`: a real account sign-out and correcting a fresh
    * mistake are different merchant-facing moments that happen to share
    * *some* mechanism, not the exact same one anymore.
+   *
+   * **Identity-reconciliation fix (`context/stage-7-backend-integration.md`)
+   * — same load-bearing companion `signOut` above now carries.** A merchant
+   * correcting a mismatched identity here still leaves Supabase's own client
+   * holding a live session unless this also signs out of it — otherwise the
+   * mount-time restore effect would resurrect exactly the identity she just
+   * rejected.
+   *
+   * **`reviewer` Blocker fix (2026-09-14) — same fix as `signOut` above, and
+   * more load-bearing here specifically:** this now `await`s
+   * `supabase.auth.signOut()` before clearing local state. Without it, this
+   * was the worse instance of the two — the resurrected session would have
+   * gone through the mount-effect's synthetic-`User` branch, which hardcodes
+   * `phoneMismatchConfirmationPending: false`, so the exact identity she just
+   * rejected via "No, elegir otro" would have come back with the §3.7e
+   * safety confirmation bypassed entirely.
    */
-  function retractMistypedVerification() {
+  async function retractMistypedVerification() {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('[store] retractMistypedVerification: Supabase signOut failed', err);
+      }
+    }
     setState((s) => {
       const id = s.currentUserId;
       if (!id) return s;
@@ -3795,7 +4001,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const value: StoreValue = {
     state,
     hydrationStatus,
+    sessionRestoreStatus,
     retryHydration: () => void runHydrationResolution(),
+    retrySessionRestore: () => void runSessionRestoreCheck(),
     hydrateFromBackend,
     requestOtp,
     verifyOtp,

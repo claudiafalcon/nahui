@@ -69,7 +69,7 @@ export function getSupabaseClient(): SupabaseClient | null {
 export type ProviderOtpResult = { ok: true } | { ok: false; reason: 'rate-limited' | 'platform-error' };
 
 export type ProviderVerifyResult =
-  | { ok: true; identifier: string }
+  | { ok: true; identifier: string; userId: string }
   | { ok: false; reason: 'incorrect' | 'expired' | 'too-many' | 'platform-error' };
 
 /** authentication.md §3.2e "Enviar código" — Supabase Auth's own
@@ -108,6 +108,11 @@ export async function sendEmailCode(email: string): Promise<ProviderOtpResult> {
  * typed value if Supabase's own response ever omits it (defensive; not
  * expected in practice). */
 export async function verifyEmailCode(email: string, code: string): Promise<ProviderVerifyResult> {
+  // `userId` is Supabase's own real `auth.users.id` — guaranteed present on
+  // a successful `verifyOtp` call — distinct from `identifier` and carried
+  // alongside it so `resolveAuthIdentity` can mint a brand-new `User` under
+  // the real Supabase UUID instead of a local mock id (the identity-
+  // reconciliation fix, `context/stage-7-backend-integration.md`).
   const supabase = getClient();
   if (!supabase) return { ok: false, reason: 'platform-error' };
   try {
@@ -127,7 +132,7 @@ export async function verifyEmailCode(email: string, code: string): Promise<Prov
       return { ok: false, reason: 'incorrect' };
     }
     const identifier = (data.user?.email ?? email).trim().toLowerCase();
-    return { ok: true, identifier };
+    return { ok: true, identifier, userId: data.user!.id };
   } catch (err) {
     console.error('[authProviders] verifyEmailCode failed', err);
     return { ok: false, reason: 'platform-error' };
@@ -156,7 +161,7 @@ export async function signInWithGoogle(redirectTo: string): Promise<{ ok: true }
 }
 
 export type GoogleResolution =
-  | { status: 'success'; subjectId: string; displayLabel: string | null }
+  | { status: 'success'; subjectId: string; userId: string; displayLabel: string | null }
   | { status: 'cancelled' }
   | { status: 'error' };
 
@@ -203,9 +208,14 @@ export async function resolveGoogleSession(): Promise<GoogleResolution> {
     // own stable per-identity UUID) is the defensive fallback should that
     // ever be absent.
     const subjectId = (googleIdentity.identity_data?.sub as string | undefined) ?? session.user.id;
+    // `userId` — Supabase's own real `auth.users.id` for this session,
+    // distinct from `subjectId` (Google's own `sub` claim, which stays the
+    // `AuthIdentity.identifier` value, unchanged) — the identity-
+    // reconciliation fix, `context/stage-7-backend-integration.md`.
+    const userId = session.user.id;
     const displayLabel =
       session.user.email ?? (googleIdentity.identity_data?.full_name as string | undefined) ?? null;
-    return { status: 'success', subjectId, displayLabel };
+    return { status: 'success', subjectId, userId, displayLabel };
   } catch (err) {
     console.error('[authProviders] resolveGoogleSession failed', err);
     return { status: 'error' };

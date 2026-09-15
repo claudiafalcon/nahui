@@ -374,7 +374,12 @@ export function InvitationFlow({ token, onDone }: { token: string; onDone: () =>
           } else {
             setStep({ kind: 'authenticating', businessName });
           }
-          retractMistypedVerification();
+          // `retractMistypedVerification` is now `Promise<void>` (`reviewer`
+          // Blocker fix, 2026-09-14) — fire-and-forget is still correct
+          // here: `setStep` above already moved this flow to
+          // `'authenticating'` synchronously, so nothing here needs to wait
+          // on the real Supabase sign-out completing before re-rendering.
+          void retractMistypedVerification();
         }}
       />
     );

@@ -1382,3 +1382,125 @@ supabase/
   timeout this screen used before backend integration is removed outright;
   the real network round trip now provides whatever perceived latency the
   `saving`/`slow` states exist to communicate.
+
+## Identity-reconciliation fix — real Supabase `auth.users.id` vs. local mock ids (2026-09-14)
+
+**The bug, found live, blocking the Product Owner's own production testing.**
+The client app minted its own local mock `User`/`currentUserId` ids
+(`makeId('user')`) for every sign-in channel, and nothing ever reconciled
+those against Supabase's own real `auth.users.id` — the id every real
+backend row (`business_memberships.user_id`, etc.) is actually keyed on for
+the email/Google channels (both native Supabase Auth). A fresh sign-in on a
+cleared browser, or a genuinely new device, minted a fresh local mock id that
+could never match the real UUID her already-hydrated backend data (Business,
+Membership) was tied to — the device looked like a brand-new merchant with
+no Business at all, even though her real account and data existed and were
+correct server-side.
+
+A second, independent gap compounded this: nothing on app mount checked
+whether Supabase's own client already held a valid, non-expired session in
+`localStorage` that this app's own `AppState.currentUserId` had simply
+forgotten about (confirmed live — exactly this state was observed). The app
+showed the fresh-login screen instead of silently resuming the session it
+already had.
+
+**The fix (`src/domain/authProviders.ts`, `src/domain/store.tsx`,
+`src/AppRouter.tsx`):**
+- The email-verification (`verifyEmailCode`) and Google (`resolveGoogleSession`)
+  channels now each surface the real Supabase `userId` (`data.user.id`/
+  `session.user.id`) alongside their existing identifier fields.
+- `resolveAuthIdentity`'s `'new-user'` branch now mints a brand-new `User`
+  under that real id (`realUserId ?? makeId('user')`) instead of always
+  fabricating one — for email and Google, the two channels that produce a
+  real Supabase session. The phone/WhatsApp channel still passes `null` here
+  and keeps minting a local id, unchanged — phone identities are minted
+  entirely outside Supabase's own native auth (custom Twilio Edge Functions)
+  and never produce a real Supabase session; a known, separate,
+  already-disclosed gap (phone sign-up cannot complete real Onboarding today
+  regardless of this fix), not addressed by this dispatch.
+- `StoreProvider` gained a new mount-only session-restore effect
+  (`sessionRestoreStatus: 'checking' | 'done'`) that calls
+  `supabase.auth.getSession()` once and, if a live session is found that
+  `AppState` doesn't know about, adopts it (`currentUserId` set to the real
+  `auth.users.id`, reusing an already-known local `User` row if one matches,
+  minting one under the real id otherwise). `AppRouter.tsx` gates its
+  `!authenticated` branch on this alongside `hydrationStatus`, reusing the
+  existing `AuthResolving` loading convention, so a device with a real
+  session about to be found doesn't flash the login screen for the duration
+  of that one round-trip.
+- `signOut()` and `retractMistypedVerification()` now also call the real
+  `supabase.auth.signOut()`, not just clear the local `currentUserId` — without
+  this, the new mount-time restore effect would silently resurrect the exact
+  session she just explicitly left, on her very next reload.
+
+**No server-side data migration was made or needed** — the real database
+data was always correct; this was a pure client-side identity-resolution
+correction.
+
+**Action required, once this lands: the Product Owner's own already-open
+browser session needs a full local-storage clear + fresh sign-in.** Signing
+out and back in again is *not* sufficient — her existing local session holds
+a stale, wrong-id `AuthIdentity` row minted under the old local-mock-id
+mechanism, and `AuthIdentity.userId` is immutable once created (per its own
+domain invariant), so it will keep resolving to the wrong id even after a
+sign-out/sign-in cycle on the same browser storage. A full local-storage
+clear is the only correct remediation for that one already-affected session
+— every fresh sign-in afterward, on any device, is unaffected and resolves
+correctly under this fix.
+
+Not committed/deployed as part of this pass — flagged for review given how
+central this logic is and that it was actively blocking live production
+testing.
+
+**`reviewer` fix round (2026-09-14) — one Blocker, one Important finding, both closed.**
+
+- **Blocker — sign-out ordering race.** `signOut()`/`retractMistypedVerification()`
+  called `void supabase.auth.signOut()` without awaiting it, then immediately
+  cleared local `currentUserId`. Verified against the actual installed
+  `@supabase/auth-js` source (`node_modules/@supabase/auth-js/dist/main/GoTrueClient.js`'s
+  own `_signOut`): it performs a real server-side revoke round-trip *before*
+  clearing the session from `localStorage`, not synchronously — so there was
+  a real window, the full network round-trip, where local `currentUserId`
+  was already `null` while Supabase's own session was still live in storage.
+  A reload in that window (an ordinary mobile occurrence — backgrounding/
+  reclaiming a tab, pull-to-refresh) would let the new session-restore effect
+  above silently resurrect the session she'd just signed out of; for
+  `retractMistypedVerification()` specifically, the resurrected session would
+  go through the mount-effect's synthetic-`User` branch, which hardcodes
+  `phoneMismatchConfirmationPending: false` — bypassing the §3.7e safety
+  confirmation for the exact identity she'd just rejected via "No, elegir
+  otro." **Fixed:** both functions are now `async` and genuinely `await`
+  `supabase.auth.signOut()` (wrapped in try/catch, logged on failure, local
+  state cleared either way) before clearing local state. `StoreValue`'s own
+  interface signatures were updated to `Promise<void>`; every call site
+  (`SellerAccountScreen.tsx`, `SettingsScreen.tsx`, `AppRouter.tsx`,
+  `InvitationFlow.tsx`) was checked and confirmed fine as an explicit
+  `void`-prefixed fire-and-forget call — none of them read state after
+  calling, they all rely on the existing reactive fall-through once
+  `currentUserId` actually clears.
+- **Important — mount-time session-restore effect had no error handling.**
+  The `getSession()` call inside the mount-only session-restore effect
+  wasn't wrapped in try/catch, unlike every other Supabase call in this
+  codebase (`authProviders.ts`'s `sendEmailCode`/`verifyEmailCode`/
+  `signInWithGoogle`/`resolveGoogleSession` all fail closed) — a thrown
+  exception would have left `sessionRestoreStatus` stuck at `'checking'`
+  forever, with `AppRouter.tsx`'s loading gate showing no retry path at all.
+  **Fixed:** the check is now factored into a reusable `runSessionRestoreCheck`
+  function, wrapped in try/catch; `sessionRestoreStatus`'s type widened to
+  `'checking' | 'done' | 'error'`. `AppRouter.tsx`'s session-restore branch
+  now passes `status={sessionRestoreStatus === 'error' ? 'error' : 'loading'}`
+  (matching the existing pattern the hydration-status branch already uses)
+  and a real `onRetry` (`retrySessionRestore`, a new `StoreValue` member that
+  re-runs the same check) instead of hardcoding `"loading"` and reusing
+  `retryHydration` — a genuinely different check, on a genuinely different
+  status, now with its own retry path.
+
+Also corrected roughly a dozen stray comments across `authProviders.ts`/
+`store.tsx` that cited "the identity-reconciliation fix, `decision-log.md`"
+as if a numbered decision-log entry existed for it — it doesn't; no RFC or
+decision-log entry was ever warranted for this fix (`architect`'s own
+original design report). They now cite `context/stage-7-backend-integration.md`
+instead, where the actual working note for this fix lives.
+
+`npm run build` (`tsc -b && vite build`) verified clean after all of the
+above. Not committed/deployed — handed back for final verification.

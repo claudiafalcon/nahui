@@ -92,7 +92,15 @@ import { OnboardingFlow } from './screens/Onboarding/OnboardingFlow';
  * rewrites it, not because persistence alone would have been sufficient.
  */
 export function AppRouter() {
-  const { state, hydrationStatus, retryHydration, confirmPhoneMismatch, retractMistypedVerification } = useStore();
+  const {
+    state,
+    hydrationStatus,
+    sessionRestoreStatus,
+    retryHydration,
+    retrySessionRestore,
+    confirmPhoneMismatch,
+    retractMistypedVerification,
+  } = useStore();
   // Stage 7 Backend Integration, this pass — see this component's own doc
   // comment above. Captured once, at mount, not re-derived on every render
   // (a client-side navigation away from `/invite/<token>` never happens in
@@ -204,6 +212,26 @@ export function AppRouter() {
             setInvitationGateActive(false);
           }}
         />
+      ) : !authenticated && sessionRestoreStatus !== 'done' ? (
+        // Identity-reconciliation fix (`context/stage-7-backend-integration.md`)
+        // — a device may hold a real, valid Supabase session that this
+        // app's own local `currentUserId` simply forgot about (a
+        // cleared/second-device scenario, confirmed live). Without this
+        // check, that device would flash the login screen for the duration
+        // of one `getSession()` round-trip before silently resolving into a
+        // session it already had — mirrors the `AuthResolving` loading
+        // convention just below, never a new visual state of its own.
+        // **`reviewer` Important finding fix (2026-09-14):** `status` now
+        // reflects a genuine `sessionRestoreStatus === 'error'` (the
+        // `getSession()` call itself failed) rather than always hardcoding
+        // `"loading"` — the same pattern the hydration-status branch right
+        // below already uses — and `onRetry` re-runs the session-restore
+        // check specifically (`retrySessionRestore`), not `retryHydration`
+        // (a genuinely different check, on a genuinely different status).
+        <AuthResolving
+          status={sessionRestoreStatus === 'error' ? 'error' : 'loading'}
+          onRetry={retrySessionRestore}
+        />
       ) : !authenticated ? (
         // authentication.md §2.2: a first-ever verification hands off
         // silently and directly into onboarding.md §3.3 — no interstitial
@@ -258,7 +286,14 @@ export function AppRouter() {
             } else {
               setRetractedPrefill(undefined);
             }
-            retractMistypedVerification();
+            // `retractMistypedVerification` is now `Promise<void>`
+            // (`reviewer` Blocker fix, 2026-09-14) — fire-and-forget is still
+            // correct here: `setRetractedPrefill` above already captured the
+            // value the freshly-remounted `AuthenticationFlow` needs, and
+            // this component's own reactive fall-through (`!authenticated`
+            // once `currentUserId` clears) handles the rest once the real
+            // Supabase sign-out this now awaits internally completes.
+            void retractMistypedVerification();
           }}
         />
       ) : isSeller ? (

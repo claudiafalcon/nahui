@@ -30,7 +30,13 @@ export function SellerAccountScreen({ onBack }: { onBack: () => void }) {
   function handleConfirm() {
     setStep('saving');
     window.setTimeout(() => {
-      signOut();
+      // `signOut` is now `Promise<void>` (`reviewer` Blocker fix,
+      // 2026-09-14) — fire-and-forget here is still correct: this screen
+      // never reads state after the call, it just waits for `AppRouter.tsx`'s
+      // own reactive fall-through once `currentUserId` clears, which
+      // `signOut` itself already awaits the real Supabase sign-out before
+      // doing.
+      void signOut();
       // `AppRouter.tsx` falls back to `AuthenticationFlow` automatically the
       // instant `currentUserId` clears (RFC 0012/D62-63 — was
       // `phoneVerifiedAt`) — no further navigation call needed here, same

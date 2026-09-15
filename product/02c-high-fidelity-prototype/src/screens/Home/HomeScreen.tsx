@@ -26,10 +26,14 @@ import { CloseSummary } from './CloseSummary';
 import { SettingsScreen } from '../Settings/SettingsScreen';
 import { SellerAccountScreen } from './SellerAccountScreen';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
+import { WritingState } from '../Settings/WritingState';
 import type { Receipt } from '../../domain/store';
+import type { ID } from '../../domain/types';
 
 type HomeUiState =
   | { kind: 'resolved' }
+  | { kind: 'starting-session'; eventId: ID | null; overrideToNfc: boolean }
+  | { kind: 'starting-session-error'; eventId: ID | null; overrideToNfc: boolean }
   | { kind: 'receipt'; receipt: Receipt }
   | { kind: 'closed'; count: number; revenue: number; venueName?: string; dayNumber?: number; sessionId: string }
   | { kind: 'account' };
@@ -102,6 +106,37 @@ export function HomeScreen({
   const role = membership.role;
   const headerIcon = role === 'OWNER' ? '⚙' : '⊚';
   const openAccountSurface = () => setUi({ kind: 'account' });
+
+  // Live-found gap (2026-09-15): `startSession` used to be a bare
+  // fire-and-forget call with no way to know a real backend failure
+  // happened — tapping "Iniciar Venta Rápida" silently did nothing.
+  // `startSession` now reports success/failure; this wraps both call
+  // sites below in the same error/retry shape every other real write in
+  // this codebase already uses (`WritingState`'s own error variant).
+  async function handleStartSession(eventId: ID | null, overrideToNfc: boolean) {
+    setUi({ kind: 'starting-session', eventId, overrideToNfc });
+    const ok = await startSession(eventId ?? undefined, overrideToNfc);
+    setUi(ok ? { kind: 'resolved' } : { kind: 'starting-session-error', eventId, overrideToNfc });
+  }
+
+  if (ui.kind === 'starting-session') {
+    return (
+      <ScreenTransition transitionKey="starting-session">
+        <WritingState label="Un momento…" />
+      </ScreenTransition>
+    );
+  }
+  if (ui.kind === 'starting-session-error') {
+    return (
+      <ScreenTransition transitionKey="starting-session-error">
+        <WritingState
+          error
+          errorLabel="No pudimos iniciar tu sesión de venta. Intenta de nuevo."
+          onRetry={() => void handleStartSession(ui.eventId, ui.overrideToNfc)}
+        />
+      </ScreenTransition>
+    );
+  }
 
   const session = myActiveSession(state, membership.id);
 
@@ -300,7 +335,7 @@ export function HomeScreen({
         upcomingEventStartDate={upcomingEvent?.startDate}
         onTapUpcomingEvent={upcomingEvent && role === 'OWNER' ? () => onNavigateToEvent(upcomingEvent.id) : undefined}
         todaySales={todaySalesSummary(state, null)}
-        onStartSession={(overrideToNfc) => void startSession(undefined, overrideToNfc)}
+        onStartSession={(overrideToNfc) => void handleStartSession(null, overrideToNfc)}
         onOpenAccountSurface={openAccountSurface}
         onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
         sellerEventsElsewhere={sellerEventsElsewhere}
@@ -327,7 +362,7 @@ export function HomeScreen({
           venueName={venueName}
           dayNumber={dayNumber}
           todaySales={todaySalesSummary(state, eventId)}
-          onContinue={(overrideToNfc) => void startSession(eventId, overrideToNfc)}
+          onContinue={(overrideToNfc) => void handleStartSession(eventId, overrideToNfc)}
           onOpenAccountSurface={openAccountSurface}
           onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
         />

@@ -198,7 +198,10 @@ export function SettingsScreen({
   function handleSignOutConfirm() {
     setSignOutStep('saving');
     window.setTimeout(() => {
-      signOut();
+      // `signOut` is now `Promise<void>` (`reviewer` Blocker fix,
+      // 2026-09-14) — fire-and-forget here is still correct, same reasoning
+      // as `SellerAccountScreen.tsx`'s own identical call site.
+      void signOut();
       // settings.md §2.5 / AppRouter.tsx — `AppRouter` falls back to
       // AuthenticationFlow automatically the instant `currentUserId` clears
       // (RFC 0012/D62-63 — was `phoneVerifiedAt`); no further navigation
