@@ -38,13 +38,35 @@
   background: var(--color-hilo);
 }
 
+/* ux-critic MAJOR-2 fix (2026-09-15 remediation) — was a flat
+   `overflow: hidden`, added originally only to contain the decorative
+   watermark's negative-right bleed (see `.watermark` below), never
+   evaluated against the Quick Session amendment's own considerably taller
+   composition (up to 8-9 stacked elements at §3.6's own fullest count).
+   Split into the two axes it actually needs: `overflow-x: hidden` still
+   contains exactly that horizontal bleed (the watermark's own
+   `right: -100px`), while `overflow-y: auto` lets this container genuinely
+   scroll once real content (not the watermark) exceeds the viewport —
+   matching the same container-scrolls convention every other multi-element
+   screen in this codebase already uses (`CatalogView.module.css`,
+   `Resultados.module.css`, `MiActividadDeHoy.module.css`, etc.) instead of
+   silently clipping or overflowing the page with no cue.
+   `justify-content: safe center` (replacing plain `center`) keeps this
+   screen's original short-state vertical centering intact — most states
+   rendered through this file are still short — but falls back to
+   start-alignment once content is taller than the available height, so a
+   tall composition never overflows equally above *and* below (which would
+   push top-of-stack content, including the secondary CTA fixed in
+   MAJOR-1, out of reach above the scrollable area with no way to scroll
+   back up to it). */
 .wrap {
   flex: 1;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: safe center;
 }
 
 /* The oversized, softly-tinted BrandMark — Nahui's own "four elements
@@ -103,6 +125,40 @@
   font: var(--text-body-sm);
   font-weight: 600;
   color: var(--color-obsidian);
+  max-width: 300px;
+}
+
+/* ux-critic MAJOR-1 fix (2026-09-15 remediation) — wraps the secondary
+   "Iniciar Sesión Rápida" CTA together with its own `.qualifyingLine`
+   caption as one bound unit, the same grouping device `.readinessNote`
+   already establishes for the NFC note's own line+link pairing (tight
+   4px internal gap, deliberately distinct from the outer 16px rhythm of
+   `.content`/`.wrap`'s stacked children). Without this, the caption sat as
+   just the next item in a uniform 16px-gapped list, indistinguishable from
+   reading as still scoped to the Event/primary CTA above it — defeating
+   the caption's whole purpose under live-customer time pressure. This
+   group itself is one child of `.content`'s outer flow, so it still
+   inherits that 16px gap from its neighbors above/below. */
+.secondaryActionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* home.md §3.6/§3.6b's on-screen independence signal (2026-09-15 amendment)
+   — "No se cuenta para {Venue.displayName}" / "...para ningún evento de
+   arriba," rendered directly beneath the secondary "Iniciar Sesión Rápida"
+   CTA, now inside `.secondaryActionGroup` above (ux-critic MAJOR-1 fix). A
+   small, non-interactive caption stating the functional outcome plainly,
+   never a button. Deliberately *not* full `.readinessLine` parity (ux-critic
+   MAJOR-1) — sized down to `--text-meta` (the same small-caption token
+   `.upcomingCountdown` already pairs with this identical muted color, right
+   above in this file) rather than `--text-body-sm`, so the two captions
+   remain visually distinguishable from each other by weight/size alone in
+   the fullest composition, without reaching for a new color. */
+.qualifyingLine {
+  font: var(--text-meta);
+  color: #6B6259;
   max-width: 300px;
 }
 

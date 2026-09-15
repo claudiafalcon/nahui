@@ -36,12 +36,24 @@
   background: var(--color-hilo);
 }
 
+/* ux-critic MAJOR-2 fix (2026-09-15 remediation) — this `.wrap` never set an
+   explicit `overflow` (defaulting to `visible`), so a taller row list plus
+   the Quick Session amendment's own new elements below it could flex
+   min-content-floor the whole page past the viewport with no scroll cue.
+   `overflow-y: auto` matches this codebase's own established
+   container-scrolls convention (`MiActividadDeHoy.module.css`'s identical
+   `.wrap` shape — flex:1, column, gap, padding, overflow-y:auto — is the
+   closest sibling pattern) rather than leaving this the one multi-element
+   screen with no scroll affordance at all. No watermark/decorative bleed
+   here to preserve, unlike `Idle.module.css`'s own `.wrap` — a plain
+   overflow-y:auto is sufficient. */
 .wrap {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-2) var(--space-6) var(--space-8);
+  overflow-y: auto;
 }
 
 .question {
@@ -74,4 +86,39 @@
 .row:active {
   transform: scale(0.98);
   background: var(--color-blush);
+}
+
+/* home.md §3.6b's Quick-Session same-day-resume line (2026-09-15 amendment)
+   — cross-referenced from §3.4/§3.6's own identical treatment
+   (Idle.module.css's `.todaySalesLine`): a plain factual line, not a warning
+   or a recommendation. */
+.todaySalesLine {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+/* ux-critic MAJOR-1 fix (2026-09-15 remediation) — same fix as
+   `Idle.module.css`'s own `.secondaryActionGroup`: binds the secondary CTA
+   and its `.qualifyingLine` caption into one tightly-gapped unit (4px)
+   instead of two separate top-level children in `.wrap`'s flat 16px
+   rhythm, so the caption visually reads as attached to the CTA above it. */
+.secondaryActionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* home.md §3.6b's on-screen independence signal (2026-09-15 amendment) —
+   "No se cuenta para ningún evento de arriba," rendered directly beneath the
+   secondary "Iniciar Sesión Rápida" CTA, now inside `.secondaryActionGroup`
+   above. A small, non-interactive caption stating the functional outcome
+   plainly, never a button — cross-referenced from §3.6's own identical
+   treatment (Idle.module.css's `.qualifyingLine`), including that same fix's
+   `--text-meta` sizing (ux-critic MAJOR-1 — distinguishes this caption from
+   `NfcSessionStartNote`'s own `.readinessLine`, which renders at
+   `--text-body-sm`, when both appear in the fullest composition). */
+.qualifyingLine {
+  font: var(--text-meta);
+  color: #6B6259;
 }

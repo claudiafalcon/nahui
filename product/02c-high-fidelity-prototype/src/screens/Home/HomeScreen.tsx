@@ -264,10 +264,14 @@ export function HomeScreen({
     return (
       <ScreenTransition transitionKey="elegir-evento">
         <ElegirEvento
+          role={role}
           events={qualifyingEvents}
           headerIcon={headerIcon}
+          quickSessionTodaySales={todaySalesSummary(state, null)}
           onOpenAccountSurface={openAccountSurface}
           onSelect={(eventId) => setPickedEventId(eventId)}
+          onStartQuickSession={(overrideToNfc) => void handleStartSession(null, overrideToNfc)}
+          onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
         />
       </ScreenTransition>
     );
@@ -362,7 +366,9 @@ export function HomeScreen({
           venueName={venueName}
           dayNumber={dayNumber}
           todaySales={todaySalesSummary(state, eventId)}
+          quickSessionTodaySales={todaySalesSummary(state, null)}
           onContinue={(overrideToNfc) => void handleStartSession(eventId, overrideToNfc)}
+          onStartQuickSession={(overrideToNfc) => void handleStartSession(null, overrideToNfc)}
           onOpenAccountSurface={openAccountSurface}
           onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
         />

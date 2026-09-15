@@ -42,6 +42,35 @@ import styles from './Idle.module.css';
  * retired here too (already retired for the active-Session header a day
  * earlier, SessionHeader.tsx): the gear icon calls `onOpenSettings` directly,
  * no `Sheet`, no `menuOpen` state.
+ *
+ * **Secondary "Iniciar Sesión Rápida" action (home.md §3.6, 2026-09-15
+ * amendment — Product Owner-raised, live-selling scenario).** Cross-
+ * referenced verbatim from §3.4's own primary action (this build's own
+ * "Iniciar Venta Rápida" naming, `Idle.tsx`'s same copy/mechanism/destination
+ * — see that component's own doc comment for the naming note) — opens a
+ * Quick Session (`Session.eventId = null`), completely independent of this
+ * Event. Renders secondary (`variant="secondary"`, the identical
+ * primary/secondary composition `inventory.md` §3.5/§3.17's "Continuar
+ * etiquetando"/"Registrar mercancía" already established in this codebase),
+ * immediately beneath "Continuar Día {dayNumber}," which keeps its exact
+ * position/size/destination — zero change to the fastest path. Shares this
+ * component's single `useNfcSessionStart` instance with the primary CTA
+ * (§3.6a's own 2026-09-15 "widened" note: one ambient, once-per-Home-open
+ * computation, applying regardless of which of the two actions is tapped) —
+ * `overrideToNfc` is threaded through `onStartQuickSession` at the moment of
+ * *this* tap, exactly like `onContinue`.
+ *
+ * **Stacking order (§3.6's own worked composition, unchanged by this
+ * amendment):** identity → Día N → Event-scoped same-day-sales line →
+ * primary CTA → Quick-Session same-day-sales line (`quickSessionTodaySales`,
+ * cross-referenced from §3.4's own identical definition/condition) →
+ * secondary CTA + the on-screen independence signal ("No se cuenta para
+ * {venueName}," a static caption, never a button — closes the `ux-critic`
+ * Major finding this same amendment fixed), grouped together in
+ * `.secondaryActionGroup` as of the 2026-09-15 remediation (ux-critic
+ * MAJOR-1 — binds the caption visually to the CTA it qualifies rather than
+ * letting it read as just the next line in the stack) → `NfcSessionStartNote`
+ * (moved here from directly-after-primary-CTA to preserve this exact order).
  */
 export function EventResume({
   role,
@@ -49,7 +78,9 @@ export function EventResume({
   venueName,
   dayNumber,
   todaySales,
+  quickSessionTodaySales,
   onContinue,
+  onStartQuickSession,
   onOpenAccountSurface,
   onOpenAssignTagsPlaceholder,
 }: {
@@ -58,10 +89,20 @@ export function EventResume({
   venueName: string;
   dayNumber: number;
   todaySales?: { total: number; count: number } | null;
+  /** §3.6's own Quick-Session same-day-resume line — cross-referenced from
+   * §3.4's identical condition (1+ Session with `eventId = null` has 1+
+   * finalized Sales today), resolved once in `HomeScreen.tsx` and passed
+   * down, never recomputed here. */
+  quickSessionTodaySales?: { total: number; count: number } | null;
   /** NFC Selling pass (D43) — `overrideToNfc` is whatever
    * `useNfcSessionStart`'s own local override state currently reads at the
    * moment of this tap (always `false` outside the Limited Ready variant). */
   onContinue: (overrideToNfc: boolean) => void;
+  /** §3.6's new secondary action (2026-09-15) — identical call shape to
+   * `onContinue`, but always opens with `eventId = null` (wired in
+   * `HomeScreen.tsx` to the same `handleStartSession` helper, just a
+   * different `eventId` argument). */
+  onStartQuickSession: (overrideToNfc: boolean) => void;
   onOpenAccountSurface: () => void;
   /** §3.6a's "Asignar tags" link — routes into Inventario's real Asignar
    * Tags queue (inventory.md §3.14, Asignar Tags pass, D43). Prop name kept
@@ -97,6 +138,18 @@ export function EventResume({
           <Button className={styles.cta} onClick={() => onContinue(overrideToNfc)}>
             Continuar Día {dayNumber}
           </Button>
+          {quickSessionTodaySales && (
+            <p className={styles.todaySalesLine}>
+              Ya vendiste {pesos(quickSessionTodaySales.total)} ·{' '}
+              {quickSessionTodaySales.count} {pluralize(quickSessionTodaySales.count, 'venta', 'ventas')} hoy
+            </p>
+          )}
+          <div className={styles.secondaryActionGroup}>
+            <Button className={styles.cta} variant="secondary" onClick={() => onStartQuickSession(overrideToNfc)}>
+              Iniciar Venta Rápida
+            </Button>
+            <p className={styles.qualifyingLine}>No se cuenta para {venueName}</p>
+          </div>
           <NfcSessionStartNote
             variant={variant}
             role={role}
