@@ -5,6 +5,7 @@ import { articulos } from '../../domain/format';
 import { CatalogRow } from '../../components/CatalogRow/CatalogRow';
 import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
+import { PhotoCapture } from '../../components/PhotoCapture/PhotoCapture';
 import styles from './CatalogView.module.css';
 import pickerStyles from '../../components/ProductPicker/ProductPicker.module.css';
 
@@ -65,6 +66,11 @@ export function CatalogView({
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [photoPreviewOpen, setPhotoPreviewOpen] = useState(false);
   const photoFileInputRef = useRef<HTMLInputElement | null>(null);
+  // Live-found gap (2026-09-15) — `capture="environment"` alone no longer
+  // reliably launches the camera on current Chrome/Android; `PhotoCapture`
+  // is the fallback-proof alternative, offered alongside the existing file
+  // picker rather than replacing it.
+  const [cameraOpen, setCameraOpen] = useState(false);
   // Preview overlay isn't a DOM descendant of the "Editar foto" Sheet (it's
   // a full-viewport sibling, §3.4b's shape doesn't fit Sheet's bottom-drawer
   // panel) — so opening it via keyboard (Enter/Space on the thumbnail) never
@@ -295,6 +301,9 @@ export function CatalogView({
                   }}
                 />
               </button>
+              <button className={styles.linkBtn} onClick={() => setCameraOpen(true)}>
+                Tomar foto
+              </button>
               <button className={styles.linkBtn} onClick={() => photoFileInputRef.current?.click()}>
                 Cambiar
               </button>
@@ -310,9 +319,14 @@ export function CatalogView({
             </div>
           ) : (
             <>
-              <button className={styles.uploadBtn} onClick={() => photoFileInputRef.current?.click()}>
-                Agregar foto
-              </button>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button className={styles.uploadBtn} onClick={() => setCameraOpen(true)}>
+                  Tomar foto
+                </button>
+                <button className={styles.uploadBtn} onClick={() => photoFileInputRef.current?.click()}>
+                  Agregar foto
+                </button>
+              </div>
               <p className={styles.photoHint}>Agrega una foto clara del producto.</p>
             </>
           )}
@@ -331,6 +345,20 @@ export function CatalogView({
             className={styles.hiddenFileInput}
             onChange={handlePhotoFileChange}
           />
+          {cameraOpen && (
+            <PhotoCapture
+              onCapture={(dataUrl) => {
+                setStagedPhoto(dataUrl);
+                setPhotoError(null);
+                setCameraOpen(false);
+              }}
+              onCancel={() => setCameraOpen(false)}
+              onUnavailable={() => {
+                setCameraOpen(false);
+                photoFileInputRef.current?.click();
+              }}
+            />
+          )}
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
             <Button variant="secondary" onClick={closePhotoSheet}>
               Cancelar

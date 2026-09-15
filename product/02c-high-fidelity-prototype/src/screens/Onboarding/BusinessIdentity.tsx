@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Button } from '../../components/Button/Button';
+import { PhotoCapture } from '../../components/PhotoCapture/PhotoCapture';
 import { WritingState } from './WritingState';
 import styles from './BusinessIdentity.module.css';
 
@@ -32,6 +33,8 @@ export function BusinessIdentity({
   const [logoError, setLogoError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Live-found gap (2026-09-15) — same as CatalogView.tsx's own note.
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const canContinue = name.trim().length > 0;
 
@@ -115,6 +118,9 @@ export function BusinessIdentity({
         {logo ? (
           <div className={styles.logoRow}>
             <img className={styles.logoPreview} src={logo} alt="Logo de tu negocio" />
+            <button className={styles.linkBtn} onClick={() => setCameraOpen(true)}>
+              Tomar foto
+            </button>
             <button className={styles.linkBtn} onClick={() => fileInputRef.current?.click()}>
               Cambiar
             </button>
@@ -132,9 +138,14 @@ export function BusinessIdentity({
             </span>
           </div>
         ) : (
-          <button className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
-            Subir logo
-          </button>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button className={styles.uploadBtn} onClick={() => setCameraOpen(true)}>
+              Tomar foto
+            </button>
+            <button className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
+              Subir logo
+            </button>
+          </div>
         )}
         {logoError && (
           <p className={styles.error}>
@@ -151,6 +162,20 @@ export function BusinessIdentity({
           className={styles.hiddenFileInput}
           onChange={handleFileChange}
         />
+        {cameraOpen && (
+          <PhotoCapture
+            onCapture={(dataUrl) => {
+              setLogo(dataUrl);
+              setLogoError(null);
+              setCameraOpen(false);
+            }}
+            onCancel={() => setCameraOpen(false)}
+            onUnavailable={() => {
+              setCameraOpen(false);
+              fileInputRef.current?.click();
+            }}
+          />
+        )}
       </div>
 
       <div className={styles.field}>

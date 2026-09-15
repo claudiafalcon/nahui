@@ -5,6 +5,7 @@ import { Button } from '../../components/Button/Button';
 import { TagStub } from '../../components/TagStub/TagStub';
 import { QuantityStepper } from '../../components/QuantityStepper/QuantityStepper';
 import { WritingState } from './WritingState';
+import { PhotoCapture } from '../../components/PhotoCapture/PhotoCapture';
 import styles from './SellingGroups.module.css';
 
 /** `product-decisions.md` Q23 — verbatim inline failure copy, reused
@@ -90,6 +91,8 @@ export function SellingGroups({
   const [dupError, setDupError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
   const photoFileInputRef = useRef<HTMLInputElement | null>(null);
+  // Live-found gap (2026-09-15) — same as CatalogView.tsx's own note.
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   function handlePhotoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -329,6 +332,9 @@ export function SellingGroups({
           {draftPhoto ? (
             <div className={styles.photoRow}>
               <img className={styles.photoThumb} src={draftPhoto} alt="" />
+              <button className={styles.linkBtn} onClick={() => setCameraOpen(true)}>
+                Tomar foto
+              </button>
               <button className={styles.linkBtn} onClick={() => photoFileInputRef.current?.click()}>
                 Cambiar
               </button>
@@ -344,9 +350,14 @@ export function SellingGroups({
             </div>
           ) : (
             <>
-              <button className={styles.uploadBtn} onClick={() => photoFileInputRef.current?.click()}>
-                Agregar foto
-              </button>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button className={styles.uploadBtn} onClick={() => setCameraOpen(true)}>
+                  Tomar foto
+                </button>
+                <button className={styles.uploadBtn} onClick={() => photoFileInputRef.current?.click()}>
+                  Agregar foto
+                </button>
+              </div>
               <span className={styles.hint}>Agrega una foto clara del producto.</span>
             </>
           )}
@@ -365,6 +376,20 @@ export function SellingGroups({
             className={styles.hiddenFileInput}
             onChange={handlePhotoFileChange}
           />
+          {cameraOpen && (
+            <PhotoCapture
+              onCapture={(dataUrl) => {
+                setDraftPhoto(dataUrl);
+                setDraftPhotoError(null);
+                setCameraOpen(false);
+              }}
+              onCancel={() => setCameraOpen(false)}
+              onUnavailable={() => {
+                setCameraOpen(false);
+                photoFileInputRef.current?.click();
+              }}
+            />
+          )}
         </div>
         {dupError && <p className={styles.error}>{dupError}</p>}
 
