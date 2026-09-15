@@ -11,6 +11,7 @@ import { RendimientoPorBazar } from './RendimientoPorBazar';
 import { VenueDetail } from './VenueDetail';
 import { TusClientes } from './TusClientes';
 import { VendiendoAhoritaDetail } from './VendiendoAhoritaDetail';
+import { ExportarVentas } from './ExportarVentas';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 import { ResolvingState } from '../../components/ResolvingState/ResolvingState';
 
@@ -45,7 +46,15 @@ export type ResultadosView =
    * cold-start Variant B, §3.4a's own card list) are both this same
    * `{ mode: 'main' }` view state (see `VendiendoAhoritaDetail.tsx`'s own
    * doc comment for why one destination is enough here). */
-  | { mode: 'live-session-detail'; sessionId: ID };
+  | { mode: 'live-session-detail'; sessionId: ID }
+  /** reports.md §3.19/§3.20 (`product-decisions.md` Q27) — "Exportar tus
+   * ventas." One mode covers both the range picker (§3.19) and the
+   * generate/download step (§3.20) — `ExportarVentas.tsx` owns that
+   * internal sub-state itself, the same shape `TeamScreen.tsx` already uses
+   * for its own multi-step "Nueva invitación" flow. No `returnTo` — its
+   * only possible parent is the main view's own row (§3.4/§3.5/§3.6),
+   * always `{ mode: 'main' }`. */
+  | { mode: 'export' };
 
 /**
  * reports.md §2/§4 — Resultados tab resolution, following
@@ -209,6 +218,19 @@ export function ResultadosScreen({
     );
   }
 
+  // §3.19/§3.20 — no tier re-check needed (unlike the `rendimiento`/
+  // `venue-detail`/`tus-clientes` guard above): "Exportar tus ventas" is
+  // available at any `subscriptionTier` (§2's sales-export availability
+  // check has no tier component at all), so there's no entitlement this
+  // view could ever lose mid-visit the way those three paid-only views can.
+  if (view.mode === 'export') {
+    return (
+      <ScreenTransition transitionKey="export">
+        <ExportarVentas onBack={() => onChangeView({ mode: 'main' })} />
+      </ScreenTransition>
+    );
+  }
+
   // reports.md §3.1/§3.2/§3.14 — this screen's own mount-triggered hydration
   // cycle (above), gating only the default `'main'` resolution below (every
   // other `view.mode` branch above already returned) — a hand-off arriving
@@ -249,6 +271,7 @@ export function ResultadosScreen({
         onTapLiveSession={(sessionId) => onChangeView({ mode: 'live-session-detail', sessionId })}
         onOpenRendimiento={() => onChangeView({ mode: 'rendimiento' })}
         onOpenTusClientes={() => onChangeView({ mode: 'tus-clientes' })}
+        onOpenExport={() => onChangeView({ mode: 'export' })}
       />
     </ScreenTransition>
   );

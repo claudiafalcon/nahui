@@ -367,6 +367,159 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- "Exportar tus ventas" (§3.19/§3.20, `product-decisions.md` Q27) —
+   own field/heading vocabulary, shaped after NuevoEvento.module.css's own
+   `.field`/`.label`/`.dateInput`/`.footer` pattern (the closest existing
+   precedent for "a real form, not a list of cards," in this codebase),
+   reused here rather than duplicated verbatim into a second per-screen CSS
+   file — this folder's own "one shared style sheet per tab" convention
+   (see this file's own header comment). ---- */
+.exportHeading {
+  font: var(--text-display-md);
+  color: var(--color-obsidian);
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.exportField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.exportLabel {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+.exportDateInput {
+  width: 100%;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  padding: 13px 14px;
+  background: var(--color-white);
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
+
+.exportBody {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+/* "Columnas: Fecha, Lugar, ..." — §3.19's own "authoritative and final, not
+   illustrative example text" column table, rendered as plain static copy at
+   this fidelity. */
+.exportColumns {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+/* The Vendedor-column limit disclosure (§3.19's own explicit "state plainly
+   what 'Vendedor' will and won't show, directly on this screen" — the
+   ux-critic-found gap this exact line closes). */
+.exportDisclosure {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  font-style: italic;
+}
+
+.exportEmptyNote {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.exportFooter {
+  padding: 14px var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  background-color: var(--color-balanced);
+  position: relative;
+}
+
+/* ---- §3.20 "generando" — the identical silent-skeleton/slow-text shape
+   `ResolvingState.module.css` already establishes, replicated locally
+   (custom copy, "Preparando tu archivo…," not that component's hardcoded
+   "Un momento…") rather than imported cross-folder. ---- */
+.exportGeneratingWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6);
+}
+
+.exportBlockLg,
+.exportBlockSm {
+  border-radius: var(--radius-sm);
+  background: var(--color-hilo);
+  animation: exportPulse 1.4s ease-in-out infinite;
+}
+
+.exportBlockLg {
+  width: 180px;
+  height: 14px;
+}
+
+.exportBlockSm {
+  width: 130px;
+  height: 14px;
+}
+
+@keyframes exportPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exportBlockLg,
+  .exportBlockSm {
+    animation: none;
+  }
+}
+
+.exportSlowText {
+  font: var(--text-body);
+  color: #6B6259;
+}
+
+/* ---- §3.20 "listo" — reuses the same ambient "✓ [outcome]" success
+   register `TeamScreen.module.css`'s own `.copyConfirmation` and
+   `EventsList.module.css`'s own "Evento cancelado ✓" already establish. ---- */
+.exportReadyWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+}
+
+.exportReadyCheck {
+  font: var(--text-heading);
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+.exportReadyFilename {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  word-break: break-all;
+  margin-bottom: var(--space-4);
+}
+
+.exportReadyCta {
+  max-width: 280px;
+}
+
 /* ---- Cold start / defensive fallback (reuses Home's own centered-copy
    shape via a direct import of ColdStart.module.css in those two files —
    nothing new needed here). ---- */

@@ -15,6 +15,7 @@ import { formatShortDate } from '../../domain/dates';
 import { pesos, pluralize } from '../../domain/format';
 import { EVENT_TYPE_LABELS } from '../Events/eventTypeLabels';
 import type { ID } from '../../domain/types';
+import { Button } from '../../components/Button/Button';
 import { VendiendoAhorita } from './VendiendoAhorita';
 import styles from './Resultados.module.css';
 
@@ -32,6 +33,7 @@ export function ResultadosMain({
   onTapLiveSession,
   onOpenRendimiento,
   onOpenTusClientes,
+  onOpenExport,
 }: {
   onTapSession: (sessionId: ID) => void;
   onTapEvent: (eventId: ID) => void;
@@ -41,6 +43,14 @@ export function ResultadosMain({
   onTapLiveSession: (sessionId: ID) => void;
   onOpenRendimiento: () => void;
   onOpenTusClientes: () => void;
+  /** §3.4/§3.5/§3.6's own new "[ Exportar tus ventas ▸ ]" row
+   * (`product-decisions.md` Q27) → §3.19. No availability check needed
+   * here beyond this component's own mount condition — `ResultadosMain`
+   * only ever renders once `hasAnyClosedSession` is true
+   * (`ResultadosScreen.tsx`'s own §2 gate), the identical condition §2's
+   * sales-export availability check reuses verbatim, so the row is
+   * unconditionally visible whenever this component is on screen at all. */
+  onOpenExport: () => void;
 }) {
   const { state } = useStore();
   if (!state.business) return null; // defensive — this tab only mounts once onboarding is complete
@@ -234,6 +244,17 @@ export function ResultadosMain({
             </p>
           </div>
         )}
+
+        {/* §3.4/§3.5/§3.6's own new row (`product-decisions.md` Q27) — "a
+            fixed utility action, not a summary of the data above it," so it
+            takes the plain secondary-Button treatment §3.10's own "[ Ver
+            Eventos ]" precedent already establishes for a single bracketed
+            CTA in this tab, rather than the two-part title/"[Ver más ▸]"
+            teaser-row shape above (which summarizes a specific data section
+            this row doesn't have). Not tier-gated, unlike those two rows. */}
+        <Button variant="secondary" onClick={onOpenExport}>
+          Exportar tus ventas ▸
+        </Button>
       </div>
     </>
   );

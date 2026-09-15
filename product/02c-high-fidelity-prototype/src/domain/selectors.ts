@@ -9,6 +9,7 @@ import type {
   ID,
   Invitation,
   InventoryUnit,
+  MembershipRole,
   Product,
   SaleItem,
   Session,
@@ -1221,4 +1222,125 @@ export function myActivityToday(
   }
   rows.sort((a, b) => a.time - b.time);
   return { total, count: rows.length, rows };
+}
+
+/** `reports.md` §3.19 (`product-decisions.md` Q27) — every Session actually
+ * `closed` within `[desde, hasta]`, inclusive on both ends, filtered against
+ * each Session's own closed date (the same date every Historial/En curso
+ * card already shows, never an `Event` date range — a multi-day Event's own
+ * Sessions can close on different individual days, and the merchant is
+ * picking a *sales* date range, not an *Event* range). A Session still
+ * `active` can never appear here, for the same reason `activeSessionIds`
+ * excludes it everywhere else in this tab — `status === 'closed'` alone
+ * already enforces that exclusion, since a still-open Session has no closed
+ * date to fall inside any range in the first place. */
+export function closedSessionsInRange(state: AppState, desde: string, hasta: string): Session[] {
+  return state.sessions.filter((s) => {
+    if (s.status !== 'closed') return false;
+    const closedDateKey = dateKey(s.closedAt ?? s.openedAt);
+    return closedDateKey >= desde && closedDateKey <= hasta;
+  });
+}
+
+/** §3.19's own default Desde/Hasta — "this Business's first and most recent
+ * closed Session's own dates," the same "start from what's actually useful,
+ * not blank" restraint `events.md` §3.6's Empieza-defaults-to-hoy decision
+ * already established (EVT-Q1). `null` only when no Session has ever closed
+ * — defensive only: the "[ Exportar tus ventas ▸ ]" row itself is reachable
+ * exclusively from the main view (§3.4/§3.5/§3.6), which is itself only ever
+ * reached once `hasAnyClosedSession` is true (§2), so this is never actually
+ * hit as `null` through real navigation. */
+export function defaultExportRange(state: AppState): { desde: string; hasta: string } | null {
+  const keys = state.sessions.filter((s) => s.status === 'closed').map((s) => dateKey(s.closedAt ?? s.openedAt));
+  if (keys.length === 0) return null;
+  let desde = keys[0];
+  let hasta = keys[0];
+  for (const k of keys) {
+    if (k < desde) desde = k;
+    if (k > hasta) hasta = k;
+  }
+  return { desde, hasta };
+}
+
+/** One row of `reports.md` §3.19's file-content column table, one step short
+ * of the actual CSV cell strings — structured data only (`Venue`/`Event`
+ * entities, a raw `MembershipRole`), matching every other selector in this
+ * file's own "hand back the entity, let the screen format the copy"
+ * discipline (`historialRows`, `sessionProductBreakdown`, etc.). The actual
+ * Spanish column-cell formatting (Event-type labels, "Tú"/"Alguien de tu
+ * equipo," "Día N"/"Venta rápida," CSV escaping) lives in
+ * `screens/Resultados/salesExportCsv.ts`, a presentation-layer concern, not
+ * this domain-layer file's own. */
+export interface SalesExportRow {
+  saleId: ID;
+  /** The Session's own closed date (`dateKey` — `YYYY-MM-DD`), per §3.19's
+   * own column-table citation for "Fecha." */
+  fecha: string;
+  venue?: Venue;
+  event?: Event;
+  /** Set iff `event` is set — this Sale's Session's own "Día N," §3.7's
+   * exact existing header vocabulary, unchanged (`dayNumberForDate`). */
+  dayNumber?: number;
+  /** `undefined` only defensively (an orphaned `performedByMembershipId` —
+   * unreachable through any real write path in this codebase, `Sale` always
+   * carries a resolved acting Membership at finalization, D58). */
+  vendedorRole?: MembershipRole;
+  product: Product;
+  /** Count of `SaleItem` rows for this `(Sale, Product)` pair — §2's own
+   * "Row shape and grouping" rule. */
+  cantidad: number;
+  /** The shared, already-resolved `pricePaid` for this `(Sale, Product)`
+   * pair (D33) — safe to read as one value per §2's own citation of
+   * `domain-model.md`'s "Price resolution" (resolves once per
+   * `(Event, Product)` at write time). */
+  precio: number;
+}
+
+/** §3.19/§3.20 (`product-decisions.md` Q27) — one row per `(Sale, Product)`
+ * pair, for every finalized Sale whose own Session closed within
+ * `[desde, hasta]` (`closedSessionsInRange` above). Reuses the identical
+ * per-`(Sale,Product)` grouping §2's own "Row shape and grouping" rule
+ * requires, and `membershipById`'s existing role-derivation — never a
+ * reimplementation of either. Row order: by Fecha, then by Sale, so every
+ * row belonging to the same Sale is contiguous (the "repeated ID de venta"
+ * shape §2/§3.19 both call for) — a stable, deterministic order for a file
+ * she may re-open later, not itself specified by the Approved spec. */
+export function salesExportRows(state: AppState, desde: string, hasta: string): SalesExportRow[] {
+  const sessions = closedSessionsInRange(state, desde, hasta);
+  const sessionById = new Map(sessions.map((s) => [s.id, s]));
+  const rows: SalesExportRow[] = [];
+  for (const sale of state.sales) {
+    if (sale.status !== 'finalized') continue;
+    const session = sessionById.get(sale.sessionId);
+    if (!session) continue;
+    const event = session.eventId ? findEvent(state, session.eventId) : undefined;
+    const venue = event ? findVenue(state, event.venueId) : undefined;
+    const dayNumber = event ? dayNumberForDate(state, event.id, dateKey(session.openedAt)) : undefined;
+    const vendedorRole = membershipById(state, sale.performedByMembershipId)?.role;
+    const fecha = dateKey(session.closedAt ?? session.openedAt);
+    // §2's own "(Sale, Product)" grouping — Cantidad is the count of
+    // matching SaleItems, Precio their one shared pricePaid (D33).
+    const byProduct = new Map<ID, { count: number; pricePaid: number }>();
+    for (const item of sale.items) {
+      const existing = byProduct.get(item.productId);
+      if (existing) existing.count += 1;
+      else byProduct.set(item.productId, { count: 1, pricePaid: item.pricePaid });
+    }
+    for (const [productId, { count, pricePaid }] of byProduct) {
+      const product = findProduct(state, productId);
+      if (!product) continue; // defensive — every SaleItem names a real Product
+      rows.push({
+        saleId: sale.id,
+        fecha,
+        venue,
+        event,
+        dayNumber,
+        vendedorRole,
+        product,
+        cantidad: count,
+        precio: pricePaid,
+      });
+    }
+  }
+  return rows.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.saleId.localeCompare(b.saleId));
 }
