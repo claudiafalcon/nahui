@@ -238,6 +238,44 @@ and §10 corrected to match. **Flagged for a fresh `ux-critic`/`reviewer`
 re-review before the already-built React code (currently ungated) is
 updated to match.**
 
+### status-2026-09-15-q27-sales-export
+**Amended 2026-09-15 (`product-decisions.md` Q27, Product Owner-requested
+during live testing):** asked directly for a date-range sales export —
+"a button with a date range that comes with event, day, total,
+salesperson" or alternatively "sales by products... just one with product
+and multiple rows with the same sale Id." Reasoned through as two
+alternatives naming the same underlying data at two different
+granularities, not two features to choose between: a single combined
+CSV, one row per `(Sale, Product)` line item, gives the second shape
+directly and lets any spreadsheet tool pivot up to the first (Event/day/
+salesperson totals) — a strict superset, not a compromise between the
+two. New §3.19 ("Exportar tus ventas — selector de rango": Desde/Hasta
+date pickers, defaulting to this Business's full closed-Session history;
+a nine-column file-content table — Fecha, Lugar, Evento, Sesión,
+Vendedor, Producto, Cantidad, Precio, Sale ID) and §3.20 ("...— generando
+/ listo": a purely client-side CSV-generation and download step, no new
+backend read). New §2 sales-export availability check (reuses step 1's
+existing "any Session ever closed" read). `architect`-confirmed additive
+— no new backend capability (`hydrateFromBackend` already loads every
+historical Sale/SaleItem for the Business unconditionally; the date
+filter and CSV generation are both pure client-side operations over
+already-loaded `AppState`), no RFC trigger. Two design calls resolved
+explicitly: rows grouped by `(Sale, Product)`, not raw SaleItem or Sale
+— safe since `pricePaid` resolves once per `(Event, Product)` at write
+time (D33); "Vendedor" reuses §3.4a's existing role-derivation
+("Tú"/"Alguien de tu equipo") rather than inventing a new name field,
+with an explicit on-screen disclosure of that limit given the export's
+own accounting-artifact context (§8 item 13). Available at any tier, not
+gated on `subscriptionTier=paid` — a placement inference, not an
+explicit instruction (§8 item 12). OWNER-only, inheriting the whole
+tab's existing scope, not independently re-gated. §1, §2, §3.4/§3.5/§3.6
+(new "[ Exportar tus ventas ▸ ]" row), §4, §5 (states 21/22), §6 (two new
+step-count rows), §7 (four new automation bullets), §9, §10, and §11
+(the stale "exporting a summary" future-consideration bullet marked
+superseded) all updated to match. **Full `ux-critic`/`reviewer` pass not
+yet run** — persisted directly from `ux-designer`'s report, next step in
+the pipeline.
+
 ---
 
 ## §10 "Decisions made" — full decision history
@@ -546,3 +584,37 @@ left unextended — this capability's only real value is contingent on a
 second Paid-tier action (inviting a SELLER) a solo Free-tier merchant
 would need regardless. §1, §2, §3.4a, §8 item 11, §10 corrected to
 match.
+
+### decisions-export-sales-date-range-q27
+**"Exportar tus ventas" added** (`product-decisions.md` Q27, Product
+Owner-requested 2026-09-15) — a single combined CSV export, one row per
+`(Sale, Product)` pair within a picked date range, Sale ID repeated
+across a multi-item Sale's own rows. Chosen over the Product Owner's own
+two named alternatives (an Event/day/total/salesperson summary; a
+product-level export with repeated Sale IDs) by recognizing both as the
+same underlying data at two granularities — the combined line-item shape
+is a strict superset either can be pivoted up from in any spreadsheet
+tool, so one file replaces what would otherwise be two overlapping
+export formats. Row grouping is `(Sale, Product)`, not raw `SaleItem`,
+because `pricePaid` resolves once per `(Event, Product)` at write time
+(D33) — every `SaleItem` for the same Product within the same Sale
+already shares one price, so summing Cantidad against that one shared
+Precio loses no information. "Vendedor" reuses §3.4a's existing
+role-only derivation rather than inventing a scoped name field — no
+`User` display-name field exists anywhere in the domain model
+(`settings.md` §2.7/§11), and inventing one silently for this export
+alone would create a second, undocumented identity surface; §3.19
+instead carries an explicit on-screen disclosure of the same limit,
+more prominent here than in §3.4a's own glance-only context because an
+exported file is a durable, handed-off artifact where the gap matters
+more (§8 item 13). Placed at any `subscriptionTier`, not gated to Paid —
+a placement inference reasoned from the export introducing no new
+computed signal or segmentation, only a different output shape for
+data the free-tier baseline already shows (§8 item 12), flagged rather
+than asserted as settled the same way "Rendimiento por bazar"'s own
+tier placement was originally flagged (§8 item 7) before Q13 was raised
+about a sibling metric. `architect`-confirmed purely additive and
+client-side: no new backend capability, no new bounded-context edge, no
+write path — `hydrateFromBackend` already loads every historical Sale/
+SaleItem for the Business, so the date-range filter and CSV generation
+are both computation over data already in memory.

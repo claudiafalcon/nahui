@@ -105,6 +105,32 @@ merchant sees nothing — no card, no note. **This amendment needs a fresh
 (currently ungated) is updated to match.** **[see
 reports.changelog.md#status-2026-09-15-d68-live-sessions-view]**
 
+**Amended 2026-09-15 (`product-decisions.md` Q27, Product Owner-requested
+— OWNER-only date-range sales export):** new §3.19/§3.20 add "Exportar
+tus ventas," a single combined CSV export (one row per Product line item
+per Sale, Sale ID repeated across a multi-item Sale's own lines)
+reachable from every main-view state (§3.4/§3.5/§3.6) whenever ≥1
+Session has ever closed for this Business. `architect`-confirmed
+additive — no new backend capability (`hydrateFromBackend` already loads
+every historical Sale/SaleItem for the Business unconditionally; the
+date-range filter and CSV generation are both pure client-side
+operations over already-loaded `AppState` data), no RFC trigger (no new
+aggregate, no new bounded-context edge, no ubiquitous-language term).
+Two design calls resolved explicitly, not pre-decided: (1) rows are
+grouped by `(Sale, Product)`, not one row per raw SaleItem — "Cantidad"
+is the count of matching SaleItems, "Precio" their shared `pricePaid`,
+architect-confirmed safe to group this way since `pricePaid` resolves
+once per `(Event, Product)` at write time, D33 (§2); (2) "Vendedor"
+reuses §3.4a's identical role-derivation as-is, paired with an explicit
+on-screen disclosure of its limits given this consumer's accounting
+purpose, rather than inventing a scoped name field (§3.19, §8 item 13,
+§11). Available at any tier, not gated on `subscriptionTier=paid` — a
+placement inference, not an explicit Product Owner instruction (§8 item
+12). OWNER-only, inheriting the whole tab's existing scope (front
+matter) — not independently re-gated (§3.19's own confirming bullet).
+**Not yet run through `ux-critic`/`reviewer`.** **[see
+reports.changelog.md#status-2026-09-15-q27-sales-export]**
+
 Scope: `Resultados`, the fourth and last of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers Journey 5
 (Review). Picks up exactly what `product/02-ux/events.md` §3.16 deliberately
@@ -168,6 +194,15 @@ Out of scope by explicit instruction:
   full location-management module — this doc only ever reads `venueId` as a
   grouping key for reporting; it never lets Ana create, rename, or manage a
   Venue (that inline picker lives entirely in `events.md` §3.7).
+- **No custom report builder, no scheduled/automatic exports, and no
+  export format beyond the one combined CSV file.**
+  `product/02-ux/product-decisions.md` Q27's own scope, deliberately
+  narrow ("not more than that") — §3.19/§3.20 design exactly one file
+  shape, chosen once (2026-09-15) over per-Event/per-salesperson-only
+  alternatives specifically because a single line-item file is a strict
+  superset any spreadsheet tool can pivot up (Q27's own 2026-09-15
+  refinement note). See §11 for what's explicitly deferred, not
+  designed.
 
 ## 1. Merchant goal
 
@@ -242,6 +277,18 @@ altitudes:
   feature at all — no card, no placeholder, no discoverability note
   (§10).
 
+- **A fourth capability, added 2026-09-15 (`product-decisions.md` Q27,
+  Product Owner-requested): taking her own sales data out of the app.**
+  Distinct in kind from the three questions above — not a new way of
+  looking at her data inside Resultados, but a way of handing a copy of it
+  to whatever tool she already trusts for that job (a spreadsheet, an
+  accountant, a notebook). "Exportar tus ventas" (§3.19/§3.20) answers
+  "give me what I've sold, for a range of dates I pick, as a file I can
+  open elsewhere" — one combined line-item CSV, not a second reporting
+  surface competing with the three altitudes §2 already describes.
+  Available at any tier (§8 item 12) — a placement inference, not an
+  explicit instruction, reasoned through in §8 rather than assumed.
+
 Nothing in Resultados is time-critical the way Home's <3s bar is
 (`company/backlog.md` #1) — there's no customer waiting while she looks at a
 number. Same posture `inventory.md` §1 and `events.md` §1 already
@@ -291,6 +338,43 @@ productos," or any other aggregate defined below — those keep reading
 only closed/reviewed data, unchanged. The live card simply stops
 rendering the instant that Session closes, and its Sales graduate into
 Historial/Total histórico through the ordinary, unchanged mechanism.
+
+**Sales-export availability check, added 2026-09-15 (`product-decisions.md`
+Q27) — evaluated on every visit, independent of every other step below:**
+has any Session ever reached `status = closed` (or later, `reviewed`) for
+this Business? This is the identical condition step 1 below already tests
+— reused as-is, not a second, separately-maintained check — since a
+Business with nothing ever closed has, by construction, no settled Sale
+to export.
+  → YES: "Exportar tus ventas" (§3.19) is reachable from every main-view
+    state (§3.4/§3.5/§3.6's own new row, §3.19's own bullet).
+  → NO: the row is absent entirely — same restraint §2's live-session
+    check already applies to its own absence, not a disabled/greyed row
+    inviting a tap into an export with nothing in it.
+
+**Row shape and grouping, `product-decisions.md` Q27:** the exported file
+is one row per `(Sale, Product)` pair within the picked date range, not
+one row per raw `SaleItem` and not one row per `Sale`. "Cantidad" is the
+count of `SaleItem` rows matching that `(Sale, Product)` pair; "Precio" is
+their one shared `pricePaid` — safe to read as a single value because
+`pricePaid` resolves once per `(Event, Product)` at write time
+(`domain-model.md`'s "Price resolution," D33), guaranteeing every
+`SaleItem` for the same Product within the same Sale already carries an
+identical resolved price. A Sale with three different Products sold
+appears as three rows sharing one "Sale ID" column, not collapsed into
+one row — the same repeated-Sale-ID shape the Product Owner asked for
+directly.
+
+**Vendedor column, `product-decisions.md` Q27:** reuses §3.4a's exact
+role-derivation ("Tú" / "Alguien de tu equipo") applied to
+`Sale.performedByMembershipId`, unchanged even for an arbitrarily old or
+later-revoked Membership (`decision-log.md` D58 — a revoked
+`BusinessMembership` still resolves to its own real, historical `role`).
+No new name field is invented for this export despite its accounting
+purpose implicitly wanting one — the same already-documented Foundation
+gap §3.4a and `settings.md` §2.7/§11 already name, not rediscovered here;
+§3.19 carries its own explicit on-screen disclosure of this limit rather
+than silently exporting a column that reads as more specific than it is.
 
 ```
 1. Has any Session ever reached status = closed (or later, reviewed) for
@@ -739,10 +823,20 @@ number as live rather than final.
 │  │ frecuentes y cuántas             │ │
 │  │ ocasionales.                     │ │
 │  └───────────────────────────┘ │
+│                                │
+│  [ Exportar tus ventas ▸ ]        │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
 ```
+- **"[ Exportar tus ventas ▸ ]," added 2026-09-15 (`product-decisions.md`
+  Q27).** A single always-visible row, below every other section and above
+  the nav bar, on every main-view state (§3.4/§3.5/§3.6 alike) whenever the
+  sales-export availability check (§2) resolves YES. Tapping it opens
+  §3.19. Available at any tier — not part of the free/paid split this row
+  sits below, and not affected by whether Historial/En curso have zero,
+  one, or many cards; it's a fixed utility action, not a summary of the
+  data above it. Absent entirely when unavailable (§2) — no disabled row.
 - "Total histórico" is a pure sum across every Session ever closed —
   free-tier eligible, it's a total, not a segmentation
   (`domain-model.md` capability table).
@@ -918,10 +1012,15 @@ number as live rather than final.
 │  │ frecuentes y cuántas             │ │
 │  │ ocasionales.                     │ │
 │  └───────────────────────────┘ │
+│                                │
+│  [ Exportar tus ventas ▸ ]        │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
 ```
+- **"[ Exportar tus ventas ▸ ]" is identical to §3.4's own row** — same
+  placement, same availability check (§2), same destination (§3.19). Not
+  restated here; see §3.4's own bullet.
 - Same layout rule as §3.4, En curso genuinely absent — most días have no
   Event running, same framing `events.md` §3.5 used for its own equivalent
   state.
@@ -970,6 +1069,8 @@ number as live rather than final.
 │  │ Sesión rápida · 20 jul        │ │
 │  │ 4 ventas · $560                │ │
 │  └───────────────────────────┘ │
+│                                │
+│  [ Exportar tus ventas ▸ ]        │
 ├───────────────────────────────┤
 │ Hoy  Inventario Eventos [Resultados] │
 └───────────────────────────────┘
@@ -1055,6 +1156,10 @@ variant below for the other reachable state, zero Claims recorded yet,
   check itself requires `subscriptionTier=paid` (§3.4/§3.5, both
   Free-tier-only, can never satisfy it — see their own corrected
   bullets). See §3.4a for the full design.
+- **"[ Exportar tus ventas ▸ ]" is identical to §3.4's own row** — same
+  placement, same availability check (§2), same destination (§3.19), and
+  itself not tier-gated even though it renders here on the paid-tier main
+  view. Not restated here; see §3.4's own bullet.
 
 ### 3.7 Session detail
 ```
@@ -1692,6 +1797,129 @@ variant below for the other reachable state, zero Claims recorded yet,
   `home.md` §3.8f's own ambient-confirmation precedent ("Venta finalizada
   ✓"), reused rather than inventing a new success-feedback shape.
 
+### 3.19 Exportar tus ventas — selector de rango
+
+Reached from any main-view state's "[ Exportar tus ventas ▸ ]" row
+(§3.4/§3.5/§3.6). Added 2026-09-15, `product-decisions.md` Q27,
+Product Owner-requested.
+
+```
+┌───────────────────────────────┐
+│ ← Resultados                     │
+│  Exportar tus ventas                │
+│                                │
+│  Elige el rango de fechas que      │
+│  quieres exportar.                  │
+│                                │
+│  Desde:   [ 1 de julio, 2026 ]     │
+│  Hasta:   [ 14 de julio, 2026 ]    │
+│                                │
+│  Vas a descargar un archivo CSV     │
+│  con una fila por producto vendido  │
+│  — se puede abrir en Excel, Google  │
+│  Sheets, o cualquier otra hoja de    │
+│  cálculo.                            │
+│                                │
+│  Columnas: Fecha, Lugar, Evento,     │
+│  Sesión, Vendedor, Producto,         │
+│  Cantidad, Precio, Sale ID           │
+│                                │
+│      [ Descargar CSV ]            │
+└───────────────────────────────┘
+```
+
+- **Two date pickers, "Desde"/"Hasta," default to this Business's first
+  and most recent closed Session's own dates** — a sensible default range
+  covering everything she has, not an empty/today-only range she has to
+  correct before the export is useful. Same "start from what's actually
+  useful, not blank" restraint `events.md` §3.6's own Empieza-defaults-to-
+  hoy decision already established (EVT-Q1).
+- **Range is inclusive on both ends, filtered against each Session's own
+  closed date** (the same date already shown on every Historial/En curso
+  card, §2) — not against `Event` date ranges, since a multi-day Event's
+  own Sessions can close on different individual days and the merchant is
+  picking a *sales* date range, not an *Event* range. A Session still
+  `active` (never closed) is never included, regardless of range — the
+  identical exclusion §2's `activeSessionIds` rule already applies
+  elsewhere in this tab (Total histórico, Top productos, sales trend,
+  Event-rollup figures) applies here too, for the same reason: a live
+  Session's Sales aren't settled yet.
+- **The file-content column table shown on this screen is authoritative
+  and final — not illustrative example text.** Nine columns, in this
+  order:
+
+  | Column | Source |
+  |---|---|
+  | Fecha | the Session's own closed date |
+  | Lugar | `Venue.displayName`, or blank for a Quick Session |
+  | Evento | Event type (`events.md`'s 6-item enum), or blank for a Quick Session |
+  | Sesión | "Día N" or "Sesión rápida" — §3.7's own existing header vocabulary, unchanged |
+  | Vendedor | §3.4a's role-derivation ("Tú"/"Alguien de tu equipo"), see §2 |
+  | Producto | Product name |
+  | Cantidad | count of `SaleItem` rows for this `(Sale, Product)` pair |
+  | Precio | the shared, already-resolved `pricePaid` for this `(Sale, Product)` pair (D33) |
+  | Sale ID | repeated across every row belonging to the same Sale |
+
+  This directly answers both of the Product Owner's own two proposed
+  shapes at once — an Event/day/total/salesperson summary, and a
+  product-level export with repeated Sale IDs — rather than picking one:
+  every column from the first is present (Lugar/Evento/Sesión/Vendedor,
+  and a day's or Event's own total is a straightforward pivot/sum over
+  Fecha/Lugar in any spreadsheet tool, not a separate file), and the
+  second is exactly what's exported (`product-decisions.md` Q27's own
+  2026-09-15 refinement note).
+- **"[ Descargar CSV ]" is disabled (not shown as an error) whenever the
+  picked range contains zero closed Sessions** — same restraint every
+  other empty-but-reachable state in this doc already applies (§3.10,
+  §3.13); re-enables the instant she picks a range that does contain
+  data. No separate empty-state screen is designed for this narrower
+  case — the disabled button and its own adjacent line ("No hay ventas
+  en este rango") are sufficient at this fidelity.
+- **OWNER-only, inheriting the whole tab's existing scope** (front
+  matter) — not independently re-gated. **Available at any
+  `subscriptionTier`, never gated on paid** — a placement inference, not
+  an explicit Product Owner instruction (see §8 item 12 for the full
+  reasoning).
+- Tapping "[ Descargar CSV ]" → §3.20.
+
+### 3.20 Exportar tus ventas — generando / listo
+
+```
+┌───────────────────────────────┐        ┌───────────────────────────────┐
+│      Preparando tu archivo…       │        │  ✓ Descarga lista               │
+└───────────────────────────────┘        │  ventas-2026-07-01-a-2026-07-14 │
+                                            │  .csv                            │
+                                            │      [ Listo ]                   │
+                                            └───────────────────────────────┘
+```
+
+- **Purely client-side — no new backend read.** `hydrateFromBackend`
+  already loads every historical Sale/SaleItem for this Business
+  unconditionally at app load (`architect`-confirmed, §1); this screen's
+  "Preparando tu archivo…" step is CSV-file generation and download-
+  triggering over already-loaded `AppState`, not a network fetch. No
+  near-instant/slow split is designed for this step at this fidelity —
+  unlike every network-bound resolving state elsewhere in this doc
+  family (§3.1/§3.2, §3.18), there's no server round-trip whose latency
+  could vary; this is a local computation over data already in memory.
+- **Filename encodes the picked range** (`ventas-{desde}-a-{hasta}.csv`,
+  ISO dates) — lets her recognize which export a given file is later,
+  without opening it, the same discoverability reasoning `home.md`
+  §3.8f's own receipt naming already applies.
+- **No write path anywhere in this state.** Generating and downloading a
+  file reads existing data and produces a local artifact on her device —
+  it doesn't create, update, or delete anything in `AppState` or any
+  backend table. This document's only actual write remains §3.17/§3.18
+  (§5's own claim, unaffected by this addition).
+- **Failure mode: none designed at this fidelity.** A client-side
+  Blob/download operation over data already successfully loaded has no
+  meaningful "retry" story distinct from simply tapping "[ Descargar CSV
+  ]" again from §3.19 — no dedicated error state is invented here (see
+  §11 for this named as a deliberate scope boundary).
+- "[ Listo ]" → returns to §3.19, date pickers unchanged, so she can
+  immediately export a second, different range without re-navigating
+  from the main view.
+
 ## 4. Interaction flow (summary)
 
 ```
@@ -1763,6 +1991,16 @@ Elsewhere (entry points into this tab's screens, not from the tab itself):
     directly, for the Session that just closed
   Eventos' "Ver resumen en Resultados" (events.md §3.16) → Event detail (3.8)
     directly, for that specific closed Event
+
+Main view (3.4/3.5/3.6, whenever the sales-export availability check
+resolves YES, §2):
+  tap "[ Exportar tus ventas ▸ ]" → Selector de rango (3.19)
+    → pick Desde/Hasta → tap "[ Descargar CSV ]" → Preparando (3.20)
+      → Descarga lista (3.20) → "[ Listo ]" → Selector de rango (3.19),
+        picked range unchanged
+  No load-failure branch here distinct from the whole-tab fallback (3.14)
+  — §3.19/§3.20 read only already-loaded AppState data, never a fresh
+  network fetch of their own (see §3.20's own annotation).
 ```
 
 ## 5. Screen states (enumeration)
@@ -1794,6 +2032,8 @@ Elsewhere (entry points into this tab's screens, not from the tab itself):
     paid-tier-gated live-session check can ever resolve YES (§3.3's own
     Variant B, §3.6 — never §3.4/§3.5, both Free-tier-only)
 20. Sesión en vivo — detalle (§3.4b), read-only
+21. Exportar tus ventas — selector de rango (§3.19)
+22. Exportar tus ventas — generando / listo (§3.20)
 
 **This document is no longer purely read-side** — §3.17/§3.18 introduce
 Resultados' first-ever write. Every other state in this document, including every other
@@ -1801,16 +2041,22 @@ state in this amendment (§3.15, §3.16's read-only content, both
 §3.12/§3.13 appends), remains read-only, unchanged from the posture the
 paragraph below originally described.
 
-Notably fewer states than `home.md` (23), `inventory.md` (18), or
-`events.md` (18) — Resultados has no forms, no writes, no destructive
-actions, and therefore no confirmation dialogs, no draft-preservation
-states, and no save/error pairs. It's the only one of the four tabs that is
-purely read-side. The three states added since the earlier remediation pass
-(§3.10, §3.11, and now §3.13) are all still read-only, so this remains true;
-applying Venue changed what §3.9/§3.11 group by, and resolving Q8 changed
-what §3.6/§3.12 are gated by and added §3.13 — neither changed how many
-*kinds* of interaction this tab supports. §3.4a/§3.4b, added 2026-09-15,
-are also read-only; the only write in this document remains §3.17/§3.18.
+Twenty-two states, still notably fewer than `home.md` (23), `inventory.md`
+(18), or `events.md` (18) — Resultados has no forms, no destructive
+actions, and, aside from §3.17/§3.18's single reward-confirmation write,
+no confirmation dialogs, no draft-preservation states, and no other
+save/error pairs. §3.19/§3.20, added 2026-09-15, don't change this either:
+they generate and download a local file from already-loaded data, which
+this document's own §3.20 annotation states plainly is not a write to
+`AppState` or any backend table — a "download" step, not a "save" step,
+so it's counted here alongside the tab's other read-only states, not
+alongside §3.17/§3.18's actual write. The three states added during the
+earlier remediation pass (§3.10, §3.11, and §3.13) are all still
+read-only, so this remains true; applying Venue changed what §3.9/§3.11
+group by, and resolving Q8 changed what §3.6/§3.12 are gated by and added
+§3.13 — neither changed how many *kinds* of interaction this tab
+supports. §3.4a/§3.4b, added 2026-09-15 for D68, are also read-only; the
+only write in this document remains §3.17/§3.18.
 
 ## 6. Minimum step count
 
@@ -1828,6 +2074,8 @@ are also read-only; the only write in this document remains §3.17/§3.18.
 | Ver el evento específico detrás de ese renglón | 4 (abrir pestaña → Ver más → tocar el renglón → tocar la tarjeta del evento) | Same destination and cost as reaching Event detail from Historial directly (two rows above) — the venue filter adds exactly one tap, never more. |
 | Ver el detalle de una clienta con seguimiento | 4 (abrir pestaña → Ver más [Tus clientes] → Ver más [Recompensas] → tocar la fila de la clienta) | One altitude deeper than "Tus clientes" itself, matching the same per-altitude cost §2/§6 already charge for "Rendimiento por bazar"'s own venue drill-down. |
 | Confirmar que ya le diste su recompensa a una clienta | 6 (los 4 anteriores + tocar "Confirmar recompensa entregada" + tocar "Confirmar ahora") | A consequential write deliberately requires an explicit confirm step, reusing `settings.md`'s own two-tap commit shape for every comparable Business/Customer-state change — never a bare single tap for an action with a real, atomic, hard-to-undo effect. |
+| Exportar tus ventas (rango por default) | 3 (abrir pestaña → tocar "Exportar tus ventas" → tocar "Descargar CSV") | The default Desde/Hasta range (§3.19) needs no picker interaction, so the only taps are opening the row and confirming the download — same "start from what's actually useful, not blank" reasoning that keeps this the common-case cost. |
+| Exportar tus ventas (rango elegido a mano) | 5 (abrir pestaña → tocar "Exportar tus ventas" → tocar Desde → tocar Hasta → tocar "Descargar CSV") | Two extra taps only when the default range (her full history) isn't what she wants — same "start from what's actually useful" restraint §3.19 states, so the common case stays at 3. |
 
 Resultados has no comparable hard speed requirement to Home's <3s bar
 (`company/backlog.md` #1) — same posture `inventory.md` §6 and `events.md`
@@ -1890,6 +2138,22 @@ there; no urgency is invented where none exists.
   automatic" finding: Ana might reach a threshold without the physical
   reward on hand yet, so the reset must wait for her deliberate
   confirmation, not fire the instant the counter crosses the line.
+- **The sales-export availability check (§2) reuses the identical "has
+  any Session ever closed" read step 1 already performs** — not a second,
+  separately-maintained flag.
+- **§3.19's Desde/Hasta defaults are computed once from this Business's
+  own first and most recent closed-Session dates** — never typed by Ana
+  unless she deliberately narrows the range.
+- **The exported file's `(Sale, Product)` Cantidad/Precio grouping is a
+  pure read-side aggregation over already-resolved SaleItem data** — never
+  entered or reconciled by hand.
+- **CSV generation and the download trigger are both pure client-side
+  computation over already-loaded `AppState`** — no new backend
+  capability, no server round-trip, same "capture business truth once,
+  reuse it forever" discipline this section already states for every
+  other computed value in this document.
+- **The exported filename's date-range encoding is derived automatically
+  from the picked Desde/Hasta values** — never typed by Ana.
 
 ## 8. Open questions
 
@@ -2113,6 +2377,47 @@ there; no urgency is invented where none exists.
     is a gating change only.
     **Status:** Resolved.
 
+12. **[Suggestion, not escalated as a new Q, `product-decisions.md` Q27]
+    Placing "Exportar tus ventas" (§3.19/§3.20) at any tier, rather than
+    Paid tier only, is an inference, not an explicit Product Owner
+    instruction.** The Product Owner's own request ("what about export
+    sales to excel") named no tier at all. Same shape as items 7/8 above
+    (§9's "Rendimiento por bazar" placement, Q13) at the time each was
+    raised: a plausible argument either way — every other Intelligence
+    capability this document adds beyond the free-tier baseline (§1's
+    "what should I pay attention to, going forward") is Paid-tier
+    (`decision-log.md` D27/D34, `product-decisions.md` Q28), which could
+    argue for consistency; but unlike those, an export is not a derived
+    insight — it's the free-tier data she already sees on-screen (Total
+    histórico, Historial, Session/Event detail, all free-tier per §1),
+    just handed to her in a different format. Reasoned to placement at
+    any tier on that basis: §3.19/§3.20 introduce no new computed signal,
+    no segmentation, no cross-Session/cross-device read beyond what §1's
+    free-tier baseline already grants — only a different output shape
+    (a file) for data she can already see. Flagging for Architect/Product
+    visibility rather than treating it as settled, the same posture item
+    7 already takes toward its own inference.
+
+13. **[Suggestion, not escalated as a new Q] "Vendedor" on the exported
+    file (§3.19) reuses §3.4a's role-only disclosure ("Tú"/"Alguien de tu
+    equipo"), inheriting the same known gap named in item 10 above, now in
+    a genuinely different consumption context.** §3.4a is a live, in-app
+    read Ana glances at once; an exported file is a durable artifact she
+    may hand to an accountant, or open weeks later, where "Alguien de tu
+    equipo" for every SELLER-attributed row may read as less useful than
+    it does in the live card context — an accounting use case implicitly
+    wants to know *which* team member made each sale. Considered inventing
+    a scoped export-only name field instead, and rejected it: no `User`
+    display-name field exists anywhere in the domain model (item 10, this
+    section; `settings.md` §2.7/§11), and inventing one silently for this
+    export alone would create a second, undocumented identity surface
+    diverging from §3.4a's own already-disclosed limit, worse than
+    disclosing the same honest limit twice. §3.19's own bullet carries an
+    explicit on-screen disclosure of this limit specifically because the
+    accounting-artifact context makes the gap more consequential here than
+    in §3.4a's glance-only context — not a new gap, the same one stated
+    more prominently where it matters more.
+
 ## 9. Principle justification
 
 **global-principles.md:**
@@ -2172,6 +2477,15 @@ there; no urgency is invented where none exists.
 - *"Selling is a state, not a navigation destination"* — "Vendiendo
   ahorita" (§3.4a/§3.4b) is genuinely read-only; no tap anywhere resumes,
   enters, or closes a Session from Resultados.
+- *"Capture business truth once, reuse it forever"*, applied to the
+  sales export (§3.19/§3.20, `product-decisions.md` Q27) — the exported
+  file computes nothing new: `(Sale, Product)` grouping, `pricePaid`
+  (D33), Session dates, and §3.4a's role-derivation are all values this
+  document already computes elsewhere, read once more into a different
+  output shape rather than re-derived. *"The fastest interaction is the
+  one that never happens"* — §3.19's Desde/Hasta default to her full
+  history, so the common case (§6's "rango por default" row) needs no
+  picker interaction at all before downloading.
 
 **architecture-principles.md:**
 - *#1 (capabilities resolved once, upstream)* — `subscriptionTier` gates
@@ -2224,6 +2538,12 @@ there; no urgency is invented where none exists.
   Intelligence-reads-Selling edge already established for every other
   figure in this document, no new bounded-context edge, no
   ubiquitous-language redefinition.
+- *#6 (one-way dependency direction), applied to the sales export
+  (`product-decisions.md` Q27)* — `architect`-confirmed additive: CSV
+  generation reads only already-loaded Intelligence-side `AppState` data
+  (Sale/SaleItem/Session/Event/Venue), writes nothing back to Selling or
+  any backend table, and introduces no new bounded-context edge. A local
+  file download is not a write to any aggregate this Foundation defines.
 
 **Loyalty Participation view (2026-08-08 amendment) — additional principle grounding:**
 - *global-principles.md, "Never ask twice"* — `ageRange`/`gender`, once
@@ -2364,6 +2684,15 @@ there; no urgency is invented where none exists.
   clientes" (§8 item 11). A Free-tier merchant sees nothing; the section
   simply never renders. **[see
   reports.changelog.md#decisions-vendiendo-ahorita-added]**
+- **"Exportar tus ventas" (§3.19/§3.20) added — a single combined CSV
+  export, one row per `(Sale, Product)` pair, Sale ID repeated across a
+  multi-item Sale's own rows** (`product-decisions.md` Q27, Product
+  Owner-requested), reachable from every main-view state whenever ≥1
+  Session has ever closed for this Business. Chosen as a strict superset
+  of the Product Owner's own two proposed shapes rather than picking one
+  (§3.19's own bullet). Available at any `subscriptionTier` — a placement
+  inference, not an explicit instruction (§8 item 12). **[see
+  reports.changelog.md#decisions-export-sales-date-range-q27]**
 
 ## 11. Future considerations
 
@@ -2391,8 +2720,11 @@ there; no urgency is invented where none exists.
 - A time-range filter (e.g., "este mes" vs. "todo el tiempo") for the
   Historial list — not designed now, no journey calls for it yet; matches
   `inventory.md`/`events.md`'s own deferral pattern for list-scale concerns.
-- Exporting or sharing a summary (e.g., end-of-day totals to send herself
-  or a supplier) — not designed, no validated need yet.
+- ~~Exporting or sharing a summary (e.g., end-of-day totals to send
+  herself or a supplier) — not designed, no validated need yet.~~
+  **Superseded 2026-09-15 (`product-decisions.md` Q27, Product
+  Owner-requested):** this is now a real, fully-specified feature — see
+  §3.19/§3.20, "Exportar tus ventas."
 - If Architect ever resolves what `reviewed` is for (§8 item 3), revisit
   whether an unread-style indicator belongs in Historial after all.
 - If Ana never adopts Eventos at all, "Rendimiento por bazar" (§3.10's
@@ -2439,3 +2771,24 @@ there; no urgency is invented where none exists.
 - **Per-SELLER display name** in "Vendiendo ahorita" — blocked on the same
   `settings.md` §2.7/§11 Foundation gap (no `User` name field exists
   today); revisit together.
+- **A real Vendedor name on the exported file (§3.19)** — blocked on the
+  identical `settings.md` §2.7/§11 Foundation gap named above, now
+  additionally motivated by the export's own accounting-artifact use case
+  (§8 item 13). Revisit together with "Vendiendo ahorita"'s own version of
+  the same gap, not as a separate fix.
+- **A custom report builder, scheduled/automatic exports, or an export
+  format beyond CSV** — explicitly out of scope by the Product Owner's own
+  instruction (front matter's "Out of scope" list, `product-decisions.md`
+  Q27's 2026-09-15 refinement note: "not more than that").
+- **Per-Event or per-salesperson-only export variants**, considered and
+  explicitly not designed — §3.19's single combined line-item file is a
+  strict superset any spreadsheet tool can already pivot up to either
+  shape, so a second, narrower file format would duplicate rather than
+  add capability (`product-decisions.md` Q27's own 2026-09-15 refinement
+  note).
+- **A "por rango" filter reused between Historial's own list (§2) and
+  §3.19's export picker** — not designed now; §3.19's Desde/Hasta exist
+  only to scope the export, and Historial has no comparable filter today
+  (§11's own earlier "time-range filter for the Historial list" item,
+  above). Worth revisiting together if that earlier item is ever picked
+  up, rather than building two independent date-range mechanisms.
