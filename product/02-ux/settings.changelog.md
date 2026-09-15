@@ -441,3 +441,47 @@ Original text, before this correction:
 > - **"Entendido" is the one tap this screen offers — not a navigation, a close (`brand-guardian` finding, remediated 2026-09-07).** The original draft rendered this screen with zero tappable affordance at all, leaving her no way to signal she'd seen the message — a real violation of `character-bible.md`'s "Things Nahui always does": "gives her an honest way out of anything — no dead ends, no forced commitments." The fix stays inside this screen's own, already-correct restraint about navigation: every ordinary destination (nav bar, header, back arrow) is still correctly withheld, since every one of them reads Business-scoped data this Membership has no standing reason to browse. "Entendido" doesn't reach any of them — it closes/exits the app instead, letting her end the moment on her own terms rather than being stuck staring at an unacknowledgeable message. If she reopens Nahui afterward, Home's resolution (`home.md` §2 step 0) shows this identical screen again, unchanged — a stable, repeatable terminal state, now with an honest way to step away from it each time it's reached.
 
 Corrected to describe the mechanism as an acknowledgment (visible confirmation + an honest "close this tab yourself" instruction) rather than a claimed app-close — see the current §3.14 text and §5 item 17a for the live version.
+
+### status-2026-09-15-displayname-capture
+**Amended 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29 —
+`User.displayName`):** full reasoning lives inline at
+`onboarding.changelog.md#status-2026-09-15-displayname-capture` — this
+entry records this document's own share of the same amendment.
+
+"Tu cuenta" (§2.5/§3.3a/§3.6) gains "Tu nombre" — a plain, editable
+field, showing `User.displayName` if set or "Agregar tu nombre" if not,
+present identically across all four "Tu cuenta" sites (Free-tier,
+Paid-tier, Paid-tier `nfc`-mirror, §3.6's pending-change state),
+regardless of role or `subscriptionTier`. New §3.3b: a small edit sheet
+reusing `inventory.md` §3.4a/§3.4b's exact dimmed-backdrop,
+pre-filled-field, Cancelar/Guardar shape — no new interaction pattern.
+Clearing the field and saving writes `null` (removes the name); no
+separate "Quitar" control, since a plain text field's own empty state
+already serves that purpose.
+
+**Deliberately the SELLER's only capture surface — not added to
+`authentication.md`'s Invitation-acceptance flow.** §3.10c ("Invitación
+aceptada — bienvenida") is a single, already brand-reviewed, one-tap
+celebration screen; `User.displayName` is optional and nothing at
+acceptance-time needs it — its only consumers (`reports.md`
+§3.4a/§3.19, this document's own "Tu equipo") are things the *OWNER*
+looks at, later, not the newly-accepted SELLER in that moment. Adding a
+field there would violate "the fastest interaction is the one that
+never happens" for a fact that isn't on that flow's own critical path.
+
+**§2.7's "Row display" paragraph corrected**, from naming the
+identification gap as unsolved to stating the resolved resolution order:
+`User.displayName` → phone (if the User verified by phone) → "Alguien de
+tu equipo" (the final, honest fallback, reused from `reports.md`
+§3.4a/§3.19). §3.11's wireframe and row-state bullets updated to match.
+§8 item 10 gets a closing note (unaffected by whether that item's own
+acceptance-flow rework ever lands); §9 gains two new principle
+citations; §10 gains a new decision bullet; §11's two related bullets
+(a merchant-visible display name; the phone-display gap) are marked
+Resolved via strikethrough, per this document's own non-deletion
+convention.
+
+Companion amendments the same night, same underlying decision:
+`onboarding.md` (OWNER capture, folded into "Tu negocio") and
+`reports.md` ("Vendiendo ahorita" and "Exportar tus ventas" both
+resolving identity through it).

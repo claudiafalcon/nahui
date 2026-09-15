@@ -12,6 +12,8 @@ Scope: the first-run flow that precedes all four top-level nav items (`Hoy`, `In
 
 **Amended 2026-09-06 (`product/02-ux/product-decisions.md` Q23, Product Owner decision — optional `Product.photo`):** §2.2a's "Define lo que vendes" step gains a fourth, fully optional field per Selling-Group row — a photo, captured or skipped with zero required taps, reusing `Business.logo`'s own device-upload/inline-failure composition (§2.2b/§3.9). `ux-critic` found 2 Major (Catalog-row tap-target disambiguation, a missing render-time-failure fallback — both scoped to `inventory.md`/`home.md`, not this document) + 5 Minor, all remediated in one round; verification pass found 2 further trivial Minor (both closed directly by Main) — `ux-critic` clean. `reviewer` found 1 Important (missing `decision-log.md` D54 entry for `Product.photo`, closed) + 1 Suggestion (this section's optional-fields enumeration, addressed). Folded back into Approved. **[see onboarding.changelog.md#status-2026-09-06-q23-product-photo]**
 
+**Further amended 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29 — `User.displayName`):** "Tu negocio" (§2.2b/§3.9/§3.9a) gains one new, fully optional field — "¿Cómo te llamas?" — capturing the OWNER's own person-level `User.displayName` alongside the existing `Business.name`/`logo`/`description` capture, on both real paths, never on the demo path. A second, independently-sequenced, best-effort write (§3.10), never gating "Continuar" and never blocking progression on failure — a deliberate asymmetry from `Business.name`'s required, all-or-nothing write, reasoned in §2.2b. **[see onboarding.changelog.md#status-2026-09-15-displayname-capture]**
+
 Resolves, within this document's own design scope per D19: the exact number of Onboarding paths, their precise copy, and the flow's exact screen sequence — none of that was decided upstream; it's the actual design task here.
 
 **Out of scope, by explicit instruction — flagged rather than designed around:**
@@ -89,8 +91,9 @@ Evaluated automatically, on every app open, before anything else:
    "Tu negocio" screen, had typed a name or selected a logo but hadn't
    tapped "Continuar," or a "Continuar" attempt failed, §3.10a)?
      → YES: resume exactly at that step, with whatever she'd already
-       typed (Nombre, Descripción) and whatever logo she'd already
-       selected intact — never re-run §3.5's write, and never advance her
+       typed (Nombre, ¿Cómo te llamas?, Descripción) and whatever logo
+       she'd already selected intact — never re-run §3.5's write, and
+       never advance her
        into "Define lo que vendes" with an unresolved identity. Does not
        apply to "Ver un ejemplo," which never reaches this step at all
        (§2.2b).
@@ -161,10 +164,11 @@ Resolves the Product Owner's decision (2026-08-08): capture an existing business
 
 **Explicitly "bring an existing identity in," not "create one."** The Product Owner's own framing, carried through directly into this step's design: no logo generation, no design/branding tooling, no color picker, no cropping/editing — a bare device-upload-or-skip affordance for a logo she may already have, nothing invented beyond that. A merchant with no digital logo ready is not a lesser or incomplete case this step tries to fix; see below.
 
-**`Business.name` is required, `Business.logo` and `Business.description` are both fully optional — three fields, three different treatments, reasoned individually:**
+**`Business.name` is required; `Business.logo`, `Business.description`, and — added 2026-09-15, `decision-log.md` D69 — the OWNER's own `User.displayName` are all fully optional — four fields across two aggregates, each reasoned individually:**
 - **`Business.name` — required, no honest default, same shape as `Product.defaultPrice`'s own required-no-default treatment (`decision-log.md` D33).** A Business's identity can't be said to be captured at all if the one field that actually identifies it to a customer is blank — and unlike a logo or a slogan, there is no honest fallback for a name (a blank name isn't a lesser but valid state, it's an unset required field). "Continuar" is gated on it, exactly as Producto/Precio gate §3.5b's own "Continuar."
 - **`Business.logo` — optional, and deliberately designed as a fully first-class path, not a lesser one.** Most merchants likely don't have a digital logo ready — this is the expected common case, not an edge case to route around. No separate "skip" tap is required to bypass it: leaving it untouched and tapping "Continuar" is the entire mechanism, identical in kind to how any other optional field in this product works. There is no visual or copy treatment anywhere on this screen that marks the no-logo path as incomplete, discouraged, or provisional.
 - **`Business.description` — optional, same "no skip tap needed" treatment as the logo,** captured because the Product Owner's decision named it explicitly, but not consumed by any downstream resolution logic this document or its siblings define today — stored only, the same "structurally present, not yet read" posture `decision-log.md` D9 established for Supplier, minus that entry's stricter "completely invisible" requirement, since this field does have a real, merchant-facing capture point right here.
+- **`User.displayName` — optional, added 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29), same "no skip tap needed" treatment as Logo/Descripción, but a genuinely different fact from the other three: it's person-level, not `Business`-level** (`User`, Identity context — the same field a SELLER later sets self-service via `settings.md` §2.5 "Tu cuenta," never a separate OWNER-specific/SELLER-specific field, per D69's own ruling). Captured here because Onboarding is the one moment in her relationship with the app where she has time to think, the same "capture business truth once, reuse it forever" reasoning §2.2b already applies to Business identity, extended here to person-level truth. **Deliberately not labeled "Tu nombre"** — that phrase is already committed on this exact screen to mean `Business.name` (the intro paragraph above, quoted verbatim in §9); reusing it for a different field on the same screen would create a real, avoidable ambiguity. Labeled instead as a direct, personal question — "¿Cómo te llamas?" — which also reads as unmistakably distinct from "Nombre de tu negocio" immediately above it. **Written by a second, independently-sequenced write, not folded into §3.10's atomic Business write** — `User` and `Business` are different aggregates (`architecture-principles.md`'s "one transaction per aggregate instance," the same boundary reasoning `product-decisions.md` Q24/Q25's reallocation design already applies); see §3.10 for the write sequencing and its deliberately non-blocking failure behavior.
 
 **Not required for "Ver un ejemplo."** The demo path's seeded Business already carries a seeded identity by construction (§2.2, §11) — this step never appears on that path, the same treatment §2.2a's Catalog step already gets.
 
@@ -498,7 +502,7 @@ The demo path's one deliberate pause point, mirroring the pause the NFC path alr
 
 ### 3.7 Retomar onboarding interrumpido
 
-No new wireframe — reaching any screen in §3.3 through §3.10a a second time (after the app was closed, backgrounded, or crashed mid-flow) renders it **pixel-identical** to the state described above, with whatever she'd already entered still present (the "Activar plan de pago" confirmation screen, §3.4, re-shows itself identically if she was interrupted there before tapping "Confirmar y activar" — there's no typed data to preserve, just a bare confirm tap not yet taken; the demo path's confirmation screen, §3.4c, re-shows itself identically if she was interrupted there before choosing either option; a path already tapped but not yet confirmed by a completed write is re-resumed at that exact step); the "Tu negocio" identity-capture step (§3.9/§3.9a, real paths only) re-shows itself identically, with whatever Nombre/Descripción she'd already typed and whatever logo she'd already selected intact; the "Define lo que vendes" step (§3.5b/§3.5c, real paths only) re-shows itself identically, with every already-committed Selling Group (including any Foto attached to it, `product-decisions.md` Q23) and whatever she'd typed or selected into the still-active row — Producto, Precio, Cantidad, and Foto alike — intact — the identical draft-preservation guarantee `inventory.md` §3.7 already makes for its own in-progress Registrar Mercancía form. Same guarantee `home.md` §3.13 and `inventory.md` §3.7 already make for their own in-progress work — *global-principles.md*, "never ask twice." She is never asked "were you still setting up?" and never restarted from §3.3 once she's made real progress past it.
+No new wireframe — reaching any screen in §3.3 through §3.10a a second time (after the app was closed, backgrounded, or crashed mid-flow) renders it **pixel-identical** to the state described above, with whatever she'd already entered still present (the "Activar plan de pago" confirmation screen, §3.4, re-shows itself identically if she was interrupted there before tapping "Confirmar y activar" — there's no typed data to preserve, just a bare confirm tap not yet taken; the demo path's confirmation screen, §3.4c, re-shows itself identically if she was interrupted there before choosing either option; a path already tapped but not yet confirmed by a completed write is re-resumed at that exact step); the "Tu negocio" identity-capture step (§3.9/§3.9a, real paths only) re-shows itself identically, with whatever Nombre/Descripción she'd already typed, whatever she'd typed into "¿Cómo te llamas?," and whatever logo she'd already selected intact; the "Define lo que vendes" step (§3.5b/§3.5c, real paths only) re-shows itself identically, with every already-committed Selling Group (including any Foto attached to it, `product-decisions.md` Q23) and whatever she'd typed or selected into the still-active row — Producto, Precio, Cantidad, and Foto alike — intact — the identical draft-preservation guarantee `inventory.md` §3.7 already makes for its own in-progress Registrar Mercancía form. Same guarantee `home.md` §3.13 and `inventory.md` §3.7 already make for their own in-progress work — *global-principles.md*, "never ask twice." She is never asked "were you still setting up?" and never restarted from §3.3 once she's made real progress past it.
 
 **This same guarantee extends past §3.5, through §3.6 — deliberately, not by oversight (see §2.1, case 2).** Onboarding's capabilities being written (§3.5's write succeeding) is necessary but not sufficient for "complete" to mean "never shown again." If she's interrupted while a "Todo listo" variant (§3.6) is on screen — a phone call, backgrounding, an OS kill, all routine events, not edge cases — the next app open resumes at that exact same variant (recomputed from her already-stored path/capabilities, never re-triggering §3.5's write a second time) rather than silently marking Onboarding complete and skipping straight to Home. This is the one narrowing of D13's "complete" in the whole document, and it exists for a specific reason: §3.6 is this document's own argument for why one deliberate beat of ceremony is warranted at all — an interruption shouldn't be allowed to silently cost her the one screen this document treats as worth having.
 
@@ -524,6 +528,12 @@ No new wireframe — reaching any screen in §3.3 through §3.10a a second time 
 │                                │
 │ Nombre de tu negocio             │
 │  [ Escribe el nombre… ]          │
+│                                │
+│ ¿Cómo te llamas? (opcional)      │  new — see §2.2b, added 2026-09-15
+│  [ Escribe tu nombre… ]          │
+│  Así te reconocen en Resultados   │
+│  y en Tu equipo — nunca en tu     │
+│  recibo.                          │
 │                                │
 │ Logo (opcional)                  │
 │  [ Subir logo ]                  │
@@ -565,6 +575,14 @@ No new wireframe — reaching any screen in §3.3 through §3.10a a second time 
   that makes the no-logo path fully first-class: the majority-case
   merchant who has no digital logo ready sees a screen with nothing
   urging her to go find one.
+- **"¿Cómo te llamas?" (added 2026-09-15, `decision-log.md` D69) never
+  gates "Continuar" either — the same zero-required-tap treatment as
+  Logo/Descripción.** Not part of the live preview at §3.9b: the preview
+  reflects only what the real Digital Receipt renders (`home.md` §3.8f —
+  `Business.name`/`Business.logo`), and a personal name never appears on
+  a customer-facing receipt, so extending §3.9b's preview to this field
+  would teach her something false about what her customer sees. No
+  change to §3.9b's own five states.
 - **The intro line's claim is scoped to exactly what it's true of — Nombre
   and Logo, not Descripción — corrected 2026-08-08.** An earlier draft's
   intro ("Esto es lo que tus clientes van a ver en tu recibo digital,"
@@ -630,6 +648,12 @@ No new wireframe — reaching any screen in §3.3 through §3.10a a second time 
 │ Nombre de tu negocio             │
 │  [ Luna Mercado                ]     │
 │                                │
+│ ¿Cómo te llamas? (opcional)      │
+│  [ Escribe tu nombre… ]          │
+│  Así te reconocen en Resultados   │
+│  y en Tu equipo — nunca en tu     │
+│  recibo.                          │
+│                                │
 │ Logo (opcional)                  │
 │  ┌────┐                          │
 │  │IMG │   [ Cambiar ]  [ Quitar ]│
@@ -676,6 +700,10 @@ No new wireframe — reaching any screen in §3.3 through §3.10a a second time 
   selected file can't be shown — the current preview stays on screen
   unchanged in that case, since nothing about the already-working
   selection is touched by a failed replacement attempt.
+- **"¿Cómo te llamas?" carries over unchanged on this rendering, exactly
+  like Nombre/Descripción, added 2026-09-15 (`decision-log.md` D69)** —
+  selecting a logo affects only the Logo field group and the preview box;
+  the personal-name field and its caption are unaffected.
 - **Intro subtext drops "Trae tu logo si ya tienes uno — no es
   necesario," corrected 2026-08-08.** §3.9's clause asks her to bring a
   logo she's already brought — repeating it here would be telling her to
@@ -913,6 +941,19 @@ to persist, nothing new that can be lost.
   reused unchanged on every retry of that same attempt.
 - On success, routes directly to §3.5b — "Define lo que vendes" — never
   back to §3.9, never to §3.6.
+- **A second, independently-sequenced write, added 2026-09-15
+  (`decision-log.md` D69).** If she typed anything into "¿Cómo te
+  llamas?," a second write updates `User.displayName` immediately after
+  this write succeeds, sharing this same near-instant/slow rendering — no
+  separate screen, no separate tap. This is deliberately *not* covered by
+  the atomicity guarantee above: `User` and `Business` are different
+  aggregates, and unlike `Business.name`/`logo`/`description`, a failure
+  of this second write is **never shown to her and never blocks
+  progression** to §3.5b. `User.displayName` is optional and low-stakes,
+  with an always-available self-service correction path (`settings.md`
+  §2.5, "Tu cuenta") — the required, receipt-facing guarantee above
+  exists to protect a fact that has neither property. If she typed
+  nothing into the field, no second write is attempted at all.
 
 ### 3.10a Guardando tu negocio — error
 ```
@@ -930,7 +971,10 @@ to persist, nothing new that can be lost.
   the same already-typed Nombre, already-selected Logo, and already-typed
   Descripción, never asks her to redo any of it. Same guarantee §3.5e
   makes for a failed "Guardar lo que vendes," and `inventory.md` §3.11
-  makes for a failed Guardar mercancía.
+  makes for a failed Guardar mercancía. Retrying also replays whatever
+  she'd typed into "¿Cómo te llamas?," and the deferred `User.displayName`
+  write (§3.10) is re-attempted as part of the same retry, on the same
+  non-blocking terms.
 - **Illustrative Descripción value added to the wireframe, corrected
   2026-08-08 — a mockup-completeness fix, not a change in guarantee.**
   The prose above already committed to Descripción surviving a failed
@@ -966,8 +1010,8 @@ From §3.3, tap a path:
   Empezar gratis
     → creando tu negocio (3.5) → error (3.5a) → Reintentar
     → success → Tu negocio (3.9/3.9a, now rendering a live, non-interactive
-        preview of Nombre/Logo per §3.9b — no new destination, nothing
-        tappable) → Continuar
+        preview of Nombre/Logo per §3.9b, plus the optional "¿Cómo te
+        llamas?" field, D69 — no new destination, nothing tappable) → Continuar
         → guardando (3.10) → error (3.10a) → Reintentar
         → success → Define lo que vendes (3.5b/3.5c) → Continuar
             → guardando (3.5d) → error (3.5e) → Reintentar
@@ -984,8 +1028,8 @@ From §3.3, tap a path:
         → "Mejor quiero empezar gratis" → back to 3.3, nothing written
         → tap "Confirmar y activar" → creando tu negocio (3.5) → error (3.5a) → Reintentar
     → success → Tu negocio (3.9/3.9a, now rendering a live, non-interactive
-        preview of Nombre/Logo per §3.9b — no new destination, nothing
-        tappable) → Continuar
+        preview of Nombre/Logo per §3.9b, plus the optional "¿Cómo te
+        llamas?" field, D69 — no new destination, nothing tappable) → Continuar
         → guardando (3.10) → error (3.10a) → Reintentar
         → success → Define lo que vendes (3.5b/3.5c) → Continuar
             → guardando (3.5d) → error (3.5e) → Reintentar
@@ -1055,6 +1099,8 @@ backgrounding, force-close):
 
 Every scenario's floor is dominated entirely by the information that scenario genuinely requires — an explicit confirmation for the one path (Activar plan de pago) with a real commitment behind it, and, for both real paths, her business name (§2.2b) plus at least one named Selling Group with a price (§2.2a) — Cantidad, added 2026-09-04 per `product-decisions.md` Q20, is real, required information too, but carries an honest default (1) the other two facts don't have, so it adds zero taps to the floor rather than a fourth undefaultable fact. None of the three paths carries a single tap that exists only for ceremony, except two deliberate exceptions: the milestone screen (§3.6), which is itself skippable via auto-continue, and the demo path's one confirmation tap (§3.4c), which is deliberately *not* skippable — because the fact it discloses has to be seen, not skimmed past, before an irreversible write.
 
+`User.displayName` capture (added 2026-09-15, D69) adds zero taps to either real path's floor, for the identical reason Logo/Descripción already do — fully optional, no skip action required.
+
 ## 7. Automation opportunities
 
 - Whether Onboarding shows at all — resolved silently on every app open (§2.1); never a manual "skip onboarding" she has to find or a setting she has to remember she already changed.
@@ -1067,6 +1113,7 @@ Every scenario's floor is dominated entirely by the information that scenario ge
 - **Deliberate exception, not an oversight:** the demo path's confirmation step (§3.4c) is added on purpose, going against this document's own automation bias. Every other reducible tap in this document is removed (§6); this one is added, because automating it away would hide, rather than surface, the one fact that has to reach her before an irreversible write.
 - Define lo que vendes (§2.2a/§3.5b–§3.5e) is deliberately not automated away either, for the identical reason `inventory.md` §3.8a already established: Producto/Precio have no honest guessable default, so the entry itself can't be removed — what is automated is the matching rule (case-insensitive, trimmed, never re-asking about a Selling Group already committed) and the reuse of Inventory's own Lot-commit write path (widened 2026-09-04, `product-decisions.md` Q20, from a Product-only write) rather than a second, parallel mechanism. **Cantidad, added by that same amendment, is the one fact on this screen that is automated away as far as it honestly can be** — it defaults to 1, the same default `inventory.md`'s own Cantidad field already established (INV-Q1), rather than being asked as a bare, unguessable question the way Producto/Precio must be.
 - **Tu negocio's identity capture (§2.2b/§3.9–§3.10a) is deliberately not automated away for `Business.name` either, for the identical reason** — no honest guessable default exists for a business's own name. What *is* automated, and deliberately not asked as separate questions: `Business.logo` and `Business.description` never gate progress and never require an explicit skip action — leaving them blank costs zero taps, the closest this document gets to actually automating an optional field away entirely.
+- **`User.displayName`, added 2026-09-15 (`decision-log.md` D69), is automated away as far as it honestly can be** — no honest guessable default for a person's name exists (same reasoning as `Business.name`), so it's never defaulted, but it's also never required: leaving it blank costs zero taps, the identical treatment `Business.logo`/`Business.description` already get.
 
 ## 8. Open questions
 
@@ -1080,6 +1127,7 @@ None of the items below block this document's completion or require inventing a 
 6. **Validation recommendation (not a Foundation ambiguity), added 2026-08-08 alongside §2.2b:** whether "Tu negocio" reads clearly as an invitation to bring in something she already has, rather than as a request to build a brand identity from scratch — the copy and design are reasoned explicitly toward the former (§2.2b), but haven't been checked against a real merchant's first reaction. Same evidence-driven caution as items 1 and 5.
 7. **Validation recommendation (not a Foundation ambiguity), added 2026-08-15 alongside §3.9b:** whether the new live preview reads clearly as a preview of what's about to be saved, rather than as confirmation that it already has been — the placement (below the fold, before "Continuar") and framing (plain caption, no receipt-styled chrome, no confirmation iconography) are reasoned explicitly toward avoiding that misread, but haven't been checked against a real merchant's first reaction. Same evidence-driven caution as items 1, 5, and 6.
 8. **Validation recommendation (not a Foundation ambiguity), added 2026-08-15 alongside `ux-critic`'s Major finding on §3.9b's placement:** whether a merchant who scrolls through "Tu negocio" in one continuous, uninterrupted gesture actually registers the live preview along the way, versus scrolling straight past a passive, non-interactive box she wasn't looking for. §3.9b's own placement reasoning establishes that "Continuar" sits below the fold — and the preview is therefore genuinely on-screen at some point during any real scroll to reach it — in every real combination of filled/unfilled optional fields, including the dominant no-logo path; what it can't establish from layout reasoning alone is whether she consciously notices it during a fast flick rather than a paused, deliberate scroll. Same evidence-driven caution as items 1, 5, 6, and 7.
+9. **Validation recommendation (not a Foundation ambiguity), added 2026-09-15 alongside D69's "¿Cómo te llamas?" field.** Whether the new field reads clearly as a *personal* name, genuinely distinct from "Nombre de tu negocio" directly above it — the label ("¿Cómo te llamas?," not "Tu nombre") and caption are reasoned explicitly toward avoiding that collision (§2.2b), but haven't been checked against a real merchant's first reaction. Same evidence-driven caution as items 1, 5, 6, 7, and 8.
 
 ## 9. Principle justification
 
@@ -1094,12 +1142,13 @@ None of the items below block this document's completion or require inventing a 
 - *"Capture business truth once, reuse it forever"* — her single first-run choice ("Empezar gratis," "Activar plan de pago," or "Ver un ejemplo") is captured exactly once and never re-asked on a retried creation failure (§3.5a); the demo path's confirmation (§3.4c) is likewise never re-asked on a retry. `nfc`'s own truth — whether it's available at all — is never captured here in the first place, deliberately: it's derived fresh from `subscriptionTier` wherever it's read (`decision-log.md` D27), so there is no second copy of that fact for this document, or any other, to keep in sync.
 - *"The best interface stays out of the merchant's way"* — a failed Business-creation write never drops an already-chosen path or an already-confirmed demo screen (§3.5a); "Mejor quiero registrar mi negocio real" is a real, always-available escape hatch, never a dead end (§3.4c).
 - *"Capture business truth once, reuse it forever"* — her business identity (`Business.name`, optional logo/description) is captured exactly once, here, at the one point in her relationship with the app where she has time to think about it rather than a customer standing in front of her, and is reused wherever each field is actually needed downstream (`Business.name`/`Business.logo` — `home.md` §3.8f's Digital Receipt; `Business.description` stored only, not yet consumed anywhere) without ever being asked again (§2.2b).
+- *"Capture business truth once, reuse it forever"* — extended 2026-09-15 (`decision-log.md` D69) to person-level truth: her own name is captured once, here (or, for a SELLER, self-service via `settings.md` §2.5), and reused wherever `User.displayName` resolves downstream (`reports.md` §3.4a/§3.19, `settings.md`'s "Tu equipo") without ever being asked again.
 
 **architecture-principles.md:**
 - *#1 (capabilities resolved once, upstream, never asked mid-flow)* — Onboarding is the highest possible point this principle can apply to: `registrationMode`, `defaultSellingMode`, and `subscriptionTier` are all set once, before any tab, Session, or Sale exists, and never re-asked anywhere in `home.md`, `inventory.md`, `events.md`, or `reports.md` (§2.2, §2.3).
 - *#4 (internal-only entities never leak into user-facing language)* — no domain term (Business, Capability, Selling Mode Capability, Session Operating Mode) ever appears in merchant-facing copy, including error and confirmation states.
 - *#6 (one-way dependency direction)* — Onboarding never fabricates a live, already-open Session for any path, including the demo (§2.4) — the demo's seed generation writes historical Inventory/Selling data through those contexts' own paths, a distinct concern from inventing active selling state on Ana's behalf.
-- *#7 (idempotency for client-facing writes)* — doesn't engage for the new live preview: it triggers no write of any kind, only a local re-render of already-entered field values; the real write stays exactly where it already was, at §3.10, gated on "Continuar" (§3.9b, added 2026-08-15).
+- *#7 (idempotency for client-facing writes)* — doesn't engage for the new live preview: it triggers no write of any kind, only a local re-render of already-entered field values; the real write stays exactly where it already was, at §3.10, gated on "Continuar" (§3.9b, added 2026-08-15). The new `User.displayName` write (§3.10, added 2026-09-15) carries its own independent idempotency key, the same D30 discipline every other write in this document already follows; its non-blocking failure behavior is a UX decision (§2.2b/§3.10), not an idempotency exception.
 
 **brand-guide.md:**
 - *Tone — "warm, direct, respects the vendor's intelligence"* — §3.4c states plainly, before any commitment, that the demo write is permanent and can't become her real business later; treating her as someone who can handle that fact upfront, rather than only letting her discover it after an irreversible tap, is what "respects the vendor's intelligence" means in practice here, not just as a slogan.
@@ -1125,6 +1174,7 @@ None of the items below block this document's completion or require inventing a 
 - **A shared "Creando tu negocio" write state (§3.5) covers all three paths**, including the demo's data-seeding. **[see onboarding.changelog.md#decisions-shared-creando-negocio-write-state]**
 - **No demo-to-real conversion mechanic is designed** — a direct, explicit application of `decision-log.md` D19's own stated contingency, not a gap this document overlooked (§11).
 - **Todo listo's CTA is "Entrar," not "Empezar," uniformly across all three variants (§3.6)** — distinct from §3.3's "Empezar gratis," which is about choosing a path, not entering the app. **[see onboarding.changelog.md#decisions-todo-listo-cta-entrar-rename]**
+- **`User.displayName` (optional) added to "Tu negocio," 2026-09-15, resolving `decision-log.md` D69/`product-decisions.md` Q29** — captured via a new, zero-required-tap "¿Cómo te llamas?" field, written by a second, independently-sequenced, non-blocking write (§3.10). Labeled to deliberately avoid colliding with this screen's existing "tu nombre" = `Business.name` usage. **[see onboarding.changelog.md#status-2026-09-15-displayname-capture]**
 - **"Define lo que vendes" (§2.2a, §3.5b–§3.5e) added 2026-08-08, Product Owner decision (`decision-log.md` D33)** — captures the merchant's initial Selling Groups (name + `defaultPrice`) as its own required step inside Onboarding, on both real paths. **[see onboarding.changelog.md#decisions-define-lo-que-vendes-added]**
 - **Required, not skippable — at least one Selling Group before "Todo listo," for both real paths, never for the demo path.** Reasoned explicitly in §2.2a. **[see onboarding.changelog.md#decisions-selling-group-required-not-skippable]**
 - **Deliberately simpler than `inventory.md`'s own two-step "Elegir producto → nuevo producto, precio inicial" shape** — one flat Producto+Precio+Cantidad row (Cantidad added 2026-09-04, `product-decisions.md` Q20) — since a first-run Catalog is guaranteed empty (§2.2a). **[see onboarding.changelog.md#decisions-flat-producto-precio-row-simpler-than-inventory]**

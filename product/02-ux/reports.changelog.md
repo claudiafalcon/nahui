@@ -670,3 +670,45 @@ client-side: no new backend capability, no new bounded-context edge, no
 write path — `hydrateFromBackend` already loads every historical Sale/
 SaleItem for the Business, so the date-range filter and CSV generation
 are both computation over data already in memory.
+
+### status-2026-09-15-d69-displayname-resolution
+**Amended 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29
+— `User.displayName`):** full reasoning lives inline at
+`onboarding.changelog.md#status-2026-09-15-displayname-capture` — this
+entry records this document's own share of the same amendment.
+
+"Vendiendo ahorita" (§3.4a) and "Exportar tus ventas" (§3.19) both
+resolve identity through `User.displayName` first now, falling back to
+the pre-existing role-only copy ("Tú"/"Alguien de tu equipo") only when
+it isn't set — a single resolution rule applied identically to both
+screens, and to OWNER and SELLER alike (D69's own framing: "Tú" was
+always the same underlying gap as "Alguien de tu equipo," not a
+separate case).
+
+**Before (§3.4a):** "Identity is role-derived, never a personal name...
+No per-SELLER display name exists to show." **After:** "Identity
+resolves through `User.displayName` first... role-derived copy only
+when it isn't set."
+
+**Before (§8 item 10):** "[New, not escalated — inherited, already-known
+Foundation gap]... Not a new question." **After:** "Resolved 2026-09-15
+(`decision-log.md` D69, `product-decisions.md` Q29)."
+
+**Before (§8 item 13):** "[Suggestion, not escalated as a new Q]
+'Vendedor'... reuses §3.4a's role-only disclosure... inheriting the same
+known gap." **After:** "Resolved 2026-09-15... the 'inventing a
+scoped export-only name field' consideration this item originally
+weighed and rejected is moot."
+
+**The concurrent-same-role-card disambiguation gap (§3.4a's own bullet,
+§8 item 10) is explicitly narrowed, not fully closed** — two concurrent
+SELLERs who have both left `displayName` unset remain genuinely
+indistinguishable when their totals coincide, honestly disclosed rather
+than silently dropped from the record. §3.19's file-content column
+table and on-screen disclosure line both corrected to describe the new,
+two-tier "Vendedor" behavior. §11's two related bullets marked Resolved
+via strikethrough, per this document's own non-deletion convention.
+
+Companion amendments the same night, same underlying decision:
+`onboarding.md` (OWNER capture) and `settings.md` (SELLER self-service
+capture/edit, plus "Tu equipo" resolving identity through it).

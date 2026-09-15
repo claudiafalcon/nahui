@@ -512,3 +512,51 @@ addressed. Folded back into Approved.
 
 Full reasoning lives inline at `status-2026-09-06-q23-product-photo`
 above — this decision was recorded there in full, not restated here.
+
+### status-2026-09-15-displayname-capture
+**Amended 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29 —
+`User.displayName`):** the Product Owner, live-testing "Tu equipo" and
+the new sales export, couldn't tell her team members apart anywhere in
+the app, and separately pointed out the OWNER herself has no captured
+name either — "Tú" only ever worked because exactly one OWNER exists per
+Business, not because her identity was ever actually recorded.
+`architect` resolved `User.displayName` as a plain additive scalar on
+`User` (optional, self-service-editable, person-level not
+Business-scoped) — no RFC trigger, the same class of change as
+D33/D36/D54/D55/D58/D65/D67.
+
+"Tu negocio" (§2.2b/§3.9/§3.9a) gains one new, fully optional field —
+"¿Cómo te llamas?" — positioned directly after "Nombre de tu negocio,"
+deliberately not labeled "Tu nombre" since that phrase already means
+`Business.name` on this exact screen (§9's own citation of the intro
+paragraph). Zero required taps, the same treatment already given to
+Logo/Descripción. Written by a second, independently-sequenced,
+best-effort write fired immediately after §3.10's own required
+`Business` write succeeds — deliberately *not* covered by that write's
+atomicity guarantee: `User` and `Business` are different aggregates, and
+a failure of this second write is never surfaced to her and never blocks
+progression, since the field is optional, low-stakes, and always
+correctable later via `settings.md` §2.5 "Tu cuenta."
+
+Not added anywhere on the SELLER path (Invitation-acceptance,
+`authentication.md` §3.10c) — reasoned explicitly in `settings.md` §2.5
+against "the fastest interaction is the one that never happens": nothing
+at acceptance-time needs the name, so asking for it there would add a
+field to an already-minimized flow for a fact that isn't on that flow's
+own critical path.
+
+§2.1 case 4, §3.7, §3.10a, and §4's interaction-flow diagram all extended
+to carry the new field through resume/retry guarantees identically to
+Nombre/Descripción. §6 (zero taps added to either real path's floor), §7
+(automated-away reasoning, same class as Logo/Descripción), §8 (new
+validation-recommendation item 9, same evidence-driven-caution posture as
+items 1/5/6/7/8), §9 (two new principle citations), §10 (new decision
+bullet) all updated to match. No new screen states — folded entirely into
+existing §3.9/§3.9a/§3.10/§3.10a.
+
+Companion amendments the same night, same underlying decision: `settings.md`
+(self-service capture/edit for a SELLER or a self-editing OWNER, plus "Tu
+equipo" now resolving identity through it) and `reports.md` ("Vendiendo
+ahorita" and "Exportar tus ventas" both resolving identity through it,
+narrowing but not fully closing the concurrent-same-role-card
+disambiguation gap).

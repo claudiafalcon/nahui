@@ -58,6 +58,8 @@ has one uniform shape across every Home state with a persistent header.
 Important findings). Folded back into Approved.
 **[see settings.changelog.md#status-2026-08-15-non-session-gear-direct-nav]**
 
+**Further amended 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29 — `User.displayName`):** "Tu cuenta" (§2.5/§3.3a/§3.6) gains a new self-service field, "Tu nombre," reusing `inventory.md` §3.4a/§3.4b's already-established dimmed-sheet edit pattern (new §3.3b) — the SELLER-path capture surface for `User.displayName`, deliberately *not* added to `authentication.md`'s Invitation-acceptance flow (reasoned in §2.5). "Tu equipo" (§2.7/§3.11) now resolves each row's identity through `User.displayName` first, falling back to the phone-number/role-only display it already had. Closes §2.7's own "Row display" gap and §11's two related Future Considerations. **[see settings.changelog.md#status-2026-09-15-displayname-capture]**
+
 Scope: `Configuración`, the merchant-facing surface for the Business Capabilities `decision-log.md` D25/D27/D40 leave merchant-self-service: `subscriptionTier` (Free ↔ Paid) — two actions (both directions), a reusable "pending change" indicator, and a way to cancel a pending change before it lands — plus `decision-log.md` D27's `defaultSellingMode` control (Botones ↔ Etiquetas NFC), constrained to whichever modes `subscriptionTier` currently makes available: **four actions total**, not six. Both `defaultSellingMode` directions use the same immediate-effect template `subscriptionTier`'s "activate" direction already uses (§2.3, §3.4) — the only real difference is that neither carries a pending-value/effective-date pair, since the field has no billing-cycle implication for D25's deferred-timing rationale to apply to, not a differently-shaped UI. `registrationMode`'s `nfc` entitlement is no longer an independently self-service-toggleable capability of its own (D27 superseded that part of D25) — it is a pure read-time derivation from `subscriptionTier = paid`, so it has no dedicated action or row here; it changes only as an automatic consequence of the `subscriptionTier` actions below. **`loyaltyEnabled` is retired outright, not merely absent from self-service scope** (`decision-log.md` D40) — there is no Business-level field left to toggle, self-service or otherwise; Frequent Customers as a whole is entitled purely by `subscriptionTier`, present in full on Paid and structurally absent on Free, with no action of Ana's own anywhere in this document or any other. **Not a fifth nav tab** — per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, Configuración hangs off the existing session-controls affordance already specified in `home.md` — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon opening a sheet, then (2026-08-14, active Session; 2026-08-15, every other Home state) replaced by a direct gear icon ("⚙") with no intermediate sheet at all (Product Owner decisions; see status header above and `home.md`'s own status header/§10 for the full reasoning) — as of 2026-08-15, this single direct shape applies uniformly across every Home state with a persistent header (§2.1). This is the last of the five merchant-facing experiences to be designed (`product/02-ux/CLAUDE.md`). Implementation-independent — low-fidelity only, no visual design. A fifth action, added 2026-08-13, sits outside this four-capability count entirely: "Cerrar sesión" (§2.5) is an Identity-context, `User`-level action (RFC 0007) — it has no Business Capability to represent, changes nothing about her plan or how she sells, and is never conditioned on `subscriptionTier` or any pending change. It's placed in its own "Tu cuenta" section, not counted among, or confused with, the four capability actions above.
 
 Out of scope by explicit instruction:
@@ -189,6 +191,12 @@ Every action in §2.2's table changes something about the Business — what she'
 
 **Her own verified phone number is now shown here too, read-only (added 2026-09-07 — see status header).** `User.phone` (`domain-model.md`), plain text, non-tappable, sitting directly above "Cerrar sesión" in "Tu cuenta" — the one place in the product she can always come back to and check which number this device is verified under, closing the exact gap a `merchant-user-tester` walk first named on 2026-08-13 (§8 item 8, then deferred) and a second, more severe walk (Slice 12) confirmed as a real defect once signing out became a routine part of the multi-Membership workflow. Never editable here — changing the verified number isn't a capability this document designs (it would mean re-running Authentication's own verification mechanism, not toggling a Business Capability).
 
+**"Tu nombre" — new, self-service, 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29).** A plain, editable text field, sitting above the phone-number line, showing `User.displayName` if set or a bracketed "Agregar tu nombre" prompt if not. Available identically regardless of role (OWNER or SELLER) or `subscriptionTier` — the same unconditional treatment "Tu cuenta" already gives phone display and "Cerrar sesión," since this is a `User`-level fact, not a Business Capability §2.2's table governs. Tapping either state opens §3.3b, a small edit sheet reusing `inventory.md` §3.4a/§3.4b's already-established dimmed-backdrop, pre-filled-field, Cancelar/Guardar pattern — not a new interaction shape.
+
+**This is the OWNER's own edit surface too, not just a SELLER's capture surface** — closes the Future Consideration `onboarding.md` §11 named ("a self-service edit surface for `Business.name`/`Business.logo`/`Business.description`... explicitly not designed here") for `User.displayName` specifically. `Business.name`/`logo`/`description` themselves remain undesigned for post-capture editing — not touched by this amendment.
+
+**Why this is the SELLER's only capture surface — not also added to `authentication.md`'s Invitation-acceptance flow, reasoned explicitly against "the fastest interaction is the one that never happens."** `authentication.md` §3.10c ("Invitación aceptada — bienvenida") is a single, already brand-reviewed, one-tap celebration screen — `tone-of-voice.md`'s own worked example for "celebration is about her, plainly stated, never inflated." `Business.name` earns a dedicated Onboarding step because it's required and a real downstream consumer (`home.md` §3.8f's receipt) reads it before she can meaningfully use the app; `User.displayName` is optional and nothing at acceptance-time needs it — its only consumers (`reports.md` §3.4a/§3.19, this section's own "Tu equipo" list) are things the *OWNER*, not the newly-accepted SELLER, looks at, later. Asking for it at acceptance would add a field to an already-minimized flow (RFC 0013/D64's entire purpose) for a fact that isn't on that flow's own critical path — the opposite of "don't ask what you don't yet need." "Tu cuenta" already exists, is already reachable the moment she's in the app, and captures the identical field a SELLER or OWNER alike ends up setting self-service regardless — one capture surface, never asked twice, rather than two competing ones.
+
 ### 2.5a What happens when the same phone re-verifies afterward (cross-document consequence, not a new destination invented here)
 
 `authentication.md §2.2` already enumerates three cases for what a confirmed code does next. Signing out and re-verifying with the same phone, on the same device, is **case 2** — "This phone was already verified on THIS device, with a Business already local to it (complete or in-progress)" — a case that document already named, but marked "Not reachable through this branch... this document never re-verifies a phone already verified on its own device," because nothing, before this action existed, ever cleared a device's session fact while leaving its local Business record intact. This action is exactly the mechanism that makes that case real for the first time — not a fourth, undesigned case, and not case 3 (a genuinely *new* device or reinstalled app with no local Business record at all — still "Not yet resolved," `product-decisions.md` Q18, untouched by this addition, since §2.5 above guarantees the local record is never cleared by signing out).
@@ -302,7 +310,7 @@ it already was (`buttons`, for every real Onboarding path, `onboarding.md`
 
 **What "Quitar" actually writes (the previously unresolved point, now settled — `product-decisions.md` Q24/Q25).** `BusinessMembership.status` flips `active → revoked` (+ `revokedAt`). **Never a delete.** Every Sale she already registered keeps resolving through `Sale.performedByMembershipId` exactly as before — same non-deletion precedent this document already applies to `subscriptionTier`/`defaultSellingMode` history (D25) and the same shape `Product.active`/`inactive` already established for a discontinued Product (Q21): removed from the merchant's *active* working set, fully intact for history. **No reactivation path is designed here** — `product-decisions.md` Q24/Q25 explicitly names this as "a small, non-urgent open product-scope question, not resolved here"; this document doesn't invent one either.
 
-**Row display — a real, named constraint, not an oversight, sharpened by two separate Foundation changes since this was first written.** `ubiquitous-language.md`: `User` carries only `phone`/`phoneVerifiedAt` in the original model — no personal display-name field yet, a named gap — and, as of RFC 0012/D62–D63, `phone` itself is no longer guaranteed to be populated at all (a `User` created cold via email or Google may hold no phone `AuthIdentity` whatsoever). "Tu equipo" identifies an **active or revoked Membership** row by phone number today, for the same reason this was always true — no display-name field exists to use instead — but that display is a narrower correctness claim than it looks: it silently assumes every accepted SELLER verified by phone, true only as long as `authentication.md`'s own Invitation-acceptance flow stays phone-scoped by design (§8, item 10). A **pending or expired Invitation** row, by contrast, never has a phone to show at all anymore — RFC 0013 removed the one field the old row design used to identify a pending offer, replaced with a generic label plus creation date and an optional, explicitly-advisory `targetHint` (§3.11, below). Both gaps are flagged, not solved, in §8/§11 — real candidates for a future, small additive `User` display-name field once evidence warrants one, not invented here.
+**Row display — resolved 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29): `User.displayName` first, then the pre-existing fallback.** Every "Tu equipo" row identifying a `BusinessMembership` (active or revoked) now resolves in this order: (1) `User.displayName`, if set — the person's own name, shown plainly, closing the identification gap this paragraph named as unsolved before D69; (2) if not set, the pre-existing display this row already had — the User's own phone number, when one exists (still true for any SELLER who verified by phone, unaffected by this amendment); (3) if neither exists — a `User` created cold via email or Google, per D63, with no phone `AuthIdentity` and no `displayName` set — "Alguien de tu equipo," the same role-only fallback `reports.md` §3.4a/§3.19 already use, applied here for the first time as this row's own last-resort case. This degrades honestly rather than fabricating an identity: a Membership never shows a name or number it doesn't actually have. A **pending or expired Invitation** row is unaffected — no `User` exists yet for an offer that hasn't been accepted, so there's nothing to resolve differently there.
 
 ### 2.7a Token expiry — why 24 hours (RFC 0013 §4/§7's own named tension, resolved here)
 
@@ -362,6 +370,8 @@ content at `settings.changelog.md#section-3-3-retired`.
 │  requiere el plan de pago)        │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu cuenta                        │
+│  Tu nombre                        │
+│  [ Agregar tu nombre ]            │
 │  +52 55 1234 5678                  │
 │  [ Cerrar sesión ]                │
 └───────────────────────────────┘
@@ -369,6 +379,13 @@ content at `settings.changelog.md#section-3-3-retired`.
 No `defaultSellingMode` control shown while `subscriptionTier=free` — nothing to choose between yet, since `nfc` isn't in her capability set (§2.3). The moment "Activar plan de pago" confirms, this row gains a real control (see the Paid-tier state below).
 
 **The "Tu cuenta" section is new (2026-08-13, §2.5) and appears identically in every vista-principal variant below** — the Paid-tier state, its `defaultSellingMode = nfc` mirror, and §3.6's pending-change state — regardless of `subscriptionTier` or pending-change status, the one part of this screen never conditioned on anything else in it. Shown in full on the Paid-tier state and §3.6 below; the `nfc`-mirror state gets the identical addition without a separate redraw, the same shared-state treatment that state already receives from its own base.
+
+**"Tu nombre" is new (2026-09-15, §2.5) and appears identically wherever "Tu cuenta" does — the four sites above.** Shown here in its default, not-yet-set state (the common case for any existing User, and for any new one who skipped it at capture). Once set, the row instead reads her actual name with a bracketed edit affordance, e.g.:
+```
+│  Tu nombre                        │
+│  Juan Pérez            [ Editar ] │
+```
+Both states open the identical §3.3b sheet.
 
 **Paid-tier state (new — this document previously never drew this state explicitly):**
 ```
@@ -386,6 +403,8 @@ No `defaultSellingMode` control shown while `subscriptionTier=free` — nothing 
 │  [ Ver equipo ]                   │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu cuenta                        │
+│  Tu nombre                        │
+│  [ Agregar tu nombre ]            │
 │  +52 55 1234 5678                  │
 │  [ Cerrar sesión ]                │
 └───────────────────────────────┘
@@ -408,6 +427,8 @@ No `defaultSellingMode` control shown while `subscriptionTier=free` — nothing 
 │  [ Ver equipo ]                   │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu cuenta                        │
+│  Tu nombre                        │
+│  [ Agregar tu nombre ]            │
 │  +52 55 1234 5678                  │
 │  [ Cerrar sesión ]                │
 └───────────────────────────────┘
@@ -424,6 +445,27 @@ indifferent to how it got there.
 **Frequent Customers has no row anywhere in this view, in either tier** (`decision-log.md` D40) — structurally absent, not a demoted sub-note. A Free-tier merchant sees nothing suggesting she could turn it on; a Paid-tier merchant sees nothing suggesting she needs to. Whether it's active is answered entirely by "Tu plan," one line above. If she wants to see what it's actually collecting, that lives in Resultados' "Tus clientes" (`reports.md` §3.6/§3.12/§3.13), not here.
 
 Once `subscriptionTier=paid`, the mode row becomes a real, tappable control — "Botones" or "Con tags," whichever `defaultSellingMode` currently is, with a button offering the other option (§2.2, §2.3, `decision-log.md` D27).
+
+### 3.3b Editar tu nombre — sheet (new, `decision-log.md` D69)
+```
+┌───────────────────────────────┐
+│ ← Configuración                  │  dimmed, visible underneath
+│  Tu cuenta                        │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Tu nombre                        │
+│   [ Juan Pérez            ]        │
+│  Así te van a reconocer en Resultados │
+│  y en Tu equipo.                     │
+│  [ Cancelar ]     [ Guardar ]        │
+└───────────────────────────────┘
+```
+Reuses `inventory.md` §3.4a/§3.4b's exact dimmed-backdrop sheet shape — no new sheet pattern invented, the same composition-of-precedented-primitives reasoning `onboarding.md` §2.2b already applies to its own device-upload affordance. Pre-filled with the current `User.displayName` if one is set, blank otherwise. Plain text entry, no format constraint.
+
+"Guardar" writes `User.displayName` directly and closes the sheet, updated — reuses §3.9/§3.10's shared near-instant/slow/error write template, with its own copy variant ("No pudimos guardar tu nombre. Intenta de nuevo."), the same idempotency-keyed retry guarantee every other write in this document carries. A failed save leaves the sheet open with her typed value intact, same convention as `inventory.md` §3.4a.
+
+"Cancelar" discards the edit and returns unchanged — nothing written. **Clearing the field to empty and tapping "Guardar" removes the name** (writes `null`) — no separate "Quitar" control, since this is a plain text field, not a file selection; the same low-stakes, fully-reversible posture `onboarding.md` §3.9a's own "Quitar" has for a genuinely different input type.
+
+Available identically regardless of role or `subscriptionTier` (§2.5) — reached from either "Tu nombre" state in §3.3a/§3.6.
 
 ### 3.4 Confirmación de efecto inmediato (generic template — shared by three copy variants)
 ```
@@ -549,6 +591,8 @@ The date shown is illustrative — Q11 hasn't settled the exact deferred-timing 
 │  [ Cambiar a vender con tags ]    │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu cuenta                        │
+│  Tu nombre                        │
+│  [ Agregar tu nombre ]            │
 │  +52 55 1234 5678                  │
 │  [ Cerrar sesión ]                │
 └───────────────────────────────┘
@@ -638,6 +682,9 @@ this document (§3.1/§3.2):
 │  Tu equipo                       │
 │  [ Invitar a alguien ]           │
 │                                   │
+│  Juan Pérez                       │
+│  Vendiendo contigo    [ Quitar ] │
+│                                   │
 │  55 1234 5678                     │
 │  Vendiendo contigo    [ Quitar ] │
 │                                   │
@@ -670,11 +717,11 @@ this document (§3.1/§3.2):
 ```
 
 - **Five row states now, each a pure read, never a merchant choice** (widened from three — RFC 0013/D64 corrected here, not just field-path). **`Invitation.status = accepted` deliberately has no row of its own** (`ux-critic`-caught gap, closed 2026-09-13) — accepting is an atomic write (RFC 0013 §2 step 6) that creates the active `BusinessMembership` in the same transaction that flips the `Invitation`, so the person simply appears as a new "Vendiendo contigo" row instead; nothing stays visible under its old pending identity:
-  - `BusinessMembership.status = active` → "Vendiendo contigo" + `[ Quitar ]` (unchanged).
+  - `BusinessMembership.status = active` → identity line per §2.7's resolved resolution order (`User.displayName` → phone → "Alguien de tu equipo") + "Vendiendo contigo" + `[ Quitar ]`.
   - `Invitation.status = pending` **and not yet expired** → "Invitación pendiente" + creation date, plus "Para {targetHint}" only if one was set + `[ Cancelar ]`. **No phone number is ever shown here** — `Invitation` carries none anymore (RFC 0013).
   - `Invitation.status = pending` **and past `expiresAt`** (a read-time derivation, `status = pending AND now > expiresAt` — §2.7a; never a written value) → "Invitación caducada" + creation date, plus "Para {targetHint}" only if one was set + `[ Generar otra ]`. No `[ Cancelar ]` on this row — the link is already unusable, so cancelling it would be a no-op action offered for nothing.
   - `Invitation.status = revoked` → "Invitación cancelada" + creation date, no action — reached via §3.12d.
-  - `BusinessMembership.status = revoked` → "Ya no vende contigo," no action (unchanged; no reactivation mechanism is designed, per `product-decisions.md` Q24/Q25).
+  - `BusinessMembership.status = revoked` → identical identity resolution + "Ya no vende contigo," no action (no reactivation mechanism is designed, per `product-decisions.md` Q24/Q25).
 - **`targetHint`, when shown, is always framed as "Para {value}," never "Enviado a {value}"** — deliberate: Nahui never automatically emailed anything (§2.7, "What 'Invitar a alguien' writes"; RFC 0013 §1's Business Decision #1), so "enviado" would overstate what actually happened. "Para" states only what Ana herself typed as a memory aid.
 - **Row order:** active Memberships, then pending Invitations, then expired Invitations, then revoked Memberships, then cancelled Invitations — deterministic, by date within each group, never Ana-sorted (`global-principles.md`, "every repeated decision should become automation"). Both terminal groups (revoked Memberships, cancelled Invitations) sit last, since neither offers an action; the two still-actionable groups (pending, expired) sit ahead of them.
 - **No delete/hide action on a revoked Membership row or a cancelled/expired Invitation row** — same non-deletion discipline as `subscriptionTier` history; every one of them stays visible, clearly labeled, forever.
@@ -1044,7 +1091,7 @@ None of the items below block this document's completion.
    Configuración stays reachable from *what shape* the trigger takes
    without noticing the second question was still open. See `home.md` §2
    and §10 for the fuller correction.
-10. **The acceptance-side flow's own real rework** (`authentication.md`) — genuinely undesigned still, and now a sharper gap than when this item was first written. RFC 0013/D64 already replaced `Invitation.phone` in the domain model itself; `authentication.md`'s own §2.1/§2.2/§2.2a/§3.10–§3.13a, as currently written, depend on that exact field (a phone-keyed lookup, and a `(businessId, phone)` uniqueness constraint that no longer exists at all) and do not compose cleanly against the now-Accepted model — confirmed directly against that document's actual text, not assumed. The citations most acutely affected: §2.1's device-level Invitation check and §2.2's case-0 routing (both depend on a phone-match mechanism the schema no longer supports), §2.2a step 1's re-check and step 2's multi-pending tie-break (the uniqueness constraint it tie-breaks against is gone), and §2.2a step 6's decline-memory marker (RFC 0013 §2 already reasons this should be eliminated outright under the new mechanism, not merely re-pathed, since nothing auto-surfaces an Invitation anymore). **One citation confirmed to still hold, named so it isn't mistakenly re-flagged:** §3.10's reuse of this document's "what a SELLER can do" sentence — that exact sentence is preserved verbatim in the redesigned §3.12, so no correction is needed there. **A second, smaller stale cross-reference, worth naming precisely:** §2.2a step 1's own parenthetical ("`settings.md §8` items 11/12 name this same gap from the issuing side") now points at two items this same amendment resolves — needs updating from "names this same gap" to "this gap is resolved from the issuing side," once `authentication.md` gets its own pass. "Tu equipo" is not end-to-end functional until `authentication.md`'s own token-based acceptance rework exists — a real, not-yet-started follow-on (RFC 0013 §6's own scope), out of this amendment.
+10. **The acceptance-side flow's own real rework** (`authentication.md`) — genuinely undesigned still, and now a sharper gap than when this item was first written. RFC 0013/D64 already replaced `Invitation.phone` in the domain model itself; `authentication.md`'s own §2.1/§2.2/§2.2a/§3.10–§3.13a, as currently written, depend on that exact field (a phone-keyed lookup, and a `(businessId, phone)` uniqueness constraint that no longer exists at all) and do not compose cleanly against the now-Accepted model — confirmed directly against that document's actual text, not assumed. The citations most acutely affected: §2.1's device-level Invitation check and §2.2's case-0 routing (both depend on a phone-match mechanism the schema no longer supports), §2.2a step 1's re-check and step 2's multi-pending tie-break (the uniqueness constraint it tie-breaks against is gone), and §2.2a step 6's decline-memory marker (RFC 0013 §2 already reasons this should be eliminated outright under the new mechanism, not merely re-pathed, since nothing auto-surfaces an Invitation anymore). **One citation confirmed to still hold, named so it isn't mistakenly re-flagged:** §3.10's reuse of this document's "what a SELLER can do" sentence — that exact sentence is preserved verbatim in the redesigned §3.12, so no correction is needed there. **A second, smaller stale cross-reference, worth naming precisely:** §2.2a step 1's own parenthetical ("`settings.md §8` items 11/12 name this same gap from the issuing side") now points at two items this same amendment resolves — needs updating from "names this same gap" to "this gap is resolved from the issuing side," once `authentication.md` gets its own pass. "Tu equipo" is not end-to-end functional until `authentication.md`'s own token-based acceptance rework exists — a real, not-yet-started follow-on (RFC 0013 §6's own scope), out of this amendment. The row-display half of this document's own team-identification gap (§2.7's "Row display" paragraph) is resolved separately, 2026-09-15, `decision-log.md` D69 — unaffected by whether this item's own acceptance-flow rework ever lands.
 11. **Resolved in this pass.** Cancelling a still-pending `Invitation` before it's accepted is now designed — §3.11's "Cancelar" action on a still-valid pending row, §3.12d's confirm screen, writing `Invitation.status: pending → revoked`. Bundled alongside RFC 0013's own token rework per that RFC's own explicit suggestion (§6) that this had become a natural, low-cost close once `revoked` already existed in the schema.
 12. **Resolved in this pass.** `Invitation.status = expired`'s trigger is now defined (RFC 0013 §4/D64 — `expiresAt`, set at creation; `expired` itself stays a read-time derivation, `status = pending AND now > expiresAt`, never written) and given a real UI treatment: an expired row reads "Invitación caducada" and offers "Generar otra" (§3.11/§2.7a), rather than being silently indistinguishable from a still-live pending offer.
 13. **Resolved, 2026-09-09 (`architect`), from existing Foundation precedent — no Product Decision needed.** An already-active SELLER `BusinessMembership` survives a Paid→Free downgrade entirely unaffected. `BusinessMembership.status` has exactly one specified write path — the OWNER-only "Quitar" action (D55: "only via the OWNER-only revoke action... no reactivation path designed") — with no second, tier-driven path anywhere in the Foundation, unlike `nfc`'s deliberate pure read-time derivation from `subscriptionTier` (D27). The Membership authorization gate (`domain-model.md` Key Mechanism, written in D56 *after* Q18's Paid-gating decision) checks existence and `status=active` only, naming no `subscriptionTier` condition. Q18/`settings.md` §2.7 both consistently gate *creating a new Invitation* on `subscriptionTier=paid`, never the *validity of an already-created Membership* — the same shape D40/D25 already established for Claim Tokens (generation stops on downgrade; existing Claims untouched). A downgrade gates future capability, never claws back already-granted state (D25's general invariant). §3.5's "Volver al plan gratis" copy correctly asserts nothing here — nothing changes for an existing SELLER, so there's nothing to disclose. **Real consequence, not just documentation:** `product/02-ux/events.md` §3.26's own affordances needed correcting to match — routed to `ux-designer`, applied 2026-09-10. Both "Ver personal de este evento" and "Asignar personal" are now present unconditionally, regardless of `subscriptionTier` — `ux-designer`'s own remediation pass corrected this entry's own initial framing here, which had conflated *assigning an already-active Membership to an Event* (`EventAssignment` creation, D60/RFC 0011 — gated only on `BusinessMembership.status = active`, never on tier) with *creating a new `Invitation`* (a separate write, reached from a separate screen, genuinely still Paid-gated). A grandfathered Free-tier Business with an active SELLER can both view and reassign that person to new Events; only inviting someone new stays behind the Paid gate. See `events.md` §3.26/§10 for the corrected design.
@@ -1064,6 +1111,8 @@ None of the items below block this document's completion.
 - **The SET-M1 fix, stated as its own principle-level point:** every piece of copy describing what client-tracking reveals is worded as a count/category ("cuántas... son frecuentes y cuántas ocasionales"), never an identity claim ("cuáles"/"quiénes son") — the same correction `reports.md` already made once (RPT2-MAJ1), applied consistently across every instance in this document, including the one a prior remediation round briefly reintroduced while fixing SET-M4.
 - *"Capture business truth once, reuse it forever"* — extended to the new sign-out action: her Business, Catálogo, and historial de ventas are captured exactly once and never re-captured, reset, or discarded by signing out — the device-held session fact is the only thing this action ever touches (§2.5).
 - *"Never ask twice"* — a same-device re-verification after signing out never re-runs Onboarding or re-asks anything already on record; it resolves straight through to wherever her existing Business already stood (§2.5a).
+- *"Never ask twice"* — extended 2026-09-15 (D69): her own name, once set via §3.3b, is never asked again anywhere — `reports.md`/`Tu equipo` all read the same stored value.
+- *"Capture business truth once, reuse it forever"* — extended to person-level truth (D69): `User.displayName` is captured once, either at Onboarding (OWNER) or here (SELLER or a self-editing OWNER), and reused everywhere identity resolves.
 
 **architecture-principles.md:**
 - *#1 (capabilities resolved once, upstream, never asked mid-flow)* — Configuración is the one deliberate exception D25/D27 carve out for merchant-initiated, explicit self-service change; no other screen re-asks any of the capabilities or settings managed here.
@@ -1162,6 +1211,7 @@ None of the items below block this document's completion.
 - **`expiresAt` default set to 24 hours, reasoned explicitly against both sides of the tension `knowledge-mentor` surfaced** (RFC 0013 §4/§7) — see §2.7a for the full reasoning; paired with a deliberately cheap, single-tap regenerate affordance rather than defaulting to either "days" or "hours" silently.
 - **"Generar otra" is a deliberate, reasoned one-tap exception to this document's otherwise-uniform two-tap floor** (§6) — the positive-activation mirror of `authentication.md §3.10`'s already-zero-tap "Ahora no."
 - **`authentication.md`'s own §2.2a/§3.10–§3.13a confirmed NOT to compose cleanly against the now-Accepted RFC 0013 domain model** — checked directly, not assumed (§8, item 10). Its own real rework is out of this amendment's scope, per RFC 0013 §6's own sequencing, and remains a named, not-yet-started follow-on.
+- **"Tu nombre" (§2.5/§3.3a/§3.3b), self-service `User.displayName` capture/edit, added 2026-09-15, resolving `decision-log.md` D69/`product-decisions.md` Q29.** Deliberately not added to `authentication.md`'s Invitation-acceptance flow — reasoned explicitly in §2.5 against "the fastest interaction is the one that never happens." "Tu equipo" (§2.7/§3.11) now resolves identity through it first. **[see settings.changelog.md#status-2026-09-15-displayname-capture]**
 
 ## 11. Future considerations
 
@@ -1172,9 +1222,9 @@ None of the items below block this document's completion.
 - `authentication.md`'s own real token-based Invitation-acceptance rework (§8, item 10) — a separate, not-yet-started follow-on, RFC 0013 §6's own scope.
 - Whether a Paid→Free downgrade affects already-active SELLER Memberships (§8, item 13).
 - Role-based access gating for Configuración/nav as a whole, once a SELLER-specific Home experience is actually designed (§8, item 14) — this is the largest real gap surfaced by this amendment.
-- A merchant-visible display name for a team member, once evidence warrants a `User` field the Foundation doesn't have today (§2.7).
+- ~~A merchant-visible display name for a team member...~~ **Resolved 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29)** — `User.displayName`, self-service via §2.5/§3.3b, resolved in "Tu equipo" per §2.7's corrected "Row display" paragraph.
 - Multi-Business switching surface (§8, item 15).
 - Whether "Cerrar sesión" should interlock with an active, non-empty Sale (§8, item 6) — not designed now, no evidence of need.
 - Whether Nahui ever builds automated email delivery for `targetHint` (§8, item 16).
-- Whether a post-acceptance soft mismatch warning (`targetHint` vs. resolved identity) is worth designing (§8, item 17) — no evidence yet it's needed.
-- The phone-display gap on an active/revoked "Tu equipo" row once a SELLER can accept via a method other than phone (§2.7's "Row display" paragraph) — sharpened, not created, by this amendment; still unsolved, still needs a real `User` display-name field.
+- ~~Whether a post-acceptance soft mismatch warning (`targetHint` vs. resolved identity) is worth designing (§8, item 17) — no evidence yet it's needed.~~ **Superseded 2026-09-15 (`product-decisions.md` Q30, `product/99-rfc/0014-invitation-target-hint-enforced.md`, Accepted, `decision-log.md` D70):** resolved as a hard block, not a soft warning — the Invitation-acceptance flow now authenticates specifically through `targetHint`, so a mismatch is prevented rather than merely flagged after the fact.
+- ~~The phone-display gap on an active/revoked "Tu equipo" row once a SELLER can accept via a method other than phone (§2.7's "Row display" paragraph) — sharpened, not created, by this amendment; still unsolved, still needs a real `User` display-name field.~~ **Resolved 2026-09-15 (`decision-log.md` D69)** — `User.displayName` now resolves first; phone stays as the fallback beneath it; "Alguien de tu equipo" is the final, honest fallback for a `User` with neither.

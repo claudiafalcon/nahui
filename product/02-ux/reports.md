@@ -175,6 +175,8 @@ row shape, columns, and every other design decision are unchanged — this
 was a file-format correction only, not a design change. **[see
 reports.changelog.md#status-2026-09-15-q27-sales-export]**
 
+**Further amended 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29 — `User.displayName`):** "Vendiendo ahorita" (§3.4a, and by cross-reference §3.3 Variant B) and "Exportar tus ventas" (§3.19) both resolve identity through `User.displayName` first, falling back to the existing role-only copy ("Tú"/"Alguien de tu equipo") only when it isn't set. Closes §8 items 10/13 and the two related §11 Future Considerations — narrows, but doesn't fully close, the concurrent-same-role-card disambiguation gap: two SELLERs who have both left `displayName` unset remain genuinely indistinguishable, honestly, not fabricated around. **[see reports.changelog.md#status-2026-09-15-d69-displayname-resolution]**
+
 Scope: `Resultados`, the fourth and last of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers Journey 5
 (Review). Picks up exactly what `product/02-ux/events.md` §3.16 deliberately
@@ -735,36 +737,34 @@ see §1 and §8 item 11 for the full record.
   reuses §3.7's exact existing vocabulary verbatim — `Venue.displayName` ·
   "Día N" when `eventId` is set, "Sesión rápida" when it isn't — never
   redefined here. Second line: identity + running total.
-- **Identity is role-derived, never a personal name.**
-  `Session.openedByMembershipId` resolves to a `BusinessMembership.role`:
-  OWNER → "Tú" (only one OWNER exists per Business — `settings.md` §2.7's
-  "Invitar a alguien" only ever creates SELLER memberships); SELLER →
-  "Alguien de tu equipo," reusing `settings.md`'s own existing "vendiendo
-  contigo" vocabulary family. **No per-SELLER display name exists to
-  show** — `domain-model.md`'s `User (id, createdAt)` and
-  `BusinessMembership (role, status)` carry no name field at all, an
-  already-documented Foundation gap (`settings.md` §2.7/§11: "still needs
-  a real `User` display-name field"), inherited here, not newly
-  discovered.
-- **Concurrent "Alguien de tu equipo" cards are never personally
-  identifiable — only numerically distinguishable, and only when their
-  numbers actually differ.** When two such cards happen to share a venue,
-  she can at least tell them apart by the context already on the card
-  (venue, running total), the same way §3.11 already tells repeat-venue
-  cards apart — but that's disambiguation by circumstance, not identity;
-  she still can't map either card to an actual person. **The harder,
-  equally-common case is two SELLERs each running a Quick Session (no
-  Event/venue at all)** — the feature's own headline scenario, checking
-  in on multiple team members, not an edge case: both cards read "Sesión
-  rápida / Alguien de tu equipo / N ventas · $X hasta ahorita," with
-  nothing but their own running totals to tell them apart, and even that
-  stops working the moment two SELLERs' totals happen to coincide — for
-  that moment, the two cards are genuinely indistinguishable on this
-  screen. Traced to the same Foundation gap named in the bullet above (no
-  `User` display-name field); the concrete failure case is restated here,
-  and cross-referenced from §8 item 10, because the abstract field gap
-  alone doesn't convey how completely it defeats disambiguation once
-  venue context isn't available.
+- **Identity resolves through `User.displayName` first, added 2026-09-15
+  (`decision-log.md` D69) — role-derived copy only when it isn't set.**
+  `Session.openedByMembershipId` resolves to a `BusinessMembership` →
+  `User` join: if that `User.displayName` is set, it renders directly
+  (e.g. "María López · 3 ventas..."), for OWNER and SELLER alike — a
+  single resolution rule, not a role-specific branch, since D69 itself
+  frames "Tú" as the same underlying gap as "Alguien de tu equipo" ("'Tú'
+  only works today because exactly one OWNER exists per Business, not
+  because her identity was ever actually recorded"). If not set, the
+  pre-existing role-only fallback renders exactly as before: OWNER →
+  "Tú"; SELLER → "Alguien de tu equipo," reusing `settings.md`'s own
+  existing "vendiendo contigo" vocabulary family. No email fallback tier
+  — `Invitation.targetHint`/a verified email's reliability is Q30,
+  separately unresolved, not coupled to this change.
+- **Concurrent-card disambiguation, narrowed by D69, not fully closed.**
+  Any SELLER who has set `User.displayName` (self-service, `settings.md`
+  §2.5/§3.3b) now renders her own name on her card, distinguishing her
+  from any other concurrent card regardless of shared venue or
+  coincidentally-equal totals — the disambiguation gap named below is
+  closed for her specifically. **The gap remains, honestly, for two
+  concurrent SELLERs who have both left `displayName` unset** — their
+  cards both still read "Alguien de tu equipo," distinguishable only by
+  venue/running-total context when those happen to differ, and genuinely
+  indistinguishable when they don't (the feature's own headline "check in
+  on multiple team members" scenario, most acute for two simultaneous
+  Quick Sessions with no venue at all). Nothing here fabricates a name
+  for a User who hasn't set one — the honest degradation D69 itself
+  requires.
 - **Running total is Session-scoped, not context-scoped** (unlike
   `home.md` §3.7's own header, which sums across every Session sharing an
   `eventId` — a deliberate difference: this section answers "how is each
@@ -1868,9 +1868,10 @@ Product Owner-requested.
 │  Sesión, Vendedor, Producto,         │
 │  Cantidad, Precio, ID de venta        │
 │                                │
-│  "Vendedor" solo distingue Tú de     │
-│  tu equipo — no muestra el nombre    │
-│  de la persona.                      │
+│  "Vendedor" muestra el nombre de     │
+│  quien vendió, si ya lo registró.     │
+│  Si no, aparece como "Tú" o           │
+│  "Alguien de tu equipo."              │
 │                                │
 │      [ Descargar Excel ]            │
 └───────────────────────────────┘
@@ -1902,7 +1903,7 @@ Product Owner-requested.
   | Lugar | `Venue.displayName`, or blank for a Quick Session |
   | Evento | Event type (`events.md`'s 6-item enum), or blank for a Quick Session |
   | Sesión | "Día N" or "Sesión rápida" — §3.7's own existing header vocabulary, unchanged |
-  | Vendedor | §3.4a's role-derivation ("Tú"/"Alguien de tu equipo"), see §2 |
+  | Vendedor | `User.displayName` if set (`decision-log.md` D69), else §3.4a's role-derivation ("Tú"/"Alguien de tu equipo") |
   | Producto | Product name |
   | Cantidad | count of `SaleItem` rows for this `(Sale, Product)` pair |
   | Precio | the shared, already-resolved `pricePaid` for this `(Sale, Product)` pair (D33) |
@@ -1916,15 +1917,15 @@ Product Owner-requested.
   Fecha/Lugar in any spreadsheet tool, not a separate file), and the
   second is exactly what's exported (`product-decisions.md` Q27's own
   2026-09-15 refinement note).
-- **A short on-screen disclosure line states plainly what "Vendedor" will
-  and won't show, directly on this screen, not only in this document's
-  own agent-facing reasoning.** §8 item 13's own reasoning for reusing
-  §3.4a's role-only derivation here specifically calls for disclosing
-  this limit more prominently than §3.4a's own glance-only context needs
-  — a durable, handed-off file has no "you" to resolve "Tú" against once
-  it leaves the app, unlike a live card Ana reads in the moment. Same
-  honest-limits register this document already uses for other disclosed
-  Foundation gaps (e.g. §3.16's "No indicado" for a missing field).
+- **A short on-screen disclosure line states plainly what "Vendedor" shows
+  and what it falls back to when a name hasn't been set — not, as before
+  D69, an absolute claim that no name is ever shown.** Corrected
+  2026-09-15 alongside `decision-log.md` D69: "Vendedor" now resolves
+  through `User.displayName` first (§3.4a's corrected bullets), so the
+  disclosure states the real, two-tier behavior rather than the retired
+  "never shows a name" claim. Same honest-limits register this document
+  already uses for other disclosed Foundation gaps (e.g. §3.16's "No
+  indicado" for a missing field).
 - **"[ Descargar Excel ]" is disabled (not shown as an error) whenever the
   picked range contains zero closed Sessions** — same restraint every
   other empty-but-reachable state in this doc already applies (§3.10,
@@ -2380,21 +2381,16 @@ there; no urgency is invented where none exists.
    mechanism) without needing a Product Owner call. Named here rather
    than resolved by inventing an answer.
 
-10. **[New, not escalated — inherited, already-known Foundation gap]**
-    "Vendiendo ahorita" (§3.4a) can only ever distinguish concurrent
-    SELLERs by role ("Alguien de tu equipo"), never by name —
-    `domain-model.md`'s `User`/`BusinessMembership` carry no display-name
-    field, a gap `settings.md` §2.7/§11 already names. Not a new
-    question; flagged here so a future agent doesn't treat it as newly
-    discovered when this section eventually needs it resolved.
-    **Concrete, worked consequence, not just the abstract field gap:**
-    two SELLERs each running a Quick Session (no Event/venue at all) —
-    the feature's own headline "check in on multiple team members"
-    scenario, not an edge case — produce two cards distinguishable only
-    by their own running totals, and not even that once those totals
-    happen to coincide; Ana can never map either card to an actual
-    person in that case. See §3.4a's own corrected bullet for the full
-    statement of this failure case.
+10. **Resolved 2026-09-15 (`decision-log.md` D69, `product-decisions.md`
+    Q29).** `User.displayName` now exists and "Vendiendo ahorita"
+    resolves through it first (§3.4a's corrected bullets, above) —
+    closes the abstract Foundation gap this item named. **The concrete
+    concurrent-card failure case is narrowed, not fully closed**, for
+    the same reason named in §3.4a directly: two SELLERs who have both
+    left `displayName` unset are still genuinely indistinguishable when
+    their totals coincide. Kept here, marked resolved-with-residual,
+    rather than removed, so the record of what this gap originally
+    covered stays intact.
 
 11. **[Q28 — Resolved 2026-09-15 (Product Owner decision, logged in
     `product/02-ux/product-decisions.md`).] "Vendiendo ahorita"
@@ -2464,25 +2460,15 @@ there; no urgency is invented where none exists.
     visibility rather than treating it as settled, the same posture item
     7 already takes toward its own inference.
 
-13. **[Suggestion, not escalated as a new Q] "Vendedor" on the exported
-    file (§3.19) reuses §3.4a's role-only disclosure ("Tú"/"Alguien de tu
-    equipo"), inheriting the same known gap named in item 10 above, now in
-    a genuinely different consumption context.** §3.4a is a live, in-app
-    read Ana glances at once; an exported file is a durable artifact she
-    may hand to an accountant, or open weeks later, where "Alguien de tu
-    equipo" for every SELLER-attributed row may read as less useful than
-    it does in the live card context — an accounting use case implicitly
-    wants to know *which* team member made each sale. Considered inventing
-    a scoped export-only name field instead, and rejected it: no `User`
-    display-name field exists anywhere in the domain model (item 10, this
-    section; `settings.md` §2.7/§11), and inventing one silently for this
-    export alone would create a second, undocumented identity surface
-    diverging from §3.4a's own already-disclosed limit, worse than
-    disclosing the same honest limit twice. §3.19's own bullet carries an
-    explicit on-screen disclosure of this limit specifically because the
-    accounting-artifact context makes the gap more consequential here than
-    in §3.4a's glance-only context — not a new gap, the same one stated
-    more prominently where it matters more.
+13. **Resolved 2026-09-15 (`decision-log.md` D69, `product-decisions.md`
+    Q29).** "Vendedor" on the exported file (§3.19) now resolves through
+    `User.displayName` first, same as §3.4a — the "inventing a
+    scoped export-only name field" consideration this item originally
+    weighed and rejected is moot: the field is now real, shared, and not
+    export-scoped, so there's no second, undocumented identity surface
+    to avoid creating. The on-screen disclosure line (§3.19) is corrected
+    to state the new, more complete behavior rather than the old "never
+    shows a name" claim, which is no longer accurate.
 
 ## 9. Principle justification
 
@@ -2835,14 +2821,11 @@ there; no urgency is invented where none exists.
   concurrent Sessions under one Event into a single live "how's this
   bazaar doing" number) — not designed now, deliberate restraint beyond
   D68's literal ask (one Session's own numbers, per card).
-- **Per-SELLER display name** in "Vendiendo ahorita" — blocked on the same
-  `settings.md` §2.7/§11 Foundation gap (no `User` name field exists
-  today); revisit together.
-- **A real Vendedor name on the exported file (§3.19)** — blocked on the
-  identical `settings.md` §2.7/§11 Foundation gap named above, now
-  additionally motivated by the export's own accounting-artifact use case
-  (§8 item 13). Revisit together with "Vendiendo ahorita"'s own version of
-  the same gap, not as a separate fix.
+- ~~Per-SELLER display name in "Vendiendo ahorita"...~~ **Resolved
+  2026-09-15 (`decision-log.md` D69)** — see §3.4a's corrected bullets.
+- ~~A real Vendedor name on the exported file (§3.19)...~~ **Resolved
+  2026-09-15 (`decision-log.md` D69)** — see §3.19's corrected column
+  table and on-screen disclosure.
 - **A custom report builder, scheduled/automatic exports, or an export
   format beyond the one `.xlsx` file** — explicitly out of scope by the Product Owner's own
   instruction (front matter's "Out of scope" list, `product-decisions.md`
