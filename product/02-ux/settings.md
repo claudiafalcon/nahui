@@ -60,6 +60,8 @@ Important findings). Folded back into Approved.
 
 **Further amended 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29 — `User.displayName`):** "Tu cuenta" (§2.5/§3.3a/§3.6) gains a new self-service field, "Tu nombre," reusing `inventory.md` §3.4a/§3.4b's already-established dimmed-sheet edit pattern (new §3.3b) — the SELLER-path capture surface for `User.displayName`, deliberately *not* added to `authentication.md`'s Invitation-acceptance flow (reasoned in §2.5). "Tu equipo" (§2.7/§3.11) now resolves each row's identity through `User.displayName` first, falling back to the phone-number/role-only display it already had. Closes §2.7's own "Row display" gap and §11's two related Future Considerations. **[see settings.changelog.md#status-2026-09-15-displayname-capture]**
 
+**Further amended 2026-09-15 (`decision-log.md` D70, `product/99-rfc/0014-invitation-target-hint-enforced.md`, Accepted — `Invitation.targetHint` becomes required, and acceptance authenticates specifically through it):** §2.7/§3.12 ("Nueva invitación") corrected — the email `targetHint` field is now required, not optional, gating "Generar invitación" on a well-formed address and explaining why in one honest line. A new OWNER-side repair path is added for a still-pending row — "Editar correo"/"Agregar correo" (new §3.12e), reusing §3.3b's dimmed-sheet edit pattern — closing the exact gap RFC 0014 itself names (a typo'd or missing hint, fixable without a cancel-and-recreate round-trip). §3.11's pending-row display now distinguishes a legacy, hint-less pending row (created before this shipped, exempt from the acceptance-time check per RFC 0014's own backward-compatibility rule) from an ordinary one, with its own honest copy and an optional path to opt it in. §8 item 17 (the former "soft mismatch warning" open question) is corrected to match its own already-updated §11 entry — resolved as a hard block, not a soft warning, per `product-decisions.md` Q30. `authentication.md`'s own two new states (the acceptance-side mismatch handling) are that document's own amendment, not this one's — see its own status header. Pending `ux-critic`/`reviewer` review.
+
 Scope: `Configuración`, the merchant-facing surface for the Business Capabilities `decision-log.md` D25/D27/D40 leave merchant-self-service: `subscriptionTier` (Free ↔ Paid) — two actions (both directions), a reusable "pending change" indicator, and a way to cancel a pending change before it lands — plus `decision-log.md` D27's `defaultSellingMode` control (Botones ↔ Etiquetas NFC), constrained to whichever modes `subscriptionTier` currently makes available: **four actions total**, not six. Both `defaultSellingMode` directions use the same immediate-effect template `subscriptionTier`'s "activate" direction already uses (§2.3, §3.4) — the only real difference is that neither carries a pending-value/effective-date pair, since the field has no billing-cycle implication for D25's deferred-timing rationale to apply to, not a differently-shaped UI. `registrationMode`'s `nfc` entitlement is no longer an independently self-service-toggleable capability of its own (D27 superseded that part of D25) — it is a pure read-time derivation from `subscriptionTier = paid`, so it has no dedicated action or row here; it changes only as an automatic consequence of the `subscriptionTier` actions below. **`loyaltyEnabled` is retired outright, not merely absent from self-service scope** (`decision-log.md` D40) — there is no Business-level field left to toggle, self-service or otherwise; Frequent Customers as a whole is entitled purely by `subscriptionTier`, present in full on Paid and structurally absent on Free, with no action of Ana's own anywhere in this document or any other. **Not a fifth nav tab** — per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, Configuración hangs off the existing session-controls affordance already specified in `home.md` — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon opening a sheet, then (2026-08-14, active Session; 2026-08-15, every other Home state) replaced by a direct gear icon ("⚙") with no intermediate sheet at all (Product Owner decisions; see status header above and `home.md`'s own status header/§10 for the full reasoning) — as of 2026-08-15, this single direct shape applies uniformly across every Home state with a persistent header (§2.1). This is the last of the five merchant-facing experiences to be designed (`product/02-ux/CLAUDE.md`). Implementation-independent — low-fidelity only, no visual design. A fifth action, added 2026-08-13, sits outside this four-capability count entirely: "Cerrar sesión" (§2.5) is an Identity-context, `User`-level action (RFC 0007) — it has no Business Capability to represent, changes nothing about her plan or how she sells, and is never conditioned on `subscriptionTier` or any pending change. It's placed in its own "Tu cuenta" section, not counted among, or confused with, the four capability actions above.
 
 Out of scope by explicit instruction:
@@ -305,6 +307,8 @@ it already was (`buttons`, for every real Onboarding path, `onboarding.md`
 **Who can invite/manage.** OWNER only — the Q24/Q25 permission table is explicit that invite/manage-staff is an OWNER capability; a SELLER has no reach into this document at all in the settled design (out of this amendment's own scope — see §8, item 5, for the larger, undesigned role-gating question this doesn't solve).
 
 **What "Invitar a alguien" writes (reworked — `product/99-rfc/0013-invitation-token-based.md`, Accepted, `decision-log.md` D64).** A new `Invitation` (`businessId`, `token` — a cryptographically random, single-use value Nahui generates on her behalf, never typed or chosen by Ana; `role`; `status: pending`; `expiresAt`; an optional `targetHint`) — never a `BusinessMembership` directly, unchanged from before. `role` is still always written as `SELLER`, still with no picker, for the identical reason already stated: showing a choice with exactly one real value would cost a tap for nothing (`global-principles.md`, "the fastest interaction is the one that never happens"). **What's genuinely new: creating an Invitation no longer requires Ana to know or type anything about the person she's inviting.** The superseded design (`Invitation.phone`) required her to know the invitee's number and type it correctly before an offer could exist at all; RFC 0013 replaces that with a token Nahui generates unconditionally, alongside an entirely optional `targetHint` (today: an email address) she may add purely as her own memory aid. `targetHint` is never matched against anything, never treated as the accepting person's identity, and never required (§2.7a; §3.12).
+
+**Corrected 2026-09-15 (`product/99-rfc/0014-invitation-target-hint-enforced.md`, Accepted, `decision-log.md` D70) — `targetHint` is now required, not optional, and is checked at acceptance.** The paragraph above's closing claim — "`targetHint` is never matched against anything, never treated as the accepting person's identity, and never required" — is superseded on exactly that point, not deleted, per this document's own non-deletion discipline. `targetHint` is now required at `create_invitation()` (rejects a null value) and the acceptance flow authenticates the invited person specifically through it — Email, pre-filled, locked to its exact value — `authentication.md`'s own concern, designed there, not here. What's unchanged: `targetHint` still never becomes `BusinessMembership`'s own canonical identity (that stays `userId`), and Nahui still never auto-emails anything on Ana's behalf — she still shares the link herself (§2.7a is unaffected). See §3.12 for the corrected field and the new OWNER-side repair path (§3.12d's neighbor, §3.12e). **Backward compatibility, stated here rather than only in the changelog:** any `Invitation` still `pending` with `targetHint = null` at the moment this shipped is exempt from the new check (RFC 0014's own rule) — §3.11 now shows this legacy state distinctly, with its own honest copy and an optional `[ Agregar correo ]` path to opt it into the new protection.
 
 **What happens once the invited person opens the link** is specified in `authentication.md` — today, that document's own §2.2a/§3.10–§3.13a acceptance-side flow is still phone-scoped by design (RFC 0012 §3's original ruling, not yet reworked for RFC 0013). Checked directly against that document's current text (not assumed): several of its mechanisms depend on `Invitation.phone` and a `(businessId, phone)` uniqueness constraint that RFC 0013 already removed from the domain model — this does **not** compose cleanly as-is, a genuine gap, not a citation nit. "Tu equipo" is not end-to-end functional until `authentication.md`'s own token-based acceptance rework exists — a real, not-yet-started follow-on (RFC 0013 §6's own scope), out of this amendment's scope. Full findings: §8, item 10.
 
@@ -690,7 +694,15 @@ this document (§3.1/§3.2):
 │                                   │
 │  Invitación pendiente             │
 │  Para ana@correo.com · creada     │
-│  el 13 sep              [ Cancelar ] │
+│  el 13 sep       [ Editar correo ]│
+│                     [ Cancelar ]  │
+│                                   │
+│  Invitación pendiente             │
+│  Creada el 5 sep · sin correo      │
+│  asignado — cualquiera que abra    │
+│  el enlace puede aceptarla.         │
+│               [ Agregar correo ]    │
+│                     [ Cancelar ]     │
 │                                   │
 │  Invitación caducada              │
 │  Creada el 10 sep     [ Generar otra ] │
@@ -718,7 +730,7 @@ this document (§3.1/§3.2):
 
 - **Five row states now, each a pure read, never a merchant choice** (widened from three — RFC 0013/D64 corrected here, not just field-path). **`Invitation.status = accepted` deliberately has no row of its own** (`ux-critic`-caught gap, closed 2026-09-13) — accepting is an atomic write (RFC 0013 §2 step 6) that creates the active `BusinessMembership` in the same transaction that flips the `Invitation`, so the person simply appears as a new "Vendiendo contigo" row instead; nothing stays visible under its old pending identity:
   - `BusinessMembership.status = active` → identity line per §2.7's resolved resolution order (`User.displayName` → phone → "Alguien de tu equipo") + "Vendiendo contigo" + `[ Quitar ]`.
-  - `Invitation.status = pending` **and not yet expired** → "Invitación pendiente" + creation date, plus "Para {targetHint}" only if one was set + `[ Cancelar ]`. **No phone number is ever shown here** — `Invitation` carries none anymore (RFC 0013).
+  - `Invitation.status = pending` **and not yet expired** → "Invitación pendiente" + creation date, plus one of two variants (**corrected 2026-09-15, RFC 0014/D70** — supersedes the previous "only if one was set" framing, which described `targetHint` as purely optional): **`targetHint` set** (the ordinary case for every Invitation created after this shipped, since `create_invitation()` now rejects a null value) → "Para {targetHint}" + `[ Editar correo ]` + `[ Cancelar ]`; **`targetHint = null`** (a legacy row, created before this shipped, exempt from the acceptance-time check per RFC 0014's own backward-compatibility rule) → "Creada el {date} · sin correo asignado — cualquiera que abra el enlace puede aceptarla." + `[ Agregar correo ]` + `[ Cancelar ]` — stated as a plain fact about how this one row still behaves, per `tone-of-voice.md`'s "state facts before offering an opinion," never phrased as a warning. **No phone number is ever shown here** — `Invitation` carries none anymore (RFC 0013).
   - `Invitation.status = pending` **and past `expiresAt`** (a read-time derivation, `status = pending AND now > expiresAt` — §2.7a; never a written value) → "Invitación caducada" + creation date, plus "Para {targetHint}" only if one was set + `[ Generar otra ]`. No `[ Cancelar ]` on this row — the link is already unusable, so cancelling it would be a no-op action offered for nothing.
   - `Invitation.status = revoked` → "Invitación cancelada" + creation date, no action — reached via §3.12d.
   - `BusinessMembership.status = revoked` → identical identity resolution + "Ya no vende contigo," no action (no reactivation mechanism is designed, per `product-decisions.md` Q24/Q25).
@@ -740,34 +752,39 @@ this document (§3.1/§3.2):
 │  mismo Catálogo y tus mismos          │
 │  precios.                              │
 │                                          │
-│  Correo electrónico (opcional)           │
+│  Correo electrónico                      │
 │  [ __________________ ]                  │
-│  Es solo para que tú recuerdes a quién     │
-│  es esta invitación — no hace falta para    │
-│  crear la invitación.                        │
+│  Para que solo esa persona pueda           │
+│  aceptarla, aunque alguien más llegue       │
+│  a tener el enlace.                          │
 │                                                │
-│  [      Generar invitación      ]              │
+│  [      Generar invitación      ]  (disabled  │
+│                                until it looks  │
+│                                like a real     │
+│                                email)          │
 └───────────────────────────────┘
 ```
 
 **Opening paragraph is preserved verbatim from the retired phone-entry screen** — the same "esta persona va a poder..." sentence `authentication.md §3.10` already mirrors from the invitee's side (`global-principles.md`, "capture business truth once, reuse it forever"). That cross-reference still holds correctly after this rework: no correction needed there (§8, item 10).
 
-**The button is never gated on the optional field, in either direction** — a structural departure from the retired design, not just a copy change. The old phone-entry screen disabled "Enviar invitación" until 10 digits were typed; this screen's "Generar invitación" is always enabled, since RFC 0013 makes the field genuinely optional, never required (§1). This is a real, measurable simplification (§6): the old floor required a correctly-typed phone number before anything could be created at all; this floor requires nothing.
+**Corrected 2026-09-15 (`product/99-rfc/0014-invitation-target-hint-enforced.md`, Accepted, `decision-log.md` D70) — the button is now gated on the field, reversing the structural departure this paragraph previously described.** `create_invitation()` rejects a null `targetHint` going forward, so "Generar invitación" stays disabled until the typed value passes the identical loose format check `authentication.md §3.2e`'s own email field already uses (at least one character before "@", an "@", at least one character before a final ".", at least one character after it) — the same "disabled-until-valid, no new validation pattern invented" discipline this document family already holds itself to everywhere else. This is a real, honest trade against RFC 0013's own earlier simplification, not a silent reversal: the Product Owner explicitly accepted this friction ("I think email is fine," `decision-log.md` D70) in exchange for closing a real, freshly-confirmed leaked-link exposure — the field's *validity* gate is what's new; its still-non-blocking soft-duplicate advisory (below) is unaffected.
 
-Inline validation, shown in place (same discipline as `authentication.md §3.2f`'s own inline invalid-email message — no navigation, no dedicated error screen), **both variants non-blocking — the button stays enabled either way**, since `targetHint` is advisory, never a hard gate (RFC 0013 §1):
+Inline validation, shown in place (same discipline as `authentication.md §3.2f`'s own inline invalid-email message — no navigation, no dedicated error screen):
 ```
-Correo electrónico (opcional)
+Correo electrónico
  [ ana@corr         ]
- Verifica tu correo — parece que le falta
- algo. Puedes dejarlo en blanco si prefieres.
+ Verifica el correo — parece que le falta
+ algo.
+[      Generar invitación      ]   (disabled)
 ```
 ```
-Correo electrónico (opcional)
+Correo electrónico
  [ ana@correo.com    ]
  Ya tienes una invitación pendiente con
  este correo. Puedes crear otra invitación
  de todas formas si quieres.
 ```
+**The duplicate-pending-row advisory (second block above) stays non-blocking, unaffected by this correction** — required-ness and duplicate-detection are two independent questions; only the first changed.
 **Wording corrected 2026-09-13 (`reviewer` Suggestion, closed)** — "generar otra" was reused here for a genuinely different operation than the identically-worded `[ Generar otra ]` CTA on an expired row (§3.11): this advisory means *create a brand-new, independent Invitation*, while the row action means *mutate this same Invitation in place* (§4). Reworded to "crear otra invitación" to avoid the collision, matching this document's own established discipline of distinguishing near-identical actions by name (§10's "Invitar a alguien" vs. "Nueva invitación" precedent).
 The second is a soft, optional nicety, not a structural check — RFC 0013 §4/Domain-model additions are explicit that uniqueness on `(businessId, targetHint.value)` is "an optional, soft UX-level duplicate-pending-row nicety... not a hard invariant," reused here exactly as scoped.
 
@@ -839,6 +856,29 @@ Same idempotent-retry guarantee §3.10's shared shape already carries (`architec
 Same dimmed-overlay, two-button shape as §3.7/§3.8/§3.13 — states the real, honest consequence plainly. `[ Sí, cancelar ]` → guardando (§3.9's shared template — a plain status flip, not a generation write) → error (§3.10's shared template, copy variant "No pudimos cancelar la invitación. Intenta de nuevo.") → success → back to §3.11, that row now "Invitación cancelada." Writes `Invitation.status: pending → revoked` — closes §8 item 11.
 
 **"Generar otra" (expired-row action) reuses §3.12a/§3.12b/§3.12c directly, with no separate confirm screen and no intervening form** — see §4 for the full branch. Closes §8 item 12.
+
+### 3.12e Editar correo / Agregar correo — sheet (new, RFC 0014/D70)
+```
+┌───────────────────────────────┐
+│ ← Tu equipo                     │  dimmed, visible underneath
+│  Invitación pendiente             │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Correo electrónico                │
+│   [ ana@correo.com        ]         │
+│  Para que solo esa persona pueda     │
+│  aceptar la invitación.               │
+│  [ Cancelar ]     [ Guardar ]          │
+└───────────────────────────────┘
+```
+Reuses §3.3b's exact dimmed-backdrop, pre-filled-field, Cancelar/Guardar sheet shape — no new sheet pattern invented, the same composition-of-precedented-primitives reasoning that document's own D69 amendment already applied. Reached by tapping either `[ Editar correo ]` (targetHint already set) or `[ Agregar correo ]` (a legacy, hint-less pending row) on §3.11 — same sheet, same field, differing only in whether it opens pre-filled or blank.
+
+**Deliberately not the same as §3.3b's own "Tu nombre" pattern on one point: clearing the field to blank does not save.** `User.displayName` is a genuinely optional, person-level fact, so §3.3b lets an empty save clear it. `Invitation.targetHint` is required for every Invitation created after this shipped and is only ever exempt-by-history for an old legacy row — this sheet never offers a way to *remove* a hint that's set, or to save a blank value onto a legacy row, since doing so would silently defeat the protection RFC 0014 exists to add. "Guardar" stays disabled until the typed value passes the same loose format check §3.12 already uses.
+
+"Guardar" writes `Invitation.targetHint` directly, on the same still-`pending` row — no token regeneration, no `expiresAt` reset (the exact mechanism RFC 0014 itself names: "she can correct `targetHint` on the still-pending row via an ordinary UPDATE, the existing OWNER-scoped `invitations_update` RLS policy already permits this, no new RPC needed") — and closes the sheet, updated. Reuses §3.9/§3.10's shared near-instant/slow/error write template, copy variant "No pudimos guardar el correo. Intenta de nuevo." A failed save leaves the sheet open with her typed value intact, same convention as §3.3b.
+
+"Cancelar" discards the edit and returns unchanged — nothing written.
+
+Not available on an expired, revoked, or cancelled row — only a still-`pending`, not-yet-expired row carries this action, since a dead or resolved Invitation has nothing left for a corrected hint to protect going forward. (Regenerating an expired row via "Generar otra," §3.12d's own neighbor, reuses `regenerate_invitation()` — RFC 0014 confirms this RPC "never touches `target_hint`" — so a regenerated legacy row stays legacy until she separately opens this sheet on the now-freshly-pending row.)
 
 ### 3.13 Quitar a alguien — confirmar
 
@@ -952,16 +992,23 @@ From "Tu equipo" (§3.11, Paid-tier only, reached via the vista principal's
 "Ver equipo" row — §3.3a):
 
   [ Invitar a alguien ] → Nueva invitación (§3.12)
-    → optional Correo electrónico left blank, or filled with a soft
-      format/duplicate advisory shown inline — never blocking, button
-      stays enabled either way (RFC 0013 §1 — targetHint is never
-      required, never a hard gate)
+    → **[Corrected 2026-09-15, RFC 0014/D70]** Correo electrónico required
+      — "Generar invitación" disabled until the typed value passes the
+      loose format check; a format-invalid or soft-duplicate advisory
+      shown inline (the format one blocking, the duplicate one still
+      non-blocking, §3.12)
     → Generar invitación → guardando (§3.12a) → error (§3.12b) → Reintentar
     → success → Invitación lista (§3.12c), showing the generated link
         → [ Copiar enlace ] / [ Compartir... ] → device-level copy/share
           mechanism, outside this document's own scope — same screen,
           tappable any number of times before leaving
         → [ Listo ] → back to §3.11, new "Invitación pendiente" row
+
+  [ Editar correo ] on a pending row with a hint set, or
+  [ Agregar correo ] on a legacy pending row with none → Editar correo (§3.12e)
+    → Cancelar → back to §3.11, untouched
+    → Guardar → guardando (§3.9) → error (§3.10) → Reintentar
+    → success → back to §3.11, row's own targetHint updated in place
 
   [ Cancelar ] on a still-pending, not-yet-expired row → confirmar (§3.12d)
     → No → back to §3.11, untouched
@@ -1000,6 +1047,7 @@ From home.md §2's new step 0 (this device's own Membership is revoked):
 1. Resolving (near-instant)
 2. Resolving — slow
 3. ~~Entry — session-controls sheet, Home idle/cold-start/Event-active-no-Session states~~ — **Retired 2026-08-15** (see status header): the header's gear icon (⚙) now routes directly into item 4 below for these states too, no sheet.
+3b. Editar tu nombre — sheet (§3.3b, new, `decision-log.md` D69)
 4. Configuración — vista principal, sin cambio pendiente (now includes a "Tu cuenta" section, §2.5)
 5. Confirmación de efecto inmediato — generic template (three copy variants: Activar plan de pago — SET-M4/D34/D40-corrected — and the two `defaultSellingMode` variants; "Activar/Desactivar clientes frecuentes" retired entirely per `decision-log.md` D40)
 6. Confirmación de efecto diferido — generic template (Volver al plan gratis)
@@ -1011,11 +1059,12 @@ From home.md §2's new step 0 (this device's own Membership is revoked):
 12. Cerrando sesión — near-instant / slow
 13. Error al cerrar sesión
 14. Tu equipo — vista principal (empty, or with pending/expired/active/revoked rows), plus its own near-instant/slow resolving pair
-15. Nueva invitación — entry form, optional email `targetHint` field with inline soft format/duplicate advisories (both non-blocking)
+15. Nueva invitación — entry form, **required** email `targetHint` field (corrected 2026-09-15, RFC 0014/D70), blocking format advisory + non-blocking soft duplicate advisory
 15a. Generando invitación — near-instant / slow
 15b. Error al generar invitación
 15c. Invitación lista — generated link, copiar/compartir, one-time-display notice
 15d. Cancelar invitación — confirmar
+15e. Editar correo / Agregar correo — sheet (§3.12e, new, RFC 0014/D70)
 16. Quitar a alguien — confirmar
 17. Acceso revocado (reached only via home.md §2 step 0)
 17a. Acceso revocado — tras tocar "Entendido" (button disabled/relabeled "Entendido ✓," inline "Ya puedes cerrar esta pestaña." confirmation shown; resets to 17 on a fresh app open, per this state's own "stable, repeatable terminal state" requirement)
@@ -1036,7 +1085,8 @@ Every action in this table now shares an identical 2-tap floor, measured at this
 
 | Action | Taps | Why it can't be fewer |
 |---|---|---|
-| Invitar a alguien | **[Corrected 2026-09-13] 4** (Invitar a alguien → Generar invitación → Copiar enlace *or* Compartir → Listo — was undercounted at 2, missing the §3.12c screen entirely) | The optional email field itself still costs nothing when skipped — that part of the floor genuinely improved over the retired phone-entry path, which required a full, correctly-typed number before the button would even enable. But §3.12c's one-time-link display is a real, new required screen this floor has to account for honestly: reaching a usable "Invitación pendiente" state now requires acting on the link (Copiar or Compartir, gated per §8 item 18) before "Listo" enables, not just generating it. Higher than the old floor, not a regression — the old design never showed her anything to act on at all. |
+| Invitar a alguien | **4** (Invitar a alguien → Generar invitación → Copiar enlace *or* Compartir → Listo) | **Corrected 2026-09-15, RFC 0014/D70** — the tap floor itself is unchanged (typing the email isn't a counted tap, per this table's own convention of counting button-presses, not keystrokes — the same convention that already lets the phone-entry floor count "Enviar código" as one tap despite ten typed digits). What changed: the email is no longer skippable — "Generar invitación" now stays disabled until a plausible address is typed, the same disabled-until-valid gate `authentication.md §3.3`'s phone field already uses. §3.12c's one-time-link display remains a required screen: reaching a usable "Invitación pendiente" state requires acting on the link (Copiar or Compartir, gated per §8 item 18) before "Listo" enables. |
+| Corregir el correo de una invitación pendiente (Editar correo / Agregar correo) | 2 (tap the row action → Guardar) | New, RFC 0014/D70 — the OWNER-side repair path the RFC names by name: a typo'd or missing `targetHint` is fixed with one edit, never a full cancel-and-recreate. Same two-tap floor as every other real commitment in this document. |
 | Generar otra (regenerate an expired Invitation) | 1 | The one deliberate exception to this document's otherwise-uniform two-tap floor, reasoned explicitly, not a gap: nothing new needs disclosing (she already saw and accepted the consequences once, when she first created the invitation being replaced), and nothing is lost or put at risk by tapping it — mirrors why `authentication.md §3.10`'s "Ahora no" already costs zero taps ("nothing is lost or destroyed"), the identical reasoning applied to the positive-activation side. |
 | Cancelar invitación | 2 (Cancelar → Sí, cancelar) | Same floor as "Quitar a alguien" — a real, if only-ever-history-preserving, commitment gets one confirming tap. |
 | Quitar a alguien | 2 (Quitar → Sí, quitar) | Same floor — a real, if reversible-in-history-only, commitment gets one confirming tap. |
@@ -1066,6 +1116,7 @@ Every action in this table now shares an identical 2-tap floor, measured at this
 - Which action a pending/expired Invitation row offers ("Cancelar," "Generar otra," or nothing) — computed automatically from that same derived state, the identical discipline this document already applies to an active/revoked Membership row's own action.
 - The token itself — generated, formatted, and (per RFC 0013 §4) stored hashed entirely by Nahui; Ana never sees, types, or handles anything about it beyond the finished shareable link.
 - The soft duplicate-`targetHint` advisory (§3.12) — a pure read of existing pending rows, shown automatically, never something she has to check for herself.
+- Whether a pending row offers "Editar correo" or "Agregar correo" — a pure read of whether `targetHint` is currently set, never something Ana has to remember or check for herself (RFC 0014/D70).
 
 ## 8. Open questions
 
@@ -1098,7 +1149,7 @@ None of the items below block this document's completion.
 14. **Configuración/nav carries no role-based access gate at all today.** §2.7/§3.14 design the OWNER-only invite/revoke surface and the revoked-SELLER defensive state, but a full SELLER-specific stripped Home/nav experience isn't designed in this document — a materially larger, separate design gap, surfaced here rather than silently assumed solved.
 15. **Multi-Business membership switching** (`product-decisions.md` Q24/Q25, item 1) — no surface designed anywhere yet; §3.14 states this plainly rather than pretending it's handled.
 16. **Whether Nahui ever builds automated email delivery for a `targetHint`** (rather than Ana always sharing the link herself) — explicitly deferred, not a gap this document leaves accidentally open: RFC 0013's own Business/Product Decisions (§1) resolve this as a separable, optional future enhancement, deliberately not built now, the identical "don't gate a path on unvalidated infrastructure" lesson `company/business-decisions.md` Q19 already taught. `targetHint`'s schema shape already supports it without a migration, whenever it does land.
-17. **Whether a soft post-acceptance mismatch warning** (the authenticated person's own resolved identity doesn't match the `targetHint` she set) is worth designing — RFC 0013 §4/Open items name this explicitly as a UX-quality call, not an architecture requirement, delegated to `ux-designer`. Not designed here: no evidence yet, at Nahui's actual pilot scale, that a forwarded/leaked link has ever been a real problem (RFC 0013 §4's own accepted-risk posture, mirrored here rather than re-litigated).
+17. ~~Whether a soft post-acceptance mismatch warning... is worth designing~~ **Superseded 2026-09-15 (`product-decisions.md` Q30, `product/99-rfc/0014-invitation-target-hint-enforced.md`, Accepted, `decision-log.md` D70).** The "no evidence yet" posture this item held is directly overtaken — the Product Owner herself surfaced this live, testing the just-shipped feature, and resolved it as a hard block at acceptance time, not a soft warning: the Invitation-acceptance flow (`authentication.md`, that document's own §2.0/§2.2a/§3.2g/§3.10f) now authenticates specifically through `targetHint`, so a mismatch is prevented rather than merely flagged after the fact. See §2.7/§3.12/§3.12e above for the invite-creation-side correction this required.
 18. **Resolved 2026-09-13.** §3.12c's "Listo" is now gated on Copiar enlace/Compartir having fired at least once — `ux-critic`-raised, `knowledge-mentor`-confirmed (general practice for one-time, non-recoverable secrets uniformly gates the dismiss action; Norman's forcing-function principle and Nielsen's error-prevention-over-warning heuristic both apply directly; this project already holds `settings.md §3.14` to the identical standard). The original ungated design, defended on brand-tone grounds alone, is corrected — see §3.12c.
 
 ## 9. Principle justification
@@ -1124,11 +1175,12 @@ None of the items below block this document's completion.
 
 **§2.7/§3.11–§3.14 additions:**
 - *global-principles.md*, "never delete historical data" (D25) — extended to `Quitar`: a status flip, not a delete; `Sale.performedByMembershipId` keeps resolving unaffected. Same non-deletion discipline this document already applies to `subscriptionTier` history, and the same shape `Product.active`/`inactive` (Q21) already established.
-- *global-principles.md*, "the fastest interaction is the one that never happens" — extended further by RFC 0013: creating an Invitation now requires zero required input from Ana at all (not even a correctly-typed phone number), only an optional memory-aid field she may skip entirely. The prior design's reuse of `authentication.md §3.3`'s phone-entry mechanism is retired along with the phone-entry step itself, not replaced with a second collection pattern — there is nothing left here to capture-once-and-reuse, since the token is generated, not collected. No role picker on Invitar a alguien either, since only one real value exists to write.
+- *global-principles.md*, "the fastest interaction is the one that never happens" — RFC 0013's reasoning here (no phone number, no role picker) stays true; **the "only an optional memory-aid field she may skip entirely" half is superseded 2026-09-15 (RFC 0014/D70)**: creating an Invitation now requires one typed, validated fact — the email — the real, named friction the Product Owner explicitly accepted ("I think email is fine," `decision-log.md` D70) in exchange for closing a freshly-confirmed leaked-link exposure. What's still true and unchanged: no phone number, no role picker, no second collection pattern reintroduced — the token itself is still generated, not collected.
 - *global-principles.md*, "business language before technical language" — every "Tu equipo" screen says "vendiendo contigo," "ya no vende contigo," never "Membership," "Invitation," or "status." Extended to the new copy: "enlace," "invitación," "caducada," never "token," "expiresAt," or "targetHint" anywhere on screen.
 - *architecture-principles.md* #7 (idempotent/keyed writes) — "Sí, quitar" reuses §3.9/§3.10's shared guardando/error/Reintentar template, the same D30-keyed-retry guarantee every other write in this document already gets; "Generar invitación," "Generar otra," and "Sí, cancelar" reuse the same template at §3.12a/§3.12b — a retried token-generation attempt must never risk creating two live Invitations for one confirming tap.
 - *architecture-principles.md* #6 (one-way dependency direction) — this section writes only to Identity's `Invitation`/`BusinessMembership`; it never reads or writes Selling data. `Sale.performedByMembershipId` continuing to resolve after a revoke is Selling's own read, not something this document touches.
-- RFC 0013 §1/§4 (the `targetHint`/token design itself) — "Correo electrónico (opcional)" is worded, and behaves, as a pure memory aid: never gates the primary action, never validated as identity, and its own inline soft-duplicate advisory (§3.12) is explicitly non-blocking, matching RFC 0013's own explicit ruling that uniqueness on `(businessId, targetHint.value)` is "an optional, soft UX-level duplicate-pending-row nicety... not a hard invariant."
+- **Superseded 2026-09-15 (`product/99-rfc/0014-invitation-target-hint-enforced.md`, Accepted, `decision-log.md` D70) — `targetHint` is no longer a pure memory aid.** "Correo electrónico" (no longer labeled "(opcional)") now gates "Generar invitación" on well-formed input and is checked as identity at acceptance time (`authentication.md`'s own concern). What's unaffected: the soft, non-blocking duplicate-pending-row advisory stays exactly as RFC 0013 scoped it — "an optional, soft UX-level duplicate-pending-row nicety... not a hard invariant" — required-ness and duplicate-detection are two independent questions, and only the first changed.
+- *brand/tone-of-voice.md*, "state facts before offering an opinion" — the required field's own helper copy states the real reason plainly ("para que solo esa persona pueda aceptarla, aunque alguien más llegue a tener el enlace"), never framed as a scary security warning (RFC 0014/D70).
 - *company/brand/brand-guide.md*, tone — "warm, direct, respects the vendor's intelligence" — §3.12c's one-time-display notice states the real constraint plainly, once, without manufactured urgency (`brand/tone-of-voice.md`, "never use urgency Nahui hasn't earned" — a factual, one-time disclosure of a real technical constraint is not the countdown-language pattern that rule targets). **"Listo" is force-gated on Copiar enlace/Compartir (corrected 2026-09-13, §8 item 18)** — this is a deliberate exception to "respects the vendor's intelligence" trumping every other consideration: `knowledge-mentor`'s research confirmed that for a one-time, non-recoverable secret, a forcing function is the established, correct pattern precisely because trusting-the-user's-attention is what fails for a realistically interrupted user, not a brand-tone call to make unilaterally.
 
 **§2.5/§3.3a phone-number-display fix (Slice 12 `merchant-user-tester`, 2026-09-07):**
@@ -1212,6 +1264,7 @@ None of the items below block this document's completion.
 - **"Generar otra" is a deliberate, reasoned one-tap exception to this document's otherwise-uniform two-tap floor** (§6) — the positive-activation mirror of `authentication.md §3.10`'s already-zero-tap "Ahora no."
 - **`authentication.md`'s own §2.2a/§3.10–§3.13a confirmed NOT to compose cleanly against the now-Accepted RFC 0013 domain model** — checked directly, not assumed (§8, item 10). Its own real rework is out of this amendment's scope, per RFC 0013 §6's own sequencing, and remains a named, not-yet-started follow-on.
 - **"Tu nombre" (§2.5/§3.3a/§3.3b), self-service `User.displayName` capture/edit, added 2026-09-15, resolving `decision-log.md` D69/`product-decisions.md` Q29.** Deliberately not added to `authentication.md`'s Invitation-acceptance flow — reasoned explicitly in §2.5 against "the fastest interaction is the one that never happens." "Tu equipo" (§2.7/§3.11) now resolves identity through it first. **[see settings.changelog.md#status-2026-09-15-displayname-capture]**
+- **RFC 0014/D70, 2026-09-15: `targetHint` becomes required at invite-creation, not optional — supersedes the earlier "optional, non-blocking, never gating the primary action, never matched against anything (RFC 0013 §1)" bullet above, on that one point only.** §3.12's field drops its "(opcional)" label, gates "Generar invitación" on a well-formed email, and its helper copy states the real reason. A new OWNER-side repair path (§3.12e) lets her correct a typo'd or missing `targetHint` on a still-pending row with one edit, writing `targetHint` in place with no token/expiry reset — the exact mechanism RFC 0014 names. A `pending` row created before this shipped, with `targetHint = null`, is exempt from the acceptance-time check (RFC 0014's own backward-compatibility rule) — §3.11 now distinguishes this legacy state with honest copy and an optional `[ Agregar correo ]` path to opt it in. **[see settings.changelog.md#status-2026-09-15-targethint-enforced]**
 
 ## 11. Future considerations
 

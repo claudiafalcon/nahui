@@ -10,6 +10,8 @@
 
 **[Further amended 2026-09-07 — Slice 12 `merchant-user-tester` defect, see `authentication.changelog.md#2026-09-07-mistyped-own-number-after-signout`.]** An OWNER who signed out (`settings.md §2.5`) and mistyped her own number on re-entry was silently dropped into a brand-new `onboarding.md §3.3`, with no way back to her existing Business — directly contradicting the sign-out screen's own "no se pierde nada" promise. New §3.7e adds a one-tap confirming screen, reached only when a genuinely-first-time-anywhere phone verifies on a device that has previously held a session for a *different* phone — the exact, narrow condition of this defect — adding zero friction to any ordinary first-time verification. Paired with `settings.md §2.5`/§3.3a, which elevates that document's own already-named, previously-deferred Future Consideration (her own verified number, shown read-only) from deferred to designed.
 
+**Further amended 2026-09-15 — `decision-log.md` D70, `product/99-rfc/0014-invitation-target-hint-enforced.md` (Accepted) — `Invitation.targetHint` becomes required, and acceptance authenticates specifically through it.** For the Invitation-acceptance entry point specifically, §2.0 step 4/§3.10's own "no session" branch no longer routes into §3.2a's three-way method choice. It routes directly into a new, pre-filled, locked Email sub-flow (new §3.2g) — RFC 0014 requires this one entry point to authenticate specifically through `targetHint`'s own value, never through phone or Google. §2.2a's write gains a fifth real outcome, `invitation_identity_mismatch` (new §3.10f) — reached identically whether the mismatch is caught against an already-valid session (RFC 0014's "already-authenticated-under-the-wrong-account" case) or after a fresh, locked Email verification (its narrower "existing account linked elsewhere" case); this document doesn't distinguish the two on screen, the same restraint §3.13a already models for a comparably shared fact. Ordinary (non-Invitation) entry through §3.2a is completely unaffected — phone, Google, and Email remain equally available first-class methods for every other entry point into this document; only the Invitation-acceptance path narrows. §3.2a's own 2026-09-14 "Invitation-context variant" is retired here, marked not deleted (§10). **Backward compatibility:** a still-`pending` Invitation with `targetHint = null` (created before this shipped) is exempt from the new check, server-side — nothing changes on this document's own screens for that case, since `accept_invitation()` simply never returns `invitation_identity_mismatch` for it. `settings.md`'s own companion amendment (the corrected, now-required invite-creation field, and a new OWNER-side repair path for a still-pending row) is that document's own scope, not this one's. Pending `ux-critic`/`reviewer` review.
+
 **[Further amended 2026-09-13 — see `authentication.changelog.md#2026-09-13-google-email`.]** Activates two new, fully independent first-time sign-in/sign-up methods — Google Sign-In and Email — alongside phone, per `decision-log.md` D62/D63 and `product/99-rfc/0012-auth-identity-multi-method.md` (Accepted). A new method-choice screen (§3.2a) now precedes what was previously the phone-only entry point; §2.1/§2.2's resolution logic is generalized to read "any verified `AuthIdentity`" rather than "phone" specifically. §2.2a and §3.10–§3.13a (Invitation acceptance) are explicitly untouched here — that surface stays phone-scoped per RFC 0012 §3's own ruling *as this specific amendment left it*, even though `product/99-rfc/0013-invitation-token-based.md` has since been Accepted (`decision-log.md` D64) and reworked `Invitation` to be token-keyed in the Foundation. **This document's own §2.2a/§3.10–§3.13a text is now stale relative to the Foundation** (`architect`-caught drift, 2026-09-13) — it still describes and designs a phone-keyed Invitation the domain model no longer has. Not fixed in this pass; a dedicated `authentication.md` Migration-Workflow amendment for RFC 0013 is real, separate, not-yet-started follow-on work (alongside the parallel `settings.md` amendment already in progress) — flagged here so the drift isn't mistaken for settled.
 
 **[Further amended 2026-09-14 — see `authentication.changelog.md#2026-09-14-rfc0013-token-invitation`.]** Closes the follow-on explicitly flagged by the banner above and by `product/02-ux/CLAUDE.md`'s own status line: §2.2a/§3.10–§3.13a (Invitation acceptance) are reworked in full against the now-Accepted `product/99-rfc/0013-invitation-token-based.md` (`decision-log.md` D64). `Invitation` discovery moves from an implicit phone-match at OTP-confirm/session-resume to an explicit pre-auth link resolution (new §2.0, new §3.9a/§3.9b) — the offer now appears *before* authentication, not after it. The acceptance write gains two new, precisely distinguished outcomes beyond success/failure (`already_member`, new §3.10d; `membership_revoked`, new §3.10e), alongside the existing `invitation_not_available` race, still §3.13a, now reached from two checkpoints instead of one and reused verbatim across both. Phone, Google, and Email all remain equally available acceptance-side authentication methods, reusing §3.2a–§3.2f verbatim — no parallel authentication UI built for this surface. The per-device decline-memory marker and the multi-pending-Invitation tie-break (former §2.2a steps 2/6) are both eliminated outright, not carried forward, per RFC 0013 §2's own structural reasoning. The ordinary, non-invitation resolution path (§2.1 session-resume, §2.2 cases 1–3, `onboarding.md` handoff) is confirmed completely unaffected — checked directly, not assumed (§2.0 step 1's NO branch). **Full remediation cycle complete.** `ux-critic` found and closed 4 Major (offer-before-authentication continuity, §3.2a's now-inaccurate "nowhere to return to" claim, an unmarked stale §10 bullet, token survival through a Google-cancel detour — see the changelog's "ux-critic closure round" entry). `reviewer`'s document-level pass found and closed 2 Important (an unmarked stale §10 bullet from the retired 2026-09-06 mechanism; the `already_member` outcome's own internal-consistency wording) + 2 Suggestions (snake_case/camelCase naming clarity, `peek_invitation` not being an RFC-literal name) — both fixed directly by Main. Folded back into Approved.
@@ -103,21 +105,25 @@ preference.
 4. She taps "Aceptar y empezar a vender" or "Ahora no" (§3.10). Both
    branches test the device's own ordinary session state first (§2.1
    step 1's existing test, unchanged) — see §3.10's own behavior notes,
-   below, for the full branch. Accepting on a session-less device threads
-   the token forward into whichever of §3.2a–§3.2f she chooses, the same
-   "carries whatever's already in progress across an interruption"
-   mechanism §3.8 already establishes for this document's other pre-auth
-   state — generalized here to carry one additional piece of context (the
+   below, for the full branch. **[Corrected 2026-09-15, RFC 0014/D70]**
+   Accepting on a session-less device now routes directly into §3.2g
+   (new) — a pre-filled, locked Email sub-flow, never the three-way
+   §3.2a–§3.2f choice — carrying the token forward the same "carries
+   whatever's already in progress across an interruption" mechanism §3.8
+   already establishes for this document's other pre-auth state,
+   generalized here to carry one additional piece of context (the
    token), not a new mechanism.
 
-   **[Added 2026-09-14, closes `ux-critic` M1.]** This token's presence
-   stays visible to her, not just to the system, for as long as she
-   carries it: every screen in §3.2a–§3.2f (and §3.3–§3.7e, wherever this
-   path reaches them) renders one additional line acknowledging the
-   commitment she just made — illustrated once, at §3.2a's own wireframe
-   (below), reused verbatim at every other screen this sub-flow reaches
-   rather than redrawn at each one, per this folder's own §4 shared-state
-   citation rule.
+   **[Added 2026-09-14, closes `ux-critic` M1; range corrected
+   2026-09-15, RFC 0014/D70 — this sub-flow no longer reaches
+   §3.2a–§3.2f/§3.3; it reaches only §3.2g and whatever §3.2g itself
+   reaches.]** This token's presence stays visible to her, not just to
+   the system, for as long as she carries it: §3.2g (new) and every
+   screen it reaches (§3.6/§3.6a/§3.6b, §3.7/§3.7a-d, §3.7e) each render
+   one additional line acknowledging the commitment she just made —
+   illustrated once, at §3.2g's own wireframe, reused verbatim at every
+   other screen this sub-flow reaches rather than redrawn at each one,
+   per this folder's own §4 shared-state citation rule.
 
    **[Added 2026-09-14, closes `ux-critic` M4.]** Two distinct guarantees
    carry this token, not one stretched to cover both. The pre-auth
@@ -135,7 +141,13 @@ preference.
      → A valid session already exists — §2.1 step 1's ordinary test,
        including its own "with no §3.7e confirmation left pending"
        condition (§2.1 step 0) → the acceptance write runs immediately,
-       no authentication detour at all → §2.2a directly.
+       no authentication detour at all → §2.2a directly. **[Amended
+       2026-09-15, RFC 0014/D70]** This write may now return a fifth
+       outcome, `invitation_identity_mismatch` — this is precisely the
+       RFC's own named "already-authenticated-under-the-wrong-account"
+       case, a device holding a valid session under a User whose own
+       verified email doesn't match `targetHint` → §3.10f (see §2.2a's
+       own corrected outcome list, below).
      → **[Added 2026-09-14, closes a `reviewer`-flagged spec-
        authorization gap from a Team Invitations Blocker fix — see
        `authentication.changelog.md#2026-09-14-mismatch-confirm-
@@ -149,30 +161,38 @@ preference.
        copy — the identical composition that mechanism's own "§3.3–§3.7e,
        wherever this path reaches them" citation already anticipated.
          → "Sí, es mío/mía" → the just-confirmed `userId` is handed
-           directly to §2.2a's acceptance write → §3.10a. Never
+           directly to §2.2a's acceptance write → §3.10a → the same five
+           real outcomes apply, including the new
+           `invitation_identity_mismatch` → §3.10f. Never
            `onboarding.md §3.3` — confirming whose credential this is and
            accepting the Invitation are two separate, simultaneously-true
            facts, not competing outcomes of the same tap.
          → "No, elegir otro" → reverts this credential's own unconfirmed
            verification (the identical mechanism ordinary §3.7e's own
            "No, elegir otro" already uses, §2.2 case 1 — not reinvented
-           here) → returns to this same offer flow's own authentication
-           step — §3.2a's Invitation-context variant, fresh, for Google;
-           §3.3/§3.2e, value preserved, for phone/email — never
-           `AppRouter`'s ordinary, context-less §3.2a. The token survives
-           this whole detour intact, the same "carries whatever is
-           already in progress" guarantee this step already gives
-           (above). A subsequent successful verification re-tests this
-           same three-way branch from the top.
+           here) → **[Corrected 2026-09-15, RFC 0014/D70]** returns to
+           §3.2g (Invitación — correo confirmado), never §3.2a's
+           Invitation-context variant or §3.3/§3.2e — this path is
+           Email-only now, with nothing typed to preserve, since there
+           was never anything to type. The token survives this whole
+           detour intact, the same "carries whatever is already in
+           progress" guarantee this step already gives (above). A
+           subsequent successful verification re-tests this same branch
+           from the top.
      → No session at all exists (a genuinely fresh device, or this exact
        credential's verification was itself just reverted by the branch
-       above) → §3.2a–§3.2f (any of the three methods, unchanged) → on a
-       successful credential verification, checked FIRST against §2.2's
-       new case 0 (a token carried from here) → §2.2a. Control returns to
-       accepting the Invitation the instant a `userId` resolves — never
-       to `onboarding.md §3.3` or any other ordinary post-auth landing.
+       above) → **[Corrected 2026-09-15, RFC 0014/D70]** §3.2g
+       (Invitación — correo confirmado, new), not §3.2a–§3.2f. The email
+       is already known — `targetHint`'s own stored value — so there is
+       nothing to choose between and nothing to type; she confirms and
+       receives a code at that exact address. On a successful
+       verification, checked FIRST against §2.2's new case 0 (a token
+       carried from here) → §2.2a. Control returns to accepting the
+       Invitation the instant a `userId` resolves — never to
+       `onboarding.md §3.3` or any other ordinary post-auth landing, and
+       never to §3.2a's own three-way choice at any point in this path.
 
-5. See §2.2a for the write itself and its four real outcomes.
+5. See §2.2a for the write itself and its five real outcomes.
 ```
 
 ### 2.1 Whether Authentication shows at all (device-level check)
@@ -357,11 +377,28 @@ here rather than reinvented.
    (§3.7, §3.7d). Shown as §3.10a (Aceptando invitación), same
    near-instant/slow convention as every other write in this document.
 
-2. Resolves into exactly one of four real outcomes, never a fifth,
+2. **[Amended 2026-09-15, RFC 0014/D70 — a fifth real outcome is added]**
+   Resolves into exactly one of five real outcomes, never a sixth,
    undefined one:
      → success → §3.10c (Invitación aceptada — bienvenida) → Ir a Hoy →
        `home.md §2`, now reading a real, active SELLER Membership for the
        first time.
+     → **[New, RFC 0014/D70]** `invitation_identity_mismatch` — a
+       defensive precondition, checked before the status CAS itself
+       (RFC 0014's own server-side guarantee, "never trust the client
+       alone to have locked the auth method correctly"): the
+       authenticating User's own resolved, verified
+       `AuthIdentity(type='email')` doesn't include a row matching
+       `targetHint`'s value. Reached identically whether this write ran
+       immediately off an already-valid session (§2.0 step 4's first
+       branch), off a confirmed §3.7e gate (§2.0 step 4's second
+       branch), or off a fresh verification through §3.2g (§2.0 step
+       4's third branch) — this document doesn't distinguish which path
+       produced it, the identical restraint §3.13a's own body text
+       already states for its own two entry points. **Never
+       `invitation_not_available`** — the Invitation itself is
+       perfectly valid; it's this account that doesn't match it. →
+       §3.10f.
      → `invitation_not_available` — a real race: the Invitation was
        still `pending` when the offer was shown (§2.0 steps 2–3), but was
        consumed, revoked, or expired by something or someone else before
@@ -384,6 +421,13 @@ here rather than reinvented.
      → the write itself fails outright (genuine platform/network
        error — none of the above was actually determined) → §3.10b,
        Reintentar, replays the same write under the same idempotency key.
+
+   **Backward compatibility, stated once here rather than at every
+   citation (RFC 0014's own rule).** A `pending` Invitation with
+   `targetHint = null` — a legacy row, created before this check shipped
+   — never produces `invitation_identity_mismatch`: the check is
+   null-guarded, not a hard-fail-everything migration. Nothing about
+   this write's other four outcomes changes for such a row.
 
 3. Declining was already resolved before this point (§2.0/§3.10's own
    "Ahora no" branch) — nothing in this section handles declining; §2.2a
@@ -461,6 +505,8 @@ Ordinary entry (no Invitation token carried into this screen):
 └───────────────────────────────┘
 ```
 
+**Retired 2026-09-15, RFC 0014/D70 — marked superseded, not deleted, per this document's own non-deletion discipline.** Nothing routes into this variant any longer: §2.0 step 4/§3.10's own "no session" branch now goes directly to §3.2g (new) instead of here, since RFC 0014 requires the Invitation-acceptance path to authenticate specifically through Email, never through a three-way choice that includes Google or phone. The ordinary (context-less) render of §3.2a immediately above is completely unaffected — every other entry point into this document still reaches it exactly as designed.
+
 - No back arrow — this is now the one screen in the whole product with nowhere to return to, the claim §3.3 previously made for itself and now inherits from this screen instead. **Caveat, added 2026-09-14 (closes `ux-critic` M2):** true only for this screen's ordinary, ambient entry point (a fresh device, no prior context). It does not hold when reached via §2.0 step 4's Invitation-offer path, where §3.10's own offer screen legitimately precedes it — a deliberate, accepted asymmetry for that one entry point, stated here explicitly rather than left as an uncaveated, now-inaccurate absolute. Not a functional dead end either way: she can always simply leave the app.
 - All three options are the same visual weight — bracketed, same size, stacked — deliberately not primary/secondary/tertiary the way `onboarding.md §3.3`'s three paths are. *global-principles.md*, "business language before technical language": no raw method-type picker ("Teléfono / Google / Email" as bare labels) — each option is phrased as the actual action she takes ("Continuar con...").
 - **Order (Google, Correo, Número celular) is a stated judgment call, not a priority ranking.** Google is listed first because it's genuinely the lowest-friction of the three when she's already signed into a Google account on her device (zero typing at all); phone is listed last, not because it's lesser, but because the exact motivating trigger for this activation (`decision-log.md` D62 — some prospective merchants are reluctant to register a phone number at all under the current government policy) means a phone-reluctant merchant shouldn't have to visually pass it first. Not asserted as validated — worth revisiting once real merchant reaction exists (Hypothesis-tagged, `tone-of-voice.md`'s own posture toward untested register choices).
@@ -530,6 +576,43 @@ Reached on a paste producing a value that satisfies the loose "@ plus something"
 
 **Behavior from here:** Enviar código → shares §3.5/§3.5a ("Enviando código," near-instant/slow, and its error state) — cited, not redescribed, per this folder's own §4 shared-state rule. Success → shares §3.6/§3.6a/§3.6b ("Ingresa el código"), generalized below. → Confirmar → shares §3.7/§3.7a–§3.7d ("Verificando código"), unchanged, already channel-neutral copy.
 
+### 3.2g Invitación — correo confirmado (new, RFC 0014/D70 — reached only via the Invitation-acceptance path; never `§3.2a`'s ordinary three-way choice)
+```
+┌───────────────────────────────┐
+│                                │
+│  Para aceptar la invitación de   │
+│  Ropa Ana                          │
+│                                │
+│  Te vamos a mandar un código a el  │
+│  correo con el que te invitaron:    │
+│                                │
+│      ana@correo.com                │
+│                                │
+│  [   Enviar código   ]             │
+│  [   Ahora no   ]                   │
+│                                │
+│  ¿No es tu correo? Dile a quien te  │
+│  invitó que lo corrija.             │
+│                                │
+└───────────────────────────────┘
+```
+Reached the instant she taps "Aceptar y empezar a vender" on §3.10's offer, when no session already exists (§2.0 step 4's third branch) or when a reverted §3.7e confirmation returns her to authenticate again (§2.0 step 4's second branch, "No, elegir otro"). Replaces the ordinary "→ §3.2a–§3.2f" routing every other entry point into this document still uses. **This screen is the one and only entry point into authentication for an Invitation-acceptance attempt** — §3.2a's own three-way method choice never renders here at all, since RFC 0014 requires the *method*, not just the value, to be fixed to Email (Google's own `AuthIdentity` never captures a real email to check against `targetHint`, `decision-log.md` D70's own reasoning).
+
+- The email shown is `targetHint`'s own stored value, read directly from the same `peek_invitation` response §3.9a already resolved — never typed, never editable on this screen. Reuses the identical "reflect a known fact back to her, plainly, before committing" shape §3.7e already establishes for a different situation, composed with the same Invitation-context line (§2.0 step 4's own M1 mechanism) rendered as the first line of body content here, exactly as it renders on every other screen this now-narrower sub-flow reaches.
+- **"Enviar código" is the one real committing tap** — reuses §3.5's own send action verbatim (`Enviando código`, near-instant/slow, §3.5/§3.5a), which is already channel-neutral (parametrized on "número / correo") and needs no change to accept this new entry point.
+- **"Ahora no" costs nothing** — the same zero-cost decline §3.10's own "Ahora no" already establishes. The device session state test is identical to §3.10's own "Ahora no" behavior (below) — she was never asked to authenticate for this, and isn't now either.
+- **"¿No es tu correo? Dile a quien te invitó que lo corrija." — the honest answer to the one real, still-possible failure mode this design leaves open: the OWNER herself typo'd or mis-set the address.** Stated plainly, not alarmingly, per `tone-of-voice.md`'s "state facts before offering an opinion" — she can't fix this herself (the field is locked by design, RFC 0014's whole point), so the honest move is telling her who can (`settings.md §3.12`'s new "Editar correo" repair path, cited not redescribed).
+- No format-validation state exists on this screen — nothing typed, nothing to mistype. If `targetHint`'s own stored value genuinely can't receive a code (a real send failure), that surfaces at §3.5a exactly as it already does for any other "Enviar código" attempt — no new error state needed.
+
+**Behavior, "Enviar código":** shares §3.5/§3.5a verbatim → success → shares §3.6/§3.6a/§3.6b ("Ingresa el código," already parametrized to show "ana@correo.com" — nothing new needed there) → Confirmar → shares §3.7/§3.7a-d verbatim → success → checked FIRST against §2.2's case 0 (token carried) → §2.2a directly (§3.10a → one of five outcomes, including the new `invitation_identity_mismatch` → §3.10f).
+
+**Behavior, "Ahora no":** identical device-session test to §3.10's own "Ahora no" (§2.0 step 4). No session exists here by construction (this screen is only ever reached on a no-session or reverted-confirmation branch), so this always routes to §3.2a, fresh, ordinary entry, no Invitation context — she was never asked to authenticate for this, and declining costs nothing further.
+
+**§3.6's own escape hatch is parametrized a third way for this path.** "← Cambiar [número / correo]" would be wrong here — there's nothing to change, the field is locked by design. For this path specifically, that line reads "← Atrás" and returns to §3.2g, not to an editable entry screen — the only real "change" available from here is declining ("Ahora no," already on §3.2g itself).
+- `§3.5`'s own citation, "reached via: phone flow — §3.3's Enviar código; or email flow — §3.2e/§3.2f's Enviar código," gains a third citation: "or the Invitation-locked email flow — §3.2g's Enviar código."
+- `§3.6`'s own citation gains the identical third citation.
+- `§3.8`'s own resumability range ("§3.2a–§3.2f, §3.3–§3.7e") extends to include §3.2g — an interruption after "Enviar código" but before "Confirmar" on this screen resumes exactly where she left it, the same guarantee every other in-progress screen in this document already carries.
+
 ### 3.3 Número celular — entry
 ```
 ┌───────────────────────────────┐
@@ -559,7 +642,7 @@ Número celular
 ```
 Non-blocking, corrects in place — nothing was ever submitted, so nothing "failed" from her side.
 
-### 3.5 Enviando código — near-instant / slow (reached via: phone flow — §3.3's Enviar código; or email flow — §3.2e/§3.2f's Enviar código)
+### 3.5 Enviando código — near-instant / slow (reached via: phone flow — §3.3's Enviar código; email flow — §3.2e/§3.2f's Enviar código; or the Invitation-locked email flow — §3.2g's Enviar código, added 2026-09-15, RFC 0014/D70)
 ```
 ┌───────────────────────────────┐        ┌───────────────────────────────┐
 │        ▢▢▢▢▢▢▢▢▢▢▢▢            │        │      Un momento…                │
@@ -578,7 +661,7 @@ The one write-like action in this half of the flow: requests a code be generated
 ```
 Su typed number isn't lost — same guarantee every retry state in this family already gives.
 
-### 3.6 Ingresa el código — entry (code sent) (reached via: phone flow §3.3, or email flow §3.2e/§3.2f — shared state, this document's own §4 rule)
+### 3.6 Ingresa el código — entry (code sent) (reached via: phone flow §3.3; email flow §3.2e/§3.2f; or the Invitation-locked email flow §3.2g, added 2026-09-15, RFC 0014/D70 — shared state, this document's own §4 rule)
 ```
 ┌───────────────────────────────┐
 │ ← Cambiar [número / correo]      │
@@ -749,7 +832,7 @@ case stays exactly as fast as it already was.
   write path (§3.5 there) ever runs.
 
 ### 3.8 Retomar autenticación interrumpida
-No new wireframe — reaching any screen in §3.2a–§3.2f, §3.3–§3.7e a second time (after the app was closed, backgrounded, or crashed mid-flow) renders it pixel-identical, with whatever she'd already typed or started (her phone number or email, a partially-typed code, an in-progress Google redirect) still present. **[Range extended 2026-09-13 — `ux-critic`-caught gap: the original range, "§3.3–§3.7d," predated the Google/email screens and left no defined resume path for a background/kill mid-Google-redirect or mid-email-entry, closed.]** For the Google flow specifically (§3.2b/§3.2c), "resume" means re-attempting the redirect/callback resolution, not literally replaying stale external UI state — the same "below this document's abstraction level" treatment §2.3 already gives OTP delivery mechanics. The one exception to "pixel-identical" otherwise: §3.6's resend countdown is recomputed from real elapsed time on resume, not frozen at its pre-interruption value or reset to a fresh 0:30 — the number changes, nothing else about the screen does. Same guarantee `onboarding.md §3.7`/`home.md §3.13`/`inventory.md §3.7` already make for their own in-progress work. *global-principles.md*, "never ask twice." Never restarts from §3.2a once she's made real progress past it. **Extended 2026-09-14, RFC 0013** — the same mechanism also carries a pre-auth Invitation token (§2.0 step 4) across an interruption during §3.2a–§3.2f, generalized here to one additional piece of context, not a new mechanism.
+No new wireframe — reaching any screen in §3.2a–§3.2f, §3.3–§3.7e a second time (after the app was closed, backgrounded, or crashed mid-flow) renders it pixel-identical, with whatever she'd already typed or started (her phone number or email, a partially-typed code, an in-progress Google redirect) still present. **[Range extended 2026-09-13 — `ux-critic`-caught gap: the original range, "§3.3–§3.7d," predated the Google/email screens and left no defined resume path for a background/kill mid-Google-redirect or mid-email-entry, closed.]** For the Google flow specifically (§3.2b/§3.2c), "resume" means re-attempting the redirect/callback resolution, not literally replaying stale external UI state — the same "below this document's abstraction level" treatment §2.3 already gives OTP delivery mechanics. The one exception to "pixel-identical" otherwise: §3.6's resend countdown is recomputed from real elapsed time on resume, not frozen at its pre-interruption value or reset to a fresh 0:30 — the number changes, nothing else about the screen does. Same guarantee `onboarding.md §3.7`/`home.md §3.13`/`inventory.md §3.7` already make for their own in-progress work. *global-principles.md*, "never ask twice." Never restarts from §3.2a once she's made real progress past it. **Extended 2026-09-14, RFC 0013** — the same mechanism also carries a pre-auth Invitation token (§2.0 step 4) across an interruption during §3.2a–§3.2f, generalized here to one additional piece of context, not a new mechanism. **Range further extended 2026-09-15, RFC 0014/D70** — the Invitation-acceptance path now reaches §3.2g (new), not §3.2a–§3.2f; this resumability guarantee extends to it identically: an interruption after "Enviar código" but before "Confirmar" on §3.2g resumes exactly where she left it.
 
 ### 3.9 Falla defensiva — no se pudo determinar el estado inicial
 ```
@@ -813,19 +896,28 @@ every other retryable read in this document.
 **Behavior, "Aceptar y empezar a vender":**
 - Does this device currently hold a valid, verified session, with no
   §3.7e confirmation left pending (§2.1 step 1's ordinary test, per §2.0
-  step 4's now three-way branch, above — cited, not restated in full)?
+  step 4's now-corrected branch, above — cited, not restated in full)?
     → YES → the token, held in this screen's own pre-auth context, is
       handed directly to §2.2a's acceptance write — §3.10a (Aceptando
-      invitación), no detour through authentication at all.
-    → **[Added 2026-09-14 — same gap and citation as §2.0 step 4's new
-      branch, above.]** A credential already verified on this device but
-      sitting on its own unconfirmed §3.7e gate → §2.0 step 4's third
-      branch runs exactly as written there.
-    → NO → routes into §3.2a (Elegir cómo entrar), carrying the token
-      forward the same way §3.8 already carries any other in-progress
-      pre-auth state — she authenticates via any of the three methods,
-      unchanged, then control returns here automatically the instant a
-      `userId` resolves (§2.2's new case 0) → §2.2a → §3.10a.
+      invitación), no detour through authentication at all. **[Amended
+      2026-09-15, RFC 0014/D70]** This write may now return
+      `invitation_identity_mismatch` → §3.10f, new — see §2.2a's own
+      corrected outcome list.
+    → A credential already verified on this device but sitting on its
+      own unconfirmed §3.7e gate → §2.0 step 4's second branch runs
+      exactly as written there (its own "Sí, es mío/mía" leads to the
+      same §2.2a write, including the possible §3.10f outcome; its "No,
+      elegir otro" now returns to §3.2g, not §3.2a/§3.3/§3.2e —
+      corrected 2026-09-15, RFC 0014/D70).
+    → NO → **[Corrected 2026-09-15, RFC 0014/D70]** routes into §3.2g
+      (Invitación — correo confirmado, new), never §3.2a's three-way
+      choice, carrying the token forward the same way §3.8 already
+      carries any other in-progress pre-auth state. The email is
+      already known (`targetHint`), so there's nothing to choose or
+      type — she confirms and receives a code at that exact address,
+      then control returns here automatically the instant a `userId`
+      resolves (§2.2's new case 0) → §2.2a → §3.10a (or, on a
+      `targetHint` mismatch, §3.10f).
 
 **Behavior, "Ahora no":**
 - Same device-session test.
@@ -951,6 +1043,33 @@ session (§2.0 step 4's "valid session" branch), falls through directly
 to `onboarding.md §2.1`'s own resolution, same as §2.1 step 1's ordinary
 pass-through.
 
+### 3.10f Invitación — no es para esta cuenta (new, RFC 0014/D70 — `accept_invitation` outcome: `invitation_identity_mismatch`)
+```
+┌───────────────────────────────┐
+│           Nahui                 │
+│                                │
+│  Esta invitación es para           │
+│  ana@correo.com, y esta cuenta      │
+│  es otra.                            │
+│                                │
+│  Si tú eres ana@correo.com, cierra   │
+│  esta sesión y entra de nuevo con     │
+│  esa cuenta.                            │
+│                                │
+│      [   Cerrar sesión e intentar    │
+│           de nuevo   ]                  │
+│      [   Entendido   ]                    │
+│                                │
+└───────────────────────────────┘
+```
+Reached only when §2.2a's write returns `invitation_identity_mismatch` — the authenticated User's own verified email doesn't match `targetHint`. Reached identically whether this write ran off an already-valid, wrong-account session (RFC 0014's own "already-authenticated-under-the-wrong-account" case) or off a fresh verification through §3.2g that still resolved to a mismatched, already-linked-elsewhere account (RFC 0014's own narrower second case) — this document has no reliable way to distinguish the two, and shouldn't guess, the identical restraint §3.13a's own body text already states for its own two entry points.
+
+- **Never "esta invitación ya no está disponible" or "no es válida" — the invitation is completely fine; it's this account that doesn't match it, per RFC 0014's own named register, held to literally.** Deliberately distinct copy and screen from §3.13a, even though both are "you don't get in" moments — collapsing them would misstate the fact, the same reasoning §3.10d/§3.10e already give for not collapsing into §3.13a's own generic framing.
+- `targetHint`'s own value fills the one variable — the same value already shown, unlocked, at §3.2g, so nothing here contradicts what she already saw if she reached this via the fresh-verification path, and introduces no new, unexplained fact if she reached this via the already-authenticated fast path, where she never saw §3.2g at all.
+- **"Cerrar sesión e intentar de nuevo" reuses `settings.md §2.5`'s exact sign-out mechanism and its own stated guarantee** — her Business, Catálogo, and historial de ventas are completely untouched, since this is a different device's session fact, not a data-loss risk. Runs inline, here, rather than sending her away to Configuración first — Configuración has no standing reason to be reachable from this exact moment, the same restraint `settings.md §3.14` already applies to its own comparable no-standing defensive state. Reuses `settings.md §3.8a/§3.8b`'s own near-instant/slow/error write template for the sign-out action itself, cited not redescribed. **No second confirming dialog** (unlike `settings.md §2.5`'s own ordinary entry point, which does show one) — she's already read the full explanation on this exact screen before tapping; a second "¿Cerrar tu sesión?" dialog on top would be a second confirming tap for the identical decision, which `onboarding.md §6`'s own standard ("a real commitment costs one deliberate tap, never zero, never two") argues against, not for. On success → §3.2g, fresh, the same Invitation token carried forward (§3.8's own guarantee, generalized here to a deliberate account-switch rather than an accidental interruption) — this branch re-tests from the top the next time she confirms.
+- **"Entendido" is the honest way out that costs nothing and fixes nothing** — the same restrained shape `settings.md §3.14`'s own "Entendido" already establishes for a comparable no-standing moment: she can simply leave, or go find whoever invited her and ask them to check the email they used (`settings.md §3.12/§3.12e`'s own "Editar correo" repair path, cited not redescribed). Tests whether a valid session still exists on the device (it does, in both entry paths, by construction — either the pre-existing wrong-account one, or the one she just created verifying `targetHint` itself): → falls through to `onboarding.md §2.1`'s own ordinary resolution, whatever standing she already has elsewhere, completely untouched by this failed attempt — the same two-way test §3.13a's own "Continuar" already runs for a session-holding device, reused rather than reinvented.
+- No "Reintentar" of its own — this isn't a failed write, it's an accurate, honest report of a real precondition that didn't hold. The only real next step (sign out and try under the right identity, or ask the OWNER to check what she typed) is stated plainly rather than implying a retry button fixes it on its own — same restraint `settings.md §3.14` already applies.
+
 ### 3.13a Invitación ya no disponible (defensive state — now reached from two checkpoints, RFC 0013)
 (reached via: §2.0 step 2 — `peek_invitation` resolving to anything other than a live `pending` status, before any authentication; or §2.2a's write returning `invitation_not_available`, after authentication. Same shared state either way, per this folder's own §4 shared-state rule — the underlying fact is identical regardless of which checkpoint catches it.)
 ```
@@ -999,21 +1118,30 @@ Open app (any time)
             (§2.1 step 1, including its own no-pending-§3.7e condition):
               valid session, no §3.7e pending → §2.2a directly →
                 outcomes below
-              valid session, §3.7e pending (added 2026-09-14) → §3.7e,
-                Invitation-context line stacked on top →
+              valid session, §3.7e pending → §3.7e, Invitation-context
+                line stacked on top →
                   Sí, es mío/mía → §2.2a directly → outcomes below
-                  No, elegir otro → reverts, returns to this same
-                    Invitation-carrying authentication step (§3.2a/§3.3/
-                    §3.2e, never AppRouter's ordinary flow) → re-tests
-                    this same three-way branch on the next successful
+                  No, elegir otro → reverts, returns to §3.2g
+                    [Corrected 2026-09-15, RFC 0014/D70 — never
+                    §3.2a/§3.3/§3.2e, this path is Email-only now] →
+                    re-tests this same branch on the next successful
                     verification
-              no session at all → §3.2a–§3.2f (any of the three methods,
-                unchanged), token carried forward the same way §3.8
-                carries any other in-progress pre-auth state → on
+              no session at all → §3.2g directly [Corrected 2026-09-15,
+                RFC 0014/D70 — never §3.2a–§3.2f's three-way choice] →
+                Enviar código → shares §3.5/§3.5a → Ingresa el código
+                (§3.6/§3.6a/§3.6b) → Confirmar → shares §3.7/§3.7a-d →
                 success, checked FIRST against §2.2's new case 0 (token
                 present) → §2.2a → outcomes below
           [outcomes, §2.2a] → success → §3.10a → §3.10c → Ir a Hoy →
                                 home.md §2
+                             → invitation_identity_mismatch [New,
+                               2026-09-15, RFC 0014/D70] → §3.10a →
+                               §3.10f → Cerrar sesión e intentar de
+                               nuevo → sign-out (settings.md §3.8a/
+                               §3.8b's template) → §3.2g, fresh → this
+                               branch re-tested from the top
+                                                 → Entendido →
+                               onboarding.md §2.1's ordinary resolution
                              → invitation_not_available → §3.10a →
                                §3.13a → Continuar → §2.2 cases 1–3
                              → already_member → §3.10a → §3.10d →
@@ -1157,6 +1285,8 @@ Any interruption up to and including a still-unconfirmed code:
 30. Invitación — no se pudo abrir el enlace (§3.9b, new)
 31. Invitación — ya formabas parte del equipo (§3.10d, new)
 32. Invitación — acceso cancelado antes (§3.10e, new)
+33. Invitación — correo confirmado (§3.2g, new, RFC 0014/D70)
+34. Invitación — no es para esta cuenta (§3.10f, new, RFC 0014/D70)
 
 ## 6. Minimum step count
 
@@ -1169,7 +1299,8 @@ Any interruption up to and including a still-unconfirmed code:
 | Resuming an interrupted verification | **0 extra** | Same guarantee `onboarding.md §3.7` already gives its own in-progress work. |
 | Recovering from a wrong/expired/exhausted code | **+1 per occurrence** (retype code, or tap Reenviar código) | Not part of the floor — only reached when something genuinely went wrong; never a designed-in tax on the happy path. |
 | Accepting a pending Invitation, already-authenticated device | **2** (Aceptar y empezar a vender → Ir a Hoy) | Unchanged from the phone-keyed version — one tap for the real commitment, one to leave the acknowledgment screen. |
-| Accepting a pending Invitation, no session yet (new, RFC 0013 — now a real, common case, since discovery no longer requires prior verification) | **2 + whichever authentication method's own floor** (e.g., 2+2=4 via Google; 2+5=7 via phone or email — see the rows above) | The Invitation-acceptance floor itself doesn't grow — she pays exactly the authentication method's own already-justified floor, once, in service of this specific commitment, never a duplicated ask. |
+| Accepting a pending Invitation, no session yet | ~~2 + whichever authentication method's own floor...~~ **Superseded 2026-09-15, RFC 0014/D70 — Invitation-acceptance no longer offers a choice of method at all.** **4** (Aceptar y empezar a vender → Enviar código → Confirmar → Ir a Hoy) | Lower than the superseded value above, not higher — RFC 0014 removes the method choice entirely for this one entry point (no §3.2a, no typing an identifier, since `targetHint` is already known), leaving only the two genuinely required auth-portion taps (send, confirm) plus the two Invitation-portion taps already justified elsewhere in this table. |
+| Recovering from `invitation_identity_mismatch` (already signed in under the wrong account) | **+2** (Cerrar sesión e intentar de nuevo, then the 4-tap floor above repeats) | New, RFC 0014/D70. Not part of the ordinary floor — only reached when a device already holds a session under an account that doesn't match `targetHint`. The fix costs exactly what `settings.md §2.5`'s own sign-out costs, once, then the same 4-tap floor above, once more. |
 | Declining a pending Invitation | **1** (Ahora no) | Unchanged — nothing to confirm, costs nothing beyond the tap, regardless of session state. |
 | First-time verification on a device that previously held a different identity's session | **+1** (Sí, es mío/mía) | Not part of the floor — only reached when a device carries this specific history; protects a real, first-time Business-creation commitment from a mistyped digit or accidental re-verification, the same reasoning `onboarding.md §6` already gives every real-commitment tap in this family (§3.7e, generalized). |
 | Accepting a pending Invitation, a credential already verified on this device but sitting on an unconfirmed §3.7e gate (new, added 2026-09-14) | **+1** (Sí, es mío/mía), on top of whichever floor already applied before the interruption — never a repeated OTP cycle | Same reasoning as the ordinary §3.7e row above, extended to this second entry point: protects the same real commitment (which identity this Business/Membership attaches to) from the same stray-tap/mistyped-credential risk, reusing the identical mechanism rather than forcing a redundant full re-verification. |
@@ -1183,9 +1314,10 @@ Any interruption up to and including a still-unconfirmed code:
 - Owner-ness — fully automatic, a pure structural consequence of the atomic Business-creation write (`decision-log.md` D44), never a question, never a picker, per the Product Owner's explicit scope constraint.
 - Whether a client also auto-fires "Confirmar" the instant a 6th digit lands (without changing the underlying required, gated action itself) is a High-Fidelity/implementation nicety, deliberately left undecided here — below this document's abstraction level, the same way exact digit-grouping in the phone field is.
 - Whether an opened link's Invitation is still live-pending, expired, revoked, or already resolved is resolved automatically the instant the link opens (§2.0), before she's ever asked to do anything — never a manual "check invitation status" step.
-- Which of §2.2a's four real accept-write outcomes occurred (success, not-available, already-member, membership-revoked) is resolved automatically and reported with distinct, honest copy for each — never collapsed into one generic "something happened" state.
+- Which of §2.2a's five real accept-write outcomes occurred (success, identity-mismatch, not-available, already-member, membership-revoked) is resolved automatically and reported with distinct, honest copy for each — never collapsed into one generic "something happened" state.
 - Whether this device has ever held a session for a *different* phone is checked automatically, silently, before any Business-creation handoff — never a raw question asked of her ("¿ya usaste este teléfono antes?" never appears anywhere); it only ever surfaces as the one confirming screen it gates (§3.7e).
 - **Added 2026-09-13:** which of the three methods she used is never re-asked — §2.2's four-way branch resolves generically off whichever `AuthIdentity` just verified, never a separate "how did you sign in" question. Google's own account picker does her typing for her when she's already signed in on the device — the closest this document gets to a genuinely zero-typing verification path.
+- Whether the authenticated identity's own verified email matches `targetHint` — checked automatically, server-side, at the moment of acceptance (RFC 0014/D70); never something Ana or the invited person has to confirm manually beyond the one "Cerrar sesión e intentar de nuevo" choice if it fails.
 
 ## 8. Open questions
 
@@ -1205,7 +1337,8 @@ None of the items below block this document's own completion. Both are named exp
 12. **`settings.md §2.5/§3.3a` ("Tu cuenta") needs a follow-up amendment — added 2026-09-13, genuinely stale, not fixed by this document's own scope.** That section unconditionally shows a phone number, read-only, on every "Tu cuenta" variant, with no case for a merchant who has no linked phone `AuthIdentity` at all — now a real, reachable state the instant a merchant completes Owner-creation via Google or Email alone (D63 explicitly permits exactly this). RFC 0012 §6's "second Approved consumer checked" note only confirmed the field path is correct for a merchant who *has* a verified phone — it couldn't have addressed the zero-phone case, since Google/Email weren't activated at that point. Flagged explicitly for a follow-up `settings.md` amendment (new screen state — what "Tu cuenta" shows for a Google-only or Email-only merchant, presumably her verified email or a Google-account label, by the same reasoning §3.7e applies); not designed here since it's outside this document's own file scope.
 13. **Provisional prototype defaults, email-specific — added 2026-09-13.** This amendment reuses phone's existing 6-digit code / 30-second cooldown / 5-minute validity / 5-attempt bound for email, unchanged, for consistency — but email delivery in the real world is frequently slower than SMS/WhatsApp (spam-filter queueing, greylisting). Worth a dedicated check once a real email provider is integrated (Stage 7), same caution §8 item 3 already states for the phone defaults, extended explicitly to cover this new channel rather than silently assumed identical.
 14. **§3.7e's device-history check doesn't cover Google's actual realistic error mode — `ux-critic`-caught Major, named explicitly 2026-09-13, not resolved here.** The check fires only when *this device* remembers a *different identity's* prior session — built to catch a transcription error (a mistyped digit or email address). Google has no transcription step at all, so the real risk isn't "wrong device history," it's **picking the wrong already-signed-in account from Google's own account picker** — common on a shared/family device with multiple Google accounts signed in — and that can happen on a device with **zero prior Nahui history**, meaning §3.7e never fires for it under the current trigger condition. A merchant could tap "Continuar con Google," pick the wrong account, and silently get a brand-new Business created under someone else's Google identity, with no confirmation screen at any point. **Not solved in this pass** — named as a real, accepted gap (same class as items 11–13) rather than the narrower "is the existing check even worth firing for Google" question this item originally, incompletely, asked. A future fix would need a Google-specific confirmation step independent of device history (e.g., always showing the resolved Google account's label back to her before proceeding, regardless of device history) — not designed here.
-15. **Whether a post-acceptance soft mismatch warning (`targetHint` vs. the resolved authenticated identity's own email) is worth designing — added 2026-09-14.** RFC 0013 Business Decision #3 explicitly delegates this to `ux-designer`; not designed in this amendment, no evidence yet it's needed — the identical low-evidence deferral posture item 7 above (now superseded) previously took for its own case.
+15. ~~Whether a post-acceptance soft mismatch warning... is worth designing~~ **Superseded 2026-09-15 (`product-decisions.md` Q30, `product/99-rfc/0014-invitation-target-hint-enforced.md`, Accepted, `decision-log.md` D70).** Resolved as a hard block, not a soft warning — see §2.0/§2.2a/§3.2g/§3.10f, this same amendment.
+16. **Whether `invitation_identity_mismatch`'s two named technical paths (already-wrong-account fast path, vs. a fresh Email verification that still resolves to an account linked elsewhere) ever need distinguishing UI, rather than sharing §3.10f — added 2026-09-15.** No evidence yet either path is common enough to warrant it — RFC 0014's own "narrower than it sounds" framing for the second path, mirrored here rather than re-litigated.
 
 ## 9. Principle justification
 
@@ -1257,6 +1390,12 @@ None of the items below block this document's own completion. Both are named exp
 - *global-principles.md*, "capture business truth once, reuse it forever" — extended here to interaction patterns, not just data: reuses §3.7e's own already-Approved screen and copy verbatim rather than authoring a parallel confirmation surface for this one entry point.
 - The same reasoning `onboarding.md §6` gives every real-commitment tap in this family, already applied to ordinary §3.7e (§9, above) — extended here to the identical commitment reached via a second path.
 
+**§2.0/§2.2a/§3.2g/§3.10f addition (RFC 0014/D70, `targetHint` enforced, 2026-09-15):**
+- *global-principles.md*, "never ask twice" — the email is given exactly once, by the OWNER, at invite-creation (`settings.md §3.12`); the invited person is never asked to type or re-confirm it, only to receive and enter the code sent there.
+- *architecture-principles.md* #7 (idempotent/keyed writes) — `accept_invitation()`'s new precondition check runs inside the identical CAS-guarded, idempotency-keyed write §2.2a already carries; a retried accept under `invitation_identity_mismatch` never risks a duplicate or ambiguous outcome.
+- *brand/tone-of-voice.md*, "state facts before offering an opinion" — §3.10f states the actual fact (this account and this invitation's own email don't match) before offering the one real fix, the identical two-beat shape §3.10d/§3.10e already use. Never "invitación inválida" — the invitation itself is fine, RFC 0014's own named register, held to literally.
+- *global-principles.md*, "the fastest interaction is the one that never happens" — weighed explicitly, not silently overridden, the same posture §1's own §3.2a tension already models: RFC 0014 removes a choice (which method) precisely because offering it here was itself the security hole, not a convenience — the friction traded away is real, named, and accepted by the Product Owner directly ("I think email is fine," `decision-log.md` D70), not a UX oversight.
+
 ## 10. Decisions made
 
 - **Named `authentication.md`, not `owner-access.md`** — the screens designed here aren't Owner-specific; naming the file after one outcome of a successful verification would overstate what's on screen. Reasoned in full at the top of this document.
@@ -1272,7 +1411,7 @@ None of the items below block this document's own completion. Both are named exp
 - **§3.13a reuses `settings.md §3.14`'s exact non-diagnostic register** rather than inventing a second tone for a closely related "you don't have standing here" moment.
 - **§3.10c's `brand-guardian` consultation (§8, item 8) is complete — copy left as-is, deliberately deferred, not treated as a blocking finding.** See §8 for the full reasoning and the on-record candidate replacement if this screen is next revisited.
 - **§2.1's session-resume check now also tests for a pending Invitation on a phone with zero standing anywhere (2026-09-07).** The original case-0 gate ("never verified before, anywhere") missed a real population: verified once, stalled before choosing an Onboarding path, invited later. Corrected to test the state that matters (zero Business/Membership anywhere) rather than verification history, checked at both entry points that can reach it. Declining is remembered per-device per-Invitation so the "never ask twice" bar holds even though this check now runs on every app open, not just once at OTP-confirm. **[Superseded 2026-09-14, RFC 0013 — see the bullets below.]**
-- **Phone/WhatsApp kept as a fully available acceptance-side authentication method, alongside Google/Email, reusing §3.2a–§3.2f verbatim — added 2026-09-14.** `business-decisions.md` Q19 concerns full Meta Business Verification for production Sender status, a separate business question; WhatsApp OTP delivery itself is real and live in this pilot. Stripping phone from only the acceptance path, while keeping it for ordinary entry, would be an arbitrary, unexplained asymmetry — a `ux-designer` call, stated plainly.
+- ~~Phone/WhatsApp kept as a fully available acceptance-side authentication method, alongside Google/Email, reusing §3.2a–§3.2f verbatim — added 2026-09-14. `business-decisions.md` Q19 concerns full Meta Business Verification for production Sender status, a separate business question; WhatsApp OTP delivery itself is real and live in this pilot. Stripping phone from only the acceptance path, while keeping it for ordinary entry, would be an arbitrary, unexplained asymmetry — a `ux-designer` call, stated plainly.~~ **Superseded 2026-09-15, RFC 0014/D70 — see the bullet below.**
 - **Offer-before-authentication sequencing composes three already-approved elements (§3.10's decision-screen shape, §3.2a's entry point, §3.8's state-carrying-across-interruption mechanism) rather than a new interaction pattern — added 2026-09-14.** Not a `knowledge-mentor` consultation candidate, the identical reasoning this document's own 2026-09-07 device-history-check composition already used.
 - **§3.13a reused verbatim as the shared "gone" state for both the pre-auth peek discovery and the post-auth accept-time race, rather than two separate dead-link screens — added 2026-09-14.** Same underlying fact, same non-diagnostic restraint already established there.
 - **`already_member` and `membership_revoked` get distinct, honest copy rather than being collapsed into §3.13a's generic framing — added 2026-09-14.** Both states are meaningfully different facts (she does have standing; she used to and lost it) that "this invitation is unavailable" would misstate or under-explain.
@@ -1287,6 +1426,12 @@ None of the items below block this document's own completion. Both are named exp
 - **No account-linking UI designed in this amendment — added 2026-09-13.** RFC 0012 §5's duplicate-User gap is named as a live, accepted risk (§8 item 11), not solved here; this document only activates the three methods as independent cold-sign-up entry points, per D63's own explicit scope.
 - **§2.2a/§3.10–§3.13a (Invitation acceptance) left entirely untouched by this amendment, including §2.2 case 0's literal phone-specific text — added 2026-09-13.** Correctly phone-scoped per RFC 0012 §3 *at the time this amendment was made* — touching it here risked getting ahead of that separately-in-progress work. **Now stale, not merely deferred** — RFC 0013/D64 was Accepted the same day and reworked `Invitation` to be token-keyed; this document's own Invitation sections need their own follow-up amendment (`architect`-caught, see the banner and §2.2's own note above).
 - **§2.1 gains a new step 0, checked before the ordinary valid-session test — added 2026-09-13, `ux-critic`-caught contradiction, closed.** The first remediation round extended §3.8's resumability claim to cover §3.7e without checking whether §2.1's own step-priority logic actually supported it — it didn't: a bare successful verification already satisfies "valid session" (step 1), so an interruption landing exactly between verification success and her §3.7e tap would have silently fallen through past the confirmation screen the moment ordinary step 1 logic ran, defeating its own safety purpose. Step 0 closes this the same way §2.2's own step 0 already outranks its 1–3 for the Invitation check — checked first, resumes directly to §3.7e, never lets the ordinary session check treat an unconfirmed §3.7e as settled.
+- **RFC 0014/D70, 2026-09-15: Invitation-acceptance now authenticates specifically through a pre-filled, locked Email sub-flow (§3.2g) — supersedes this document's own 2026-09-13 "Phone/WhatsApp kept as a fully available acceptance-side authentication method... reusing §3.2a–§3.2f verbatim" decision, on that one point only.** That earlier decision reasoned against an arbitrary asymmetry between ordinary entry and Invitation-acceptance entry — correct reasoning at the time, superseded now by a real, named technical/security requirement: Google's `AuthIdentity` never captures a real email to check `targetHint` against (`decision-log.md` D70's own reasoning), so only Email specifically can be checked cleanly. Ordinary (non-Invitation) entry is completely unaffected — §3.2a's three-way choice, and phone/Google as first-class methods generally, remain exactly as designed for every other entry point into this document.
+- **§3.2a's own 2026-09-14 "Invitation-context variant" is retired, not deleted, by this correction** — nothing routes into it any longer, since §2.0 step 4/§3.10's own "no session" branch now goes to §3.2g instead. Kept, marked superseded, per this document's own non-deletion discipline (the same treatment §2.2a step 4 already gives the retired multi-pending tie-break).
+- **New defensive state §3.10f, reached from §2.2a's new `invitation_identity_mismatch` outcome, reused identically regardless of which of RFC 0014's two named paths produced it** — the same "this document has no reliable way to distinguish, and shouldn't guess" restraint §3.13a already models, applied here to a new outcome rather than reinvented.
+- **No `knowledge-mentor` consultation run for §3.2g's own shape — reasoned explicitly, not silently skipped.** It composes three already-Approved elements: §3.7e's "reflect a known identifier back to her, plainly, before committing" shape, §3.10's own zero-cost "Ahora no" decline, and §3.5/§3.6's already channel-neutral send/confirm mechanism — the identical "composition, not a new pattern" reasoning this document already applied to its own 2026-09-14 offer-before-authentication sequencing (§10, above).
+- **No `brand-guardian` consultation run for §3.10f's copy — reasoned explicitly.** Its two-beat "state the fact, then the one real fix" shape and its literal "never say invalid, the invitation is fine" register are both RFC 0014's own explicit, named instruction (`decision-log.md` D70), not a fresh tonal judgment call this document is making independently — the same posture already justified for §3.9b/§3.10d/§3.10e's own routine-composition copy (§10, 2026-09-14 entry, above).
+- **§3.10f's "Cerrar sesión e intentar de nuevo" runs without a second confirming dialog, deliberately — reasoned explicitly against `settings.md §2.5`'s own ordinary entry point, which does show one.** There, the sign-out row itself carries no context, so a confirm dialog is the one deliberate tap for that real commitment. Here, she's already read the full explanation on §3.10f itself before this button is even visible — a second "¿Cerrar tu sesión?" dialog on top would be a second confirming tap for the identical decision, which `onboarding.md §6`'s own standard ("never zero, never two") argues against.
 
 ## 11. Future considerations
 
@@ -1300,4 +1445,5 @@ None of the items below block this document's own completion. Both are named exp
 - **`onboarding.md §0`'s own "Authentication... implementation-level concern below this spec's abstraction level" framing is now stale** now that this document exists as a real spec for exactly that concern. Flagged for whoever next amends `onboarding.md` — not resolved here, since `onboarding.md` is treated as frozen for this task.
 - **A persistent, read-only display of her own verified phone number somewhere in `settings.md` — Resolved 2026-09-07.** First flagged 2026-08-13 (`merchant-user-tester` walk of "Tu cuenta," read as "an unfinished corner"), logged then as a mild want; a second, later `merchant-user-tester` walk of Slice 12 confirmed it as a real, severe defect once routine sign-out/sign-in cycling became part of the multi-Membership workflow (`product/02-ux/experience-review-2026-09-07-slice-12-team-invite.md`) — a mistyped digit on re-verification silently produced a brand-new, empty Business with no way back, directly contradicting the sign-out screen's own "no se pierde nada" promise. Closed by `settings.md §2.5`/§3.3a now showing her own verified number, read-only, in "Tu cuenta," paired with this document's own §2.2/§3.7e device-history check.
 - **The device-history marker §2.2/§3.7e relies on is itself a plain local fact, not a domain concept** — if a device's local storage is ever cleared independently of a deliberate sign-out (app reinstall, cache clear), this safeguard silently stops firing for that device, the same limitation §2.1's own session-persistence mechanism already has. Not designed around here, consistent with this document's existing abstraction-level line.
-- **A post-acceptance soft mismatch warning (`targetHint` vs. the resolved authenticated identity) — added 2026-09-14.** Not designed here, RFC 0013 Business Decision #3, delegated, no evidence yet it's needed (§8 item 15).
+- ~~A post-acceptance soft mismatch warning (`targetHint` vs. the resolved authenticated identity) — added 2026-09-14.~~ **Superseded 2026-09-15 (RFC 0014/D70)** — resolved as a hard block, not a soft warning; see §2.0/§2.2a/§3.2g/§3.10f, this same amendment.
+- **Whether `invitation_identity_mismatch`'s two named technical paths ever need distinguishing UI — added 2026-09-15 (§8, item 16).** Not designed here, no evidence yet it's needed.

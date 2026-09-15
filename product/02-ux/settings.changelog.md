@@ -485,3 +485,16 @@ Companion amendments the same night, same underlying decision:
 `onboarding.md` (OWNER capture, folded into "Tu negocio") and
 `reports.md` ("Vendiendo ahorita" and "Exportar tus ventas" both
 resolving identity through it).
+
+### status-2026-09-15-targethint-enforced
+**Amended 2026-09-15 (`decision-log.md` D70, `product/99-rfc/0014-invitation-target-hint-enforced.md`, Accepted — `Invitation.targetHint` becomes required, and acceptance authenticates specifically through it):** the Product Owner, testing "Tu equipo" live, asked whether the invite link should be bound to a specific email/phone for security — a leaked link previously let any stranger who could complete any auth method accept it. `architect` ruled out phone directly (contradicts her own earlier D63 instruction); she confirmed email, refining the mechanism herself: rather than a post-acceptance match-or-reject check, the acceptance flow authenticates specifically through a pre-filled, locked Email field — necessary, not just simpler, since Google's `AuthIdentity` never captures a real email to check against.
+
+§2.7/§3.12 ("Nueva invitación") corrected: `targetHint` drops its "(opcional)" label and now gates "Generar invitación" on a well-formed address, with copy stating the real reason plainly ("para que solo esa persona pueda aceptarla, aunque alguien más llegue a tener el enlace"). New §3.12e ("Editar correo / Agregar correo") gives the OWNER a one-edit repair path for a typo'd or missing hint on a still-pending row, reusing §3.3b's exact sheet shape and writing `targetHint` in place — no token or expiry reset, the exact mechanism RFC 0014 names.
+
+**Before (§3.12 field):** "Correo electrónico (opcional)... Es solo para que tú recuerdes a quién es esta invitación — no hace falta para crear la invitación." **After:** "Correo electrónico... Para que solo esa persona pueda aceptarla, aunque alguien más llegue a tener el enlace."
+
+**Backward compatibility, a real design decision, not an afterthought:** a `pending` Invitation created before this shipped, with `targetHint = null`, is exempt from the acceptance-time check per RFC 0014's own rule — §3.11's wireframe now shows this legacy state as its own distinct row ("sin correo asignado — cualquiera que abra el enlace puede aceptarla") with an `[ Agregar correo ]` path to opt it in, rather than silently treating every pending row identically.
+
+§4's interaction flow, §5's screen-state enumeration (new 15e), §6's step-count table (Invitar a alguien's own row corrected, one new row added), §7 (new automation bullet), §8 item 17 (superseded — resolved as a hard block, not a soft warning), §9 (two citations corrected/added), §10 (new decision bullet) all updated to match.
+
+`authentication.md`'s own companion amendment (the acceptance-side mismatch handling — new §3.2g locked-email sub-flow, new §3.10f defensive state) is that document's own scope, cited here, not restated. Not yet run through `ux-critic`/`reviewer`.
