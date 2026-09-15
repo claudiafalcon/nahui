@@ -748,9 +748,15 @@ see §1 and §8 item 11 for the full record.
   because her identity was ever actually recorded"). If not set, the
   pre-existing role-only fallback renders exactly as before: OWNER →
   "Tú"; SELLER → "Alguien de tu equipo," reusing `settings.md`'s own
-  existing "vendiendo contigo" vocabulary family. No email fallback tier
-  — `Invitation.targetHint`/a verified email's reliability is Q30,
-  separately unresolved, not coupled to this change.
+  existing "vendiendo contigo" vocabulary family. **No email fallback
+  tier, even though Q30 is now Resolved (`decision-log.md` D70).**
+  Corrected 2026-09-15 (`reviewer` Important, closed): Q30's resolution
+  makes `targetHint` a required, verified-match precondition at
+  Invitation *acceptance* — a security gate, never a merchant-facing
+  display fact — so it still gives this screen nothing new to show; a
+  verified email existing reliably for every future SELLER doesn't by
+  itself mean showing it here is the right design (a separate,
+  not-yet-made UX call, distinct from D70's own security scope).
 - **Concurrent-card disambiguation, narrowed by D69, not fully closed.**
   Any SELLER who has set `User.displayName` (self-service, `settings.md`
   §2.5/§3.3b) now renders her own name on her card, distinguishing her
