@@ -1972,14 +1972,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     if (error || !rawData) {
       console.error('[store] create_business_with_owner failed', error);
-      // TEMPORARY DIAGNOSTIC — remove before this dispatch is done. Surfaces
-      // the raw error on-screen so it can be read directly off a phone,
-      // where console access isn't practical.
-      if (typeof window !== 'undefined') {
-        window.alert(
-          `DIAGNOSTIC create_business_with_owner error:\nmessage: ${error?.message}\ncode: ${error?.code}\ndetails: ${error?.details}\nhint: ${error?.hint}`,
-        );
-      }
       return null;
     }
     const data = rawData as { business_id: ID; membership_id: ID };
