@@ -226,8 +226,25 @@ primary/secondary-CTA-on-one-screen precedent — no new interaction pattern,
 no `knowledge-mentor` consultation needed. §3.6a's NFC Readiness composition
 confirmed unchanged in content, only widened in applicability (it's a single,
 Business-wide, ambient computation, not Event- or CTA-scoped). §2, §3.6a
-(applicability sentence only), §4, §5, §6, §9, §10, §11 updated to match.
-Pending `ux-critic`/`reviewer` review before folding back into Approved.
+(applicability sentence only), §4, §5, §6, §9, §10 updated to match.
+
+**Remediation, 2026-09-15 (same day, `ux-critic` first-round findings — 1
+Major + 3 Minor, no Blockers): all four fixed in this pass.** The Major
+(§3.6/§3.6b's secondary CTA had no on-screen signal of independence from
+the shared Event-identity header directly above it — a real
+misattribution-in-reverse risk) is resolved on-screen (Option 1): a new
+qualifying line ("No se cuenta para Plaza Norte" / "No se cuenta para
+ningún evento de arriba") now renders directly beneath the secondary CTA
+on both §3.6 and §3.6b, stating the independence as a plain, functional
+fact rather than relying on spec-only side annotation. The three Minor
+findings: §3.6's High-Fidelity flag extended to explicitly name the NFC
+Readiness line/action its own stacking-order bullet already covered;
+§3.6b gains its own matching High-Fidelity flag, previously absent
+despite a comparably complex composition; and this header's own claim,
+below, is corrected — **§11 receives no entry from this amendment, since
+the Major was closed with an on-screen fix, not a logged residual risk.**
+Pending `ux-critic` re-verification against exactly these four findings
+before folding back into Approved.
 **[see home.changelog.md#status-2026-09-15-quick-session-alongside-event]**
 
 Scope: `Hoy`, the first of four top-level nav items per
@@ -1067,8 +1084,10 @@ for the `scheduled` case; `merchant-user-tester`-found defect,
 │      Plaza Norte                │
 │      Hoy es tu Día 2             │
 │      [   Continuar Día 2     ]  │
-│      [  Iniciar Sesión Rápida ] │  secondary — an ordinary way to sell,
-│                                │  independent of this Event
+│      [  Iniciar Sesión Rápida ] │  secondary
+│        No se cuenta para Plaza Norte │  on-screen independence signal
+│                                │  (new, 2026-09-15 remediation — see
+│                                │  bullet below)
 ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
@@ -1150,6 +1169,32 @@ completely independent of whichever Event(s) are `active` right now.
   both OWNER and SELLER unconditionally); "opening" one is the same
   unrestricted capability §3.15 already states for "closing" one ("a
   SELLER opens and closes her own Session exactly like an OWNER does").
+- **On-screen independence signal added (closes `ux-critic`'s Major
+  finding, this remediation pass, 2026-09-15) — a short qualifying line
+  renders directly beneath the secondary CTA itself**, stating in plain
+  business language that opening a Quick Session here doesn't attribute
+  to the Event named above: "No se cuenta para Plaza Norte"
+  (`Venue.displayName`, the identical token already rendered in the
+  header two lines above — never a second, independently-typed value).
+  This was a real, unaddressed gap before this fix: the venue-name-and-
+  Día-N header sits directly above both buttons with no separating
+  content, and neither button's own label states which one it governs —
+  a merchant under live-customer time pressure could plausibly misread
+  the secondary CTA as still scoped to that Event, the reverse of the
+  misattribution risk this whole amendment exists to prevent. A
+  spec-reader-only side annotation ("secondary — an ordinary way to
+  sell, independent of this Event") was never something Ana herself sees
+  on the real screen, and doesn't resolve this on its own. Chosen over
+  the alternative (logging the risk in §11 and shipping unchanged)
+  because the fix is cheap — one static line, zero added taps, no new
+  interaction pattern — and states the fact functionally (what happens
+  to her sale) rather than abstractly, the same "state facts plainly"
+  discipline this document already uses everywhere else
+  (`brand/tone-of-voice.md`). Deliberately worded "no se cuenta para..."
+  rather than any "fuera de este evento" phrasing — a factual outcome
+  statement, not an exit-framing one, preserving this amendment's own
+  "salir del evento" avoidance (the "Framing, deliberately" bullet
+  above, unchanged and still binding).
 
 **Same-day resume — a Session with finalized Sales already exists today
 under this `eventId` (unchanged condition, now composes with the new
@@ -1163,6 +1208,7 @@ secondary action):**
 │      [   Continuar Día 1     ]  │
 │      Ya vendiste $420 · 3 ventas hoy │
 │      [  Iniciar Sesión Rápida ] │
+│        No se cuenta para Plaza Norte │
 ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
@@ -1190,16 +1236,28 @@ same-day line holds but the Quick-Session one doesn't)
   composition:** identity → Día N → Event-scoped same-day-sales line (if
   it holds) → primary CTA "Continuar Día N" → Quick-Session same-day-sales
   line (if it holds, mirroring §3.4's own fact-line-before-its-CTA order)
-  → secondary CTA "Iniciar Sesión Rápida" → §3.6a's recommendation/mention
-  line (if any — applies regardless of which CTA is eventually tapped, see
-  §3.6a) → §3.6a's own secondary action, if offered. A condition that
-  doesn't currently hold is skipped entirely, never left as blank space.
+  → secondary CTA "Iniciar Sesión Rápida" → the new qualifying line ("No
+  se cuenta para Plaza Norte," always shown alongside the secondary CTA,
+  `ux-critic` Major finding fix, 2026-09-15) → §3.6a's recommendation/
+  mention line (if any — applies regardless of which CTA is eventually
+  tapped, see §3.6a) → §3.6a's own secondary action, if offered. A
+  condition that doesn't currently hold is skipped entirely, never left
+  as blank space.
 - **Flagged for High-Fidelity attention, same class of flag §3.4/§3.5
   already carry for their own multi-element compositions** — `ui-designer`
-  must confirm both CTAs, and up to two independent same-day-sales lines,
-  still read as two clearly distinct, unambiguous actions on an actual
-  phone screen at this screen's fullest composition, not simply assume the
-  Low-Fidelity text description proves it.
+  must confirm both CTAs, the new qualifying line beneath the secondary
+  CTA, up to two independent same-day-sales lines, and — when shown —
+  §3.6a's own recommendation/mention line and its own secondary action,
+  all still read as distinct, unambiguous elements on an actual phone
+  screen at this screen's fullest composition (up to eight or nine
+  co-occurring elements, per this section's own stacking-order bullet
+  above), not simply assume the Low-Fidelity text description proves it.
+  **Corrected 2026-09-15 (`ux-critic` Minor finding, this remediation
+  pass)** — this flag previously under-scoped relative to the
+  stacking-order bullet immediately above it, silently dropping the NFC
+  Readiness line/action from explicit verification scope even though the
+  stacking-order bullet already names it; this list now matches that
+  bullet exactly.
 
 ### 3.6a Session-start moment — NFC Readiness disagreement (new — folds in `decision-log.md` D23)
 
@@ -1525,8 +1583,10 @@ Reached only via §2 step 2b. Not reached at all while at most one Event qualifi
 │  [ Mercado de Toluca · Día 1   ] │
 │                                   │
 │      Ya vendiste $420 · 3 ventas hoy │
-│      [  Iniciar Sesión Rápida ] │  secondary — independent of either
-│                                │  Event above
+│      [  Iniciar Sesión Rápida ] │  secondary
+│        No se cuenta para ningún evento de arriba │  on-screen
+│                                │  independence signal (new, 2026-09-15
+│                                │  remediation)
 ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘
@@ -1540,10 +1600,34 @@ Reached only via §2 step 2b. Not reached at all while at most one Event qualifi
 - No back arrow, no dismiss — a top-level Home resolution state, same category as §3.3–§3.6. Header's gear icon (⚙) routes directly into Configuración, no intermediate sheet, identically to §3.3–§3.6 (§2.1).
 - **Data source is role-scoped as of `product/99-rfc/0011-event-assignment.md` (2026-09-09) — wireframe and interaction unchanged.** For an OWNER, unchanged: every currently `active` Event, Business-wide. For a SELLER, this list is now only the Events she holds an `EventAssignment` for (§2's role-scoped step 2) — never the Business's full active-Event set. Nothing about this section's own wireframe, row content, tap behavior, or copy differs between the two cases; only which rows exist to render does.
 - **Corrected 2026-09-15 (Product Owner-raised) — this screen's own closing bullet previously asserted "Iniciar Sesión Rápida stays reachable and unaffected regardless of how many Events are active," but nothing on this screen's actual wireframe ever rendered it — the assertion was unimplemented aspirational text, never a real, tappable affordance. Confirmed by direct inspection of the wireframe, not restated on report.** The Product Owner caught the identical gap at §3.6 first (exactly one qualifying Event); on inspection here, this screen had the same gap, one level earlier in the same resolution branch (§2 step 2b — 2+ qualifying Events, no Session opened yet today). Fixed the same way §3.6 was: a secondary "Iniciar Sesión Rápida" action, identical copy/mechanism/destination to §3.4's own primary action, cross-referenced not redefined, rendered beneath the Event row list — see §3.6's own full reasoning (visual weight, tianguis framing, zero added cost to the primary flow), not restated twice here.
+- **On-screen independence signal added (closes `ux-critic`'s Major
+  finding, this remediation pass, 2026-09-15) — same fix as §3.6's own.**
+  A short qualifying line renders directly beneath this screen's
+  secondary CTA: "No se cuenta para ningún evento de arriba," stating in
+  plain business language that a Quick Session opened here doesn't
+  attribute to any Event row listed above. Same reasoning as §3.6's own
+  fuller bullet, not restated twice here — this screen has the identical
+  structural risk (an Event-identity list sitting directly above both the
+  primary picker rows and the secondary CTA, nothing on-screen
+  previously stating which one the secondary CTA is scoped to) and the
+  identical fix (cheap, static, zero added taps, states the functional
+  outcome rather than an abstract independence claim, avoids any "salir
+  del evento" framing).
 - **Composes with the identical Quick-Session same-day-resume line §3.4 already defines** (condition: 1+ Session with `eventId = null` has 1+ finalized Sales today), cross-referenced not redefined, rendering directly above this new secondary CTA — absent entirely in the common case (zero added line, zero added tap).
 - **Same NFC Readiness composition as §3.6's own new secondary action** — see §3.6a's widened applicability note.
 - **Applies identically to both roles** — an OWNER's Business-wide picker and a SELLER's `EventAssignment`-scoped picker (§2 step 2b) both gain the identical secondary action; Quick Session has never been role-gated (§3.15).
 - Row order, tap behavior, and every other bullet above are otherwise unchanged by this amendment — it only adds the one secondary action beneath the existing list.
+- **Flagged for High-Fidelity attention (new, 2026-09-15 remediation,
+  `ux-critic` Minor finding — this screen previously had no equivalent
+  flag despite a comparably complex composition to §3.6's own).**
+  `ui-designer` must confirm the Event row list (2+ rows), the new
+  qualifying line beneath the secondary CTA, the Quick-Session same-day-
+  resume line, both CTAs (row-tap and secondary), and — when shown —
+  §3.6a's own recommendation/mention line and its own secondary action,
+  all still read as distinct, unambiguous elements on an actual phone
+  screen at this screen's fullest composition, not simply assume the
+  Low-Fidelity text description proves it. Same class of flag
+  §3.4/§3.5/§3.6 already carry for their own multi-element compositions.
 
 ### 3.6c Session-controls sheet — retired (superseded 2026-08-15 — see status header)
 
@@ -3074,7 +3158,10 @@ and back to Hoy):
    when she holds none — see item 39, below)
 6. Event active, no Session opened today — "Continuar Día N," plus (new,
    2026-09-15) a secondary, always-available "Iniciar Sesión Rápida"
-   opening a Quick Session, independent of this Event
+   opening a Quick Session, independent of this Event, with an on-screen
+   qualifying line stating that independence directly beneath the
+   secondary CTA (added in this document's same-day remediation pass,
+   closing a `ux-critic` Major finding)
 7. Session-start moment — Session-start mode disagreement or discoverability
    mention: Limited Ready recommendation, Not Ready mention, Selling Mode
    Capability revoked mention, or (new) Ready-but-still-on-botones tags-now-
@@ -3122,7 +3209,8 @@ and back to Hoy):
 25. Resolution error / defensive fallback
 26. Elegir evento — idle Membership, 2+ Events currently active (§3.6b),
     plus (new, 2026-09-15) the identical secondary "Iniciar Sesión Rápida"
-    action
+    action, plus its own on-screen qualifying line (same remediation pass,
+    closing the identical `ux-critic` Major finding)
 27. Acceso revocado — revoked Membership (reached via §2 step 0, defined in settings.md §3.14)
 28. Nav bar — role-scoped (§3.16), applied to every state above
 29. Header icon — role-scoped (§3.15); SELLER's own "Tu cuenta" minimal surface (§3.15a)
@@ -3433,6 +3521,13 @@ her actual top sellers within the first screenful regardless of Catalog size.
   exception or an escape hatch ("salir del evento" or similar); the copy
   is a verbatim reuse of vocabulary Ana already knows from §3.4, never new
   "workaround" language.
+- *brand/tone-of-voice.md*, "state facts before offering an opinion" —
+  the new qualifying line ("No se cuenta para Plaza Norte" / "No se
+  cuenta para ningún evento de arriba," 2026-09-15 remediation) states
+  the functional outcome plainly, closing `ux-critic`'s Major finding
+  that the shared Event-identity header gave no on-screen signal of the
+  secondary CTA's independence — resolved with an on-screen fix rather
+  than a logged residual risk.
 - *brand-guide.md*, "Logo meaning — the four pillars," Movimiento ("the
   itinerant nature of the business itself: moving between bazares,
   adapting, growing") — thematic grounding, not literal instruction: an
@@ -3704,6 +3799,23 @@ her actual top sellers within the first screenful regardless of Catalog size.
   regardless of which Session-start action is eventually tapped, confirmed
   rather than assumed. **[see
   home.changelog.md#decisions-2026-09-15-quick-session-alongside-event]**
+- **Remediation, 2026-09-15 (same day, `ux-critic` 1 Major + 3 Minor,
+  this pass) — the Major closed via an on-screen fix, not a logged
+  risk.** §3.6 and §3.6b's secondary CTA gains a short qualifying line
+  directly beneath itself ("No se cuenta para Plaza Norte" / "No se
+  cuenta para ningún evento de arriba," `Venue.displayName`-bound where
+  applicable) — resolves the real, unaddressed misattribution-in-reverse
+  risk `ux-critic` found: the shared Event-identity header sat directly
+  above both buttons with nothing on-screen (as opposed to spec-only
+  side annotation) stating which one it governs. §3.6's own
+  High-Fidelity flag extended to explicitly name the NFC Readiness
+  line/action already covered by its stacking-order bullet (previously
+  under-scoped); §3.6b gains its own matching High-Fidelity flag, not
+  previously present despite a comparably complex composition. This
+  status header's own stale "§11 updated to match" claim corrected — no
+  §11 entry results from this fix, since the risk is resolved on-screen,
+  not logged as accepted. **[see
+  home.changelog.md#decisions-2026-09-15-quick-session-remediation]**
 
 ## 11. Future considerations
 

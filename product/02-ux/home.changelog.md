@@ -1511,3 +1511,24 @@ context. NFC Readiness (§3.6a) composition confirmed unchanged in content
 — a single, Business-wide, ambient computation already applied regardless
 of which Session-start action gets tapped, the same way it already
 composes with §3.4/§3.5's own single CTA.
+
+### decisions-2026-09-15-quick-session-remediation
+**Remediation, same day — `ux-critic` first-round findings (1 Major, 3
+Minor, no Blockers), all fixed in this pass.** The Major — §3.6/§3.6b's
+secondary CTA sat directly beneath a shared Event-identity header
+(Venue name + Día N) with nothing on-screen stating which action that
+header governed, a real risk of the reverse misattribution this whole
+amendment exists to prevent — is resolved on-screen: a short qualifying
+line now renders directly beneath the secondary CTA itself ("No se
+cuenta para Plaza Norte" / "No se cuenta para ningún evento de arriba"),
+stating the functional outcome plainly rather than relying on a
+spec-reader-only side annotation Ana never sees. Chosen over logging the
+risk as an accepted Future Consideration, since the fix is cheap (one
+static line, zero added taps, no new interaction pattern) and matches
+this document's own "state facts plainly" discipline. The three Minor
+findings: §3.6's High-Fidelity flag extended to explicitly name the NFC
+Readiness line/action its own stacking-order bullet already covered
+(previously under-scoped); §3.6b gains a matching High-Fidelity flag,
+not previously present despite a comparably complex composition; the
+status header's own "§11 updated to match" claim corrected, since this
+remediation resolves the Major on-screen rather than logging it in §11.
