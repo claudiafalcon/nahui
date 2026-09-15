@@ -1263,14 +1263,14 @@ export function defaultExportRange(state: AppState): { desde: string; hasta: str
 }
 
 /** One row of `reports.md` §3.19's file-content column table, one step short
- * of the actual CSV cell strings — structured data only (`Venue`/`Event`
- * entities, a raw `MembershipRole`), matching every other selector in this
- * file's own "hand back the entity, let the screen format the copy"
- * discipline (`historialRows`, `sessionProductBreakdown`, etc.). The actual
- * Spanish column-cell formatting (Event-type labels, "Tú"/"Alguien de tu
- * equipo," "Día N"/"Venta rápida," CSV escaping) lives in
- * `screens/Resultados/salesExportCsv.ts`, a presentation-layer concern, not
- * this domain-layer file's own. */
+ * of the actual exported-file cell values — structured data only
+ * (`Venue`/`Event` entities, a raw `MembershipRole`), matching every other
+ * selector in this file's own "hand back the entity, let the screen format
+ * the copy" discipline (`historialRows`, `sessionProductBreakdown`, etc.).
+ * The actual Spanish column-cell formatting (Event-type labels, "Tú"/
+ * "Alguien de tu equipo," "Día N"/"Venta rápida") and the real-`.xlsx`
+ * workbook generation live in `screens/Resultados/salesExportFile.ts`, a
+ * presentation-layer concern, not this domain-layer file's own. */
 export interface SalesExportRow {
   saleId: ID;
   /** The Session's own closed date (`dateKey` — `YYYY-MM-DD`), per §3.19's

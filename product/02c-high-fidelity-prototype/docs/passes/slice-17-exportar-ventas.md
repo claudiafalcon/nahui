@@ -186,7 +186,68 @@ if a fourth instance appears.
 `npm run build` — clean, independently re-confirmed by Main throughout.
 Folded back into the prototype's Approved state.
 
+## Further corrected 2026-09-15, same night — real `.xlsx`, not CSV
+(Product Owner-reported live production-testing defect)
+
+The Product Owner tested the just-shipped export on her own phone
+(Chrome → downloaded file → opened in the Google Sheets Android app) and
+found every accented character mojibaked: "Sesión" → "SesiÃ³n," "Tú" →
+"TÃº," "Día 1" → "DÃa 1," "Venta rápida" → "Venta rÃ¡pida" — the exact,
+single-layer signature of correct UTF-8 bytes being misread as
+Latin-1/Windows-1252 by the receiving app.
+
+**Root cause, verified directly, not assumed:** hex-dumped the source's
+own `new Blob(['﻿', csv], ...)` call — confirmed the literal bytes
+between the quotes were already `EF BB BF`, the correct 3-byte UTF-8 BOM,
+and hex-dumped every accented string literal in `salesExportCsv.ts`
+(`'Sesión'`, `'Tú'`, `'Venta rápida'`) — all correctly UTF-8-encoded at
+the source level too. The file this app generated was itself correct;
+the defect was the Google Sheets Android app's own CSV encoding
+auto-detection on a locally-opened file, which a BOM doesn't universally
+guarantee against across every mobile spreadsheet app's "open a local
+file" path (a documented, real-world gap in that class of app, distinct
+from the desktop/web versions' more reliable import dialogs).
+
+**Fix: switched from plain-text CSV to a genuine `.xlsx` Excel
+workbook**, which has no equivalent ambiguity — OOXML's XML content is
+unambiguously UTF-8 per the format's own spec, so there's no
+encoding-detection step left for any receiving app to get wrong.
+Verified with a build-then-reread round-trip test (`XLSX.write` →
+`XLSX.readFile` → `sheet_to_json`): every accented value (`Sesión`,
+`Día 1`, `Tú`, `Venta rápida`) survives intact.
+
+**Implementation:** added `xlsx` (SheetJS community build, MIT) as a
+dependency. `salesExportCsv.ts` renamed `salesExportFile.ts`;
+`buildSalesExportCsv`/`triggerCsvDownload` replaced with
+`buildSalesExportWorkbook`/`triggerXlsxDownload`. **`xlsx` is
+dynamically imported** (`await import('xlsx')` inside
+`buildSalesExportWorkbook`), not a static top-level import — the
+package adds ~450KB gzipped, real weight this slice's own first build
+had put directly into the main bundle (confirmed: the initial static
+import grew the main chunk from 626KB to 910KB gzipped-equivalent before
+this fix). Code-splitting it means that weight is only ever fetched the
+first time a merchant actually taps "Descargar Excel," never paid by
+every merchant's ordinary app load (Home's <3s bar, `company/backlog.md`
+#1, never sees it). `ExportarVentas.tsx` updated to match: the download
+button now reads "Descargar Excel," the filename extension is `.xlsx`,
+and the on-screen body copy no longer says "(CSV)."
+
+`reports.md` §2/§3.19/§3.20/§4/§7/§9/§10 (spec) and
+`reports.changelog.md`/`product/02-ux/CLAUDE.md` (status records) all
+corrected in the same pass to describe "Excel (.xlsx)" in place of
+"CSV" — row shape, columns, and every other design decision from the
+Approved spec are unchanged; this was a file-format correction only.
+
+`npm run build` — clean, independently re-confirmed by Main. Bundle
+verified via the build output: `xlsx` now ships as its own separate
+chunk, not inflating the main bundle.
+
 ## Not yet run
 
 `merchant-user-tester`'s live walkthrough has not run against this
-build yet.
+build yet. No further `ux-critic`/`reviewer` dispatch was run for this
+specific correction — a narrow, unambiguous encoding-correctness fix
+with a directly verifiable round-trip test, the same class of
+direct-fix handled without a full review-pipeline dispatch as the
+session's other confirmed bugs (e.g. the `accept_invitation` column-
+ambiguity fixes).

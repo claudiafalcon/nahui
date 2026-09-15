@@ -4,7 +4,7 @@ import { closedSessionsInRange, defaultExportRange, salesExportRows } from '../.
 import { todayKey } from '../../domain/dates';
 import { Button } from '../../components/Button/Button';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
-import { buildSalesExportCsv, triggerCsvDownload } from './salesExportCsv';
+import { buildSalesExportWorkbook, triggerXlsxDownload } from './salesExportFile';
 import styles from './Resultados.module.css';
 
 /** `reports.md` §3.2's own "slow (>~1.5s)" boundary, reused verbatim per
@@ -22,8 +22,10 @@ type SubView = { kind: 'range' } | { kind: 'generating' } | { kind: 'ready'; fil
 
 /**
  * `reports.md` §3.19/§3.20 (`product-decisions.md` Q27) — "Exportar tus
- * ventas": a date-range picker (§3.19) followed by a client-side CSV
- * generate-and-download (§3.20), combined in one component the same way
+ * ventas": a date-range picker (§3.19) followed by a client-side, real
+ * `.xlsx` generate-and-download (§3.20 — corrected 2026-09-15 from CSV,
+ * see `salesExportFile.ts`'s own header comment for the live-testing
+ * defect that drove the correction), combined in one component the same way
  * `TeamScreen.tsx` combines its own multi-step "Nueva invitación" flow —
  * one screen, an internal `SubView` state machine, no separate mount per
  * step in `ResultadosScreen.tsx`.
@@ -71,7 +73,7 @@ export function ExportarVentas({ onBack }: { onBack: () => void }) {
     setSlow(false);
     setSubView({ kind: 'generating' });
     const slowTimer = window.setTimeout(() => setSlow(true), SLOW_THRESHOLD_MS);
-    // Yields one tick before the synchronous CSV build below so the
+    // Yields one tick before the synchronous workbook build below so the
     // "generating" state actually paints first, matching §3.20's own
     // reasoning ("Generation time scales with this Business's total
     // closed-Session/Sale volume... so an always-instant assumption isn't
@@ -80,9 +82,9 @@ export function ExportarVentas({ onBack }: { onBack: () => void }) {
     // effectively instant in practice.
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     const rows = salesExportRows(state, desde, hasta);
-    const csv = buildSalesExportCsv(rows);
-    const filename = `ventas-${desde}-a-${hasta}.csv`;
-    triggerCsvDownload(csv, filename);
+    const workbook = await buildSalesExportWorkbook(rows);
+    const filename = `ventas-${desde}-a-${hasta}.xlsx`;
+    triggerXlsxDownload(workbook, filename);
     window.clearTimeout(slowTimer);
     setSubView({ kind: 'ready', filename });
   }
@@ -158,8 +160,8 @@ export function ExportarVentas({ onBack }: { onBack: () => void }) {
         </label>
 
         <p className={styles.exportBody}>
-          Vas a descargar un archivo de Excel (CSV) con una fila por producto vendido — se puede abrir en Excel,
-          Google Sheets, o cualquier otra hoja de cálculo.
+          Vas a descargar un archivo de Excel con una fila por producto vendido — se puede abrir en Excel, Google
+          Sheets, o cualquier otra hoja de cálculo.
         </p>
 
         <p className={styles.exportColumns}>
@@ -179,7 +181,7 @@ export function ExportarVentas({ onBack }: { onBack: () => void }) {
             finding, code review round). */}
         {!canDownload && <p className={styles.exportEmptyNote}>No hay ventas en este rango.</p>}
         <Button disabled={!canDownload} onClick={handleDownload}>
-          Descargar CSV
+          Descargar Excel
         </Button>
       </div>
     </ScreenTransition>
