@@ -243,8 +243,11 @@ Readiness line/action its own stacking-order bullet already covered;
 despite a comparably complex composition; and this header's own claim,
 below, is corrected — **§11 receives no entry from this amendment, since
 the Major was closed with an on-screen fix, not a logged residual risk.**
-Pending `ux-critic` re-verification against exactly these four findings
-before folding back into Approved.
+**`ux-critic` re-verification confirmed all four findings closed, nothing
+new introduced.** `reviewer` found 0 Blockers (2 Important documentation-
+persistence gaps — this status line's own stale "pending" wording, and a
+missing `ux-critic-findings.md` entry for the remediation round — both
+closed directly by Main). Folded back into Approved.
 **[see home.changelog.md#status-2026-09-15-quick-session-alongside-event]**
 
 Scope: `Hoy`, the first of four top-level nav items per
