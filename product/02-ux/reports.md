@@ -93,6 +93,18 @@ in both places; and a missing `ux-critic-findings.md` entry for this
 remediation round, added. Folded back into Approved. **[see
 reports.changelog.md#status-2026-09-15-d68-live-sessions-view]**
 
+**Further corrected 2026-09-15, same day (Product Owner decision,
+`product-decisions.md` Q28): "Vendiendo ahorita" is Paid tier**, gated on
+`subscriptionTier=paid` alone, matching "Rendimiento por bazar"/"Tus
+clientes" (`decision-log.md` D27/D34, `company/business-decisions.md`
+Q18) — not free-tier-and-paid-tier-alike as originally shipped. §2's
+live-session check now also requires `subscriptionTier=paid`; §1,
+§3.4a's intro, §8 item 11, and §10 corrected to match. A Free-tier
+merchant sees nothing — no card, no note. **This amendment needs a fresh
+`ux-critic`/`reviewer` pass before the already-built React code
+(currently ungated) is updated to match.** **[see
+reports.changelog.md#status-2026-09-15-d68-live-sessions-view]**
+
 Scope: `Resultados`, the fourth and last of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers Journey 5
 (Review). Picks up exactly what `product/02-ux/events.md` §3.16 deliberately
@@ -205,31 +217,30 @@ altitudes:
   going forward" family is — which is part of why Free-tier was this
   section's original default.
 
-  **That classification alone doesn't resolve tier placement, though —
-  see §8, item 11 (`product-decisions.md` Q28), a genuinely open Product
-  Decision.** The motivating scenario above is structurally Paid-tier
-  only: SELLER invitations are themselves a Paid-tier-gated capability
-  (`settings.md` §2.7 "Tu equipo," `company/business-decisions.md` Q18,
-  Resolved) — a Free-tier Business can never have a SELLER Membership, so
-  the literal "OWNER checking in on several SELLERs" case this feature
-  exists to solve cannot occur there. What a Free-tier merchant can see
-  via "Vendiendo ahorita" is only her own single active Session —
-  information already visible live on Home's own running-total header
-  the entire time she's selling (the same precedent `decision-log.md`
-  D68 itself cites for why this kind of live read is architecturally
-  sound) — so for the one population Free-tier placement actually grants
-  this feature to, it adds nothing beyond what already exists elsewhere
-  in the app. Whether the whole section should instead be Paid-tier
-  gated, matching the scenario it was built for, is a genuine Product
-  Owner call this document doesn't make unilaterally — the same shape as
-  §8 item 8's still-open NFC-adoption-rate tier question (Q13): a
-  placement question with a plausible argument on both sides, not an
-  inference this document can responsibly settle on its own. **Shipped
-  default while this is open: unchanged — free-tier and paid-tier
-  alike**, the same illustrative-default-while-genuinely-open pattern
-  this document already uses elsewhere (§3.15's `loyaltyRewardThreshold`
-  default, §3.12's segmentation thresholds) rather than withholding an
-  already-fully-specified capability while the question is pending.
+  **That classification alone didn't resolve tier placement on its own —
+  see §8, item 11 (`product-decisions.md` Q28, Resolved 2026-09-15 by the
+  Product Owner: Paid tier).** The motivating scenario above is
+  structurally Paid-tier only: SELLER invitations are themselves a
+  Paid-tier-gated capability (`settings.md` §2.7 "Tu equipo,"
+  `company/business-decisions.md` Q18, Resolved) — a Free-tier Business
+  can never have a SELLER Membership, so the literal "OWNER checking in
+  on several SELLERs" case this feature exists to solve cannot occur
+  there. What a Free-tier merchant would have seen via "Vendiendo
+  ahorita," had it stayed free-tier, was only her own single active
+  Session — information already visible live on Home's own running-total
+  header the entire time she's selling (the same precedent
+  `decision-log.md` D68 itself cites for why this kind of live read is
+  architecturally sound) — so the one population Free-tier placement
+  would have actually granted this feature to would have gained nothing
+  beyond what already exists elsewhere in the app. **Resolved: "Vendiendo
+  ahorita" is Paid tier, gated on `subscriptionTier=paid` alone** — the
+  same class of gate as "Rendimiento por bazar"/"Tus clientes"
+  (`decision-log.md` D27/D34, `company/business-decisions.md` Q18),
+  matching the scenario it was actually built for. See §2's live-session
+  check for the corrected gating logic and §8 item 11 for the full
+  resolved record. A Free-tier merchant now sees nothing from this
+  feature at all — no card, no placeholder, no discoverability note
+  (§10).
 
 Nothing in Resultados is time-critical the way Home's <3s bar is
 (`company/backlog.md` #1) — there's no customer waiting while she looks at a
@@ -248,16 +259,27 @@ rather than building a second selling mechanism inside this tab.
 
 **Live-session check — evaluated on every visit, independent of every
 step below, including the cold-start case in step 1** (`decision-log.md`
-D68): does this Business currently have any Session with status =
-`active`, right now, across any device or Membership?
-  → YES: "Vendiendo ahorita" (§3.4a) renders, stacked above whichever
-    state step 1 resolves to — including §3.3's own cold-start message,
-    whose own copy branches for this exact case (see §3.3's Variant B) —
-    since this condition is completely independent of whether any
-    Session has ever closed for this Business.
-  → NO:  "Vendiendo ahorita" is entirely absent — no placeholder line,
-    same restraint step 2's "En curso" already applies to its own
-    absence.
+D68; gate corrected 2026-09-15, `product-decisions.md` Q28, Resolved):
+is this Business `subscriptionTier=paid`, **and** does it currently have
+any Session with status = `active`, right now, across any device or
+Membership? Two independent conditions, both required to render
+anything — not a single fact under two names the way D34 corrected the
+old `subscriptionTier`/`loyaltyEnabled` joint gate into one; tier and "is
+anyone selling right now" genuinely vary independently of each other, the
+same reason step 4 below keeps its own `subscriptionTier=paid` check as a
+distinct question rather than folding it into the steps that precede it.
+  → YES (both): "Vendiendo ahorita" (§3.4a) renders, stacked above
+    whichever state step 1 resolves to — including §3.3's own cold-start
+    message, whose own copy branches for this exact case (see §3.3's
+    Variant B) — since the live-Session half of this condition is
+    completely independent of whether any Session has ever closed for
+    this Business.
+  → NO (either): "Vendiendo ahorita" is entirely absent — no placeholder
+    line, no note anywhere in this tab pointing at it (§10's "no
+    paid-tier upgrade/discoverability copy" posture, §8 item 11). Same
+    restraint step 2's "En curso" already applies to its own absence, now
+    covering the Free-tier case exactly as it already covers the
+    no-live-Session case.
 
 A live Session's Sales are never counted toward "Total histórico," "Top
 productos," or any other aggregate defined below — those keep reading
@@ -535,11 +557,12 @@ one, not yet closed (§2's live-session check resolves YES)**
 
 Renders at the very top of every Resultados state — above "Total histórico"
 in §3.4/§3.5/§3.6, and above §3.3's own cold-start message (its Variant B)
-— whenever §2's live-session check resolves YES. Absent entirely
-otherwise (no zero-state line — see §2's live-session check). Shipped as
-free-tier and paid-tier alike for now; tier placement is a genuinely open
-Product Decision, not a settled classification — see §1 and §8 item 11
-(`product-decisions.md` Q28).
+— whenever §2's live-session check resolves YES (both `subscriptionTier=paid`
+and a currently-`active` Session). Absent entirely otherwise — no
+zero-state line, for either half of that condition (see §2's
+live-session check). **Paid tier only**, resolved 2026-09-15
+(`product-decisions.md` Q28, Resolved by the Product Owner) — see §1 and
+§8 item 11 for the full record.
 
 ```
 ┌───────────────────────────────┐
@@ -2024,38 +2047,52 @@ there; no urgency is invented where none exists.
     person in that case. See §3.4a's own corrected bullet for the full
     statement of this failure case.
 
-11. **[Escalated as Q28, open, logged in `product/02-ux/product-decisions.md`
-    as a Product Decision] Should "Vendiendo ahorita" (§3.4a/§3.4b) be
-    free-tier or paid-tier?** Raised during `ux-critic`'s remediation
-    review of this amendment (2026-09-15). §1's own stated motivation for
-    this feature is an OWNER checking in on several SELLERs at once —
-    but SELLER invitations are themselves Paid-tier-gated
+11. **[Q28 — Resolved 2026-09-15 (Product Owner decision, logged in
+    `product/02-ux/product-decisions.md`).] "Vendiendo ahorita"
+    (§3.4a/§3.4b) is Paid tier.** Escalated during `ux-critic`'s
+    remediation review of this amendment (2026-09-15). §1's own stated
+    motivation for this feature is an OWNER checking in on several
+    SELLERs at once — but SELLER invitations are themselves Paid-tier-gated
     (`settings.md` §2.7 "Tu equipo," `company/business-decisions.md`
     Q18, Resolved), so a Free-tier Business can never have a SELLER
     Membership and the literal motivating scenario can't occur there.
-    What a Free-tier merchant sees via this feature is only her own
-    single active Session — already visible live on Home's own
+    What a Free-tier merchant would have seen via this feature was only
+    her own single active Session — already visible live on Home's own
     running-total header the entire time she's selling, the same
     precedent `decision-log.md` D68 itself cites — so Free-tier
-    placement, as currently shipped, grants the feature to a population
-    for whom it adds nothing beyond what already exists elsewhere in the
-    app. Same shape as item 8 above (Q13, NFC adoption rate): a
-    plausible argument either way (this section's own family
-    classification — "how's it going right now," same always-available
-    family as "how did I do," §1 — suggests free tier, consistent with
-    the rest of that family; the fact that its one differentiating use
-    case is structurally paid-only suggests paid tier), genuinely
-    undecided rather than an inference this document can responsibly
-    settle on its own.
-    **Not resolved here.** Unlike Q13, this feature is already fully
-    specified (§3.4a/§3.4b, wireframes and all) rather than undesigned,
-    so — pending this decision — it ships with its original default
-    (free-tier and paid-tier alike), the same illustrative-default-while-
-    open pattern this document already uses elsewhere (§3.15's
-    `loyaltyRewardThreshold` default, §3.12's segmentation thresholds)
-    rather than withholding an already-designed capability while the
-    question is pending.
-    **Status:** Open.
+    placement, as originally shipped, granted the feature to a
+    population for whom it added nothing beyond what already exists
+    elsewhere in the app. Same shape as item 8 above (Q13, NFC adoption
+    rate) at the time this was raised: a plausible argument either way
+    (this section's own family classification — "how's it going right
+    now," same always-available family as "how did I do," §1 —
+    suggested free tier, consistent with the rest of that family; the
+    fact that its one differentiating use case is structurally paid-only
+    suggested paid tier).
+    **Resolved: Paid tier, gated on `subscriptionTier=paid` alone** —
+    the same class of gate as "Rendimiento por bazar" (§3.9/§3.10) and
+    "Tus clientes" (§3.12/§3.13), same class as NFC/Frequent
+    Customers/multi-staff SELLER accounts (`decision-log.md` D27/D34,
+    `company/business-decisions.md` Q18). §2's live-session check now
+    also requires `subscriptionTier=paid`, ANDed with the existing "any
+    Session active" check — two independent conditions, not a single
+    fact under two names (see §2 for why this differs from the D34
+    joint-gate correction).
+    A Free-tier merchant sees nothing — §3.4a/§3.4b simply never render,
+    no placeholder, no informational note pointing at the capability,
+    the same posture §10 already states for why no paid-tier
+    upgrade/discoverability copy is designed anywhere in this tab. The
+    shared "Con el plan de pago vas a ver..." note at §3.4/§3.5 is
+    unchanged, still describing only "Rendimiento por bazar" and "Tus
+    clientes" — "Vendiendo ahorita" is deliberately not folded into it,
+    since unlike those two, its value is entirely contingent on a second
+    Paid-tier action (inviting a SELLER) that a solo Free-tier Ana would
+    need to take regardless of whether she ever learns this capability
+    exists — mentioning it here would advertise a capability worthless
+    to the only population who'd ever read the note. §3.4a/§3.4b's own
+    wireframes, flow, and copy are otherwise unchanged — this correction
+    is a gating change only.
+    **Status:** Resolved.
 
 ## 9. Principle justification
 
@@ -2302,9 +2339,11 @@ there; no urgency is invented where none exists.
 - **"Vendiendo ahorita" (§3.4a/§3.4b) added — a live, cross-Session,
   cross-device view of currently-active Sessions** (`decision-log.md`
   D68), read-only, positioned above every other Resultados state.
-  Shipped free-tier and paid-tier alike for now; tier placement is a
-  genuinely open Product Decision, not settled (§8 item 11,
-  `product-decisions.md` Q28). **[see
+  **Paid tier only**, resolved 2026-09-15 (`product-decisions.md` Q28,
+  Resolved by the Product Owner) — gated on `subscriptionTier=paid`
+  alone, the same class of gate as "Rendimiento por bazar"/"Tus
+  clientes" (§8 item 11). A Free-tier merchant sees nothing; the section
+  simply never renders. **[see
   reports.changelog.md#decisions-vendiendo-ahorita-added]**
 
 ## 11. Future considerations

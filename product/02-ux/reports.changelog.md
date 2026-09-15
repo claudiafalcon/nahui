@@ -215,8 +215,28 @@ list into its own labeled "live-session check" paragraph, and every
 cross-reference to "§2 Step 0" in this document renamed to match (Minor).
 §1's "a third question" wording, sitting close to the pre-existing "a
 third element" bullet, was reworded to "a new question" (Minor).
-**Pending `ux-critic` re-verification before folding back into
-Approved.**
+`ux-critic` re-verification confirmed all five findings closed, nothing
+new introduced. `reviewer` found 0 Blockers, 2 Important (both closed
+directly by Main): new copy ("...en cuanto cada quien cierre su
+sesión," identical in §3.3 Variant B and §3.4a) reproduced the exact
+`sesión`-collision terminology `home.md`'s own 2026-08-13 decision
+retired from Selling-domain merchant-facing copy, reworded to "cierre su
+jornada" in both places; and a missing `ux-critic-findings.md` entry,
+added. Folded back into Approved.
+
+**Q28 resolved same day (2026-09-15), Product Owner decision — Paid
+tier.** `product-decisions.md` Q28 (§8 item 11) is closed: "Vendiendo
+ahorita" gates on `subscriptionTier=paid` alone, matching "Rendimiento
+por bazar"/"Tus clientes" (`decision-log.md` D27/D34,
+`company/business-decisions.md` Q18). §2's live-session check now also
+requires `subscriptionTier=paid`, ANDed with the existing "any Session
+active" check. A Free-tier merchant sees nothing — §3.4a/§3.4b never
+render, and the shared "Con el plan de pago vas a ver..." note
+(§3.4/§3.5) is deliberately left unchanged, not extended to mention this
+capability (see §8 item 11 for why). §1, §2, §3.4a's intro, §8 item 11,
+and §10 corrected to match. **Flagged for a fresh `ux-critic`/`reviewer`
+re-review before the already-built React code (currently ungated) is
+updated to match.**
 
 ---
 
@@ -506,14 +526,23 @@ exactly one honest explanation left: no customer has completed one yet.
 
 ### decisions-vendiendo-ahorita-added
 Placed above every other Resultados state (not folded into "En curso," a
-deliberately different, already-defined meaning); shipped free-tier and
-paid-tier alike per §1's new question ("how's it going right now," same
-family as the always-available retrospective question, not the paid-tier
-forward-looking one) — but tier placement itself is a genuinely open
-Product Decision, not settled, since §1's own motivating scenario (an
-OWNER checking in on several SELLERs) is structurally Paid-tier-only
-(SELLER invitations are themselves Paid-tier-gated, `settings.md` §2.7,
-`business-decisions.md` Q18); tracked as `product-decisions.md` Q28
-(§8 item 11), current default unchanged pending that decision;
+deliberately different, already-defined meaning); per §1's new question
+("how's it going right now," same family as the always-available
+retrospective question, not the paid-tier forward-looking one);
 per-Session granularity, not per-Event (a live Event-level rollup is a
 named Future Consideration, §11, not designed now).
+
+**Resolved 2026-09-15, same day, Product Owner decision
+(`product-decisions.md` Q28): Paid tier.** Gates on `subscriptionTier=paid`
+alone — the same class of gate as "Rendimiento por bazar"/"Tus clientes"
+(`decision-log.md` D27/D34, `company/business-decisions.md` Q18) —
+matching the scenario the feature was actually built for (an OWNER
+checking in on several SELLERs, itself only possible on Paid tier). §2's
+live-session check now ANDs `subscriptionTier=paid` with the existing
+"any Session active" check — two independent conditions, both required.
+A Free-tier merchant sees nothing: §3.4a/§3.4b never render, and the
+existing shared paid-tier informational note (§3.4/§3.5) is deliberately
+left unextended — this capability's only real value is contingent on a
+second Paid-tier action (inviting a SELLER) a solo Free-tier merchant
+would need regardless. §1, §2, §3.4a, §8 item 11, §10 corrected to
+match.
