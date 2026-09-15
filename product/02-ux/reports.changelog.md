@@ -252,7 +252,7 @@ salesperson totals) — a strict superset, not a compromise between the
 two. New §3.19 ("Exportar tus ventas — selector de rango": Desde/Hasta
 date pickers, defaulting to this Business's full closed-Session history;
 a nine-column file-content table — Fecha, Lugar, Evento, Sesión,
-Vendedor, Producto, Cantidad, Precio, Sale ID) and §3.20 ("...— generando
+Vendedor, Producto, Cantidad, Precio, ID de venta) and §3.20 ("...— generando
 / listo": a purely client-side CSV-generation and download step, no new
 backend read). New §2 sales-export availability check (reuses step 1's
 existing "any Session ever closed" read). `architect`-confirmed additive
@@ -272,9 +272,38 @@ tab's existing scope, not independently re-gated. §1, §2, §3.4/§3.5/§3.6
 (new "[ Exportar tus ventas ▸ ]" row), §4, §5 (states 21/22), §6 (two new
 step-count rows), §7 (four new automation bullets), §9, §10, and §11
 (the stale "exporting a summary" future-consideration bullet marked
-superseded) all updated to match. **Full `ux-critic`/`reviewer` pass not
-yet run** — persisted directly from `ux-designer`'s report, next step in
-the pipeline.
+superseded) all updated to match.
+
+**`ux-critic` review found 3 Major + 2 Minor, all fixed in one
+remediation pass (2026-09-15):** a CTA/destination-heading collision
+(§3.19's own on-screen heading was identical to the "[ Exportar tus
+ventas ▸ ]" row's own label — the same defect class already found and
+fixed twice elsewhere in this project, `HJR-INV-M1`/`HJR-EVT-M1`; fixed
+by retitling §3.19's heading to "Elige el rango a exportar"); a claimed
+"on-screen disclosure" of the Vendedor column's role-only limit that
+wasn't actually present anywhere in §3.19 (fixed with a real wireframe
+line); "Sale ID" left untranslated in an otherwise fully-Spanish
+merchant-facing file, per `global-principles.md`'s Product Language rule
+(renamed "ID de venta" everywhere it's the actual column name — this
+entry's own column list above corrected to match); a date-field notation
+drift from `events.md` §3.6's numeric convention (fixed); §3.20's
+loading text shown unconditionally rather than following this document's
+own near-instant/slow convention (fixed). `ux-critic` re-verification
+confirmed all five closed, nothing new introduced.
+
+**`reviewer` found 0 Blockers, 2 Important, both closed directly by
+Main:** this changelog entry, `reports.md`'s own front-matter status
+paragraph, and `product/02-ux/CLAUDE.md`'s status line all still
+asserted "not yet reviewed" after the `ux-critic` cycle above had
+already landed — corrected across all three locations (this entry being
+one of the corrections). §3.19's file-content table stated every
+column's literal value source except "ID de venta," despite being
+marked "authoritative and final" — fixed with an explicit `Sale.id`
+citation, described as an opaque internal reference Ana only needs for
+grouping/filtering, never to interpret. 1 Suggestion (non-blocking,
+applied): "Vas a descargar un archivo CSV" reworded to lead with "un
+archivo de Excel," Ana's own more familiar term. Folded back into
+Approved.
 
 ---
 

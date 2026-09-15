@@ -128,7 +128,29 @@ purpose, rather than inventing a scoped name field (§3.19, §8 item 13,
 placement inference, not an explicit Product Owner instruction (§8 item
 12). OWNER-only, inheriting the whole tab's existing scope (front
 matter) — not independently re-gated (§3.19's own confirming bullet).
-**Not yet run through `ux-critic`/`reviewer`.** **[see
+**`ux-critic` review found 3 Major + 2 Minor, all fixed in one
+remediation pass (2026-09-15):** a CTA/destination-heading collision
+(§3.19's own screen heading, previously identical to the row's CTA
+label, retitled "Elige el rango a exportar"); the Vendedor-column
+disclosure this front matter's own text claimed was "on-screen" wasn't
+actually present anywhere in §3.19 — fixed with a real wireframe line;
+"Sale ID" left untranslated in an otherwise fully-Spanish file, per
+`global-principles.md`'s Product Language rule — renamed "ID de venta"
+everywhere it's the actual column name; a date-field notation drift from
+`events.md` §3.6's own numeric convention; §3.20's loading text shown
+unconditionally rather than following this doc's own near-instant/slow
+convention. `ux-critic` re-verification confirmed all five closed,
+nothing new introduced. `reviewer` found 0 Blockers, 2 Important (both
+closed directly by Main): this status paragraph and two sibling
+locations (`reports.changelog.md`, `product/02-ux/CLAUDE.md`) still
+claimed "not yet reviewed" after the cycle above had already completed;
+and §3.19's own file-content table stated every column's value source
+except "ID de venta," despite being marked "authoritative and final" —
+fixed with an explicit `Sale.id` citation. 1 Suggestion (non-blocking,
+applied): "Vas a descargar un archivo CSV" reworded to lead with "un
+archivo de Excel," Ana's own more familiar term, per
+`global-principles.md`'s "business language before technical language."
+Folded back into Approved. **[see
 reports.changelog.md#status-2026-09-15-q27-sales-export]**
 
 Scope: `Resultados`, the fourth and last of four top-level nav items per
@@ -1813,11 +1835,11 @@ Product Owner-requested.
 │  Hasta                          │
 │  [ 14 / 07 / 2026 ]               │
 │                                │
-│  Vas a descargar un archivo CSV     │
-│  con una fila por producto vendido  │
-│  — se puede abrir en Excel, Google  │
-│  Sheets, o cualquier otra hoja de    │
-│  cálculo.                            │
+│  Vas a descargar un archivo de       │
+│  Excel (CSV) con una fila por        │
+│  producto vendido — se puede abrir   │
+│  en Excel, Google Sheets, o          │
+│  cualquier otra hoja de cálculo.     │
 │                                │
 │  Columnas: Fecha, Lugar, Evento,     │
 │  Sesión, Vendedor, Producto,         │
@@ -1861,7 +1883,7 @@ Product Owner-requested.
   | Producto | Product name |
   | Cantidad | count of `SaleItem` rows for this `(Sale, Product)` pair |
   | Precio | the shared, already-resolved `pricePaid` for this `(Sale, Product)` pair (D33) |
-  | ID de venta | repeated across every row belonging to the same Sale |
+  | ID de venta | `Sale.id` — an opaque internal reference, repeated across every row belonging to the same Sale; Ana only needs it to group/filter rows in her own spreadsheet tool, never to interpret its value |
 
   This directly answers both of the Product Owner's own two proposed
   shapes at once — an Event/day/total/salesperson summary, and a
