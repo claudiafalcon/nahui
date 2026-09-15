@@ -1,0 +1,30 @@
+-- Real Blocker, found via live browser testing 2026-09-15: every Edge
+-- Function in this project that queries a table directly via PostgREST
+-- (send-otp/verify-otp against `otp_attempts`, peek-invitation against
+-- `invitation_peek_attempts`) has been failing with `42501 permission
+-- denied` since each table was created. Root cause: `service_role`'s
+-- `bypassrls` attribute bypasses RLS *policies* — a completely separate
+-- Postgres mechanism from ordinary GRANT-based table privileges, which
+-- were never issued for either table. Every other table in this project
+-- was unaffected because every other table is accessed exclusively
+-- through `SECURITY DEFINER` RPC functions, which run with the
+-- function *owner's* privileges regardless of the calling role — `service
+-- _role` never needed a table grant to reach any of them. These two
+-- tables are the only ones an Edge Function queries directly via
+-- `.from(...)`, the one access pattern this gap could actually reach.
+--
+-- This was never caught in review because nothing was ever live-tested
+-- against real deployed infrastructure until now (both tables' own
+-- migrations disclosed this limitation explicitly in their header
+-- comments). The now-corrected assumption ("service_role already
+-- bypasses grants") was repeated verbatim in `otp_attempts`'s own
+-- creation migration and `invitation_peek_attempts`'s — both wrong in
+-- the identical way, closed together here.
+--
+-- Scoped to exactly the operations each function actually performs
+-- (confirmed by reading the Edge Function source directly, not assumed):
+-- send-otp/verify-otp need SELECT/INSERT/UPDATE on otp_attempts;
+-- peek-invitation needs SELECT/INSERT only on invitation_peek_attempts
+-- (it never updates a row).
+grant select, insert, update on public.otp_attempts to service_role;
+grant select, insert on public.invitation_peek_attempts to service_role;

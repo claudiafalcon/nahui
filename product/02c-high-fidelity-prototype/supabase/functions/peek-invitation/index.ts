@@ -14,12 +14,24 @@
 // Deno runtime (Supabase Edge Functions), not covered by the prototype's
 // own `tsc -b`/Vite build — see supabase/README.md for how this gets
 // deployed and verified.
-// NOT LIVE-TESTED against real infrastructure — this environment can't
-// actually invoke a deployed Edge Function end to end, so the
-// `x-forwarded-for` behavior described below (Supabase's edge network
-// populating it before the handler runs) is asserted from Supabase's own
-// documented platform behavior, not verified live here. Verified for
-// syntax/structure only, same disclosure `send-otp`/`verify-otp` carry.
+// Database connectivity WAS live-tested against real infrastructure and
+// found broken three times, for three real, separate reasons, all now
+// fixed — see send-otp/index.ts's own header for the fuller account of
+// (1)/(2), shared with that function: (1) stale env-var reads for the
+// deprecated key system (fixed, this file's own createClient call
+// below); (2) `service_role` was never GRANTed table privileges on
+// `invitation_peek_attempts`/`otp_attempts`, the only two tables any Edge
+// Function queries directly via PostgREST rather than through a
+// `SECURITY DEFINER` RPC (`20260915000000_edge_function_table_grants.sql`);
+// (3) unique to this function, since it's the only one that calls an RPC
+// at all — `service_role` also lacked `EXECUTE` on `peek_invitation(text)`
+// itself, a separate Postgres grant from the table-level one in (2)
+// (`20260915010000_peek_invitation_service_role_execute.sql`).
+// The `x-forwarded-for` behavior described below (Supabase's edge network
+// populating it before the handler runs) remains genuinely unverified
+// live — this environment still can't invoke a deployed Edge Function
+// end to end to observe that specific header — and is still asserted
+// from Supabase's own documented platform behavior only.
 //
 // Request: POST { token: string }
 // Response: 200 { ok: true, businessName: string, status: 'pending' | 'expired' | 'accepted' | 'revoked', expiresAt: string }
@@ -40,8 +52,14 @@ import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
 // does that).
 const PEEK_RATE_LIMIT_PER_10_MIN = 20;
 
+// New API key system (see send-otp/index.ts's own header) — the platform
+// injects SUPABASE_SECRET_KEYS (a JSON object keyed by name, "default"
+// for this project's own key), not a plain SUPABASE_SERVICE_ROLE_KEY
+// string. Resolved once here, kept under the same downstream variable
+// name since every call site below already references it that way.
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SUPABASE_SECRET_KEYS = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS')!);
+const SUPABASE_SERVICE_ROLE_KEY = SUPABASE_SECRET_KEYS['default'];
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 

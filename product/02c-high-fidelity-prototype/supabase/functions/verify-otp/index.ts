@@ -5,9 +5,15 @@
 // already exhausted on attempts. Consumes the code on success — single
 // use, per architecture-principles.md #7's idempotency discipline.
 //
-// Deno runtime (Supabase Edge Functions) — see send-otp/index.ts's own
-// header for the same disclosures (not covered by `tsc -b`, not
-// live-tested against real infrastructure).
+// Deno runtime (Supabase Edge Functions) — not covered by the prototype's
+// own `tsc -b`/Vite build. Database connectivity WAS live-tested against
+// real infrastructure and found broken for two real, separate reasons,
+// fixed the same way here — see send-otp/index.ts's own header for the
+// full account: (1) this project's migration to Supabase's new API key
+// system left the deprecated `SUPABASE_SERVICE_ROLE_KEY` env var
+// non-functional; (2) `service_role` was never GRANTed table privileges
+// on `otp_attempts` at all, a separate Postgres mechanism from RLS/
+// `bypassrls` (`20260915000000_edge_function_table_grants.sql`).
 //
 // Request: POST { phone: string, code: string }
 // Response: 200 { ok: true }
@@ -25,8 +31,14 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
 import { VERIFY_MAX_ATTEMPTS, hashOtp, normalizeCode, normalizePhone } from '../_shared/otp.ts';
 
+// New API key system (see send-otp/index.ts's own header) — the platform
+// injects SUPABASE_SECRET_KEYS (a JSON object keyed by name, "default"
+// for this project's own key), not a plain SUPABASE_SERVICE_ROLE_KEY
+// string. Resolved once here, kept under the same downstream variable
+// name since every call site below already references it that way.
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SUPABASE_SECRET_KEYS = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS')!);
+const SUPABASE_SERVICE_ROLE_KEY = SUPABASE_SECRET_KEYS['default'];
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 

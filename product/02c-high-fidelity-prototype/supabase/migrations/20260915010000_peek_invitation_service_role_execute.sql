@@ -1,0 +1,17 @@
+-- Second half of the Edge Function permission Blocker fixed in
+-- `20260915000000_edge_function_table_grants.sql`. That migration closed
+-- the table-level gap; live re-testing immediately afterward surfaced a
+-- second, separate one: `service_role` also lacks EXECUTE on
+-- `peek_invitation(text)` itself — `42501 permission denied for function
+-- peek_invitation`, confirmed via a live raw-RPC diagnostic call.
+--
+-- `20260914060000_peek_invitation_rate_limit.sql`'s own revoke statement
+-- only removed `anon`/`authenticated` execute, assuming `service_role`
+-- already had it — the same "service_role bypasses grants" misconception
+-- already corrected in the sibling table-grant migration, recurring here
+-- for a function instead of a table. This project appears to have
+-- PostgreSQL's normal "PUBLIC gets EXECUTE on every new function by
+-- default" behavior revoked at the schema level (a real, deliberate
+-- security posture, not a bug in itself) — which is exactly why this
+-- needs an explicit grant rather than relying on any implicit default.
+grant execute on function public.peek_invitation(text) to service_role;

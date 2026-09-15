@@ -976,18 +976,26 @@ interface StoreValue {
    * gated on `state.currentUserId`). `status` already reflects the
    * read-time `expired` derivation the server itself computes — never call
    * `invitationDisplayStatus` on this result, it's already resolved.
-   * `null` on token-not-found, rate-limited, or platform error alike — the
-   * caller can't usefully distinguish these (a rate-limited caller has no
-   * more actionable next step than "the read itself failed," §3.9b's own
-   * generic "no se pudo abrir el enlace" retry copy already covers it; the
-   * same collapse `sendOtp`'s own `rate-limited` reason already gets at the
-   * `PhoneStep.tsx` UI layer, `docs/passes` — a plumbing-level protection,
-   * not a distinguishable user-facing state), so this keeps the same
-   * two-way `null`/success shape the RPC-direct version already had rather
-   * than inventing a third UI state nothing in `authentication.md` defines. */
+   * **Corrected 2026-09-15 — the prior version of this doc comment
+   * collapsed `not-found` into the same `null` bucket as `rate-limited`/
+   * `platform-error`, live-tested and found to contradict `authentication.md`
+   * §2.0 step 2's own literal text: "the read itself fails outright" → §3.9b
+   * is a genuinely different outcome from "resolves cleanly to anything
+   * else — not found... or a determinate status that isn't a live
+   * pending" → §3.13a. `rate-limited`/`platform-error` still collapse to
+   * `null` (§3.9b, retry-appropriate — the caller can't usefully
+   * distinguish a plumbing-level protection from a genuine transient
+   * failure, same posture `sendOtp`'s own `rate-limited` reason already
+   * gets at `PhoneStep.tsx`), but `not-found` now returns its own
+   * sentinel, since it's a determinate, non-retryable outcome with its
+   * own defined destination, not an ambiguous failure.** */
   peekInvitation: (
     token: string,
-  ) => Promise<{ businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' } | null>;
+  ) => Promise<
+    | { businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' }
+    | 'not-found'
+    | null
+  >;
   /** authentication.md §2.2a step 3 (RFC 0013/D64, real backend write —
    * Stage 7 Backend Integration, this pass) — calls the already-working
    * `accept_invitation` RPC (unchanged by this pass): atomically creates
@@ -3159,10 +3167,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * `state`, since the caller may not even hold a `currentUserId` yet. */
   async function peekInvitation(
     token: string,
-  ): Promise<{ businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' } | null> {
+  ): Promise<
+    | { businessName: string; status: 'pending' | 'expired' | 'accepted' | 'revoked' }
+    | 'not-found'
+    | null
+  > {
     const result = await peekInvitationRemote(token);
-    if (!result.ok) return null;
-    return { businessName: result.businessName, status: result.status };
+    if (result.ok) return { businessName: result.businessName, status: result.status };
+    if (result.reason === 'not-found') return 'not-found';
+    return null;
   }
 
   /** authentication.md §2.2a step 3 (RFC 0013/D64) — see this function's

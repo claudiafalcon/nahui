@@ -6,9 +6,28 @@
 //
 // Deno runtime (Supabase Edge Functions), not covered by the prototype's
 // own `tsc -b`/Vite build — see supabase/README.md for how this gets
-// deployed and verified once real Supabase/Twilio credentials exist.
-// NOT LIVE-TESTED against real infrastructure — no Supabase/Twilio account
-// exists yet (see supabase/README.md). Verified for syntax/structure only.
+// deployed and verified.
+// Database connectivity WAS live-tested against real infrastructure and
+// found broken, for two real, separate reasons, both now fixed:
+// (1) this project has since migrated to Supabase's new API key system
+// (`sb_secret_...`) and the deprecated `SUPABASE_SERVICE_ROLE_KEY` env var
+// this file used to read no longer resolves to a working credential —
+// fixed by reading the new `SUPABASE_SECRET_KEYS` JSON object instead
+// (below). (2) Fixing that surfaced the actual root cause of the 403s
+// themselves, confirmed via a live raw-REST diagnostic: `service_role`
+// was never GRANTed table privileges on `otp_attempts` at all — a
+// completely separate Postgres mechanism from RLS/`bypassrls`, which this
+// migration's own original comment (`20260910000000_create_otp_attempts
+// .sql`) incorrectly assumed covered it. Every other table in this
+// project is accessed only through `SECURITY DEFINER` RPCs (which run
+// with the function owner's privileges, never needing a caller-side
+// grant) — `otp_attempts`/`invitation_peek_attempts` are the only two
+// tables any Edge Function queries directly via PostgREST, the one
+// access pattern this gap could reach. Fixed:
+// `20260915000000_edge_function_table_grants.sql`. Twilio delivery itself
+// remains genuinely unverified live — no Twilio account/credentials exist
+// yet (see supabase/README.md's manual checklist, steps 2-4), so this
+// function will still fail past the DB checks until those are set.
 //
 // Request: POST { phone: string }              — 10 digits, e.g. "5512345678"
 // Response: 200 { ok: true }
@@ -27,12 +46,21 @@ import {
 } from '../_shared/otp.ts';
 
 // Supabase secrets (`supabase secrets set …`, see supabase/README.md) —
-// never hardcoded, never committed. SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY
-// are auto-injected into every Edge Function's environment by the
-// Supabase platform itself; the Twilio ones are set explicitly by the
-// Product Owner once a Twilio account exists.
+// never hardcoded, never committed. SUPABASE_URL/SUPABASE_SECRET_KEYS are
+// auto-injected into every Edge Function's environment by the Supabase
+// platform itself; the Twilio ones are set explicitly by the Product
+// Owner once a Twilio account exists.
+//
+// New API key system (this project has migrated — see
+// https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys):
+// the platform no longer injects a plain SUPABASE_SERVICE_ROLE_KEY string,
+// it injects SUPABASE_SECRET_KEYS, a JSON object keyed by secret-key name
+// (this project's own key is named "default"). Resolved once here and
+// kept under the same downstream variable name since every call site below
+// already references it that way — only the source changed.
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SUPABASE_SECRET_KEYS = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS')!);
+const SUPABASE_SERVICE_ROLE_KEY = SUPABASE_SECRET_KEYS['default'];
 const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
 const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
 // The Meta-verified WhatsApp Business Sender number, E.164, no "whatsapp:"

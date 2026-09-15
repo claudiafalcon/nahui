@@ -169,7 +169,7 @@ export function InvitationFlow({ token, onDone }: { token: string; onDone: () =>
       setStep({ kind: 'resolve-error' }); // §3.9b — the read itself failed outright
       return;
     }
-    if (result.status !== 'pending') {
+    if (result === 'not-found' || result.status !== 'pending') {
       // Not found, already accepted, revoked, or expired — this document
       // "has no reliable way to distinguish these cases and shouldn't
       // guess" (§2.0 step 2's own text).
