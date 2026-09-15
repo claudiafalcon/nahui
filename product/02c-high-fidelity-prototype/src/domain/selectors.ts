@@ -79,6 +79,37 @@ export function myActiveSession(state: AppState, membershipId: ID): Session | un
   return state.sessions.find((s) => s.status === 'active' && s.openedByMembershipId === membershipId);
 }
 
+/**
+ * `reports.md` §2/§3.4a ("Vendiendo ahorita," `decision-log.md` D68) — a
+ * **Business-wide, cross-Session, cross-device read**: every Session with
+ * `status = 'active'` right now, regardless of which Membership opened it or
+ * which device it's running on. Deliberately **not** `myActiveSession`
+ * above, which is Membership-scoped — the wrong shape here, since this check
+ * has to surface every OWNER's and every SELLER's Session at once (§1's own
+ * motivating scenario: "an OWNER at home with three SELLERs each actively
+ * selling, wanting to check in without interrupting anyone"). No explicit
+ * `businessId` parameter — this prototype's `AppState` is implicitly
+ * single-Business, the same convention `activeEventsForBusiness` below
+ * already follows for an identical "ForBusiness" read. Sorted
+ * most-recently-opened-first (§3.4a's own explicit sort rule — "never
+ * Ana-sorted"), never re-sorted by the caller.
+ */
+export function activeSessionsForBusiness(state: AppState): Session[] {
+  return state.sessions.filter((s) => s.status === 'active').sort((a, b) => b.openedAt - a.openedAt);
+}
+
+/**
+ * `reports.md` §3.4a — resolves a `Session.openedByMembershipId` straight to
+ * its `BusinessMembership` row, id-only. Distinct from `findMembership`
+ * above, which needs `(userId, businessId)` in hand and answers a different
+ * question ("does this User hold a Membership on this Business") — here we
+ * already have the Membership's own id and just need its `role`, the one
+ * fact "Tú" vs. "Alguien de tu equipo" (§3.4a) turns on.
+ */
+export function membershipById(state: AppState, membershipId: ID): BusinessMembership | undefined {
+  return state.memberships.find((m) => m.id === membershipId);
+}
+
 /** Every Session this Membership has ever opened — `home.md` §3.6b's own
  * "does this device already have a signal today" check, and §3.7c's own
  * per-Membership Sale attribution, both narrow from this same set rather
@@ -513,14 +544,26 @@ export function eventDayRows(
 /** `{days, sales, revenue}` — the one-line ambient rollup reused verbatim
  * across the Pasados list card (§3.4/§3.5), the closed-detail echo (§3.16,
  * EVT-M3), and Home's own countdown text — one computation, several display
- * points, never recomputed differently at each. */
+ * points, never recomputed differently at each.
+ *
+ * Excludes Sales belonging to a currently-`active` Session
+ * (`activeSessionIds` below, `reports.md` §2's live-Session exclusion) —
+ * `eventStatus` computes an Event as `'closed'` purely from
+ * `today > event.endDate`, entirely independent of whether its own Session(s)
+ * have actually been closed via the separate `closeSession` merchant action.
+ * A multi-day Event can therefore read `'closed'` while its last Session is
+ * still `active` — without this exclusion, that still-open Session's Sales
+ * would double as both "Vendiendo ahorita" (still live, "hasta ahorita") and
+ * settled Resultados history at once, the exact contradiction §2 forbids. */
 export function eventRollup(state: AppState, eventId: ID): { days: number; sales: number; revenue: number } {
   const days = eventCompletedDays(state, eventId);
+  const liveSessionIds = activeSessionIds(state);
   const sessionIds = new Set(state.sessions.filter((s) => s.eventId === eventId).map((s) => s.id));
   let sales = 0;
   let revenue = 0;
   for (const sale of state.sales) {
-    if (sale.status !== 'finalized' || !sessionIds.has(sale.sessionId)) continue;
+    if (sale.status !== 'finalized' || !sessionIds.has(sale.sessionId) || liveSessionIds.has(sale.sessionId))
+      continue;
     sales += 1;
     for (const item of sale.items) revenue += item.pricePaid;
   }
@@ -722,16 +765,41 @@ export function hasAnyClosedSession(state: AppState): boolean {
   return state.sessions.some((s) => s.status === 'closed');
 }
 
+/** Every Session currently `active`, as a Set of its `id`s — the standing
+ * exclusion `reports.md` §2 (`decision-log.md` D68) requires of every
+ * Resultados all-time aggregate: "A live Session's Sales are never counted
+ * toward 'Total histórico,' 'Top productos,' or any other aggregate defined
+ * below — those keep reading only closed/reviewed data, unchanged." A Sale's
+ * own `status` turns `'finalized'` the instant that one transaction
+ * completes (`store.tsx`'s `finalizeSale`), completely independent of
+ * whether the Session it belongs to has closed yet — so `Sale.status`
+ * alone can never answer "is this Sale still part of a live Session," only
+ * this Session-level check can.
+ *
+ * **Deliberately not folded into `salesCount` below.** `salesCount` is
+ * shared with Home's own `sellingGridRows` (`home.md` §3.9), which correctly
+ * needs live-Session Sales counted in real time — "how much of this Product
+ * is already spoken for right now" during an active selling day is a
+ * different, correct use case from Resultados' own closed/reviewed-only
+ * altitude. This Set exists so Resultados-scoped selectors can apply the
+ * exclusion themselves without narrowing the selector Home depends on. */
+function activeSessionIds(state: AppState): Set<ID> {
+  return new Set(state.sessions.filter((s) => s.status === 'active').map((s) => s.id));
+}
+
 /** "Total histórico" (§3.4/§3.5/§3.6) — sum/count of `SaleItem.pricePaid`
  * across every finalized Sale this Business has ever recorded, all-time, no
- * Session/Event scoping. `sessionTotals` above is the identical computation
- * scoped to one Session; this is its all-time-scoped sibling, needed because
- * no existing selector sums across every Session at once. */
+ * Session/Event scoping, excluding any Sale whose Session is still `active`
+ * (§2's live-Session exclusion, `activeSessionIds` above). `sessionTotals`
+ * above is the identical computation scoped to one Session; this is its
+ * all-time-scoped sibling, needed because no existing selector sums across
+ * every Session at once. */
 export function allTimeTotals(state: AppState): { revenue: number; count: number } {
+  const liveSessionIds = activeSessionIds(state);
   let revenue = 0;
   let count = 0;
   for (const sale of state.sales) {
-    if (sale.status !== 'finalized') continue;
+    if (sale.status !== 'finalized' || liveSessionIds.has(sale.sessionId)) continue;
     count += 1;
     for (const item of sale.items) revenue += item.pricePaid;
   }
@@ -739,14 +807,22 @@ export function allTimeTotals(state: AppState): { revenue: number; count: number
 }
 
 /** "Top productos · todo tu historial" (§3.4/§3.5/§3.6) — every Product with
- * ≥1 finalized SaleItem ever, ranked by piece count descending. Reuses
- * `salesCount` (the exact per-Product logic `sellingGridRows` already
- * computes) rather than re-deriving it — the one all-time-scope difference
- * is `sellingGridRows`'s own tie-break-by-registration-order and
- * zero-count rows, neither of which this ranked, filtered list needs. */
+ * ≥1 finalized SaleItem ever recorded under a closed/reviewed Session,
+ * ranked by piece count descending. **Does not reuse `salesCount`** the way
+ * an earlier pass did — `salesCount` intentionally counts live-Session Sales
+ * too (Home's own `sellingGridRows` needs that), while this list must not
+ * (§2's live-Session exclusion, `activeSessionIds` above) — so this performs
+ * its own identically-shaped per-Product count, scoped to closed/reviewed
+ * Sales only. */
 export function topProductsAllTime(state: AppState): { product: Product; count: number }[] {
+  const liveSessionIds = activeSessionIds(state);
+  const counts = new Map<ID, number>();
+  for (const sale of state.sales) {
+    if (sale.status !== 'finalized' || liveSessionIds.has(sale.sessionId)) continue;
+    for (const item of sale.items) counts.set(item.productId, (counts.get(item.productId) ?? 0) + 1);
+  }
   return state.products
-    .map((product) => ({ product, count: salesCount(state, product.id) }))
+    .map((product) => ({ product, count: counts.get(product.id) ?? 0 }))
     .filter((row) => row.count > 0)
     .sort((a, b) => b.count - a.count);
 }
@@ -938,6 +1014,13 @@ function mondayOfWeek(targetDateKey: string): string {
  * than comparing this week against a week she never had, mirroring the same
  * restraint `venuePerformance`'s empty state and §3.10 already apply to "no
  * fabricated venue data."
+ *
+ * **Live-Session exclusion (§2, `decision-log.md` D68):** the day-by-day
+ * tally below excludes any Sale whose Session is still `active`
+ * (`activeSessionIds` above) — this headline is one of the aggregates §2
+ * names explicitly ("or any other aggregate defined below"), so a still-open
+ * Session's Sales must not move "esta semana"'s count until that Session
+ * actually closes, same as every other aggregate on this screen.
  */
 export function salesTrend(state: AppState, now: number = Date.now()): { thisWeek: number; lastWeek: number } | null {
   const closedSessionDateKeys = state.sessions.filter((s) => s.status === 'closed').map((s) => dateKey(s.openedAt));
@@ -951,10 +1034,11 @@ export function salesTrend(state: AppState, now: number = Date.now()): { thisWee
 
   if (earliestSessionDateKey > lastSunday) return null; // she wasn't active yet last week
 
+  const liveSessionIds = activeSessionIds(state);
   let thisWeek = 0;
   let lastWeek = 0;
   for (const sale of state.sales) {
-    if (sale.status !== 'finalized' || sale.finalizedAt == null) continue;
+    if (sale.status !== 'finalized' || sale.finalizedAt == null || liveSessionIds.has(sale.sessionId)) continue;
     const dk = dateKey(sale.finalizedAt);
     if (dk >= thisMonday && dk <= todayKey) thisWeek += 1;
     else if (dk >= lastMonday && dk <= lastSunday) lastWeek += 1;

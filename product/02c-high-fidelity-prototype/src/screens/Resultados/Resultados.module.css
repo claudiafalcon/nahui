@@ -271,6 +271,63 @@
   margin: 0;
 }
 
+/* ---- "Vendiendo ahorita" (§3.4a, `decision-log.md` D68) — a live,
+   cross-Session, cross-device read. Wrapped in its own warm-tinted card,
+   visually distinct from the plain Historial/En curso cards below it, so a
+   still-moving total is never mistaken for a settled one — additive to (not
+   a replacement for) the spec's own required "hasta ahorita" copy
+   qualifier, which is the actual load-bearing signal at any fidelity. ---- */
+.liveSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: color-mix(in srgb, var(--color-blush) 14%, var(--color-white));
+  border: 1.5px solid var(--color-blush);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.liveSectionLabel {
+  font: var(--text-body-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-tezontle-dark);
+}
+
+.liveSectionBody {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.liveCards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* One live card = one active Session — same shape as .card above (12/14px
+   padding, white surface, press-scale) so it reads as "the same kind of
+   tappable row," just inside the tinted wrapper that marks the whole
+   section as live. */
+.liveCard {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.liveCard:active {
+  transform: scale(0.98);
+}
+
 /* ---- Detail-screen header block (Session/Event/Venue detail) ---- */
 .header {
   display: flex;

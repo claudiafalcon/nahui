@@ -10,6 +10,7 @@ import { ResultadosEventDetail } from './ResultadosEventDetail';
 import { RendimientoPorBazar } from './RendimientoPorBazar';
 import { VenueDetail } from './VenueDetail';
 import { TusClientes } from './TusClientes';
+import { VendiendoAhoritaDetail } from './VendiendoAhoritaDetail';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 import { ResolvingState } from '../../components/ResolvingState/ResolvingState';
 
@@ -38,7 +39,13 @@ export type ResultadosView =
   | { mode: 'event-detail'; eventId: ID; returnTo: EventDetailReturnTo }
   | { mode: 'venue-detail'; venueId: ID }
   | { mode: 'rendimiento' }
-  | { mode: 'tus-clientes' };
+  | { mode: 'tus-clientes' }
+  /** reports.md §3.4b (`decision-log.md` D68) — "Vendiendo ahorita"'s own
+   * read-only detail. No `returnTo` — its only two possible parents (§3.3's
+   * cold-start Variant B, §3.4a's own card list) are both this same
+   * `{ mode: 'main' }` view state (see `VendiendoAhoritaDetail.tsx`'s own
+   * doc comment for why one destination is enough here). */
+  | { mode: 'live-session-detail'; sessionId: ID };
 
 /**
  * reports.md §2/§4 — Resultados tab resolution, following
@@ -153,6 +160,14 @@ export function ResultadosScreen({
     );
   }
 
+  if (view.mode === 'live-session-detail') {
+    return (
+      <ScreenTransition transitionKey={`live-session-detail:${view.sessionId}`}>
+        <VendiendoAhoritaDetail sessionId={view.sessionId} onBack={() => onChangeView({ mode: 'main' })} />
+      </ScreenTransition>
+    );
+  }
+
   if (view.mode === 'venue-detail') {
     return (
       <ScreenTransition transitionKey={`venue-detail:${view.venueId}`}>
@@ -211,7 +226,10 @@ export function ResultadosScreen({
   if (!hasAnyClosedSession(state)) {
     return (
       <ScreenTransition transitionKey="cold-start">
-        <ResultadosColdStart onNavigateToHoy={onNavigateToHoy} />
+        <ResultadosColdStart
+          onNavigateToHoy={onNavigateToHoy}
+          onTapLiveSession={(sessionId) => onChangeView({ mode: 'live-session-detail', sessionId })}
+        />
       </ScreenTransition>
     );
   }
@@ -221,6 +239,7 @@ export function ResultadosScreen({
       <ResultadosMain
         onTapSession={(sessionId) => onChangeView({ mode: 'session-detail', sessionId, returnTo: { mode: 'main' } })}
         onTapEvent={(eventId) => onChangeView({ mode: 'event-detail', eventId, returnTo: { mode: 'main' } })}
+        onTapLiveSession={(sessionId) => onChangeView({ mode: 'live-session-detail', sessionId })}
         onOpenRendimiento={() => onChangeView({ mode: 'rendimiento' })}
         onOpenTusClientes={() => onChangeView({ mode: 'tus-clientes' })}
       />

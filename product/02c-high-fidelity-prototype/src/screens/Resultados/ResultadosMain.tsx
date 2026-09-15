@@ -15,6 +15,7 @@ import { formatShortDate } from '../../domain/dates';
 import { pesos, pluralize } from '../../domain/format';
 import { EVENT_TYPE_LABELS } from '../Events/eventTypeLabels';
 import type { ID } from '../../domain/types';
+import { VendiendoAhorita } from './VendiendoAhorita';
 import styles from './Resultados.module.css';
 
 /**
@@ -28,11 +29,16 @@ import styles from './Resultados.module.css';
 export function ResultadosMain({
   onTapSession,
   onTapEvent,
+  onTapLiveSession,
   onOpenRendimiento,
   onOpenTusClientes,
 }: {
   onTapSession: (sessionId: ID) => void;
   onTapEvent: (eventId: ID) => void;
+  /** reports.md §2/§3.4a (`decision-log.md` D68) — taps a "Vendiendo
+   * ahorita" card, routing to the read-only §3.4b detail, never §3.7's
+   * closed-Session detail. */
+  onTapLiveSession: (sessionId: ID) => void;
   onOpenRendimiento: () => void;
   onOpenTusClientes: () => void;
 }) {
@@ -60,6 +66,13 @@ export function ResultadosMain({
       </div>
 
       <div className={styles.scroll}>
+        {/* reports.md §2/§3.4a (`decision-log.md` D68) — "Vendiendo
+            ahorita" renders at the very top of every main-view state
+            (§3.4/§3.5/§3.6 alike, all three served by this one component),
+            above "Total histórico." Self-contained — renders nothing when
+            no Session is active anywhere on this Business. */}
+        <VendiendoAhorita onTapSession={onTapLiveSession} />
+
         <div className={styles.hero}>
           <p className={styles.heroLabel}>Total histórico</p>
           <p className={styles.heroValue}>
