@@ -964,6 +964,9 @@ Reached only on the write's own genuine platform-error outcome (§2.2a) — same
 │  Cuando quieras vender, abre       │
 │  tu sesión aquí.                    │
 │                                │
+│  Para que te reconozcan por tu       │
+│  nombre, agrégalo en Tu cuenta.        │
+│                                │
 │      [   Ir a Hoy   ]              │
 │                                │
 └───────────────────────────────┘
@@ -971,6 +974,7 @@ Reached only on the write's own genuine platform-error outcome (§2.2a) — same
 - **Copy reuses the exact register `tone-of-voice.md` itself names as the concrete example of "celebration is about her, plainly stated, never inflated"** — "Ya quedaste registrada con Ropa Ana" is that document's own worked example, applied here rather than invented fresh. No confetti-shaped language, no exclamation, no framing this as Nahui's own accomplishment.
 - One tap, "Ir a Hoy" — hands off into `home.md §2`'s own resolution, now reading a real, active SELLER Membership for the first time.
 - Reached only on §2.2a's `success` outcome.
+- **Added 2026-09-15 (`decision-log.md` D69/D70, `ux-critic` Major, closed) — a passive, zero-required-tap line pointing at "Tu cuenta."** `settings.md` §2.5 explicitly reasons against adding a `displayName` *field* to this screen (the fastest interaction is the one that never happens, and nothing at acceptance-time needs the name) — that reasoning is unaffected and still correct. What was missing, found by `ux-critic`: a SELLER onboarded this way never sees "Tu equipo," "Vendiendo ahorita," or "Exportar tus ventas" (all OWNER-only), so she had no way to ever learn anyone sees "Alguien de tu equipo" on her behalf, or that a fix exists — "Tu cuenta" existing self-service is not the same as her knowing it exists. This one informational line closes that discoverability gap without adding a field, a tap, or a decision to make right now — she can act on it later, or never, exactly as before. **No `brand-guardian` consultation run** — a single factual, low-stakes informational sentence, the same "routine composition of this document's own already-established informational register" reasoning already applied to §3.2g/§3.10f (§10), not a new emotional or tonal situation for this screen's already-cited exemplar to weigh in on.
 
 ### 3.10d Invitación — ya formabas parte del equipo (new, RFC 0013 —
 accept_invitation outcome: already_member)
