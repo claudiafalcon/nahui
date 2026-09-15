@@ -263,9 +263,12 @@ D68; gate corrected 2026-09-15, `product-decisions.md` Q28, Resolved):
 is this Business `subscriptionTier=paid`, **and** does it currently have
 any Session with status = `active`, right now, across any device or
 Membership? Two independent conditions, both required to render
-anything — not a single fact under two names the way D34 corrected the
-old `subscriptionTier`/`loyaltyEnabled` joint gate into one; tier and "is
-anyone selling right now" genuinely vary independently of each other, the
+anything — unlike D34, which found `loyaltyEnabled` had been wrongly
+required as a second precondition for a decision (visibility) it doesn't
+actually govern (`architect` kept `loyaltyEnabled` itself intact, since
+it answers a genuinely different question — Claim collection — never
+merging it with `subscriptionTier` into one fact), tier and "is anyone
+selling right now" are both genuinely load-bearing for this gate, the
 same reason step 4 below keeps its own `subscriptionTier=paid` check as a
 distinct question rather than folding it into the steps that precede it.
   → YES (both): "Vendiendo ahorita" (§3.4a) renders, stacked above
@@ -275,8 +278,10 @@ distinct question rather than folding it into the steps that precede it.
     completely independent of whether any Session has ever closed for
     this Business.
   → NO (either): "Vendiendo ahorita" is entirely absent — no placeholder
-    line, no note anywhere in this tab pointing at it (§10's "no
-    paid-tier upgrade/discoverability copy" posture, §8 item 11). Same
+    line, no note anywhere in this tab pointing at it (§8 item 11's own
+    SELLER-contingency reasoning — a Free-tier merchant can't act on this
+    capability regardless, so it isn't worth mentioning to her, distinct
+    from §10's narrower "no upgrade/purchase flow" posture). Same
     restraint step 2's "En curso" already applies to its own absence, now
     covering the Free-tier case exactly as it already covers the
     no-live-Session case.
@@ -2089,14 +2094,14 @@ there; no urgency is invented where none exists.
     Customers/multi-staff SELLER accounts (`decision-log.md` D27/D34,
     `company/business-decisions.md` Q18). §2's live-session check now
     also requires `subscriptionTier=paid`, ANDed with the existing "any
-    Session active" check — two independent conditions, not a single
-    fact under two names (see §2 for why this differs from the D34
-    joint-gate correction).
+    Session active" check — two independent conditions, both genuinely
+    load-bearing (see §2 for the corrected reasoning against D34, which
+    found `loyaltyEnabled` wrongly required as an *unrelated* second
+    precondition for visibility, not that two genuinely independent
+    facts should collapse into one).
     A Free-tier merchant sees nothing — §3.4a/§3.4b simply never render,
-    no placeholder, no informational note pointing at the capability,
-    the same posture §10 already states for why no paid-tier
-    upgrade/discoverability copy is designed anywhere in this tab. The
-    shared "Con el plan de pago vas a ver..." note at §3.4/§3.5 is
+    no placeholder, no informational note pointing at the capability.
+    The shared "Con el plan de pago vas a ver..." note at §3.4/§3.5 is
     unchanged, still describing only "Rendimiento por bazar" and "Tus
     clientes" — "Vendiendo ahorita" is deliberately not folded into it,
     since unlike those two, its value is entirely contingent on a second
