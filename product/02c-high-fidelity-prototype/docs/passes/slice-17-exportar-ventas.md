@@ -159,7 +159,34 @@ constraint, the skeleton→"Preparando tu archivo…" transition (an exact
 structural replica of `ResolvingState.tsx`), and every new CSS
 rule's token/spacing conformance against `DESIGN-SYSTEM.md`.
 
+**`reviewer` (Foundation consistency) — 0 Blockers, 0 Important.**
+Confirmed genuinely read-only (grepped `store.tsx` directly — no write
+function referenced anywhere in this slice's files); `closedSessionsInRange`/
+`salesExportRows` correctly avoid duplicating `activeSessionIds`'s
+Sale-level exclusion, since here the iteration is over `Session` records
+directly, where `status === 'closed'` is the natural equivalent check,
+not a divergent reimplementation; `membershipById`'s role-derivation
+reused verbatim from the Vendiendo ahorita slice; `(Sale, Product)`
+grouping (Cantidad = SaleItem count, Precio = first-encountered
+`pricePaid`) confirmed correct against D33's per-`(Event, Product)`
+price-resolution guarantee; no internal-only entity name leaks into
+rendered copy; "Venta rápida" confirmed consistent with this prototype's
+own already-disclosed, already-established rename (`SessionHeader.tsx`,
+`HomeScreen.tsx`, `SessionDetail.tsx`, `VendiendoAhorita.tsx` all already
+use it in this identical slot), not a new divergence; no selector
+duplicates what `eventRollup`/`historialRows` already compute (neither
+applies a merchant-picked date range across all closed Sessions the way
+this slice's new selectors do). One Suggestion, non-blocking, not
+applied: a third independent `SLOW_THRESHOLD_MS = 1500` local constant
+now exists alongside `ResolvingState.tsx`/`PersonalParaEsteEvento.tsx`'s
+own copies — consistent with, not a new instance of, an already-accepted
+per-screen-copy convention; worth extracting to a shared constant only
+if a fourth instance appears.
+
+`npm run build` — clean, independently re-confirmed by Main throughout.
+Folded back into the prototype's Approved state.
+
 ## Not yet run
 
-`reviewer`'s Foundation-consistency pass and `merchant-user-tester`'s
-live walkthrough have not run against this build yet.
+`merchant-user-tester`'s live walkthrough has not run against this
+build yet.
