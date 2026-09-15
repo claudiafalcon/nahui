@@ -555,14 +555,18 @@ one, not yet closed (§2's live-session check resolves YES)**
 
 ### 3.4a Vendiendo ahorita — live Sessions, present (`decision-log.md` D68)
 
-Renders at the very top of every Resultados state — above "Total histórico"
-in §3.4/§3.5/§3.6, and above §3.3's own cold-start message (its Variant B)
-— whenever §2's live-session check resolves YES (both `subscriptionTier=paid`
-and a currently-`active` Session). Absent entirely otherwise — no
-zero-state line, for either half of that condition (see §2's
-live-session check). **Paid tier only**, resolved 2026-09-15
-(`product-decisions.md` Q28, Resolved by the Product Owner) — see §1 and
-§8 item 11 for the full record.
+Renders at the very top of the only two states where §2's live-session
+check can ever resolve YES — above "Total histórico" in §3.6 (the
+paid-tier main view; never §3.4/§3.5, both explicitly Free-tier-only main
+views the paid half of this gate can never resolve YES against), and
+above §3.3's own cold-start message (its Variant B, itself reachable only
+when the same gate resolves YES, so likewise only ever a Paid-tier
+account) — whenever §2's live-session check resolves YES (both
+`subscriptionTier=paid` and a currently-`active` Session). Absent
+entirely otherwise — no zero-state line, for either half of that
+condition (see §2's live-session check). **Paid tier only**, resolved
+2026-09-15 (`product-decisions.md` Q28, Resolved by the Product Owner) —
+see §1 and §8 item 11 for the full record.
 
 ```
 ┌───────────────────────────────┐
@@ -869,12 +873,12 @@ number as live rather than final.
   was corrected from an earlier draft that said "quiénes son," which would
   have implied identity-level information this architecture deliberately
   never surfaces to the merchant (`decision-log.md` D22, `product/99-rfc/0002-loyalty-claim-complete-capability.md`).
-- **"Vendiendo ahorita" (§3.4a) renders above this screen's own content
-  whenever §2's live-session check resolves YES** — not shown in this
-  wireframe, which illustrates the common case where nothing is
-  currently active. See §3.4a for the full design; not redrawn per
-  variant since its content and condition are identical across all three
-  (§3.4/§3.5/§3.6).
+- **"Vendiendo ahorita" (§3.4a) never renders above this screen's own
+  content.** §2's live-session check requires `subscriptionTier=paid`,
+  and §3.4 only ever renders for a Free-tier account — the two are
+  mutually exclusive. The only main view it can render above is §3.6 (the
+  paid-tier main view); at cold start it renders above §3.3's own Variant
+  B instead. See §3.4a for the full design.
 
 ### 3.5 Main view — free tier, no active Event (most common day-to-day)
 ```
@@ -923,9 +927,11 @@ number as live rather than final.
   — same computation, same guardrails, same graceful-degradation and
   graceful-omission rules. Not restated here; see §3.4's own bullets for
   the full reasoning.
-- **"Vendiendo ahorita" (§3.4a) renders above this screen's own content
-  whenever §2's live-session check resolves YES** — same cross-reference
-  as §3.4's own bullet, not restated in full.
+- **"Vendiendo ahorita" (§3.4a) never renders above this screen's own
+  content, for the same reason §3.4's own corrected bullet states** —
+  §3.5 is a Free-tier main view, and §2's live-session check requires
+  `subscriptionTier=paid`; the two are mutually exclusive. The only main
+  view it can render above is §3.6.
 
 ### 3.6 Main view — paid tier
 ```
@@ -1039,8 +1045,11 @@ variant below for the other reachable state, zero Claims recorded yet,
   annotation under §3.4 and RPT2-MAJ1 (`ux-critic-findings.md`) for why
   this was corrected from an earlier "quiénes son" draft.
 - **"Vendiendo ahorita" (§3.4a) renders above this screen's own content
-  whenever §2's live-session check resolves YES** — same cross-reference
-  as §3.4's own bullet, not restated in full.
+  whenever §2's live-session check resolves YES** — the only main view
+  where this can actually happen: §3.6 is the paid-tier view, and the
+  check itself requires `subscriptionTier=paid` (§3.4/§3.5, both
+  Free-tier-only, can never satisfy it — see their own corrected
+  bullets). See §3.4a for the full design.
 
 ### 3.7 Session detail
 ```
@@ -1687,11 +1696,14 @@ Open Resultados tab
       → no Session ever closed ─────────→ cold start (3.3) → Hoy (home.md §2)
       → Sessions exist ──────────────────→ main view (3.4/3.5, or 3.6 if paid)
 
-Every top-level state (cold start 3.3, main view 3.4/3.5/3.6):
-  [§2's live-session check] any Session active right now → "Vendiendo
-    ahorita" (3.4a) renders above this state's own content — for cold
-    start specifically, this also selects 3.3's Variant B copy (no CTA),
-    not 3.3's default Variant A
+Only two top-level states can ever satisfy §2's live-session check (cold
+start 3.3's own Variant B, and main view 3.6 — never 3.4/3.5, both
+Free-tier-only and therefore mutually exclusive with the check's own
+`subscriptionTier=paid` requirement):
+  [§2's live-session check: subscriptionTier=paid AND any Session active
+    right now] both true → "Vendiendo ahorita" (3.4a) renders above this
+    state's own content — for cold start specifically, this also selects
+    3.3's Variant B copy (no CTA), not 3.3's default Variant A
     tap a card → live detail (3.4b) → back only, no action
 
 Main view:
@@ -1773,7 +1785,9 @@ Elsewhere (entry points into this tab's screens, not from the tab itself):
     (`product/99-rfc/0005-...`, Accepted, `decision-log.md` D39)
 18. Confirmar recompensa entregada — guardando / error
 19. Vendiendo ahorita — live Sessions present (§3.4a), conceptually
-    positioned above every top-level state (§3.3, §3.4-§3.6)
+    positioned above the only two top-level states where §2's
+    paid-tier-gated live-session check can ever resolve YES (§3.3's own
+    Variant B, §3.6 — never §3.4/§3.5, both Free-tier-only)
 20. Sesión en vivo — detalle (§3.4b), read-only
 
 **This document is no longer purely read-side** — §3.17/§3.18 introduce
