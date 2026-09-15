@@ -66,12 +66,16 @@ export function ResultadosMain({
       </div>
 
       <div className={styles.scroll}>
-        {/* reports.md §2/§3.4a (`decision-log.md` D68) — "Vendiendo
-            ahorita" renders at the very top of every main-view state
-            (§3.4/§3.5/§3.6 alike, all three served by this one component),
-            above "Total histórico." Self-contained — renders nothing when
-            no Session is active anywhere on this Business. */}
-        <VendiendoAhorita onTapSession={onTapLiveSession} />
+        {/* reports.md §2/§3.4a (`decision-log.md` D68; gate corrected
+            2026-09-15, `product-decisions.md` Q28) — "Vendiendo ahorita" is
+            Paid tier only, gated on `subscriptionTier=paid` the same way as
+            "Rendimiento por bazar"/"Tus clientes" below (`paid`, already
+            computed above). Structurally only reachable via §3.6 (the
+            paid-tier main view) now — §3.4/§3.5 (Free tier) never render it.
+            Self-contained beyond that: still renders nothing when no
+            Session is active anywhere on this Business, even for a Paid
+            merchant. */}
+        {paid && <VendiendoAhorita onTapSession={onTapLiveSession} />}
 
         <div className={styles.hero}>
           <p className={styles.heroLabel}>Total histórico</p>

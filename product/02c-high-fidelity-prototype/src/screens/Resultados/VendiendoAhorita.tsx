@@ -28,9 +28,14 @@ import styles from './Resultados.module.css';
  * already applies to its own absence" (§2). A caller can render this
  * unconditionally.
  *
- * Shipped as free-tier and paid-tier alike for now — tier placement is a
- * genuinely open Product Decision, not settled here (§1, §8 item 11,
- * `product-decisions.md` Q28).
+ * Paid tier only (`product-decisions.md` Q28, Resolved 2026-09-15 by the
+ * Product Owner) — gating lives entirely in the two call sites above
+ * (`ResultadosMain.tsx`, `ResultadosColdStart.tsx`), each already reusing
+ * their own existing `subscriptionTier === 'paid'` check, not in this
+ * component. This component itself stays tier-agnostic on purpose: it only
+ * ever renders when a caller decides to mount it, and returns `null` on its
+ * own only when no Session is active — matching how `activeSessionsForBusiness`
+ * itself stays tier-agnostic too (a pure data read; see `selectors.ts`).
  */
 export function VendiendoAhorita({ onTapSession }: { onTapSession: (sessionId: ID) => void }) {
   const { state } = useStore();

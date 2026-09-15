@@ -10,17 +10,22 @@ import resultadosStyles from './Resultados.module.css';
 /**
  * reports.md §3.3 — cold start, reached whenever `hasAnyClosedSession` is
  * false. Two variants, selected by §2's own live-session check
- * (`decision-log.md` D68) — independent of the closed-Session gate that
- * routes here at all, not sequential to it.
+ * (`decision-log.md` D68; gate corrected 2026-09-15, `product-decisions.md`
+ * Q28) — independent of the closed-Session gate that routes here at all, not
+ * sequential to it. The live-session check is now itself an AND of two
+ * conditions — `subscriptionTier=paid` **and** an active Session — so
+ * Variant B is structurally only reachable for a Paid-tier Business; a
+ * Free-tier merchant with an active Session still sees Variant A.
  *
- * **Variant A — no Session active right now (the ordinary case).** Same
- * centered-copy shape as Home's/Inventario's/Eventos' own cold starts
- * (`ColdStart.module.css`, reused verbatim rather than a fifth hand-rolled
- * copy) — routes to Hoy, an existing tab, never a second selling mechanism
- * inside this tab (§1's own explicit rule).
+ * **Variant A — no Session active right now (the ordinary case), or any
+ * Session state at all on a Free-tier Business.** Same centered-copy shape
+ * as Home's/Inventario's/Eventos' own cold starts (`ColdStart.module.css`,
+ * reused verbatim rather than a fifth hand-rolled copy) — routes to Hoy, an
+ * existing tab, never a second selling mechanism inside this tab (§1's own
+ * explicit rule).
  *
- * **Variant B — a Session is active right now, including her very first
- * one, not yet closed.** Composed to fix a direct, in-the-moment
+ * **Variant B — Paid tier, and a Session is active right now, including her
+ * very first one, not yet closed.** Composed to fix a direct, in-the-moment
  * contradiction Variant A would otherwise create: asserting "en cuanto
  * cierres tu primera sesión de venta" / "[ Empezar a vender ]" is false the
  * moment "Vendiendo ahorita" is rendering directly above, showing her
@@ -40,7 +45,12 @@ export function ResultadosColdStart({
   onTapLiveSession: (sessionId: ID) => void;
 }) {
   const { state } = useStore();
-  const liveNow = activeSessionsForBusiness(state).length > 0;
+  // §2's live-session check (gate corrected 2026-09-15, `product-decisions.md`
+  // Q28) — both conditions required: Paid tier AND an active Session. Reuses
+  // the same `subscriptionTier === 'paid'` check `ResultadosMain.tsx` already
+  // uses to gate "Rendimiento por bazar"/"Tus clientes".
+  const paid = state.business?.subscriptionTier === 'paid';
+  const liveNow = paid && activeSessionsForBusiness(state).length > 0;
 
   if (liveNow) {
     return (

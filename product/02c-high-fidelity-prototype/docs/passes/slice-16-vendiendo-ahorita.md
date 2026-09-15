@@ -107,7 +107,7 @@ re-confirmed by Main after both `reviewer` dispatches lacked Bash access
 to run it themselves. No live browser/device verification was possible in
 this environment.
 
-## Known limitation, disclosed, not blocking
+## Known limitations, disclosed, not blocking
 
 `eventCompletedDays` can count a calendar date whose Session is still
 `active` (not yet explicitly closed) even after the Event's own date
@@ -117,3 +117,56 @@ exclude that Session — a narrow, self-correcting display inconsistency
 taps "Cerrar jornada de venta"). Not fixed in this slice; revisit if real
 usage shows this reads confusingly rather than merely momentarily
 imprecise.
+
+`ResultadosScreen.tsx`'s `live-session-detail` route (§3.4b) doesn't
+re-check `subscriptionTier` on every render the way the other three
+Paid-only subviews (`rendimiento`/`venue-detail`/`tus-clientes`) do — a
+merchant already viewing that screen when a pending downgrade reconciles
+underneath her (Settings' reconciliation-on-mount) keeps seeing it until
+she navigates away, unlike the other three, which bounce to `main`
+immediately. Not an entitlement leak — the content shown (live Session
+sales figures) isn't Paid-exclusive data; a Free-tier merchant already
+sees the same class of data via ordinary `SessionDetail.tsx`/Historial —
+and it's self-correcting the moment she taps back. `reviewer` confirmed
+independently: the code comment defending the omission (view mode only
+ever *set* through already-gated UI) doesn't actually address the
+mid-view-downgrade risk the sibling re-check exists for, but the
+underlying conclusion (safe to leave) still holds on the entitlement
+grounds above. Revisit only if real usage shows this reads confusingly.
+
+## Further amended 2026-09-15, same night (Product Owner decision,
+`product-decisions.md` Q28): Paid tier only
+
+Live on her own phone, the Product Owner resolved Q28 directly: "Vendiendo
+ahorita" is Paid tier, not free-tier-and-paid-alike as originally shipped
+above. `product/02-ux/reports.md` was corrected to match (§1, §2's
+live-session check — now ANDing `subscriptionTier=paid` with the existing
+active-Session check — §3.4a, §4, §5, §8 item 11, §10), and the React
+code gated to match: `ResultadosMain.tsx`'s `<VendiendoAhorita>` mount and
+`ResultadosColdStart.tsx`'s Variant B selection both now require
+`subscriptionTier=paid`, reusing the file's own pre-existing `paid` const
+(the same one already gating "Rendimiento por bazar"/"Tus clientes") —
+not a new conditional shape. `VendiendoAhorita.tsx`/`VendiendoAhoritaDetail.tsx`'s
+own content, layout, and copy are untouched; this was a pure
+visibility-gating change.
+
+**Spec correction review rounds:** `ux-critic` found 1 Blocker (the
+correction's own canonical wiring definition, §4, plus four other
+cross-references still listed the Free-tier-only main views §3.4/§3.5 as
+valid render targets — fixed across six locations, including one `ux-critic`
+didn't originally flag that Main caught applying the batch). `reviewer`
+found 0 Blockers, 2 Important — both narrow citation-accuracy corrections
+(the gate's own D34 and §10 citations each slightly mischaracterized what
+those sections actually established; neither affected the correctness of
+the gate itself) — closed directly by Main.
+
+**Code gate review round:** `ux-critic` found 0 Blockers, 0 Majors, 1
+Minor (the `live-session-detail` re-check gap, folded into the Known
+Limitations above). `reviewer` found 0 Blockers, independently confirmed
+the gate matches `reports.md`'s corrected spec exactly, no duplicated
+logic, no domain-layer drift — 2 Important documentation-persistence
+gaps (this file and its `README.md` index entry not yet reflecting the
+correction, a missing `ux-critic-findings.md` entry for this round), both
+closed by this same update.
+
+`npm run build` — clean, re-confirmed by Main.

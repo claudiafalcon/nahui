@@ -160,6 +160,13 @@ export function ResultadosScreen({
     );
   }
 
+  // No explicit tier re-check needed here (gate corrected 2026-09-15,
+  // `product-decisions.md` Q28), unlike the `rendimiento`/`venue-detail`/
+  // `tus-clientes` guard above: this view mode is only ever set from the two
+  // `onTapLiveSession` wirings below, each reachable only through a UI
+  // element (`VendiendoAhorita`'s own cards, `ResultadosColdStart`'s Variant
+  // B) that's now itself gated on `subscriptionTier === 'paid'` — no other
+  // call site sets `mode: 'live-session-detail'` anywhere in this codebase.
   if (view.mode === 'live-session-detail') {
     return (
       <ScreenTransition transitionKey={`live-session-detail:${view.sessionId}`}>
