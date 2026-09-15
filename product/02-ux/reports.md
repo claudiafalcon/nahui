@@ -108,7 +108,7 @@ reports.changelog.md#status-2026-09-15-d68-live-sessions-view]**
 **Amended 2026-09-15 (`product-decisions.md` Q27, Product Owner-requested
 — OWNER-only date-range sales export):** new §3.19/§3.20 add "Exportar
 tus ventas," a single combined CSV export (one row per Product line item
-per Sale, Sale ID repeated across a multi-item Sale's own lines)
+per Sale, "ID de venta" repeated across a multi-item Sale's own lines)
 reachable from every main-view state (§3.4/§3.5/§3.6) whenever ≥1
 Session has ever closed for this Business. `architect`-confirmed
 additive — no new backend capability (`hydrateFromBackend` already loads
@@ -361,9 +361,9 @@ their one shared `pricePaid` — safe to read as a single value because
 (`domain-model.md`'s "Price resolution," D33), guaranteeing every
 `SaleItem` for the same Product within the same Sale already carries an
 identical resolved price. A Sale with three different Products sold
-appears as three rows sharing one "Sale ID" column, not collapsed into
-one row — the same repeated-Sale-ID shape the Product Owner asked for
-directly.
+appears as three rows sharing one "ID de venta" column, not collapsed
+into one row — the same repeated-Sale-ID shape the Product Owner asked
+for directly.
 
 **Vendedor column, `product-decisions.md` Q27:** reuses §3.4a's exact
 role-derivation ("Tú" / "Alguien de tu equipo") applied to
@@ -1806,13 +1806,12 @@ Product Owner-requested.
 ```
 ┌───────────────────────────────┐
 │ ← Resultados                     │
-│  Exportar tus ventas                │
+│  Elige el rango a exportar          │
 │                                │
-│  Elige el rango de fechas que      │
-│  quieres exportar.                  │
-│                                │
-│  Desde:   [ 1 de julio, 2026 ]     │
-│  Hasta:   [ 14 de julio, 2026 ]    │
+│  Desde                          │
+│  [ 01 / 07 / 2026 ]               │
+│  Hasta                          │
+│  [ 14 / 07 / 2026 ]               │
 │                                │
 │  Vas a descargar un archivo CSV     │
 │  con una fila por producto vendido  │
@@ -1822,7 +1821,11 @@ Product Owner-requested.
 │                                │
 │  Columnas: Fecha, Lugar, Evento,     │
 │  Sesión, Vendedor, Producto,         │
-│  Cantidad, Precio, Sale ID           │
+│  Cantidad, Precio, ID de venta        │
+│                                │
+│  "Vendedor" solo distingue Tú de     │
+│  tu equipo — no muestra el nombre    │
+│  de la persona.                      │
 │                                │
 │      [ Descargar CSV ]            │
 └───────────────────────────────┘
@@ -1858,7 +1861,7 @@ Product Owner-requested.
   | Producto | Product name |
   | Cantidad | count of `SaleItem` rows for this `(Sale, Product)` pair |
   | Precio | the shared, already-resolved `pricePaid` for this `(Sale, Product)` pair (D33) |
-  | Sale ID | repeated across every row belonging to the same Sale |
+  | ID de venta | repeated across every row belonging to the same Sale |
 
   This directly answers both of the Product Owner's own two proposed
   shapes at once — an Event/day/total/salesperson summary, and a
@@ -1868,6 +1871,15 @@ Product Owner-requested.
   Fecha/Lugar in any spreadsheet tool, not a separate file), and the
   second is exactly what's exported (`product-decisions.md` Q27's own
   2026-09-15 refinement note).
+- **A short on-screen disclosure line states plainly what "Vendedor" will
+  and won't show, directly on this screen, not only in this document's
+  own agent-facing reasoning.** §8 item 13's own reasoning for reusing
+  §3.4a's role-only derivation here specifically calls for disclosing
+  this limit more prominently than §3.4a's own glance-only context needs
+  — a durable, handed-off file has no "you" to resolve "Tú" against once
+  it leaves the app, unlike a live card Ana reads in the moment. Same
+  honest-limits register this document already uses for other disclosed
+  Foundation gaps (e.g. §3.16's "No indicado" for a missing field).
 - **"[ Descargar CSV ]" is disabled (not shown as an error) whenever the
   picked range contains zero closed Sessions** — same restraint every
   other empty-but-reachable state in this doc already applies (§3.10,
@@ -1886,22 +1898,29 @@ Product Owner-requested.
 
 ```
 ┌───────────────────────────────┐        ┌───────────────────────────────┐
-│      Preparando tu archivo…       │        │  ✓ Descarga lista               │
+│        (skeleton, silent)         │        │  ✓ Descarga lista               │
 └───────────────────────────────┘        │  ventas-2026-07-01-a-2026-07-14 │
                                             │  .csv                            │
                                             │      [ Listo ]                   │
                                             └───────────────────────────────┘
+
+┌───────────────────────────────┐
+│      Preparando tu archivo…       │  shown only past ~1.5s (§3.2's
+└───────────────────────────────┘  own slow-case threshold)
 ```
 
 - **Purely client-side — no new backend read.** `hydrateFromBackend`
   already loads every historical Sale/SaleItem for this Business
-  unconditionally at app load (`architect`-confirmed, §1); this screen's
-  "Preparando tu archivo…" step is CSV-file generation and download-
-  triggering over already-loaded `AppState`, not a network fetch. No
-  near-instant/slow split is designed for this step at this fidelity —
-  unlike every network-bound resolving state elsewhere in this doc
-  family (§3.1/§3.2, §3.18), there's no server round-trip whose latency
-  could vary; this is a local computation over data already in memory.
+  unconditionally at app load (`architect`-confirmed, §1); CSV generation
+  and the download trigger both run over already-loaded `AppState`, not a
+  network fetch. **Same near-instant/slow split as §3.1/§3.2**, not
+  skipped: a silent skeleton for the ordinary case, "Preparando tu
+  archivo…" only past the same ~1.5s threshold §3.2 already establishes.
+  Generation time scales with this Business's total closed-Session/Sale
+  volume — the same unbounded-history figure Historial/"Top productos"
+  already treat as potentially large — so an always-instant assumption
+  isn't safe to assert, even though it's local computation, not a
+  network call.
 - **Filename encodes the picked range** (`ventas-{desde}-a-{hasta}.csv`,
   ISO dates) — lets her recognize which export a given file is later,
   without opening it, the same discoverability reasoning `home.md`
@@ -2685,8 +2704,8 @@ there; no urgency is invented where none exists.
   simply never renders. **[see
   reports.changelog.md#decisions-vendiendo-ahorita-added]**
 - **"Exportar tus ventas" (§3.19/§3.20) added — a single combined CSV
-  export, one row per `(Sale, Product)` pair, Sale ID repeated across a
-  multi-item Sale's own rows** (`product-decisions.md` Q27, Product
+  export, one row per `(Sale, Product)` pair, "ID de venta" repeated
+  across a multi-item Sale's own rows** (`product-decisions.md` Q27, Product
   Owner-requested), reachable from every main-view state whenever ≥1
   Session has ever closed for this Business. Chosen as a strict superset
   of the Product Owner's own two proposed shapes rather than picking one
