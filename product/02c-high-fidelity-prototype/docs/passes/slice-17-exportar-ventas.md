@@ -104,8 +104,12 @@ sales-export availability check reuses verbatim, so the row's visibility
 is already correct by construction. **Styled as a plain secondary Button,
 not the two-part title/"[Ver más ▸]" `.teaserRow` shape** "Rendimiento por
 bazar"/"Tus clientes" use — this row summarizes no data section of its
-own, matching §3.10's existing "[ Ver Eventos ]" precedent for a single
-bracketed CTA in this same tab instead.
+own, matching this app's own single-utility-action convention instead
+(e.g. Settings' "Ver mi equipo"/"Cerrar sesión," TeamScreen's copy/share
+actions) — corrected during code review below; the original citation to
+§3.10's "[ Ver Eventos ]" was wrong (that button is actually the
+default/primary variant, not secondary), though the rendered choice
+itself was already right.
 
 **`ResultadosScreen.tsx`** — new `{ mode: 'export' }` `ResultadosView`
 variant, no `returnTo` (its only possible parent is the main view). No
@@ -122,11 +126,40 @@ tier re-check on this branch, unlike the `rendimiento`/`venue-detail`/
 
 ## Verification
 
-`npm run build` (`tsc -b && vite build`) — clean, zero errors. No live
-browser/device verification was possible in this environment.
+`npm run build` (`tsc -b && vite build`) — clean, zero errors,
+independently re-confirmed by Main. No live browser/device verification
+was possible in this environment.
+
+## Review rounds
+
+**`ux-critic` (High-Fidelity: flow/state, layout/hierarchy, visual
+consistency, accessibility-as-rendered) — 0 Blockers, 0 Majors, 4
+Minors, all fixed:** the "Columnas: ..." reference line shared
+`.exportLabel`'s bold weight/obsidian color, visually competing with the
+actual "Desde"/"Hasta" field labels for first-glance attention — dropped
+to `.exportBody`'s plain-weight muted-gray treatment instead. "Desde"/
+"Hasta" paired their text with the date input by visual proximity only,
+no `htmlFor`/`id` association (a real accessibility-as-rendered gap,
+inherited from `NuevoEvento.tsx`'s own identical pre-existing gap on its
+Empieza/Termina pair, not newly introduced) — fixed here by wrapping
+each pair in a `<label htmlFor>`. "No hay ventas en este rango." sat as
+the last child of a `flex:1` scroll container, not necessarily adjacent
+to the disabled button it explains on a short-content screen (provisional
+finding, since real rendered spacing couldn't be confirmed without
+browser tools) — moved into `.exportFooter` directly above the button.
+The row's own styling comment cited §3.10's "[ Ver Eventos ]" as a
+secondary-Button precedent; checked directly, that button is actually
+the default/primary variant — the rendered choice (secondary) was
+already correct on independent grounds (avoids a second coral CTA
+competing with "Total histórico"'s own accent), only the comment's
+citation was wrong — corrected in both `ResultadosMain.tsx` and this
+file. `ux-critic` also confirmed clean: the full §3.19→§3.20→"Listo"
+loop against the remediated spec, the Desde ≤ Hasta ≤ today cross-
+constraint, the skeleton→"Preparando tu archivo…" transition (an exact
+structural replica of `ResolvingState.tsx`), and every new CSS
+rule's token/spacing conformance against `DESIGN-SYSTEM.md`.
 
 ## Not yet run
 
-Review Pipeline (`ux-critic` → `reviewer` → `merchant-user-tester`) has
-not run against this build yet — this entry documents the initial build
-only, per this dispatch's own scope.
+`reviewer`'s Foundation-consistency pass and `merchant-user-tester`'s
+live walkthrough have not run against this build yet.

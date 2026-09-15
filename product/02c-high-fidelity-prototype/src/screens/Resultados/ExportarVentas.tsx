@@ -133,19 +133,21 @@ export function ExportarVentas({ onBack }: { onBack: () => void }) {
       <h1 className={styles.exportHeading}>Elige el rango a exportar</h1>
 
       <div className={styles.scroll}>
-        <div className={styles.exportField}>
+        <label className={styles.exportField} htmlFor="exportar-desde">
           <span className={styles.exportLabel}>Desde</span>
           <input
+            id="exportar-desde"
             className={styles.exportDateInput}
             type="date"
             value={desde}
             max={hasta}
             onChange={(e) => handleDesdeChange(e.target.value)}
           />
-        </div>
-        <div className={styles.exportField}>
+        </label>
+        <label className={styles.exportField} htmlFor="exportar-hasta">
           <span className={styles.exportLabel}>Hasta</span>
           <input
+            id="exportar-hasta"
             className={styles.exportDateInput}
             type="date"
             value={hasta}
@@ -153,7 +155,7 @@ export function ExportarVentas({ onBack }: { onBack: () => void }) {
             max={today}
             onChange={(e) => handleHastaChange(e.target.value)}
           />
-        </div>
+        </label>
 
         <p className={styles.exportBody}>
           Vas a descargar un archivo de Excel (CSV) con una fila por producto vendido — se puede abrir en Excel,
@@ -167,11 +169,15 @@ export function ExportarVentas({ onBack }: { onBack: () => void }) {
         <p className={styles.exportDisclosure}>
           "Vendedor" solo distingue Tú de tu equipo — no muestra el nombre de la persona.
         </p>
-
-        {!canDownload && <p className={styles.exportEmptyNote}>No hay ventas en este rango.</p>}
       </div>
 
       <div className={`${styles.exportFooter} stitchTop`}>
+        {/* Kept directly above the button it explains — §3.19's own
+            "disabled button and its own adjacent line" reasoning only holds
+            if the two actually render next to each other, not separated by
+            .scroll's own flex:1 gap on a short-content screen (ux-critic
+            finding, code review round). */}
+        {!canDownload && <p className={styles.exportEmptyNote}>No hay ventas en este rango.</p>}
         <Button disabled={!canDownload} onClick={handleDownload}>
           Descargar CSV
         </Button>

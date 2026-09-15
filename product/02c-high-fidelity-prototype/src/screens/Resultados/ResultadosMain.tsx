@@ -247,11 +247,18 @@ export function ResultadosMain({
 
         {/* §3.4/§3.5/§3.6's own new row (`product-decisions.md` Q27) — "a
             fixed utility action, not a summary of the data above it," so it
-            takes the plain secondary-Button treatment §3.10's own "[ Ver
-            Eventos ]" precedent already establishes for a single bracketed
-            CTA in this tab, rather than the two-part title/"[Ver más ▸]"
+            takes the plain outlined secondary-Button treatment this app's
+            own single-utility-action convention already establishes (e.g.
+            Settings' "Ver mi equipo"/"Cerrar sesión," TeamScreen's
+            copy/share actions), rather than the two-part title/"[Ver más ▸]"
             teaser-row shape above (which summarizes a specific data section
-            this row doesn't have). Not tier-gated, unlike those two rows. */}
+            this row doesn't have) or a filled coral CTA (which would compete
+            with "Total histórico"'s own accent color for attention). Not
+            tier-gated, unlike those two rows. (Corrected citation —
+            ux-critic found the original "§3.10's '[ Ver Eventos ]'"
+            precedent cited here is actually the default/primary Button
+            variant, not secondary; the rendered choice was already correct,
+            only this comment's own citation was wrong.) */}
         <Button variant="secondary" onClick={onOpenExport}>
           Exportar tus ventas ▸
         </Button>

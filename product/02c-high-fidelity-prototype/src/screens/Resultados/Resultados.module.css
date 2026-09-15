@@ -409,11 +409,13 @@
 
 /* "Columnas: Fecha, Lugar, ..." — §3.19's own "authoritative and final, not
    illustrative example text" column table, rendered as plain static copy at
-   this fidelity. */
+   this fidelity. Same weight/color as .exportBody, not .exportLabel — this
+   is skim-not-read reference text, not an interactive field's own name, so
+   it shouldn't compete with "Desde"/"Hasta" for first-glance attention
+   (ux-critic finding, code review round). */
 .exportColumns {
   font: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--color-obsidian);
+  color: #6B6259;
 }
 
 /* The Vendedor-column limit disclosure (§3.19's own explicit "state plainly
@@ -431,6 +433,9 @@
 }
 
 .exportFooter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   padding: 14px var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
   background-color: var(--color-balanced);
   position: relative;
