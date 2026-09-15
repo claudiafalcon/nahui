@@ -327,6 +327,7 @@ export function CatalogView({
             ref={photoFileInputRef}
             type="file"
             accept="image/*"
+            capture="environment"
             className={styles.hiddenFileInput}
             onChange={handlePhotoFileChange}
           />

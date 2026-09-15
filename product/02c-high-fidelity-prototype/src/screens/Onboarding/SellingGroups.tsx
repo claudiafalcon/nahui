@@ -361,6 +361,7 @@ export function SellingGroups({
             ref={photoFileInputRef}
             type="file"
             accept="image/*"
+            capture="environment"
             className={styles.hiddenFileInput}
             onChange={handlePhotoFileChange}
           />

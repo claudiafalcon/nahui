@@ -147,6 +147,7 @@ export function BusinessIdentity({
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           className={styles.hiddenFileInput}
           onChange={handleFileChange}
         />

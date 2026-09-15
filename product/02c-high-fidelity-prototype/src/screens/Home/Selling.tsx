@@ -166,6 +166,12 @@ export function Selling({
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [closeBlockedOpen, setCloseBlockedOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Live-found gap (2026-09-15, `merchant-user-tester` walkthrough): a
+  // genuine `finalize_sale` platform failure previously left this screen
+  // completely silent — "Finalizar Venta" tapped repeatedly with zero
+  // feedback of any kind. Same error/retry shape every other real write
+  // in this codebase already uses (`WritingState`'s own error variant).
+  const [finalizeError, setFinalizeError] = useState(false);
   // home.md §3.8a extended / §3.8d-i / §3.8d-ii (Slice 12, `product-
   // decisions.md` Q24/Q25) — the "lost the race" terminal marker. Local,
   // UI-only state (never part of the persisted `Sale`/`SaleItem` domain
@@ -452,6 +458,7 @@ export function Selling({
       return;
     }
     setSaving(true);
+    setFinalizeError(false);
     // `reviewer` Blocker fix precedent (`RegisterMerchandise.tsx`'s own
     // `commitIdempotencyKeyRef`) — generated once per attempt, reused
     // unchanged across a retry.
@@ -475,6 +482,7 @@ export function Selling({
       // comment. The idempotency key deliberately stays in place — a
       // follow-up "Finalizar Venta" tap retries this exact same attempt.
       console.error('[Selling] finalizeSale failed');
+      setFinalizeError(true);
       return;
     }
     finalizeIdempotencyKeyRef.current = null;
@@ -519,6 +527,11 @@ export function Selling({
 
       {saving ? (
         <div className={styles.savingLine}>Cerrando venta…</div>
+      ) : finalizeError ? (
+        <div className={styles.savingLine}>
+          <p>No pudimos finalizar tu venta. Intenta de nuevo.</p>
+          <Button onClick={() => void handleFinalize()}>Reintentar</Button>
+        </div>
       ) : (
         <>
           {stockHint && (
