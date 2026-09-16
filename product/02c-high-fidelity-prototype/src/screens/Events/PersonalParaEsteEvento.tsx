@@ -67,6 +67,21 @@ export function PersonalParaEsteEvento({
     return phoneIdentifierFor(state, membership.userId);
   }
 
+  // `decision-log.md` D69, `product-decisions.md` Q29 — live-found gap
+  // (2026-09-15, Product Owner-reported): this screen kept showing a bare
+  // phone number for every row even after `User.displayName` shipped
+  // elsewhere tonight (`TeamScreen.tsx`, `VendiendoAhorita.tsx`,
+  // `salesExportFile.ts`). Deliberately not `membershipDisplayName`
+  // (`selectors.ts`) — that selector's own second tier is the role-only
+  // "Alguien de tu equipo" fallback, which would be a real regression here:
+  // every row on this screen is an *active* Membership, so phone (this
+  // screen's own existing, always-available fallback) is strictly more
+  // informative than the role-only text and should stay the second tier,
+  // matching `events.md` §3.26's own corrected two-tier resolution.
+  function displayNameFor(membership: BusinessMembership): string | null {
+    return state.users.find((u) => u.id === membership.userId)?.displayName ?? null;
+  }
+
   function rowState(membershipId: ID): RowSaveState {
     return rowStates[membershipId] ?? { kind: 'idle' };
   }
@@ -179,6 +194,7 @@ export function PersonalParaEsteEvento({
                 membership={membership}
                 eventId={eventId}
                 phone={phoneFor(membership)}
+                displayName={displayNameFor(membership)}
                 assigned
                 saveState={rowState(membership.id)}
                 slow={slowIds.has(membership.id)}
@@ -200,6 +216,7 @@ export function PersonalParaEsteEvento({
                 membership={membership}
                 eventId={eventId}
                 phone={phoneFor(membership)}
+                displayName={displayNameFor(membership)}
                 assigned={false}
                 saveState={rowState(membership.id)}
                 slow={slowIds.has(membership.id)}
@@ -227,6 +244,7 @@ function PersonalRow({
   membership,
   eventId,
   phone,
+  displayName,
   assigned,
   saveState,
   slow,
@@ -238,6 +256,7 @@ function PersonalRow({
   membership: BusinessMembership;
   eventId: string;
   phone: string;
+  displayName: string | null;
   assigned: boolean;
   saveState: RowSaveState;
   slow: boolean;
@@ -258,7 +277,7 @@ function PersonalRow({
   return (
     <div className={`${rowClassName} stitchBottom`}>
       <div className={styles.rowTopLine}>
-        <span className={styles.rowPhone}>{formatPhone(phone)}</span>
+        <span className={styles.rowPhone}>{displayName ?? formatPhone(phone)}</span>
       </div>
       {assigned && <p className={styles.rowStatus}>Vendiendo en este evento</p>}
       {conflictLine && <p className={styles.conflictLine}>{conflictLine}</p>}
@@ -322,9 +341,10 @@ function joinSpanishList(parts: string[]): string {
 }
 
 /** Same phone-grouping display as `TeamScreen.tsx`'s own `formatPhone` — a
- * local copy per this folder's own convention (§3.26's own "no display-name
- * field exists on `User` yet" annotation, the identical gap `settings.md`
- * §2.7 already flags, not solved a second time here). */
+ * local copy per this folder's own convention. Now only the fallback tier
+ * (`decision-log.md` D69) — `displayNameFor`, above, resolves
+ * `User.displayName` first; this only formats the phone when that's unset,
+ * `events.md` §3.26's own corrected two-tier resolution. */
 function formatPhone(phone: string): string {
   if (phone.length !== 10) return phone;
   return `${phone.slice(0, 2)} ${phone.slice(2, 6)} ${phone.slice(6)}`;

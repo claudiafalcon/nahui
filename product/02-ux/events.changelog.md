@@ -679,3 +679,22 @@ to RFC 0010's stated invariant ("1+ unit still `reserved` in
 `allocatedUnitIds`, either mode, for a `status = open` `EventAllocation`"),
 replacing a stale `quantityRemaining`-based check and fixing a pre-existing
 "available"-vs-"reserved" wording error RFC 0010's own Open Items flagged.
+
+### status-2026-09-15-d69-displayname-resolution
+**Amended 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29,
+Product Owner live-testing report):** §3.26 "Personal para este evento"
+still showed every SELLER row by bare phone number, even after the
+Product Owner had just set her own team member's display name —
+`User.displayName` shipped elsewhere in the app tonight (`settings.md`,
+`reports.md`) but this screen's own annotation was never extended to
+match. Corrected: rows now resolve `User.displayName` first, phone only
+when it isn't set — the same two-tier read `settings.md` §2.7's own
+resolution order already establishes (this screen's own third tier,
+"Alguien de tu equipo," never applies here, since every row is by
+construction an *active* Membership). §3.26's default-state wireframe
+updated to show one resolved-name row and one still-on-phone-fallback
+row side by side, illustrating both states directly. §3.26's own §8
+open-question entry corrected from naming the gap to recording it
+Resolved. No layout/action change — the row shape, its actions, and
+every other state (conflict, zero-state, resolving) are unaffected;
+only the identity line's own resolved value changes.
