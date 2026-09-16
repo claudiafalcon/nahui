@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
 import {
   actingMembership,
@@ -36,12 +36,33 @@ import styles from './Selling.module.css';
  * - `'nfc'` (§3.10, NFC Selling pass, D43) — no product grid at all, not
  *   grayed out, not present: replaced entirely by `NFCScanPrompt` (reused
  *   from the Asignar Tags slice, per the Architecture Gap Analysis's own
- *   instruction), simulating a scan by resolving `addItemToSaleByTag`
- *   against a randomly-picked currently-tagged-and-available unit — the
- *   same "mock the physical mechanism, keep the domain layer honest"
- *   posture `AssignTags.tsx`'s own scan simulation already established, not
- *   a new convention invented here.
+ *   instruction), resolving `addItemToSaleByTag` against the real physical
+ *   tag she taps.
+ *
+ *   **Real vs. simulated hardware, disclosed here rather than silently
+ *   assumed** — `home.md` doesn't claim any exact NFC hardware mechanics,
+ *   the same disclaimed-mechanics posture `inventory.md` §3.8b already
+ *   holds for camera mechanics. On Chrome/Android (`nfcSupported`, the only
+ *   browser that implements Web NFC as of this build), the first tap of
+ *   `NFCScanPrompt` starts a real, persistent `NDEFReader.scan()` listening
+ *   session (see `handleScan` below) — every physical tag she then holds
+ *   near the phone resolves via its own real, app-written `tagId` (the same
+ *   one `AssignTags.tsx`'s own real write path put there), no further
+ *   on-screen tap needed. Everywhere else (iPhone Safari, desktop, any
+ *   browser without Web NFC), scanning stays the pure client-side
+ *   simulation this comment previously described as the *only* mechanism —
+ *   resolving `addItemToSaleByTag` against a randomly-picked currently-
+ *   tagged-and-available unit, the same "mock the physical mechanism, keep
+ *   the domain layer honest" posture `AssignTags.tsx`'s own scan simulation
+ *   already established, not a new convention invented here.
  */
+/** Real Web NFC (`NDEFReader`) is Chrome/Android-only as of this build —
+ * resolved once, same shape as `BarcodeScanner.tsx`'s own
+ * `'BarcodeDetector' in window` check and `AssignTags.tsx`'s own identical
+ * constant. Everywhere else (iPhone Safari, desktop, any browser without
+ * it) keeps today's simulated scan behavior below, completely unchanged. */
+const nfcSupported = typeof window !== 'undefined' && 'NDEFReader' in window;
+
 export function Selling({
   role,
   onSaleFinalized,
@@ -222,6 +243,27 @@ export function Selling({
   // hardware capability.
   const [scannerMode, setScannerMode] = useState<'closed' | 'active' | 'no-match'>('closed');
 
+  // Real Web NFC read path only (`nfcSupported`, §3.10's `nfc` operating
+  // mode) — `NDEFReader.scan()` requires its initial call to happen inside a
+  // user-gesture handler, so this session is lazily started on the *first*
+  // tap of `NFCScanPrompt`, never auto-started on mount. `scanStartedRef`
+  // guards it to exactly once per mount (a ref, not state — starting the
+  // session must never itself trigger a re-render); `nfcAbortRef` is the
+  // `AbortController` for that session's `scan()` call, aborted on unmount
+  // so a stale listener never fires into an unmounted component.
+  const scanStartedRef = useRef(false);
+  const nfcAbortRef = useRef<AbortController | null>(null);
+  // Always points at this render's own `resolveTag` (below) — the mechanism
+  // that keeps the persistent `ndef.onreading` handler (set up only once)
+  // from ever dispatching through a stale closure. See `resolveTag`'s own
+  // doc comment.
+  const handleTagResolvedRef = useRef<(tagId: string) => Promise<void>>(async () => {});
+  useEffect(() => {
+    return () => {
+      nfcAbortRef.current?.abort();
+    };
+  }, []);
+
   const membership = actingMembership(state);
   if (!membership) return null; // defensive — HomeScreen only mounts this once a valid acting Membership resolves
   const session = myActiveSession(state, membership.id);
@@ -348,8 +390,11 @@ export function Selling({
   }
 
   /**
-   * home.md §3.10's own scan simulation (see this file's top doc comment) —
-   * picks a random currently-tagged-and-available unit and resolves the
+   * home.md §3.10's own scan resolution (see this file's top doc comment) —
+   * on real Web NFC hardware, starts (on the first tap only) a persistent
+   * `NDEFReader.scan()` listening session and resolves each physical tag
+   * read against `addItemToSaleByTag`; on every other browser, picks a
+   * random currently-tagged-and-available unit and resolves the simulated
    * scan against it, exactly the way a real NFC read would resolve against
    * whichever physical tag she actually holds near the phone.
    *
@@ -376,19 +421,23 @@ export function Selling({
    * the exact wireframe placement on §3.10 itself remains Q2's own open
    * item, not invented here.
    */
-  async function handleScan() {
-    const pool = state.units.filter((u) => u.status === 'available' && u.tagId != null);
-    const candidate = pool[Math.floor(Math.random() * pool.length)];
+  // Shared by both the real-hardware and simulated paths below — takes a
+  // resolved `tagId` (however it was obtained: a real tag read, or the
+  // simulated random pick) through the one real, unchanged write:
+  // `addItemToSaleByTag`'s own `no-match` handling. Reassigned into
+  // `handleTagResolvedRef` on every render (see below) so the persistent
+  // `ndef.onreading` handler — set up only once, on the first real-hardware
+  // tap — always dispatches through this render's current closure
+  // (`addItemToSaleByTag`, `stockHint`, `showHint` all freshly bound) rather
+  // than a stale one captured back when the scan session was first started.
+  async function resolveTag(tagId: string) {
     const noMatchLink = { label: 'Asignar tags', onTap: onNavigateToAssignTags };
-    if (!candidate?.tagId) {
-      showHint('No hay ninguna prenda con tag lista para escanear.', noMatchLink);
-      return;
-    }
-    const result = await addItemToSaleByTag(candidate.tagId);
+    const result = await addItemToSaleByTag(tagId);
     if (!result.ok) {
-      // Defensively unreachable in practice — `candidate` above was drawn
-      // from the exact live set `addItemToSaleByTag` itself re-derives —
-      // but never silently dropped either way (same disclosure as above).
+      // A real tag whose id was never assigned to any unit (or, on the
+      // simulated path, the defensively-unreachable case the old inline
+      // comment here already disclosed) — the same designed §3.10 no-match
+      // state either way.
       showHint('No hay ninguna prenda con tag lista para escanear.', noMatchLink);
       return;
     }
@@ -403,6 +452,68 @@ export function Selling({
       window.clearTimeout(stockHintTimeout.current);
       setStockHint(null);
     }
+  }
+  handleTagResolvedRef.current = resolveTag;
+
+  // A transient hardware-read-failure hint — reused `showHint`, no link
+  // needed since this isn't a no-match case (a genuine no-match still
+  // resolves through `resolveTag` above and keeps its own "Asignar tags"
+  // link). Same tone as `BarcodeScanner.tsx`'s own "No pudimos leer el
+  // código. Intenta de nuevo." precedent, adapted for a tag.
+  function handleNfcReadError() {
+    showHint('No pudimos leer el tag. Intenta de nuevo.');
+  }
+
+  async function handleScan() {
+    if (nfcSupported) {
+      if (scanStartedRef.current) {
+        // A scan session is already listening in the background — she just
+        // holds the next garment's tag near the phone directly, no need to
+        // keep tapping the on-screen prompt. Harmless no-op.
+        return;
+      }
+      scanStartedRef.current = true;
+      const controller = new AbortController();
+      nfcAbortRef.current = controller;
+      try {
+        const ndef = new window.NDEFReader!();
+        ndef.onreading = (event) => {
+          const record = event.message.records[0];
+          if (!record?.data) return;
+          const tagId = new TextDecoder(record.encoding || 'utf-8').decode(record.data);
+          void handleTagResolvedRef.current(tagId);
+        };
+        ndef.onreadingerror = () => {
+          handleNfcReadError();
+        };
+        // Hangs until this listening session is actually established —
+        // resolves once, then `onreading` fires for every subsequent tap.
+        await ndef.scan({ signal: controller.signal });
+      } catch {
+        // `scan()` itself rejected on this first tap (permission denied,
+        // hardware unavailable despite feature detection) — a failure of
+        // this specific tap, not a permanently wedged session: leave
+        // `scanStartedRef` un-set so the next tap retries starting the
+        // session from scratch.
+        scanStartedRef.current = false;
+        nfcAbortRef.current = null;
+        handleNfcReadError();
+      }
+      return;
+    }
+
+    // Simulated path — every browser without Web NFC (iPhone Safari,
+    // desktop, any browser lacking `NDEFReader`), unchanged.
+    const pool = state.units.filter((u) => u.status === 'available' && u.tagId != null);
+    const candidate = pool[Math.floor(Math.random() * pool.length)];
+    if (!candidate?.tagId) {
+      showHint('No hay ninguna prenda con tag lista para escanear.', {
+        label: 'Asignar tags',
+        onTap: onNavigateToAssignTags,
+      });
+      return;
+    }
+    await resolveTag(candidate.tagId);
   }
 
   /**

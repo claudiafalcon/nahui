@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
 import { pendingTagBreakdown } from '../../domain/selectors';
 import { makeId } from '../../domain/id';
@@ -7,14 +7,29 @@ import { NFCScanPrompt } from '../../components/NFCScanPrompt/NFCScanPrompt';
 import styles from './AssignTags.module.css';
 
 /** inventory.md §3.16 — a genuine physical read failure (out of range, foil
- * interference, timeout), simulated client-side only; §3.16's own explicit
- * instruction is that this state never touches the domain layer. */
+ * interference, timeout), client-side only; §3.16's own explicit instruction
+ * is that this state never touches the domain layer. **Only used on
+ * browsers without real Web NFC** (`!nfcSupported`, below) — there, it's a
+ * random roll simulating a hardware failure that a real NFC radio would
+ * otherwise report on its own. On real hardware (Chrome/Android), this same
+ * `{ kind: 'scan-failed' }` feedback state is still reached, but from a
+ * genuine `NDEFReader.write()` rejection, not this random chance. */
 const SCAN_FAIL_CHANCE = 0.18;
 /** Simulates a merchant accidentally re-presenting a tag already stuck to a
  * different garment — the only way to reach §3.15 (a genuine business-logic
  * conflict, unlike §3.16) without a dev-only test affordance. Only ever
- * rolled once ≥1 tag has actually been assigned. */
+ * rolled once ≥1 tag has actually been assigned, and only on browsers
+ * without real Web NFC (`!nfcSupported`) — on real hardware, §3.15 is
+ * reached the honest way: `assignTagToNextPendingUnit` rejecting a `tagId`
+ * that's genuinely already assigned, because she physically re-tapped a tag
+ * already stuck to a different garment. */
 const DUPLICATE_TAG_CHANCE = 0.12;
+/** Real Web NFC (`NDEFReader`) is Chrome/Android-only as of this build —
+ * resolved once, same shape as `BarcodeScanner.tsx`'s own
+ * `'BarcodeDetector' in window` check. Everywhere else (iPhone Safari,
+ * desktop, any browser without it) keeps today's simulated scan behavior
+ * below, completely unchanged. */
+const nfcSupported = typeof window !== 'undefined' && 'NDEFReader' in window;
 
 type ScanFeedback = { kind: 'already-assigned' } | { kind: 'scan-failed' } | null;
 
@@ -36,6 +51,20 @@ export interface AssignTagsEntryLine {
  * `pendingTagBreakdown` live on every render — never a snapshot taken once
  * at mount — so a unit consumed elsewhere (sold via FIFO in buttons mode
  * while she'd deferred tagging, §3.17) silently drops out of the queue.
+ *
+ * **Real vs. simulated hardware, disclosed here rather than silently
+ * assumed** — `inventory.md` doesn't claim any exact NFC hardware
+ * mechanics, the same disclaimed-mechanics posture §3.8b already holds for
+ * camera mechanics. On Chrome/Android (`nfcSupported`, the only browser that
+ * implements Web NFC as of this build), `handleScan` below genuinely writes
+ * the generated `tagId` onto whichever physical tag she taps, via the real
+ * `NDEFReader.write()` API — this hangs until she actually taps a tag, then
+ * proceeds through the same real `assignTagToNextPendingUnit` RPC either
+ * way. Everywhere else (iPhone Safari, desktop, any browser without Web
+ * NFC), scanning stays the pure client-side simulation this comment
+ * previously described as the *only* mechanism — no physical tag is ever
+ * written to on those browsers, `SCAN_FAIL_CHANCE`/`DUPLICATE_TAG_CHANCE`
+ * stand in for what a real radio would otherwise report.
  */
 export function AssignTags({
   onDefer,
@@ -71,6 +100,19 @@ export function AssignTags({
   const current = breakdown[0] ?? null;
 
   const [feedback, setFeedback] = useState<ScanFeedback>(null);
+
+  // Real-hardware write path only (`nfcSupported`) — the in-flight
+  // `AbortController` for whichever `NDEFReader.write()` call is currently
+  // hanging, waiting for her to physically tap a tag. Aborted on unmount so
+  // a write that never resolves (she navigates away, e.g. "Terminar
+  // después," mid-tap) doesn't keep the underlying NFC radio reserved or
+  // resolve into an unmounted component later.
+  const nfcAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => {
+      nfcAbortRef.current?.abort();
+    };
+  }, []);
 
   // A stable string key of the live queue's own shape (product id + its
   // live count, front-to-back) — changes exactly when a scan lands or the
@@ -168,19 +210,11 @@ export function AssignTags({
           .join(' · ')
       : null;
 
-  async function handleScan() {
-    if (Math.random() < SCAN_FAIL_CHANCE) {
-      // §3.16 — never touches the domain layer; queue state is unchanged.
-      setFeedback({ kind: 'scan-failed' });
-      return;
-    }
-
-    const assignedTagIds = state.units.map((u) => u.tagId).filter((id): id is string => id != null);
-    const simulateDuplicate = assignedTagIds.length > 0 && Math.random() < DUPLICATE_TAG_CHANCE;
-    const tagId = simulateDuplicate
-      ? assignedTagIds[Math.floor(Math.random() * assignedTagIds.length)]
-      : makeId('tag');
-
+  // Shared by both the real-hardware and simulated paths below — takes a
+  // resolved `tagId` (however it was obtained) through the one real,
+  // unchanged write: `assignTagToNextPendingUnit`'s own
+  // `already-assigned`/`scan-failed` handling.
+  async function commitTag(tagId: string) {
     // Stage 7 Backend Integration, Phase 1 — assignTagToNextPendingUnit is
     // now a real, awaitable Supabase RPC call.
     const result = await assignTagToNextPendingUnit(tagId);
@@ -202,6 +236,53 @@ export function AssignTags({
     // A successful scan (or a different conflict) clears any prior message
     // automatically — no tap required to dismiss it (§3.15/§3.16).
     setFeedback(null);
+  }
+
+  async function handleScan() {
+    if (nfcSupported) {
+      // Real Web NFC write path (Chrome/Android). The app stays in control
+      // of the ID format regardless of hardware — `makeId('tag')` is
+      // generated here exactly as the simulated path does, then physically
+      // written onto whichever tag she taps.
+      const tagId = makeId('tag');
+      const controller = new AbortController();
+      nfcAbortRef.current = controller;
+      try {
+        const ndef = new window.NDEFReader!();
+        // Hangs until she physically taps a tag against the phone — that's
+        // expected, not a bug.
+        await ndef.write({ records: [{ recordType: 'text', data: tagId }] }, { signal: controller.signal });
+      } catch {
+        // Permission denied, no NFC hardware despite feature detection,
+        // AbortError (unmounted mid-write), or any other rejection — a real
+        // failure always means "show scan-failed, let her physically
+        // retry," never a silent fall-back to the simulated random-tagId/
+        // random-fail logic below, which would fabricate a tag assignment
+        // that was never actually written to any physical object.
+        setFeedback({ kind: 'scan-failed' });
+        return;
+      } finally {
+        nfcAbortRef.current = null;
+      }
+      await commitTag(tagId);
+      return;
+    }
+
+    // Simulated path — every browser without Web NFC (iPhone Safari,
+    // desktop, any browser lacking `NDEFReader`), unchanged.
+    if (Math.random() < SCAN_FAIL_CHANCE) {
+      // §3.16 — never touches the domain layer; queue state is unchanged.
+      setFeedback({ kind: 'scan-failed' });
+      return;
+    }
+
+    const assignedTagIds = state.units.map((u) => u.tagId).filter((id): id is string => id != null);
+    const simulateDuplicate = assignedTagIds.length > 0 && Math.random() < DUPLICATE_TAG_CHANCE;
+    const tagId = simulateDuplicate
+      ? assignedTagIds[Math.floor(Math.random() * assignedTagIds.length)]
+      : makeId('tag');
+
+    await commitTag(tagId);
   }
 
   return (
