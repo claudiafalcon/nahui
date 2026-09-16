@@ -782,3 +782,15 @@ Clean otherwise: the full `authentication.md` §2.0/§2.1 step 0/§2.2/§2.2a/§
 - **Flagged, not fixed — outside `ux-critic`'s own lane, routed to `reviewer`.** `setUserDisplayName`'s write (`update_user_display_name`) carries no idempotency key, while `settings.md` §3.3b's text claims "the same idempotency-keyed retry guarantee every other write... carries." Likely a non-issue (an unconditional `SET` is naturally idempotent, unlike a token-generating write) but an `architecture-principles.md` #7 judgment call, not a UX question.
 
 `npm run build` — clean (re-confirmed by Main after applying the fixes above; see the pass file's own verification note for the first build). Ready for `reviewer`.
+
+## Reviewer pass on Slice 18 code (2026-09-15) — 1 Important, fixed
+
+`reviewer`'s Foundation-consistency pass on the built code found 0 Blockers, 1 Important — a genuine confirmation pass, not just a clean report: every bare column reference in all four touched/new SQL functions (`create_invitation`, `accept_invitation`, `update_invitation_target_hint`, `peek_invitation`) was checked line-by-line against each function's own `RETURNS TABLE` names for the exact ambiguity bug class found six times earlier tonight — none found, all correctly qualified or safely inside INSERT target-column lists.
+
+- **Fixed.** `settings.md` §3.3b (and, found to be the identical claim in a second place, `onboarding.md` §9's own citation) claimed the new `User.displayName` write carries "the same idempotency-keyed retry guarantee every other write in this document carries" — the *guarantee* holds (retries never duplicate or corrupt state), but the *mechanism* doesn't: `update_user_display_name` is an unconditional `INSERT ... ON CONFLICT DO UPDATE`, naturally idempotent, with no client-supplied idempotency-key parameter at all — the one write in this family that drops the parameter entirely, unlike `editPrice`/`setProductPhoto`'s own precedent of keeping the parameter even when unused for replay. Both citations corrected to describe the actual mechanism.
+
+Also confirmed clean, not just asserted: `public.users`'s RLS composition (an OWNER can see a revoked SELLER's `display_name`, no cross-Business leak or escalation risk); no ubiquitous-language leaks in rendered copy; the legacy-hint-less-row fallback provably preserves the "Para aceptar la invitación de X" banner (traced the actual prop chain, not inferred); the migration-push-status disclosure in `supabase/README.md` is honest and correctly attributed.
+
+**Explicitly not superseded by this review:** the static SQL read above is not a substitute for a live-execution verification pass before these migrations are pushed — every one of tonight's six prior ambiguity bugs was caught by actually running the RPC, not by reading the code. `supabase/README.md`'s own push checklist item requiring a live-execution pass stays a hard gate, not satisfied by this round.
+
+`npm run build` — clean. Ready to push live once a fresh Supabase access token is available.
