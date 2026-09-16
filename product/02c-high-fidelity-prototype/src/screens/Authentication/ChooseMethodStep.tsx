@@ -1,4 +1,5 @@
 import { BrandMark } from '../../components/BrandMark/BrandMark';
+import { GoogleLogo } from '../../components/GoogleLogo/GoogleLogo';
 import { Button } from '../../components/Button/Button';
 import type { InvitationContext } from './InvitationContextLine';
 import styles from './ChooseMethodStep.module.css';
@@ -56,7 +57,7 @@ export function ChooseMethodStep({
 
       <div className={styles.ctaStack}>
         <Button className={styles.cta} variant="secondary" onClick={onGoogle}>
-          Continuar con Google
+          <GoogleLogo /> Continuar con Google
         </Button>
         <Button className={styles.cta} variant="secondary" onClick={onEmail}>
           Continuar con correo
