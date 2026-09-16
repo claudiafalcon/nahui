@@ -154,7 +154,7 @@ export function SellerAccountScreen({ onBack }: { onBack: () => void }) {
               onChange={(e) => setNameDraft(e.target.value)}
             />
           </div>
-          <p className={styles.confirmBody}>Así te van a reconocer en Resultados y en Tu equipo.</p>
+          <p className={styles.hint}>Así te van a reconocer en Resultados y en Tu equipo.</p>
           {nameSaveError && <p className={styles.error}>No pudimos guardar tu nombre. Intenta de nuevo.</p>}
           <div className={styles.confirmRow}>
             <Button variant="secondary" onClick={() => setEditNameOpen(false)}>

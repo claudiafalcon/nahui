@@ -40,6 +40,17 @@
   margin-bottom: var(--space-4);
 }
 
+/* `settings.md` §3.3b's "Tu nombre" sheet caption — matches
+   `SettingsScreen.module.css`'s own `.hint` definition exactly (same
+   class name, same rules), not `.confirmBody` above, since this is the
+   identical shared sheet, not a confirm dialog (ux-critic Minor,
+   2026-09-15, closed: the two independently-built "Tu nombre" sheets had
+   drifted onto two differently-named classes for the same element). */
+.hint {
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
 .confirmRow {
   display: flex;
   gap: 12px;

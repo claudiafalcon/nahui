@@ -106,13 +106,19 @@ preference.
    branches test the device's own ordinary session state first (§2.1
    step 1's existing test, unchanged) — see §3.10's own behavior notes,
    below, for the full branch. **[Corrected 2026-09-15, RFC 0014/D70]**
-   Accepting on a session-less device now routes directly into §3.2g
-   (new) — a pre-filled, locked Email sub-flow, never the three-way
-   §3.2a–§3.2f choice — carrying the token forward the same "carries
-   whatever's already in progress across an interruption" mechanism §3.8
-   already establishes for this document's other pre-auth state,
-   generalized here to carry one additional piece of context (the
-   token), not a new mechanism.
+   Accepting on a session-less device now routes into §3.2g (new) — a
+   pre-filled, locked Email sub-flow — whenever this Invitation's own
+   `targetHint` is set (every Invitation created after RFC 0014 shipped,
+   since §3.12's field is now required). **A legacy `pending` Invitation
+   with `targetHint = null` (created before RFC 0014 shipped) has no
+   email value to lock to, so it falls back to the ordinary §3.2a
+   three-way choice instead** — see §3.2a's own retirement note for the
+   full reasoning; a real, reachable branch, not a hypothetical, until
+   every such legacy row is eventually accepted or expires. Either way,
+   the token carries forward the same "carries whatever's already in
+   progress across an interruption" mechanism §3.8 already establishes
+   for this document's other pre-auth state, generalized here to carry
+   one additional piece of context (the token), not a new mechanism.
 
    **[Added 2026-09-14, closes `ux-critic` M1; range corrected
    2026-09-15, RFC 0014/D70 — this sub-flow no longer reaches
@@ -505,7 +511,7 @@ Ordinary entry (no Invitation token carried into this screen):
 └───────────────────────────────┘
 ```
 
-**Retired 2026-09-15, RFC 0014/D70 — marked superseded, not deleted, per this document's own non-deletion discipline.** Nothing routes into this variant any longer: §2.0 step 4/§3.10's own "no session" branch now goes directly to §3.2g (new) instead of here, since RFC 0014 requires the Invitation-acceptance path to authenticate specifically through Email, never through a three-way choice that includes Google or phone. The ordinary (context-less) render of §3.2a immediately above is completely unaffected — every other entry point into this document still reaches it exactly as designed.
+**Retired 2026-09-15, RFC 0014/D70 for the ordinary case — marked superseded, not deleted, per this document's own non-deletion discipline. One narrow exception carved back in, 2026-09-15, `ux-critic`-caught spec/build disagreement, closed:** for a `pending` Invitation whose `targetHint` is `null` — a legacy row, created before this shipped, exempt from RFC 0014's own matching check by its explicit backward-compatibility rule (§2.2a step 2's own note) — there's no email value for §3.2g to lock to, so §2.0 step 4/§3.10's own "no session" branch falls back to *this* variant instead, exactly as it did before RFC 0014. This is a real, reachable branch, not a hypothetical: any Invitation still pending from before this feature shipped reaches it. Every Invitation created after RFC 0014 shipped always has a `targetHint` (§3.12's field is now required), so this variant becomes unreachable for any newly-created Invitation, converging toward true retirement over time as old pending rows expire or get accepted — but it is not unreachable today, and this document shouldn't claim otherwise. The ordinary (context-less) render of §3.2a immediately above is, as before, completely unaffected — every other entry point into this document still reaches it exactly as designed.
 
 - No back arrow — this is now the one screen in the whole product with nowhere to return to, the claim §3.3 previously made for itself and now inherits from this screen instead. **Caveat, added 2026-09-14 (closes `ux-critic` M2):** true only for this screen's ordinary, ambient entry point (a fresh device, no prior context). It does not hold when reached via §2.0 step 4's Invitation-offer path, where §3.10's own offer screen legitimately precedes it — a deliberate, accepted asymmetry for that one entry point, stated here explicitly rather than left as an uncaveated, now-inaccurate absolute. Not a functional dead end either way: she can always simply leave the app.
 - All three options are the same visual weight — bracketed, same size, stacked — deliberately not primary/secondary/tertiary the way `onboarding.md §3.3`'s three paths are. *global-principles.md*, "business language before technical language": no raw method-type picker ("Teléfono / Google / Email" as bare labels) — each option is phrased as the actual action she takes ("Continuar con...").
@@ -583,7 +589,7 @@ Reached on a paste producing a value that satisfies the loose "@ plus something"
 │  Para aceptar la invitación de   │
 │  Ropa Ana                          │
 │                                │
-│  Te vamos a mandar un código a el  │
+│  Te vamos a mandar un código al    │
 │  correo con el que te invitaron:    │
 │                                │
 │      ana@correo.com                │
@@ -909,15 +915,19 @@ every other retryable read in this document.
       same §2.2a write, including the possible §3.10f outcome; its "No,
       elegir otro" now returns to §3.2g, not §3.2a/§3.3/§3.2e —
       corrected 2026-09-15, RFC 0014/D70).
-    → NO → **[Corrected 2026-09-15, RFC 0014/D70]** routes into §3.2g
-      (Invitación — correo confirmado, new), never §3.2a's three-way
-      choice, carrying the token forward the same way §3.8 already
-      carries any other in-progress pre-auth state. The email is
-      already known (`targetHint`), so there's nothing to choose or
-      type — she confirms and receives a code at that exact address,
-      then control returns here automatically the instant a `userId`
-      resolves (§2.2's new case 0) → §2.2a → §3.10a (or, on a
-      `targetHint` mismatch, §3.10f).
+    → NO → **[Corrected 2026-09-15, RFC 0014/D70]** if this Invitation's
+      `targetHint` is set (every Invitation created after RFC 0014
+      shipped), routes into §3.2g (Invitación — correo confirmado, new),
+      never §3.2a's three-way choice, carrying the token forward the
+      same way §3.8 already carries any other in-progress pre-auth
+      state. The email is already known (`targetHint`), so there's
+      nothing to choose or type — she confirms and receives a code at
+      that exact address, then control returns here automatically the
+      instant a `userId` resolves (§2.2's new case 0) → §2.2a → §3.10a
+      (or, on a `targetHint` mismatch, §3.10f). **If `targetHint` is
+      `null` (a legacy `pending` Invitation, created before RFC 0014
+      shipped) → §3.2a's own three-way choice instead** — see that
+      section's own retirement note for why this branch still exists.
 
 **Behavior, "Ahora no":**
 - Same device-session test.
@@ -1131,12 +1141,16 @@ Open app (any time)
                     §3.2a/§3.3/§3.2e, this path is Email-only now] →
                     re-tests this same branch on the next successful
                     verification
-              no session at all → §3.2g directly [Corrected 2026-09-15,
-                RFC 0014/D70 — never §3.2a–§3.2f's three-way choice] →
+              no session at all → §3.2g directly if targetHint is set
+                [Corrected 2026-09-15, RFC 0014/D70 — never §3.2a–§3.2f's
+                three-way choice for a hint-bearing Invitation] →
                 Enviar código → shares §3.5/§3.5a → Ingresa el código
                 (§3.6/§3.6a/§3.6b) → Confirmar → shares §3.7/§3.7a-d →
                 success, checked FIRST against §2.2's new case 0 (token
                 present) → §2.2a → outcomes below
+                — OR, if targetHint is null (a legacy pending
+                Invitation) → §3.2a's own three-way choice instead [see
+                §3.2a's own retirement note]
           [outcomes, §2.2a] → success → §3.10a → §3.10c → Ir a Hoy →
                                 home.md §2
                              → invitation_identity_mismatch [New,
