@@ -3,6 +3,7 @@ import { Sheet } from '../Sheet/Sheet';
 import { Button } from '../Button/Button';
 import { TagStub } from '../TagStub/TagStub';
 import { BarcodeScanner } from '../BarcodeScanner/BarcodeScanner';
+import { PhotoCapture } from '../PhotoCapture/PhotoCapture';
 import { matchProductByBarcode } from '../../domain/selectors';
 import type { Product } from '../../domain/types';
 import styles from './ProductPicker.module.css';
@@ -94,6 +95,14 @@ export function ProductPicker({
   // the one genuinely missing fact a scan can't supply.
   const [scanName, setScanName] = useState('');
   const photoFileInputRef = useRef<HTMLInputElement | null>(null);
+  // Live-found gap (2026-09-15, Product Owner-reported): this picker's own
+  // inline "new Product" Foto field never got the `PhotoCapture` fix
+  // `CatalogView.tsx`/`BusinessIdentity.tsx`/`SellingGroups.tsx` already
+  // received — `capture="environment"` alone no longer reliably launches
+  // the camera on current Chrome/Android, and this field didn't even carry
+  // that attempt. Same fix, same pattern: `PhotoCapture` offered alongside
+  // the existing file picker, never replacing it.
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const normalizedQuery = query.trim().toLowerCase();
   const exactMatch = products.find((p) => p.name.trim().toLowerCase() === normalizedQuery);
@@ -159,6 +168,9 @@ export function ProductPicker({
         {photo ? (
           <div className={styles.photoRow}>
             <img className={styles.photoThumb} src={photo} alt="" />
+            <button className={styles.linkBtn} onClick={() => setCameraOpen(true)}>
+              Tomar foto
+            </button>
             <button className={styles.linkBtn} onClick={() => photoFileInputRef.current?.click()}>
               Cambiar
             </button>
@@ -173,9 +185,14 @@ export function ProductPicker({
             </button>
           </div>
         ) : (
-          <button className={styles.uploadBtn} onClick={() => photoFileInputRef.current?.click()}>
-            Agregar foto
-          </button>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button className={styles.uploadBtn} onClick={() => setCameraOpen(true)}>
+              Tomar foto
+            </button>
+            <button className={styles.uploadBtn} onClick={() => photoFileInputRef.current?.click()}>
+              Agregar foto
+            </button>
+          </div>
         )}
         {photoError && (
           <p className={styles.photoErrorText}>
@@ -187,10 +204,25 @@ export function ProductPicker({
         <input
           ref={photoFileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,android/allowCamera"
+          capture="environment"
           className={styles.hiddenFileInput}
           onChange={handlePhotoFileChange}
         />
+        {cameraOpen && (
+          <PhotoCapture
+            onCapture={(dataUrl) => {
+              setPhoto(dataUrl);
+              setPhotoError(null);
+              setCameraOpen(false);
+            }}
+            onCancel={() => setCameraOpen(false)}
+            onUnavailable={() => {
+              setCameraOpen(false);
+              photoFileInputRef.current?.click();
+            }}
+          />
+        )}
       </>
     );
   }
