@@ -97,6 +97,8 @@ inventory.changelog.md#status-2026-09-13-d65-barcode-scanning]**
 
 **Amended 2026-09-13 (`company/business-decisions.md` Q20 resolved, Product Owner) — barcode scanning gated Paid-tier only, same gating class as NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18).** §2 gains a new capability-derivation paragraph gating "Escanear código de barras" (§3.8) and its full sub-flow (§3.8a's scan variant, §3.8b–§3.8e) on `Business.subscriptionTier = paid`, resolved once as part of Inventario's own tab-level state load — never per-scan. §3.8 gains a Free-tier wireframe variant (picker minus the scan row, nothing in its place); §3.8a/§3.8b/§3.8c/§3.8d/§3.8e headers marked Paid-tier-only; §4/§5/§10 corrected to match. No discoverability/upsell copy designed for Free tier — grounded directly in this document family's own precedent (`settings.md` §2.7's "Tu equipo," absent entirely on the Free-tier vista principal; this document's own Assign-Tags gate, absent entirely when `nfc ∉ registrationMode`), not the different `reports.md` "con el plan de pago vas a ver…" pattern, which serves a data-summary context this picker doesn't share. Closes the "Free/Paid-tier open item" this document's own D65 review round logged to `company/business-decisions.md`. `ux-critic` found 0 Blockers/Major/Minor (1 Suggestion, applied directly). `reviewer` found 0 Blockers (3 Important documentation-persistence gaps — two wrong precedent-citation section numbers, a missing `ux-critic-findings.md` entry — all closed directly by Main). Folded back into Approved. **[see inventory.changelog.md#status-2026-09-13-q20-barcode-scanning-paid-tier-gate]**
 
+**Amended 2026-09-16/17 (`decision-log.md` D65, live production defect, Product Owner-confirmed — expedited pass) — a write path to correct a misread `Product.barcode` added.** D65's write-path rule restricts this field to Inventory alone (never Selling) but, until now, offered no way to *correct* an already-captured value — `types.ts`'s own doc comment states it plainly: captured silently, exactly once, at first-scan-to-new-Product resolution, never cleared or reassigned by any other write path. That absence is the direct cause of a real, live defect: a barcode misread once at registration permanently blocks every subsequent, correctly-read scan of that same physical product from matching, with no way for Ana to fix it. New Catalog-row overflow affordance ("⋯", a fourth row-level tap zone alongside marker/body/price — §3.4) opens "Editar código de barras" (new §3.4c), showing the Product's current `barcode` (or "Sin código") and letting her capture a fresh value via "Volver a escanear" (reusing §3.8b's camera mechanism — the same `BarcodeScanner.tsx` component, no new camera surface — new §3.4d). The fresh value is staged, never written until "Guardar código de barras," which then replaces the stored value outright — no merge, no history — matching this document's existing Editar precio/Editar foto posture (§3.4a/§3.4b). A freshly-scanned code that already belongs to a *different* existing Product is caught before it can be staged (new §3.4e, extending §3.15's "identifier already claimed by someone else" pattern and §3.8c's recognition-display convention) — she's shown which Product already holds it and offered to rescan or cancel, never a silent overwrite, never an automatic reassignment away from the other Product. Camera permission-denied/read-failed variants (§3.4f/§3.4g) reuse §3.8d/§3.8e verbatim, adapted only in their fallback destination (back to this sheet, not a typed-search field, since none exists here). Gated identically to §3.8's own barcode-scanning gate — Paid tier only (`company/business-decisions.md` Q20); a Free-tier Catalog row keeps its existing three tap zones, nothing added. **Write-path amendment only** — Selling's read-only scan resolution (`home.md` §3.9a family) and the original registration-time capture (§3.8a–§3.8e) are both completely untouched. **Expedited given live production impact — this pass has not gone through `ux-critic`/`reviewer` before being handed off to `ui-designer`; standard review pipeline deferred, not skipped.** No new `decision-log.md` entry needed — D65 already owns `Product.barcode`'s field/uniqueness rule, this only adds a second Inventory-owned write surface to it, alongside the existing Registrar Mercancía capture point.
+
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -292,6 +294,10 @@ above — two independent Paid-tier capabilities, each derived from the
 same `subscriptionTier` field but gating unrelated surfaces (Assign Tags
 vs. barcode scanning); a Free-tier Business fails both, a Paid-tier one
 passes both, and nothing links them beyond sharing one upstream field.
+The same gate now also covers the Catalog-row "Editar código de barras"
+correction sheet added 2026-09-16/17 (§3.4c–§3.4g) — its only capture
+mechanism is the same camera scan, so it inherits this exact check rather
+than defining a separate one.
 
 ## 3. Low-fidelity wireframes
 
@@ -410,10 +416,11 @@ current tab in brackets.
 ┌───────────────────────────────┐
 │  Inventario                    │
 │  ┌───────────────────────────┐ │
-│  │[B] Bolsas    $350   12 disponibles│ │  marker → §3.4b; row → §3.6,
-│  │[A] Accesorios $180 3 disponibles│ │  prefilled; price [ $XXX ] → §3.4a
-│  │[P] Playeras $280   0 disponibles│ │  sold out — dimmed, tappable
-│  │[D] Delantales $90      sin registrar│ │  never registered — dimmed, tappable
+│  │[B] Bolsas    $350   12 disponibles [⋯]│ │  marker → §3.4b; row → §3.6,
+│  │[A] Accesorios $180 3 disponibles [⋯]│ │  prefilled; price [ $XXX ] → §3.4a
+│  │[P] Playeras $280   0 disponibles [⋯]│ │  sold out — dimmed, tappable
+│  │[D] Delantales $90      sin registrar [⋯]│ │  [⋯] → §3.4c (código de barras),
+│  │                                        │ │  never registered — dimmed, tappable    Paid tier only
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
@@ -462,6 +469,30 @@ current tab in brackets.
   wherever this row shape reappears — §3.5, §3.12, §3.13, §3.17 — the same
   "specified once, reused everywhere" rule this document's own marker/
   dimming treatment already established; no separate rewrite needed at each.
+- **Corrected 2026-09-16/17 — a fourth tap zone added, Paid tier only
+  (`decision-log.md` D65, live production defect fix).** The "three tap
+  zones" enumeration above is superseded, not deleted:
+  1. Marker/photo icon → §3.4b, unchanged.
+  2. Row body → §3.6, unchanged.
+  3. Price figure → §3.4a, unchanged.
+  4. **Overflow indicator ("⋯", rightmost, after the price figure) — opens
+     §3.4c, "Editar código de barras," directly.** A single destination
+     today, not an intermediate list — reuses the "⋯" glyph Ana already
+     recognizes from Home/Configuración as "secondary actions live here"
+     (`home.md`/`settings.md`'s own entry-point icon), rather than inventing
+     new iconography, and follows the same "collapse a single-item overflow
+     into a direct affordance" call `home.md`'s own header amendment
+     (2026-08-14) already made for an identical one-action-behind-the-icon
+     situation.
+  A merchant reaching for "restock," "edit photo," "open detail," or "fix a
+  misread barcode" now lands in a correctly-sized, non-ambiguous target for
+  each of these four — no tap resolves between two of them. **Paid tier
+  only**: a Free-tier Catalog row renders the original three zones alone —
+  the fourth is absent entirely, never shown-then-blocked, matching §3.8's
+  own Free-tier posture for the same underlying capability (§2). Applies
+  identically wherever this row shape reappears — §3.5, §3.12, §3.13,
+  §3.17 — the same "specified once, reused everywhere" rule already
+  governing zones 1–3.
 - **A zero-`disponibles` row (Playeras, 0 disponibles) now renders
   dimmed** — the same visual dimming signal `home.md` §3.9 already applies
   to a sold-out ProductTile, reused here rather than inventing a second
@@ -672,6 +703,252 @@ current tab in brackets.
 - **A previously-saved photo that fails to render later — a distinct case from the selection-time failure above — falls back silently to the initial-letter marker, never a broken-image glyph, never a blank tile.** This prototype is local-storage-only (`product-decisions.md` Q23's own architect finding) — corruption/eviction of an already-stored value is real, not hypothetical. This is a passive rendering fallback, not a merchant-facing error state: no message, no retry affordance. Applies wherever a Product's photo can render — the Catalog-row marker (§3.4), the Venta rápida selling tile (`home.md` §3.9, most consequential there, since a customer is standing in front of her), and this sheet itself (reverts to its own "Agregar foto" no-photo-yet state, never "Cambiar"/"Quitar" against a thumbnail she can't see).
 - "Cambiar" opens the device picker to replace the current selection; "Quitar" clears it within the sheet's own pending state. "Guardar foto" commits whichever state the sheet currently shows as one write to `Product.photo` and closes back to the Catalog view, updated (that row's marker now showing the photo, or reverting to the initial letter if removed). "Cancelar" discards any in-sheet change and returns unchanged. Follows the same near-instant/slow/error save convention as every other write in this document (§3.10/§3.11) — a failed "Guardar foto" leaves the sheet open with the attempted change intact. **Correction (`reviewer` finding, 2026-09-06, on the built code):** this passage previously claimed the write "carries its own stable idempotency key, generated once per attempt," per `architecture-principles.md` #7. Not accurate against the actual implementation — no key is generated. Same pre-existing gap as `commitLot()`/`editPrice` (`product/02c-high-fidelity-prototype/BACKLOG.md` §F), not fixed here.
 - **Not a discount, haggling, or point-of-sale mechanism — n/a here, named only for parallel structure with §3.4a**: this sheet only ever changes what a Product looks like in the app, never anything sold or priced.
+
+### 3.4c Editar código de barras — sheet (`decision-log.md` D65, new write path, Paid tier only)
+```
+┌───────────────────────────────┐
+│ ← Inventario                     │  dimmed, visible underneath
+│  Bolsas                          │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Código de barras                │
+│  7501234567890                   │
+│  [ Volver a escanear ]           │
+│  [ Cancelar ]  [ Guardar código de barras ]│
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+
+**Sin código todavía (mismo sheet):**
+```
+┌───────────────────────────────┐
+│ ← Inventario                     │  dimmed, visible underneath
+│  Delantales                      │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Código de barras                │
+│  Sin código                       │
+│  [ Volver a escanear ]           │
+│  [ Cancelar ]  [ Guardar código de barras ]│
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+
+**Con un código recién escaneado (staged, sin guardar todavía):**
+```
+┌───────────────────────────────┐
+│ ← Inventario                     │  dimmed, visible underneath
+│  Bolsas                          │
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Código de barras                │
+│  7501234567890 (actual)          │
+│  7509876543210 (nuevo, sin guardar)│
+│  [ Volver a escanear ]           │
+│  [ Cancelar ]  [ Guardar código de barras ]│
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+
+- **Catalog-row-level correction affordance for `Product.barcode`**
+  (`decision-log.md` D65), opened by the fourth tap zone (§3.4's "⋯") on any
+  Catalog row (§3.4, and identically §3.5/§3.12/§3.13/§3.17). Reuses the
+  exact dimmed-backdrop sheet shape already established by "Elegir
+  producto" (§3.8), "Editar precio" (§3.4a), and "Editar foto" (§3.4b) — no
+  new sheet/modal pattern.
+- **On-screen heading is the Product's name ("Bolsas"), never the string
+  "Editar código de barras"** — the identical relationship §3.4a/§3.4b
+  already establish between their section title and their actual on-screen
+  heading, deliberately avoiding the CTA/heading-collision defect class this
+  project has already found and fixed twice (`ux-critic-findings.md`
+  HJR-INV-M1, HJR-EVT-M1).
+- **The current value is shown plainly**, unformatted, exactly as captured —
+  or "Sin código" for a Product that's never had one, whether a legacy
+  Product created before D65 shipped or one added without ever scanning.
+  Neither case is treated as an error state; both are the correct, factual
+  reading of a fact that may legitimately be absent.
+- **"Volver a escanear" is the only way to change this value — there is no
+  manual/typed entry here.** A barcode is a manufacturer/packaging-printed
+  fact, not one Ana authors (§10, citing D65's own reasoning) — typing one
+  in by hand would defeat the entire point of the scan-to-match mechanism
+  and isn't designed. Opens the shared camera scanner (§3.4d).
+- **A successful scan stages the new value; nothing is written until
+  "Guardar código de barras" is explicitly tapped.** The sheet then shows
+  both the current, still-saved value and the freshly-scanned one side by
+  side, clearly marked "(actual)" / "(nuevo, sin guardar)" — reusing this
+  document's own "revisa antes de guardar" vocabulary family (§3.6, INV-Q1)
+  rather than inventing new copy, and giving her a direct before/after
+  comparison at the exact moment this whole amendment exists to serve: she
+  can see the wrong value she's replacing and the corrected one she just
+  captured, side by side, before committing.
+- **"Guardar código de barras" is disabled until a fresh scan has been
+  staged.** Unlike Precio/Foto (§3.4a/§3.4b), where a value is always
+  present or deliberately re-selected, there's no manually-adjustable state
+  here to re-save — resaving an unchanged value serves no purpose, so the
+  button stays inert until she's actually captured something new. Once
+  enabled, tapping it writes the staged value to `Product.barcode`,
+  **replacing the stored value outright — no merge, no history kept** —
+  matching D33/`domain-model.md`'s existing "plain mutable current scalar"
+  posture for `defaultPrice`/`photo`, extended here to `barcode`. Follows
+  the same near-instant/slow/error save convention as every other write in
+  this document (§3.10/§3.11) — a failed save leaves the sheet open with the
+  staged value intact.
+- **A saved change is confirmed with an ambient "Código de barras
+  actualizado ✓" line on the Catalog view she returns to** (same ambient,
+  fading, no-tap-to-dismiss shape as §3.12's "Mercancía registrada ✓") —
+  added here specifically because, unlike Precio/Foto, nothing in the
+  Catalog row itself visibly changes to confirm the write succeeded
+  (`Product.barcode` isn't rendered in the row, §3.4). Without this line,
+  she'd have no signal at all that "Guardar" did anything.
+- **"Cancelar" discards any staged (unsaved) scan and closes the sheet,
+  returning to Catalog view unchanged** — identical decline treatment to
+  §3.4a/§3.4b.
+- **A freshly-scanned code matching a *different* existing Product is never
+  staged, never offered for Guardar — see §3.4e.** A scan matching *no*
+  other Product, or matching this same Product's own already-stored value
+  (a pointless but harmless rescan), stages normally as shown above; the
+  uniqueness check is against every *other* Product only, never this one.
+- **A residual, accepted race** — the same class D65's own build already
+  names for the creation path (`commit_lot`'s collision handling) — exists
+  between a successful §3.4e check and the moment "Guardar código de
+  barras" actually writes: another device could register the identical code
+  in between. Not designed with a dedicated UI branch here, consistent with
+  that existing precedent; a genuine collision this late simply surfaces
+  through the shared save-error state (§3.10/§3.11-equivalent).
+- **No "Quitar" (remove) action designed here**, unlike Foto's Cambiar/Quitar
+  pair. A barcode with no value is already the legitimate "Sin código"
+  state every pre-D65 or never-scanned Product carries — removing an
+  existing one wasn't the reported problem and isn't designed in this pass.
+- Reached identically wherever this row shape reappears — §3.5, §3.12,
+  §3.13, §3.17 — the same "specified once, reused everywhere" rule §3.4a/
+  §3.4b already establish.
+- **Not a discount, haggling, or point-of-sale mechanism — n/a here, named
+  only for parallel structure with §3.4a/§3.4b.**
+
+### 3.4d Editar código de barras — volver a escanear, cámara activa (`decision-log.md` D65, Paid tier only)
+```
+┌───────────────────────────────┐
+│ ← Bolsas                         │
+│                                │
+│                                │
+│         visor de cámara          │
+│                                │
+│    Apunta al código de barras    │
+│                                │
+│  [ Cancelar ]                    │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- **Identical camera mechanics to §3.8b — reused verbatim, not
+  re-litigated.** Full-view live camera, no per-frame confirmation tap, a
+  successful read resolves automatically. §3.8b's own implementation-
+  independence disclaimer (no claim about camera APIs, permission
+  mechanics, scan latency, or symbologies) applies here unchanged — the
+  same underlying camera mechanism, built once as `BarcodeScanner.tsx`, no
+  new camera surface for this context.
+- **One contextual adaptation:** §3.8b's "Escribir en su lugar" fallback —
+  a typed-name alternative that only makes sense inside the Elegir producto
+  picker's own typed-search field — is replaced here by "Cancelar," since
+  there is no typed alternative when correcting an already-identified
+  Product's barcode. Both return to their respective callers (§3.8 there,
+  §3.4c here) with nothing committed.
+- Back arrow behaves identically to "Cancelar" — returns to §3.4c
+  unchanged.
+
+### 3.4e Editar código de barras — escaneo, coincide con otro producto (conflicto) (`decision-log.md` D65, Paid tier only)
+```
+┌───────────────────────────────┐
+│ ← Bolsas                         │  dimmed, visible underneath
+├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
+│  Este código ya está registrado  │
+│  en otro producto:               │
+│  [A] Accesorios                   │
+│  5 disponibles                    │
+│                                │
+│  No se puede usar el mismo código │
+│  en dos productos. Revisa que sea │
+│  la prenda correcta, o escanea    │
+│  otro código.                     │
+│                                │
+│  [ Escanear otro código ]         │
+│  [ Cancelar ]                     │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- **The one real edge case this amendment resolves explicitly, rather than
+  leaving undefined.** `Product.barcode` is enforced unique per Business at
+  the database level (`products_barcode_unique_idx`, a partial unique
+  index, `types.ts`) — a straight overwrite would violate it whenever the
+  freshly-scanned code already belongs to a different Product (scanning the
+  wrong physical item, or two products genuinely sharing a manufacturer
+  barcode by error).
+- **Extends two already-approved patterns rather than inventing a third.**
+  The "an identifier already belongs to something else, offer a different
+  one, no reassignment" shape is §3.15's exact pattern ("Este tag ya está
+  asignado a otra prenda. Usa un tag nuevo."), applied here to a barcode
+  instead of an NFC tag. The recognition display — marker/name/disponibles
+  for the *other* Product — reuses §3.8c's own presentation verbatim, for
+  the identical reason: a bare name is easy to misread past, a real,
+  recognizable glance catches the mistake.
+- **No reassignment offered — deliberately.** Nothing here clears or moves
+  the barcode away from the Product that already legitimately holds it;
+  doing so would require a second write against an unrelated Product and
+  risks silently breaking *that* Product's own future matching, which
+  nothing in this pass asked for or was reported as broken. Her only two
+  paths are trying a different scan or backing out — the same narrow,
+  conservative posture §3.15 already established for its own conflict.
+- **"Escanear otro código" returns to the camera view (§3.4d)** — she can
+  reattempt immediately, most usefully if this was simply the wrong
+  physical item.
+- **"Cancelar" returns to §3.4c** — not all the way back to Catalog view —
+  showing its state exactly as it was before this scan attempt (the
+  original saved value, nothing staged). Same "return to the nearer state,
+  not the furthest one" behavior §3.8c's own "No es este" already
+  establishes for a structurally identical moment.
+- Nothing is written anywhere by reaching or leaving this state.
+
+### 3.4f Editar código de barras — permiso de cámara denegado (`decision-log.md` D65, Paid tier only)
+```
+┌───────────────────────────────┐
+│ ← Bolsas                         │
+│                                │
+│  No pudimos usar la cámara.       │
+│  Revisa los permisos de cámara    │
+│  de tu teléfono e intenta de       │
+│  nuevo.                           │
+│                                │
+│  [ Cancelar ]                    │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- Reached the instant camera access is denied or unavailable — same
+  business-language-first posture as §3.8d, no permission/browser/OS error
+  string, ever.
+- **Falls back to §3.4c unchanged** rather than §3.8d's typed-search field —
+  there is no typed alternative in this context, so the copy also drops
+  §3.8d's "Escribe el nombre del producto" clause, which doesn't apply here.
+  Never a dead end: the sheet she came from is still exactly as she left it.
+
+### 3.4g Editar código de barras — no se pudo leer el código (`decision-log.md` D65, Paid tier only)
+```
+┌───────────────────────────────┐
+│ ← Bolsas                         │
+│         visor de cámara          │
+│  No pudimos leer el código.       │
+│  Intenta de nuevo.                 │
+│  [ Cancelar ]                    │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- Identical posture to §3.8e — a single missed read, not a terminal state.
+  Stays on the live camera view; the message clears automatically on the
+  next attempt, no tap to dismiss.
+- "Cancelar" stays reachable exactly as in §3.4d — a failing scan never
+  traps her here, returning to §3.4c unchanged.
 
 ### 3.5 Catalog view — with pending tag work (`defaultSellingMode = 'nfc'` Businesses only)
 ```
@@ -1558,6 +1835,24 @@ Catalog view:
   tap a Product row's price figure → 3.4a (Editar precio)
       → Cancelar → back to Catalog view, unchanged
       → Guardar precio → back to Catalog view, that row's price updated
+  tap a Product row's overflow indicator ("⋯", Paid tier only) → 3.4c
+    (Editar código de barras) — shows current código, or "Sin código"
+      tap "Volver a escanear" → camera (3.4d)
+        → scan matches no other Product (or matches this same Product's own
+          current code) → back to 3.4c, staged new value shown alongside
+          the current one, "Guardar código de barras" now enabled
+        → scan matches a different existing Product → conflict (3.4e)
+            → "Escanear otro código" → back to camera (3.4d)
+            → "Cancelar" → back to 3.4c, unchanged, nothing staged
+        → camera permission denied/unavailable → 3.4f → back to 3.4c,
+          unchanged
+        → scan fails to read → 3.4g → stays on camera, retry, or
+          "Cancelar" → back to 3.4c, unchanged
+      → tap "Cancelar" (from 3.4c itself) → back to Catalog view, unchanged
+      → tap "Guardar código de barras" (enabled only once a fresh scan is
+        staged) → saving (near-instant/slow, §3.10-equivalent) → error
+        (§3.11-equivalent, Reintentar) or success → Catalog view, ambient
+        "Código de barras actualizado ✓" — DONE
   [defaultSellingMode = nfc + pending untagged units] tap "Continuar
     etiquetando" (primary action in this state, §3.5) → 3.14 (resume)
 
@@ -1642,6 +1937,11 @@ D46 Addendum):
 3a. Entry from Settings' "Cambiar a vender con tags," zero inventory to tag yet (D46)
 4. Catalog view — normal
 4a. Editar precio — sheet, Catalog-row-level (D33)
+4c. Editar código de barras — sheet (D65, new write path, Paid tier only)
+4d. Editar código de barras — volver a escanear, cámara activa (D65, Paid tier only)
+4e. Editar código de barras — escaneo, coincide con otro producto, conflicto (D65, Paid tier only)
+4f. Editar código de barras — permiso de cámara denegado (D65, Paid tier only)
+4g. Editar código de barras — no se pudo leer el código (D65, Paid tier only)
 5. Catalog view — pending tag work (`defaultSellingMode = 'nfc'` Businesses only)
 6. Registrar mercancía — entry (blank or shortcut-prefilled)
 7. Registrar mercancía — with committed lines, editing the next
@@ -1673,6 +1973,7 @@ D46 Addendum):
 | Restock an already-known, sold-out Product at quantity 1 (tap Catalog row) | 1 (row, prefills Producto + Cantidad defaults to 1) + 1 (Guardar) | Shortest possible — Product identity reused instead of re-searched, and the default removes the previously-required typed quantity for the common 1-unit-restock case. *global-principles.md*, "capture business truth once, reuse it forever." |
 | Same, `defaultSellingMode = 'nfc'` Business, U total units in the Lot | + U scans, 1 per physical unit | Per-unit tagging is a domain requirement (`decision-log.md` D4), not a UX choice — one tag, one unit, no shortcut exists that preserves traceability. A failed read (§3.16) costs zero extra taps — she simply re-presents the same tag. |
 | Ajustar el precio de un Producto ya existente, fuera de Registrar mercancía (Editar precio, §3.4a) | 1 (tocar el precio en la fila del Catálogo) + 1 (Guardar precio) = 2 | Shortest possible — the price figure is its own tap target directly on the Catalog row (§3.4); no need to open Registrar mercancía at all for a pure price change (`decision-log.md` D33). |
+| Corregir el código de barras de un Producto ya existente (Editar código de barras, Paid tier only) | 1 (⋯ en la fila) + 1 (Volver a escanear — el propio scan resuelve la captura) + 1 (Guardar código de barras) = 3 | One fewer action than registering a brand-new Product via barcode scan (6, above) — there's no Nombre or Precio to ask, only a value being replaced. |
 | Restock an already-known Product via barcode scan, quantity 1 (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto → escanear código) + 1 (confirmar "Sí, es este") + 1 (Guardar) = 4 | One deliberate extra tap vs. the typed-name baseline (3) — the confirm-on-scan tap (§3.8c) is intentional, not an oversight; see §10 for why a barcode, unlike a typed name, gets this one extra tap every time it resolves to an existing Product. |
 | Register 1 brand-new Product via barcode scan, no match, quantity 1 (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto → escanear código, sin coincidencia) + 1 typed Nombre + 1 typed Precio + 1 ("Agregar producto") + 1 (Guardar) = 6 | One fewer action than the typed-new-Product path (7) — the scan itself both searches and confirms "not found, create new" in a single motion, skipping the separate "+ Agregar... como producto nuevo" tap the typed path needs. |
 | Browse the Catalog only | 0 taps | Opening the tab is itself the answer; nothing to register. |
@@ -2028,6 +2329,20 @@ comparable hard speed requirement — the floor above is about not adding
   that same standing here, no matter how many times she scans it.
   **[see inventory.changelog.md#decisions-d65-barcode-scanning]**
 - **Barcode scanning gated Paid-tier only, resolving `company/business-decisions.md` Q20 (Product Owner, 2026-09-13) — same gating class as NFC/Frequent Customers/multi-staff SELLER accounts (`decision-log.md` D27, D34, Q18).** `Business.subscriptionTier = paid` is checked once, upstream, as part of this tab's own state load (§2) — never per-scan. A Free-tier merchant's Elegir producto picker (§3.8) shows no "Escanear código de barras" row at all; §3.8a's scan variant and §3.8b–§3.8e are unreachable for her. **Chosen posture: gone entirely, no upsell/discoverability copy** — matches this document family's own existing precedent for a Business capability that isn't relevant to a Free merchant (`settings.md` §2.7's "Tu equipo," absent entirely on the Free-tier vista principal; this document's own Assign-Tags mechanism, absent entirely when `nfc ∉ registrationMode`). **Checked against, and distinguished from, `settings.md` §2.3/§3.3a's own closer precedent for the same NFC/Paid-tier gate** — the "Cómo vendes normalmente" status line there *does* name the paid-only alternative to a Free-tier merchant ("Botones (vender con tags requiere el plan de pago)"), the opposite posture. That line is an always-rendering current-state fact ("how do you sell, right now"), with no analogue for an optional action row like "Escanear código de barras" — the distinction that keeps "gone entirely" correct here despite that closer counter-example existing. Not the different precedent `reports.md` §3.4/§3.5 uses (a passive "con el plan de pago vas a ver..." card) — that pattern exists specifically to explain an otherwise-confusing missing number inside a data summary Ana is already looking at, not to replace an action affordance in a working list, which is what "Escanear código de barras" is. No proactive "why doesn't this exist" mention designed either: `decision-log.md` D27's own discoverability mention (`home.md` §3.6a's "Ready-but-still-on-botones") is scoped narrowly to a Paid-tier merchant who already holds a capability but hasn't activated it — it has no precedent for, and doesn't extend to, a Free-tier merchant who lacks the capability outright. **[see inventory.changelog.md#decisions-q20-barcode-scanning-paid-tier-gate]**
+- **A write path to correct a misread `Product.barcode` added, 2026-09-16/17
+  (`decision-log.md` D65, live production defect, Product Owner-confirmed,
+  expedited pass).** New Catalog-row overflow affordance ("⋯," §3.4, Paid
+  tier only) opens "Editar código de barras" (§3.4c–§3.4g). Replaces the
+  stored value outright on save — no merge, no history — matching Editar
+  precio/Editar foto's existing posture. **The one real edge case resolved
+  explicitly: a freshly-scanned code already belonging to a different
+  Product.** Caught before it can be staged (§3.4e), extending §3.15's
+  "identifier already claimed, no reassignment" pattern and §3.8c's
+  recognition-display convention — no new interaction pattern invented, no
+  `knowledge-mentor` consultation needed. Stays fully inside D65's own
+  "Inventory-only" write-path boundary — a second Inventory-owned write
+  surface, never touching Selling. **Expedited: not yet run through
+  `ux-critic`/`reviewer`.**
 
 ## 11. Future considerations
 
