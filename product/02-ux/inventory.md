@@ -411,12 +411,16 @@ current tab in brackets.
 │  │[P] Playeras $280   0 disponibles [⋯]│ │  sold out — dimmed, tappable
 │  │[D] Delantales $90      sin registrar [⋯]│ │  [⋯] → §3.4c (código de barras),
 │  │                                        │ │  never registered — dimmed, tappable    Paid tier only
+│  │[C] Camisas   $250   8 disponibles [NFC: No][⋯]│ │  fifth zone — Paid tier +
+│  │                                                │ │  nfcPerProductEnabled + sin
+│  │                                                │ │  código de barras only → §3.4
 │  └───────────────────────────┘ │
 │      [ Registrar mercancía ]    │
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
+- **Exact on-row position/width of the fifth zone (inline, on a second line within the row, etc.) is illustrative** — `ui-designer`'s call at Medium-Fidelity, the same disclaimer this document already gives §3.12c's link-display width in `settings.md`.
 - List shows Product + available count only — never a Lot, InventoryEntry, or
   InventoryUnit reference. *architecture-principles.md* #4; matches
   *global-principles.md*, "she sees 'Hoodie (4 available)'."
@@ -483,6 +487,24 @@ current tab in brackets.
   identically wherever this row shape reappears — §3.5, §3.12, §3.13,
   §3.17 — the same "specified once, reused everywhere" rule already
   governing zones 1–3.
+- **Corrected 2026-09-16/17 — a fifth tap zone added (`decision-log.md` D71, `product-decisions.md` Q31).** The "four tap zones" enumeration above is superseded again, not deleted:
+  1. Marker/photo icon → §3.4b, unchanged.
+  2. Row body → §3.6, unchanged.
+  3. Price figure → §3.4a, unchanged.
+  4. Overflow indicator ("⋯") → §3.4c, unchanged.
+  5. **NFC-eligibility switch (new, rightmost when present) — writes `Product.nfcTaggingEnabled` directly, inline, no sheet.** Rendered `[ NFC: No ]` when off, `[ NFC: Sí ]` when on; a bare tap flips it.
+
+  **Precise gating condition, stated in full:** `Business.nfcPerProductEnabled = true` **and** `nfc ∈ registrationMode` (i.e., `subscriptionTier = paid`) **and** this Product has no `barcode`. The middle clause is normally redundant — the only write path that can ever set `nfcPerProductEnabled = true` (`settings.md` §2.8) is itself only offered while `nfc ∈ registrationMode` — until a subsequent Paid→Free downgrade lands, which never resets `nfcPerProductEnabled`'s own stored value (the same "two independent fields, no reset needed" pattern governing `defaultSellingMode`, `settings.md` §2.3). Checking it explicitly here, rather than assuming it's always redundant, is what keeps this zone honestly absent for a since-downgraded Business, rather than surfacing a tagging affordance for a capability that no longer structurally exists for her.
+
+  **Reasoned explicitly why this is a fifth, independent zone rather than a state folded into the "⋯" overflow sheet, against this document's own tap-zone-disambiguation discipline (§3.4's own 2026-09-06 amendment) — not defaulted to one shape without checking.** "⋯" already resolves to exactly one, unconditional destination for every Paid-tier row today (§3.4c, directly, no intermediate list) — the same "collapse a single-item overflow into a direct affordance" call `home.md`'s own header amendment already made. Folding the NFC toggle in as a second, conditionally-present option inside that same sheet would make "⋯"'s own destination ambiguous exactly on the rows where both conditions are true at once (a Paid-tier, barcode-less row on an `nfcPerProductEnabled = true` Business) — the precise "no tap resolves between two destinations" failure this document's own disambiguation discipline already argues against, and the same class of defect `ux-critic` already found and fixed twice in this document (marker/body/price ambiguity, Q23; the barcode overflow itself needing its own zone rather than merging into the price or body zone, D65). A fifth, always-independently-tappable control keeps "⋯" doing exactly one thing, unconditionally, on every row that has it at all, and gives NFC eligibility its own honestly-labeled, non-overlapping target, visible only under its own gating condition — the same shape barcode's own fourth zone already established for a capability-gated, row-level control.
+
+  **Mutual exclusivity with `Product.barcode`, enforced at the point of conflict, not merely declared (`decision-log.md` D71's own "never both" rule).** This zone is never rendered at all on a barcoded row — the gating condition (`Product.barcode` absent) already makes the two structurally impossible to show together on the same row. The one real path that could still create a conflict — assigning a barcode, via §3.4c, to a Product currently `nfcTaggingEnabled = true` — is corrected at §3.4c itself (see that section): saving a fresh barcode there also clears `nfcTaggingEnabled` in the same write, never leaving both true at once. A newly-created Product resolved via barcode scan (§3.8b–§3.8e) is never a conflict risk by construction, since it starts with `barcode` already set and `nfcTaggingEnabled` at its own default (`false`) — the toggle in §3.4 was never visible for it to begin with.
+
+  **Save-state discipline — composes two already-approved primitives, no new pattern invented, no `knowledge-mentor` consultation needed.** A bare tap on the switch immediately dims that one row (reusing `settings.md` §3.9's own "fila atenuada" mechanic — a row dims in place while its own capability-level write is inflight — composed here onto this document's own existing four-zone row architecture, rather than a sheet). Near-instant: the row simply dims and un-dims silently. Slow (>~1.5s): the row's NFC label reads "Guardando…" in place of its Sí/No state, same calm, plain-language convention as every other write in this document (§3.10). A failed write reverts the switch to its last-saved state and shows a small inline line directly beneath that one row — "No pudimos guardar. Intenta de nuevo." — with the switch itself remaining tappable as its own retry (no separate "Reintentar" button, no full-screen error — this is a small, low-stakes, instantly-retriable boolean flip, the same reasoning `settings.md` §3.10 already gives its own toggle failures, scoped here to one row instead of one screen since nothing else on the Catalog view is affected by this one row's failed save).
+
+  **Toggling it on or off never hands off anywhere, and never immediately auto-enters Asignar Tags** — a deliberate contrast with "Cambiar a vender con tags" (§3.3a), which does auto-route her into tagging, because that action is an explicit declaration of whole-Catalog intent. Enabling this one Product simply makes its currently- or future-`available`, untagged units NFC-tagging-eligible (§2's new composed test) starting at her next ordinary Inventario open (picked up by §2 step 2's existing pending-nudge, unchanged mechanism) or her next Guardar mercancía for this Product (§2 step 3) — never an immediate navigation the moment she flips the switch. The same "no hand-off, only future eligibility starts/stops" posture `settings.md` §2.8 gives the Business-level toggle, applied here at the Product level. **Turning it off never untags or orphans an already-tagged unit of this Product either** — the identical invariant, restated at the per-Product level rather than only inherited silently from the Business-level description: an already-NFC-tagged Camisas unit stays exactly as tagged and sellable via NFC; only future eligibility for not-yet-tagged units of this Product stops.
+
+  Applies identically wherever this row shape reappears — §3.5, §3.12, §3.13, §3.17 — the same "specified once, reused everywhere" rule already governing zones 1–4.
 - **A zero-`disponibles` row (Playeras, 0 disponibles) now renders
   dimmed** — the same visual dimming signal `home.md` §3.9 already applies
   to a sold-out ProductTile, reused here rather than inventing a second
@@ -783,6 +805,7 @@ current tab in brackets.
   the same near-instant/slow/error save convention as every other write in
   this document (§3.10/§3.11) — a failed save leaves the sheet open with the
   staged value intact.
+- **New 2026-09-16/17 (`decision-log.md` D71) — saving a fresh barcode here also clears `Product.nfcTaggingEnabled`, in the same write, whenever it was `true`.** D71's own rule is that a Product is barcode-identified or NFC-tagging-eligible, never both; this is the one write path that could otherwise leave both true at once (§3.4's own fifth zone is only ever visible while `barcode` is absent, so the two can't be set to true independently through the UI — this is the sole remaining seam). The clear-on-save is silent, not a separate confirmation step — the same "no confirmation needed for a change that only stops future eligibility" posture `settings.md` §2.8 already establishes for the Business-level toggle's own off-direction. **Any already-tagged `InventoryUnit` of this Product is completely unaffected** — it stays tagged and stays sellable via NFC, the identical never-untag/never-orphan invariant §3.4's own fifth zone already states. This clears only the Product's own *future*-eligibility flag, the exact same effect as her manually switching the row's NFC toggle off, one write earlier than she'd have needed to do it herself.
 - **A saved change is confirmed with an ambient "Código de barras
   actualizado ✓" line on the Catalog view she returns to** (same ambient,
   fading, no-tap-to-dismiss shape as §3.12's "Mercancía registrada ✓") —
