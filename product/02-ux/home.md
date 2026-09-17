@@ -250,6 +250,25 @@ missing `ux-critic-findings.md` entry for the remediation round — both
 closed directly by Main). Folded back into Approved.
 **[see home.changelog.md#status-2026-09-15-quick-session-alongside-event]**
 
+**Amended 2026-09-16 (`decision-log.md` D71, `product-decisions.md` Q31 —
+NFC becomes a per-product opt-in composing with buttons/barcode, Architect
+Decision, no RFC required):** new §3.9d/§3.9e design a "Leer con NFC"
+overlay for the `Session.operatingMode = buttons` surface — the direct
+sibling of the existing "Escanear código de barras" overlay (§3.9a-§3.9c,
+D65) — reached only in the Limited Ready case (some tagged inventory
+exists, below the NFC Readiness threshold) and only when
+`Business.nfcPerProductEnabled = true`. `Session.operatingMode`'s
+"resolved once, never re-evaluated mid-Session" invariant (D23) is
+preserved, not amended — this overlay composes with `buttons` mode, it
+does not introduce a new operating mode. Unlike the barcode overlay, this
+one stays open across repeated scans (continuous-scan, manually exited via
+"Volver a botones") — a deliberate divergence from D65's own
+resolve-and-return shape, reasoned explicitly in §3.9d, not inherited
+by default. §3.9's own wireframe and entry-point bullets are amended to
+show the new affordance's exact gating condition and position. This went
+through a full `architect` ruling (D71) — **not** an expedited live-bug-fix
+pass. `ux-critic`/`reviewer` review is pending, not skipped.
+
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -2322,6 +2341,9 @@ Three elements only — confirmation, total, business identity. No future-regist
 ├───────────────────────────────┤
 │ Venta actual: (vacía)            │
 │  [ Escanear código de barras ]   │  second way to add a Product — §3.9a
+│  [ Leer con NFC ]                │  NEW — §3.9d; only when NFC Readiness
+│                                │  = Limited Ready AND
+│                                │  nfcPerProductEnabled = true (D71)
 │  ┌─────────┐  ┌─────────┐       │
 │  │(B)      │  │(A)      │       │  per-Product marker — first letter of
 │  │ Bolsas  │  │Accesorios│       │  Product.name, uppercased
@@ -2393,6 +2415,50 @@ all unreachable for a Free-tier Business.
   grid's first row, and doesn't cost the screen any of its existing
   scan-and-tap speed on an actual phone screen — not resolved by this
   Low-Fidelity text description.
+- **"Leer con NFC" — a third way to add a Product to "Venta actual," direct
+  sibling of "Escanear código de barras" above, new (`decision-log.md`
+  D71, `product-decisions.md` Q31).** Renders in the identical position
+  family (directly beneath "Escanear código de barras," inside the same
+  "zona de registro" this section already defines) — **absent entirely,
+  not shown-then-disabled, matching this document's own established
+  posture for every other capability-gated affordance** (the identical
+  rule the Free-tier barcode-scan row above already follows) — whenever
+  any of the following isn't true:
+    - `Session.operatingMode = buttons` for this Session (unchanged by
+      this amendment: `nfc ⟺` full readiness stays a silent, whole-Session
+      resolution exactly as today, §2/§3.6a);
+    - `Business.nfcPerProductEnabled = true` (Settings-owned master
+      toggle, taken as a given fact per D71 — not designed here, see
+      `settings.md`'s own D71 amendment);
+    - this Business's ambiently-computed NFC Readiness (§2's existing
+      Business-wide, tagged-vs-total-sellable-inventory computation,
+      re-read live rather than newly invented) currently resolves to
+      **Limited Ready specifically** — some sellable tagged inventory
+      exists, below the full-readiness threshold. **Deliberately narrower
+      than "≥1 tagged unit exists"**: a Business whose tagged inventory
+      has actually crossed into Ready (full readiness) while
+      `defaultSellingMode` still reads `buttons` (§3.6a's own
+      "Ready-but-buttons-default" nudge case) does **not** get this
+      overlay in this pass — D71's own text scopes the new composition to
+      "Limited Ready → buttons," not to every case where `buttons` mode
+      and ≥1 tagged unit happen to coexist. This is a real, narrower
+      exclusion, not an oversight — flagged as its own open item, §8.
+  **This is a live-evaluated display condition, re-read on every render
+  of this screen, not a fact committed at Session-start the way
+  `Session.operatingMode` itself is** — the identical "ambient, not
+  sticky" treatment this section already gives the tile's own
+  Event-scoped remaining-stock line (above) and the sold-out/"0 en este
+  evento" captions. Nothing about `Session.operatingMode`'s own
+  immutability is touched: if this Business's tagged-inventory mix shifts
+  mid-Session (e.g. a concurrent Asignar Tags action on another device
+  pushes her past the Ready threshold), the overlay's entry point may
+  appear or disappear between renders — the Session's actual selling mode
+  never changes, only whether this one composed affordance is currently
+  offered. In the realistic case D71/Q31 itself describes (a Business
+  with a permanent mix of NFC-eligible and barcode/button-only Products —
+  Camisas tagged, Cerveza/Papas/Plumas never eligible), tagged proportion
+  stays durably below full-readiness threshold, so this is Limited Ready's
+  steady state, not a rare transient — see §3.9d.
 - Tapping it opens the same camera-viewfinder shape `inventory.md` §3.8b
   already defines (cross-referenced, not redrawn) — except the header,
   which reads "← Escanear código" here instead of §3.8b's own "← Elegir
@@ -2690,6 +2756,230 @@ to `inventory.md` §3.8e, adapted destination only:
   marker, §3.9's sold-out-tile message).
 - No claim made about camera APIs, permission-request mechanics, or
   barcode-symbology support — build-time concerns, out of this spec.
+
+### 3.9d Leer con NFC — overlay (`decision-log.md` D71, `product-decisions.md` Q31, Limited Ready + nfcPerProductEnabled only)
+
+Opened by tapping "Leer con NFC" (§3.9). Reuses the identical
+`NFCScanPrompt`-shaped surface §3.10's own full `nfc`-mode screen already
+defines ("Acerca el tag del producto") — same visual, but here as a
+dedicated **overlay** she can back out of, not a full mode swap:
+
+```
+┌───────────────────────────────┐
+│ ← Leer con NFC                   │
+│                                │
+│     Acerca el tag del            │
+│         producto                 │
+│                                │
+│  Venta actual: 3 artículos        │  live, same running count
+│                                │  §3.8/§3.9 already show
+│  [ Volver a botones ]            │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+
+On a successful scan (ambient, self-dismissing confirmation; overlay stays
+open — see below):
+```
+┌───────────────────────────────┐
+│ ← Leer con NFC                   │
+│  Camisas agregada ✓               │  ambient, fades — same mechanism
+│                                │  as §3.8f's "Venta finalizada ✓"
+│     Acerca el tag del            │
+│         producto                 │
+│  Venta actual: 4 artículos        │
+│  [ Volver a botones ]            │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+
+- **Entry:** tapping "Leer con NFC" (§3.9) opens this overlay directly —
+  no intermediate confirmation, the same one-tap-opens-a-scan-surface
+  shape "Escanear código de barras" already establishes (§3.9).
+- **A successful scan resolves a specific `InventoryUnit`, not a
+  Product** — the existing `NFCTag` → `InventoryUnit` → `Product` lookup
+  (`domain-model.md` D10, "Dual-purpose tag resolution," already
+  Product-agnostic at the data level, per D71) — and adds it to "Venta
+  actual" through the identical shared cart-add write path a tile
+  tap/barcode scan already use (§3.8/§3.8a), silently, with the same
+  deliberately-no-confirm-step reasoning §3.9a already states for barcode
+  (the identity-trust decision — this tag really is this unit — was
+  already made once, upstream, at Asignar Tags; re-confirming it here on
+  every Sale-time scan would reopen exactly the mid-flow question
+  `company/backlog.md` #1's <3-second bar exists to eliminate).
+- **Continuous scan — stays open across repeated scans, a deliberate
+  divergence from the barcode overlay's own resolve-and-return shape
+  (§3.9a: "camera view closes" on every single match).** Reasoned
+  explicitly, not inherited by default:
+    - **The Product Owner's own worked scenario (Q31) states this
+      requirement directly**, distinct from what she asked for barcode:
+      she should be able to scan several NFC items back-to-back while
+      that overlay is open, then return to buttons — a continuous queue,
+      not a per-scan open/close cycle.
+    - **A real, already-approved precedent for continuous NFC scanning
+      already exists in this folder** — `events.md` §3.22's own
+      per-Product NFC scan queue ("Escaneando: Bolsas... Ya escaneadas:
+      2... [ Terminar ]") stays open across an arbitrary number of scans,
+      exited only by an explicit "Terminar" tap. This overlay adopts the
+      identical shape, adapted to Sale-time (mixed-Product, not
+      pre-selected) rather than invented fresh.
+    - **A concrete reason the two contexts genuinely differ, not just a
+      stated preference:** a barcode scan is a single, discrete
+      camera-alignment act per item (point, hold steady, resolve) with no
+      natural "next item" continuity — closing back to the grid after
+      each one costs nothing extra, since she's already looking at the
+      grid to find her next tap target anyway. NFC scanning is a
+      physical, sequential gesture against a pile of garments she's
+      already handling one after another (the same physical motion
+      §3.22's own "Acerca el tag de la prenda que te llevas" already
+      describes) — forcing a close-then-reopen tap between each one would
+      add exactly the kind of per-item friction `global-principles.md`'s
+      "the fastest interaction is the one that never happens" argues
+      against, with no corresponding benefit.
+  Each successful scan: resolves the unit, writes it into "Venta actual"
+  (live count updates, visible on this same overlay screen), shows a
+  brief ambient self-dismissing confirmation naming the Product (reusing
+  §3.8f's own "✓" ambient-confirmation mechanism, not a new one), and the
+  overlay stays open, ready for the next tag — exactly the loop §3.22
+  already establishes, at Sale-time instead of allocation-time.
+- **Manual exit — "Volver a botones," always available while the overlay
+  is open**, returning to the grid (§3.9) at any point. Cart contents
+  (every item already scanned, whether via NFC here or barcode/tile
+  earlier) stay completely intact — this is a pure navigation return, not
+  a cancel of anything. Mirrors §3.9b/§3.9c's own "Entendido"/"Usar los
+  botones" guarantee ("Venta actual" is never touched by leaving a scan
+  surface), extended here to a non-error exit as well.
+- **Composability with the barcode overlay — explicit, load-bearing (Q31's
+  own stated requirement, not an inference):** "Escanear código de
+  barras" and "Leer con NFC" are two independent, freely-alternating entry
+  points on the same base grid (§3.9), never mutually exclusive and never
+  gating each other. She can scan a barcode (resolves and returns
+  automatically, §3.9a), then tap "Leer con NFC" and scan several tags in
+  a row, then tap "Volver a botones" and tap a tile directly, then reopen
+  either overlay again — any order, any number of times, for the same
+  Sale. All three input methods write into the identical "Venta actual"
+  cart through the identical shared add-path; nothing on this screen ever
+  records or cares which method added which line. Only one scan surface
+  is ever open at a time, but both remain reachable from the grid at every
+  moment while `Session.operatingMode = buttons`.
+- **Price resolution is unaffected** — every unit this overlay adds
+  resolves `SaleItem.pricePaid` through the identical automatic rule
+  every other add-path already uses (§2's "Price resolution" — Event
+  Price Override if one exists, else `Product.defaultPrice`). No new
+  price-resolution behavior.
+- No confirm-on-scan step for the identity match itself, matching §3.9a's
+  own reasoning (above) — the *only* confirmation shown is the ambient
+  "[Producto] agregada ✓" line, informational, self-dismissing, never
+  blocking the next scan.
+- See §3.9e for what happens when a scan doesn't resolve cleanly.
+
+### 3.9e Leer con NFC — error states (`decision-log.md` D71)
+
+Reuses this document's own existing hardware-read-failure register
+(§3.9c's "No pudimos leer el código. Intenta de nuevo." family) — plain,
+inline, non-blocking, on the still-open scan surface — rather than
+routing to a separate dead-end screen the way barcode's own no-match state
+does (§3.9b). **A deliberate, reasoned divergence from §3.9b, not an
+inconsistency:** §3.9b's full-screen "No encontramos este código /
+Entendido" shape fits barcode's own resolve-and-return interaction, where
+leaving the scan surface after a miss costs nothing extra. This overlay is
+explicitly continuous (§3.9d) — routing every miss to a full-screen dead
+end would force her to reopen the overlay after every failed tag, directly
+defeating the "scan several in a row" ergonomic Q31 asked for. All four
+outcomes below stay on this same still-open overlay, self-clear on the
+next scan attempt, and never interrupt the running "Venta actual" count.
+
+**Tag doesn't resolve to any known `InventoryUnit`** (unassigned tag, or a
+tag belonging to an unrelated system):
+```
+┌───────────────────────────────┐
+│ ← Leer con NFC                   │
+│  No reconocemos este tag.        │
+│  Intenta con otra prenda.        │
+│                                │
+│     Acerca el tag del            │
+│         producto                 │
+│  Venta actual: 3 artículos        │
+│  [ Volver a botones ]            │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+
+**Resolves to a real unit, but it's already sold / no longer available**
+(consumed by another concurrent scan or Sale since this device's last
+sync):
+```
+┌───────────────────────────────┐
+│ ← Leer con NFC                   │
+│  Esta prenda ya se vendió.        │
+│                                │
+│     Acerca el tag del            │
+│         producto                 │
+│  Venta actual: 3 artículos        │
+│  [ Volver a botones ]            │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+
+**Resolves to a real, available unit — but one allocated to a different,
+simultaneously-running Event** (the Selling-side surface of the same
+physical-location-exclusivity invariant `events.md` §3.22 already enforces
+at allocation time — reuses that exact phrase, since it's the identical
+underlying fact):
+```
+┌───────────────────────────────┐
+│ ← Leer con NFC                   │
+│  Esta prenda ya está en otro       │
+│  evento.                         │
+│                                │
+│     Acerca el tag del            │
+│         producto                 │
+│  Venta actual: 3 artículos        │
+│  [ Volver a botones ]            │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+
+**Genuine hardware read failure** (tag physically failed to read — weak
+signal, misalignment; nothing resolved at all):
+```
+┌───────────────────────────────┐
+│ ← Leer con NFC                   │
+│  No se pudo leer el tag.          │
+│  Acércalo de nuevo.               │
+│                                │
+│     Acerca el tag del            │
+│         producto                 │
+│  Venta actual: 3 artículos        │
+│  [ Volver a botones ]            │
+├───────────────────────────────┤
+│ [Hoy]  Inventario Eventos Resultados │
+└───────────────────────────────┘
+```
+
+- **Copy for the read-failure case is reused verbatim from `events.md`
+  §3.22's own "No se pudo leer el tag. Acércalo de nuevo."** — a more
+  precise, already-approved, NFC-specific precedent than the generic
+  camera-based register `home.md` §3.9c uses for barcode, and the exact
+  same underlying hardware fact (a failed tag read).
+- **"Esta prenda ya está en otro evento" is reused verbatim from
+  `events.md` §3.22's own conflict copy** — the identical
+  physical-location-exclusivity fact, surfaced here instead at Sale-time
+  rather than allocation-time. No new invariant, no new copy invented.
+- None of the four states above block anything: the overlay stays open,
+  "Venta actual" and its running count are completely unaffected, "Volver
+  a botones" stays reachable at every moment, and every message clears
+  automatically the instant the next scan attempt begins — the same
+  non-blocking posture every other ambient failure state in this document
+  already follows (§3.8a's sync-failure marker, §3.9c's own two states).
+- **No claim made about NFC hardware APIs, read latency, or tag
+  compatibility** — build-time concerns, out of this spec, matching
+  §3.9c's own disclaimer.
 
 ### 3.10 Session active — `Session.operatingMode = nfc` surface
 ```
@@ -3240,6 +3530,15 @@ and back to Hoy):
 44. Session active, `buttons` mode — scan resolves to a known Product
     already at zero available stock, ambient non-add message (§3.9a-i,
     D65, Paid tier only)
+45. Session active, `buttons` mode — "Leer con NFC" affordance in the
+    registration zone, Limited Ready + `nfcPerProductEnabled` only (§3.9,
+    D71)
+46. Session active, `buttons` mode — "Leer con NFC" overlay, continuous
+    scan, ambient per-scan confirmation (§3.9d, D71)
+47. Session active, `buttons` mode — "Leer con NFC" overlay error states:
+    no match, already sold/unavailable, allocated to another Event,
+    genuine read failure — all non-blocking, overlay stays open (§3.9e,
+    D71)
 
 ## 6. Minimum step count
 
@@ -3418,6 +3717,25 @@ her actual top sellers within the first screenful regardless of Catalog size.
   named honestly rather than worked around silently; worth revisiting if
   real usage shows mis-adds (tap or scan) are common enough to need a
   lighter-weight per-item removal, independent of how the item was added.
+- **New (`decision-log.md` D71) — the "Ready, but `defaultSellingMode =
+  buttons`" edge case (§3.6a's own fourth variant) doesn't get "Leer con
+  NFC," by this amendment's own deliberate scoping to "Limited Ready"
+  only (§3.9).** A Business whose tagged inventory has crossed into full
+  Ready while she's still selling with `buttons` by choice is a real,
+  reachable state — D71's own text scopes the new overlay strictly to
+  "Limited Ready → buttons," so this state currently gets neither the
+  overlay nor any NFC-scan affordance during Selling, only the existing
+  one-time discoverability nudge at Session-start (§3.6a). Whether that's
+  the right outcome, or whether the overlay should extend to this case
+  too, isn't re-derived here — flagged for Architect/Product Owner rather
+  than silently widened past what D71 authorized.
+- **New (`decision-log.md` D71) — no NFC-hardware-unavailable/permission-
+  denied state is designed for §3.9d, mirroring a pre-existing gap
+  already present in §3.10's own full `nfc`-mode surface** (which
+  likewise defines no such state). Not a new omission introduced by this
+  amendment — inherited, named honestly rather than silently left
+  undefined. Worth closing for both surfaces together, if real device
+  testing surfaces a need.
 
 ## 9. Principle justification
 
@@ -3819,6 +4137,22 @@ her actual top sellers within the first screenful regardless of Catalog size.
   §11 entry results from this fix, since the risk is resolved on-screen,
   not logged as accepted. **[see
   home.changelog.md#decisions-2026-09-15-quick-session-remediation]**
+- **"Leer con NFC" (§3.9/§3.9d/§3.9e) is a continuous-scan overlay, not a
+  resolve-and-return one like barcode's own §3.9a — a deliberate,
+  reasoned divergence, not an inconsistency between two "same shape"
+  overlays.** Grounded directly in the Product Owner's own worked
+  scenario (`product-decisions.md` Q31) and an already-approved
+  continuous-scan precedent in this folder (`events.md` §3.22). **[see
+  home.changelog.md#decisions-d71-leer-con-nfc]**
+- **Gated strictly to the Limited Ready → buttons case, not "any buttons
+  Session with ≥1 tagged unit"** — a deliberate narrower scope than the
+  broadest possible reading of D71, matching D71's own literal text. See
+  §8 for the one edge case this leaves open. **[see
+  home.changelog.md#decisions-d71-leer-con-nfc]**
+- **"Escanear código de barras" and "Leer con NFC" compose freely, any
+  order, any number of times, into the same "Venta actual" — explicit,
+  load-bearing per Q31's own stated requirement**, not an inference.
+  **[see home.changelog.md#decisions-d71-leer-con-nfc]**
 
 ## 11. Future considerations
 

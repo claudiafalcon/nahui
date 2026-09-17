@@ -30,6 +30,26 @@ events.changelog.md#status-evt-q1-empieza-hoy-default]**
 
 **Amended 2026-09-16 (Product Owner live-testing request, expedited pass — barcode-scan search shortcut added to §3.21):** a new list-level "Escanear código de barras" affordance is added above §3.21's row list (default and expanded states), letting Ana jump straight to a Catalog Product's row by scanning its `Product.barcode` instead of scrolling — a pure navigation shortcut, never a write. Opens the identical shared camera scanner already used at `inventory.md` §3.8b/§3.4d (`BarcodeScanner.tsx`, cited the same implementation-independent way those sections already do). On a match: collapses whichever row is currently expanded and expands the matched Product's row in its place, scrolled into view, per §3.21's own existing one-row-expanded-at-a-time rule — the manual stepper is then adjusted by hand exactly as if she'd found and tapped the row herself; **the scan itself commits nothing**, a deliberate contrast with this same screen's own NFC scan (§3.22), which is a live, immediate write the instant a tag is read. On no match against this Business's Catalog: new §3.21b, an explicit inline no-match message with a plain way back to the list — this screen never creates a new Product on a miss, unlike `inventory.md` §3.8a's registration-time scan, since every Catalog Product already has a row here by construction. Camera permission-denied/read-failure reuse `inventory.md` §3.4f/§3.4g's shape verbatim (new §3.21c/§3.21d), the closest existing precedent for a no-typed-search-fallback context. Gated Paid-tier only, identical to every other barcode-scanning surface (`decision-log.md` D65, `company/business-decisions.md` Q20) — resolved once, upstream, as part of this screen's own state load; inherits §3.21's existing OWNER-only permission, no separate gate. A second, read-only consumer of `Product.barcode`, alongside Selling's own scan-to-add (`home.md` §3.9a) — the closer precedent than the registration-time scan, since neither creates anything. No `decision-log.md` entry needed — reuses D65's existing field/gate. **Expedited, same as tonight's other live-driven passes — not yet run through `ux-critic`/`reviewer`.**
 
+**Amended 2026-09-16/17 (`decision-log.md` D71, `product-decisions.md`
+Q31 — NFC becomes a per-product opt-in, Architect Decision, no RFC
+required):** new §3.22a adds a list-level, mixed-pile "Leer con NFC"
+scanner to §3.21's Mercancía screen — letting Ana scan a physically mixed
+pile across several different Products in one continuous pass, each tag
+auto-resolving to its own Product's `EventAllocation` row live, with no
+Product pre-selected first. Composes with, does not replace, §3.22's
+existing per-Product scan queue (unchanged, untouched by this amendment) —
+see §8 for an honest open observation on whether the narrower version is
+still needed once the list-level one exists. **Requires real new backend
+support, confirmed by `architect` (D71): today's
+`scan_unit_into_event_allocation` RPC requires and validates a pre-known
+`productId`; a new write-path variant is needed that resolves
+`EventAllocation(eventId, resolvedProductId)` from the scanned unit's own
+`productId` instead, minting that row if none exists yet for that
+`(eventId, productId)` pair (§3.22a's own annotation states the exact
+requirement).** This went through a full `architect` ruling (D71) — **not**
+an expedited live-bug-fix pass, unlike tonight's earlier §3.21 barcode
+amendment above. `ux-critic`/`reviewer` review is pending, not skipped.
+
 **Amended 2026-08-04 (icon/comprehension audit):** §3.4/§3.5's Events list
 cards now show Event type alongside `Venue.displayName` ("Plaza Norte ·
 Bazar"), matching the subordinate role Type already has on Detail screens.
@@ -1131,6 +1151,9 @@ registered no Products at all yet in Inventario:
 │  queda disponible para tus otros    │
 │  eventos.                        │
 │  [ Escanear código de barras ]     │  Paid tier only — opens §3.21a
+│  [ Leer con NFC ]                  │  NEW — §3.22a; only when ≥1 Product
+│                                │  on this screen has
+│                                │  nfcTaggingEnabled = true (D71)
 │  ┌───────────────────────────┐ │
 │  │ Bolsas — 7 para este evento  ▾│ │  collapsed — tap to expand
 │  ├───────────────────────────┤ │
@@ -1149,6 +1172,8 @@ registered no Products at all yet in Inventario:
 │ ← Plaza Norte                    │
 │  Mercancía para este evento        │
 │  [ Escanear código de barras ]     │  Paid tier only — same position,
+│                                │  list-level, not per-row
+│  [ Leer con NFC ]                  │  NEW — §3.22a; identical position,
 │                                │  list-level, not per-row
 │  ┌───────────────────────────┐ │
 │  │ Bolsas — 7 para este evento  ▴│ │  expanded — tap to collapse
@@ -1202,6 +1227,23 @@ registered no Products at all yet in Inventario:
 - Same near-instant/slow/error save convention as every other write in this doc (§3.9), detailed in new §3.23.
 - **OWNER-only**, per `product-decisions.md` Q24/Q25's settled permission table — the SELLER-role experience isn't designed here (§8).
 - **New, list-level "Escanear código de barras" affordance, Paid tier only (`decision-log.md` D65, `company/business-decisions.md` Q20) — added 2026-09-16, Product Owner live-testing request, expedited pass.** Renders once, above the row list, in the identical position on both the default and expanded states (never per-row) — a search shortcut for finding one Product's row quickly on a large Catalog, not a per-row action; present unconditionally whenever the row list itself renders, the same "always-present, not size-gated" posture `inventory.md` §3.8's own scan row already takes for a Paid-tier picker. Opens the identical shared camera scanner already used at `inventory.md` §3.8b/§3.4d — same underlying mechanism, `BarcodeScanner.tsx`, no new camera surface (§3.21a). **A successful scan is a pure navigation jump, never a write — a deliberate, explicit contrast with this same screen's own NFC scan (§3.22), where a successful scan *is* a live, immediate write the instant a tag is read.** It collapses whichever row is currently expanded and expands the matched Product's row instead, scrolled into view, per this section's own existing one-row-expanded-at-a-time rule (above) — she then adjusts the manual stepper by hand exactly as if she'd scrolled to and tapped the row herself. A scan matching no Catalog Product's `barcode` never creates one — unlike `inventory.md` §3.8a's registration-time scan, every Catalog Product here already has a row by construction, so a true miss just means "not on file" (§3.21b). Absent entirely on the Zero-Catalog-Products variant above — nothing to search for — and, being Paid-tier gated the same as every other barcode-scanning surface, also absent for a Free-tier Business. Inherits this section's own OWNER-only gate — no separate permission model.
+- **New, list-level "Leer con NFC" affordance (`decision-log.md` D71,
+  `product-decisions.md` Q31) — positioned identically to the barcode
+  shortcut immediately above: above the row list, in the same slot on
+  both the default and expanded states, never per-row.** Present
+  unconditionally whenever ≥1 Product on this Business's Catalog has
+  `Product.nfcTaggingEnabled = true` — **absent entirely, not
+  shown-then-disabled, for a Business/Event with nothing NFC-tagged**,
+  matching this screen's own existing gating posture for the barcode row
+  above. Opens §3.22a, a new mixed-pile scan surface — **a materially
+  different write behavior from the barcode shortcut immediately above**:
+  where a barcode scan here is a pure navigation jump that writes
+  nothing (this section's own annotation, above), an NFC scan here is a
+  live, immediate write the instant a tag is read, exactly like §3.22's
+  existing per-Product queue — the same explicit contrast this section
+  already draws between its own two scan mechanisms, unchanged by this
+  addition. Inherits this section's own OWNER-only gate — no separate
+  permission model.
 
 ### 3.21a Mercancía para este evento — buscar por código de barras, cámara activa (new — `decision-log.md` D65, Paid tier only)
 ```
@@ -1329,6 +1371,144 @@ registered no Products at all yet in Inventario:
 - Reached from §3.21's "Escanear las que te llevas." Reuses `inventory.md` §3.14/§3.15/§3.16's Asignar Tags shape and error register verbatim, not reinvented — same physical gesture, same failure classes (business-logic conflict vs. genuine read failure), same "business language before technical language" discipline (no UID, no "reserved," no "conflict").
 - **The "ya está en otro evento" error is the direct UI surface of `product-decisions.md` Q24/Q25's exclusivity invariant** ("a unit ID may appear in at most one `open` `EventAllocation.allocatedUnitIds` at a time, enforced via `InventoryUnit`'s existing `available→reserved` conditional write") — this is what makes the error possible at all: she physically tries to take a garment that's already committed elsewhere, and the system tells her plainly rather than silently double-booking it.
 - "Terminar" returns to §3.21; every scanned-so-far unit stays committed (§3.21's own annotation) — a failing tag never traps her or discards prior progress, same guarantee `inventory.md` §3.16 already gives.
+
+### 3.22a Escaneando — cola de escaneo (mixta, multi-Producto) (new — `decision-log.md` D71, `product-decisions.md` Q31)
+
+Reached from §3.21's new list-level "Leer con NFC" affordance (above),
+**not** from any single row's own "Escanear las que te llevas" (that
+remains §3.22, unchanged, scoped to one pre-selected Product).
+
+**Before any scan (list starts empty):**
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │
+│  Leer con NFC                    │
+│                                │
+│      Acerca el tag de la          │
+│      prenda que te llevas          │
+│                                │
+│  [ Terminar ]                    │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+**After several scans across different Products — live tally, one line
+per Product actually scanned so far, growing as she scans:**
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │
+│  Leer con NFC                    │
+│  Bolsas: 2 escaneadas             │
+│  Camisas: 3 escaneadas            │
+│                                │
+│      Acerca el tag de la          │
+│      prenda que te llevas          │
+│                                │
+│  [ Terminar ]                    │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+**Error — prenda ya asignada a otro evento** (reused verbatim from §3.22's
+own conflict copy — the tag still resolves to a known Product, so it's
+named specifically, unlike the generic read-failure case below):
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │
+│  Leer con NFC                    │
+│  Bolsas: esta prenda ya está en    │
+│  otro evento. Usa otra.          │
+│  Bolsas: 2 escaneadas             │
+│  Camisas: 3 escaneadas            │
+│      Acerca el tag de la          │
+│      prenda que te llevas          │
+│  [ Terminar ]                    │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+**Error — no se pudo leer** (reused verbatim from §3.22 — genuinely
+Product-agnostic, since nothing resolved yet):
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │
+│  Leer con NFC                    │
+│  No se pudo leer el tag.          │
+│  Acércalo de nuevo.               │
+│  Bolsas: 2 escaneadas             │
+│  Camisas: 3 escaneadas            │
+│      Acerca el tag de la          │
+│      prenda que te llevas          │
+│  [ Terminar ]                    │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+
+- **Reuses §3.22's own shape and error register directly — a genuine
+  sibling variant, not reinvented.** Same physical gesture ("Acerca el
+  tag de la prenda que te llevas"), same two failure classes
+  (business-logic conflict vs. genuine read failure), same "business
+  language before technical language" discipline, same live-write
+  immediacy ("no per-unit confirmation tap," `inventory.md` §3.14's own
+  convention, already cited by §3.22). The only structural difference is
+  what's fixed at screen-open: §3.22 fixes one Product (its header names
+  it, "Escaneando: Bolsas") and offers no per-Product tally since there's
+  only ever one; this screen fixes nothing — **each successful scan
+  resolves its own `productId` automatically from the scanned unit itself
+  (`domain-model.md` D10's already-Product-agnostic tag resolution), and
+  increments *that* Product's own row live, on this same screen and back
+  on §3.21 underneath.**
+- **A mixed pile across Products is the entire point** (Q31's own worked
+  scenario — Camisas tagged, other Products not, all needing allocation
+  in one pass): she never pre-selects a Product before scanning here,
+  unlike §3.22, where the Product is fixed the moment the screen opens
+  from that row's own button.
+- **The conflict error names the specific Product the just-scanned tag
+  resolved to, computed per-scan** (`"Bolsas: esta prenda ya está en otro
+  evento."`) — this is possible precisely because a conflict only ever
+  fires *after* a tag has successfully resolved to a real
+  `InventoryUnit`/`Product` pair; the exclusivity check happens on an
+  already-identified unit, the same order of operations §3.22 already
+  uses. **The read-failure error stays generic** (`"No se pudo leer el
+  tag."`) — nothing resolved at all in that case, so there's no Product
+  to name; reused verbatim from §3.22 rather than invented.
+- **Live, immediate write per scan, identical to §3.22 — never staged
+  behind "Guardar cambios."** §3.21's own row-level annotation ("a
+  successful scan is a live, immediate write... exactly like
+  `inventory.md` §3.14's Asignar Tags convention") applies unchanged
+  here, extended across however many different Product rows a single
+  scanning session on this screen touches.
+- **"Terminar" returns to §3.21**, every row this session touched already
+  reflecting its own live, committed total — exactly §3.22's own
+  guarantee ("every scanned-so-far unit stays committed... a failing tag
+  never traps her or discards prior progress"), unchanged.
+- **New backend requirement, named explicitly for the build dispatch that
+  follows this spec (not designed or built here):** today's
+  `scan_unit_into_event_allocation` RPC requires and validates a
+  pre-known `productId`, returning `tag_wrong_product` when the scanned
+  unit belongs to a different Product than the one passed in — a
+  precondition this screen structurally cannot satisfy, since no Product
+  is pre-selected. A new write-path variant is needed that instead:
+    1. resolves the scanned `NFCTag` → `InventoryUnit` → its own
+       `productId` (the existing D10 lookup, unchanged);
+    2. resolves the target `EventAllocation(eventId, resolvedProductId)`
+       for *that* Product — **minting a new `EventAllocation` row if this
+       Event has never had one for that particular Product before**,
+       reusing `EventAllocation`'s existing `(eventId, productId)`
+       uniqueness (D57/D59) rather than requiring the caller to already
+       know and pass `productId`;
+    3. runs the identical physical-location-exclusivity check §3.22's own
+       RPC already performs (the `available → reserved` conditional
+       write, D71/Q24-Q25) against that resolved allocation.
+  No new field, no new aggregate — a new resolution path into
+  machinery that already exists, the same class of change D71's own
+  RFC-trigger test confirms doesn't require an RFC.
+- **OWNER-only**, inherited from §3.21's own permission gate — no
+  separate permission model.
 
 ### 3.23 Guardando cambios de mercancía — saving / error (new — bulk manual commit, `product-decisions.md` Q24/Q25)
 
@@ -1916,6 +2096,25 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 - **New — a revoked `BusinessMembership`'s existing `EventAssignment` rows are not addressed by RFC 0011 or this amendment.** Since §3.26 only ever displays `active`-status Memberships, a revoked Membership simply stops appearing on this list — but whether its prior `EventAssignment` rows are cleaned up, or left as harmless orphaned data, is a schema-level housekeeping question RFC 0011 doesn't resolve and this UX pass doesn't need to for correctness (no merchant-facing surface reads a revoked Membership's stale assignments — `home.md` §2 step 0 intercepts a revoked SELLER before her own Session-open resolution ever reaches the assignment check). Flagged for Architect, non-blocking.
 - **Resolved 2026-09-10 (EVT-M4, `ux-critic` finding) — a pre-emptive "already busy elsewhere" indicator on an unassigned row, shown before she taps "Asignar," is now designed.** §3.26's scheduling-conflict line renders on every row, assigned or not, computed live on every render — see §3.26's own annotation. Kept here, marked resolved, so the record of this being considered and initially deferred stays visible.
 - **New — SELLER-role experience of §3.26 is not designed in this pass**, matching the identical scoping already stated for §3.21-§3.25 above; a SELLER's own view of which Events she's assigned to is `home.md` §3.6b, not a screen in this document.
+- **New (`decision-log.md` D71, `product-decisions.md` Q31) — does §3.22's
+  narrower, per-Product NFC scan queue still earn a place once §3.22a's
+  list-level, mixed-pile version exists?** Checked honestly, not silently
+  resolved: for the general case (any pile, single- or multi-Product),
+  §3.22a produces the identical outcome §3.22 does — tag resolution is
+  Product-agnostic at the data level regardless of entry point (D10), so
+  scanning an entirely single-Product pile through §3.22a resolves and
+  commits exactly the same as using §3.22's own scoped version. The only
+  observable differences are the entry point (a specific row's "Escanear
+  las que te llevas" vs. the list-level "Leer con NFC") and the header
+  display (a fixed single Product name vs. a live, growing per-Product
+  tally). No functional case was found where §3.22 does something §3.22a
+  cannot. This reads as a real subsumption, not a deliberately-kept
+  narrower tool — flagged here as an open observation for
+  `architect`/Product Owner, per this document's own non-deletion/don't-
+  resolve-unilaterally discipline, rather than deprecating §3.22 in this
+  pass. §3.22 itself is left completely unchanged, both entry points
+  (a row's own button and the new list-level one) stay live side by side
+  until this is actually decided.
 
 ## 9. Principle justification
 
@@ -2246,6 +2445,18 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 - **"Asignar personal"/"Ver personal de este evento" are present unconditionally, regardless of `subscriptionTier` (corrected 2026-09-10, EVT-M6 remediation — supersedes this document's earlier "structurally absent from Free tier" treatment).** `EventAssignment` creation (D60/RFC 0011) gates only on `BusinessMembership.status = active`, never on tier — `settings.md` §8 item 13 resolved that an already-active SELLER Membership survives a Paid→Free downgrade entirely unaffected, so a grandfathered Free-tier Business retains real ability to view and assign its existing staff. A genuinely-never-Paid Free-tier Business simply has zero active SELLER Memberships to show and lands on §3.26's own zero-state — no tier check is needed to produce the correct outcome. **[see events.changelog.md#decisions-rfc0011-event-assignment]**
 - **§3.26's zero-state distinguishes "never invited anyone" from "invited someone, still awaiting acceptance" (corrected 2026-09-10, EVT-M5 remediation, `ux-critic` finding).** The second, previously-missing case now checks for a pending `Invitation` and shows honest, distinct copy naming that an invitation is outstanding, rather than repeating "invita a alguien" to a merchant who just did exactly that. **[see events.changelog.md#decisions-rfc0011-event-assignment]**
 - **A list-level "Escanear código de barras" search shortcut added to §3.21, Paid tier only (`decision-log.md` D65, `company/business-decisions.md` Q20) — Product Owner live-testing request, 2026-09-16, expedited pass.** A pure navigation jump to the matching Catalog-Product row (collapsing any other expanded row, per §3.21's own existing rule) — never a write, a deliberate contrast with §3.22's NFC scan, which is a live, immediate write. A miss never creates a Product, unlike `inventory.md` §3.8a's registration-time scan (§3.21b). Second read-only consumer of `Product.barcode`, alongside Selling's own scan-to-add (`home.md` §3.9a) — the closer precedent than registration's own scan, since neither creates anything. **Expedited — not yet run through `ux-critic`/`reviewer`.**
+- **§3.22a's list-level, mixed-pile NFC scanner composes with, rather than
+  replaces, §3.22's existing per-Product queue — deliberately, per D71's
+  own explicit instruction not to redesign §3.22's actual behavior.**
+  Whether §3.22 remains worth keeping once §3.22a exists is logged as an
+  open observation, not resolved here — see §8. **[see
+  events.changelog.md#decisions-d71-leer-con-nfc]**
+- **The new write-path RPC variant §3.22a requires is named as a spec-level
+  requirement for the build dispatch, not designed at the implementation
+  level here** — resolve `EventAllocation(eventId, resolvedProductId)`
+  from the scanned unit's own `productId`, minting the row if it doesn't
+  exist yet, reusing the existing `(eventId, productId)` uniqueness
+  (D57/D59). **[see events.changelog.md#decisions-d71-leer-con-nfc]**
 
 ## 11. Future considerations
 
