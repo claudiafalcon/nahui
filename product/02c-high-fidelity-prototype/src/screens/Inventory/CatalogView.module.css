@@ -16,6 +16,16 @@
   color: var(--color-success);
 }
 
+/* inventory.md §3.13's mixed-Lot completion-copy variant (`decision-log.md`
+   D71) — the optional second line under `.confirmation`, plain factual
+   register (not bold/success-colored — it's explaining, not re-announcing
+   success), same ambient fade lifecycle as `.confirmation` itself. */
+.confirmationDetail {
+  margin: calc(-1 * var(--space-1)) var(--space-4) var(--space-2);
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
 /* inventory.md §3.3a/§3.4 (`decision-log.md` D46 Addendum) — the one-time
    ambient banner acknowledging "Cambiar a vender con tags," plain factual
    register matching §3.4's "sin registrar" precedent, never a warning. */

@@ -17,7 +17,7 @@ import styles from './SettingsScreen.module.css';
  * `downgrade`, which uses the deferred-effect one (§3.5). `cancel-pending`
  * (§3.7) has no confirm *screen* of its own — only the Sheet — but shares
  * the same §3.9/§3.10 write/error states as every other action. */
-type ConfirmAction = 'activate-paid' | 'tags-on' | 'tags-off' | 'downgrade';
+type ConfirmAction = 'activate-paid' | 'tags-on' | 'tags-off' | 'downgrade' | 'nfc-per-product-on' | 'nfc-per-product-off';
 type ActionKind = ConfirmAction | 'cancel-pending';
 
 type SubView =
@@ -76,6 +76,23 @@ function confirmCopy(action: ConfirmAction): { title: string; body: string[]; ct
         ctaLabel: 'Confirmar cambio',
       };
     }
+    case 'nfc-per-product-on':
+      return {
+        title: 'Activar NFC por producto',
+        body: [
+          'Vas a poder elegir, producto por producto, cuáles vender con tag NFC — solo en los que no tengan código de barras.',
+          'Esto no cambia cómo vendes ahorita; nada se etiqueta todavía, tú decides cuáles en Inventario.',
+        ],
+        ctaLabel: 'Activar ahora',
+      };
+    case 'nfc-per-product-off':
+      return {
+        title: 'Desactivar NFC por producto',
+        body: [
+          'Ya no vas a poder marcar más productos para vender con NFC, ni vas a ver la opción de leer tags NFC al vender con botones. La mercancía que ya etiquetaste sigue etiquetada y se puede seguir vendiendo con NFC sin problema.',
+        ],
+        ctaLabel: 'Desactivar ahora',
+      };
   }
 }
 
@@ -110,6 +127,7 @@ export function SettingsScreen({
     requestDowngradeToFree,
     cancelPendingSubscriptionTierChange,
     changeDefaultSellingMode,
+    changeNfcPerProductEnabled,
     reconcilePendingSubscriptionTier,
     signOut,
     setUserDisplayName,
@@ -174,6 +192,12 @@ export function SettingsScreen({
         break;
       case 'tags-off':
         ok = await changeDefaultSellingMode('buttons');
+        break;
+      case 'nfc-per-product-on':
+        ok = await changeNfcPerProductEnabled(true);
+        break;
+      case 'nfc-per-product-off':
+        ok = await changeNfcPerProductEnabled(false);
         break;
       case 'downgrade':
         // Same deterministic rule `confirmCopy`'s own `downgrade` branch
@@ -342,6 +366,7 @@ export function SettingsScreen({
         onActivatePaidTap={() => setSubView({ kind: 'confirm', action: 'activate-paid' })}
         onDowngradeTap={() => setSubView({ kind: 'confirm', action: 'downgrade' })}
         onModeChangeTap={(nextAction) => setSubView({ kind: 'confirm', action: nextAction })}
+        onNfcPerProductTap={(nextAction) => setSubView({ kind: 'confirm', action: nextAction })}
         onViewTeamTap={() => setSubView({ kind: 'team' })}
         cancelPendingOpen={cancelPendingOpen}
         onCancelPendingTap={() => setCancelPendingOpen(true)}
@@ -381,6 +406,7 @@ function SettingsMain({
   onActivatePaidTap,
   onDowngradeTap,
   onModeChangeTap,
+  onNfcPerProductTap,
   onViewTeamTap,
   cancelPendingOpen,
   onCancelPendingTap,
@@ -418,6 +444,12 @@ function SettingsMain({
   onActivatePaidTap: () => void;
   onDowngradeTap: () => void;
   onModeChangeTap: (action: 'tags-on' | 'tags-off') => void;
+  /** settings.md §2.8/§3.4 — "Activar NFC por producto"/"Desactivar NFC por
+   * producto" (`decision-log.md` D71), same shape as `onModeChangeTap`
+   * above, kept as its own prop rather than widening that one's action
+   * union — a distinct capability (`nfcPerProductEnabled`), not a third
+   * direction of `defaultSellingMode`. */
+  onNfcPerProductTap: (action: 'nfc-per-product-on' | 'nfc-per-product-off') => void;
   onViewTeamTap: () => void;
   cancelPendingOpen: boolean;
   onCancelPendingTap: () => void;
@@ -516,6 +548,25 @@ function SettingsMain({
                 onClick={() => onModeChangeTap(business.defaultSellingMode === 'nfc' ? 'tags-off' : 'tags-on')}
               >
                 {business.defaultSellingMode === 'nfc' ? 'Cambiar a vender con botones' : 'Cambiar a vender con tags'}
+              </Button>
+
+              {/* settings.md §2.8/§3.4 "NFC por producto" — a fifth
+                  self-service capability (`decision-log.md` D71), offered
+                  only while `nfc ∈ registrationMode` (`subscriptionTier ===
+                  'paid'`) — same gate as the mode row immediately above,
+                  never a locked/disabled hint on Free (§2.8's own explicit
+                  posture). Off by default, never a side effect of any other
+                  action here. */}
+              <p className={styles.modeValue}>
+                NFC por producto: {business.nfcPerProductEnabled ? 'Sí' : 'No'}
+              </p>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  onNfcPerProductTap(business.nfcPerProductEnabled ? 'nfc-per-product-off' : 'nfc-per-product-on')
+                }
+              >
+                {business.nfcPerProductEnabled ? 'Desactivar NFC por producto' : 'Activar NFC por producto'}
               </Button>
             </>
           ) : (

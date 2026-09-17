@@ -18,7 +18,16 @@ import styles from './CatalogRow.module.css';
  * `onTapBarcode` is only ever passed by the caller when
  * `Business.subscriptionTier === 'paid'` (`CatalogView.tsx`'s own gate) —
  * `undefined` on a Free-tier Business, which keeps this row's existing
- * three tap zones exactly as they were, nothing added. */
+ * three tap zones exactly as they were, nothing added.
+ *
+ * **Fifth tap zone, `decision-log.md` D71's amendment
+ * (`product-decisions.md` Q31).** A compact NFC-eligibility switch, rendered
+ * only when the caller passes `nfcToggle` — `CatalogView.tsx`'s own gate:
+ * `Business.nfcPerProductEnabled === true` AND `nfc ∈ registrationMode`
+ * AND this Product has no `barcode` (§3.4's own "precise gating condition,
+ * stated in full"). A bare tap flips it directly, no sheet, no confirmation
+ * — the one action on this row (or anywhere in `inventory.md`) with no
+ * separate confirm step. */
 export function CatalogRow({
   name,
   photo,
@@ -29,6 +38,7 @@ export function CatalogRow({
   onTapPrice,
   onTapPhoto,
   onTapBarcode,
+  nfcToggle,
 }: {
   name: string;
   /** `Product.photo` (`product-decisions.md` Q23) — rendered in the
@@ -47,51 +57,85 @@ export function CatalogRow({
    * this row. `undefined` on a Free-tier Business (the gate this prop's
    * own caller enforces) renders no overflow indicator at all. */
   onTapBarcode?: () => void;
+  /** `inventory.md` §3.4's fifth tap zone — `undefined` renders nothing
+   * (the gate this prop's own caller, `CatalogView.tsx`, enforces).
+   * `saving`/`slow` distinguish the near-instant (silent dim) vs. slow
+   * (>~1.5s, "Guardando…" label) cases per §3.4's own save-state
+   * discipline; `error` renders the inline "No pudimos guardar" line below
+   * the row, with the switch itself staying tappable as its own retry. */
+  nfcToggle?: {
+    enabled: boolean;
+    saving: boolean;
+    slow: boolean;
+    error: boolean;
+    onTap: () => void;
+  };
 }) {
   const dimmed = available <= 0;
   const caption = !everReceived ? 'sin registrar' : `${available} disponibles`;
   const tone = toneForProduct(name);
+  const nfcSaving = nfcToggle?.saving ?? false;
 
   return (
     <div
       className={`${styles.row} stitchBottom ${dimmed ? styles.dimmed : ''}`}
       style={{ '--tone-bg': tone.bg } as CSSProperties}
     >
-      <button
-        className={styles.marker}
-        onClick={(e) => {
-          e.stopPropagation();
-          onTapPhoto();
-        }}
-        aria-label={`Editar foto de ${name}`}
-      >
-        <TagStub name={name} photo={photo} muted={dimmed} size={48} />
-      </button>
-      <button className={styles.main} onClick={onTapRow}>
-        <span className={styles.name}>{name}</span>
-        <span className={styles.caption}>{caption}</span>
-      </button>
-      <button
-        className={`${styles.price} moneyTag`}
-        onClick={(e) => {
-          e.stopPropagation();
-          onTapPrice();
-        }}
-      >
-        ${price.toLocaleString('es-MX')}
-      </button>
-      {onTapBarcode && (
+      {/* `settings.md` §3.9's own "fila atenuada" mechanic, composed onto
+          this row's existing architecture (§3.4's own D71 text) — the whole
+          row dims while the NFC switch's own write is in flight, not just
+          the switch itself. */}
+      <div className={`${styles.rowMain} ${nfcSaving ? styles.rowMainSaving : ''}`}>
         <button
-          className={styles.overflow}
+          className={styles.marker}
           onClick={(e) => {
             e.stopPropagation();
-            onTapBarcode();
+            onTapPhoto();
           }}
-          aria-label={`Editar código de barras de ${name}`}
+          aria-label={`Editar foto de ${name}`}
         >
-          ⋯
+          <TagStub name={name} photo={photo} muted={dimmed} size={48} />
         </button>
-      )}
+        <button className={styles.main} onClick={onTapRow}>
+          <span className={styles.name}>{name}</span>
+          <span className={styles.caption}>{caption}</span>
+        </button>
+        <button
+          className={`${styles.price} moneyTag`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onTapPrice();
+          }}
+        >
+          ${price.toLocaleString('es-MX')}
+        </button>
+        {onTapBarcode && (
+          <button
+            className={styles.overflow}
+            onClick={(e) => {
+              e.stopPropagation();
+              onTapBarcode();
+            }}
+            aria-label={`Editar código de barras de ${name}`}
+          >
+            ⋯
+          </button>
+        )}
+        {nfcToggle && (
+          <button
+            className={`${styles.nfcToggle} ${nfcSaving ? styles.nfcToggleSaving : ''}`}
+            disabled={nfcSaving}
+            onClick={(e) => {
+              e.stopPropagation();
+              nfcToggle.onTap();
+            }}
+            aria-label={`${nfcToggle.enabled ? 'Desactivar' : 'Activar'} venta con NFC para ${name}`}
+          >
+            {nfcSaving && nfcToggle.slow ? 'Guardando…' : nfcToggle.enabled ? 'NFC: Sí' : 'NFC: No'}
+          </button>
+        )}
+      </div>
+      {nfcToggle?.error && <p className={styles.nfcError}>No pudimos guardar. Intenta de nuevo.</p>}
     </div>
   );
 }

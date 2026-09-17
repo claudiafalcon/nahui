@@ -70,6 +70,10 @@ export function mapBusinessRow(row: Record<string, unknown>): Business {
     pendingSubscriptionTierEffectiveDate: (row.pending_subscription_tier_effective_date as string | null) ?? null,
     pendingSubscriptionTierAcknowledged: row.pending_subscription_tier_acknowledged as boolean,
     nfcAvailabilityNudgeShown: row.nfc_availability_nudge_shown as boolean,
+    // `decision-log.md` D71 — `not null default false` server-side
+    // (`20260917000000_nfc_per_product.sql`), so every real row already
+    // carries a real boolean; `?? false` is a purely defensive fallback.
+    nfcPerProductEnabled: (row.nfc_per_product_enabled as boolean) ?? false,
   };
 }
 
@@ -92,6 +96,9 @@ export function mapProductRow(row: Record<string, unknown>): Product {
     defaultPrice: Number(row.default_price),
     photo: (row.photo as string | null) ?? undefined,
     barcode: (row.barcode as string | null) ?? undefined,
+    // `decision-log.md` D71 — `not null default false` server-side, same
+    // defensive-fallback posture as `Business.nfcPerProductEnabled` above.
+    nfcTaggingEnabled: (row.nfc_tagging_enabled as boolean) ?? false,
     createdAt: toMs(row.created_at as string),
   };
 }

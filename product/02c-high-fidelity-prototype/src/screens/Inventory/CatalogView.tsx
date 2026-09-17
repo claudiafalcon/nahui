@@ -8,7 +8,7 @@ import { Sheet } from '../../components/Sheet/Sheet';
 import { PhotoCapture } from '../../components/PhotoCapture/PhotoCapture';
 import { BarcodeScanner } from '../../components/BarcodeScanner/BarcodeScanner';
 import { TagStub } from '../../components/TagStub/TagStub';
-import type { Product } from '../../domain/types';
+import type { ID, Product } from '../../domain/types';
 import styles from './CatalogView.module.css';
 import pickerStyles from '../../components/ProductPicker/ProductPicker.module.css';
 
@@ -32,6 +32,7 @@ export function CatalogView({
   onRegisterProduct,
   onContinueTagging,
   confirmationMessage,
+  confirmationDetail,
   settingsTagsBanner,
 }: {
   onRegister: () => void;
@@ -39,6 +40,14 @@ export function CatalogView({
   /** §3.5/§3.17 — resumes Asignar Tags exactly where she left off. */
   onContinueTagging: () => void;
   confirmationMessage?: string | null;
+  /** inventory.md §3.13's mixed-Lot completion-copy variant
+   * (`decision-log.md` D71) — an optional second line rendered directly
+   * beneath `confirmationMessage`, e.g. "Camisas ya está etiquetada. Plumas
+   * no necesita tag — se vende con botones, y ya está lista." Only ever
+   * accompanies the "Mercancía lista para vender" message, on the same
+   * fade lifecycle; `undefined`/`null` renders nothing extra, the plain,
+   * undifferentiated confirmation §3.13 already had before D71. */
+  confirmationDetail?: string | null;
   /** inventory.md §3.3a/§3.4 (`decision-log.md` D46 Addendum) — the one-time
    * ambient banner shown when this view was reached via `settings.md` §2.6's
    * "Cambiar a vender con tags" handoff and step 0 found nothing to
@@ -48,10 +57,11 @@ export function CatalogView({
    * it's handed. */
   settingsTagsBanner?: string | null;
 }) {
-  const { state, editPrice, setProductPhoto, setProductBarcode } = useStore();
+  const { state, editPrice, setProductPhoto, setProductBarcode, setProductNfcTaggingEnabled } = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftPrice, setDraftPrice] = useState('');
   const [toast, setToast] = useState<string | null>(confirmationMessage ?? null);
+  const [toastDetail, setToastDetail] = useState<string | null>(confirmationDetail ?? null);
 
   // inventory.md §3.4b "Editar foto" — the sheet's own staged state.
   // `Product.photo` is untouched until "Guardar foto" is explicitly tapped;
@@ -107,6 +117,17 @@ export function CatalogView({
     everReceived: boolean;
   } | null>(null);
 
+  // inventory.md §3.4's fifth tap zone (`decision-log.md` D71) — the
+  // NFC-eligibility switch's own per-row save state. Per-row grain (a
+  // `Record`/`Set` keyed by `Product.id`), same shape
+  // `PersonalParaEsteEvento.tsx`'s own per-row save/slow/error mechanic
+  // already establishes for an identical "several independent rows, each
+  // saved on its own" screen — each row's tap is independent, never
+  // blocking any other row.
+  const [nfcSavingIds, setNfcSavingIds] = useState<Set<ID>>(new Set());
+  const [nfcSlowIds, setNfcSlowIds] = useState<Set<ID>>(new Set());
+  const [nfcErrorIds, setNfcErrorIds] = useState<Set<ID>>(new Set());
+
   useEffect(() => {
     if (photoPreviewOpen) {
       previewOverlayRef.current?.focus();
@@ -119,10 +140,14 @@ export function CatalogView({
   useEffect(() => {
     if (confirmationMessage) {
       setToast(confirmationMessage);
-      const t = window.setTimeout(() => setToast(null), 2400);
+      setToastDetail(confirmationDetail ?? null);
+      const t = window.setTimeout(() => {
+        setToast(null);
+        setToastDetail(null);
+      }, 2400);
       return () => window.clearTimeout(t);
     }
-  }, [confirmationMessage]);
+  }, [confirmationMessage, confirmationDetail]);
 
   const rows = catalogRows(state);
   const editingProduct = rows.find((r) => r.product.id === editingId)?.product;
@@ -132,6 +157,48 @@ export function CatalogView({
   // §3.4's fourth tap zone ("a Free-tier Catalog row keeps its existing
   // three tap zones, nothing added").
   const canEditBarcode = state.business?.subscriptionTier === 'paid';
+  // inventory.md §3.4's fifth tap zone — "precise gating condition, stated
+  // in full": `nfcPerProductEnabled` AND `nfc ∈ registrationMode`, checked
+  // explicitly rather than assumed redundant (a since-downgraded Business
+  // keeps `nfcPerProductEnabled = true` stored but no longer has
+  // `subscriptionTier = 'paid'` — §3.4's own reasoning for checking both).
+  // The third clause (no `barcode`) is per-Product, applied per row below.
+  const nfcPerProductAvailable =
+    state.business?.nfcPerProductEnabled === true && state.business?.subscriptionTier === 'paid';
+
+  // §3.4's own save-state discipline — a bare tap dims that one row
+  // (near-instant: silent; slow >~1.5s: "Guardando…" label), reverting to
+  // its last-saved state and showing an inline retry line on failure. The
+  // switch itself is the retry — no separate "Reintentar" control.
+  async function handleToggleNfc(productId: ID, nextEnabled: boolean) {
+    setNfcSavingIds((s) => new Set(s).add(productId));
+    setNfcErrorIds((s) => {
+      if (!s.has(productId)) return s;
+      const next = new Set(s);
+      next.delete(productId);
+      return next;
+    });
+    const slowTimer = window.setTimeout(() => {
+      setNfcSlowIds((s) => new Set(s).add(productId));
+    }, 1500);
+    const ok = await setProductNfcTaggingEnabled(productId, nextEnabled);
+    window.clearTimeout(slowTimer);
+    setNfcSlowIds((s) => {
+      if (!s.has(productId)) return s;
+      const next = new Set(s);
+      next.delete(productId);
+      return next;
+    });
+    setNfcSavingIds((s) => {
+      const next = new Set(s);
+      next.delete(productId);
+      return next;
+    });
+    if (!ok) {
+      console.error('[CatalogView] setProductNfcTaggingEnabled failed');
+      setNfcErrorIds((s) => new Set(s).add(productId));
+    }
+  }
 
   const draftPriceValue = useMemo(() => parseFloat(draftPrice), [draftPrice]);
   const draftPriceValid =
@@ -278,8 +345,15 @@ export function CatalogView({
   // selling mode (`defaultSellingMode === 'nfc'`), never mere nfc capability
   // (`subscriptionTier === 'paid'`) — a Paid merchant who stays in
   // `buttons` mode never sees this nudge.
+  // inventory.md §3.5, further amended `decision-log.md` D71 — the gate is
+  // now the composed NFC-tagging-eligible test itself, not a second,
+  // separately-checked `defaultSellingMode === 'nfc'` condition:
+  // `pendingTagCount` (`selectors.ts`) already only counts units whose own
+  // Product passes `isNfcTaggingEligible`, so "any pending work at all" is
+  // the whole test — a Paid `buttons`-mode Business with nothing opted into
+  // NFC per-Product correctly reads 0 here, same as before D71.
   const pendingCount = pendingTagCount(state);
-  const pendingTagWork = state.business?.defaultSellingMode === 'nfc' && pendingCount > 0;
+  const pendingTagWork = pendingCount > 0;
 
   return (
     <>
@@ -287,6 +361,7 @@ export function CatalogView({
         <span className={styles.wordmark}>Inventario</span>
       </div>
       {toast && <p className={styles.confirmation}>{toast} ✓</p>}
+      {toast && toastDetail && <p className={styles.confirmationDetail}>{toastDetail}</p>}
 
       {settingsTagsBanner && <p className={styles.settingsBanner}>{settingsTagsBanner}</p>}
 
@@ -313,6 +388,17 @@ export function CatalogView({
             }}
             onTapPhoto={() => openPhotoSheet(product.id)}
             onTapBarcode={canEditBarcode ? () => openBarcodeSheet(product.id) : undefined}
+            nfcToggle={
+              nfcPerProductAvailable && !product.barcode
+                ? {
+                    enabled: product.nfcTaggingEnabled,
+                    saving: nfcSavingIds.has(product.id),
+                    slow: nfcSlowIds.has(product.id),
+                    error: nfcErrorIds.has(product.id),
+                    onTap: () => void handleToggleNfc(product.id, !product.nfcTaggingEnabled),
+                  }
+                : undefined
+            }
           />
         ))}
       </div>

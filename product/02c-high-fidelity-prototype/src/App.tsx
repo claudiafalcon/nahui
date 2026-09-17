@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from './domain/store';
 import { currentUser, findMembership } from './domain/selectors';
+import type { AppState } from './domain/types';
 import { NavBar, type TabKey } from './components/NavBar/NavBar';
 import { HomeScreen } from './screens/Home/HomeScreen';
 import { InventoryScreen, type InventoryView } from './screens/Inventory/InventoryScreen';
@@ -10,6 +11,43 @@ import { AccesoRevocado } from './screens/Settings/AccesoRevocado';
 import { AccesoNoDisponible } from './screens/Home/AccesoNoDisponible';
 import { ScreenTransition } from './components/ScreenTransition/ScreenTransition';
 import styles from './App.module.css';
+
+/** Spanish "y"-joined list, the identical join rule
+ * `PersonalParaEsteEvento.tsx`'s own `buildConflictLine` already establishes
+ * for a structurally similar "name several things in one sentence" need. */
+function joinNombres(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? '';
+  if (names.length === 2) return `${names[0]} y ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}`;
+}
+
+/** inventory.md §3.13's mixed-Lot completion-copy variant (`decision-log.md`
+ * D71) — the verbatim worked example is "Camisas ya está etiquetada. Plumas
+ * no necesita tag — se vende con botones, y ya está lista." (one eligible,
+ * one non-eligible Product); generalized here to name every Product on each
+ * side of a Lot that mixed more than one of either, with the matching
+ * singular/plural conjugation. Built once, at the moment tagging completes
+ * (`onTagsComplete` below), from the exact eligible/non-eligible lines
+ * `commitLot` wrote for this specific Lot — never guessed or re-derived from
+ * the live Catalog. */
+function buildMixedLotDetail(
+  state: AppState,
+  eligibleLines: { productId: string; quantity: number }[],
+  nonEligibleLines: { productId: string; quantity: number }[],
+): string {
+  const nameFor = (productId: string) => state.products.find((p) => p.id === productId)?.name ?? '';
+  const eligibleNames = eligibleLines.map((l) => nameFor(l.productId)).filter(Boolean);
+  const nonEligibleNames = nonEligibleLines.map((l) => nameFor(l.productId)).filter(Boolean);
+  const eligiblePlural = eligibleNames.length > 1;
+  const nonEligiblePlural = nonEligibleNames.length > 1;
+  const yaEstaEligible = eligiblePlural ? 'ya están' : 'ya está';
+  const etiquetada = eligiblePlural ? 'etiquetadas' : 'etiquetada';
+  const necesita = nonEligiblePlural ? 'necesitan' : 'necesita';
+  const seVende = nonEligiblePlural ? 'se venden' : 'se vende';
+  const yaEstaNonEligible = nonEligiblePlural ? 'ya están' : 'ya está';
+  const lista = nonEligiblePlural ? 'listas' : 'lista';
+  return `${joinNombres(eligibleNames)} ${yaEstaEligible} ${etiquetada}. ${joinNombres(nonEligibleNames)} no ${necesita} tag — ${seVende} con botones, y ${yaEstaNonEligible} ${lista}.`;
+}
 
 /**
  * information-architecture.md — frozen four-tab nav (Hoy · Inventario ·
@@ -56,6 +94,17 @@ export default function App() {
   // describes (AT-M2).
   const [assignTagsEntry, setAssignTagsEntry] = useState<{ productId: string; quantity: number }[] | null>(null);
   const [assignTagsSegmentTotals, setAssignTagsSegmentTotals] = useState<Record<string, number>>({});
+  // inventory.md §3.13's mixed-Lot completion-copy variant (`decision-log.md`
+  // D71) — this specific Lot's remaining, non-eligible lines (e.g. Plumas,
+  // alongside an eligible Camisas line seeded into `assignTagsEntry`),
+  // replaced only alongside `assignTagsEntry` (a fresh commit), so it
+  // survives a defer/resume cycle exactly the same way AT-M1 already
+  // guarantees for `assignTagsEntry` itself. `null` whenever this Lot didn't
+  // mix (or this entry came from step 0's whole-Catalog seed, which can't
+  // mix by construction) — the ordinary, undifferentiated §3.13 copy.
+  const [assignTagsMixedNonEligible, setAssignTagsMixedNonEligible] = useState<
+    { productId: string; quantity: number }[] | null
+  >(null);
 
   return (
     <>
@@ -112,23 +161,41 @@ export default function App() {
               view={inventoryView}
               onOpenRegister={(prefillProductId) => setInventoryView({ mode: 'register', prefillProductId })}
               onSaved={(lastProductId) => setInventoryView({ mode: 'catalog', justSaved: lastProductId })}
-              onOpenAssignTags={(entryBreakdown) => {
+              onOpenAssignTags={(entryBreakdown, nonEligibleBreakdown) => {
                 // AT-M1 — only a fresh `commitLot` (RegisterMerchandise's own
                 // save, threading its breakdown through) replaces the frozen
                 // receipt; resuming via "Continuar etiquetando" or Home's
                 // "Asignar tags" link calls this with no argument, so the
                 // receipt from whichever commit is still the live session's
-                // own stays exactly as it was.
-                if (entryBreakdown) setAssignTagsEntry(entryBreakdown);
+                // own stays exactly as it was. `nonEligibleBreakdown`
+                // (`decision-log.md` D71) is replaced in lockstep, alongside
+                // `entryBreakdown` — this Lot's own remaining, non-eligible
+                // lines when it genuinely mixed, `null` otherwise (a plain
+                // eligible-only Lot, or step 0's whole-Catalog seed, neither
+                // of which ever passes a second argument at all).
+                if (entryBreakdown) {
+                  setAssignTagsEntry(entryBreakdown);
+                  setAssignTagsMixedNonEligible(nonEligibleBreakdown ?? null);
+                }
                 setInventoryView({ mode: 'assign-tags' });
               }}
               onTagsComplete={() => {
+                // inventory.md §3.13's mixed-Lot completion-copy variant
+                // (`decision-log.md` D71) — built here, once, from exactly
+                // what this specific Lot's own commit wrote (both still held
+                // in state at this exact moment, right before they're
+                // cleared below), never re-derived from the live Catalog.
+                const mixedLotDetail =
+                  assignTagsEntry && assignTagsEntry.length > 0 && assignTagsMixedNonEligible
+                    ? buildMixedLotDetail(state, assignTagsEntry, assignTagsMixedNonEligible)
+                    : null;
                 // Tagging queue reached zero — nothing left to freeze a
                 // receipt or a denominator against until a future commitLot
                 // starts a genuinely new session.
                 setAssignTagsEntry(null);
+                setAssignTagsMixedNonEligible(null);
                 setAssignTagsSegmentTotals({});
-                setInventoryView({ mode: 'catalog', tagsComplete: true });
+                setInventoryView({ mode: 'catalog', tagsComplete: true, mixedLotDetail });
               }}
               onBackToCatalog={() => setInventoryView({ mode: 'catalog' })}
               onSettingsTagsOnMarkerHandled={() =>

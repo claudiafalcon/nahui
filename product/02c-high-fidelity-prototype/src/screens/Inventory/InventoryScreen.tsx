@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../domain/store';
-import { catalogRows, findProduct, pendingTagBreakdown, pendingTagCount } from '../../domain/selectors';
+import { catalogRows, findProduct, isNfcTaggingEligible, pendingTagBreakdown, pendingTagCount } from '../../domain/selectors';
 import { InventoryColdStart } from './InventoryColdStart';
 import { CatalogView } from './CatalogView';
 import { RegisterMerchandise } from './RegisterMerchandise';
@@ -8,7 +8,20 @@ import { AssignTags, type AssignTagsEntryLine } from './AssignTags';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 
 export type InventoryView =
-  | { mode: 'catalog'; justSaved?: string | null; tagsComplete?: boolean; enteredViaSettingsTagsOn?: boolean }
+  | {
+      mode: 'catalog';
+      justSaved?: string | null;
+      tagsComplete?: boolean;
+      enteredViaSettingsTagsOn?: boolean;
+      /** inventory.md §3.13's mixed-Lot completion-copy variant
+       * (`decision-log.md` D71) — set only when the Lot that just finished
+       * tagging genuinely mixed NFC-tagging-eligible and non-eligible
+       * Product lines (§2 step 3's own per-Lot test), never for a
+       * whole-Catalog `defaultSellingMode = 'nfc'` completion or the
+       * `settings.md` §2.6 whole-Catalog entry point (step 0), neither of
+       * which can mix by construction. */
+      mixedLotDetail?: string | null;
+    }
   | { mode: 'register'; prefillProductId?: string }
   | { mode: 'assign-tags' };
 
@@ -41,13 +54,20 @@ export function InventoryScreen({
   view: InventoryView;
   onOpenRegister: (prefillProductId?: string) => void;
   onSaved: (lastProductId: string) => void;
-  /** inventory.md §2 step 3 — `defaultSellingMode === 'nfc'` Business,
-   * auto-entered right after "Guardar mercancía" succeeds (no intermediate
-   * question); also reached via §3.5/§3.17's "Continuar etiquetando" and via
-   * this screen's own step 0 below. `entryBreakdown` is passed only when a
-   * fresh commit (or step 0's whole-Catalog seed) actually triggered this
-   * entry — omitted on a plain resume. */
-  onOpenAssignTags: (entryBreakdown?: AssignTagsEntryLine[]) => void;
+  /** inventory.md §2 step 3 — an NFC-tagging-eligible Lot (the composed
+   * test, `decision-log.md` D71), auto-entered right after "Guardar
+   * mercancía" succeeds (no intermediate question); also reached via
+   * §3.5/§3.17's "Continuar etiquetando" and via this screen's own step 0
+   * below. `entryBreakdown` is passed only when a fresh commit (or step 0's
+   * whole-Catalog seed) actually triggered this entry — omitted on a plain
+   * resume — and, per D71, already filtered to only this Lot's eligible
+   * lines (never the whole Lot when it mixes eligible/non-eligible Product
+   * lines, §2 step 3's own corrected test). `nonEligibleBreakdown` is this
+   * same Lot's remaining, non-eligible lines — passed only alongside a
+   * genuinely mixed Lot (never on step 0's whole-Catalog seed, which can't
+   * mix by construction) so §3.13's mixed-Lot completion copy can name both
+   * halves once tagging finishes. */
+  onOpenAssignTags: (entryBreakdown?: AssignTagsEntryLine[], nonEligibleBreakdown?: AssignTagsEntryLine[]) => void;
   /** inventory.md §2 step 4 → §3.13 — 0 units left pending; Catalog view
    * returns with the "lista para vender" confirmation. */
   onTagsComplete: () => void;
@@ -150,17 +170,32 @@ export function InventoryScreen({
           key={view.prefillProductId ?? 'blank'}
           initialProductId={view.prefillProductId}
           onSaved={(lastProductId, entryBreakdown) => {
-            // inventory.md §2 step 3 (`decision-log.md` D46) — gates on her
-            // actual chosen selling mode (`defaultSellingMode === 'nfc'`),
-            // never on mere nfc capability (`subscriptionTier === 'paid'`): a
-            // Paid merchant who stays in `buttons` mode is never auto-routed
-            // into tagging, at any point, for any reason. Read from this
-            // render's own state (unaffected by the commit — `defaultSellingMode`
-            // never changes as a side effect of it), so no post-commit re-read
-            // is needed.
-            if (state.business?.defaultSellingMode === 'nfc') {
-              onOpenAssignTags(entryBreakdown);
+            // inventory.md §2 step 3, corrected `decision-log.md` D71 — gates
+            // on the composed NFC-tagging-eligible test, per line, not a
+            // single whole-Lot `defaultSellingMode === 'nfc'` check: a Lot
+            // that mixes eligible and non-eligible Product lines (Ana's own
+            // worked scenario, Camisas + Plumas registered together) seeds
+            // Asignar Tags with only its eligible lines' units, never the
+            // whole Lot. Read from this render's own state (unaffected by
+            // the commit — neither `defaultSellingMode` nor
+            // `nfcPerProductEnabled` changes as a side effect of it), so no
+            // post-commit re-read is needed.
+            const business = state.business;
+            const eligibleLines = business
+              ? entryBreakdown.filter(({ productId }) => {
+                  const product = findProduct(state, productId);
+                  return product ? isNfcTaggingEligible(business, product) : false;
+                })
+              : [];
+            if (eligibleLines.length > 0) {
+              const nonEligibleLines = entryBreakdown.filter(
+                (line) => !eligibleLines.some((e) => e.productId === line.productId),
+              );
+              onOpenAssignTags(eligibleLines, nonEligibleLines.length > 0 ? nonEligibleLines : undefined);
             } else {
+              // No line in this Lot is NFC-tagging-eligible (§2 step 3's NO
+              // branch) — return to Catalog view with the plain "registrada"
+              // confirmation (§3.12), never the tagging queue.
               onSaved(lastProductId);
             }
           }}
@@ -198,6 +233,11 @@ export function InventoryScreen({
     : savedName
       ? 'Mercancía registrada'
       : null;
+  // inventory.md §3.13's mixed-Lot completion-copy variant
+  // (`decision-log.md` D71) — only ever set alongside `tagsComplete`
+  // (`App.tsx`'s own `onTagsComplete` handler), never on a plain "Mercancía
+  // registrada" confirmation.
+  const confirmationDetail = view.tagsComplete ? (view.mixedLotDetail ?? null) : null;
 
   return (
     <ScreenTransition transitionKey="catalog">
@@ -206,6 +246,7 @@ export function InventoryScreen({
         onRegisterProduct={(productId) => onOpenRegister(productId)}
         onContinueTagging={onOpenAssignTags}
         confirmationMessage={confirmationMessage}
+        confirmationDetail={confirmationDetail}
         settingsTagsBanner={settingsTagsBanner}
       />
     </ScreenTransition>

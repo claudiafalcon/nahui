@@ -1,6 +1,7 @@
 import { addDaysToKey, dateKey } from './dates';
 import type {
   AppState,
+  Business,
   BusinessMembership,
   Event,
   EventAllocation,
@@ -274,14 +275,48 @@ export function catalogRows(state: AppState) {
  * queue, which falls out for free from the filter below as long as nothing
  * caches the result. */
 
-/** The live tagging queue itself — every `available`, untagged unit, in
+/**
+ * `inventory.md` §2's composed **NFC-tagging-eligible** test
+ * (`decision-log.md` D71, `product-decisions.md` Q31) — the single source
+ * of truth every step/state in this document now reads, replacing the
+ * earlier `defaultSellingMode === 'nfc'`-only gate (D46):
+ *
+ * `business.defaultSellingMode === 'nfc'` OR
+ * (`business.nfcPerProductEnabled === true` AND `product.nfcTaggingEnabled === true`)
+ *
+ * The first disjunct is the original, unchanged D46 rule — a whole-Catalog
+ * `nfc`-selling Business, unaffected by anything D71 adds. The second is
+ * new: a `buttons`-mode Business that's opted specific, barcode-less
+ * Products into NFC individually still qualifies, Product by Product, never
+ * whole-Catalog. Deliberately collapses back to the original rule for any
+ * Business that never turns on `nfcPerProductEnabled` — a real,
+ * backward-compatible property, not merely a claim (`inventory.md` §2's own
+ * text). `business` is `null | undefined`-safe (defensive — every real
+ * caller already holds a resolved Business by the time it reads Inventory
+ * state) and returns `false` rather than throwing.
+ */
+export function isNfcTaggingEligible(business: Business | null | undefined, product: Product): boolean {
+  if (!business) return false;
+  if (business.defaultSellingMode === 'nfc') return true;
+  return business.nfcPerProductEnabled === true && product.nfcTaggingEnabled === true;
+}
+
+/** The live tagging queue itself — every `available`, untagged, NFC-tagging-
+ * eligible unit (the composed test above, `decision-log.md` D71), in
  * `state.units`' own array order (the order she entered them, `inventory.md`
  * §3.14's own "in the order she entered them" requirement — no separate
  * ordering field needed). Scoped globally across every Lot/Product, never to
  * one Lot, per the Architecture Gap Analysis's own confirmation against §2
- * step 2's business-wide gate. */
+ * step 2's business-wide gate. A unit whose own Product isn't NFC-tagging-
+ * eligible (e.g. Plumas on a Business that's only opted Camisas in) never
+ * enters this queue at all — not filtered out later, never queued in the
+ * first place. */
 export function pendingTagUnits(state: AppState): InventoryUnit[] {
-  return state.units.filter((u) => u.status === 'available' && u.tagId == null);
+  return state.units.filter((u) => {
+    if (u.status !== 'available' || u.tagId != null) return false;
+    const product = state.products.find((p) => p.id === u.productId);
+    return product ? isNfcTaggingEligible(state.business, product) : false;
+  });
 }
 
 /** §2 step 2 / §3.5's own gate — "how many articles are left to tag." */
@@ -1162,6 +1197,24 @@ export function quantityRemaining(state: AppState, allocation: EventAllocation):
   return state.eventAllocationUnits.filter(
     (u) => u.eventAllocationId === allocation.id && isCommittedUnitStillOutstanding(state, u),
   ).length;
+}
+
+/** Which open `EventAllocation` a unit is currently, genuinely committed to
+ * (if any) — the read-side counterpart of `isCommittedUnitStillOutstanding`
+ * above, exposed for a caller that needs to go unit → allocation directly:
+ * `home.md` §3.9d/§3.9e's "Leer con NFC" Selling overlay (`decision-log.md`
+ * D71) classifies a scanned tag's "already in a different Event" conflict
+ * this way, entirely client-side, ahead of ever attempting the write — the
+ * exact same need `events.md` §3.22a's own mixed-pile scan queue has for
+ * naming which Product a conflicting tag belongs to. At most one such row
+ * can exist per unit at a time by construction (the physical-location-
+ * exclusivity invariant, `product-decisions.md` Q24/Q25). */
+export function currentEventAllocationForUnit(state: AppState, unitId: ID): EventAllocation | undefined {
+  const row = state.eventAllocationUnits.find(
+    (u) => u.unitId === unitId && isCommittedUnitStillOutstanding(state, u),
+  );
+  if (!row) return undefined;
+  return state.eventAllocations.find((a) => a.id === row.eventAllocationId);
 }
 
 /** Stage 7 Backend Integration, Phase 2b — `quantityRemaining` above, scoped

@@ -8,20 +8,37 @@
   introduced), just with a divider that's specific to a clothing vendor's
   own material world instead of a generic gray line.
 */
+/* Outer row wrapper — a plain flex column now (`decision-log.md` D71's
+   fifth tap zone needs an optional second line, the inline NFC save-error
+   message, below the tappable-zones line rather than crammed into it).
+   `.rowMain` below carries every property this element used to own
+   directly, unchanged in appearance. */
 .row {
   width: 100%;
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-1) 14px 4px;
+  flex-direction: column;
   /* background-color, not the `background` shorthand — the shorthand would
      reset the .stitchBottom global class's own background-image (patterns
      .css), since both target the same property family on this element. */
   background-color: transparent;
   border: none;
-  text-align: left;
-  cursor: pointer;
   position: relative;
+}
+
+.rowMain {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-1) 14px 4px;
+  text-align: left;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+/* `settings.md` §3.9's "fila atenuada" mechanic — the whole row dims while
+   its own fifth-zone (NFC toggle) write is in flight (`decision-log.md`
+   D71). */
+.rowMainSaving {
+  opacity: 0.55;
 }
 
 .row.dimmed .name,
@@ -105,4 +122,35 @@
   cursor: pointer;
   flex-shrink: 0;
   line-height: 1;
+}
+
+/* Fifth tap zone (`decision-log.md` D71) — the NFC-eligibility switch. A
+   small labeled pill, not a bare glyph like `.overflow` — its own state
+   ("NFC: No"/"NFC: Sí"/"Guardando…") is the whole point of this control, so
+   it needs to read as text, not be inferred from an icon. Reuses
+   `settings.md` §3.9's own "fila atenuada" dim-while-saving mechanic via
+   `.nfcToggleSaving` below, composed onto this row's own existing
+   architecture rather than a new sheet. */
+.nfcToggle {
+  appearance: none;
+  border: 1px solid #D8CFC2;
+  border-radius: 999px;
+  background: none;
+  padding: 6px 12px;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.nfcToggleSaving {
+  cursor: default;
+}
+
+.nfcError {
+  margin: 0 var(--space-1) 10px 4px;
+  font: var(--text-body-sm);
+  color: var(--color-error);
 }

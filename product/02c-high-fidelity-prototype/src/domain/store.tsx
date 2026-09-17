@@ -942,6 +942,28 @@ interface StoreValue {
    * `subscriptionTier` action, in either direction. Stage 7 Backend
    * Integration — real call to `change_default_selling_mode`. */
   changeDefaultSellingMode: (mode: SessionOperatingMode) => Promise<boolean>;
+  /** settings.md §2.8/§3.4 "Activar NFC por producto"/"Desactivar NFC por
+   * producto" (`decision-log.md` D71, `product-decisions.md` Q31) —
+   * immediate, no pending-value/effective-date pair, same mutability class
+   * as `changeDefaultSellingMode` above (§2.8's own "same class" wording).
+   * Never touches `defaultSellingMode`, never touches any Product's own
+   * `nfcTaggingEnabled` in either direction — turning it off never untags or
+   * orphans an already-tagged `InventoryUnit` (§2.8's own explicit
+   * invariant), it only stops future Asignar Tags eligibility via the
+   * composed test (`selectors.ts`'s `isNfcTaggingEligible`). Real call to
+   * `change_nfc_per_product_enabled`, same "server-confirmed, then local
+   * mirror" shape as `activatePaidPlan`/`changeDefaultSellingMode`. */
+  changeNfcPerProductEnabled: (enabled: boolean) => Promise<boolean>;
+  /** inventory.md §3.4's fifth Catalog-row tap zone (`decision-log.md` D71)
+   * — a bare tap, no confirmation screen, writes `Product.nfcTaggingEnabled`
+   * directly. Real call to `set_product_nfc_tagging_enabled`, same
+   * "server-confirmed, then local mirror" shape as `editPrice`/
+   * `setProductPhoto`/`setProductBarcode`. Resolves `true` on success,
+   * `false` on any rejected/failed outcome (no local state change happens in
+   * that case — `CatalogRow.tsx`'s own switch reverts to its last-saved
+   * state and shows the inline "No pudimos guardar" line, per §3.4's own
+   * text — the switch itself stays tappable as its own retry). */
+  setProductNfcTaggingEnabled: (productId: ID, enabled: boolean) => Promise<boolean>;
   /** home.md §3.6a's fourth variant (Ready-but-`buttons`, shown once ever) —
    * sets `Business.nfcAvailabilityNudgeShown = true`, permanently. Fired
    * once, via a `useEffect`, the first time that variant actually renders
@@ -1265,6 +1287,26 @@ interface StoreValue {
   ) => Promise<
     | { ok: true; unitId: ID }
     | { ok: false; reason: 'already-committed' | 'tag-not-found' | 'wrong-product' | 'platform-error' }
+  >;
+  /** events.md §3.22a "Leer con NFC" (list-level, mixed-pile) — new,
+   * `decision-log.md` D71/`product-decisions.md` Q31. A real call to
+   * `scan_unit_into_event_allocation_any_product`, the sibling RPC
+   * `scanUnitIntoEventAllocation` above calls, minus the pre-known
+   * `productId` — the server itself resolves the scanned tag's own unit,
+   * reads *that* unit's `productId` directly, and mints-or-finds *that*
+   * Product's own `EventAllocation` for this Event, so this function never
+   * needs (and cannot supply) which Product the tag belongs to ahead of
+   * time. Returns `productId` in its success case for exactly this reason —
+   * `MercanciaParaEsteEvento.tsx`'s own mixed tally only learns which
+   * Product a given scan resolved to from this return value, never from a
+   * caller-supplied assumption. Same idempotency-key-per-scan convention as
+   * its sibling. */
+  scanUnitIntoEventAllocationAnyProduct: (
+    eventId: ID,
+    tagIdentifier: string,
+  ) => Promise<
+    | { ok: true; unitId: ID; productId: ID }
+    | { ok: false; reason: 'already-committed' | 'tag-not-found' | 'event-not-found' | 'platform-error' }
   >;
   /** events.md §3.24 "Mover a otro evento," D57's single-transaction move of
    * allocated stock between two simultaneously-open Events. Stage 7 Backend
@@ -2058,6 +2100,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               defaultPrice: line.product.defaultPrice,
               photo: line.product.photo,
               barcode: line.product.barcode,
+              // `decision-log.md` D71 — a freshly-created Product always
+              // starts at the server's own `not null default false`; never
+              // a conflict risk with `barcode` above by construction (§3.4's
+              // own reasoning — this toggle was never visible for it to
+              // begin with).
+              nfcTaggingEnabled: false,
               createdAt: receivedAt,
             },
           ]
@@ -2351,6 +2399,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       pendingSubscriptionTierEffectiveDate: null,
       pendingSubscriptionTierAcknowledged: false,
       nfcAvailabilityNudgeShown: false,
+      // `decision-log.md` D71 — off by default even on the demo path's
+      // richest (`nfc`-selling) combination above; a freshly-created
+      // Business always starts at the server's own `not null default
+      // false`, matching `settings.md` §2.8's "never a side effect of
+      // anything else" rule.
+      nfcPerProductEnabled: false,
     };
     const membership: BusinessMembership = {
       id: data.membership_id,
@@ -2577,6 +2631,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * `setProductPhoto` immediately above. Replaces the stored value outright
    * — no merge, no history — the same plain-scalar-write posture those two
    * writes already establish, extended here to `barcode`.
+   *
+   * **`decision-log.md` D71 — also mirrors `nfcTaggingEnabled: false`
+   * locally, unconditionally.** The corrected `update_product_barcode`
+   * (`20260917000000_nfc_per_product.sql`) now clears
+   * `Product.nfc_tagging_enabled` server-side in the same write whenever it
+   * was `true` — enforcing D71's "never both" barcode/NFC-tagging
+   * mutual-exclusivity rule from this direction too. Mirroring the clear
+   * unconditionally (rather than reading whatever it was before) is
+   * correct either way: it's already `false` on every Product this sheet
+   * can reach in practice (§3.4's own toggle is only ever visible on a
+   * barcode-less row to begin with), and matches exactly what the server
+   * just did on the one seam where it could have been `true`.
    */
   async function setProductBarcode(productId: ID, newBarcode: string): Promise<boolean> {
     if (!state.business) return false;
@@ -2597,7 +2663,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     applyWriteMirror((s) => ({
       ...s,
-      products: s.products.map((p) => (p.id === productId ? { ...p, barcode: newBarcode } : p)),
+      products: s.products.map((p) =>
+        p.id === productId ? { ...p, barcode: newBarcode, nfcTaggingEnabled: false } : p,
+      ),
     }));
     return true;
   }
@@ -3323,6 +3391,66 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return false;
     }
     applyWriteMirror((s) => (s.business ? { ...s, business: { ...s.business, defaultSellingMode: mode } } : s));
+    return true;
+  }
+
+  /** settings.md §2.8/§3.4 "Activar NFC por producto"/"Desactivar NFC por
+   * producto" — see this function's own `StoreValue` doc comment above.
+   * Real call to `change_nfc_per_product_enabled`
+   * (`supabase/migrations/20260917000000_nfc_per_product.sql`), OWNER-only,
+   * server-side-rejects `enabled=true` while `subscriptionTier !== 'paid'`
+   * (`nfc_not_available`) — the client never offers this row outside that
+   * gate to begin with (`SettingsScreen.tsx`), so that rejection is a
+   * defensive backstop, not a reachable real-UI outcome. */
+  async function changeNfcPerProductEnabled(enabled: boolean): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] changeNfcPerProductEnabled: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('change_nfc_per_product_enabled', {
+      p_business_id: state.business.id,
+      p_idempotency_key: crypto.randomUUID(),
+      p_enabled: enabled,
+    });
+    if (error) {
+      console.error('[store] change_nfc_per_product_enabled failed', error);
+      return false;
+    }
+    applyWriteMirror((s) => (s.business ? { ...s, business: { ...s.business, nfcPerProductEnabled: enabled } } : s));
+    return true;
+  }
+
+  /** inventory.md §3.4's fifth Catalog-row tap zone — see this function's
+   * own `StoreValue` doc comment above. Real call to
+   * `set_product_nfc_tagging_enabled`, OWNER-only, server-side-rejects
+   * `enabled=true` while the Business's own `nfc_per_product_enabled` is
+   * false, or while this Product already has a `barcode`
+   * (`nfc_per_product_not_enabled`/`product_has_barcode`) — both defensive
+   * backstops, since `CatalogRow.tsx`'s own gating condition already keeps
+   * this zone from rendering at all outside either case. */
+  async function setProductNfcTaggingEnabled(productId: ID, enabled: boolean): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] setProductNfcTaggingEnabled: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('set_product_nfc_tagging_enabled', {
+      p_business_id: state.business.id,
+      p_product_id: productId,
+      p_idempotency_key: crypto.randomUUID(),
+      p_enabled: enabled,
+    });
+    if (error) {
+      console.error('[store] set_product_nfc_tagging_enabled failed', error);
+      return false;
+    }
+    applyWriteMirror((s) => ({
+      ...s,
+      products: s.products.map((p) => (p.id === productId ? { ...p, nfcTaggingEnabled: enabled } : p)),
+    }));
     return true;
   }
 
@@ -4141,6 +4269,73 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return { ok: true, unitId: row.unit_id };
   }
 
+  /** events.md §3.22a — see this function's own `StoreValue` doc comment for
+   * the full reasoning. A real call to `scan_unit_into_event_allocation_any_product`
+   * — structurally identical to `scanUnitIntoEventAllocation` above (same
+   * mint-or-find `EventAllocation` upsert, same `initial_allocation` vs.
+   * `replenish` local inference, same single-unit `AllocationMovement`
+   * mirror), with the one real difference this RPC exists for: `productId`
+   * comes back from the server's own resolution of the scanned unit, never
+   * passed in. */
+  async function scanUnitIntoEventAllocationAnyProduct(
+    eventId: ID,
+    tagIdentifier: string,
+  ): Promise<
+    | { ok: true; unitId: ID; productId: ID }
+    | { ok: false; reason: 'already-committed' | 'tag-not-found' | 'event-not-found' | 'platform-error' }
+  > {
+    if (!state.business) return { ok: false, reason: 'platform-error' };
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] scanUnitIntoEventAllocationAnyProduct: Supabase not configured. See supabase/README.md.');
+      return { ok: false, reason: 'platform-error' };
+    }
+    const { data, error } = await supabase
+      .rpc('scan_unit_into_event_allocation_any_product', {
+        p_business_id: state.business.id,
+        p_event_id: eventId,
+        p_tag_identifier: tagIdentifier,
+        p_idempotency_key: crypto.randomUUID(),
+      })
+      .single();
+
+    if (error || !data) {
+      if (error?.message === 'unit_already_committed') return { ok: false, reason: 'already-committed' };
+      if (error?.message === 'tag_not_found') return { ok: false, reason: 'tag-not-found' };
+      if (error?.message === 'event_not_found') return { ok: false, reason: 'event-not-found' };
+      console.error('[store] scan_unit_into_event_allocation_any_product failed', error);
+      return { ok: false, reason: 'platform-error' };
+    }
+
+    const row = data as { event_allocation_id: ID; unit_id: ID; product_id: ID; movement_id: ID };
+    const existingAllocation = state.eventAllocations.find((a) => a.id === row.event_allocation_id);
+    const wasEmptyBefore = !state.eventAllocationUnits.some(
+      (u) => u.eventAllocationId === row.event_allocation_id && u.unitSource === 'scan',
+    );
+
+    applyWriteMirror((s) => {
+      let next = mirrorAllocationUpsert(
+        s,
+        eventId,
+        row.product_id,
+        row.event_allocation_id,
+        existingAllocation?.quantityAllocated ?? 0,
+        'open',
+      );
+      next = mirrorAllocationMovement(next, row.event_allocation_id, {
+        id: row.movement_id,
+        type: wasEmptyBefore ? 'initial_allocation' : 'replenish',
+        unitIds: [row.unit_id],
+        quantityDelta: 1,
+        unitSource: 'scan',
+        quantityExpected: null,
+        counterpartEventAllocationId: null,
+      });
+      return next;
+    });
+    return { ok: true, unitId: row.unit_id, productId: row.product_id };
+  }
+
   /** events.md §3.24 — see this function's own `StoreValue` doc comment for
    * the full reasoning. A real call to `reallocate_event_allocation`,
    * folding both sides of the single-transaction move into the local
@@ -4360,6 +4555,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     requestDowngradeToFree,
     cancelPendingSubscriptionTierChange,
     changeDefaultSellingMode,
+    changeNfcPerProductEnabled,
+    setProductNfcTaggingEnabled,
     markNfcAvailabilityNudgeShown,
     reconcilePendingSubscriptionTier,
     signOut,
@@ -4375,6 +4572,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     revokeMembership,
     saveEventAllocations,
     scanUnitIntoEventAllocation,
+    scanUnitIntoEventAllocationAnyProduct,
     reallocateEventAllocation,
     returnScannedUnitsToGeneral,
     reconcileManualAllocation,

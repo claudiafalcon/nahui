@@ -363,6 +363,21 @@ export interface Business {
    * `defaultSellingMode` disagreement it flagged persists indefinitely.
    */
   nfcAvailabilityNudgeShown: boolean;
+  /**
+   * `settings.md` §2.8/§3.4 (`decision-log.md` D71, `product-decisions.md`
+   * Q31) — the master per-product-opt-in toggle. Off by default even on an
+   * already-Paid, already-`nfc`-capable Business (never a side effect of
+   * "Activar plan de pago" or "Cambiar a vender con tags") — a deliberate
+   * opt-in, only offered while `nfc ∈ registrationMode`
+   * (`subscriptionTier === 'paid'`). Turning it off never resets any
+   * individual `Product.nfcTaggingEnabled` value (the same "two independent
+   * stored fields, no reset rule needed" pattern §2.3 already establishes
+   * between `defaultSellingMode`/`subscriptionTier`) — it only withdraws
+   * *future* tag-assignment eligibility while it reads `false`, per the
+   * composed NFC-tagging-eligible test (`selectors.ts`'s
+   * `isNfcTaggingEligible`).
+   */
+  nfcPerProductEnabled: boolean;
 }
 
 /** Selling context — Eventos (`events.md`, `decision-log.md` D8/D17/D20). */
@@ -624,6 +639,23 @@ export interface Product {
    * this field is never written from Selling.
    */
   barcode?: string;
+  /**
+   * `inventory.md` §3.4's fifth Catalog-row tap zone (`decision-log.md`
+   * D71, `product-decisions.md` Q31) — this Product's own opt-in into the
+   * composed NFC-tagging-eligible test (`selectors.ts`'s
+   * `isNfcTaggingEligible`), only ever meaningful while
+   * `Business.nfcPerProductEnabled = true`. Mutually exclusive with
+   * `barcode` by construction, enforced server-side too
+   * (`set_product_nfc_tagging_enabled` rejects enabling on a barcoded
+   * Product; `update_product_barcode` clears this flag in the same write
+   * whenever it saves a fresh barcode on a Product currently `true`) — a
+   * Product is barcode-identified or NFC-tagging-eligible, never both.
+   * Turning it (or the Business-level toggle) off never untags or orphans
+   * an already-tagged `InventoryUnit` of this Product — only *future*
+   * eligibility stops, the same invariant `Business.nfcPerProductEnabled`'s
+   * own doc comment states.
+   */
+  nfcTaggingEnabled: boolean;
   createdAt: number;
 }
 
