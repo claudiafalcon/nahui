@@ -334,6 +334,16 @@ function loadState(): AppState {
           units: Array.isArray(parsed.units)
             ? parsed.units.map((u) => ({ ...u, tagId: u.tagId ?? null }))
             : parsed.units,
+          // `decision-log.md` D71 — an older saved Product (before this
+          // pass) has no `nfcTaggingEnabled` key at all; defaulted to
+          // `false`, the same honest "never opted in" starting value
+          // `commitLot`'s own fresh-Product write already gives a brand-new
+          // row. Same "never crash on a stale local blob, self-migrate
+          // instead of asking her to clear anything" discipline as every
+          // other field here.
+          products: Array.isArray(parsed.products)
+            ? parsed.products.map((p) => ({ ...p, nfcTaggingEnabled: p.nfcTaggingEnabled ?? false }))
+            : parsed.products,
           business: parsed.business
             ? {
                 ...parsed.business,
@@ -346,6 +356,11 @@ function loadState(): AppState {
                 // yet" starting value `completeOnboarding` writes for a
                 // brand-new Business.
                 nfcAvailabilityNudgeShown: parsed.business.nfcAvailabilityNudgeShown ?? false,
+                // `decision-log.md` D71 — an older saved Business has no
+                // `nfcPerProductEnabled` key at all; defaulted to `false`,
+                // matching the server's own `not null default false` and
+                // `completeOnboarding`'s fresh-Business starting value.
+                nfcPerProductEnabled: parsed.business.nfcPerProductEnabled ?? false,
               }
             : parsed.business,
         };
