@@ -707,6 +707,22 @@ interface StoreValue {
    * gap `BACKLOG.md` §F previously named. Resolves `true` on success,
    * `false` on any rejected/failed outcome. */
   setProductPhoto: (productId: ID, photo: string | undefined) => Promise<boolean>;
+  /** inventory.md §3.4c-§3.4g "Editar código de barras" (`decision-log.md`
+   * D65, 2026-09-16/17 amendment) — the Catalog-row-level `Product.barcode`
+   * correction write, same "server-confirmed, then local mirror" shape as
+   * `editPrice`/`setProductPhoto` above. Only ever called with an already
+   * fresh-scanned, already-staged value — this sheet has no manually-typed
+   * field and its own client-side check (`matchProductByBarcode`, §3.4e)
+   * already ruled out a collision against a *different* Product before
+   * "Guardar código de barras" is even enabled; a genuine late collision
+   * (the residual, accepted two-device race §3.4c's own text names) simply
+   * surfaces as an ordinary failed save here, `false`, same as any other
+   * rejected write — no dedicated UI branch, matching `commit_lot`'s own
+   * precedent for the identical race on the creation path. Resolves `true`
+   * on success, `false` on any rejected/failed outcome (no local state
+   * change happens in that case — `CatalogView.tsx`'s sheet stays open,
+   * staged value intact, so she can retry). */
+  setProductBarcode: (productId: ID, newBarcode: string) => Promise<boolean>;
   /** inventory.md §3.14 — Asignar Tags' own write, one scan at a time
    * (`addItemToSale`'s per-event-write shape, not `commitLot`'s batch
    * shape). "Next pending unit" = FIFO-first (oldest `receivedAt`) unit,
@@ -2554,6 +2570,39 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /**
+   * inventory.md §3.4c-§3.4g "Guardar código de barras" (`decision-log.md`
+   * D65, 2026-09-16/17 amendment) — real call to `update_product_barcode`
+   * (`supabase/migrations/20260916000000_inventory_barcode_correction_write.sql`),
+   * same "server-confirmed, then local mirror" shape as `editPrice`/
+   * `setProductPhoto` immediately above. Replaces the stored value outright
+   * — no merge, no history — the same plain-scalar-write posture those two
+   * writes already establish, extended here to `barcode`.
+   */
+  async function setProductBarcode(productId: ID, newBarcode: string): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] setProductBarcode: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('update_product_barcode', {
+      p_business_id: state.business.id,
+      p_product_id: productId,
+      p_idempotency_key: crypto.randomUUID(),
+      p_new_barcode: newBarcode,
+    });
+    if (error) {
+      console.error('[store] update_product_barcode failed', error);
+      return false;
+    }
+    applyWriteMirror((s) => ({
+      ...s,
+      products: s.products.map((p) => (p.id === productId ? { ...p, barcode: newBarcode } : p)),
+    }));
+    return true;
+  }
+
+  /**
    * inventory.md §3.14 — one scan, one write. §3.16 ("scan failed," a
    * genuine physical read failure) never reaches this function at all —
    * it's simulated entirely client-side in `AssignTags.tsx`, the same
@@ -4295,6 +4344,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     commitLot,
     editPrice,
     setProductPhoto,
+    setProductBarcode,
     assignTagToNextPendingUnit,
     createEvent,
     cancelEvent,

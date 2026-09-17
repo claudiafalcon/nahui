@@ -29,6 +29,10 @@
   color: #9C9186;
 }
 
+.row.dimmed .overflow {
+  color: #9C9186;
+}
+
 /* Marker/photo tap target (`product-decisions.md` Q23) — a bare button
    reset around `TagStub`, its own independent zone, distinct from `.main`
    and `.price` below. */
@@ -82,4 +86,23 @@
 
 .price:active {
   transform: rotate(-2deg) scale(0.94);
+}
+
+/* Fourth tap zone (`decision-log.md` D65, Paid tier only) — the overflow
+   indicator opening "Editar código de barras" (inventory.md §3.4c),
+   rightmost, after the price figure. Reuses the same "⋯" glyph Ana already
+   recognizes from Home/Configuración as "secondary actions live here"
+   (inventory.md §3.4's own cross-reference), rather than inventing new
+   iconography. */
+.overflow {
+  border: none;
+  background: none;
+  padding: 8px 4px;
+  margin: 0 -4px 0 -8px;
+  font: var(--text-body);
+  font-weight: 700;
+  color: #6B6259;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
 }

@@ -610,15 +610,18 @@ export interface Product {
    * `inventory.md` §3.8b-§3.8e). Unique per Business (enforced server-side
    * by `products_barcode_unique_idx`, a partial unique index so multiple
    * `null`s never collide) — never globally unique, since two different
-   * Businesses' own stock is never meant to conflict. **Only ever written
-   * from this document's own Registrar Mercancía flow** (`inventory.md`
-   * §3.8b's "vía escaneo" path, via `commitLot`) — Selling reads it
-   * read-only (`home.md` §3.9a/§3.9b, `architecture-principles.md` #6).
-   * Captured once, silently, the first time a barcode resolves to a new
-   * Product identity; never shown as its own editable field anywhere
-   * (there is no "Editar código de barras" affordance — D65 names no such
-   * UI, unlike `defaultPrice`/`photo`, which both get explicit Catalog-row
-   * edit sheets).
+   * Businesses' own stock is never meant to conflict. **Written only from
+   * two Inventory-owned surfaces, both in this document** — the original
+   * capture at Registrar Mercancía (`inventory.md` §3.8b's "vía escaneo"
+   * path, via `commitLot`, captured once, silently, the first time a
+   * barcode resolves to a new Product identity) and, as of D65's
+   * 2026-09-16/17 amendment, a correction path (`inventory.md`
+   * §3.4c-§3.4g, "Editar código de barras," Paid tier only, via
+   * `update_product_barcode`) that replaces the stored value outright — no
+   * merge, no history — matching `defaultPrice`/`photo`'s existing "plain
+   * mutable current scalar" posture. Selling still only ever reads it
+   * read-only (`home.md` §3.9a/§3.9b, `architecture-principles.md` #6);
+   * this field is never written from Selling.
    */
   barcode?: string;
   createdAt: number;

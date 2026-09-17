@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
-import { catalogRows, pendingTagCount } from '../../domain/selectors';
+import { catalogRows, matchProductByBarcode, pendingTagCount } from '../../domain/selectors';
 import { articulos } from '../../domain/format';
 import { CatalogRow } from '../../components/CatalogRow/CatalogRow';
 import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
 import { PhotoCapture } from '../../components/PhotoCapture/PhotoCapture';
+import { BarcodeScanner } from '../../components/BarcodeScanner/BarcodeScanner';
+import { TagStub } from '../../components/TagStub/TagStub';
+import type { Product } from '../../domain/types';
 import styles from './CatalogView.module.css';
 import pickerStyles from '../../components/ProductPicker/ProductPicker.module.css';
 
@@ -45,7 +48,7 @@ export function CatalogView({
    * it's handed. */
   settingsTagsBanner?: string | null;
 }) {
-  const { state, editPrice, setProductPhoto } = useStore();
+  const { state, editPrice, setProductPhoto, setProductBarcode } = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftPrice, setDraftPrice] = useState('');
   const [toast, setToast] = useState<string | null>(confirmationMessage ?? null);
@@ -82,6 +85,28 @@ export function CatalogView({
   const previewOverlayRef = useRef<HTMLDivElement | null>(null);
   const previewTriggerRef = useRef<HTMLButtonElement | null>(null);
 
+  // inventory.md §3.4c-§3.4g "Editar código de barras" (`decision-log.md`
+  // D65, 2026-09-16/17 amendment, Paid tier only) — the sheet's own staged
+  // state. `Product.barcode` is untouched until "Guardar código de
+  // barras" is explicitly tapped; "Cancelar" (from any sub-state) discards
+  // whatever was staged and returns the Catalog row exactly as it was.
+  const [editingBarcodeId, setEditingBarcodeId] = useState<string | null>(null);
+  type BarcodeStage = 'sheet' | 'scanning' | 'conflict' | 'cameraFailure';
+  const [barcodeStage, setBarcodeStage] = useState<BarcodeStage>('sheet');
+  // A fresh, successful scan that doesn't conflict with a *different*
+  // Product (§3.4e) — `undefined` means "nothing staged yet," the exact
+  // condition "Guardar código de barras" stays disabled on (§3.4c: "there's
+  // no manually-adjustable state here to re-save").
+  const [stagedBarcode, setStagedBarcode] = useState<string | undefined>(undefined);
+  // §3.4e's recognition display — the *other* Product a scanned code
+  // already belongs to, reusing §3.8c's own marker/name/disponibles
+  // presentation (`ProductPicker.tsx`'s `confirmScan` mode) verbatim.
+  const [barcodeConflict, setBarcodeConflict] = useState<{
+    product: Product;
+    available: number;
+    everReceived: boolean;
+  } | null>(null);
+
   useEffect(() => {
     if (photoPreviewOpen) {
       previewOverlayRef.current?.focus();
@@ -102,6 +127,11 @@ export function CatalogView({
   const rows = catalogRows(state);
   const editingProduct = rows.find((r) => r.product.id === editingId)?.product;
   const editingPhotoProduct = rows.find((r) => r.product.id === editingPhotoId)?.product;
+  const editingBarcodeProduct = rows.find((r) => r.product.id === editingBarcodeId)?.product;
+  // inventory.md §2's D65 barcode-scanning gate, extended here verbatim to
+  // §3.4's fourth tap zone ("a Free-tier Catalog row keeps its existing
+  // three tap zones, nothing added").
+  const canEditBarcode = state.business?.subscriptionTier === 'paid';
 
   const draftPriceValue = useMemo(() => parseFloat(draftPrice), [draftPrice]);
   const draftPriceValid =
@@ -121,6 +151,69 @@ export function CatalogView({
     setStagedPhoto(undefined);
     setPhotoError(null);
     setPhotoPreviewOpen(false);
+  }
+
+  // inventory.md §3.4c "Editar código de barras" — opened by the Catalog
+  // row's fourth tap zone ("⋯"). Resets any residue from a previous open of
+  // this same sheet (mirrors openPhotoSheet's own reset discipline).
+  function openBarcodeSheet(productId: string) {
+    setEditingBarcodeId(productId);
+    setStagedBarcode(undefined);
+    setBarcodeConflict(null);
+    setBarcodeStage('sheet');
+  }
+
+  // "Cancelar" (§3.4c) — discards any staged (unsaved) scan and closes the
+  // sheet, returning to Catalog view unchanged.
+  function closeBarcodeSheet() {
+    setEditingBarcodeId(null);
+    setStagedBarcode(undefined);
+    setBarcodeConflict(null);
+    setBarcodeStage('sheet');
+  }
+
+  // §3.4d → §3.4c/§3.4e — a successful scan. §3.4c's own text: "A scan
+  // matching *no* other Product, or matching this same Product's own
+  // already-stored value (a pointless but harmless rescan), stages
+  // normally... the uniqueness check is against every *other* Product
+  // only, never this one." A match against a *different* Product (§3.4e)
+  // is never staged, never offered for Guardar.
+  function handleBarcodeScanResult(code: string) {
+    const trimmed = code.trim();
+    const match = matchProductByBarcode(state.products, trimmed);
+    if (match && match.id !== editingBarcodeId) {
+      const matchRow = rows.find((r) => r.product.id === match.id);
+      setBarcodeConflict({
+        product: match,
+        available: matchRow?.available ?? 0,
+        everReceived: matchRow?.everReceived ?? false,
+      });
+      setBarcodeStage('conflict');
+      return;
+    }
+    setStagedBarcode(trimmed);
+    setBarcodeStage('sheet');
+  }
+
+  // "Guardar código de barras" — disabled until a fresh scan has been
+  // staged (enforced by the button's own `disabled` prop below); replaces
+  // `Product.barcode` outright, no merge, no history. A failed save leaves
+  // the sheet open with the staged value intact, the same convention
+  // `handleGuardarFoto`/`editPrice`'s own Guardar handler already follow.
+  async function handleGuardarBarcode() {
+    if (!editingBarcodeId || stagedBarcode === undefined) return;
+    const ok = await setProductBarcode(editingBarcodeId, stagedBarcode);
+    if (!ok) {
+      console.error('[CatalogView] setProductBarcode failed');
+      return;
+    }
+    closeBarcodeSheet();
+    // Added specifically because nothing in the Catalog row itself visibly
+    // changes to confirm the write succeeded (`Product.barcode` isn't
+    // rendered in the row, §3.4) — without this line she'd have no signal
+    // at all that "Guardar" did anything.
+    setToast('Código de barras actualizado');
+    window.setTimeout(() => setToast(null), 2400);
   }
 
   function handlePhotoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -219,6 +312,7 @@ export function CatalogView({
               setDraftPrice(String(product.defaultPrice));
             }}
             onTapPhoto={() => openPhotoSheet(product.id)}
+            onTapBarcode={canEditBarcode ? () => openBarcodeSheet(product.id) : undefined}
           />
         ))}
       </div>
@@ -420,6 +514,135 @@ export function CatalogView({
             ← Cerrar
           </button>
         </div>
+      )}
+
+      {/* inventory.md §3.4d — "Volver a escanear," cámara activa. Same
+          live-camera shape §3.8b already establishes (BarcodeScanner.tsx
+          reused verbatim, no new camera surface) — not wrapped in <Sheet>,
+          a real camera viewfinder needs the full content area, this
+          sheet's own dimmed-backdrop chrome is set aside for as long as
+          scanning is active. §3.8b's "Escribir en su lugar" fallback is
+          replaced here by "Cancelar" (§3.4d's own explicit adaptation
+          note): there is no typed alternative when correcting an
+          already-identified Product's barcode. A sustained failed read
+          (§3.4g) is handled entirely inside BarcodeScanner itself — the
+          live camera view stays exactly as it is, no separate state here. */}
+      {editingBarcodeProduct && barcodeStage === 'scanning' && (
+        <BarcodeScanner
+          backLabel={editingBarcodeProduct.name}
+          fallbackLabel="Cancelar"
+          onBack={() => setBarcodeStage('sheet')}
+          onResult={handleBarcodeScanResult}
+          onPermissionDenied={() => setBarcodeStage('cameraFailure')}
+        />
+      )}
+
+      {/* inventory.md §3.4f — permiso de cámara denegado. Falls back to
+          §3.4c unchanged (not a typed-search field, since none exists in
+          this context) — reuses ProductPicker's own dedicated
+          full-screen fallback chrome (§3.8d's precedent), copy adapted to
+          drop the "Escribe el nombre del producto" clause that doesn't
+          apply here. */}
+      {editingBarcodeProduct && barcodeStage === 'cameraFailure' && (
+        <div className={pickerStyles.cameraFailureScreen}>
+          <button
+            className={pickerStyles.cameraFailureBack}
+            onClick={() => setBarcodeStage('sheet')}
+          >
+            ← {editingBarcodeProduct.name}
+          </button>
+          <p className={pickerStyles.cameraFailureText}>
+            No pudimos usar la cámara.
+            <br />
+            Revisa los permisos de cámara de tu teléfono e intenta de nuevo.
+          </p>
+          <Button variant="secondary" onClick={() => setBarcodeStage('sheet')}>
+            Cancelar
+          </Button>
+        </div>
+      )}
+
+      {/* inventory.md §3.4e — escaneo, coincide con otro producto
+          (conflicto). Extends §3.15's "identifier already claimed by
+          someone else, offer a different one, no reassignment" pattern and
+          reuses §3.8c's own recognition display (marker/name/disponibles)
+          verbatim — same dimmed-backdrop sheet shape as §3.4c itself.
+          "Cancelar" returns to §3.4c exactly as it was before this scan
+          attempt (nothing here ever touches `stagedBarcode`). */}
+      {editingBarcodeProduct && barcodeStage === 'conflict' && barcodeConflict && (
+        <Sheet onDismiss={() => setBarcodeStage('sheet')}>
+          <p className={pickerStyles.sheetTitle}>
+            Este código ya está registrado
+            <br />
+            en otro producto:
+          </p>
+          <div className={pickerStyles.confirmProductRow}>
+            <TagStub
+              name={barcodeConflict.product.name}
+              photo={barcodeConflict.product.photo}
+              size={48}
+            />
+            <div>
+              <p className={pickerStyles.confirmProductName}>{barcodeConflict.product.name}</p>
+              <p className={pickerStyles.confirmProductCaption}>
+                {!barcodeConflict.everReceived
+                  ? 'sin registrar'
+                  : `${barcodeConflict.available} disponibles`}
+              </p>
+            </div>
+          </div>
+          <p className={styles.barcodeConflictText}>
+            No se puede usar el mismo código en dos productos. Revisa que sea la prenda correcta, o
+            escanea otro código.
+          </p>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Button variant="secondary" onClick={() => setBarcodeStage('sheet')}>
+              Cancelar
+            </Button>
+            <Button onClick={() => setBarcodeStage('scanning')}>Escanear otro código</Button>
+          </div>
+        </Sheet>
+      )}
+
+      {/* inventory.md §3.4c — "Editar código de barras." On-screen heading
+          is the Product's name, never the literal string "Editar código de
+          barras" (the same CTA/heading-collision avoidance §3.4a/§3.4b
+          already establish). "Guardar código de barras" stays disabled
+          until a fresh scan has actually been staged — there's no
+          manually-editable field here to re-save. */}
+      {editingBarcodeProduct && barcodeStage === 'sheet' && (
+        <Sheet onDismiss={closeBarcodeSheet}>
+          <p className={pickerStyles.sheetTitle}>{editingBarcodeProduct.name}</p>
+          <p className={pickerStyles.newProductLabel}>Código de barras</p>
+          {stagedBarcode !== undefined ? (
+            <div className={styles.barcodeValues}>
+              <p className={styles.barcodeCurrent}>
+                {editingBarcodeProduct.barcode ?? 'Sin código'}{' '}
+                <span className={styles.barcodeTag}>(actual)</span>
+              </p>
+              <p className={styles.barcodeStaged}>
+                {stagedBarcode} <span className={styles.barcodeTag}>(nuevo, sin guardar)</span>
+              </p>
+            </div>
+          ) : (
+            <p className={styles.barcodeCurrent}>{editingBarcodeProduct.barcode ?? 'Sin código'}</p>
+          )}
+          <Button
+            variant="secondary"
+            className={styles.rescanBtn}
+            onClick={() => setBarcodeStage('scanning')}
+          >
+            Volver a escanear
+          </Button>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Button variant="secondary" onClick={closeBarcodeSheet}>
+              Cancelar
+            </Button>
+            <Button disabled={stagedBarcode === undefined} onClick={handleGuardarBarcode}>
+              Guardar código de barras
+            </Button>
+          </div>
+        </Sheet>
       )}
     </>
   );

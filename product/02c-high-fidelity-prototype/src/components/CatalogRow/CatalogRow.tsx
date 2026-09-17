@@ -9,7 +9,16 @@ import styles from './CatalogRow.module.css';
  * `ux-critic` Major). Same per-Product tone as the selling tile
  * (src/styles/productIdentity.ts) — a merchant learns "Playeras is the clay
  * tag" once, in Inventario, and that same color meets her again on the
- * selling grid, tying the catalog she manages to the grid she sells from. */
+ * selling grid, tying the catalog she manages to the grid she sells from.
+ *
+ * **Fourth tap zone, `decision-log.md` D65's 2026-09-16/17 amendment,
+ * Paid tier only** — the overflow indicator ("⋯", rightmost, after the
+ * price figure) opens `inventory.md` §3.4c's "Editar código de barras"
+ * sheet directly, a single destination today, not an intermediate list.
+ * `onTapBarcode` is only ever passed by the caller when
+ * `Business.subscriptionTier === 'paid'` (`CatalogView.tsx`'s own gate) —
+ * `undefined` on a Free-tier Business, which keeps this row's existing
+ * three tap zones exactly as they were, nothing added. */
 export function CatalogRow({
   name,
   photo,
@@ -19,6 +28,7 @@ export function CatalogRow({
   onTapRow,
   onTapPrice,
   onTapPhoto,
+  onTapBarcode,
 }: {
   name: string;
   /** `Product.photo` (`product-decisions.md` Q23) — rendered in the
@@ -32,6 +42,11 @@ export function CatalogRow({
   /** Opens `inventory.md` §3.4b's "Editar foto" sheet — a bare tap on the
    * marker/photo icon, distinct from `onTapRow`/`onTapPrice`. */
   onTapPhoto: () => void;
+  /** Opens `inventory.md` §3.4c's "Editar código de barras" sheet — a bare
+   * tap on the "⋯" overflow indicator, distinct from every other zone on
+   * this row. `undefined` on a Free-tier Business (the gate this prop's
+   * own caller enforces) renders no overflow indicator at all. */
+  onTapBarcode?: () => void;
 }) {
   const dimmed = available <= 0;
   const caption = !everReceived ? 'sin registrar' : `${available} disponibles`;
@@ -65,6 +80,18 @@ export function CatalogRow({
       >
         ${price.toLocaleString('es-MX')}
       </button>
+      {onTapBarcode && (
+        <button
+          className={styles.overflow}
+          onClick={(e) => {
+            e.stopPropagation();
+            onTapBarcode();
+          }}
+          aria-label={`Editar código de barras de ${name}`}
+        >
+          ⋯
+        </button>
+      )}
     </div>
   );
 }
