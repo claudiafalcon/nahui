@@ -1730,8 +1730,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    */
   async function runHydrationResolution(): Promise<void> {
     const supabase = getSupabaseClient();
-    if (!supabase || state.currentUserId == null) {
-      setHydrationStatus('ready'); // nothing to hydrate — local-only/dev mode, or no live session yet
+    if (!supabase) {
+      setHydrationStatus('ready'); // nothing to hydrate — local-only/dev mode
+      return;
+    }
+    if (state.currentUserId == null) {
+      // Real, live-reported bug fix: on a cold reload of a returning
+      // merchant's session, `state.currentUserId` starts `null` for a
+      // moment while `runSessionRestoreCheck` above is still recovering it
+      // asynchronously from the persisted Supabase session. This effect
+      // fires on the very first render too (its own doc comment below), so
+      // without this guard it used to read that transient `null` as "no
+      // session, nothing to hydrate" and set `hydrationStatus: 'ready'`
+      // immediately — `AppRouter.tsx`'s loading gate then fell through
+      // toward `OnboardingFlow` for a returning merchant who already has a
+      // Business, until the real hydration cycle (re-triggered once
+      // `currentUserId` genuinely resolved, since this effect is keyed on
+      // it) caught up a moment later. That was the onboarding-welcome-
+      // screen flash-before-Home bug. Only conclude "genuinely no session"
+      // once session-restore itself has actually finished checking.
+      if (sessionRestoreStatus === 'checking') {
+        return; // leave hydrationStatus as-is; re-invoked once currentUserId resolves (or session-restore concludes there's truly none)
+      }
+      setHydrationStatus('ready'); // session-restore already concluded: genuinely no session, or a real error — either way, nothing to hydrate
       return;
     }
     setHydrationStatus('loading');
@@ -1762,7 +1783,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // itself is a fresh closure every render, but re-running this effect on
     // every unrelated state change it happens to close over would defeat the
     // "once per session becoming available" trigger this design specifies.
-  }, [state.currentUserId]);
+    // `sessionRestoreStatus` is also a dep (not just `currentUserId`) for a
+    // genuinely session-less visitor: `runHydrationResolution`'s own
+    // `currentUserId == null` branch above now waits out
+    // `sessionRestoreStatus === 'checking'` rather than concluding "ready"
+    // off a merely not-yet-resolved id — for that wait to ever actually
+    // resolve when there truly is no session (so `currentUserId` itself
+    // never changes), this effect must also re-fire when
+    // `sessionRestoreStatus` alone flips to `'done'`/`'error'`.
+  }, [state.currentUserId, sessionRestoreStatus]);
 
   /**
    * Stage 7 Backend Integration — trigger 2 of 3 (design summary): "again on

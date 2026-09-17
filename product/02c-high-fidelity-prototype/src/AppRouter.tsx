@@ -242,7 +242,7 @@ export function AppRouter() {
         // below — an ordinary fresh open, a genuine account sign-out, or a
         // Google-channel rejection never sets it.
         <AuthenticationFlow initialPrefill={retractedPrefill} onGoogleResolved={setGoogleDisplayLabel} />
-      ) : !state.business && hydrationStatus !== 'ready' ? (
+      ) : !state.business && (hydrationStatus !== 'ready' || sessionRestoreStatus === 'checking') ? (
         // Stage 7 Backend Integration — the second-device/cleared-browser
         // case this whole pass exists to fix: a live session exists, but
         // this device's own local mirror holds no Business yet, and the
@@ -257,6 +257,27 @@ export function AppRouter() {
         // point is ever reached.) See `AuthResolving.tsx` for the full
         // reasoning, including its own disclosed deviation from `home.md`
         // §3.1/§3.2/§3.14's nav-bar-present wireframes.
+        //
+        // Real, live-reported bug fix: `sessionRestoreStatus === 'checking'`
+        // is a second, independent layer against the same race class as
+        // `store.tsx`'s `runHydrationResolution` fix (that async function's
+        // own doc comment above it) — a returning merchant's cold reload
+        // could see `hydrationStatus` prematurely read `'ready'` (a stale
+        // signal from a `currentUserId` that was merely not-yet-resolved,
+        // not genuinely absent) while `sessionRestoreStatus` was still
+        // `'checking'`, letting this branch fall through toward
+        // `OnboardingFlow`'s welcome screen for a moment before the real
+        // hydration cycle caught up and corrected it. Deliberately checks
+        // for `'checking'` specifically, not `!== 'done'` (which would also
+        // match `'error'`): once session-restore has terminally errored
+        // while `currentUserId` was already resolved some other way (an
+        // interactive login racing a failed `getSession()` call — rare, but
+        // possible since that guard only runs before the async call, not
+        // after), that error is stale and no longer blocking anything real;
+        // treating it the same as `'done'` here avoids stranding a
+        // genuinely-hydrated, business-less new merchant on this loading
+        // gate forever over a session-restore error nothing here would ever
+        // retry (`onRetry` below only re-runs hydration, not session-restore).
         <AuthResolving status={hydrationStatus === 'error' ? 'error' : 'loading'} onRetry={retryHydration} />
       ) : needsPhoneMismatchConfirmation && user && mismatchIdentity ? (
         // authentication.md §3.7e (Slice 12 `merchant-user-tester` defect
