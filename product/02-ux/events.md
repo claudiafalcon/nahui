@@ -28,6 +28,8 @@ events.changelog.md#status-evt-q1-empieza-hoy-default]**
 
 **Further amended 2026-09-15 (`decision-log.md` D69, `product-decisions.md` Q29, Product Owner live-testing report — `User.displayName`):** §3.26 "Personal para este evento" — live on a real device, the Product Owner found this screen still showing only a bare phone number for every SELLER row, no name, even after setting one. This document's own §3.26 annotation had gone stale after D69 shipped elsewhere tonight (`settings.md`/`reports.md`) but was never extended here. Corrected: every row now resolves `User.displayName` first, falling back to phone only when it isn't set — the same resolution order `settings.md` §2.7's own corrected "Row display" paragraph already establishes, narrowed to its first two tiers only (every row here is, by construction, an *active* Membership, so the third "Alguien de tu equipo" tier never applies). §3.26's own §8 open-question entry, corrected to Resolved. No wireframe/layout change — same row shape, same actions, only the identity line's own resolved value changes. **[see events.changelog.md#status-2026-09-15-d69-displayname-resolution]**
 
+**Amended 2026-09-16 (Product Owner live-testing request, expedited pass — barcode-scan search shortcut added to §3.21):** a new list-level "Escanear código de barras" affordance is added above §3.21's row list (default and expanded states), letting Ana jump straight to a Catalog Product's row by scanning its `Product.barcode` instead of scrolling — a pure navigation shortcut, never a write. Opens the identical shared camera scanner already used at `inventory.md` §3.8b/§3.4d (`BarcodeScanner.tsx`, cited the same implementation-independent way those sections already do). On a match: collapses whichever row is currently expanded and expands the matched Product's row in its place, scrolled into view, per §3.21's own existing one-row-expanded-at-a-time rule — the manual stepper is then adjusted by hand exactly as if she'd found and tapped the row herself; **the scan itself commits nothing**, a deliberate contrast with this same screen's own NFC scan (§3.22), which is a live, immediate write the instant a tag is read. On no match against this Business's Catalog: new §3.21b, an explicit inline no-match message with a plain way back to the list — this screen never creates a new Product on a miss, unlike `inventory.md` §3.8a's registration-time scan, since every Catalog Product already has a row here by construction. Camera permission-denied/read-failure reuse `inventory.md` §3.4f/§3.4g's shape verbatim (new §3.21c/§3.21d), the closest existing precedent for a no-typed-search-fallback context. Gated Paid-tier only, identical to every other barcode-scanning surface (`decision-log.md` D65, `company/business-decisions.md` Q20) — resolved once, upstream, as part of this screen's own state load; inherits §3.21's existing OWNER-only permission, no separate gate. A second, read-only consumer of `Product.barcode`, alongside Selling's own scan-to-add (`home.md` §3.9a) — the closer precedent than the registration-time scan, since neither creates anything. No `decision-log.md` entry needed — reuses D65's existing field/gate. **Expedited, same as tonight's other live-driven passes — not yet run through `ux-critic`/`reviewer`.**
+
 **Amended 2026-08-04 (icon/comprehension audit):** §3.4/§3.5's Events list
 cards now show Event type alongside `Venue.displayName` ("Plaza Norte ·
 Bazar"), matching the subordinate role Type already has on Detail screens.
@@ -1128,6 +1130,7 @@ registered no Products at all yet in Inventario:
 │  producto. Lo que no asignes se     │
 │  queda disponible para tus otros    │
 │  eventos.                        │
+│  [ Escanear código de barras ]     │  Paid tier only — opens §3.21a
 │  ┌───────────────────────────┐ │
 │  │ Bolsas — 7 para este evento  ▾│ │  collapsed — tap to expand
 │  ├───────────────────────────┤ │
@@ -1145,6 +1148,8 @@ registered no Products at all yet in Inventario:
 ┌───────────────────────────────┐
 │ ← Plaza Norte                    │
 │  Mercancía para este evento        │
+│  [ Escanear código de barras ]     │  Paid tier only — same position,
+│                                │  list-level, not per-row
 │  ┌───────────────────────────┐ │
 │  │ Bolsas — 7 para este evento  ▴│ │  expanded — tap to collapse
 │  │ Disponible en general: 8       │ │
@@ -1196,6 +1201,78 @@ registered no Products at all yet in Inventario:
 - **"Mover a otro evento" only appears on a row once "Para este evento" > 0** (nothing to move otherwise) — opens §3.24, live variant, scoped to that one Product.
 - Same near-instant/slow/error save convention as every other write in this doc (§3.9), detailed in new §3.23.
 - **OWNER-only**, per `product-decisions.md` Q24/Q25's settled permission table — the SELLER-role experience isn't designed here (§8).
+- **New, list-level "Escanear código de barras" affordance, Paid tier only (`decision-log.md` D65, `company/business-decisions.md` Q20) — added 2026-09-16, Product Owner live-testing request, expedited pass.** Renders once, above the row list, in the identical position on both the default and expanded states (never per-row) — a search shortcut for finding one Product's row quickly on a large Catalog, not a per-row action; present unconditionally whenever the row list itself renders, the same "always-present, not size-gated" posture `inventory.md` §3.8's own scan row already takes for a Paid-tier picker. Opens the identical shared camera scanner already used at `inventory.md` §3.8b/§3.4d — same underlying mechanism, `BarcodeScanner.tsx`, no new camera surface (§3.21a). **A successful scan is a pure navigation jump, never a write — a deliberate, explicit contrast with this same screen's own NFC scan (§3.22), where a successful scan *is* a live, immediate write the instant a tag is read.** It collapses whichever row is currently expanded and expands the matched Product's row instead, scrolled into view, per this section's own existing one-row-expanded-at-a-time rule (above) — she then adjusts the manual stepper by hand exactly as if she'd scrolled to and tapped the row herself. A scan matching no Catalog Product's `barcode` never creates one — unlike `inventory.md` §3.8a's registration-time scan, every Catalog Product here already has a row by construction, so a true miss just means "not on file" (§3.21b). Absent entirely on the Zero-Catalog-Products variant above — nothing to search for — and, being Paid-tier gated the same as every other barcode-scanning surface, also absent for a Free-tier Business. Inherits this section's own OWNER-only gate — no separate permission model.
+
+### 3.21a Mercancía para este evento — buscar por código de barras, cámara activa (new — `decision-log.md` D65, Paid tier only)
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │
+│                                │
+│                                │
+│         visor de cámara          │
+│                                │
+│    Apunta al código de barras    │
+│                                │
+│  [ Cancelar ]                    │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+- Reached by tapping "Escanear código de barras" above §3.21's row list. Identical camera mechanics to `inventory.md` §3.8b/§3.4d, reused verbatim, not re-litigated — full-view live camera, no per-frame confirmation tap, a successful read resolves automatically; the same implementation-independence disclaimer applies (no claim about camera APIs, permission mechanics, scan latency, or symbologies — build-time concerns for `ui-designer`/`architect`).
+- **No typed-search alternative exists on this screen** — unlike `inventory.md` §3.8b's "Escribir en su lugar," which sits beside a typed-name field that already exists on that picker. §3.21 has no equivalent (she finds a Product by scrolling its row list, not by typing). "Cancelar" is the sole way back, matching the same contextual adaptation `inventory.md` §3.4d already made for the identical absence.
+- **On a match, resolves silently — no confirm-on-scan step, unlike `inventory.md` §3.8c's own confirm step for the same underlying fact (a barcode matched to a Product).** Reasoned the same way `home.md` §3.9a's own silent Selling-time resolution already is: the barcode→Product identity-trust decision was already made once, upstream, the first time this barcode was resolved in Inventory (`inventory.md` §3.8c) — `architecture-principles.md` #1's "capabilities resolved once, upstream, never asked mid-flow" applies to that trust decision here exactly as it does at Sale-time. Collapses whichever row is currently expanded, expands the matched row in its place (scrolled into view), and returns to §3.21 — nothing else changes; the manual stepper still requires her own tap to adjust, same as reaching that row any other way.
+- No match anywhere in this Business's Catalog → §3.21b. Camera permission denied/unavailable → §3.21c. Failed read → §3.21d.
+- Back arrow behaves identically to "Cancelar" — returns to §3.21 unchanged, whichever row was expanded (if any) before she tapped "Escanear código de barras" untouched.
+
+### 3.21b Mercancía para este evento — código sin coincidencia (new — `decision-log.md` D65, Paid tier only)
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │
+│                                │
+│  No encontramos este código en    │
+│  tu Catálogo.                     │
+│                                │
+│  [   Entendido   ]               │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+- Reached when a scanned barcode matches no `Product.barcode` on file for this Business — plainly stated, reusing `home.md` §3.9b's exact register and structure for the identical underlying fact (a scan with nothing to resolve to), adapted only in copy since this screen has no typed-search field to name as the alternative next step.
+- **This screen never creates a new Product on a miss — a deliberate, explicit difference from `inventory.md` §3.8a's registration-time scan variant.** Every Catalog Product this Business has ever registered already has a row on §3.21 by construction (§3.21's own "one row per Catalog Product she's ever registered"), so a true no-match here specifically means "this code isn't on file for anything in your Catalog" — not "this is new merchandise," the meaning the identical no-match event carries at registration time. Nothing is written, staged, or offered for creation.
+- **"Entendido" returns to §3.21 exactly as she left it before the scan** — whichever row was expanded (or none) stays exactly as it was; this is a dead-end-free, single-tap acknowledgment, the same "never a forced navigation away, never a trap" posture `home.md` §3.9b's own "Entendido" already establishes, adapted here from a live-Sale context to a planning one.
+
+### 3.21c Mercancía para este evento — permiso de cámara denegado (new — `decision-log.md` D65, Paid tier only)
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │
+│                                │
+│  No pudimos usar la cámara.       │
+│  Revisa los permisos de cámara    │
+│  de tu teléfono e intenta de       │
+│  nuevo.                           │
+│                                │
+│  [ Cancelar ]                    │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+- Reused verbatim from `inventory.md` §3.4f's shape and register — same business-language-first posture, no permission/browser/OS error string, ever.
+- **Falls back to §3.21 unchanged, not a typed-search field** — the identical contextual adaptation §3.4f already makes for the same reason: no typed alternative exists in this context either.
+
+### 3.21d Mercancía para este evento — no se pudo leer el código (new — `decision-log.md` D65, Paid tier only)
+```
+┌───────────────────────────────┐
+│ ← Mercancía para este evento     │
+│         visor de cámara          │
+│  No pudimos leer el código.       │
+│  Intenta de nuevo.                 │
+│  [ Cancelar ]                    │
+├───────────────────────────────┤
+│ Hoy  Inventario [Eventos] Resultados │
+└───────────────────────────────┘
+```
+- Identical posture to `inventory.md` §3.4g — a single missed read, not a terminal state. Stays on the live camera view; the message clears automatically on the next attempt, no tap to dismiss.
+- "Cancelar" stays reachable exactly as in §3.21a — a failing scan never traps her here, returning to §3.21 unchanged.
 
 ### 3.22 Escaneando — cola de escaneo (por Producto) (new — `product-decisions.md` Q24/Q25)
 
@@ -1521,6 +1598,18 @@ Elsewhere:
 Event detail — scheduled (3.11):
   tap "Llevar mercancía" → 3.21 (Mercancía para este evento)
     zero Catalog Products → empty-state variant (3.21), no further branch
+    ≥1 Catalog Product, Paid tier → tap "Escanear código de barras" (list-level, above the row list)
+      → 3.21a (camera)
+        scan matches a Product in this Catalog → collapses any expanded
+          row, expands the matched row (scrolled into view) → back to
+          3.21 — nothing written, she adjusts the manual stepper herself
+          exactly as any other row
+        scan matches nothing in this Catalog → 3.21b → "Entendido" → back
+          to 3.21, unchanged
+        camera permission denied/unavailable → 3.21c → "Cancelar" → back
+          to 3.21, unchanged
+        scan fails to read → 3.21d → stays on camera, retry, or
+          "Cancelar" → back to 3.21, unchanged
     ≥1 Catalog Product → per-row:
       adjust manual stepper (local, unsaved until Guardar cambios)
       tap "Escanear las que te llevas" (only if Product has tagged stock)
@@ -1647,6 +1736,10 @@ Event detail — closed/past, unresolved allocation (extends 3.16, per-pool — 
     including its zero-Catalog-Product empty-state variant
 20. Editar precio para este evento — sheet (D33)
 21. Mercancía para este evento — lista por producto (shared: "Llevar mercancía" / "Ver mercancía de este evento"), including its zero-Catalog-Product empty-state variant
+21a. Mercancía para este evento — buscar por código de barras, cámara activa (new, Paid tier only)
+21b. Mercancía para este evento — código sin coincidencia (new, Paid tier only)
+21c. Mercancía para este evento — permiso de cámara denegado (new, Paid tier only)
+21d. Mercancía para este evento — no se pudo leer el código (new, Paid tier only)
 22. Escaneando — cola de escaneo por Producto, including its two error states (prenda ya en otro evento; no se pudo leer)
 23. Guardando cambios de mercancía — saving (near-instant/slow) and error, plus ambient post-save confirmation
 24. Mover a otro evento — destino + cantidad/escaneo, live variant and closed-source (reconciliation) variant, including the Elegir evento sub-sheet, its zero-other-Events empty state, saving/error, and ambient post-save confirmation
@@ -1686,6 +1779,7 @@ floor above is about not adding unnecessary steps, the same posture
 | Resolver mercancía sin vender al cerrar un Evento — manual, todo regresó (caso común) | 1 (tap "Sí, regresaron las N") = 1 | The Product Owner's own explicit instruction: confirming the full expected amount returned requires minimal interaction — the system already knows N, she only confirms it. |
 | Resolver mercancía sin vender al cerrar un Evento — manual, regresaron menos de lo esperado | 1 (Ajustar cantidad) + 1+ (ajustar el stepper, 1 toque por unidad de diferencia) + 1 (Confirmar) = 3+ | The genuinely secondary path — never faster than the happy path above, by design, since it's collecting a real fact the system didn't already have (§3.16's own reasoning); still bounded by however many units actually differ, never a full retyped count from zero (stepper starts at N). |
 | Resolver mercancía sin vender al cerrar un Evento — moverla a otro | 1 (Mover a otro evento) + 1 (Elegir evento) + 1 (Mover mercancía) = 3 | Unchanged, now available for either mode. One tap fewer than the live variant — quantity is pre-stated at the full remaining amount, not asked, since reconciliation-time "moving" is framed as fully resolving the row, and no scan step applies (§3.16's reconciliation annotation). |
+| Encontrar un producto en una lista larga, por código de barras (Paid tier) | 1 (tocar "Escanear código de barras") + 0 (el escaneo resuelve solo, sin confirmación) = 1 acción para llegar a la fila correcta, ya expandida | Replaces however many scroll-and-tap attempts a large Catalog would otherwise cost with one fixed-cost action — the manual-stepper adjustment that follows costs the same as reaching that row any other way, already counted in the rows above. |
 
 **New rows (`product/99-rfc/0011-event-assignment.md`):**
 
@@ -1962,6 +2056,17 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 - *#6 (one-way dependency direction)* — Eventos reads Identity's `BusinessMembership` data read-only, the identical edge RFC 0011 itself confirms is already established (Selling→Identity, via `Sale.performedByMembershipId`, D58) — no new dependency direction introduced by this screen.
 - *#7 (idempotent/keyed retries)* — every assign/unassign write carries a stable idempotency key; "Reintentar" never double-creates or double-removes the same `EventAssignment` row.
 
+**Barcode-scan search addition (`decision-log.md` D65, 2026-09-16):**
+
+**global-principles.md:**
+- *"The fastest interaction is the one that never happens"* — scanning replaces however many scroll-and-tap attempts a long Catalog would otherwise cost her with one.
+- *"Never ask twice"* — a successful scan resolves silently, reusing the identity-trust decision already made once, upstream, at Inventory's own confirm-on-scan step (`inventory.md` §3.8c) — she is never asked to re-confirm the same match here.
+- *"Business language before technical language"* — "No encontramos este código en tu Catálogo," never a scan-symbology or barcode-format term.
+
+**architecture-principles.md:**
+- *#1 (capabilities resolved once, upstream)* — Paid-tier gating is read once as part of this screen's own state load, never re-checked per scan.
+- *#6 (one-way dependency direction)* — a pure read of `Product.barcode`; no new write path into Inventory, no new dependency edge.
+
 ## 10. Decisions made
 
 - **§3.14 (active Event, no Session opened today) now surfaces an ambient
@@ -2140,6 +2245,7 @@ active-status toggling) are non-blocking scope deferrals, not open questions
 - **Both directions of multi-assignment are supported without a new mechanism**: multiple people assigned to one Event in a single visit (each row's tap is independent, no batch step); one person assigned to multiple Events (this screen is scoped per-Event, so a second Event just means a second, independent visit). **[see events.changelog.md#decisions-rfc0011-event-assignment]**
 - **"Asignar personal"/"Ver personal de este evento" are present unconditionally, regardless of `subscriptionTier` (corrected 2026-09-10, EVT-M6 remediation — supersedes this document's earlier "structurally absent from Free tier" treatment).** `EventAssignment` creation (D60/RFC 0011) gates only on `BusinessMembership.status = active`, never on tier — `settings.md` §8 item 13 resolved that an already-active SELLER Membership survives a Paid→Free downgrade entirely unaffected, so a grandfathered Free-tier Business retains real ability to view and assign its existing staff. A genuinely-never-Paid Free-tier Business simply has zero active SELLER Memberships to show and lands on §3.26's own zero-state — no tier check is needed to produce the correct outcome. **[see events.changelog.md#decisions-rfc0011-event-assignment]**
 - **§3.26's zero-state distinguishes "never invited anyone" from "invited someone, still awaiting acceptance" (corrected 2026-09-10, EVT-M5 remediation, `ux-critic` finding).** The second, previously-missing case now checks for a pending `Invitation` and shows honest, distinct copy naming that an invitation is outstanding, rather than repeating "invita a alguien" to a merchant who just did exactly that. **[see events.changelog.md#decisions-rfc0011-event-assignment]**
+- **A list-level "Escanear código de barras" search shortcut added to §3.21, Paid tier only (`decision-log.md` D65, `company/business-decisions.md` Q20) — Product Owner live-testing request, 2026-09-16, expedited pass.** A pure navigation jump to the matching Catalog-Product row (collapsing any other expanded row, per §3.21's own existing rule) — never a write, a deliberate contrast with §3.22's NFC scan, which is a live, immediate write. A miss never creates a Product, unlike `inventory.md` §3.8a's registration-time scan (§3.21b). Second read-only consumer of `Product.barcode`, alongside Selling's own scan-to-add (`home.md` §3.9a) — the closer precedent than registration's own scan, since neither creates anything. **Expedited — not yet run through `ux-critic`/`reviewer`.**
 
 ## 11. Future considerations
 
