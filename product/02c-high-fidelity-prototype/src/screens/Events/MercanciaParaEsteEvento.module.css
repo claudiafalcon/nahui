@@ -226,3 +226,34 @@
   font: var(--text-body);
   color: var(--color-obsidian);
 }
+
+/* §3.22a — the mixed-pile NFC scan queue, built on the same
+   `.scanFallbackScreen`/`.scanFallbackBack` full-screen push-in shape above
+   (a light "back + content" chrome, not a camera view, since this is an NFC
+   read, not a barcode scan). */
+.nfcQueueHeading {
+  font: var(--text-heading);
+}
+
+.nfcQueueError {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-warning-aa);
+}
+
+.nfcQueueTally {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font: var(--text-body-sm);
+  color: var(--color-obsidian);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nfcQueuePrompt {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4) 0;
+}

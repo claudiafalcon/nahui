@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
 import {
   actingMembership,
+  currentEventAllocationForUnit,
   dayNumberForDate,
   eventScopedRemaining,
   findProduct,
   findVenue,
   myActiveSession,
+  nfcReadiness,
   openSaleForSession,
   productByBarcode,
   sellingGridRows,
@@ -243,6 +245,27 @@ export function Selling({
   // hardware capability.
   const [scannerMode, setScannerMode] = useState<'closed' | 'active' | 'no-match'>('closed');
 
+  // home.md §3.9d/§3.9e (`decision-log.md` D71, `product-decisions.md`
+  // Q31) — "Leer con NFC," `buttons`-mode-only, a dismissible overlay
+  // (never a full mode swap) sitting directly on top of this same grid.
+  // Mutually exclusive with `scannerMode` above by construction (only one
+  // scan surface is ever open at a time, per §3.9d's own composability
+  // rule) but tracked as its own independent boolean rather than folded
+  // into `scannerMode`'s union — the two are genuinely different
+  // mechanisms (camera vs. NFC hardware) with different lifecycles, not two
+  // states of one machine.
+  const [nfcOverlayOpen, setNfcOverlayOpen] = useState(false);
+  // §3.9d's ambient "[Producto] agregada ✓" (self-dismissing, timer-based —
+  // same mechanism as §3.8f's "Venta finalizada ✓") and §3.9e's four error
+  // states (non-blocking, self-clear on the *next scan attempt*, never a
+  // timer — see `resolveOverlayTag` below) share one slot: only one is ever
+  // showing, and a new scan attempt always starts by clearing whatever's
+  // currently there before deciding what (if anything) replaces it.
+  const [nfcOverlayFeedback, setNfcOverlayFeedback] = useState<
+    { kind: 'success'; productName: string } | { kind: 'error'; message: string } | null
+  >(null);
+  const nfcOverlaySuccessTimeout = useRef<number | undefined>(undefined);
+
   // Real Web NFC read path only (`nfcSupported`, §3.10's `nfc` operating
   // mode) — `NDEFReader.scan()` requires its initial call to happen inside a
   // user-gesture handler, so this session is lazily started on the *first*
@@ -285,6 +308,20 @@ export function Selling({
   // zero rather than `todaySalesSummary`'s `null` "no Sales yet" case.
   const contextTotals = todaySalesSummary(state, session.eventId) ?? { total: 0, count: 0 };
   const grid = sellingGridRows(state);
+
+  // home.md §3.9's own new bullet (`decision-log.md` D71, `product-
+  // decisions.md` Q31) — a live-evaluated display condition, re-read on
+  // every render, never a fact committed once at Session-start the way
+  // `Session.operatingMode` itself is. Deliberately narrower than "≥1
+  // tagged unit exists": Limited Ready specifically, not Ready (a Business
+  // whose tagged inventory has crossed into full Ready while still
+  // defaulting to `buttons` gets §3.6a's own separate nudge instead, not
+  // this overlay — see §3.9's own annotation for why that's a real,
+  // narrower exclusion, not an oversight).
+  const showNfcOverlayEntry =
+    session.operatingMode === 'buttons' &&
+    state.business?.nfcPerProductEnabled === true &&
+    nfcReadiness(state) === 'limited';
 
   // home.md §3.7b — Quick Session keeps "Venta rápida" (title stays
   // undefined, SessionHeader's own default); an Event-linked Session
@@ -453,14 +490,106 @@ export function Selling({
       setStockHint(null);
     }
   }
-  handleTagResolvedRef.current = resolveTag;
+  /**
+   * home.md §3.9d/§3.9e (`decision-log.md` D71) — the overlay's own scan
+   * resolver, dispatched through the identical `handleTagResolvedRef`
+   * mechanism `resolveTag` above already uses (see `handleScan` below and
+   * this ref's own reassignment just under this function) — both real
+   * hardware and the simulated path acquire a `tagId` exactly the same way
+   * regardless of which surface is currently open; only what happens *once
+   * a tagId is in hand* differs.
+   *
+   * **Classifies locally, then writes through the one real, unchanged
+   * mechanism — `addItemToSaleByTag`, never a second write path.** §3.9e
+   * specifies four distinct outcomes, but `add_item_to_sale_by_tag` (the
+   * exact resolution call this overlay is instructed to reuse, not
+   * reinvent — §3.10's own resolution mechanism) only ever distinguishes
+   * `no_active_session` from a single, undifferentiated `no_match` — it was
+   * never built to tell "unknown tag" apart from "already sold" apart from
+   * "committed to a different Event." Rather than inventing a new RPC this
+   * dispatch wasn't authorized to write, this reads the same already-
+   * hydrated `state.units`/`state.eventAllocationUnits`/`state.eventAllocations`
+   * every other read-only selector on this screen already trusts (`grid`,
+   * `eventScopedRemaining`, etc.) to classify *which* of §3.9e's first three
+   * outcomes applies before ever attempting the write, then still commits
+   * through the real RPC for the actual reservation. A residual race (local
+   * state said sellable, the server disagreed — e.g. sold by a concurrent
+   * device between this read and the write) fold into the "ya se vendió"
+   * bucket, the most honest single guess available without a richer server
+   * contract; genuinely rare, non-blocking, and self-clearing like every
+   * other branch here. Genuine hardware failure (nothing ever resolved to a
+   * `tagId` at all) never reaches this function — see `handleNfcReadError`.
+   */
+  async function resolveOverlayTag(tagId: string) {
+    const unit = state.units.find((u) => u.tagId === tagId);
+    if (!unit) {
+      setNfcOverlayFeedback({ kind: 'error', message: 'No reconocemos este tag. Intenta con otra prenda.' });
+      return;
+    }
+    if (unit.status === 'sold') {
+      setNfcOverlayFeedback({ kind: 'error', message: 'Esta prenda ya se vendió.' });
+      return;
+    }
+    if (unit.status === 'reserved') {
+      const custody = currentEventAllocationForUnit(state, unit.id);
+      // `session?.eventId` — not a bare `session.eventId` — for the same
+      // reason `handleBarcodeResult`'s own identical read does (see that
+      // function's own doc comment): `session` is guaranteed non-null at
+      // runtime by this component's top-of-body guard, but TS's narrowing
+      // of that outer `const` doesn't carry into this separately-declared
+      // nested function.
+      if (custody && custody.status === 'open' && custody.eventId !== (session?.eventId ?? null)) {
+        setNfcOverlayFeedback({ kind: 'error', message: 'Esta prenda ya está en otro evento.' });
+        return;
+      }
+    }
+    const result = await addItemToSaleByTag(tagId);
+    if (!result.ok) {
+      setNfcOverlayFeedback({ kind: 'error', message: 'Esta prenda ya se vendió.' });
+      return;
+    }
+    const productName = findProduct(state, result.productId)?.name ?? '';
+    window.clearTimeout(nfcOverlaySuccessTimeout.current);
+    setNfcOverlayFeedback({ kind: 'success', productName });
+    nfcOverlaySuccessTimeout.current = window.setTimeout(() => setNfcOverlayFeedback(null), 2400);
+  }
 
-  // A transient hardware-read-failure hint — reused `showHint`, no link
-  // needed since this isn't a no-match case (a genuine no-match still
-  // resolves through `resolveTag` above and keeps its own "Asignar tags"
-  // link). Same tone as `BarcodeScanner.tsx`'s own "No pudimos leer el
-  // código. Intenta de nuevo." precedent, adapted for a tag.
+  // Only one of the two scan surfaces can ever be mounted at a time
+  // (`nfc`-mode's own §3.10 surface vs. `buttons`-mode's §3.9d overlay — a
+  // Session's `operatingMode` never changes mid-Session, and the overlay
+  // only ever renders while it's `'buttons'`), so a single ref reassignment
+  // per render is sufficient — never both resolvers racing the same tap.
+  handleTagResolvedRef.current = nfcOverlayOpen ? resolveOverlayTag : resolveTag;
+
+  /** §3.9d's own "Volver a botones" — always available while the overlay is
+   * open, a pure navigation return (cart contents untouched, matching
+   * §3.9b/§3.9c's existing guarantee). Also stops whichever real-hardware
+   * listening session this overlay's own tap may have started, so a later
+   * re-open begins a genuinely fresh `scan()` session rather than assuming
+   * one is still live. */
+  function closeNfcOverlay() {
+    setNfcOverlayOpen(false);
+    setNfcOverlayFeedback(null);
+    window.clearTimeout(nfcOverlaySuccessTimeout.current);
+    if (scanStartedRef.current) {
+      nfcAbortRef.current?.abort();
+      nfcAbortRef.current = null;
+      scanStartedRef.current = false;
+    }
+  }
+
+  // A transient hardware-read-failure hint — genuine hardware failure
+  // (weak signal, misalignment, permission/hardware rejection — nothing
+  // ever resolved to a `tagId`), routed to whichever surface is actually
+  // open. §3.9e's own copy ("No se pudo leer el tag. Acércalo de nuevo,"
+  // reused verbatim from `events.md` §3.22) for the overlay; §3.10's own,
+  // slightly different existing copy ("No pudimos leer el tag. Intenta de
+  // nuevo") is unchanged for the full `nfc`-mode surface.
   function handleNfcReadError() {
+    if (nfcOverlayOpen) {
+      setNfcOverlayFeedback({ kind: 'error', message: 'No se pudo leer el tag. Acércalo de nuevo.' });
+      return;
+    }
     showHint('No pudimos leer el tag. Intenta de nuevo.');
   }
 
@@ -503,17 +632,28 @@ export function Selling({
     }
 
     // Simulated path — every browser without Web NFC (iPhone Safari,
-    // desktop, any browser lacking `NDEFReader`), unchanged.
+    // desktop, any browser lacking `NDEFReader`). Unchanged for §3.10; for
+    // the §3.9d overlay, an empty simulated pool (nothing tagged-and-
+    // available to draw from in this build/demo environment) is the
+    // closest available meaning to §3.9e's "tag doesn't resolve to any
+    // unit" bucket — genuinely disclosed as a demo-environment limitation,
+    // not a claim that this is how a real unknown tag would classify on
+    // real hardware (there, any physical tag can be read regardless of
+    // whether it happens to belong to an `available` unit).
     const pool = state.units.filter((u) => u.status === 'available' && u.tagId != null);
     const candidate = pool[Math.floor(Math.random() * pool.length)];
     if (!candidate?.tagId) {
+      if (nfcOverlayOpen) {
+        setNfcOverlayFeedback({ kind: 'error', message: 'No reconocemos este tag. Intenta con otra prenda.' });
+        return;
+      }
       showHint('No hay ninguna prenda con tag lista para escanear.', {
         label: 'Asignar tags',
         onTap: onNavigateToAssignTags,
       });
       return;
     }
-    await resolveTag(candidate.tagId);
+    await handleTagResolvedRef.current(candidate.tagId);
   }
 
   /**
@@ -683,6 +823,11 @@ export function Selling({
               <button className={styles.scanBtn} onClick={() => setScannerMode('active')}>
                 Escanear código de barras
               </button>
+              {showNfcOverlayEntry && (
+                <button className={styles.scanBtn} onClick={() => setNfcOverlayOpen(true)}>
+                  Leer con NFC
+                </button>
+              )}
               {grid.length === 0 ? (
                 <p className={styles.emptyGrid}>Todavía no tienes productos registrados.</p>
               ) : (
@@ -762,6 +907,58 @@ export function Selling({
               Revísalo en Inventario.
             </p>
             <Button onClick={() => setScannerMode('closed')}>Entendido</Button>
+          </div>
+        </div>
+      )}
+
+      {/* home.md §3.9d/§3.9e (`decision-log.md` D71) — the "Leer con NFC"
+          overlay. Mounted as a sibling of the header/tray/grid above, same
+          technique as the barcode scanner/dead-end above it, so the grid
+          stays mounted (untouched) underneath the entire time — "Volver a
+          botones" is a pure navigation return, not a remount. Deliberately
+          **continuous**, unlike the barcode scanner: it never closes itself
+          on a successful scan, only on an explicit "Volver a botones" tap
+          (§3.9d's own reasoning — a real, sequential physical-scan
+          ergonomic, not inherited by default from the barcode overlay's
+          resolve-and-return shape). */}
+      {nfcOverlayOpen && (
+        <div className={styles.nfcOverlay}>
+          <div className={styles.nfcOverlayTopbar}>
+            <button className={styles.nfcOverlayBack} onClick={closeNfcOverlay}>
+              ← Leer con NFC
+            </button>
+          </div>
+          <div className={styles.nfcOverlayBody}>
+            {/* §3.9d's ambient "[Producto] agregada ✓" and §3.9e's four
+                non-blocking error states share one slot — see
+                `nfcOverlayFeedback`'s own state doc comment. */}
+            <p
+              className={`${styles.nfcOverlayFeedback} ${
+                nfcOverlayFeedback ? '' : styles.nfcOverlayFeedbackHidden
+              } ${nfcOverlayFeedback?.kind === 'error' ? styles.nfcOverlayFeedbackError : ''}`}
+            >
+              {nfcOverlayFeedback?.kind === 'success' && `${nfcOverlayFeedback.productName} agregada ✓`}
+              {nfcOverlayFeedback?.kind === 'error' && nfcOverlayFeedback.message}
+            </p>
+            <NFCScanPrompt
+              onTap={handleScan}
+              ariaLabel="Acerca el tag del producto"
+              label={
+                <>
+                  Acerca el tag del
+                  <br />
+                  producto
+                </>
+              }
+            />
+            <p className={styles.nfcOverlayCount}>
+              Venta actual: {articulos(items.length)}
+            </p>
+          </div>
+          <div className={`${styles.footer} stitchTop`}>
+            <Button variant="secondary" onClick={closeNfcOverlay}>
+              Volver a botones
+            </Button>
           </div>
         </div>
       )}
