@@ -2208,6 +2208,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * key across every retry of this same logical attempt
    * (`onboardingIdempotencyKeyRef`, above) — never a fresh key per call,
    * which would defeat the RPC's own replay-on-conflict guarantee.
+   *
+   * Session-freshness guard (2026-09-16, real-user bug): live-reproduced
+   * twice by two different real Google-sign-in merchants — confirmed via
+   * direct SQL against `public.idempotency_keys` (zero rows project-wide)
+   * that the RPC's own first write never ran, meaning `auth.uid()` was
+   * null server-side (or PostgREST rejected the JWT before the function
+   * body ever executed) even though this device's local `currentUserId`
+   * already believed the merchant was signed in. `signInWithGoogle` is a
+   * real, synchronous full-page redirect away from this app and back
+   * (`authProviders.ts`), and this device's local `currentUserId` becoming
+   * truthy afterward only proves a session existed at the moment that
+   * check ran — not that the same session's access token is still valid
+   * and attached to `getSupabaseClient()`'s cached client instance by the
+   * time this later, separate action fires its own RPC call. So,
+   * immediately before the RPC call below, this function now calls
+   * `supabase.auth.getSession()` — which forces any in-flight/pending
+   * internal token refresh to resolve before returning — and bails out
+   * the same way this function already bails when `getSupabaseClient()`
+   * itself returns null, landing on the existing `creating-error`/
+   * "Reintentar" UI rather than inventing a new failure state.
    */
   async function completeOnboarding(path: OnboardingPath): Promise<ID | null> {
     const user = currentUser(state);
@@ -2236,6 +2256,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       onboardingIdempotencyKeyRef.current = crypto.randomUUID();
     }
     const idempotencyKey = onboardingIdempotencyKeyRef.current;
+
+    // Session-freshness guard — see this function's own doc comment above
+    // for the real, live-reproduced failure this closes. `getSession()`
+    // resolves any pending token refresh and returns the client's actual
+    // current session state, a strictly more reliable signal than trusting
+    // this device's local `currentUserId`, which only reflects whatever
+    // was true at some earlier point in time.
+    const { data: sessionCheck } = await supabase.auth.getSession();
+    if (!sessionCheck.session) {
+      console.error('[store] completeOnboarding: no active Supabase session at RPC call time.');
+      return null;
+    }
 
     // onboarding.md §2.2's capability table — the only three combinations
     // any Onboarding path may ever produce.
@@ -2303,6 +2335,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.error('[store] setBusinessIdentity: Supabase not configured. See supabase/README.md.');
       return false;
     }
+
+    // Session-freshness guard — see `completeOnboarding`'s own doc comment
+    // for the real, live-reproduced failure this closes.
+    const { data: sessionCheck } = await supabase.auth.getSession();
+    if (!sessionCheck.session) {
+      console.error('[store] setBusinessIdentity: no active Supabase session at RPC call time.');
+      return false;
+    }
+
     const { error } = await supabase.rpc('update_business_identity', {
       p_business_id: state.business.id,
       p_idempotency_key: crypto.randomUUID(),
@@ -3561,6 +3602,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.error('[store] acceptInvitation: Supabase not configured. See supabase/README.md.');
       return null;
     }
+
+    // Session-freshness guard — see `completeOnboarding`'s own doc comment
+    // for the real, live-reproduced failure this closes.
+    const { data: sessionCheck } = await supabase.auth.getSession();
+    if (!sessionCheck.session) {
+      console.error('[store] acceptInvitation: no active Supabase session at RPC call time.');
+      return null;
+    }
+
     const { data, error } = await supabase
       .rpc('accept_invitation', { p_token: token, p_idempotency_key: idempotencyKey })
       .single();
