@@ -309,6 +309,14 @@ export function Selling({
   const contextTotals = todaySalesSummary(state, session.eventId) ?? { total: 0, count: 0 };
   const grid = sellingGridRows(state);
 
+  // home.md §3.9 — "Escanear código de barras" is Paid tier only
+  // (`decision-log.md` D65), the same gate `MercanciaParaEsteEvento.tsx`'s
+  // own `canScanBarcode` already enforces for the equivalent Eventos
+  // shortcut. Pre-existing gap, not introduced by D71 — this button had no
+  // gate in code at all until now, caught while building the "Leer con
+  // NFC" overlay immediately below it.
+  const canScanBarcode = state.business?.subscriptionTier === 'paid';
+
   // home.md §3.9's own new bullet (`decision-log.md` D71, `product-
   // decisions.md` Q31) — a live-evaluated display condition, re-read on
   // every render, never a fact committed once at Session-start the way
@@ -820,9 +828,11 @@ export function Selling({
             </div>
           ) : (
             <div className={styles.gridScroll}>
-              <button className={styles.scanBtn} onClick={() => setScannerMode('active')}>
-                Escanear código de barras
-              </button>
+              {canScanBarcode && (
+                <button className={styles.scanBtn} onClick={() => setScannerMode('active')}>
+                  Escanear código de barras
+                </button>
+              )}
               {showNfcOverlayEntry && (
                 <button className={styles.scanBtn} onClick={() => setNfcOverlayOpen(true)}>
                   Leer con NFC
