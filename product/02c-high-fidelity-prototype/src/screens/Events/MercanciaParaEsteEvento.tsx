@@ -1,7 +1,13 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
-import { disponibleEnGeneral, eventAllocationFor, quantityRemaining } from '../../domain/selectors';
+import {
+  disponibleEnGeneral,
+  eventAllocationFor,
+  productByBarcode,
+  quantityRemaining,
+} from '../../domain/selectors';
 import { Button } from '../../components/Button/Button';
+import { BarcodeScanner } from '../../components/BarcodeScanner/BarcodeScanner';
 import styles from './MercanciaParaEsteEvento.module.css';
 
 /**
@@ -28,6 +34,24 @@ import styles from './MercanciaParaEsteEvento.module.css';
  * `RegisterMerchandise.tsx`'s own per-attempt key ref — generated once per
  * "Guardar cambios" attempt, reused unchanged across a Reintentar retry of
  * that same attempt, cleared only on success.
+ *
+ * §3.21/§3.21a-d (2026-09-16 amendment, expedited pass) — a list-level
+ * "Escanear código de barras" affordance, Paid tier only, sitting above the
+ * row list in the identical position regardless of which row (if any) is
+ * expanded. **A pure navigation jump, never a write** — a deliberate
+ * contrast with the NFC-scan mechanism this slice doesn't build at all
+ * (this file's own docstring above: manual allocation only). On a match
+ * against this Business's Catalog (`productByBarcode`, the same shared
+ * matcher `inventory.md`'s own barcode surfaces already use), collapses
+ * whichever row is expanded and expands the matched row instead, scrolled
+ * into view — the manual stepper still requires her own tap to adjust. No
+ * match → §3.21b, a plain "Entendido" dead-end back to this list, never a
+ * new-Product offer (unlike `inventory.md` §3.8a's registration-time scan
+ * — every Catalog Product already has a row here by construction).
+ * Permission-denied/read-failure reuse `inventory.md` §3.4f/§3.4g's exact
+ * shape and copy, verbatim, per §3.21c/§3.21d's own citation — see
+ * `CatalogView.tsx`'s `barcodeStage === 'cameraFailure'` branch for the
+ * precedent this mirrors.
  */
 export function MercanciaParaEsteEvento({
   eventId,
@@ -73,6 +97,50 @@ export function MercanciaParaEsteEvento({
   // `commitIdempotencyKeyRef`. Cleared on success; left in place on failure
   // so Reintentar replays the exact same attempt.
   const saveIdempotencyKeyRef = useRef<string | null>(null);
+
+  // §3.21/§3.21a-d — the list-level "Escanear código de barras" shortcut's
+  // own sub-state. `closed` renders the ordinary row list untouched;
+  // `scanning` mounts the shared camera; `noMatch`/`cameraFailure` are the
+  // two dead-end screens it can resolve to, each with its own single way
+  // back to `closed`.
+  const [scanMode, setScanMode] = useState<'closed' | 'scanning' | 'noMatch' | 'cameraFailure'>('closed');
+  // Set the instant a scan resolves to a real Product match, alongside
+  // `setExpandedProductId` in the same handler — consumed by the effect
+  // below to scroll that row into view exactly once, then cleared. Kept
+  // separate from `expandedProductId` itself so an ordinary manual row tap
+  // (already visible on screen, nothing to scroll to) never triggers this.
+  const [pendingScrollId, setPendingScrollId] = useState<string | null>(null);
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  // inventory.md §2's D65 barcode-scanning gate, the identical check every
+  // other barcode-scanning surface in this codebase uses (see
+  // `CatalogView.tsx`'s own `canEditBarcode`) — Paid tier only.
+  const canScanBarcode = state.business?.subscriptionTier === 'paid';
+
+  useEffect(() => {
+    if (!pendingScrollId) return;
+    const id = pendingScrollId;
+    const raf = window.requestAnimationFrame(() => {
+      rowRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    setPendingScrollId(null);
+    return () => window.cancelAnimationFrame(raf);
+  }, [pendingScrollId]);
+
+  // A successful scan matching a Catalog Product — collapses whichever row
+  // is currently expanded and expands the matched row instead, scrolled
+  // into view (§3.21's own amendment). Writes nothing: the manual stepper
+  // still needs her own tap, exactly as if she'd scrolled to and tapped
+  // this row herself. No match → §3.21b.
+  function handleScanResult(code: string) {
+    const match = productByBarcode(state, code.trim());
+    if (!match) {
+      setScanMode('noMatch');
+      return;
+    }
+    setExpandedProductId(match.id);
+    setPendingScrollId(match.id);
+    setScanMode('closed');
+  }
 
   const ceilings = useMemo(() => {
     const map: Record<string, number> = {};
@@ -155,6 +223,14 @@ export function MercanciaParaEsteEvento({
         Elige cuánto llevas de cada producto. Lo que no asignes se queda disponible para tus otros eventos.
       </p>
 
+      {/* §3.21's own amendment — list-level, same position whether or not a
+          row happens to be expanded below (never per-row), Paid tier only. */}
+      {canScanBarcode && (
+        <button className={styles.scanBtn} onClick={() => setScanMode('scanning')}>
+          Escanear código de barras
+        </button>
+      )}
+
       {confirmation && <p className={styles.confirmation}>Mercancía actualizada ✓</p>}
 
       <div className={styles.list}>
@@ -165,7 +241,13 @@ export function MercanciaParaEsteEvento({
           const summary = quantity > 0 ? `${quantity} para este evento` : 'nada para este evento todavía';
 
           return (
-            <div key={product.id} className={`${styles.row} stitchBottom`}>
+            <div
+              key={product.id}
+              ref={(el) => {
+                rowRefs.current[product.id] = el;
+              }}
+              className={`${styles.row} stitchBottom`}
+            >
               <button
                 className={styles.rowSummary}
                 onClick={() => setExpandedProductId(expanded ? null : product.id)}
@@ -222,6 +304,63 @@ export function MercanciaParaEsteEvento({
       <div className={`${styles.footer} stitchTop`}>
         <Button onClick={handleSave}>Guardar cambios</Button>
       </div>
+
+      {/* §3.21a — cámara activa. Same live-camera mechanics as every other
+          consumer of this shared component (`ProductPicker.tsx`,
+          `Selling.tsx`, `CatalogView.tsx`'s own "Editar código de barras"),
+          no new camera surface. No typed-search alternative exists on this
+          screen (§3.21a's own explicit note) — "Cancelar" is the sole way
+          back, matching the identical contextual adaptation
+          `inventory.md` §3.4d already makes for the same reason. Mounted as
+          a sibling of the row list above (never nested inside it), so the
+          list stays mounted underneath exactly as it was before this tap —
+          the back arrow/"Cancelar" both simply unmount this, leaving
+          whichever row was expanded (if any) untouched. */}
+      {scanMode === 'scanning' && (
+        <BarcodeScanner
+          backLabel="Mercancía para este evento"
+          fallbackLabel="Cancelar"
+          onBack={() => setScanMode('closed')}
+          onResult={handleScanResult}
+          onPermissionDenied={() => setScanMode('cameraFailure')}
+        />
+      )}
+
+      {/* §3.21c — permiso de cámara denegado. Reused verbatim from
+          `inventory.md` §3.4f's shape/register, the same precedent
+          `CatalogView.tsx`'s own "Editar código de barras" build already
+          established for the identical situation (no typed-search
+          fallback exists in this context either). */}
+      {scanMode === 'cameraFailure' && (
+        <div className={styles.scanFallbackScreen}>
+          <button className={styles.scanFallbackBack} onClick={() => setScanMode('closed')}>
+            ← Mercancía para este evento
+          </button>
+          <p className={styles.scanFallbackText}>
+            No pudimos usar la cámara.
+            <br />
+            Revisa los permisos de cámara de tu teléfono e intenta de nuevo.
+          </p>
+          <Button variant="secondary" onClick={() => setScanMode('closed')}>
+            Cancelar
+          </Button>
+        </div>
+      )}
+
+      {/* §3.21b — código sin coincidencia. Never creates a new Product on a
+          miss (every Catalog Product already has a row here by
+          construction) — a plain, dead-end-free "Entendido" back to §3.21
+          exactly as she left it, adapted from `home.md` §3.9b's own
+          register for the identical underlying fact. */}
+      {scanMode === 'noMatch' && (
+        <div className={styles.scanFallbackScreen}>
+          <button className={styles.scanFallbackBack} onClick={() => setScanMode('closed')}>
+            ← Mercancía para este evento
+          </button>
+          <p className={styles.scanFallbackText}>No encontramos este código en tu Catálogo.</p>
+          <Button onClick={() => setScanMode('closed')}>Entendido</Button>
+        </div>
+      )}
     </>
   );
 }

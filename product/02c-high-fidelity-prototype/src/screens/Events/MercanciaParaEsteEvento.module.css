@@ -174,3 +174,55 @@
   font: var(--text-body);
   color: #6B6259;
 }
+
+/* §3.21's own amendment — the list-level "Escanear código de barras"
+   shortcut, Paid tier only. Local copy of `ProductPicker.module.css`'s own
+   `.scanBtn` shape, per this folder's own established convention (see this
+   file's own header comment) rather than a cross-folder import. */
+.scanBtn {
+  display: block;
+  text-align: left;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  padding: 12px 14px;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-obsidian);
+  cursor: pointer;
+  margin: 0 var(--space-4) var(--space-3);
+}
+
+/* §3.21b/§3.21c — the two scan dead-end screens (no-match, camera
+   permission denied), both full-screen fallbacks. Local copy of
+   `ProductPicker.module.css`'s own `.cameraFailureScreen`/
+   `.cameraFailureBack`/`.cameraFailureText` shapes — the same "light back +
+   content push-in" chrome, not the dark `BarcodeScanner.module.css` camera
+   theme, since neither is a camera view. */
+.scanFallbackScreen {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: var(--color-white);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6) var(--space-8);
+  overflow-y: auto;
+}
+
+.scanFallbackBack {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
+.scanFallbackText {
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
