@@ -39,20 +39,31 @@ import styles from './NFCScanPrompt.module.css';
  *
  * **`state` (live-hardware reliability fix, 2026-09-17).** Real Web NFC
  * (`NDEFReader.scan()`/`.write()`) can only ever be started inside a user-
- * gesture handler — this component can never auto-start a session the
- * instant it mounts, so there is always a genuine moment, at minimum before
- * the first on-screen tap, where no session is listening yet. Before this
- * fix, this component rendered exactly one visual state always (this
- * pulsing "ready" ring, unconditionally) — every real-hardware call site
- * tracked whether a session was actually active purely via a non-reactive
- * `useRef`, so a session that silently died (`scan()`/`write()` rejecting,
- * or the ref resetting after a genuine platform failure) left the identical
- * "ready, tap a tag now" ring on screen, inviting a physical tap into a dead
- * session — which Android's own OS-level NFC dispatch can intercept instead
- * (its generic "Nueva etiqueta escaneada / Etiqueta vacía" system dialog, or
- * launching an unrelated app for a tag that already carries pre-written
- * content). `state` makes that real, three-way distinction reactive instead
- * of ref-only, so this screen can never visually lie about whether it's
+ * gesture handler — *this component itself* (a pure presentational
+ * button, no `scan()` call of its own) never auto-starts anything; every
+ * caller below owns exactly when its own `scan()` session actually begins.
+ * Most callers wait for the first on-screen tap of this very component, so
+ * for them there's always a genuine moment where no session is listening
+ * yet. **`AssignTags.tsx` is a deliberate, disclosed exception (2026-09-17
+ * mount-time auto-start fix, D74 follow-up):** it calls `scan()` from a
+ * mount effect the instant it mounts, inheriting the still-fresh transient
+ * activation from the click in a *different* component that caused this
+ * mount — see that file's own doc comment for the sourced Chromium
+ * reasoning. `'idle'` there is reached only as the fallback once that
+ * inherited activation window has genuinely lapsed, not the routine
+ * starting state a first-ever tap resolves elsewhere. Before this whole
+ * `state` mechanism existed, this component rendered exactly one visual
+ * state always (this pulsing "ready" ring, unconditionally) — every
+ * real-hardware call site tracked whether a session was actually active
+ * purely via a non-reactive `useRef`, so a session that silently died
+ * (`scan()`/`write()` rejecting, or the ref resetting after a genuine
+ * platform failure) left the identical "ready, tap a tag now" ring on
+ * screen, inviting a physical tap into a dead session — which Android's
+ * own OS-level NFC dispatch can intercept instead (its generic "Nueva
+ * etiqueta escaneada / Etiqueta vacía" system dialog, or launching an
+ * unrelated app for a tag that already carries pre-written content).
+ * `state` makes that real, three-way distinction reactive instead of
+ * ref-only, so this screen can never visually lie about whether it's
  * actually listening:
  * - `'idle'` — no session genuinely started yet: before the first tap, right
  *   after an explicit close/reset, or (write-flow call sites only) between
