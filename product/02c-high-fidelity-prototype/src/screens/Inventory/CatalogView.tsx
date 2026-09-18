@@ -31,6 +31,7 @@ export function CatalogView({
   onRegister,
   onRegisterProduct,
   onOpenAssignTagsForProduct,
+  onStartNfcAssignScan,
   confirmationMessage,
   confirmationDetail,
   settingsTagsBanner,
@@ -41,6 +42,16 @@ export function CatalogView({
    * zone's toggle-ON auto-open and the sixth zone's resume tap both call
    * this, scoped to one Product's own pending units. */
   onOpenAssignTagsForProduct: (productId: string) => void;
+  /** 2026-09-18 architecture fix (`decision-log.md` D74/D75 follow-up) —
+   * `nfcAssignSession.startScan` (`useNfcAssignTagSession.ts`), threaded
+   * down from `App.tsx` via `InventoryScreen.tsx`. Called synchronously,
+   * right alongside `onOpenAssignTagsForProduct` at both of this screen's
+   * own tap sites below, so the real `NDEFReader.scan()` call happens
+   * inside the same tap that semantically starts tagging — never deferred
+   * into `AssignTags.tsx`'s own mount effect after the navigation, the
+   * unreliable shape this fix replaces. See the hook's own doc comment for
+   * the full reasoning. */
+  onStartNfcAssignScan: () => Promise<void>;
   confirmationMessage?: string | null;
   /** inventory.md §3.13's mixed-Lot completion-copy variant
    * (`decision-log.md` D71) — an optional second line rendered directly
@@ -234,6 +245,22 @@ export function CatalogView({
       (u) => u.productId === productId && u.status === 'available' && u.tagId == null,
     ).length;
     if (rawPendingUnits > 0) {
+      // 2026-09-18 architecture fix — `startScan()` called synchronously,
+      // immediately before the navigation it's paired with, right here in
+      // the resolved-RPC continuation of the same handler the original tap
+      // invoked. Not literally inside the click's own synchronous callstack
+      // (this line only runs after `await setProductNfcTaggingEnabled(...)`
+      // above resolves) — but Chromium's transient-activation budget is a
+      // genuine 5-second wall-clock window from the original gesture, not a
+      // same-callstack requirement (`useNfcAssignTagSession.ts`'s own doc
+      // comment), and this removes the one hop that was actually unreliable:
+      // starting the scan from a *newly-mounted component's own effect*
+      // after an additional React render/commit cycle on top of this RPC's
+      // own latency. Fire-and-forget (never awaited) — `onOpenAssignTagsForProduct`
+      // right below must not wait on it; `startScan`'s own internal guard
+      // makes it safe to call unconditionally, and `AssignTags.tsx`'s mount
+      // effect finds it already started (or starting) and no-ops.
+      void onStartNfcAssignScan();
       onOpenAssignTagsForProduct(productId);
     }
     // Zero eligible units right now (nothing yet received, or everything
@@ -422,7 +449,25 @@ export function CatalogView({
               // `Product.nfcTaggingEnabled`.
               pendingTag={
                 pendingTagRowCount > 0
-                  ? { count: pendingTagRowCount, onTap: () => onOpenAssignTagsForProduct(product.id) }
+                  ? {
+                      count: pendingTagRowCount,
+                      // 2026-09-18 architecture fix — this tap is itself the
+                      // literal, synchronous user gesture (no `await` in
+                      // between, unlike the toggle-ON site above), the exact
+                      // same shape `Selling.tsx`'s "Leer con NFC"/
+                      // `MercanciaParaEsteEvento.tsx`'s scanner-open button
+                      // already use: `handleScan()`/`startScan()` called
+                      // directly inside the same `onClick`, no navigation, no
+                      // new-component-mount gap. `onStartNfcAssignScan`
+                      // fire-and-forget before `onOpenAssignTagsForProduct`
+                      // — the Product Owner's own instruction, "the action
+                      // that semantically starts the NFC operation should
+                      // start listening," applies most literally right here.
+                      onTap: () => {
+                        void onStartNfcAssignScan();
+                        onOpenAssignTagsForProduct(product.id);
+                      },
+                    }
                   : undefined
               }
               nfcToggle={

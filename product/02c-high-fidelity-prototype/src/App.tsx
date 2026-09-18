@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from './domain/store';
 import { currentUser, findMembership } from './domain/selectors';
+import { useNfcAssignTagSession } from './domain/useNfcAssignTagSession';
 import type { AppState } from './domain/types';
 import { NavBar, type TabKey } from './components/NavBar/NavBar';
 import { HomeScreen } from './screens/Home/HomeScreen';
@@ -108,6 +109,14 @@ export default function App() {
   const [assignTagsMixedNonEligible, setAssignTagsMixedNonEligible] = useState<
     { productId: string; quantity: number }[] | null
   >(null);
+  // 2026-09-18 architecture fix (`decision-log.md` D74/D75 follow-up) — the
+  // live Web NFC listening session behind Asignar Tags, lifted here for the
+  // identical reason `assignTagsEntry`/`assignTagsSegmentTotals` already are:
+  // it must be started from a tap in `CatalogView.tsx` and survive the
+  // navigation into `AssignTags.tsx`, a different component instance. See
+  // `useNfcAssignTagSession.ts`'s own top-of-file doc comment for the full
+  // "why this moved out of `AssignTags.tsx`'s own state" reasoning.
+  const nfcAssignSession = useNfcAssignTagSession();
 
   return (
     <>
@@ -244,6 +253,7 @@ export default function App() {
               assignTagsEntry={assignTagsEntry}
               assignTagsSegmentTotals={assignTagsSegmentTotals}
               onAssignTagsSegmentTotalsChange={setAssignTagsSegmentTotals}
+              nfcAssignSession={nfcAssignSession}
             />
           </ScreenTransition>
         )}

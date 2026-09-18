@@ -5,6 +5,7 @@ import { InventoryColdStart } from './InventoryColdStart';
 import { CatalogView } from './CatalogView';
 import { RegisterMerchandise } from './RegisterMerchandise';
 import { AssignTags, type AssignTagsEntryLine } from './AssignTags';
+import type { NfcAssignSession } from '../../domain/useNfcAssignTagSession';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 
 export type InventoryView =
@@ -69,6 +70,7 @@ export function InventoryScreen({
   assignTagsEntry,
   assignTagsSegmentTotals,
   onAssignTagsSegmentTotalsChange,
+  nfcAssignSession,
 }: {
   view: InventoryView;
   onOpenRegister: (prefillProductId?: string) => void;
@@ -127,6 +129,15 @@ export function InventoryScreen({
   assignTagsEntry: AssignTagsEntryLine[] | null;
   assignTagsSegmentTotals: Record<string, number>;
   onAssignTagsSegmentTotalsChange: (updater: (totals: Record<string, number>) => Record<string, number>) => void;
+  /** 2026-09-18 architecture fix (`decision-log.md` D74/D75 follow-up) —
+   * the live Web NFC session (`useNfcAssignTagSession`), owned by `App.tsx`
+   * one level up, alongside `assignTagsEntry`/`assignTagsSegmentTotals` for
+   * the identical reason. Forwarded whole to `AssignTags` (which reads the
+   * live session state/feedback and owns the mount-time fallback start);
+   * only its `startScan` function is forwarded to `CatalogView` (which
+   * never renders the ring itself, only triggers the real gesture-bound
+   * `scan()` call ahead of navigating in). */
+  nfcAssignSession: NfcAssignSession;
 }) {
   const { state } = useStore();
   const rows = catalogRows(state);
@@ -265,6 +276,7 @@ export function InventoryScreen({
           segmentTotals={assignTagsSegmentTotals}
           onSegmentTotalsChange={onAssignTagsSegmentTotalsChange}
           scopeProductId={scopeProductId}
+          nfcSession={nfcAssignSession}
         />
       </ScreenTransition>
     );
@@ -307,6 +319,7 @@ export function InventoryScreen({
         onRegister={() => onOpenRegister()}
         onRegisterProduct={(productId) => onOpenRegister(productId)}
         onOpenAssignTagsForProduct={onOpenAssignTagsForProduct}
+        onStartNfcAssignScan={nfcAssignSession.startScan}
         confirmationMessage={confirmationMessage}
         confirmationDetail={confirmationDetail}
         settingsTagsBanner={settingsTagsBanner}

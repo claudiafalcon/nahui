@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { useStore } from '../../domain/store';
 import { pendingTagBreakdown } from '../../domain/selectors';
 import { makeId } from '../../domain/id';
-import { NFC_SIMULATION_ENABLED, nfcSupported, nfcUnavailable } from '../../domain/nfcSupport';
+import { nfcSupported, nfcUnavailable } from '../../domain/nfcSupport';
+import type { NfcAssignSession } from '../../domain/useNfcAssignTagSession';
 import { Button } from '../../components/Button/Button';
 import { NFCScanPrompt } from '../../components/NFCScanPrompt/NFCScanPrompt';
 import styles from './AssignTags.module.css';
@@ -26,16 +27,15 @@ const SCAN_FAIL_CHANCE = 0.18;
  * that's genuinely already assigned, because she physically re-tapped a tag
  * already stuck to a different garment. */
 const DUPLICATE_TAG_CHANCE = 0.12;
-// `nfcSupported` / `NFC_SIMULATION_ENABLED` / `nfcUnavailable` — the shared
-// capability + simulation switch (`src/domain/nfcSupport.ts`, Stage 7
-// correctness fix 2026-09-17), replacing this file's own former
-// `'NDEFReader' in window` constant. The simulated path below is now only
-// reachable when `NFC_SIMULATION_ENABLED` (dev / explicit demo build) —
-// a production build on a browser without Web NFC renders
-// `NFCScanPrompt`'s `'unsupported'` state instead and never commits a
-// fabricated tag id.
-
-type ScanFeedback = { kind: 'already-assigned' } | { kind: 'scan-failed' } | null;
+// `nfcSupported` / `nfcUnavailable` — the shared capability + simulation
+// switch (`src/domain/nfcSupport.ts`, Stage 7 correctness fix 2026-09-17),
+// replacing this file's own former `'NDEFReader' in window` constant. The
+// simulated path below is now only reachable when Web NFC isn't real and
+// simulation is allowed (`NFC_SIMULATION_ENABLED`, read inside
+// `nfcUnavailable`'s own definition and inside `nfcSession`'s own
+// `'listening'`-by-default initial state, `useNfcAssignTagSession.ts`) — a
+// production build on a browser without Web NFC renders `NFCScanPrompt`'s
+// `'unsupported'` state instead and never commits a fabricated tag id.
 
 /** AT-M1/AT-M2 fix-round shape — a frozen entry (the "Lo que registraste"
  * receipt) plus the frozen per-Product "M" denominator map, both lifted out
@@ -81,6 +81,7 @@ export function AssignTags({
   segmentTotals,
   onSegmentTotalsChange,
   scopeProductId,
+  nfcSession,
 }: {
   onDefer: () => void;
   onComplete: () => void;
@@ -120,227 +121,102 @@ export function AssignTags({
    * filter (`selectors.ts`) — never some *other* Product's units surfacing
    * mid-queue while she's working through one specific Product's stack. */
   scopeProductId?: string;
+  /** 2026-09-18 architecture fix (`decision-log.md` D74/D75 follow-up) —
+   * the live Web NFC session itself, lifted out of this component's own
+   * state and owned by `App.tsx` (`useNfcAssignTagSession`, alongside
+   * `assignTagsEntry`/`assignTagsSegmentTotals`, the identical reason those
+   * two are already lifted there) so it can be started from a click handler
+   * in `CatalogView.tsx` — a different component — and survive the
+   * navigation into this one. See that hook's own top-of-file doc comment
+   * for the full "why this moved" reasoning. */
+  nfcSession: NfcAssignSession;
 }) {
   const { state, assignTagToNextPendingUnit } = useStore();
   const breakdown = pendingTagBreakdown(state, scopeProductId);
   const current = breakdown[0] ?? null;
 
-  const [feedback, setFeedback] = useState<ScanFeedback>(null);
+  const { state: nfcState, feedback, setFeedback, startScan, stopSession, handleTagResolvedRef } = nfcSession;
 
-  // Live-hardware correctness fix (2026-09-17), read-path rebuild
-  // (`decision-log.md` D74, same day) — `NFCScanPrompt`'s own reactive
-  // `state`, real `useState` rather than a ref (see that component's own
-  // top-of-file doc comment). **Continuous scan, mirroring
-  // `Selling.tsx`/`MercanciaParaEsteEvento.tsx`'s own long-lived `scan()`
-  // session shape, not one `write()` call per physical tag.** D74 replaced
-  // this file's real-hardware path from `NDEFReader.write()` (a fabricated
-  // client-minted id, physically written onto the tag) to `NDEFReader.scan()`
-  // (reading the tag's own factory-set hardware UID) — and `scan()`, unlike
-  // `write()`, naturally supports many physical taps against one listening
-  // session via `onreading` firing repeatedly, exactly the shape §3.14's own
-  // "no per-unit confirm tap, advances automatically" flow already wants.
-  // So this file now starts exactly one `scan()` session for the whole
-  // tagging queue, same as its two siblings, rather than reopening a fresh
-  // write-per-tag cycle: `'listening'` is set once `scan()` has genuinely
-  // resolved (the browser has granted and begun the session), and a
-  // successful or failed commit (`commitTag`, below) no longer resets
-  // `nfcState` back to `'idle'` — the ring stays honestly listening for the
-  // next physical tag exactly as it does mid-Session on `Selling.tsx`.
-  // Simulated (non-hardware, dev/demo-build only) browsers have no real
-  // session to represent at all, so `nfcState` there stays permanently
-  // `'listening'` — the original, always-on look, unchanged, since there is
-  // no real dead-session hazard (no real NFC radio) for it to misrepresent.
-  // A production build on a browser without Web NFC is `'unsupported'`
-  // from mount and stays there: nothing below ever transitions it.
-  const [nfcState, setNfcState] = useState<'idle' | 'listening' | 'error' | 'unsupported'>(
-    nfcSupported ? 'idle' : NFC_SIMULATION_ENABLED ? 'listening' : 'unsupported',
-  );
-
-  // Real Web NFC read path only (`nfcSupported`) — the same
-  // `scanStartedRef`/`nfcAbortRef` trio `Selling.tsx`/
-  // `MercanciaParaEsteEvento.tsx` already establish. `scanStartedRef` guards
-  // the *dispatch* — exactly one in-flight `scan()` attempt at a time (a
-  // ref, not state, so a second tap arriving before React flushes can't
-  // fire a second concurrent `scan()` call); `nfcAbortRef` is the
-  // `AbortController` for that session's `scan()` call, aborted on unmount
-  // so a stale listener never fires into an unmounted component (she
-  // navigates away, e.g. "Terminar después," mid-session).
-  const scanStartedRef = useRef(false);
-  const nfcAbortRef = useRef<AbortController | null>(null);
-  // Always points at this render's own `commitTag` (defined below, after
-  // this component's `if (!current)` early return) — declared here,
-  // unconditionally, with this component's other hooks (Rules of Hooks);
-  // reassigned every render further down, where `commitTag` itself is
-  // defined. See that reassignment's own doc comment for why a persistent
-  // `ndef.onreading` handler needs this indirection at all.
-  const handleTagResolvedRef = useRef<(tagId: string) => Promise<void>>(async () => {});
-
-  // Mount-time auto-start fix (2026-09-17, D74 follow-up — live-testing
-  // friction: the Product Owner kept tapping a physical tag while this ring
-  // was still gray, landing on Android's own generic NFC dispatch instead
-  // of Nahui). Extracted out of `handleScan` below into its own stable
-  // `useCallback` closing over nothing but the refs/setters declared above
-  // (never `current`/`commitTag` directly, both of which are only
-  // meaningful after this component's `if (!current)` early return below) —
-  // so its identity never changes across renders, an empty dependency array
-  // is correct, and it's safe to call from two places without ever racing:
-  // the mount effect immediately below, and `handleScan`'s own
-  // `nfcSupported` branch (the manual-tap retry path a failed mount-time
-  // attempt falls back to). `scanStartedRef` is the one guard shared by
-  // both call sites — a session already starting or started makes either
-  // caller a harmless no-op, so the two can never double-fire a second
-  // concurrent `scan()`.
-  const startScan = useCallback(() => {
-    if (scanStartedRef.current) return Promise.resolve();
-    scanStartedRef.current = true;
-    const controller = new AbortController();
-    nfcAbortRef.current = controller;
-    return (async () => {
+  // 2026-09-18 architecture fix (`decision-log.md` D74/D75 follow-up) — the
+  // real `scan()` session mechanics (the `'idle'|'listening'|'error'|
+  // 'unsupported'` state itself, `scanStartedRef`/`nfcAbortRef`, the
+  // persistent `onreading`/`onreadingerror` handlers, the D75
+  // `visibilitychange` hardening) all moved out of this component's own
+  // state into `nfcSession` (`useNfcAssignTagSession`, owned by `App.tsx`)
+  // — see that hook's own top-of-file doc comment for the full mechanics
+  // and the "why this moved" reasoning. `startScan`/`stopSession`
+  // destructured above are that hook's own functions, unchanged in
+  // behavior, just no longer local to this component.
+  //
+  // Mount-time auto-start — kept here as a fallback for the one entry point
+  // that doesn't originate in `CatalogView.tsx` and so can't call
+  // `startScan()` from its own click handler ahead of time:
+  // `RegisterMerchandise.tsx`'s post-save auto-entry (Lot-scoped, entry
+  // point 1). For the two `CatalogView.tsx`-originated entry points
+  // (toggle-ON auto-open, the "[ N sin etiquetar ]" resume tap), `startScan`
+  // has already been called synchronously (or as the first step of the
+  // resolved-RPC continuation) inside that component's own tap handler by
+  // the time this effect runs — `nfcSession`'s own internal
+  // `scanStartedRef` guard makes this call a harmless no-op then, never a
+  // second concurrent `scan()`. `useLayoutEffect`, not `useEffect`
+  // (2026-09-18 real-device fix) — fires synchronously after this
+  // component's DOM mutations commit, strictly earlier than a passive
+  // effect, narrowing the gap between `RegisterMerchandise.tsx`'s own
+  // `await commitLot(...)` and this attempt's own `scan()` call as much as
+  // a mount-triggered effect still can. In every case where Chromium's
+  // 5-second transient-activation budget (`kActivationLifespan`,
+  // `third_party/blink/public/common/frame/user_activation_state.h`) is
+  // genuinely exhausted by the time this effect runs, `startScan`'s own
+  // `catch` (inside `nfcSession`) falls back to `state: 'error'` ("Toca
+  // para intentar de nuevo"), never a stuck state.
+  //
+  // Best-effort diagnostic, 2026-09-18 — `navigator.permissions.query` for
+  // `'nfc'` isn't implemented by every browser (and isn't in this
+  // codebase's own TS lib types), so this is wrapped defensively and never
+  // gates `startScan()` itself. Logged only, to tell a future real-device
+  // session whether the browser already considers this origin
+  // NFC-permission-granted before this attempt starts.
+  useLayoutEffect(() => {
+    if (!nfcSupported) return;
+    (async () => {
       try {
-        const ndef = new window.NDEFReader!();
-        ndef.onreading = (event) => {
-          // `decision-log.md` D74 — keyed on the tag's own hardware UID
-          // (`serialNumber`), never `message.records`: a factory-blank tag
-          // fires `reading` with an empty `message` and must still resolve
-          // correctly (Nahui never writes to it). An empty `serialNumber`
-          // (spec-legal — "may be unavailable") is a genuine read failure,
-          // routed through the same §3.16 feedback a bad physical read
-          // already gets, never committed as a tag identifier.
-          if (!event.serialNumber) {
-            setFeedback({ kind: 'scan-failed' });
-            return;
-          }
-          void handleTagResolvedRef.current(event.serialNumber);
-        };
-        ndef.onreadingerror = () => {
-          // A single bad physical read — the session itself stays alive
-          // and listening, so `nfcState` is untouched here (mirrors
-          // `Selling.tsx`'s identical distinction).
-          setFeedback({ kind: 'scan-failed' });
-        };
-        // Hangs until this listening session is actually established —
-        // resolves once, then `onreading` fires for every subsequent tap,
-        // one commit per physical tag, no further on-screen tap needed.
-        await ndef.scan({ signal: controller.signal });
-        // The browser has genuinely granted and begun the session now —
-        // the one moment `NFCScanPrompt`'s pulsing "listening" ring is
-        // actually honest.
-        setNfcState('listening');
+        const permissions = navigator.permissions as
+          | { query: (descriptor: { name: string }) => Promise<{ state: string }> }
+          | undefined;
+        const status = await permissions?.query({ name: 'nfc' });
+        if (status) console.info('[AssignTags] navigator.permissions "nfc" state at mount:', status.state);
       } catch {
-        // `scan()` itself rejected — permission denied, hardware
-        // unavailable despite feature detection, or (mount-time call only)
-        // a genuinely expired transient-activation window by the time this
-        // effect ran — a failure of this specific attempt, not a
-        // permanently wedged session: leave `scanStartedRef` un-set so the
-        // next tap on the ring retries starting the session from scratch,
-        // the exact same graceful fallback a failed manual tap already had
-        // before this fix. The session itself never started —
-        // `NFCScanPrompt`'s own `'error'` ring communicates that directly;
-        // no separate ambient `scan-failed` feedback line here (that copy
-        // is reserved for a per-tag misread mid-session, above).
-        scanStartedRef.current = false;
-        nfcAbortRef.current = null;
-        setNfcState('error');
+        console.info('[AssignTags] navigator.permissions "nfc" query unsupported on this browser.');
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Mount-time auto-start — every real entry point into `AssignTags` is
-  // itself a genuine user click/tap in a *different* component
-  // (`CatalogView.tsx`'s toggle-ON auto-open, its own "[ N sin etiquetar ]"
-  // resume tap, `RegisterMerchandise.tsx`'s post-save auto-entry),
-  // immediately followed by a React state update that mounts this
-  // component as a new instance — never a stale, untouched page. Chromium's
-  // Web NFC permission check is a genuine wall-clock budget, not "must be
-  // the literal synchronous call inside the click handler": `scan()`
-  // requests the "nfc" permission via `PermissionService`, and the browser
-  // process grants it only if `RenderFrameHost::HasTransientUserActivation()`
-  // is still true at that moment — a 5-second window from the original
-  // gesture (`kActivationLifespan`,
-  // `third_party/blink/public/common/frame/user_activation_state.h`),
-  // explicitly sized, per that file's own comment, "long enough to allow
-  // network round trips even in a very slow connection." Confirmed by
-  // reading Chromium's own current source directly (`ndef_reader.cc`'s
-  // `scan()` → `PermissionServiceImpl`'s
-  // `HasTransientUserActivation()` read, evaluated at IPC-handling time,
-  // not at the original click → `NfcPermissionContext::DecidePermission`'s
-  // `user_gesture` check), not reasoned about abstractly — no live
-  // Chrome/Android device was available to physically confirm this in
-  // addition, a gap disclosed here rather than silently assumed closed. A
-  // React passive effect firing after a click-triggered mount lands within
-  // single-digit-to-low-double-digit milliseconds for the two
-  // synchronous-state-flip entry points (both `CatalogView.tsx` paths),
-  // comfortably inside the 5-second budget; `RegisterMerchandise.tsx`'s
-  // post-save entry fires after an *awaited* `commitLot` RPC — the one
-  // entry point where a genuinely slow network could still exhaust the
-  // budget before this effect runs. That case is exactly what `startScan`'s
-  // own `catch`, above, exists for: falls back to `nfcState: 'error'`
-  // ("Toca para intentar de nuevo"), never a stuck state. Guarded by the
-  // same `scanStartedRef` as the manual-tap retry path (`startScan` itself)
-  // — this effect and a tap on the ring can never race or double-fire.
-  useEffect(() => {
-    if (!nfcSupported) return;
     void startScan();
   }, [startScan]);
 
+  // Tears the live session down on every genuine "leaving Asignar Tags"
+  // transition ("Terminar después," a completed queue routing back to
+  // Catalog view) — every one of those unmounts this component
+  // (`InventoryScreen.tsx`'s own discriminated `InventoryView` branching),
+  // so this single cleanup site covers all of them, the same coverage the
+  // previous component-scoped cleanup effect already had, now delegated to
+  // `nfcSession.stopSession` (shared with `App.tsx`, see that function's
+  // own doc comment). Also closes the identical React 18 `<StrictMode>`
+  // double-invoke hazard the previous local version fixed (2026-09-18,
+  // `main.tsx`'s dev-only double-invoke of every effect on initial mount):
+  // `stopSession` resets `nfcSession`'s own dispatch guard on both a
+  // genuine unmount and StrictMode's synthetic one, so a synthetic
+  // remount's second `startScan()` call is never silently guarded away by
+  // a stale "already started" flag left over from the aborted first
+  // attempt. **Disclosed extension, 2026-09-18** — this now also applies,
+  // dev-only, to a session `CatalogView.tsx` already started before this
+  // component ever mounted: StrictMode's synthetic cleanup will abort that
+  // real, live session and `startScan`'s own mount-effect retry immediately
+  // restarts it, a harmless extra `scan()` round-trip that only ever
+  // happens under `vite dev`'s double-invoke, never in a production build
+  // (which doesn't run `<StrictMode>` at all) and never observably to her —
+  // the ring settles into the correct final state either way.
   useEffect(() => {
-    return () => {
-      nfcAbortRef.current?.abort();
-    };
-  }, []);
-
-  // Live-hardware correctness fix (2026-09-17, visibility-hardening
-  // follow-up), carried over unchanged in shape from the write-flow version
-  // of this same fix, now re-targeted at the `scan()` session D74
-  // introduced — the identical dead-session-while-hidden exposure
-  // `Selling.tsx`/`MercanciaParaEsteEvento.tsx`'s own sibling fix already
-  // closes: per Chromium's own documented behavior, Android's real
-  // underlying reader-mode session is silently disabled the instant this
-  // tab goes hidden (screen lock, app-switch), with no JS event this code
-  // was listening for — and once past its first `scan()` resolution
-  // (`nfcState === 'listening'`, the steady state most of a tagging session
-  // spends in), there's no pending promise left for that silent death to
-  // reject, so without this listener the ring kept honestly showing "ready,
-  // acerca el tag" over a browser-level session Chrome had already killed
-  // in the background.
-  const wasSessionActiveBeforeHiddenRef = useRef(false);
-  useEffect(() => {
-    if (!nfcSupported) return;
-    function handleVisibilityChange() {
-      if (document.visibilityState === 'hidden') {
-        if (scanStartedRef.current) {
-          nfcAbortRef.current?.abort();
-          nfcAbortRef.current = null;
-          scanStartedRef.current = false;
-          wasSessionActiveBeforeHiddenRef.current = true;
-          // Live-hardware correctness fix (2026-09-17, staleness-window
-          // follow-up) — the teardown above is real and synchronous (the
-          // session is genuinely dead the instant the tab hides), but
-          // leaving `nfcState` untouched here left the ring rendering
-          // `'listening'` for the entire time the tab stayed hidden,
-          // correcting only later, whenever (if ever) the matching
-          // `'visible'` transition fired. `'idle'`, not `'error'` — this
-          // isn't a failure, the session was deliberately torn down because
-          // the tab is backgrounded, the same "no active session, needs a
-          // fresh tap" semantics `'idle'` already carries everywhere else in
-          // this file.
-          setNfcState('idle');
-        }
-      } else if (wasSessionActiveBeforeHiddenRef.current) {
-        wasSessionActiveBeforeHiddenRef.current = false;
-        // Redundant with the `'hidden'` branch's own `setNfcState('idle')`
-        // above once that fix is in place for the case where `'hidden'`
-        // already ran — kept anyway as a harmless no-op / defensive
-        // backstop in case some device fires `'visible'` without a matching
-        // prior `'hidden'` having gone through this exact code path, safer
-        // than assuming perfect event pairing on every device.
-        setNfcState('idle');
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
+    return stopSession;
+  }, [stopSession]);
 
   // A stable string key of the live queue's own shape (product id + its
   // live count, front-to-back) — changes exactly when a scan lands or the
