@@ -16,6 +16,7 @@ import {
   todaySalesSummary,
 } from '../../domain/selectors';
 import { todayKey } from '../../domain/dates';
+import { NFC_SIMULATION_ENABLED, nfcSupported, nfcUnavailable } from '../../domain/nfcSupport';
 import { SessionHeader } from '../../components/SessionHeader/SessionHeader';
 import { VentaActualTray } from '../../components/VentaActualTray/VentaActualTray';
 import { ProductTile } from '../../components/ProductTile/ProductTile';
@@ -58,12 +59,14 @@ import styles from './Selling.module.css';
  *   the domain layer honest" posture `AssignTags.tsx`'s own scan simulation
  *   already established, not a new convention invented here.
  */
-/** Real Web NFC (`NDEFReader`) is Chrome/Android-only as of this build —
- * resolved once, same shape as `BarcodeScanner.tsx`'s own
- * `'BarcodeDetector' in window` check and `AssignTags.tsx`'s own identical
- * constant. Everywhere else (iPhone Safari, desktop, any browser without
- * it) keeps today's simulated scan behavior below, completely unchanged. */
-const nfcSupported = typeof window !== 'undefined' && 'NDEFReader' in window;
+// `nfcSupported` / `NFC_SIMULATION_ENABLED` / `nfcUnavailable` — the shared
+// capability + simulation switch (`src/domain/nfcSupport.ts`, Stage 7
+// correctness fix 2026-09-17), replacing this file's own former
+// `'NDEFReader' in window` constant. The simulated pool in `handleScan`
+// below is now only reachable when `NFC_SIMULATION_ENABLED` (dev / explicit
+// demo build) — a production build on a browser without Web NFC renders
+// `NFCScanPrompt`'s `'unsupported'` state on both of this screen's NFC
+// surfaces and never resolves a fake sale-by-tag.
 
 export function Selling({
   role,
@@ -290,11 +293,15 @@ export function Selling({
   // con NFC" overlay) — both call the identical `handleScan` below and, per
   // this file's own existing comment, only one is ever mounted at a time,
   // so one shared piece of state is correct, not two independent copies.
-  // Simulated (non-hardware) browsers have no real session to represent, so
-  // this stays permanently `'listening'` there — the original, always-on
-  // look, unchanged (no real NFC radio for a dead session to misrepresent).
-  const [nfcSessionState, setNfcSessionState] = useState<'idle' | 'listening' | 'error'>(
-    nfcSupported ? 'idle' : 'listening',
+  // Simulated (non-hardware, dev/demo-build only) browsers have no real
+  // session to represent, so this stays permanently `'listening'` there —
+  // the original, always-on look, unchanged (no real NFC radio for a dead
+  // session to misrepresent). A production build on a browser without Web
+  // NFC is `'unsupported'` from mount and stays there: `closeNfcOverlay`'s
+  // and the visibility listener's own resets are both `nfcSupported`-gated,
+  // so nothing below ever transitions it away.
+  const [nfcSessionState, setNfcSessionState] = useState<'idle' | 'listening' | 'error' | 'unsupported'>(
+    nfcSupported ? 'idle' : NFC_SIMULATION_ENABLED ? 'listening' : 'unsupported',
   );
   // Always points at this render's own `resolveTag` (below) — the mechanism
   // that keeps the persistent `ndef.onreading` handler (set up only once)
@@ -690,6 +697,15 @@ export function Selling({
   }
 
   async function handleScan() {
+    if (nfcUnavailable) {
+      // Stage 7 correctness fix (2026-09-17) — no Web NFC and no simulation
+      // allowed in this build. `NFCScanPrompt`'s `'unsupported'` state
+      // already renders nothing tappable on either surface; this guard
+      // additionally makes the simulated pool below unreachable, so no
+      // random tagged unit is ever pushed through `add_item_to_sale_by_tag`
+      // as if a physical tag had been read.
+      return;
+    }
     if (nfcSupported) {
       if (scanStartedRef.current) {
         // A scan session is already listening in the background — she just
@@ -738,8 +754,10 @@ export function Selling({
       return;
     }
 
-    // Simulated path — every browser without Web NFC (iPhone Safari,
-    // desktop, any browser lacking `NDEFReader`). Unchanged for §3.10; for
+    // Simulated path — a browser without Web NFC (iPhone Safari, desktop,
+    // any browser lacking `NDEFReader`) **in a dev or explicit demo build
+    // only** (`NFC_SIMULATION_ENABLED`; the `nfcUnavailable` guard above
+    // makes this unreachable in production). Unchanged for §3.10; for
     // the §3.9d overlay, an empty simulated pool (nothing tagged-and-
     // available to draw from in this build/demo environment) is the
     // closest available meaning to §3.9e's "tag doesn't resolve to any

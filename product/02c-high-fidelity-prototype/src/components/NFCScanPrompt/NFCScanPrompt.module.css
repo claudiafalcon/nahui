@@ -33,7 +33,11 @@
     box-shadow var(--duration-base) var(--ease-standard);
 }
 
-.prompt:active:not(:disabled) .ring {
+/* `:not(.promptUnsupported)` — the `'unsupported'` state is a plain `div`
+   (never `:disabled`), so without this exclusion a press on the inert ring
+   would still squash it, a tactile "this responds" cue on the one state
+   that must read as responding to nothing. */
+.prompt:active:not(:disabled):not(.promptUnsupported) .ring {
   transform: scale(0.96);
 }
 
@@ -93,6 +97,24 @@
   box-shadow: 0 2px 6px rgba(167, 44, 44, 0.24);
 }
 
+/* `'unsupported'` — no Web NFC in this browser and no simulation allowed
+   in this build (`nfcUnavailable`, `src/domain/nfcSupport.ts`). Rendered as
+   a plain `div`, not a `button`, so there is genuinely nothing to tap:
+   default cursor, no press feedback, no pulse, no halo. The ring reuses
+   `'idle'`'s muted tone but faded well past it — the conventional "greyed
+   out, not available" read — so it can't be mistaken for `'idle'`'s
+   "tap to activate" invitation, which it visually sits closest to. The
+   label itself stays at full opacity: the sentence *is* the state here. */
+.promptUnsupported {
+  cursor: default;
+}
+
+.ringUnsupported {
+  background: #a79c8d;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
 .label {
   font: var(--text-body);
   font-weight: 600;
@@ -111,4 +133,13 @@
 
 .labelError {
   color: var(--color-error);
+}
+
+/* Same muted body tone as `'idle'` — a blocking fact, but not an alarm
+   (nothing she did failed, nothing is lost); the honest instruction is the
+   point, not a red ring. Slightly narrower than the other states' two-line
+   copy so the two sentences wrap as two clean lines on a 360px phone. */
+.labelUnsupported {
+  color: #6b6259;
+  max-width: 260px;
 }

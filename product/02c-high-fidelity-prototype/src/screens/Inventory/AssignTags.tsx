@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
 import { pendingTagBreakdown } from '../../domain/selectors';
 import { makeId } from '../../domain/id';
+import { NFC_SIMULATION_ENABLED, nfcSupported, nfcUnavailable } from '../../domain/nfcSupport';
 import { Button } from '../../components/Button/Button';
 import { NFCScanPrompt } from '../../components/NFCScanPrompt/NFCScanPrompt';
 import styles from './AssignTags.module.css';
@@ -24,12 +25,14 @@ const SCAN_FAIL_CHANCE = 0.18;
  * that's genuinely already assigned, because she physically re-tapped a tag
  * already stuck to a different garment. */
 const DUPLICATE_TAG_CHANCE = 0.12;
-/** Real Web NFC (`NDEFReader`) is Chrome/Android-only as of this build —
- * resolved once, same shape as `BarcodeScanner.tsx`'s own
- * `'BarcodeDetector' in window` check. Everywhere else (iPhone Safari,
- * desktop, any browser without it) keeps today's simulated scan behavior
- * below, completely unchanged. */
-const nfcSupported = typeof window !== 'undefined' && 'NDEFReader' in window;
+// `nfcSupported` / `NFC_SIMULATION_ENABLED` / `nfcUnavailable` — the shared
+// capability + simulation switch (`src/domain/nfcSupport.ts`, Stage 7
+// correctness fix 2026-09-17), replacing this file's own former
+// `'NDEFReader' in window` constant. The simulated path below is now only
+// reachable when `NFC_SIMULATION_ENABLED` (dev / explicit demo build) —
+// a production build on a browser without Web NFC renders
+// `NFCScanPrompt`'s `'unsupported'` state instead and never commits a
+// fabricated tag id.
 
 type ScanFeedback = { kind: 'already-assigned' } | { kind: 'scan-failed' } | null;
 
@@ -143,11 +146,15 @@ export function AssignTags({
   // tag (`write()`'s own gesture-per-call requirement) — a successful
   // commit resets back to `'idle'`, honestly requiring a new tap rather than
   // implying the ring is still listening for the next tag on its own.
-  // Simulated (non-hardware) browsers have no real session to represent at
-  // all, so `nfcState` there stays permanently `'listening'` — the original,
-  // always-on look, unchanged, since there is no real dead-session hazard
-  // (no real NFC radio) for it to misrepresent.
-  const [nfcState, setNfcState] = useState<'idle' | 'listening' | 'error'>(nfcSupported ? 'idle' : 'listening');
+  // Simulated (non-hardware, dev/demo-build only) browsers have no real
+  // session to represent at all, so `nfcState` there stays permanently
+  // `'listening'` — the original, always-on look, unchanged, since there is
+  // no real dead-session hazard (no real NFC radio) for it to misrepresent.
+  // A production build on a browser without Web NFC is `'unsupported'`
+  // from mount and stays there: nothing below ever transitions it.
+  const [nfcState, setNfcState] = useState<'idle' | 'listening' | 'error' | 'unsupported'>(
+    nfcSupported ? 'idle' : NFC_SIMULATION_ENABLED ? 'listening' : 'unsupported',
+  );
 
   // Real-hardware write path only (`nfcSupported`) — the in-flight
   // `AbortController` for whichever `NDEFReader.write()` call is currently
@@ -339,6 +346,14 @@ export function AssignTags({
   }
 
   async function handleScan() {
+    if (nfcUnavailable) {
+      // Stage 7 correctness fix (2026-09-17) — no Web NFC and no simulation
+      // allowed in this build. `NFCScanPrompt`'s `'unsupported'` state
+      // already renders nothing tappable, so this is a belt-and-braces
+      // guard: whatever reaches here must never mint a `makeId('tag')` and
+      // push it through the real `assign_tag_to_next_pending_unit` RPC.
+      return;
+    }
     if (nfcSupported) {
       if (nfcState === 'listening') {
         // A write() call is already in flight, hanging on her physical tap
@@ -382,8 +397,10 @@ export function AssignTags({
       return;
     }
 
-    // Simulated path — every browser without Web NFC (iPhone Safari,
-    // desktop, any browser lacking `NDEFReader`), unchanged.
+    // Simulated path — a browser without Web NFC (iPhone Safari, desktop,
+    // any browser lacking `NDEFReader`) **in a dev or explicit demo build
+    // only** (`NFC_SIMULATION_ENABLED`); the `nfcUnavailable` guard above
+    // makes this unreachable in a production build. Unchanged otherwise.
     if (Math.random() < SCAN_FAIL_CHANCE) {
       // §3.16 — never touches the domain layer; queue state is unchanged.
       setFeedback({ kind: 'scan-failed' });

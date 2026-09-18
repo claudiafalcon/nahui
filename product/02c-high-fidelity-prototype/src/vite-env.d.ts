@@ -7,6 +7,10 @@ interface ImportMetaEnv {
   // silent success.
   readonly VITE_SUPABASE_URL?: string;
   readonly VITE_SUPABASE_ANON_KEY?: string;
+  // `'true'` opts a *build* into the simulated NFC path (demo builds only)
+  // — see `src/domain/nfcSupport.ts`. Unset in production; `vite` dev
+  // simulates regardless via `import.meta.env.DEV`.
+  readonly VITE_NFC_SIMULATE?: string;
 }
 
 interface ImportMeta {

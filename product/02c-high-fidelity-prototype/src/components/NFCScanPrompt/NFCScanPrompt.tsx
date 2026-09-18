@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { TagStub } from '../TagStub/TagStub';
+import { isSamsungInternet } from '../../domain/nfcSupport';
 import styles from './NFCScanPrompt.module.css';
 
 /**
@@ -75,6 +76,24 @@ import styles from './NFCScanPrompt.module.css';
  *   per-*tag-read* failure while a session stays genuinely alive
  *   (`onreadingerror`) never touches `state` at all, only a failure of the
  *   session itself does.
+ * - `'unsupported'` (Stage 7 correctness fix, 2026-09-17) — this browser has
+ *   no Web NFC at all *and* the build isn't a dev/demo build allowed to
+ *   simulate one (`nfcUnavailable`, `src/domain/nfcSupport.ts`). Before this
+ *   state existed, that browser (Samsung Internet on the Product Owner's own
+ *   phone, Firefox, any in-app WebView, iOS Safari) silently got the
+ *   prototype-era simulated path — a fabricated tag id committed through
+ *   the real RPC under a permanently pulsing "listening" ring, so the
+ *   database said "tagged" while the physical tag stayed blank. Now: a
+ *   static, dimmed, deliberately inert ring (no pulse, no halo — nothing
+ *   is or can be listening) and one plain sentence naming the problem plus
+ *   the one thing she can do about it (open Nahui in Chrome). Samsung
+ *   Internet is named specifically when its own documented `SamsungBrowser`
+ *   UA token is present, since that's the default browser on exactly the
+ *   Android phones whose NFC radio Chrome *could* use. Tapping does
+ *   nothing, enforced here (`onClick` is never wired in this state) as well
+ *   as at every call site — never a fabricated tag, never an RPC call.
+ *   `label`/`ariaLabel` overrides don't apply: the copy is fixed, mechanism-
+ *   level, and identical whether she's tagging, selling, or allocating.
  */
 export function NFCScanPrompt({
   onTap,
@@ -87,8 +106,36 @@ export function NFCScanPrompt({
   disabled?: boolean;
   label?: ReactNode;
   ariaLabel?: string;
-  state: 'idle' | 'listening' | 'error';
+  state: 'idle' | 'listening' | 'error' | 'unsupported';
 }) {
+  if (state === 'unsupported') {
+    const browserLine = isSamsungInternet
+      ? 'Samsung Internet no tiene NFC.'
+      : 'Tu navegador no tiene NFC.';
+    const instructionLine = 'Abre Nahui en Chrome para usar los tags.';
+    return (
+      <div
+        className={`${styles.prompt} ${styles.promptUnsupported}`}
+        role="status"
+        aria-label={`${browserLine} ${instructionLine}`}
+      >
+        <span className={`${styles.ring} ${styles.ringUnsupported}`} aria-hidden="true">
+          <TagStub
+            name=""
+            size={52}
+            showLetter={false}
+            tone={{ bg: 'var(--color-white)', ink: 'var(--color-white)' }}
+          />
+        </span>
+        <span className={`${styles.label} ${styles.labelUnsupported}`}>
+          {browserLine}
+          <br />
+          {instructionLine}
+        </span>
+      </div>
+    );
+  }
+
   const ringClass =
     state === 'idle' ? styles.ringIdle : state === 'error' ? styles.ringError : styles.ringListening;
 

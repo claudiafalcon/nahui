@@ -6,6 +6,7 @@ import {
   productByBarcode,
   quantityRemaining,
 } from '../../domain/selectors';
+import { NFC_SIMULATION_ENABLED, nfcSupported, nfcUnavailable } from '../../domain/nfcSupport';
 import { Button } from '../../components/Button/Button';
 import { BarcodeScanner } from '../../components/BarcodeScanner/BarcodeScanner';
 import { NFCScanPrompt } from '../../components/NFCScanPrompt/NFCScanPrompt';
@@ -17,10 +18,14 @@ import styles from './MercanciaParaEsteEvento.module.css';
  * radio would otherwise report on its own) rather than inventing a new
  * simulation convention. */
 const NFC_SCAN_FAIL_CHANCE = 0.15;
-/** Real Web NFC (`NDEFReader`) is Chrome/Android-only as of this build —
- * resolved once, the same shape `Selling.tsx`/`AssignTags.tsx` each already
- * establish independently for their own NFC surfaces. */
-const nfcSupported = typeof window !== 'undefined' && 'NDEFReader' in window;
+// `nfcSupported` / `NFC_SIMULATION_ENABLED` / `nfcUnavailable` — the shared
+// capability + simulation switch (`src/domain/nfcSupport.ts`, Stage 7
+// correctness fix 2026-09-17), replacing this file's own former
+// `'NDEFReader' in window` constant. The simulated pool in `handleNfcScan`
+// below is now only reachable when `NFC_SIMULATION_ENABLED` (dev / explicit
+// demo build) — a production build on a browser without Web NFC renders
+// `NFCScanPrompt`'s `'unsupported'` state and never scans a random tagged
+// unit into this Event's allocation.
 
 /**
  * events.md §3.21/§3.23 "Mercancía para este evento" — the shared screen
@@ -183,10 +188,12 @@ export function MercanciaParaEsteEvento({
   // Live-hardware correctness fix (2026-09-17) — `NFCScanPrompt`'s own
   // reactive `state`, see that component's own top-of-file doc comment and
   // `Selling.tsx`'s identical `nfcSessionState` for the full rationale.
-  // Simulated (non-hardware) browsers stay permanently `'listening'` — no
-  // real session for a dead-session hazard to exist for.
-  const [nfcSessionState, setNfcSessionState] = useState<'idle' | 'listening' | 'error'>(
-    nfcSupported ? 'idle' : 'listening',
+  // Simulated (non-hardware, dev/demo-build only) browsers stay permanently
+  // `'listening'` — no real session for a dead-session hazard to exist for.
+  // A production build on a browser without Web NFC is `'unsupported'` from
+  // mount and stays there (every reset below is `nfcSupported`-gated).
+  const [nfcSessionState, setNfcSessionState] = useState<'idle' | 'listening' | 'error' | 'unsupported'>(
+    nfcSupported ? 'idle' : NFC_SIMULATION_ENABLED ? 'listening' : 'unsupported',
   );
   useEffect(() => {
     return () => {
@@ -308,6 +315,15 @@ export function MercanciaParaEsteEvento({
   }
 
   async function handleNfcScan() {
+    if (nfcUnavailable) {
+      // Stage 7 correctness fix (2026-09-17) — no Web NFC and no simulation
+      // allowed in this build. `NFCScanPrompt`'s `'unsupported'` state
+      // already renders nothing tappable; this guard additionally makes the
+      // simulated pool below unreachable, so no random tagged unit is ever
+      // committed into this Event's allocation via the real RPC as if a
+      // physical tag had been read.
+      return;
+    }
     if (nfcSupported) {
       if (nfcScanStartedRef.current) return;
       nfcScanStartedRef.current = true;
@@ -342,7 +358,9 @@ export function MercanciaParaEsteEvento({
       return;
     }
 
-    // Simulated path — every browser without Web NFC. Unlike `Selling.tsx`
+    // Simulated path — a browser without Web NFC **in a dev or explicit demo
+    // build only** (`NFC_SIMULATION_ENABLED`; the `nfcUnavailable` guard
+    // above makes this unreachable in production). Unlike `Selling.tsx`
     // §3.9d's own simulated pool (scoped to `available` units only, since
     // that overlay has no conflict state worth simulating), this pool draws
     // from *every* tagged unit regardless of status — the richer pool is
