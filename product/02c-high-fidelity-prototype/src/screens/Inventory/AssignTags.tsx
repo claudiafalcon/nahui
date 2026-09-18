@@ -50,7 +50,9 @@ export interface AssignTagsEntryLine {
  * unit and advances automatically, no per-unit confirm tap (§3.14). Reads
  * `pendingTagBreakdown` live on every render — never a snapshot taken once
  * at mount — so a unit consumed elsewhere (sold via FIFO in buttons mode
- * while she'd deferred tagging, §3.17) silently drops out of the queue.
+ * while she'd deferred tagging, per "Terminar después," §3.14's own note —
+ * §3.17 retired 2026-09-17, folded into §3.4's per-row resume indicator)
+ * silently drops out of the queue.
  *
  * **Real vs. simulated hardware, disclosed here rather than silently
  * assumed** — `inventory.md` doesn't claim any exact NFC hardware
@@ -72,6 +74,7 @@ export function AssignTags({
   entryBreakdown,
   segmentTotals,
   onSegmentTotalsChange,
+  scopeProductId,
 }: {
   onDefer: () => void;
   onComplete: () => void;
@@ -86,7 +89,12 @@ export function AssignTags({
    * what she actually just entered. `null` when this screen is reached with
    * no commit known this app session (e.g. resuming right after a reload)
    * — the summary line is simply omitted then, never fabricated from the
-   * live queue. */
+   * live queue. **Also always `null` for a Product-scoped entry
+   * (`scopeProductId` set, below)** — `inventory.md` §3.14's own wireframe
+   * variant for this entry point drops "Lo que registraste" outright, since
+   * it implies units just received, which isn't necessarily true for a
+   * resumed or toggle-triggered Product-scoped queue; the caller
+   * (`InventoryScreen.tsx`) enforces this, never this component itself. */
   entryBreakdown: AssignTagsEntryLine[] | null;
   /** AT-M2 fix — the frozen per-Product "M" denominator ("Faltan N de M"),
    * owned by the caller instead of this component's own state, so it
@@ -94,9 +102,21 @@ export function AssignTags({
    * and remounting when she taps "Continuar etiquetando." */
   segmentTotals: Record<string, number>;
   onSegmentTotalsChange: (updater: (totals: Record<string, number>) => Record<string, number>) => void;
+  /** `inventory.md` §3.14's entry point 3 (2026-09-17 live pass) — Asignar
+   * Tags entered via §3.4's fifth zone (toggle-ON auto-open, when ≥1
+   * eligible unit already exists) or sixth zone (the `[ N sin etiquetar ]`
+   * resume indicator). `undefined` is the existing, completely unchanged
+   * Lot-scoped shape (entry point 1, `inventory.md` §2 step 3) — the whole-
+   * Catalog live queue, exactly as before this amendment. Set, it narrows
+   * every live read below (`breakdown`, and therefore `current`,
+   * `breakdownKey`, and the completion check) to only this one Product's own
+   * pending units, via `pendingTagBreakdown`'s own additive `productId`
+   * filter (`selectors.ts`) — never some *other* Product's units surfacing
+   * mid-queue while she's working through one specific Product's stack. */
+  scopeProductId?: string;
 }) {
   const { state, assignTagToNextPendingUnit } = useStore();
-  const breakdown = pendingTagBreakdown(state);
+  const breakdown = pendingTagBreakdown(state, scopeProductId);
   const current = breakdown[0] ?? null;
 
   const [feedback, setFeedback] = useState<ScanFeedback>(null);

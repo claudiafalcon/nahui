@@ -191,6 +191,30 @@
   transform: translateX(16px);
 }
 
+/* Sixth tap zone (2026-09-17 live pass) — the `[ N sin etiquetar ]` resume
+   affordance, rendered as a second line below `.rowMain` rather than a
+   seventh horizontal column (see `CatalogRow.tsx`'s own top-of-file doc
+   comment for why: a variable-length string can't be given a fixed reserved
+   width the way `.nfcSlot`'s single switch glyph can, and placing it on its
+   own line shares no horizontal space with price/marker/switch, so there's
+   nothing here for the reserved-column fix to protect). Coral, link-styled
+   — the same "settings-style, plain, conventional control" posture
+   `DESIGN-SYSTEM.md` §8 already applies to `.nfcSavingHint` immediately
+   below, but tappable, matching `.price`'s own coral accent for "a fact
+   specific to this Product she can act on." */
+.pendingTagLink {
+  display: block;
+  margin: 0 var(--space-1) 10px 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-coral-aa);
+  cursor: pointer;
+  text-align: left;
+}
+
 .nfcError {
   margin: 0 var(--space-1) 10px 4px;
   font: var(--text-body-sm);

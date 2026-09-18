@@ -85,13 +85,16 @@ export default function App() {
   const [resultadosView, setResultadosView] = useState<ResultadosView>({ mode: 'main' });
   // AT-M1/AT-M2 fix round (`AssignTags.tsx`) — both owned here, alongside
   // `inventoryView`, rather than inside `AssignTags` itself, so a plain
-  // "Terminar después" → "Continuar etiquetando" defer/resume — which
-  // unmounts/remounts `<AssignTags>` (`InventoryScreen.tsx` swaps it out
-  // whenever `inventoryView.mode` leaves `'assign-tags'`) — never loses
-  // either. `assignTagsEntry` is replaced only when a fresh `commitLot`
-  // actually triggers a new entry (AT-M1); `assignTagsSegmentTotals` is
-  // updated by `AssignTags` itself, per-Product, as its own doc comment
-  // describes (AT-M2).
+  // "Terminar después" → resume defer/resume cycle — which unmounts/
+  // remounts `<AssignTags>` (`InventoryScreen.tsx` swaps it out whenever
+  // `inventoryView.mode` leaves `'assign-tags'`) — never loses either.
+  // (Resuming is now always via `inventory.md` §3.4's sixth-zone
+  // `[ N sin etiquetar ]` indicator, Product-scoped — §3.5/§3.17's former
+  // whole-Catalog "Continuar etiquetando" button is retired, 2026-09-17.)
+  // `assignTagsEntry` is replaced only when a fresh `commitLot` actually
+  // triggers a new entry (AT-M1); `assignTagsSegmentTotals` is updated by
+  // `AssignTags` itself, per-Product, as its own doc comment describes
+  // (AT-M2).
   const [assignTagsEntry, setAssignTagsEntry] = useState<{ productId: string; quantity: number }[] | null>(null);
   const [assignTagsSegmentTotals, setAssignTagsSegmentTotals] = useState<Record<string, number>>({});
   // inventory.md §3.13's mixed-Lot completion-copy variant (`decision-log.md`
@@ -136,8 +139,13 @@ export default function App() {
               onNavigateToAssignTags={() => {
                 // home.md §3.6a's "Asignar tags" link — routes into
                 // Inventario's own Asignar Tags queue (inventory.md §3.14),
-                // same destination §3.5/§3.17's "Continuar etiquetando"
-                // resumes, not a Home-local stub.
+                // the same whole-Catalog/Lot-scoped shape entry point 1 and
+                // the (dormant since D72) entry point 2 both use — not a
+                // Home-local stub. Unaffected by the 2026-09-17 live pass:
+                // that amendment only retired §3.5/§3.17's own Catalog-view
+                // "Continuar etiquetando" button and added the new
+                // Product-scoped entry point 3 (`onOpenAssignTagsForProduct`
+                // below), neither of which this Home-originated link uses.
                 setInventoryView({ mode: 'assign-tags' });
                 setActiveTab('inventario');
               }}
@@ -164,20 +172,38 @@ export default function App() {
               onOpenAssignTags={(entryBreakdown, nonEligibleBreakdown) => {
                 // AT-M1 — only a fresh `commitLot` (RegisterMerchandise's own
                 // save, threading its breakdown through) replaces the frozen
-                // receipt; resuming via "Continuar etiquetando" or Home's
-                // "Asignar tags" link calls this with no argument, so the
-                // receipt from whichever commit is still the live session's
-                // own stays exactly as it was. `nonEligibleBreakdown`
-                // (`decision-log.md` D71) is replaced in lockstep, alongside
-                // `entryBreakdown` — this Lot's own remaining, non-eligible
-                // lines when it genuinely mixed, `null` otherwise (a plain
-                // eligible-only Lot, or step 0's whole-Catalog seed, neither
-                // of which ever passes a second argument at all).
+                // receipt; step 0's own dormant whole-Catalog seed (D72 —
+                // no longer reachable via any live merchant action) calls
+                // this with a breakdown too, so the receipt from whichever
+                // commit is still the live session's own stays exactly as it
+                // was. `nonEligibleBreakdown` (`decision-log.md` D71) is
+                // replaced in lockstep, alongside `entryBreakdown` — this
+                // Lot's own remaining, non-eligible lines when it genuinely
+                // mixed, `null` otherwise (a plain eligible-only Lot, or step
+                // 0's whole-Catalog seed, neither of which ever passes a
+                // second argument at all). **Untouched by the 2026-09-17 live
+                // pass** — Product-scoped entry (toggle-ON / the sixth zone's
+                // resume tap) never calls this; see
+                // `onOpenAssignTagsForProduct` below.
                 if (entryBreakdown) {
                   setAssignTagsEntry(entryBreakdown);
                   setAssignTagsMixedNonEligible(nonEligibleBreakdown ?? null);
                 }
                 setInventoryView({ mode: 'assign-tags' });
+              }}
+              onOpenAssignTagsForProduct={(productId) => {
+                // inventory.md §3.14's entry point 3 (new, 2026-09-17 live
+                // pass) — §3.4's fifth zone (toggle-ON auto-open, when this
+                // Product already has ≥1 eligible unit) or sixth zone (the
+                // `[ N sin etiquetar ]` resume indicator). Scoped strictly to
+                // this one Product — never touches `assignTagsEntry`/
+                // `assignTagsMixedNonEligible` (the Lot-scoped receipt,
+                // AT-M1/D71's own frozen state), since this entry point never
+                // shows a "Lo que registraste" summary line at all
+                // (`InventoryScreen.tsx` enforces `entryBreakdown={null}`
+                // whenever `scopeProductId` is set, regardless of whatever's
+                // still frozen here from a possibly-unrelated earlier Lot).
+                setInventoryView({ mode: 'assign-tags', scopeProductId: productId });
               }}
               onTagsComplete={() => {
                 // inventory.md §3.13's mixed-Lot completion-copy variant
@@ -196,6 +222,20 @@ export default function App() {
                 setAssignTagsMixedNonEligible(null);
                 setAssignTagsSegmentTotals({});
                 setInventoryView({ mode: 'catalog', tagsComplete: true, mixedLotDetail });
+              }}
+              onProductTagsComplete={(productId) => {
+                // inventory.md §3.13a (new, 2026-09-17 live pass) — a
+                // Product-scoped queue reaching 0 pending. Distinct from
+                // `onTagsComplete`'s Lot-scoped §3.13: names the specific
+                // Product, ambient/fading, no mixed-Lot copy, no "just
+                // registered" framing. Clears the frozen segment-total map
+                // the same way the Lot-scoped completion above does — a
+                // finished queue leaves nothing worth freezing a denominator
+                // against until a future commit/toggle starts a new one.
+                // Never touches `assignTagsEntry`/`assignTagsMixedNonEligible`
+                // — this entry point never set them in the first place.
+                setAssignTagsSegmentTotals({});
+                setInventoryView({ mode: 'catalog', productTagsCompleteId: productId });
               }}
               onBackToCatalog={() => setInventoryView({ mode: 'catalog' })}
               onSettingsTagsOnMarkerHandled={() =>

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
 import { catalogRows, matchProductByBarcode, pendingTagCount } from '../../domain/selectors';
-import { articulos } from '../../domain/format';
 import { CatalogRow } from '../../components/CatalogRow/CatalogRow';
 import { Button } from '../../components/Button/Button';
 import { Sheet } from '../../components/Sheet/Sheet';
@@ -18,27 +17,30 @@ import pickerStyles from '../../components/ProductPicker/ProductPicker.module.cs
 const PHOTO_UNREADABLE_MESSAGE = 'No pudimos mostrar ese archivo.';
 
 /**
- * inventory.md §3.4/§3.5 — Catalog view. Product + available count only,
- * never a Lot/InventoryUnit reference. Price is its own tap target (§3.4a,
- * D33). §3.5's pending-tag-work variant (nfc-capable Businesses only, ≥1
- * untagged `available` unit) renders "Continuar etiquetando" as the primary
- * action directly under the header and demotes "Registrar mercancía" to
- * secondary — same position, same destination, never gated (2026-08-07
- * amendment). Identical to §3.17 ("Terminar después") — same live check,
- * no separate flag needed to distinguish how she arrived here.
+ * inventory.md §3.4 — Catalog view. Product + available count only, never a
+ * Lot/InventoryUnit reference. Price is its own tap target (§3.4a, D33).
+ * **There is exactly one Catalog view now (2026-09-17 live pass)** —
+ * §3.5/§3.17's former combined, cross-Catalog "Continuar etiquetando"
+ * variant (promoted primary action, demoted "Registrar mercancía") is
+ * retired outright, its role folded into §3.4's own per-row sixth tap zone
+ * (the `[ N sin etiquetar ]` resume indicator, rendered by `CatalogRow`
+ * itself below, live-computed per row). "Registrar mercancía" stays the
+ * one, unconditional primary action in this view's own footer.
  */
 export function CatalogView({
   onRegister,
   onRegisterProduct,
-  onContinueTagging,
+  onOpenAssignTagsForProduct,
   confirmationMessage,
   confirmationDetail,
   settingsTagsBanner,
 }: {
   onRegister: () => void;
   onRegisterProduct: (productId: string) => void;
-  /** §3.5/§3.17 — resumes Asignar Tags exactly where she left off. */
-  onContinueTagging: () => void;
+  /** inventory.md §3.14's entry point 3 (2026-09-17 live pass) — the fifth
+   * zone's toggle-ON auto-open and the sixth zone's resume tap both call
+   * this, scoped to one Product's own pending units. */
+  onOpenAssignTagsForProduct: (productId: string) => void;
   confirmationMessage?: string | null;
   /** inventory.md §3.13's mixed-Lot completion-copy variant
    * (`decision-log.md` D71) — an optional second line rendered directly
@@ -204,7 +206,39 @@ export function CatalogView({
     if (!ok) {
       console.error('[CatalogView] setProductNfcTaggingEnabled failed');
       setNfcErrorIds((s) => new Set(s).add(productId));
+      return;
     }
+    if (!nextEnabled) return; // turning OFF never hands off anywhere (§3.4's own unchanged invariant)
+
+    // Corrected 2026-09-17 (Product Owner decision, live) — turning this
+    // switch ON now auto-enters Asignar Tags directly, Product-scoped,
+    // exactly when there's already something to tag (`inventory.md` §3.4's
+    // own corrected text: "a tap dims the row → on a successful save, if
+    // this Product currently has ≥1 available, untagged unit... she's taken
+    // straight into Asignar Tags"). Computed here against the *raw* unit
+    // set, deliberately not `pendingTagCount(state, productId)` (which
+    // additionally requires `isNfcTaggingEligible`, i.e.
+    // `product.nfcTaggingEnabled === true`) — `state` in this closure was
+    // captured at this render and never updates in place mid-async-function;
+    // `setProductNfcTaggingEnabled`'s own `applyWriteMirror` triggers a
+    // fresh render of a *future* CatalogView instance, not this one. But
+    // toggling NFC on never changes which units exist or their
+    // available/tagId state, only whether they now *count* as eligible — so
+    // reading the raw available/untagged count already on hand, rather than
+    // waiting on a `state` that will never refresh inside this closure, is
+    // both correct and race-free: the write already succeeded (`ok`), and
+    // `nfcTaggingEnabled` is now `true` for this Product server-side, since
+    // this call is the one that just set it.
+    const rawPendingUnits = state.units.filter(
+      (u) => u.productId === productId && u.status === 'available' && u.tagId == null,
+    ).length;
+    if (rawPendingUnits > 0) {
+      onOpenAssignTagsForProduct(productId);
+    }
+    // Zero eligible units right now (nothing yet received, or everything
+    // already tagged) — the row simply un-dims in place, exactly as before;
+    // an empty tagging queue is never shown as a landing state (D46's own
+    // rule, restated at the per-Product level).
   }
 
   const draftPriceValue = useMemo(() => parseFloat(draftPrice), [draftPrice]);
@@ -344,24 +378,6 @@ export function CatalogView({
     window.setTimeout(() => setToast(null), 2400);
   }
 
-  // §2 step 2 / §3.5 — a live check, recomputed every render (never
-  // cached): deferring tagging and later selling some of those same
-  // untagged units via FIFO in buttons mode must silently shrink this
-  // count, not just refresh whenever Asignar Tags itself is reopened.
-  // Gate corrected per `decision-log.md` D46: this reads her actual chosen
-  // selling mode (`defaultSellingMode === 'nfc'`), never mere nfc capability
-  // (`subscriptionTier === 'paid'`) — a Paid merchant who stays in
-  // `buttons` mode never sees this nudge.
-  // inventory.md §3.5, further amended `decision-log.md` D71 — the gate is
-  // now the composed NFC-tagging-eligible test itself, not a second,
-  // separately-checked `defaultSellingMode === 'nfc'` condition:
-  // `pendingTagCount` (`selectors.ts`) already only counts units whose own
-  // Product passes `isNfcTaggingEligible`, so "any pending work at all" is
-  // the whole test — a Paid `buttons`-mode Business with nothing opted into
-  // NFC per-Product correctly reads 0 here, same as before D71.
-  const pendingCount = pendingTagCount(state);
-  const pendingTagWork = pendingCount > 0;
-
   return (
     <>
       <div className={styles.topbar}>
@@ -372,47 +388,62 @@ export function CatalogView({
 
       {settingsTagsBanner && <p className={styles.settingsBanner}>{settingsTagsBanner}</p>}
 
-      {pendingTagWork && (
-        <div className={styles.pendingTagBlock}>
-          <p className={styles.pendingTagLine}>Te faltan {articulos(pendingCount)} por etiquetar</p>
-          <Button onClick={onContinueTagging}>Continuar etiquetando</Button>
-        </div>
-      )}
-
       <div className={styles.list}>
-        {rows.map(({ product, available, everReceived }) => (
-          <CatalogRow
-            key={product.id}
-            name={product.name}
-            photo={product.photo}
-            price={product.defaultPrice}
-            available={available}
-            everReceived={everReceived}
-            onTapRow={() => onRegisterProduct(product.id)}
-            onTapPrice={() => {
-              setEditingId(product.id);
-              setDraftPrice(String(product.defaultPrice));
-            }}
-            onTapPhoto={() => openPhotoSheet(product.id)}
-            onTapBarcode={canEditBarcode ? () => openBarcodeSheet(product.id) : undefined}
-            reserveNfcSlot={nfcPerProductAvailable}
-            nfcToggle={
-              nfcPerProductAvailable && !product.barcode
-                ? {
-                    enabled: product.nfcTaggingEnabled,
-                    saving: nfcSavingIds.has(product.id),
-                    slow: nfcSlowIds.has(product.id),
-                    error: nfcErrorIds.has(product.id),
-                    onTap: () => void handleToggleNfc(product.id, !product.nfcTaggingEnabled),
-                  }
-                : undefined
-            }
-          />
-        ))}
+        {rows.map(({ product, available, everReceived }) => {
+          const pendingTagRowCount = pendingTagCount(state, product.id);
+          return (
+            <CatalogRow
+              key={product.id}
+              name={product.name}
+              photo={product.photo}
+              price={product.defaultPrice}
+              available={available}
+              everReceived={everReceived}
+              onTapRow={() => onRegisterProduct(product.id)}
+              onTapPrice={() => {
+                setEditingId(product.id);
+                setDraftPrice(String(product.defaultPrice));
+              }}
+              onTapPhoto={() => openPhotoSheet(product.id)}
+              onTapBarcode={canEditBarcode ? () => openBarcodeSheet(product.id) : undefined}
+              reserveNfcSlot={nfcPerProductAvailable}
+              // inventory.md §3.4's sixth tap zone (2026-09-17 live pass) —
+              // live-computed per row, every render, never cached: this
+              // Product currently has ≥1 available, untagged, NFC-tagging-
+              // eligible unit (the same composed test `pendingTagCount`
+              // already applies whole-Catalog, `selectors.ts`, now narrowed
+              // to this one Product). Disjunct-agnostic by construction —
+              // renders identically whether eligibility comes from the
+              // legacy whole-Catalog `defaultSellingMode = 'nfc'` case or
+              // this Product's own `nfcTaggingEnabled` opt-in. Pure
+              // navigation, never touches `Product.nfcTaggingEnabled`.
+              pendingTag={
+                pendingTagRowCount > 0
+                  ? { count: pendingTagRowCount, onTap: () => onOpenAssignTagsForProduct(product.id) }
+                  : undefined
+              }
+              nfcToggle={
+                nfcPerProductAvailable && !product.barcode
+                  ? {
+                      enabled: product.nfcTaggingEnabled,
+                      saving: nfcSavingIds.has(product.id),
+                      slow: nfcSlowIds.has(product.id),
+                      error: nfcErrorIds.has(product.id),
+                      onTap: () => void handleToggleNfc(product.id, !product.nfcTaggingEnabled),
+                    }
+                  : undefined
+              }
+            />
+          );
+        })}
       </div>
 
       <div className={`${styles.footer} stitchTop`}>
-        <Button variant={pendingTagWork ? 'secondary' : 'primary'} onClick={onRegister}>
+        {/* inventory.md §3.4 (2026-09-17 live pass) — "Registrar mercancía"
+            is now the one, unconditional primary action in every Catalog
+            view state; the former pending-tag-work variant that demoted it
+            to secondary (§3.5/§3.17) is retired. */}
+        <Button variant="primary" onClick={onRegister}>
           Registrar mercancía
         </Button>
       </div>

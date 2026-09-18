@@ -44,7 +44,34 @@ import styles from './CatalogRow.module.css';
  * barcode overflow ("⋯", after price) doesn't get the same reserved-slot
  * treatment: unlike `nfcToggle`, `onTapBarcode` is already uniform across
  * every row in a given list (gated only on `Business.subscriptionTier`,
- * never per-Product), so it can't itself produce this row-to-row drift. */
+ * never per-Product), so it can't itself produce this row-to-row drift.
+ *
+ * **Sixth tap zone, 2026-09-17 live pass ("Continuar etiquetando" and the
+ * combined, cross-Catalog pending-tag queue retired; entry/resume become
+ * per-Product) — `pendingTag`.** A live-computed `[ N sin etiquetar ]`
+ * resume affordance, rendered only when this Product currently has ≥1
+ * `available`, untagged, NFC-tagging-eligible unit (`selectors.ts`'
+ * `pendingTagCount`, disjunct-agnostic — renders identically for the legacy
+ * whole-Catalog `defaultSellingMode = 'nfc'` case or the per-Product
+ * `nfcPerProductEnabled` case, `inventory.md` §3.4's own text). **Never
+ * reads or writes `Product.nfcTaggingEnabled`** — pure navigation into the
+ * identical Product-scoped Asignar Tags destination the fifth zone's own
+ * toggle-ON auto-open reaches, the *only* way to resume an interrupted
+ * per-Product queue after "Terminar después." Deliberately not folded into
+ * the fifth zone (§3.4's own reasoning, restated in full there): turning
+ * NFC off is a real, meaningful state change that must never fire as a side
+ * effect of wanting to resume tagging. Rendered as a second line below the
+ * tappable-zones row (`.pendingTagLink`, the same "conventional caption
+ * below the row" placement `DESIGN-SYSTEM.md` §8 already establishes for
+ * the fifth zone's own slow-save hint) rather than a seventh horizontal
+ * column — a variable-length "N sin etiquetar" string can't itself be given
+ * a fixed reserved width the way `.nfcSlot`'s single switch glyph can, and
+ * placing it on its own line means it shares no horizontal space with
+ * price/marker/switch at all, so it can't reintroduce the row-to-row
+ * column-drift bug the fifth zone's own reserved-slot fix closed — there is
+ * nothing here for a reserved-column technique to protect. No save-state
+ * discipline needed (unlike zones 1–5): this is read-only navigation, never
+ * a write, so there's nothing to dim, retry, or fail. */
 export function CatalogRow({
   name,
   photo,
@@ -57,6 +84,7 @@ export function CatalogRow({
   onTapBarcode,
   nfcToggle,
   reserveNfcSlot,
+  pendingTag,
 }: {
   name: string;
   /** `Product.photo` (`product-decisions.md` Q23) — rendered in the
@@ -94,6 +122,14 @@ export function CatalogRow({
    * same list-level value (`CatalogView.tsx`'s own `nfcPerProductAvailable`)
    * to every row in a given Catalog list; never derive it per-row. */
   reserveNfcSlot?: boolean;
+  /** `inventory.md` §3.4's sixth tap zone (2026-09-17) — `undefined` (or a
+   * zero `count`) renders nothing. Pure navigation: `onTap` must never touch
+   * `Product.nfcTaggingEnabled` — see this component's own top-of-file doc
+   * comment for the full reasoning against folding this into `nfcToggle`. */
+  pendingTag?: {
+    count: number;
+    onTap: () => void;
+  };
 }) {
   const dimmed = available <= 0;
   const caption = !everReceived ? 'sin registrar' : `${available} disponibles`;
@@ -166,6 +202,19 @@ export function CatalogRow({
           </button>
         )}
       </div>
+      {pendingTag && pendingTag.count > 0 && (
+        <button
+          type="button"
+          className={styles.pendingTagLink}
+          onClick={(e) => {
+            e.stopPropagation();
+            pendingTag.onTap();
+          }}
+          aria-label={`Terminar de etiquetar ${name} — ${pendingTag.count} sin etiquetar`}
+        >
+          {pendingTag.count} sin etiquetar
+        </button>
+      )}
       {nfcToggle?.error && <p className={styles.nfcError}>No pudimos guardar. Intenta de nuevo.</p>}
       {nfcToggle && nfcSaving && nfcToggle.slow && (
         <p className={styles.nfcSavingHint}>Guardando cambio de NFC…</p>

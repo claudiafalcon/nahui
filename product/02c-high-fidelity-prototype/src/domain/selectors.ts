@@ -305,41 +305,64 @@ export function isNfcTaggingEligible(business: Business | null | undefined, prod
  * eligible unit (the composed test above, `decision-log.md` D71), in
  * `state.units`' own array order (the order she entered them, `inventory.md`
  * §3.14's own "in the order she entered them" requirement — no separate
- * ordering field needed). Scoped globally across every Lot/Product, never to
- * one Lot, per the Architecture Gap Analysis's own confirmation against §2
+ * ordering field needed). Scoped globally across every Lot/Product by
+ * default, per the Architecture Gap Analysis's own confirmation against §2
  * step 2's business-wide gate. A unit whose own Product isn't NFC-tagging-
  * eligible (e.g. Plumas on a Business that's only opted Camisas in) never
  * enters this queue at all — not filtered out later, never queued in the
- * first place. */
-export function pendingTagUnits(state: AppState): InventoryUnit[] {
+ * first place.
+ *
+ * **`productId`, added 2026-09-17 (live pass — "Continuar etiquetando"
+ * retired, tagging entry/resume becomes per-Product).** Optional, additive,
+ * backward-compatible: omitted (or `undefined`), this returns the identical
+ * whole-Catalog queue it always has — every existing caller (the Lot-scoped
+ * entry point, `inventory.md` §2 step 3, untouched by this amendment) is
+ * unaffected. Passed, it narrows the same composed-eligibility filter to one
+ * Product's own units only — the exact test `inventory.md` §3.4's new sixth
+ * tap zone and §3.14's new Product-scoped entry point both require, reusing
+ * this one function rather than duplicating its filter logic a second time. */
+export function pendingTagUnits(state: AppState, productId?: ID): InventoryUnit[] {
   return state.units.filter((u) => {
     if (u.status !== 'available' || u.tagId != null) return false;
+    if (productId != null && u.productId !== productId) return false;
     const product = state.products.find((p) => p.id === u.productId);
     return product ? isNfcTaggingEligible(state.business, product) : false;
   });
 }
 
-/** §2 step 2 / §3.5's own gate — "how many articles are left to tag." */
-export function pendingTagCount(state: AppState): number {
-  return pendingTagUnits(state).length;
+/** §2 step 2 / §3.4's own gate — "how many articles are left to tag,"
+ * whole-Catalog by default. **`productId` (2026-09-17, additive, see
+ * `pendingTagUnits`'s own doc comment) narrows this to one Product's own
+ * pending count** — `inventory.md` §3.4's sixth tap zone's own live,
+ * per-row rendering condition ("this Product currently has ≥1 `available`,
+ * untagged, NFC-tagging-eligible unit"), computed fresh on every render,
+ * never cached. */
+export function pendingTagCount(state: AppState, productId?: ID): number {
+  return pendingTagUnits(state, productId).length;
 }
 
 /** Per-Product breakdown of the live tagging queue, grouped in the order
  * each Product first appears in it (mirrors `pendingTagUnits`' own queue
  * order, per-unit, collapsed to one row per Product) — drives §3.14's "Lo
  * que registraste: Bolsas (10) · Accesorios (5)" summary line and, via its
- * first entry, "Etiquetando: Bolsas / Faltan 7 de 10." */
-export function pendingTagBreakdown(state: AppState): { product: Product; count: number }[] {
+ * first entry, "Etiquetando: Bolsas / Faltan 7 de 10." **`productId`
+ * (2026-09-17, additive, see `pendingTagUnits`'s own doc comment) narrows
+ * this to a single-Product breakdown** — `inventory.md` §3.14's new
+ * Product-scoped entry point (toggle-ON auto-open or the sixth zone's
+ * resume tap), which must never let some *other* Product's own pending
+ * units surface in "Etiquetando: …" while she's working through one
+ * specific Product's stack. */
+export function pendingTagBreakdown(state: AppState, productId?: ID): { product: Product; count: number }[] {
   const order: ID[] = [];
   const counts = new Map<ID, number>();
-  for (const unit of pendingTagUnits(state)) {
+  for (const unit of pendingTagUnits(state, productId)) {
     if (!counts.has(unit.productId)) order.push(unit.productId);
     counts.set(unit.productId, (counts.get(unit.productId) ?? 0) + 1);
   }
   return order
-    .map((productId) => {
-      const product = state.products.find((p) => p.id === productId);
-      return product ? { product, count: counts.get(productId)! } : null;
+    .map((pid) => {
+      const product = state.products.find((p) => p.id === pid);
+      return product ? { product, count: counts.get(pid)! } : null;
     })
     .filter((row): row is { product: Product; count: number } => row != null);
 }
