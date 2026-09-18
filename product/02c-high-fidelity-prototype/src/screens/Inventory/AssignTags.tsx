@@ -14,7 +14,8 @@ import styles from './AssignTags.module.css';
  * random roll simulating a hardware failure that a real NFC radio would
  * otherwise report on its own. On real hardware (Chrome/Android), this same
  * `{ kind: 'scan-failed' }` feedback state is still reached, but from a
- * genuine `NDEFReader.write()` rejection, not this random chance. */
+ * genuine `onreadingerror` (or an unavailable `serialNumber`,
+ * `decision-log.md` D74), not this random chance. */
 const SCAN_FAIL_CHANCE = 0.18;
 /** Simulates a merchant accidentally re-presenting a tag already stuck to a
  * different garment — the only way to reach §3.15 (a genuine business-logic
@@ -61,15 +62,17 @@ export interface AssignTagsEntryLine {
  * assumed** — `inventory.md` doesn't claim any exact NFC hardware
  * mechanics, the same disclaimed-mechanics posture §3.8b already holds for
  * camera mechanics. On Chrome/Android (`nfcSupported`, the only browser that
- * implements Web NFC as of this build), `handleScan` below genuinely writes
- * the generated `tagId` onto whichever physical tag she taps, via the real
- * `NDEFReader.write()` API — this hangs until she actually taps a tag, then
- * proceeds through the same real `assignTagToNextPendingUnit` RPC either
- * way. Everywhere else (iPhone Safari, desktop, any browser without Web
- * NFC), scanning stays the pure client-side simulation this comment
- * previously described as the *only* mechanism — no physical tag is ever
- * written to on those browsers, `SCAN_FAIL_CHANCE`/`DUPLICATE_TAG_CHANCE`
- * stand in for what a real radio would otherwise report.
+ * implements Web NFC as of this build), `handleScan` below starts a real,
+ * persistent `NDEFReader.scan()` listening session and reads each physical
+ * tag's own factory-set hardware UID (`event.serialNumber`,
+ * `decision-log.md` D74) — Nahui never writes anything onto a tag; a blank
+ * factory tag is fully usable as-is. Every UID read resolves through the
+ * same real `assignTagToNextPendingUnit` RPC either way. Everywhere else
+ * (iPhone Safari, desktop, any browser without Web NFC), scanning stays the
+ * pure client-side simulation this comment previously described as the
+ * *only* mechanism — no physical tag is ever touched on those browsers,
+ * `SCAN_FAIL_CHANCE`/`DUPLICATE_TAG_CHANCE` stand in for what a real radio
+ * would otherwise report.
  */
 export function AssignTags({
   onDefer,
@@ -124,28 +127,25 @@ export function AssignTags({
 
   const [feedback, setFeedback] = useState<ScanFeedback>(null);
 
-  // Live-hardware correctness fix (2026-09-17) — `NFCScanPrompt`'s own
-  // reactive `state`, real `useState` rather than a ref (see that
-  // component's own top-of-file doc comment). **Write-flow specific
-  // asymmetry, disclosed rather than silently assumed:** unlike `scan()`
-  // (`Selling.tsx`/`MercanciaParaEsteEvento.tsx`), Web NFC's
-  // `NDEFReader.write()` exposes no intermediate "permission granted,
-  // now listening" signal separate from full completion — its one promise
-  // spans the entire wait for a physical tap through the write itself, so
-  // `'listening'` is set the moment `write()` is actually invoked (the
-  // earliest observable point), not after some later resolution the API
-  // simply doesn't expose. This is a genuine, narrow platform gap (a tap
-  // landing in the sliver between invocation and an actual permission grant
-  // on a browser's very first-ever request could still race Android's own
-  // dispatch), not something this fix invents or can close further without
-  // a browser API this codebase doesn't have. It's still a large, real
-  // improvement over the previous always-on ring, which showed "ready,
-  // listening" from mount regardless of whether `write()` had ever been
-  // called at all. Also unlike `scan()`'s one long-lived multi-tag session,
-  // every unit here needs its own fresh on-screen tap before each physical
-  // tag (`write()`'s own gesture-per-call requirement) — a successful
-  // commit resets back to `'idle'`, honestly requiring a new tap rather than
-  // implying the ring is still listening for the next tag on its own.
+  // Live-hardware correctness fix (2026-09-17), read-path rebuild
+  // (`decision-log.md` D74, same day) — `NFCScanPrompt`'s own reactive
+  // `state`, real `useState` rather than a ref (see that component's own
+  // top-of-file doc comment). **Continuous scan, mirroring
+  // `Selling.tsx`/`MercanciaParaEsteEvento.tsx`'s own long-lived `scan()`
+  // session shape, not one `write()` call per physical tag.** D74 replaced
+  // this file's real-hardware path from `NDEFReader.write()` (a fabricated
+  // client-minted id, physically written onto the tag) to `NDEFReader.scan()`
+  // (reading the tag's own factory-set hardware UID) — and `scan()`, unlike
+  // `write()`, naturally supports many physical taps against one listening
+  // session via `onreading` firing repeatedly, exactly the shape §3.14's own
+  // "no per-unit confirm tap, advances automatically" flow already wants.
+  // So this file now starts exactly one `scan()` session for the whole
+  // tagging queue, same as its two siblings, rather than reopening a fresh
+  // write-per-tag cycle: `'listening'` is set once `scan()` has genuinely
+  // resolved (the browser has granted and begun the session), and a
+  // successful or failed commit (`commitTag`, below) no longer resets
+  // `nfcState` back to `'idle'` — the ring stays honestly listening for the
+  // next physical tag exactly as it does mid-Session on `Selling.tsx`.
   // Simulated (non-hardware, dev/demo-build only) browsers have no real
   // session to represent at all, so `nfcState` there stays permanently
   // `'listening'` — the original, always-on look, unchanged, since there is
@@ -156,13 +156,24 @@ export function AssignTags({
     nfcSupported ? 'idle' : NFC_SIMULATION_ENABLED ? 'listening' : 'unsupported',
   );
 
-  // Real-hardware write path only (`nfcSupported`) — the in-flight
-  // `AbortController` for whichever `NDEFReader.write()` call is currently
-  // hanging, waiting for her to physically tap a tag. Aborted on unmount so
-  // a write that never resolves (she navigates away, e.g. "Terminar
-  // después," mid-tap) doesn't keep the underlying NFC radio reserved or
-  // resolve into an unmounted component later.
+  // Real Web NFC read path only (`nfcSupported`) — the same
+  // `scanStartedRef`/`nfcAbortRef` trio `Selling.tsx`/
+  // `MercanciaParaEsteEvento.tsx` already establish. `scanStartedRef` guards
+  // the *dispatch* — exactly one in-flight `scan()` attempt at a time (a
+  // ref, not state, so a second tap arriving before React flushes can't
+  // fire a second concurrent `scan()` call); `nfcAbortRef` is the
+  // `AbortController` for that session's `scan()` call, aborted on unmount
+  // so a stale listener never fires into an unmounted component (she
+  // navigates away, e.g. "Terminar después," mid-session).
+  const scanStartedRef = useRef(false);
   const nfcAbortRef = useRef<AbortController | null>(null);
+  // Always points at this render's own `commitTag` (defined below, after
+  // this component's `if (!current)` early return) — declared here,
+  // unconditionally, with this component's other hooks (Rules of Hooks);
+  // reassigned every render further down, where `commitTag` itself is
+  // defined. See that reassignment's own doc comment for why a persistent
+  // `ndef.onreading` handler needs this indirection at all.
+  const handleTagResolvedRef = useRef<(tagId: string) => Promise<void>>(async () => {});
   useEffect(() => {
     return () => {
       nfcAbortRef.current?.abort();
@@ -170,41 +181,37 @@ export function AssignTags({
   }, []);
 
   // Live-hardware correctness fix (2026-09-17, visibility-hardening
-  // follow-up) — checked for the identical dead-session-while-hidden
-  // exposure `Selling.tsx`/`MercanciaParaEsteEvento.tsx`'s own sibling fix
-  // (same pass) closes, and found genuinely exposed, **not** safe by
-  // construction, despite this file's write-flow shape looking safer at
-  // first glance (a fresh tap already required per physical tag, per this
-  // file's own existing `nfcState` doc comment above).
-  //
-  // The reason it's exposed: `write()`'s one promise stays pending for
-  // `nfcState`'s *entire* `'listening'` duration (unlike `scan()`, which
-  // resolves once and then just keeps a session alive with no promise left
-  // pending) — so today, with no visibility listener at all, backgrounding
-  // mid-write leaves that promise hanging. Per the same Chromium-documented
-  // behavior this pass is built on, Chrome doesn't reject it on its own
-  // when the tab goes hidden — it silently drops the underlying reader-mode
-  // session and leaves the JS promise pending indefinitely. Returning to
-  // the tab then shows a `nfcState` still stuck at `'listening'` forever,
-  // and `handleScan`'s own `if (nfcState === 'listening') return` guard
-  // (below) makes a fresh on-screen tap a silent no-op too — no recovery
-  // even by tapping again, a genuinely *worse* dead end than the sibling
-  // `scan()` case, not merely an equally-stale ring.
-  //
-  // **Fixed the minimal way, reusing machinery that already exists rather
-  // than duplicating the sibling fix's own manual idle-reset:** aborting
-  // the in-flight `write()` here is sufficient on its own — `handleScan`'s
-  // own `catch` block below already anticipates `AbortError` as a rejection
-  // reason and already sets `feedback: scan-failed` / `nfcState: 'error'`
-  // correctly, since (unlike the `scan()` case) there is always still a
-  // genuinely pending promise for this abort to reject at the moment the
-  // tab goes hidden. No separate "on visible again, reset to idle" branch
-  // is needed here the way the sibling fix requires one.
+  // follow-up), carried over unchanged in shape from the write-flow version
+  // of this same fix, now re-targeted at the `scan()` session D74
+  // introduced — the identical dead-session-while-hidden exposure
+  // `Selling.tsx`/`MercanciaParaEsteEvento.tsx`'s own sibling fix already
+  // closes: per Chromium's own documented behavior, Android's real
+  // underlying reader-mode session is silently disabled the instant this
+  // tab goes hidden (screen lock, app-switch), with no JS event this code
+  // was listening for — and once past its first `scan()` resolution
+  // (`nfcState === 'listening'`, the steady state most of a tagging session
+  // spends in), there's no pending promise left for that silent death to
+  // reject, so without this listener the ring kept honestly showing "ready,
+  // acerca el tag" over a browser-level session Chrome had already killed
+  // in the background.
+  const wasSessionActiveBeforeHiddenRef = useRef(false);
   useEffect(() => {
     if (!nfcSupported) return;
     function handleVisibilityChange() {
-      if (document.visibilityState === 'hidden' && nfcAbortRef.current) {
-        nfcAbortRef.current.abort();
+      if (document.visibilityState === 'hidden') {
+        if (scanStartedRef.current) {
+          nfcAbortRef.current?.abort();
+          nfcAbortRef.current = null;
+          scanStartedRef.current = false;
+          wasSessionActiveBeforeHiddenRef.current = true;
+        }
+      } else if (wasSessionActiveBeforeHiddenRef.current) {
+        wasSessionActiveBeforeHiddenRef.current = false;
+        // Not `'listening'` — nothing confirms Chrome has actually
+        // re-granted reader mode until a fresh `scan()` call resolves
+        // again. Honestly falls back to "toca para activar," requiring a
+        // fresh tap before the ring can honestly claim to be listening.
+        setNfcState('idle');
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -308,23 +315,27 @@ export function AssignTags({
       : null;
 
   // Shared by both the real-hardware and simulated paths below — takes a
-  // resolved `tagId` (however it was obtained) through the one real,
-  // unchanged write: `assignTagToNextPendingUnit`'s own
-  // `already-assigned`/`scan-failed` handling.
+  // resolved `tagId` (however it was obtained: a real UID read, or the
+  // simulated random pick) through the one real, unchanged write:
+  // `assignTagToNextPendingUnit`'s own `already-assigned`/`scan-failed`
+  // handling. Reassigned into `handleTagResolvedRef` on every render (see
+  // below), the identical mechanism `Selling.tsx`'s own `resolveTag` already
+  // establishes — the persistent `ndef.onreading` handler is set up only
+  // once, on the session's first tap, so it must always dispatch through
+  // this render's current closure rather than a stale one captured back
+  // when the scan session was first started.
   async function commitTag(tagId: string) {
     // Stage 7 Backend Integration, Phase 1 — assignTagToNextPendingUnit is
     // now a real, awaitable Supabase RPC call.
     const result = await assignTagToNextPendingUnit(tagId);
-    // Either branch below means the physical write() itself already
-    // completed (real hardware genuinely wrote *something*, or the
-    // simulated path picked its outcome) — this write cycle is over either
-    // way, so a genuinely new on-screen tap is required before the *next*
-    // physical tag (write()'s own gesture-per-call requirement, see this
-    // file's own `nfcState` doc comment above). Never `'error'` here — a
+    // Unlike the retired `write()`-per-tag shape, a commit (successful or
+    // not) no longer resets `nfcState` back to `'idle'` — the underlying
+    // `scan()` session stays genuinely alive and listening for the next
+    // physical tap (`decision-log.md` D74), exactly as `Selling.tsx`'s own
+    // continuous scan session already behaves. Never `'error'` here — a
     // business-logic rejection (already-assigned) or a platform hiccup
     // folded into existing copy is not "the session failed to start," the
     // one thing `NFCScanPrompt`'s own `'error'` ring means.
-    if (nfcSupported) setNfcState('idle');
     if (!result.ok) {
       if (result.reason === 'already-assigned') {
         setFeedback({ kind: 'already-assigned' });
@@ -344,6 +355,13 @@ export function AssignTags({
     // automatically — no tap required to dismiss it (§3.15/§3.16).
     setFeedback(null);
   }
+  // Always points at this render's own `commitTag` (above) — see that
+  // function's own doc comment for why. Plain assignment, not a hook call —
+  // `handleTagResolvedRef` itself is declared with the rest of this
+  // component's hooks, above the `if (!current)` early return (Rules of
+  // Hooks); this reassignment is safe to sit after it, same as `handleScan`
+  // below already does.
+  handleTagResolvedRef.current = commitTag;
 
   async function handleScan() {
     if (nfcUnavailable) {
@@ -355,45 +373,59 @@ export function AssignTags({
       return;
     }
     if (nfcSupported) {
-      if (nfcState === 'listening') {
-        // A write() call is already in flight, hanging on her physical tap
-        // — a second concurrent write() would just race the same tap.
-        // Harmless no-op, mirrors `Selling.tsx`'s identical guard.
+      if (scanStartedRef.current) {
+        // A scan session is already listening in the background — she just
+        // holds the next garment's tag near the phone directly, no need to
+        // keep tapping the on-screen prompt. Harmless no-op, mirrors
+        // `Selling.tsx`'s identical guard.
         return;
       }
-      // Real Web NFC write path (Chrome/Android). The app stays in control
-      // of the ID format regardless of hardware — `makeId('tag')` is
-      // generated here exactly as the simulated path does, then physically
-      // written onto whichever tag she taps. `setNfcState('listening')` here
-      // (rather than after `write()` resolves) is this call site's own
-      // disclosed asymmetry with `scan()` — see this file's own `nfcState`
-      // doc comment for why write() exposes no earlier signal to wait for.
-      setNfcState('listening');
-      const tagId = makeId('tag');
+      scanStartedRef.current = true;
       const controller = new AbortController();
       nfcAbortRef.current = controller;
       try {
         const ndef = new window.NDEFReader!();
-        // Hangs until she physically taps a tag against the phone — that's
-        // expected, not a bug.
-        await ndef.write({ records: [{ recordType: 'text', data: tagId }] }, { signal: controller.signal });
+        ndef.onreading = (event) => {
+          // `decision-log.md` D74 — keyed on the tag's own hardware UID
+          // (`serialNumber`), never `message.records`: a factory-blank tag
+          // fires `reading` with an empty `message` and must still resolve
+          // correctly (Nahui never writes to it). An empty `serialNumber`
+          // (spec-legal — "may be unavailable") is a genuine read failure,
+          // routed through the same §3.16 feedback a bad physical read
+          // already gets, never committed as a tag identifier.
+          if (!event.serialNumber) {
+            setFeedback({ kind: 'scan-failed' });
+            return;
+          }
+          void handleTagResolvedRef.current(event.serialNumber);
+        };
+        ndef.onreadingerror = () => {
+          // A single bad physical read — the session itself stays alive and
+          // listening, so `nfcState` is untouched here (mirrors
+          // `Selling.tsx`'s identical distinction).
+          setFeedback({ kind: 'scan-failed' });
+        };
+        // Hangs until this listening session is actually established —
+        // resolves once, then `onreading` fires for every subsequent tap,
+        // one commit per physical tag, no further on-screen tap needed.
+        await ndef.scan({ signal: controller.signal });
+        // The browser has genuinely granted and begun the session now —
+        // the one moment `NFCScanPrompt`'s pulsing "listening" ring is
+        // actually honest.
+        setNfcState('listening');
       } catch {
-        // Permission denied, no NFC hardware despite feature detection,
-        // AbortError (unmounted mid-write), or any other rejection — a real
-        // failure always means "show scan-failed, let her physically
-        // retry," never a silent fall-back to the simulated random-tagId/
-        // random-fail logic below, which would fabricate a tag assignment
-        // that was never actually written to any physical object. The
-        // session itself failed here — `NFCScanPrompt`'s own `'error'` ring,
-        // not just this line's existing (deliberately non-alarming, AT-M3)
-        // `scan-failed` copy.
-        setFeedback({ kind: 'scan-failed' });
-        setNfcState('error');
-        return;
-      } finally {
+        // `scan()` itself rejected on this first tap (permission denied,
+        // hardware unavailable despite feature detection) — a failure of
+        // this specific tap, not a permanently wedged session: leave
+        // `scanStartedRef` un-set so the next tap retries starting the
+        // session from scratch. The session itself never started —
+        // `NFCScanPrompt`'s own `'error'` ring communicates that directly;
+        // no separate ambient `scan-failed` feedback line here (that copy
+        // is reserved for a per-tag misread mid-session, above).
+        scanStartedRef.current = false;
         nfcAbortRef.current = null;
+        setNfcState('error');
       }
-      await commitTag(tagId);
       return;
     }
 

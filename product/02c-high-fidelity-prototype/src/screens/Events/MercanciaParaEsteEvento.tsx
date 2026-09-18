@@ -176,10 +176,12 @@ export function MercanciaParaEsteEvento({
     { kind: 'conflict'; productName: string } | { kind: 'generic' } | null
   >(null);
   // Real Web NFC read path only — the persistent `NDEFReader.scan()`
-  // listening session this overlay's own first tap starts (mirrors
-  // `Selling.tsx` §3.9d/§3.10's identical mechanism), so every subsequent
-  // physical tap needs no further on-screen tap. Reset on close so a later
-  // re-open starts a genuinely fresh session. `nfcScanStartedRef` guards the
+  // listening session this list-level "Leer con NFC" tap itself starts
+  // (`decision-log.md` D74 — mirrors `Selling.tsx`'s own "Leer con NFC"
+  // overlay entry), so the overlay opens already listening and every
+  // subsequent physical tap needs no further on-screen tap. Reset on close
+  // so a later re-open starts a genuinely fresh session. `nfcScanStartedRef`
+  // guards the
   // *dispatch* (exactly one in-flight `scan()` attempt — a ref, not state,
   // so a second tap arriving before React re-renders can't fire a second
   // concurrent `scan()` call).
@@ -332,10 +334,18 @@ export function MercanciaParaEsteEvento({
       try {
         const ndef = new window.NDEFReader!();
         ndef.onreading = (event) => {
-          const record = event.message.records[0];
-          if (!record?.data) return;
-          const tagId = new TextDecoder(record.encoding || 'utf-8').decode(record.data);
-          void commitNfcScan(tagId);
+          // `decision-log.md` D74 — keyed on the tag's own hardware UID
+          // (`serialNumber`), never `message.records`: a factory-blank tag
+          // fires `reading` with an empty `message` and must still resolve
+          // correctly. An empty `serialNumber` (spec-legal — "may be
+          // unavailable") is a genuine read failure, routed through the same
+          // generic bucket a bad physical read already gets, never committed
+          // as a tag identifier.
+          if (!event.serialNumber) {
+            setNfcFeedback({ kind: 'generic' });
+            return;
+          }
+          void commitNfcScan(event.serialNumber);
         };
         ndef.onreadingerror = () => {
           // A single bad physical read — the session itself stays alive and
@@ -493,7 +503,22 @@ export function MercanciaParaEsteEvento({
           persistence as the barcode shortcut above. Present only when ≥1
           Product on this Catalog is NFC-tagging-eligible. */}
       {canScanNfc && (
-        <button className={styles.scanBtn} onClick={() => setNfcOverlayOpen(true)}>
+        <button
+          className={styles.scanBtn}
+          onClick={() => {
+            // `decision-log.md` D74 — this tap is itself the user gesture
+            // Web NFC's `scan()` requires (the same "the tap that opens NFC
+            // mode is the gesture" precedent
+            // `product/01-validation/registro.html`'s own `iniciarNfc()`
+            // established), so it starts the session directly rather than
+            // opening the overlay and waiting for a second tap on the ring
+            // inside it. `handleNfcScan` runs synchronously, in this same
+            // click handler, before its first `await` — the exact point Web
+            // NFC's transient-activation check is satisfied.
+            setNfcOverlayOpen(true);
+            void handleNfcScan();
+          }}
+        >
           Leer con NFC
         </button>
       )}

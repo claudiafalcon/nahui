@@ -46,18 +46,19 @@ import styles from './Selling.module.css';
  *   assumed** — `home.md` doesn't claim any exact NFC hardware mechanics,
  *   the same disclaimed-mechanics posture `inventory.md` §3.8b already
  *   holds for camera mechanics. On Chrome/Android (`nfcSupported`, the only
- *   browser that implements Web NFC as of this build), the first tap of
- *   `NFCScanPrompt` starts a real, persistent `NDEFReader.scan()` listening
- *   session (see `handleScan` below) — every physical tag she then holds
- *   near the phone resolves via its own real, app-written `tagId` (the same
- *   one `AssignTags.tsx`'s own real write path put there), no further
- *   on-screen tap needed. Everywhere else (iPhone Safari, desktop, any
- *   browser without Web NFC), scanning stays the pure client-side
- *   simulation this comment previously described as the *only* mechanism —
- *   resolving `addItemToSaleByTag` against a randomly-picked currently-
- *   tagged-and-available unit, the same "mock the physical mechanism, keep
- *   the domain layer honest" posture `AssignTags.tsx`'s own scan simulation
- *   already established, not a new convention invented here.
+ *   browser that implements Web NFC as of this build), the gesture that
+ *   enters this surface starts a real, persistent `NDEFReader.scan()`
+ *   listening session (see `handleScan` below) — every physical tag she
+ *   then holds near the phone resolves via its own factory-set hardware UID
+ *   (`event.serialNumber`, `decision-log.md` D74 — the same UID
+ *   `AssignTags.tsx`'s own real scan path captured), no further on-screen
+ *   tap needed. Everywhere else (iPhone Safari, desktop, any browser without
+ *   Web NFC), scanning stays the pure client-side simulation this comment
+ *   previously described as the *only* mechanism — resolving
+ *   `addItemToSaleByTag` against a randomly-picked currently-tagged-and-
+ *   available unit, the same "mock the physical mechanism, keep the domain
+ *   layer honest" posture `AssignTags.tsx`'s own scan simulation already
+ *   established, not a new convention invented here.
  */
 // `nfcSupported` / `NFC_SIMULATION_ENABLED` / `nfcUnavailable` — the shared
 // capability + simulation switch (`src/domain/nfcSupport.ts`, Stage 7
@@ -269,16 +270,24 @@ export function Selling({
   >(null);
   const nfcOverlaySuccessTimeout = useRef<number | undefined>(undefined);
 
-  // Real Web NFC read path only (`nfcSupported`, §3.10's `nfc` operating
-  // mode) — `NDEFReader.scan()` requires its initial call to happen inside a
-  // user-gesture handler, so this session is lazily started on the *first*
-  // tap of `NFCScanPrompt`, never auto-started on mount. `scanStartedRef`
-  // guards the *dispatch* — exactly one in-flight `scan()` attempt at a
-  // time (a ref, not state — this specific guard must stay synchronous, not
-  // wait for a re-render, so a second tap arriving before React flushes
-  // can't fire a second concurrent `scan()` call); `nfcAbortRef` is the
-  // `AbortController` for that session's `scan()` call, aborted on unmount
-  // so a stale listener never fires into an unmounted component.
+  // Real Web NFC read path only (`nfcSupported`) — `NDEFReader.scan()`
+  // requires its initial call to happen inside a user-gesture handler, never
+  // auto-started on mount. Two different entering gestures start it,
+  // depending on which of this screen's two NFC surfaces is in play
+  // (`decision-log.md` D74): §3.10's own full `nfc`-mode surface has no
+  // antecedent tap to enter it (the Session's `operatingMode` is already
+  // fixed before this screen ever mounts), so the *first tap of
+  // `NFCScanPrompt` itself* is genuinely the entering gesture there,
+  // unchanged; the `buttons`-mode "Leer con NFC" overlay's own entering tap
+  // ("Leer con NFC" itself, below) now calls `handleScan` directly, so the
+  // overlay opens already listening rather than requiring a second tap on
+  // the ring inside it. `scanStartedRef` guards the *dispatch* — exactly one
+  // in-flight `scan()` attempt at a time (a ref, not state — this specific
+  // guard must stay synchronous, not wait for a re-render, so a second tap
+  // arriving before React flushes can't fire a second concurrent `scan()`
+  // call); `nfcAbortRef` is the `AbortController` for that session's
+  // `scan()` call, aborted on unmount so a stale listener never fires into
+  // an unmounted component.
   const scanStartedRef = useRef(false);
   const nfcAbortRef = useRef<AbortController | null>(null);
   // Live-hardware correctness fix (2026-09-17) — `NFCScanPrompt`'s own
@@ -719,10 +728,18 @@ export function Selling({
       try {
         const ndef = new window.NDEFReader!();
         ndef.onreading = (event) => {
-          const record = event.message.records[0];
-          if (!record?.data) return;
-          const tagId = new TextDecoder(record.encoding || 'utf-8').decode(record.data);
-          void handleTagResolvedRef.current(tagId);
+          // `decision-log.md` D74 — keyed on the tag's own hardware UID
+          // (`serialNumber`), never `message.records`: a factory-blank tag
+          // fires `reading` with an empty `message` and must still resolve
+          // correctly. An empty `serialNumber` (spec-legal — "may be
+          // unavailable") is a genuine read failure, routed through the same
+          // per-tag ambient hint a bad physical read already gets, not
+          // committed as a tag identifier.
+          if (!event.serialNumber) {
+            handleNfcReadError();
+            return;
+          }
+          void handleTagResolvedRef.current(event.serialNumber);
         };
         ndef.onreadingerror = () => {
           // A single bad physical read — the session itself stays alive and
@@ -952,7 +969,27 @@ export function Selling({
                 </button>
               )}
               {showNfcOverlayEntry && (
-                <button className={styles.scanBtn} onClick={() => setNfcOverlayOpen(true)}>
+                <button
+                  className={styles.scanBtn}
+                  onClick={() => {
+                    // `decision-log.md` D74 — this tap is itself the user
+                    // gesture Web NFC's `scan()` requires (the same "the tap
+                    // that opens NFC mode is the gesture" precedent
+                    // `product/01-validation/registro.html`'s own
+                    // `iniciarNfc()` established), so it starts the session
+                    // directly rather than opening the overlay and waiting
+                    // for a second tap on the ring inside it. `handleScan`
+                    // is called synchronously, in this same click handler,
+                    // before its first `await` — the exact point Web NFC's
+                    // transient-activation check is satisfied. By the time a
+                    // physical tag is actually presented, `nfcOverlayOpen`
+                    // has already re-rendered `true` and
+                    // `handleTagResolvedRef` already points at
+                    // `resolveOverlayTag` (reassigned every render, above).
+                    setNfcOverlayOpen(true);
+                    void handleScan();
+                  }}
+                >
                   Leer con NFC
                 </button>
               )}
