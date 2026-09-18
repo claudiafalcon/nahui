@@ -232,10 +232,23 @@ export function MercanciaParaEsteEvento({
           nfcAbortRef.current = null;
           nfcScanStartedRef.current = false;
           wasSessionActiveBeforeHiddenRef.current = true;
+          // Live-hardware correctness fix (2026-09-17, staleness-window
+          // follow-up) — the teardown above is real and synchronous (the
+          // session is genuinely dead the instant the tab hides), but
+          // leaving `nfcSessionState` untouched here left the ring
+          // rendering `'listening'` for the entire time the tab stayed
+          // hidden, correcting only later, whenever (if ever) the matching
+          // `'visible'` transition fired. `'idle'`, not `'error'` — see
+          // `Selling.tsx`'s identical comment for why.
+          setNfcSessionState('idle');
         }
       } else if (wasSessionActiveBeforeHiddenRef.current) {
         wasSessionActiveBeforeHiddenRef.current = false;
-        // Not `'listening'` — see `Selling.tsx`'s identical comment for why.
+        // Redundant with the `'hidden'` branch's own
+        // `setNfcSessionState('idle')` above once that fix is in place —
+        // kept anyway as a harmless no-op / defensive backstop in case some
+        // device fires `'visible'` without a matching prior `'hidden'`
+        // having gone through this exact code path.
         setNfcSessionState('idle');
       }
     }

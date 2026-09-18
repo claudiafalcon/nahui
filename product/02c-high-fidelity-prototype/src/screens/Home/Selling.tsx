@@ -367,14 +367,28 @@ export function Selling({
           nfcAbortRef.current = null;
           scanStartedRef.current = false;
           wasSessionActiveBeforeHiddenRef.current = true;
+          // Live-hardware correctness fix (2026-09-17, staleness-window
+          // follow-up) — the teardown above is real and synchronous (the
+          // session is genuinely dead the instant the tab hides), but
+          // leaving `nfcSessionState` untouched here left the ring
+          // rendering `'listening'` for the entire time the tab stayed
+          // hidden, correcting only later, whenever (if ever) the matching
+          // `'visible'` transition fired. `'idle'`, not `'error'` — this
+          // isn't a failure, the session was deliberately torn down because
+          // the tab is backgrounded, the same "no active session, needs a
+          // fresh tap" semantics `'idle'` already carries everywhere else in
+          // this file.
+          setNfcSessionState('idle');
         }
       } else if (wasSessionActiveBeforeHiddenRef.current) {
         wasSessionActiveBeforeHiddenRef.current = false;
-        // Not `'listening'` — nothing confirms Chrome has actually
-        // re-granted reader mode until a fresh `scan()` call resolves
-        // again. Honestly falls back to "toca para activar," the same
-        // copy a first-ever tap on this screen would show, requiring her
-        // to tap again before the ring can honestly claim to be listening.
+        // Redundant with the `'hidden'` branch's own
+        // `setNfcSessionState('idle')` above once that fix is in place for
+        // the case where `'hidden'` already ran — kept anyway as a harmless
+        // no-op / defensive backstop in case some device fires `'visible'`
+        // without a matching prior `'hidden'` having gone through this
+        // exact code path, safer than assuming perfect event pairing on
+        // every device.
         setNfcSessionState('idle');
       }
     }
