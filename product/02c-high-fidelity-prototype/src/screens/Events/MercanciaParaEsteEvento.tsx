@@ -194,6 +194,46 @@ export function MercanciaParaEsteEvento({
     };
   }, []);
 
+  // Live-hardware correctness fix (2026-09-17, visibility-hardening
+  // follow-up) — the identical gap `Selling.tsx`'s own sibling fix (same
+  // pass) closes, applied here since this screen's "Leer con NFC" overlay
+  // (§3.22a) manages the same kind of long-lived `scan()` session: per
+  // Chromium's own documented behavior, Android's real underlying reader-
+  // mode session is silently disabled the instant this tab goes hidden
+  // (screen lock, app-switch), with no JS event our code was listening for
+  // — and once past its first `scan()` resolution, there's no pending
+  // promise left for that silent death to reject, so the ring kept
+  // honestly showing "ready, acerca el tag" over an already-dead browser
+  // session. See `Selling.tsx`'s own identical effect for the full
+  // reasoning (mirrored here verbatim in shape) — one listener for this
+  // component's whole mount lifetime, gated internally by
+  // `nfcScanStartedRef.current` (this file's own name for the same
+  // always-current dispatch-guard ref `handleNfcScan` itself relies on)
+  // rather than tied to `nfcOverlayOpen` in the effect's own dependency
+  // array, since the two are behaviorally equivalent and this avoids
+  // re-subscription risk.
+  const wasSessionActiveBeforeHiddenRef = useRef(false);
+  useEffect(() => {
+    if (!nfcSupported) return;
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        if (nfcScanStartedRef.current) {
+          // Mirrors `closeNfcOverlay`'s own explicit-close cleanup below.
+          nfcAbortRef.current?.abort();
+          nfcAbortRef.current = null;
+          nfcScanStartedRef.current = false;
+          wasSessionActiveBeforeHiddenRef.current = true;
+        }
+      } else if (wasSessionActiveBeforeHiddenRef.current) {
+        wasSessionActiveBeforeHiddenRef.current = false;
+        // Not `'listening'` — see `Selling.tsx`'s identical comment for why.
+        setNfcSessionState('idle');
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   useEffect(() => {
     if (!pendingScrollId) return;
     const id = pendingScrollId;

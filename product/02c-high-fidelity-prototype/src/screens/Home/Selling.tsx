@@ -307,6 +307,65 @@ export function Selling({
     };
   }, []);
 
+  // Live-hardware correctness fix (2026-09-17, visibility-hardening
+  // follow-up) — a gap the same-day fix above didn't yet close. Per a
+  // `knowledge-mentor` consultation live-fetched from Android's own docs and
+  // Chromium's own source: Web NFC's `scan()` is built on Android's real
+  // `enableReaderMode()`, and Chromium's own documented behavior is that
+  // this underlying "Android NFC Reader Mode" session is silently disabled
+  // the instant the tab becomes hidden (screen lock, app-switch) — with no
+  // corresponding JS event our code previously listened for. Once a session
+  // is past its first `scan()` resolution (`nfcSessionState === 'listening'`,
+  // the steady state most of a real selling session spends in), there's no
+  // pending promise left for that silent death to reject — so without this
+  // listener, the ring kept honestly showing "ready, acerca el tag" over a
+  // browser-level session that Chrome had already killed in the background,
+  // the exact stale-"listening" hazard the earlier fix closed for every
+  // *other* case that same day.
+  //
+  // Deliberately one listener for the component's whole mount lifetime
+  // (never re-subscribed per `nfcOverlayOpen`/`operatingMode` change) —
+  // `scanStartedRef.current` (already the synchronous, always-current
+  // ground truth `handleScan` itself relies on) is what actually gates the
+  // work inside the handler, so this is behaviorally identical to "active
+  // only while a session is genuinely open" without the extra complexity/
+  // re-subscription risk of tying the effect's own dependency array to
+  // either piece of state. Shared correctly across both real-hardware NFC
+  // surfaces this screen can show (`nfc`-mode's own full surface and the
+  // `buttons`-mode "Leer con NFC" overlay) since both already share this
+  // same `scanStartedRef`/`nfcAbortRef`/`nfcSessionState` trio and only one
+  // is ever mounted at a time (this file's own pre-existing comment above).
+  const wasSessionActiveBeforeHiddenRef = useRef(false);
+  useEffect(() => {
+    if (!nfcSupported) return;
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        if (scanStartedRef.current) {
+          // Mirrors `closeNfcOverlay`'s own explicit-close cleanup below —
+          // abort whatever real `scan()` session may still (as far as our
+          // own state believes) be listening, and reset the dispatch guard
+          // so the *next* interaction — an on-screen tap, or a stray
+          // physical tag held near the phone — starts a genuinely fresh
+          // `scan()` call rather than assuming the old one is still good.
+          nfcAbortRef.current?.abort();
+          nfcAbortRef.current = null;
+          scanStartedRef.current = false;
+          wasSessionActiveBeforeHiddenRef.current = true;
+        }
+      } else if (wasSessionActiveBeforeHiddenRef.current) {
+        wasSessionActiveBeforeHiddenRef.current = false;
+        // Not `'listening'` — nothing confirms Chrome has actually
+        // re-granted reader mode until a fresh `scan()` call resolves
+        // again. Honestly falls back to "toca para activar," the same
+        // copy a first-ever tap on this screen would show, requiring her
+        // to tap again before the ring can honestly claim to be listening.
+        setNfcSessionState('idle');
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const membership = actingMembership(state);
   if (!membership) return null; // defensive — HomeScreen only mounts this once a valid acting Membership resolves
   const session = myActiveSession(state, membership.id);

@@ -142,6 +142,48 @@ export function AssignTags({
     };
   }, []);
 
+  // Live-hardware correctness fix (2026-09-17, visibility-hardening
+  // follow-up) — checked for the identical dead-session-while-hidden
+  // exposure `Selling.tsx`/`MercanciaParaEsteEvento.tsx`'s own sibling fix
+  // (same pass) closes, and found genuinely exposed, **not** safe by
+  // construction, despite this file's write-flow shape looking safer at
+  // first glance (a fresh tap already required per physical tag, per this
+  // file's own existing `nfcState` doc comment above).
+  //
+  // The reason it's exposed: `write()`'s one promise stays pending for
+  // `nfcState`'s *entire* `'listening'` duration (unlike `scan()`, which
+  // resolves once and then just keeps a session alive with no promise left
+  // pending) — so today, with no visibility listener at all, backgrounding
+  // mid-write leaves that promise hanging. Per the same Chromium-documented
+  // behavior this pass is built on, Chrome doesn't reject it on its own
+  // when the tab goes hidden — it silently drops the underlying reader-mode
+  // session and leaves the JS promise pending indefinitely. Returning to
+  // the tab then shows a `nfcState` still stuck at `'listening'` forever,
+  // and `handleScan`'s own `if (nfcState === 'listening') return` guard
+  // (below) makes a fresh on-screen tap a silent no-op too — no recovery
+  // even by tapping again, a genuinely *worse* dead end than the sibling
+  // `scan()` case, not merely an equally-stale ring.
+  //
+  // **Fixed the minimal way, reusing machinery that already exists rather
+  // than duplicating the sibling fix's own manual idle-reset:** aborting
+  // the in-flight `write()` here is sufficient on its own — `handleScan`'s
+  // own `catch` block below already anticipates `AbortError` as a rejection
+  // reason and already sets `feedback: scan-failed` / `nfcState: 'error'`
+  // correctly, since (unlike the `scan()` case) there is always still a
+  // genuinely pending promise for this abort to reject at the moment the
+  // tab goes hidden. No separate "on visible again, reset to idle" branch
+  // is needed here the way the sibling fix requires one.
+  useEffect(() => {
+    if (!nfcSupported) return;
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden' && nfcAbortRef.current) {
+        nfcAbortRef.current.abort();
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   // A stable string key of the live queue's own shape (product id + its
   // live count, front-to-back) — changes exactly when a scan lands or the
   // queue's composition genuinely changes, never merely because
