@@ -17,7 +17,7 @@ import styles from './SettingsScreen.module.css';
  * `downgrade`, which uses the deferred-effect one (§3.5). `cancel-pending`
  * (§3.7) has no confirm *screen* of its own — only the Sheet — but shares
  * the same §3.9/§3.10 write/error states as every other action. */
-type ConfirmAction = 'activate-paid' | 'tags-on' | 'tags-off' | 'downgrade' | 'nfc-per-product-on' | 'nfc-per-product-off';
+type ConfirmAction = 'activate-paid' | 'tags-off' | 'downgrade' | 'nfc-per-product-on' | 'nfc-per-product-off';
 type ActionKind = ConfirmAction | 'cancel-pending';
 
 type SubView =
@@ -49,20 +49,11 @@ function confirmCopy(action: ConfirmAction): { title: string; body: string[]; ct
         ],
         ctaLabel: 'Confirmar y activar',
       };
-    case 'tags-on':
-      return {
-        title: 'Cambiar a vender con tags',
-        body: [
-          'Desde tu próxima sesión, vas a empezar vendiendo con tags, siempre que tengas mercancía etiquetada lista. Si no tienes tags listos ese día, vendes con botones sin problema.',
-          'Si tienes mercancía sin etiquetar, te llevamos a etiquetarla en cuanto confirmes. Si aún no has registrado mercancía, primero te pedimos que la registres.',
-        ],
-        ctaLabel: 'Cambiar ahora',
-      };
     case 'tags-off':
       return {
         title: 'Cambiar a vender con botones',
         body: [
-          'Desde tu próxima sesión, vas a empezar vendiendo con botones. Puedes volver a cambiarlo cuando quieras.',
+          'Desde tu próxima sesión, vas a empezar vendiendo con botones. Ya no vas a poder volver a vender con tags para todo tu catálogo — pero puedes seguir vendiendo con NFC, producto por producto, activándolo en Configuración cuando quieras.',
         ],
         ctaLabel: 'Cambiar ahora',
       };
@@ -78,7 +69,7 @@ function confirmCopy(action: ConfirmAction): { title: string; body: string[]; ct
     }
     case 'nfc-per-product-on':
       return {
-        title: 'Activar NFC por producto',
+        title: 'Activar NFC',
         body: [
           'Vas a poder elegir, producto por producto, cuáles vender con tag NFC — solo en los que no tengan código de barras.',
           'Esto no cambia cómo vendes ahorita; nada se etiqueta todavía, tú decides cuáles en Inventario.',
@@ -87,7 +78,7 @@ function confirmCopy(action: ConfirmAction): { title: string; body: string[]; ct
       };
     case 'nfc-per-product-off':
       return {
-        title: 'Desactivar NFC por producto',
+        title: 'Desactivar NFC',
         body: [
           'Ya no vas a poder marcar más productos para vender con NFC, ni vas a ver la opción de leer tags NFC al vender con botones. La mercancía que ya etiquetaste sigue etiquetada y se puede seguir vendiendo con NFC sin problema.',
         ],
@@ -111,14 +102,15 @@ export function SettingsScreen({
 }: {
   onBack: () => void;
   /** settings.md §2.6 (`decision-log.md` D46, corrected per its own
-   * Addendum — architect ruling) — called the instant "Cambiar a vender con
-   * tags" (`'tags-on'`) finishes writing `defaultSellingMode`. This
-   * component never reads or queries any `InventoryUnit`/Catalog fact to
-   * decide where she lands next — it only writes the field and hands off
-   * navigation via this bare callback (a lightweight entry marker, set by
-   * the caller); `inventory.md` §2's own new step 0 owns the routing
-   * decision entirely, avoiding the Identity→Inventory→Identity dependency
-   * back-edge `architecture-principles.md` #6 forbids. */
+   * Addendum — architect ruling). **Retired as a live call path, 2026-09-17
+   * (`decision-log.md` D72)** — "Cambiar a vender con tags" (the only action
+   * that ever invoked this) no longer exists (§2.2/§2.3), so this callback
+   * is never called from this component any longer. Kept in the prop
+   * signature (dead, unreachable) rather than unwound end-to-end through
+   * `HomeScreen.tsx`/`App.tsx` in this pass — `inventory.md` §2 step 0's own
+   * resolution logic this fed is itself explicitly left untouched by D72
+   * (settings.md §2.6's own retirement note), so removing the plumbing here
+   * only is deliberately deferred, not an oversight. */
   onSwitchedToTags: () => void;
 }) {
   const {
@@ -187,9 +179,6 @@ export function SettingsScreen({
       case 'activate-paid':
         ok = await activatePaidPlan();
         break;
-      case 'tags-on':
-        ok = await changeDefaultSellingMode('nfc');
-        break;
       case 'tags-off':
         ok = await changeDefaultSellingMode('buttons');
         break;
@@ -217,18 +206,10 @@ export function SettingsScreen({
       return;
     }
 
-    // settings.md §2.6 (`decision-log.md` D46, corrected per its own
-    // Addendum) — "Cambiar a vender con tags" doesn't return to this
-    // screen's own vista principal like every other action above; the
-    // instant the write succeeds it unconditionally hands off navigation
-    // into `inventory.md` §2's own resolution, carrying nothing more than
-    // a bare entry marker. No `InventoryUnit`/Catalog fact is read here —
-    // see this component's own `onSwitchedToTags` doc comment.
-    if (action === 'tags-on') {
-      onSwitchedToTags();
-      return;
-    }
-
+    // settings.md §2.6's own handoff (`decision-log.md` D46) is retired
+    // along with "Cambiar a vender con tags" itself (`decision-log.md`
+    // D72) — every remaining action returns to this screen's own vista
+    // principal, no special-cased handoff branch needed any longer.
     setSubView({ kind: 'main' });
   }
 
@@ -443,12 +424,16 @@ function SettingsMain({
   onBack: () => void;
   onActivatePaidTap: () => void;
   onDowngradeTap: () => void;
-  onModeChangeTap: (action: 'tags-on' | 'tags-off') => void;
-  /** settings.md §2.8/§3.4 — "Activar NFC por producto"/"Desactivar NFC por
-   * producto" (`decision-log.md` D71), same shape as `onModeChangeTap`
-   * above, kept as its own prop rather than widening that one's action
-   * union — a distinct capability (`nfcPerProductEnabled`), not a third
-   * direction of `defaultSellingMode`. */
+  /** settings.md §2.3 — `decision-log.md` D72 narrows this to a one-way
+   * escape valve: only ever called with `'tags-off'`, only ever rendered
+   * while `defaultSellingMode = 'nfc'` (grandfathered/demo Businesses).
+   * `'tags-on'` no longer exists as a reachable action. */
+  onModeChangeTap: (action: 'tags-off') => void;
+  /** settings.md §2.8/§3.4 — "Activar NFC"/"Desactivar NFC" (`decision-log.md`
+   * D71, renamed D72), same shape as `onModeChangeTap` above, kept as its
+   * own prop rather than widening that one's action union — a distinct
+   * capability (`nfcPerProductEnabled`), not a third direction of
+   * `defaultSellingMode`. */
   onNfcPerProductTap: (action: 'nfc-per-product-on' | 'nfc-per-product-off') => void;
   onViewTeamTap: () => void;
   cancelPendingOpen: boolean;
@@ -534,55 +519,53 @@ function SettingsMain({
           )}
         </div>
 
-        {/* settings.md §2.3 — defaultSellingMode row. Never conditioned on a
-            pending subscriptionTier change (§2.2's own "no capability with a
+        {/* settings.md §2.3 — defaultSellingMode row. `decision-log.md` D72:
+            no longer a two-way picker for any Business. A `buttons`-mode
+            Business (the normal case going forward) sees a plain,
+            un-actioned line, nothing to switch into `nfc` with — replaced by
+            the real self-service control that matters now, "Activar NFC"
+            (§2.8), immediately below. Only an already-`nfc`-moded Business
+            (grandfathered/demo) sees a real control here: the one-way
+            "Cambiar a vender con botones" escape valve, nothing else
+            NFC-related until she uses it. Never conditioned on a pending
+            subscriptionTier change (§2.2's own "no capability with a
             pending change offers a second, stacking action" applies only to
             the capability that actually has one). */}
         <div className={styles.section}>
           <p className={styles.sectionLabel}>Cómo vendes normalmente:</p>
           {business.subscriptionTier === 'paid' ? (
-            <>
-              <p className={styles.modeValue}>{business.defaultSellingMode === 'nfc' ? 'Con tags' : 'Botones'}</p>
-              <Button
-                variant="secondary"
-                onClick={() => onModeChangeTap(business.defaultSellingMode === 'nfc' ? 'tags-off' : 'tags-on')}
-              >
-                {business.defaultSellingMode === 'nfc' ? 'Cambiar a vender con botones' : 'Cambiar a vender con tags'}
-              </Button>
+            business.defaultSellingMode === 'nfc' ? (
+              <>
+                <p className={styles.modeValue}>Con tags</p>
+                <Button variant="secondary" onClick={() => onModeChangeTap('tags-off')}>
+                  Cambiar a vender con botones
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className={styles.modeValue}>Botones</p>
 
-              {/* settings.md §2.8/§3.4 "NFC por producto" — a fifth
-                  self-service capability (`decision-log.md` D71), offered
-                  only while `nfc ∈ registrationMode` (`subscriptionTier ===
-                  'paid'`) AND `defaultSellingMode !== 'nfc'` — Product Owner
-                  correction (2026-09-17): once the whole-Catalog "Con tags"
-                  mode is active, every Product is already NFC-tagging-
-                  eligible via the original D46 rule (the composed test's
-                  first disjunct, `selectors.ts`'s `isNfcTaggingEligible`),
-                  so this per-product opt-in has nothing left to add and
-                  showing it is pure redundant clutter — it only ever means
-                  something for a `buttons`-mode Business selectively opting
-                  a few barcode-less Products in. The stored
-                  `nfcPerProductEnabled` value itself is untouched by this
-                  visibility change (never a side effect of switching mode,
-                  per this section's own standing invariant) — the row
-                  simply reappears, unchanged, if she switches back to
-                  Botones. */}
-              {business.defaultSellingMode !== 'nfc' && (
-                <>
-                  <p className={styles.modeValue}>
-                    NFC por producto: {business.nfcPerProductEnabled ? 'Sí' : 'No'}
-                  </p>
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      onNfcPerProductTap(business.nfcPerProductEnabled ? 'nfc-per-product-off' : 'nfc-per-product-on')
-                    }
-                  >
-                    {business.nfcPerProductEnabled ? 'Desactivar NFC por producto' : 'Activar NFC por producto'}
-                  </Button>
-                </>
-              )}
-            </>
+                {/* settings.md §2.8/§3.4 "Activar NFC" — the sole remaining
+                    self-service NFC control (`decision-log.md` D71, renamed
+                    D72), offered only while `nfc ∈ registrationMode`
+                    (`subscriptionTier === 'paid'`) — the `defaultSellingMode
+                    !== 'nfc'` branch we're already inside guarantees the
+                    second half of §2.8's own gate. The stored
+                    `nfcPerProductEnabled` value is untouched by any mode
+                    switch (never a side effect of one, per this section's
+                    own standing invariant) — this row simply reappears,
+                    unchanged, whenever she's back in Botones mode. */}
+                <p className={styles.modeValue}>NFC: {business.nfcPerProductEnabled ? 'Sí' : 'No'}</p>
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    onNfcPerProductTap(business.nfcPerProductEnabled ? 'nfc-per-product-off' : 'nfc-per-product-on')
+                  }
+                >
+                  {business.nfcPerProductEnabled ? 'Desactivar NFC' : 'Activar NFC'}
+                </Button>
+              </>
+            )
           ) : (
             <p className={styles.modeValue}>
               Botones <span className={styles.modeNote}>(vender con tags requiere el plan de pago)</span>

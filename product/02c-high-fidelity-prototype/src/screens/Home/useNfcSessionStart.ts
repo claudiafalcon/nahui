@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useStore } from '../../domain/store';
 import { nfcCapable, nfcReadiness } from '../../domain/selectors';
 
@@ -8,19 +8,27 @@ import { nfcCapable, nfcReadiness } from '../../domain/selectors';
  * reach the identical folded-in sub-step §2 describes ("not a new top-level
  * branch of its own... Steps 2 and 3... are the only two points... where a
  * Session doesn't yet exist and one is about to open"), so one hook decides
- * the one shared question — which of the four §3.6a variants (if any)
+ * the one shared question — which of the three §3.6a variants (if any)
  * applies right now — and each caller only supplies its own copy/wiring.
  *
  * `'none'` is the common case (§3.4/§3.5/§3.6's own "otherwise
  * pixel-identical" screen) — Ready & capable & matching `defaultSellingMode`,
  * or a `buttons` default with nothing to disagree with.
+ *
+ * **A former fourth variant, `'ready-buttons-nudge'`, is retired
+ * (2026-09-17, `decision-log.md` D72)** — it used to nudge a `buttons`-mode
+ * Paid merchant, once her tagged inventory cleared NFC Readiness, toward
+ * `settings.md`'s "Cambiar a vender con tags." D72 retires that action
+ * outright (whole-catalog `nfc` mode is no longer self-service-enterable),
+ * so this branch has nowhere left to route her — removed rather than
+ * repointed, since its own trigger condition can no longer arise for a
+ * merchant who hasn't already turned `Business.nfcPerProductEnabled` on
+ * (tagging any unit at all requires that field to already be true,
+ * `decision-log.md` D71). `Business.nfcAvailabilityNudgeShown`
+ * (`decision-log.md` D29) is a dead field as of this change — kept in the
+ * schema (never delete historical data), no longer read or written here.
  */
-export type NfcSessionStartVariant =
-  | 'none'
-  | 'limited-ready'
-  | 'not-ready'
-  | 'capability-revoked'
-  | 'ready-buttons-nudge';
+export type NfcSessionStartVariant = 'none' | 'limited-ready' | 'not-ready' | 'capability-revoked';
 
 export interface NfcSessionStartState {
   variant: NfcSessionStartVariant;
@@ -34,25 +42,16 @@ export interface NfcSessionStartState {
 }
 
 export function useNfcSessionStart(): NfcSessionStartState {
-  const { state, markNfcAvailabilityNudgeShown } = useStore();
+  const { state } = useStore();
 
   // Resolved once, at this hook's own mount — matching §2's "evaluated
   // ambiently, on every Home open" (a fresh Idle/EventResume mount *is* a
   // Home open, per this codebase's own routing: both unmount whenever
   // Configuración, Asignar Tags, or a Session takes over, and remount fresh
   // on return). Frozen via `useState`'s lazy initializer rather than
-  // recomputed on every render — load-bearing for `ready-buttons-nudge`
-  // specifically: `markNfcAvailabilityNudgeShown()` below writes the exact
-  // flag this variant's own condition reads, and without freezing the
-  // initial read, that write's own resulting re-render would make the
-  // mention disappear before Ana can read it. This is the same "capture the
-  // moment, don't re-derive off a live flag the same action just flipped"
-  // technique `reconcilePendingSubscriptionTier`'s own `landed` local state
-  // (`SettingsScreen.tsx`) already established for an analogous
-  // one-time-acknowledgment case. Freezing all four variants (not just this
-  // one) keeps the rule uniform and matches "shown once per occurrence of
-  // this Session-start moment" for the other three as well — an occurrence
-  // is exactly one mount-to-unmount visit to this screen.
+  // recomputed on every render — matches "shown once per occurrence of this
+  // Session-start moment" for all three variants: an occurrence is exactly
+  // one mount-to-unmount visit to this screen.
   const [variant] = useState<NfcSessionStartVariant>(() => {
     const business = state.business;
     if (!business) return 'none';
@@ -65,24 +64,13 @@ export function useNfcSessionStart(): NfcSessionStartState {
       if (readiness === 'limited') return 'limited-ready';
       return 'none'; // Ready, capability intact, matching default — silent
     }
-    // defaultSellingMode === 'buttons'
-    if (capable && readiness === 'ready' && !business.nfcAvailabilityNudgeShown) {
-      return 'ready-buttons-nudge';
-    }
+    // defaultSellingMode === 'buttons' — always 'none' now (`decision-log.md`
+    // D72 retires the former fourth, ready-buttons-nudge variant this branch
+    // used to sometimes resolve to; see this file's own top-of-file comment).
     return 'none';
   });
 
   const [overrideToNfc, setOverrideToNfc] = useState(false);
-
-  // §3.6a's "shown once ever" mutator — fires exactly once, the render this
-  // variant is first frozen as `'ready-buttons-nudge'` above. Empty deps:
-  // one real mount, not every re-render or every identity change of the
-  // store action itself (same convention `SettingsScreen.tsx`'s own
-  // `reconcilePendingSubscriptionTier` effect already documents).
-  useEffect(() => {
-    if (variant === 'ready-buttons-nudge') void markNfcAvailabilityNudgeShown();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return {
     variant,

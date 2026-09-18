@@ -21,9 +21,14 @@ import styles from './Idle.module.css';
  * Limited Ready is unchanged for both roles (a local, in-the-moment
  * override, not a Configuración/Inventario destination). Not Ready and
  * capability-revoked become a passive note naming the real, actionable next
- * step (ask the OWNER) in place of the link. The Ready-but-`buttons`
- * discoverability nudge is suppressed entirely for a SELLER — purely
- * discretionary, unactionable for her either way.
+ * step (ask the OWNER) in place of the link.
+ *
+ * **The former fourth variant, `'ready-buttons-nudge'`, is retired
+ * (2026-09-17, `decision-log.md` D72)** — it used to nudge a `buttons`-mode
+ * Paid merchant toward `settings.md`'s "Cambiar a vender con tags," an
+ * action D72 removes outright. `useNfcSessionStart.ts`'s own resolution can
+ * no longer produce this variant, so this component has nothing left to
+ * render for it — see that hook's own comment for the full reasoning.
  */
 export function NfcSessionStartNote({
   variant,
@@ -83,31 +88,17 @@ export function NfcSessionStartNote({
     );
   }
 
-  if (variant === 'capability-revoked') {
-    return (
-      <div className={styles.readinessNote}>
-        <p className={styles.readinessLine}>Por ahora no puedes vender con tags — vas a vender con botones.</p>
-        {role === 'OWNER' ? (
-          <button className={styles.readinessLink} onClick={onOpenSettings}>
-            Ir a Configuración
-          </button>
-        ) : (
-          <p className={styles.readinessLine}>Solo quien te invitó puede activar esto.</p>
-        )}
-      </div>
-    );
-  }
-
-  // variant === 'ready-buttons-nudge' — suppressed entirely for a SELLER
-  if (role !== 'OWNER') return null;
+  // variant === 'capability-revoked'
   return (
     <div className={styles.readinessNote}>
-      <p className={styles.readinessLine}>
-        Ya tienes prendas con tag suficientes para vender con tags — actívalo cuando quieras en Configuración.
-      </p>
-      <button className={styles.readinessLink} onClick={onOpenSettings}>
-        Ir a Configuración
-      </button>
+      <p className={styles.readinessLine}>Por ahora no puedes vender con tags — vas a vender con botones.</p>
+      {role === 'OWNER' ? (
+        <button className={styles.readinessLink} onClick={onOpenSettings}>
+          Ir a Configuración
+        </button>
+      ) : (
+        <p className={styles.readinessLine}>Solo quien te invitó puede activar esto.</p>
+      )}
     </div>
   );
 }
