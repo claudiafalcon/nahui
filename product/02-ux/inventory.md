@@ -101,6 +101,10 @@ inventory.changelog.md#status-2026-09-13-d65-barcode-scanning]**
 
 **Amended 2026-09-16/17 (`decision-log.md` D71, `product/02-ux/product-decisions.md` Q31 — NFC becomes a per-product opt-in composing with buttons/barcode) — two real, substantive changes, not a footnote.** (1) A new, fifth Catalog-row tap zone — a compact NFC-eligibility switch — is added (§3.4), visible only when `Business.nfcPerProductEnabled = true` AND `nfc ∈ registrationMode` AND this Product has no `Product.barcode` (mutual exclusivity per D71: barcode-identified and NFC-tagging-eligible are never both true for the same Product). Toggling it writes `Product.nfcTaggingEnabled` directly, with its own near-instant/slow/error save discipline, composing this document's own existing dimmed-row save convention (reused from `settings.md` §3.9) with its own existing four-zone row architecture — no new interaction pattern invented, no `knowledge-mentor` consultation needed. A genuine mutual-exclusivity edge this amendment resolves explicitly rather than leaving dangling: assigning a fresh barcode via the existing §3.4c "Editar código de barras" sheet on a Product currently `nfcTaggingEnabled = true` now also clears that flag at the same moment `barcode` is written — enforcing D71's own "never both" rule going forward, while leaving any already-tagged unit of that Product exactly as tagged and sellable as it was (the identical "never untag/orphan, only future eligibility stops" invariant `settings.md` §2.8 states for the Business-level toggle, applied here at the Product level for the first time). (2) §2's Asignar Tags resolution (steps 0, 2, 3) and every dependent state (§1, §3.5, §3.12, §3.13, §3.14, §3.17, §7, §9) are corrected from a pure `Business.defaultSellingMode === 'nfc'` gate to a new composed **NFC-tagging-eligible** test — `defaultSellingMode === 'nfc'` (legacy, whole-Catalog, unchanged) **OR** (`Business.nfcPerProductEnabled === true` AND this unit's `Product.nfcTaggingEnabled === true`) — so a freshly-received Lot of Plumas or Cerveza is never offered for tagging, even on an NFC-capable, `nfcPerProductEnabled = true` Business, exactly as D71 requires. A mixed-Product Lot (e.g., Camisas + Plumas registered in one Guardar mercancía) now seeds Asignar Tags with only its NFC-tagging-eligible lines' units, never the whole Lot — a real, new per-Lot filtering behavior, not only a per-Business gate correction. §3.12/§3.13's own post-save routing, and §3.13's completion copy for a mixed Lot, are corrected to match. Every place this document previously said "every untagged unit... Product-agnostically" is corrected to the composed test — checked across the whole document, not only §3.14's own auto-entry (§1, §2, §3.5, §3.14, §3.17, §7, §9 all touched). `home.md`/`events.md` are untouched by this pass — a parallel dispatch is designing those against the same D71 ruling. **This pass went through a full `architect` review (`decision-log.md` D71), unlike some of tonight's earlier live-bug-fix passes — `ux-critic`/`reviewer` review is pending, to be run before/alongside build if time allows.**
 
+**Amended 2026-09-17 (`decision-log.md` D72 — Settings collapses to one "Activar NFC" control) — §3.14's "two entry points" bullet corrected: the former whole-Catalog Settings handoff is no longer reachable via any live merchant action.** Copy-only — the Asignar Tags auto-entry logic itself is unaffected; see §3.14's own note.
+
+**Amended 2026-09-17 (Product Owner decision, live, building directly on D71/D72) — "Continuar etiquetando" and the combined, cross-Catalog pending-tag queue retired; tagging entry and resume both become per-Product.** Turning a Product's own NFC toggle on (§3.4's fifth zone) now immediately opens Asignar Tags (§3.14), scoped to only that Product's own pending untagged units, whenever ≥1 already exists. A new, sixth Catalog-row tap zone — a live-computed `[ N sin etiquetar ]` indicator (§3.4) — is the sole way to resume an interrupted Product's tagging after "Terminar después," deliberately independent of the toggle itself. §3.5/§3.17 (the old combined, whole-Catalog "Continuar etiquetando" Catalog-view state) are retired outright, their content folded into §3.4's own per-row rendering; §2 step 2 is retired as a tab-level branch for the identical reason. §3.13 gains a sibling, §3.13a, for a Product-scoped queue's own completion confirmation. §2 step 3 (the Lot-scoped auto-entry immediately after Guardar mercancía) is untouched — reasoned explicitly, not assumed, in §10. No new `decision-log.md` entry — same UI-flow/entry-point-correction class as D46's own Addendum, no schema or aggregate change; `architect` not required. **Expedited, live pass — `ux-critic`/`reviewer` review pending, not skipped, same posture as tonight's D71/D72 passes.**
+
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -181,14 +185,19 @@ completes:
      → NO:  cold-start empty state (§3.3).
      → YES: Catalog view (§3.4 / §3.5).
 
-2. [Catalog view] Does at least one InventoryUnit exist with status =
+2. ~~[Catalog view] Does at least one InventoryUnit exist with status =
    available, no NFCTag assigned, and NFC-tagging-eligible (see the
-   composed test below)?
-     → YES: pending-tag-work Catalog view (§3.5) — "Continuar etiquetando" is
-       the primary action in this state (non-blocking, resumes Asignar Tags
-       exactly where she left off); Registrar mercancía remains fully
-       available as a secondary action, never gated.
-     → NO: plain Catalog view (§3.4).
+   composed test below)? → YES: pending-tag-work Catalog view (§3.5)...
+   → NO: plain Catalog view (§3.4).~~
+   **[Retired 2026-09-17.]** Catalog view no longer branches on this test
+   at the tab level — there is exactly one Catalog view (§3.4) now,
+   always. Whether any given row shows a pending-tag indicator is a
+   **per-row**, not a per-tab, computation (see §3.4's new sixth zone) —
+   every row independently checks whether *its own* Product currently has
+   ≥1 `available`, untagged, NFC-tagging-eligible unit (the identical
+   composed test above, applied Product-by-Product instead of
+   Catalog-wide). §3.5/§3.17 are retired as distinct screen states — see
+   their own headers.
 
 3. [Inside Registrar Mercancía, after "Guardar mercancía"] Does this Lot
    contain at least one InventoryUnit that's NFC-tagging-eligible (see
@@ -215,7 +224,7 @@ completes:
 
 The first disjunct is the original, unchanged D46 rule — a Business selling her whole Catalog with tags, unaffected by anything in this amendment. The second is new: a Business that keeps `defaultSellingMode = 'buttons'` (her actual majority mode, in Ana's own worked scenario) but has opted specific, barcode-less Products into NFC individually (`settings.md` §2.8, `inventory.md` §3.4's own new per-Product toggle below) now also qualifies, Product by Product, never whole-Catalog. **This composed test deliberately collapses back to the original rule for any Business that never turns on `nfcPerProductEnabled`** — the second disjunct is always false, so nothing changes for her; this is a real, stated backward-compatibility property, not merely a claim. `Product.nfcTaggingEnabled` is never reset when `nfcPerProductEnabled` toggles off Business-wide (`settings.md` §2.8) — it simply stops counting toward this test while the Business-level flag is off, the same "two independent stored fields, no reset rule needed" pattern `settings.md` §2.3 already establishes for `defaultSellingMode`/`subscriptionTier`. Every place in this document that previously read "every untagged unit... Product-agnostically" for NFC-tagging purposes now means "every untagged, NFC-tagging-eligible unit" — checked and corrected at every occurrence, not only §3.14's own headline auto-entry: §1 (merchant goal), step 0/2/3 above, §3.5, §3.12/§3.13, §3.14, §3.17, §7, §9.
 
-**Reached via `settings.md`'s "Cambiar a vender con tags" handoff (step 0), the composed test naturally reduces to its original, unchanged behavior.** At that moment `defaultSellingMode` has just been written `'nfc'`, so the first disjunct is trivially true for every unit, and the whole-Catalog seed proceeds exactly as it always has — this isn't special-cased; it falls out of the composed test as written. **The new per-Product path never triggers step 0, or any hand-off, at all** — see §3.4's own explanation below for why toggling that switch never triggers navigation of its own.
+**Reached via `settings.md`'s "Cambiar a vender con tags" handoff (step 0), the composed test naturally reduces to its original, unchanged behavior.** At that moment `defaultSellingMode` has just been written `'nfc'`, so the first disjunct is trivially true for every unit, and the whole-Catalog seed proceeds exactly as it always has — this isn't special-cased; it falls out of the composed test as written. **The new per-Product path never triggers step 0 — corrected 2026-09-17.** Toggling a Product's own NFC switch on now does trigger navigation, but directly into Asignar Tags (§3.14), Product-scoped, never through step 0's whole-Catalog hand-off shape — see §3.4's own corrected explanation below for the actual sequence.
 
 **New, highest-priority trigger condition — step 0, added by architect's
 own corrected design (`decision-log.md` D46 Addendum).** This check
@@ -249,7 +258,7 @@ already-defined destination; none is invented here.
 
 **This is deliberately a different, shallower test than Home's own §2 step 3 check** (`decision-log.md` D33 / `onboarding.md`'s 2026-08-08 amendment). Home tests for at least one `available` InventoryUnit, since offering "Iniciar Sesión Rápida" is a promise that something is sellable right now — a promise a named-but-unstocked Catalog can't honestly make (`home.md` §2 step 3, §3.3). Inventario's own question is narrower and carries no such promise: whether there's a Catalog to *display and receive against* at all — a zero-`disponibles` row (§3.4) is never a dead end here the way an all-dimmed selling grid would be in Home, since every Catalog row stays honestly labeled and fully tappable into Registrar Mercancía regardless of stock. The two tabs deliberately read different facts now; before `onboarding.md`'s "Define lo que vendes" step existed, they happened to coincide, since a Product could never exist without an accompanying Lot — that coincidence no longer holds, and this test's own substance was re-checked against it rather than assumed still correct by inertia (see `onboarding.md` §2.2a).
 
-**Gate corrected, `decision-log.md` D46, further extended `decision-log.md` D71.** Steps 2 and 3 above previously gated on `nfc ∈ registrationMode` (NFC *availability*) — a Paid merchant who never intends to sell with tags was unconditionally routed into a tagging queue and shown a persistent tagging nudge, regardless of whether she'd ever choose `nfc` as her normal selling mode. Both steps now gate on the composed **NFC-tagging-eligible** test above — `defaultSellingMode === 'nfc'` (her actual, self-service-chosen whole-Catalog intent, unchanged from D46) **or**, as of D71, `nfcPerProductEnabled === true` together with the specific unit's own `Product.nfcTaggingEnabled === true` — never on capability alone, in either case. A Paid merchant who keeps `defaultSellingMode = 'buttons'` and never opts any Product into NFC individually sees no pending-tag nudge (§3.5) and is never auto-routed into Asignar Tags after Guardar mercancía, exactly as D46 requires ("A Paid merchant who never switches to `nfc` mode is never auto-routed into tagging, at any point, for any reason"). A Paid merchant who opts specific Products in sees the nudge and auto-entry scoped to exactly those Products, never her whole Catalog, exactly as D71 requires. This does not change whether the Assign-Tags step *exists* in Inventario at all — see below.
+**Gate corrected, `decision-log.md` D46, further extended `decision-log.md` D71.** Steps 2 and 3 above previously gated on `nfc ∈ registrationMode` (NFC *availability*) — a Paid merchant who never intends to sell with tags was unconditionally routed into a tagging queue and shown a persistent tagging nudge, regardless of whether she'd ever choose `nfc` as her normal selling mode. Both steps now gate on the composed **NFC-tagging-eligible** test above — `defaultSellingMode === 'nfc'` (her actual, self-service-chosen whole-Catalog intent, unchanged from D46) **or**, as of D71, `nfcPerProductEnabled === true` together with the specific unit's own `Product.nfcTaggingEnabled === true` — never on capability alone, in either case. A Paid merchant who keeps `defaultSellingMode = 'buttons'` and never opts any Product into NFC individually sees no pending-tag indicator anywhere on the Catalog (§3.4's sixth zone, 2026-09-17) and is never auto-routed into Asignar Tags after Guardar mercancía, exactly as D46 requires ("A Paid merchant who never switches to `nfc` mode is never auto-routed into tagging, at any point, for any reason"). A Paid merchant who opts specific Products in sees the nudge and auto-entry scoped to exactly those Products, never her whole Catalog, exactly as D71 requires. This does not change whether the Assign-Tags step *exists* in Inventario at all — see below.
 
 `nfc ∈ registrationMode` gates whether an "Assign Tags" step exists **at all**
 in Inventario, per `information-architecture.md` ("`nfc ∉ registrationMode`
@@ -502,9 +511,23 @@ current tab in brackets.
 
   **Save-state discipline — composes two already-approved primitives, no new pattern invented, no `knowledge-mentor` consultation needed.** A bare tap on the switch immediately dims that one row (reusing `settings.md` §3.9's own "fila atenuada" mechanic — a row dims in place while its own capability-level write is inflight — composed here onto this document's own existing four-zone row architecture, rather than a sheet). Near-instant: the row simply dims and un-dims silently. Slow (>~1.5s): the row's NFC label reads "Guardando…" in place of its Sí/No state, same calm, plain-language convention as every other write in this document (§3.10). A failed write reverts the switch to its last-saved state and shows a small inline line directly beneath that one row — "No pudimos guardar. Intenta de nuevo." — with the switch itself remaining tappable as its own retry (no separate "Reintentar" button, no full-screen error — this is a small, low-stakes, instantly-retriable boolean flip, the same reasoning `settings.md` §3.10 already gives its own toggle failures, scoped here to one row instead of one screen since nothing else on the Catalog view is affected by this one row's failed save).
 
-  **Toggling it on or off never hands off anywhere, and never immediately auto-enters Asignar Tags** — a deliberate contrast with "Cambiar a vender con tags" (§3.3a), which does auto-route her into tagging, because that action is an explicit declaration of whole-Catalog intent. Enabling this one Product simply makes its currently- or future-`available`, untagged units NFC-tagging-eligible (§2's new composed test) starting at her next ordinary Inventario open (picked up by §2 step 2's existing pending-nudge, unchanged mechanism) or her next Guardar mercancía for this Product (§2 step 3) — never an immediate navigation the moment she flips the switch. The same "no hand-off, only future eligibility starts/stops" posture `settings.md` §2.8 gives the Business-level toggle, applied here at the Product level. **Turning it off never untags or orphans an already-tagged unit of this Product either** — the identical invariant, restated at the per-Product level rather than only inherited silently from the Business-level description: an already-NFC-tagged Camisas unit stays exactly as tagged and sellable via NFC; only future eligibility for not-yet-tagged units of this Product stops.
+  **Corrected 2026-09-17 (Product Owner decision, live) — toggling this switch ON now auto-enters Asignar Tags directly, Product-scoped, exactly when there's already something to tag.** The write sequence: a tap dims the row (unchanged save mechanic, above) → on a successful save, if this Product currently has ≥1 `available`, untagged unit (i.e., it's immediately NFC-tagging-eligible under the composed test the instant `nfcTaggingEnabled` lands), she's taken straight into Asignar Tags (§3.14), scoped to only this Product's own pending units — no intermediate question, the same "obvious next action" reasoning §7 already gives the post-Guardar-mercancía auto-entry (D46), now extended to this toggle. If this Product has zero `available` units at that moment (nothing yet received, or everything already tagged), the row simply un-dims in place, exactly as before — an empty tagging queue is never shown as a landing state (D46's own rule, restated here at the per-Product level). **Toggling OFF never hands off anywhere, unchanged** — it only ever stops future eligibility, the same never-untag/never-orphan invariant restated below: an already-NFC-tagged Camisas unit stays exactly as tagged and sellable via NFC; only future eligibility for not-yet-tagged units of this Product stops.
 
-  Applies identically wherever this row shape reappears — §3.5, §3.12, §3.13, §3.17 — the same "specified once, reused everywhere" rule already governing zones 1–4.
+- **Corrected 2026-09-17 (Product Owner decision, live) — a sixth tap zone added, the resume affordance for an interrupted per-Product tagging queue.** The "five tap zones" enumeration above is superseded, not deleted:
+  1–5. Unchanged (marker, body, price, overflow, NFC-eligibility switch).
+  6. **Pending-tag indicator (new, rendered near the fifth zone when present, or in its place when absent — exact on-row position is illustrative, same disclaimer as the fifth zone's own) — `[ N sin etiquetar ]`, tappable, opens Asignar Tags (§3.14) scoped to only this Product's own pending untagged units.**
+
+  **Rendering condition, computed fresh on every Catalog view render, per row, independent of which disjunct of the composed NFC-tagging-eligible test (§2) applies:** this Product currently has ≥1 `available`, untagged unit that is NFC-tagging-eligible. This is deliberately disjunct-agnostic — it renders identically whether the unit qualifies because `Business.defaultSellingMode = 'nfc'` (the legacy/demo whole-catalog case, D72) or because `nfcPerProductEnabled = true` and this Product opted in individually (D71) — one mechanism serves both, rather than maintaining two.
+
+  **Reasoned explicitly why this is a sixth, independent zone rather than folded into the fifth (the NFC toggle) — the exact gap this amendment exists to close.** Turning NFC off for a Product is a real, meaningful state change (withdraws future eligibility) that must never fire as a side effect of wanting to resume tagging; if resuming required tapping the toggle, a merchant who's already ON (which is what got her into this state in the first place) would have no way to re-enter without first turning NFC off — the wrong, and only, other thing that switch does. This is the identical "no tap resolves between two destinations" failure this document's own disambiguation discipline (§3.4's own precedent, Q23/D65/D71 each checked explicitly before adding a zone) already argues against. Nor is it folded into the fourth zone ("⋯") — that resolves unconditionally to the barcode sheet today, and this document's own §3.4 reasoning for the fifth zone already rejected overloading "⋯" with a second, conditionally-present destination for the identical reason.
+
+  **Never requires touching the toggle.** Tapping this indicator never reads or writes `Product.nfcTaggingEnabled` — pure navigation, into the identical Product-scoped Asignar Tags destination the toggle's own auto-open (above) reaches. Whether she got here by flipping the toggle just now or by resuming days later makes no difference to the destination.
+
+  **No save-state discipline needed** — unlike zones 1–5, this is a read-only navigation trigger, not a write; there's nothing to dim, retry, or fail beyond ordinary navigation.
+
+  **Disappears the moment its underlying condition stops holding** — either she finishes tagging this Product's units (queue reaches 0 pending, §3.13a) or she turns the Product's own NFC toggle off, which (per the existing, unmodified D71 invariant) instantly removes any remaining untagged units from eligibility. This is not a new rule; it's the already-approved consequence of the toggle's own semantics, simply now visible through a second zone.
+
+  Applies identically wherever this row shape reappears — §3.4's own the one, ordinary Catalog view (§3.5/§3.17 retired, see their own headers) — no separate variant exists anymore to restate it for.
 - **A zero-`disponibles` row (Playeras, 0 disponibles) now renders
   dimmed** — the same visual dimming signal `home.md` §3.9 already applies
   to a sold-out ProductTile, reused here rather than inventing a second
@@ -963,7 +986,10 @@ current tab in brackets.
 - "Cancelar" stays reachable exactly as in §3.4d — a failing scan never
   traps her here, returning to §3.4c unchanged.
 
-### 3.5 Catalog view — with pending tag work (`defaultSellingMode = 'nfc'` Businesses only)
+### 3.5 [RETIRED 2026-09-17 — see status header and §10] Catalog view — with pending tag work
+
+**This state no longer exists.** Its role — surfacing and resuming pending tag work — is now served entirely by §3.4's own sixth zone (the `[ N sin etiquetar ]` per-row indicator), computed live on the one, ordinary Catalog view. There is no longer a separate Catalog-view variant, no promoted primary action, and no combined, cross-Catalog "Continuar etiquetando" entry point. The wireframe and reasoning below are preserved as historical record only, per this project's non-deletion discipline — not a live spec.
+
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
@@ -1697,7 +1723,25 @@ gated the same way `decision-log.md` D27 already gates NFC).
   ```
   For a Lot where every line was NFC-tagging-eligible (including the original, unchanged `defaultSellingMode = 'nfc'` whole-Catalog case), the plain, undifferentiated "Mercancía lista para vender ✓" stays exactly as it already was — this variant only renders when the Lot genuinely mixed eligible and non-eligible lines, a fact this document already has on hand from §2 step 3's own per-Lot test, never guessed or inferred separately.
 
-### 3.14 Asignar tags — active queue (auto-entered after Guardar mercancía or after switching to tags in Configuración, for NFC-tagging-eligible units — `decision-log.md` D46/D71)
+### 3.13a Post-tagging confirmation — Product-scoped queue complete (new 2026-09-17, toggle-ON or resume-indicator entry)
+```
+┌───────────────────────────────┐
+│  Inventario                    │
+│  Camisas ya está etiquetada ✓    │  ambient, fades — not a separate screen
+│  ┌───────────────────────────┐ │  requiring a tap to dismiss
+│  │[B] Bolsas    $350   12 disponibles [⋯]│ │
+│  │[C] Camisas   $250   8 disponibles [NFC: Sí][⋯]│ │
+│  └───────────────────────────┘ │
+│      [ Registrar mercancía ]    │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- **Reached whenever a Product-scoped Asignar Tags queue (§3.14, entered via the fifth zone's toggle-ON auto-open or the sixth zone's resume tap) finishes with 0 units remaining.** A distinct case from §3.13, which is specifically the post-Guardar-mercancía, Lot-scoped completion — this state carries no "just registered" framing, since a Product-scoped queue may resolve units received long before today.
+- Names the specific Product, not a generic "lista para vender" — she just finished exactly one Product's stack, and the copy should say which one, matching this document's own precedent for naming specifics rather than a generic line whenever the underlying fact is already on hand (§3.13's own mixed-Lot variant, same reasoning).
+- Same ambient, fading, no-tap-to-dismiss shape as §3.12/§3.13 — no new confirmation pattern invented.
+
+### 3.14 Asignar tags — active queue (three entry points, all seeding the identical scan-driven queue — `decision-log.md` D46/D71, amended 2026-09-17)
 ```
 ┌───────────────────────────────┐
 │  Asignar tags                   │
@@ -1727,19 +1771,27 @@ gated the same way `decision-log.md` D27 already gates NFC).
 - Each physical unit gets its own tag (`decision-log.md` D4) — this queue is
   necessarily per-unit, never per-Product-type; "Faltan 7 de 10" is exactly
   that granularity.
-- **Two entry points now reach this identical queue, both gated on
-  `Business.defaultSellingMode === 'nfc'` (`decision-log.md` D46):** (1)
-  immediately after "Guardar mercancía" succeeds, for the just-created Lot's
-  units (§2 step 3); (2) immediately after `settings.md` §2.6's "Cambiar a
-  vender con tags" action hands off its entry marker into this document's
-  own §2 step 0, for whatever untagged InventoryUnits already exist across
-  her whole Catalog at that moment, not scoped to a single Lot — the check
-  itself runs entirely here, in Inventario, never in Settings (architect
-  ruling, `decision-log.md` D46 Addendum). Both are the identical
-  non-blocking, scan-driven queue below — only which set of units seeded it
-  and which screen preceded it differ.
-- **Further amended 2026-09-16/17 (`decision-log.md` D71).** Both entry points now seed only NFC-tagging-eligible units (§2's composed test), not every untagged unit Product-agnostically: entry point (1) seeds only this Lot's eligible lines' units, never the whole Lot when it mixes eligible and non-eligible Products (§2 step 3's own corrected test); entry point (2) seeds every eligible untagged unit across the whole Catalog — still whole-Catalog in scope, exactly as before, but now excluding any unit whose Product isn't NFC-tagging-eligible, which only matters for an `nfcPerProductEnabled = true` Business (a pure `defaultSellingMode = 'nfc'` Business sees no difference here, since every unit already qualifies under the test's first disjunct). The on-screen "Lo que registraste:" summary line (this section's own wireframe) lists only the Products actually queued — for a mixed Lot, it never names Plumas alongside Camisas, since Plumas was never seeded into this queue at all.
-- **Entry point (2) is no longer reachable via any live merchant action, corrected 2026-09-17 (`decision-log.md` D72)** — `settings.md`'s "Cambiar a vender con tags" is retired outright, so nothing produces this entry marker going forward. Kept here as an accurate description of this document's own resolution logic, which D72 leaves untouched (this document's own scope for this amendment is copy-only — see `settings.md` §2.6 for the corresponding Identity-side retirement note). A Business already `defaultSellingMode = 'nfc'` never needed entry point (2) in the first place — she reaches untagged inventory the ordinary way, through entry point (1), like any other Business.
+- **Three entry points now reach this identical queue mechanism, differing only in what's seeded and the summary line shown — the scan mechanics, error states (§3.15/§3.16), and "Terminar después" behavior below are unchanged across all three:**
+  1. **Lot-scoped** — immediately after "Guardar mercancía" succeeds (§2 step 3), seeded with only the just-saved Lot's own NFC-tagging-eligible lines' units — unchanged by this amendment.
+  2. **[Retired, D72]** — the former whole-Catalog Settings handoff. No longer reachable via any live merchant action; kept only as an accurate description of this document's own dormant resolution logic (unchanged from the prior amendment's note).
+  3. **Product-scoped (new, 2026-09-17)** — via §3.4's fifth zone (toggle-ON, when ≥1 eligible unit already exists) or sixth zone (the `[ N sin etiquetar ]` resume indicator) — seeded with only that one Product's own NFC-tagging-eligible untagged units, drawn from however many Lots/receiving-events they originated in. This is the *only* entry point that survives an interruption: after any "Terminar después," from any of the three entry points above, resuming is always Product-scoped going forward — there is no persisted, ordered, cross-Product queue position to restore. Each row's own sixth-zone indicator always reflects the current, live count.
+- **Wireframe variant for entry point 3 — the "Lo que registraste:" summary line is dropped** (it implies units just received, which isn't necessarily true for a resumed or toggle-triggered Product-scoped queue):
+  ```
+  ┌───────────────────────────────┐
+  │  Asignar tags                   │
+  │  Etiquetando: Camisas             │
+  │  Faltan 3 de 10                  │
+  │                                │
+  │      Acerca el tag a la          │
+  │         prenda                   │
+  │                                │
+  │  [ Terminar después ]            │
+  ├───────────────────────────────┤
+  │ Hoy [Inventario] Eventos Resultados │
+  └───────────────────────────────┘
+  ```
+- **Completion:** entry point 1 (Lot-scoped) still completes into §3.12/§3.13, unchanged. Entry point 3 (Product-scoped) completes into §3.13a.
+- **"Terminar después" always returns to the one, ordinary Catalog view (§3.4)** — never to a retired §3.5/§3.17 — where every still-pending Product's own sixth-zone indicator reflects exactly what's left, independently resumable.
 
 ### 3.15 Asignar tags — error, tag already assigned
 ```
@@ -1795,7 +1847,10 @@ gated the same way `decision-log.md` D27 already gates NFC).
 - "Terminar después" stays reachable exactly as in every other state in this
   queue — a failing tag never traps her in the flow.
 
-### 3.17 Asignar tags — "Terminar después" (deliberate defer)
+### 3.17 [RETIRED 2026-09-17 — see status header and §10] Asignar tags — "Terminar después"
+
+**This state no longer exists as a separate Catalog-view variant.** "Terminar después" now returns to the one, ordinary Catalog view (§3.4), where each still-pending Product's own sixth-zone `[ N sin etiquetar ]` indicator reflects exactly what's left — see §3.14's own note. The wireframe and reasoning below are preserved as historical record only, per this project's non-deletion discipline — not a live spec.
+
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
@@ -1877,8 +1932,8 @@ Catalog view:
         staged) → saving (near-instant/slow, §3.10-equivalent) → error
         (§3.11-equivalent, Reintentar) or success → Catalog view, ambient
         "Código de barras actualizado ✓" — DONE
-  [defaultSellingMode = nfc + pending untagged units] tap "Continuar
-    etiquetando" (primary action in this state, §3.5) → 3.14 (resume)
+  [Product row has ≥1 eligible untagged unit] tap the pending-tag indicator
+    (sixth zone, §3.4) → 3.14 (Product-scoped, resume)
 
 Registrar mercancía (3.6/3.7):
   fill Producto (→ 3.8 if using the picker; matching is case-insensitive,
@@ -1914,23 +1969,38 @@ Registrar mercancía (3.6/3.7):
       → saving (3.10)
       → error (3.11) → Reintentar → saving again
       → success:
-          defaultSellingMode = buttons (whether or not nfc ∈ registrationMode)
+          this Lot contains ≥1 NFC-tagging-eligible unit (composed test, §2 step 3)
+            → Asignar tags (3.14), Lot-scoped, auto-entered
+          no line in this Lot is NFC-tagging-eligible
             → Catalog view + ambient confirmation (3.12) — DONE
-          defaultSellingMode = nfc → Asignar tags (3.14), auto-entered
   → [any point] leave without saving → draft preserved silently, resumes
     later at §3.6/§3.7, whichever step was in progress
   → [≥1 line committed] tap "Descartar" → confirm (3.9)
       → Cancelar → back to the form (3.6/3.7, whichever was current), unchanged
       → Sí, descartar → draft cleared → blank Registrar Mercancía (3.6)
 
-Asignar tags (defaultSellingMode = nfc Business only, 3.14):
+Asignar tags (3.14, any of the three entry points — see that section's own list):
   scan tag → assign to next pending unit → counter decrements → repeat
   → tag already assigned → error (3.15) → scan a different tag
   → scan fails to read (out of range, foil, timeout) → error (3.16) →
     reposition and try again — queue state unchanged
-  → tap "Terminar después" → Catalog view, "Continuar etiquetando" primary
-    (3.17, = 3.5)
-  → 0 pending → Catalog view + "lista para vender" confirmation (3.13) — DONE
+  → tap "Terminar después" → Catalog view (3.4), unchanged Catalog rows,
+    each still-pending Product's own sixth-zone indicator now reflecting
+    current progress
+  → 0 pending, Lot-scoped entry → Catalog view + "lista para vender"
+    confirmation (3.13) — DONE
+  → 0 pending, Product-scoped entry → Catalog view + Product-named
+    confirmation (3.13a) — DONE
+
+Catalog view (3.4), Product row:
+  tap NFC-eligibility switch (fifth zone, when shown) → write
+  `nfcTaggingEnabled` (dim/save, unchanged)
+    → on success: ≥1 eligible unit already available and untagged for this
+      Product → Asignar tags (3.14), Product-scoped, auto-entered
+    → on success, otherwise → stays on Catalog view, row un-dimmed, no
+      navigation
+  tap pending-tag indicator (sixth zone, "[ N sin etiquetar ]", when shown)
+    → Asignar tags (3.14), Product-scoped, resumed
 
 Entry from settings.md §2.6 ("Cambiar a vender con tags" succeeds, carrying
 only an entry marker — never a queried Inventory fact, `decision-log.md`
@@ -1966,7 +2036,7 @@ D46 Addendum):
 4e. Editar código de barras — escaneo, coincide con otro producto, conflicto (D65, Paid tier only)
 4f. Editar código de barras — permiso de cámara denegado (D65, Paid tier only)
 4g. Editar código de barras — no se pudo leer el código (D65, Paid tier only)
-5. Catalog view — pending tag work (NFC-tagging-eligible Businesses only — `defaultSellingMode = 'nfc'`, or `nfcPerProductEnabled` with 1+ Product opted in — `decision-log.md` D46/D71)
+5. [RETIRED 2026-09-17] Catalog view — pending tag work — see §3.4's sixth zone instead.
 6. Registrar mercancía — entry (blank or shortcut-prefilled)
 7. Registrar mercancía — with committed lines, editing the next
 8. Elegir producto — picker sheet
@@ -1980,10 +2050,11 @@ D46 Addendum):
 11. Guardar mercancía — error
 12. Post-save confirmation — no NFC-tagging-eligible unit in this Lot (`decision-log.md` D46/D71)
 13. Post-save confirmation — this Lot's NFC-tagging-eligible units are now tagged (`decision-log.md` D46/D71), including a mixed-Lot copy variant
-14. Asignar tags — active queue, seeded with only NFC-tagging-eligible units (`decision-log.md` D46/D71)
+13a. Post-tagging confirmation — Product-scoped queue complete (new 2026-09-17)
+14. Asignar tags — active queue, three entry points (Lot-scoped / retired-Settings-handoff / Product-scoped), seeded with only NFC-tagging-eligible units (`decision-log.md` D46/D71, amended 2026-09-17)
 15. Asignar tags — error, tag already assigned
 16. Asignar tags — error, scan failed
-17. Asignar tags — "Terminar después" (defer, = state 5 on return)
+17. [RETIRED 2026-09-17] Asignar tags — "Terminar después" — see §3.4's Catalog view (state 4), unchanged, plus the sixth-zone indicator.
 18. Defensive fallback / load error
 
 ## 6. Minimum step count
@@ -2002,6 +2073,8 @@ D46 Addendum):
 | Register 1 brand-new Product via barcode scan, no match, quantity 1 (buttons-only) | 1 (Registrar mercancía) + 1 (elegir producto → escanear código, sin coincidencia) + 1 typed Nombre + 1 typed Precio + 1 ("Agregar producto") + 1 (Guardar) = 6 | One fewer action than the typed-new-Product path (7) — the scan itself both searches and confirms "not found, create new" in a single motion, skipping the separate "+ Agregar... como producto nuevo" tap the typed path needs. |
 | Browse the Catalog only | 0 taps | Opening the tab is itself the answer; nothing to register. |
 | Activar/desactivar NFC por producto para un Producto ya existente (Catalog row, fifth zone, §3.4) | 1 (toque en el switch — sin sheet, sin confirmar) | The one action in this document with no separate save/confirm step at all: an inline, instantly-retriable boolean flip, the same low-stakes, easily-reversible reasoning `settings.md` §2.8 gives its own Business-level toggle's — one level lower-friction here, since neither direction discloses a consequence needing a full confirmation screen. |
+| Reanudar el etiquetado de un Producto con trabajo pendiente (tocar `[ N sin etiquetar ]` en su fila) | 1 | Sixth zone, pure navigation, no intermediate question — she already knows which Product, the app already knows how many remain. |
+| Activar NFC por producto cuando ya hay unidades disponibles sin etiquetar (toggle) | 1 (toque en el switch) — abre Asignar Tags directamente, sin pantalla intermedia | Mismo costo del switch de siempre; el escaneo posterior ya está contado en la fila "U scans, 1 per physical unit." |
 
 Unlike Home's <3s-per-item bar (`company/backlog.md` #1, which is specifically
 about *sale* registration under live customer pressure), Inventario has no
@@ -2035,8 +2108,16 @@ comparable hard speed requirement — the floor above is about not adding
   resolution (§2's new step 0), triggered by a bare entry marker
   `settings.md`'s action hands off — never a fact Settings itself computes
   or reads (architect ruling, D46's own Addendum).
-- Resuming an interrupted tagging queue (§3.5/§3.17) — automatic, discoverable
-  as the primary action in that state, no re-prompt.
+- Resuming an interrupted, Product-scoped tagging queue — automatic and
+  discoverable per row, via the Catalog's own live-computed sixth-zone
+  indicator (§3.4). Never a whole-Catalog prompt, never a remembered
+  cross-Product queue position — every row always reflects its own current
+  pending count fresh, computed the same composed test (§2) every render.
+- Turning a Product's own NFC toggle on auto-opens Asignar Tags directly,
+  scoped to just that Product, whenever ≥1 of its units already qualifies —
+  no "¿quieres etiquetar ahora?" question, the identical reasoning D46
+  already applies to the post-Guardar-mercancía auto-entry, now extended to
+  the per-Product toggle (2026-09-17).
 - Draft preservation of an in-progress Registrar Mercancía form across any
   accidental interruption — automatic, no discard-vs-keep prompt unless she
   explicitly asks via "Descartar."
@@ -2081,11 +2162,12 @@ comparable hard speed requirement — the floor above is about not adding
    precondition for `available`, and the "dual-purpose tag resolution"
    mechanism (`domain-model.md`) disambiguates sale-time vs. claim-time scans
    by status — it assumes a tag already exists once one is scanned. If a
-   merchant defers tagging (§3.17) and a customer later wants to buy that
-   physical, untagged unit, there's no tag to scan it with. This spec doesn't
-   invent a block-the-sale mechanic in Selling; it only makes the untagged
-   backlog visible and resumable in Inventario (§3.5) so she's nudged to
-   finish before it becomes a problem at the point of sale. **Escalated to
+   merchant defers tagging ("Terminar después," §3.14) and a customer later
+   wants to buy that physical, untagged unit, there's no tag to scan it
+   with. This spec doesn't invent a block-the-sale mechanic in Selling; it
+   only makes the untagged backlog visible and resumable per Product in
+   Inventario (§3.4's sixth zone) so she's nudged to finish before it
+   becomes a problem at the point of sale. **Escalated to
    Architect — confirmed a genuine gap, not resolvable from the Foundation as
    it stands. Logged as Q2 in `product/02-ux/product-decisions.md`** (reclassified
    from `architect-questions.md` as a Product Decision), since
@@ -2125,9 +2207,11 @@ comparable hard speed requirement — the floor above is about not adding
   `decision-log.md` D46); the Catalog-row shortcut removes a redundant
   Product search (§3.4, §6).
 - *"Never ask twice"* — an in-progress Registrar Mercancía draft survives any
-  interruption without a discard-vs-keep prompt (§3.7); the pending-tags state
-  resumes automatically via its primary "Continuar etiquetando" action, never
-  asking "were you still tagging?" (§3.5/§3.17);
+  interruption without a discard-vs-keep prompt (§3.7); an interrupted
+  per-Product tagging queue resumes with a single tap on that row's own
+  pending-tag indicator, never asking "were you still tagging?" and never
+  asking which Product or where she left off — both already known (§3.4's
+  sixth zone, 2026-09-17);
   the picker never asks "is this new?" — inferred via the case-insensitive,
   trimmed matching rule (§3.8).
 - *"Never ask twice" (further amendment, D65)* — a barcode scan matching an
@@ -2209,7 +2293,7 @@ comparable hard speed requirement — the floor above is about not adding
   direction clean: `settings.md` never reads Inventory-owned state back,
   only hands off a bare entry marker for this document's own,
   already-legitimate check to consume.
-- **§3.4's own tap-zone disambiguation discipline, extended a third time (Q23's marker/body/price split; D65's fourth, overflow zone; D71's fifth, NFC-eligibility zone)** — every new row-level control this document has added has been reasoned explicitly against merging into an existing, already-precedented zone before being given its own, rather than defaulting to nesting it inside the nearest existing affordance (§3.4's own reasoning above).
+- **§3.4's own tap-zone disambiguation discipline, extended a fourth time (Q23's marker/body/price split; D65's fourth, overflow zone; D71's fifth, NFC-eligibility zone; this 2026-09-17 amendment's sixth, pending-tag indicator zone)** — every new row-level control this document has added has been reasoned explicitly against merging into an existing, already-precedented zone before being given its own, rather than defaulting to nesting it inside the nearest existing affordance (§3.4's own reasoning above).
 
 ## 10. Decisions made
 
@@ -2296,8 +2380,10 @@ comparable hard speed requirement — the floor above is about not adding
   mercancía" repositioned to explicitly secondary in that one state only —
   Product-Owner-directed refinement, 2026-08-07.** No new confirmation step,
   no change to the always-reachable Registrar Mercancía invariant, no split
-  into a separate tagging flow, no new domain concept or aggregate. **[see
+  into a separate tagging flow, no new domain concept or aggregate.
+  **[Superseded 2026-09-17 — see the entry below.]** **[see
   inventory.changelog.md#decisions-2026-08-07-continuar-etiquetando-primary-action]**
+- **"Continuar etiquetando" and the combined, cross-Catalog pending-tag queue retired outright, 2026-09-17 (Product Owner decision, live, building on D71/D72).** The existing Asignar Tags queue already seeds from a single underlying parameter — "which set of eligible untagged units to work through" — at three possible grains the document already exercises: whole-Catalog (dead since D72, kept only as historical description) and one-Lot (alive, §2 step 3). A Product-scoped grain is simply a third, narrower instance of that same parameter — no new RPC/selector shape, no new completion semantics (§2 step 4's "does this queue still have units" already reads generically against "the ones actually seeded into this queue," which is grain-agnostic by design). Critically, this also means **the queue is not persisted/resumed as a stateful, ordered, cross-session object** — it's recomputed fresh, live, every time it's opened, scoped to whatever's requested at that moment. That's what makes the resume design clean: after any "Terminar después," resuming is *always* Product-scoped going forward, regardless of whether the original entry was Lot-scoped (spanning several Products from one Guardar mercancía). No "remember exactly where she left off in a specific cross-Product order" mechanism is needed at all — a genuine simplification, not just a UI relabel. **Two different mechanisms, two different answers on whether the legacy whole-catalog `nfc` case needed anything new:** §2 step 3 (Lot-scoped auto-entry, immediately after Guardar mercancía) is **untouched** — it was never "continuing a standing task," it already opens immediately at registration time, which is the same immediacy this amendment now gives the per-Product toggle. But §3.5/§3.17 (the Catalog-view "Continuar etiquetando" resume state) served **both** whole-catalog `nfc` and per-Product businesses identically — that shared mechanism **is** retired, for both. The new per-row `[ N sin etiquetar ]` indicator (driven by the same composed test, disjunct-agnostic) becomes the *only* resume path for a whole-catalog `nfc` business too — not a second, case-A-specific mechanism, since inventing one would contradict "tagging becomes per-product, not a combined queue" and would duplicate a mechanism that already generalizes cleanly. No new `decision-log.md` entry — same UI-flow/entry-point-correction class as D46's own Addendum, no schema or aggregate change.
 - **`Product.defaultPrice` capture added at the exact moment a brand-new
   Product name is created (§3.8a — or via Onboarding's "Define lo que
   vendes" step, `onboarding.md` §2.2a, whichever comes first), and a
@@ -2416,5 +2502,5 @@ comparable hard speed requirement — the floor above is about not adding
   simple audit trail) — explicitly out of scope: `decision-log.md` D33
   states `defaultPrice` is a plain mutable current scalar, no version
   history. Not designed; revisit only if D33 itself is revised.
-- Whether Asignar Tags ever needs a manual, non-auto-entry "go tag this Product now" affordance, independent of Guardar mercancía/Settings' handoff — not designed here; today's two entry points (§3.14) remain the only ways in, unchanged by this amendment.
+- **[Resolved 2026-09-17 — see §3.4's sixth zone / §3.14's entry point 3.]** A manual, per-Product resume affordance now exists.
 - The events-side interaction this document flags but doesn't resolve (§8, item 4) — a Product's NFC-eligibility toggling off mid-Event, against already-committed allocation units — `events.md`'s own parallel D71 pass, not this document's.
