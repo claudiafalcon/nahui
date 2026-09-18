@@ -522,15 +522,12 @@ function SettingsMain({
         {/* settings.md §2.3 — defaultSellingMode row. `decision-log.md` D72:
             no longer a two-way picker for any Business. A `buttons`-mode
             Business (the normal case going forward) sees a plain,
-            un-actioned line, nothing to switch into `nfc` with — replaced by
-            the real self-service control that matters now, "Activar NFC"
-            (§2.8), immediately below. Only an already-`nfc`-moded Business
+            un-actioned line. Only an already-`nfc`-moded Business
             (grandfathered/demo) sees a real control here: the one-way
-            "Cambiar a vender con botones" escape valve, nothing else
-            NFC-related until she uses it. Never conditioned on a pending
-            subscriptionTier change (§2.2's own "no capability with a
-            pending change offers a second, stacking action" applies only to
-            the capability that actually has one). */}
+            "Cambiar a vender con botones" escape valve. Never conditioned on
+            a pending subscriptionTier change (§2.2's own "no capability with
+            a pending change offers a second, stacking action" applies only
+            to the capability that actually has one). */}
         <div className={styles.section}>
           <p className={styles.sectionLabel}>Cómo vendes normalmente:</p>
           {business.subscriptionTier === 'paid' ? (
@@ -542,34 +539,41 @@ function SettingsMain({
                 </Button>
               </>
             ) : (
-              <>
-                <p className={styles.modeValue}>Botones</p>
-
-                {/* settings.md §2.8/§3.4 "Activar NFC" — the sole remaining
-                    self-service NFC control (`decision-log.md` D71, renamed
-                    D72), offered only while `nfc ∈ registrationMode`
-                    (`subscriptionTier === 'paid'`) — the `defaultSellingMode
-                    !== 'nfc'` branch we're already inside guarantees the
-                    second half of §2.8's own gate. The stored
-                    `nfcPerProductEnabled` value is untouched by any mode
-                    switch (never a side effect of one, per this section's
-                    own standing invariant) — this row simply reappears,
-                    unchanged, whenever she's back in Botones mode. */}
-                <p className={styles.modeValue}>NFC: {business.nfcPerProductEnabled ? 'Sí' : 'No'}</p>
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    onNfcPerProductTap(business.nfcPerProductEnabled ? 'nfc-per-product-off' : 'nfc-per-product-on')
-                  }
-                >
-                  {business.nfcPerProductEnabled ? 'Desactivar NFC' : 'Activar NFC'}
-                </Button>
-              </>
+              <p className={styles.modeValue}>Botones</p>
             )
           ) : (
             <p className={styles.modeValue}>
               Botones <span className={styles.modeNote}>(vender con tags requiere el plan de pago)</span>
             </p>
+          )}
+
+          {/* settings.md §2.8/§3.4 "Activar NFC" (`decision-log.md` D71,
+              renamed D72, gate corrected D73) — offered whenever
+              `nfc ∈ registrationMode` (`subscriptionTier === 'paid'`),
+              regardless of `defaultSellingMode`. D73 drops the earlier
+              `defaultSellingMode !== 'nfc'` clause: whole-Catalog `nfc` mode
+              being moot for Selling-screen *composition* (nothing for
+              "Leer con NFC" to overlay onto there) never made
+              `nfcPerProductEnabled` itself unreachable for Inventario
+              tagging-prep purposes, which don't care what Selling currently
+              resolves to — an already-named, valid, reachable combination
+              (settings.md §2.8). So this row now renders alongside the
+              escape valve above, not in its place, whenever the Business is
+              `nfc`-moded. The stored `nfcPerProductEnabled` value is
+              untouched by any mode switch (never a side effect of one, per
+              this section's own standing invariant). */}
+          {business.subscriptionTier === 'paid' && (
+            <>
+              <p className={styles.modeValue}>NFC: {business.nfcPerProductEnabled ? 'Sí' : 'No'}</p>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  onNfcPerProductTap(business.nfcPerProductEnabled ? 'nfc-per-product-off' : 'nfc-per-product-on')
+                }
+              >
+                {business.nfcPerProductEnabled ? 'Desactivar NFC' : 'Activar NFC'}
+              </Button>
+            </>
           )}
         </div>
 

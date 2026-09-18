@@ -51,9 +51,10 @@ import styles from './CatalogRow.module.css';
  * per-Product) — `pendingTag`.** A live-computed `[ N sin etiquetar ]`
  * resume affordance, rendered only when this Product currently has ≥1
  * `available`, untagged, NFC-tagging-eligible unit (`selectors.ts`'
- * `pendingTagCount`, disjunct-agnostic — renders identically for the legacy
- * whole-Catalog `defaultSellingMode = 'nfc'` case or the per-Product
- * `nfcPerProductEnabled` case, `inventory.md` §3.4's own text). **Never
+ * `pendingTagCount`, reading `isNfcTaggingEligible` — as of `decision-log.md`
+ * D73 a single condition, `nfcPerProductEnabled` + this Product's own
+ * `nfcTaggingEnabled`, no `defaultSellingMode` read at all,
+ * `inventory.md` §3.4's own text). **Never
  * reads or writes `Product.nfcTaggingEnabled`** — pure navigation into the
  * identical Product-scoped Asignar Tags destination the fifth zone's own
  * toggle-ON auto-open reaches, the *only* way to resume an interrupted

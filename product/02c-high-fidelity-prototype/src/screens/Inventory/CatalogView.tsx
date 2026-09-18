@@ -165,15 +165,16 @@ export function CatalogView({
   // keeps `nfcPerProductEnabled = true` stored but no longer has
   // `subscriptionTier = 'paid'` — §3.4's own reasoning for checking both).
   // The third clause (no `barcode`) is per-Product, applied per row below.
-  // Product Owner correction (2026-09-17), same reasoning as
-  // `SettingsScreen.tsx`'s own matching fix: also requires
-  // `defaultSellingMode !== 'nfc'` — once whole-Catalog "Con tags" mode is
-  // active, every Product already qualifies via the composed test's first
-  // disjunct (D46), so a per-row opt-in switch has nothing left to add.
+  // `decision-log.md` D73 corrects a same-night regression: a prior pass
+  // (2026-09-17) also required `defaultSellingMode !== 'nfc'` here, on the
+  // now-disproven premise that whole-Catalog "Con tags" mode already
+  // qualified every Product via D46's composed-test disjunct — D73 drops
+  // that disjunct entirely, so this row's own visibility no longer reads
+  // `defaultSellingMode` at all; it's governed purely by
+  // `nfcPerProductEnabled` + `subscriptionTier`, matching `isNfcTaggingEligible`
+  // (`src/domain/selectors.ts`) exactly.
   const nfcPerProductAvailable =
-    state.business?.nfcPerProductEnabled === true &&
-    state.business?.subscriptionTier === 'paid' &&
-    state.business?.defaultSellingMode !== 'nfc';
+    state.business?.nfcPerProductEnabled === true && state.business?.subscriptionTier === 'paid';
 
   // §3.4's own save-state discipline — a bare tap dims that one row
   // (near-instant: silent; slow >~1.5s: "Guardando…" label), reverting to
@@ -410,13 +411,15 @@ export function CatalogView({
               // inventory.md §3.4's sixth tap zone (2026-09-17 live pass) —
               // live-computed per row, every render, never cached: this
               // Product currently has ≥1 available, untagged, NFC-tagging-
-              // eligible unit (the same composed test `pendingTagCount`
-              // already applies whole-Catalog, `selectors.ts`, now narrowed
-              // to this one Product). Disjunct-agnostic by construction —
-              // renders identically whether eligibility comes from the
-              // legacy whole-Catalog `defaultSellingMode = 'nfc'` case or
-              // this Product's own `nfcTaggingEnabled` opt-in. Pure
-              // navigation, never touches `Product.nfcTaggingEnabled`.
+              // eligible unit (the same `isNfcTaggingEligible` test
+              // `pendingTagCount` already applies whole-Catalog,
+              // `selectors.ts`, now narrowed to this one Product).
+              // `decision-log.md` D73 drops the eligibility test's earlier
+              // `defaultSellingMode === 'nfc'` disjunct entirely, so this
+              // row now renders purely off this Product's own
+              // `nfcTaggingEnabled` opt-in, regardless of
+              // `defaultSellingMode`. Pure navigation, never touches
+              // `Product.nfcTaggingEnabled`.
               pendingTag={
                 pendingTagRowCount > 0
                   ? { count: pendingTagRowCount, onTap: () => onOpenAssignTagsForProduct(product.id) }

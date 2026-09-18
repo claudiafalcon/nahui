@@ -276,28 +276,28 @@ export function catalogRows(state: AppState) {
  * caches the result. */
 
 /**
- * `inventory.md` §2's composed **NFC-tagging-eligible** test
- * (`decision-log.md` D71, `product-decisions.md` Q31) — the single source
- * of truth every step/state in this document now reads, replacing the
- * earlier `defaultSellingMode === 'nfc'`-only gate (D46):
+ * `inventory.md` §2's **NFC-tagging-eligible** test (`decision-log.md` D73,
+ * narrowing D71/`product-decisions.md` Q31) — the single source of truth
+ * every step/state in this document now reads:
  *
- * `business.defaultSellingMode === 'nfc'` OR
- * (`business.nfcPerProductEnabled === true` AND `product.nfcTaggingEnabled === true`)
+ * `business.nfcPerProductEnabled === true` AND `product.nfcTaggingEnabled === true`
  *
- * The first disjunct is the original, unchanged D46 rule — a whole-Catalog
- * `nfc`-selling Business, unaffected by anything D71 adds. The second is
- * new: a `buttons`-mode Business that's opted specific, barcode-less
- * Products into NFC individually still qualifies, Product by Product, never
- * whole-Catalog. Deliberately collapses back to the original rule for any
- * Business that never turns on `nfcPerProductEnabled` — a real,
- * backward-compatible property, not merely a claim (`inventory.md` §2's own
- * text). `business` is `null | undefined`-safe (defensive — every real
+ * A single condition, not a disjunction. D73 drops the earlier
+ * `defaultSellingMode === 'nfc'`-only disjunct (D46's original rule, carried
+ * forward unexamined by D71) outright: a barcoded Product being swept into
+ * "needs an NFC tag" purely because the Business is in whole-Catalog `nfc`
+ * mode was never a state that could actually resolve (barcode/NFC-tagging
+ * are mutually exclusive per Product, D71) — a structurally unfixable
+ * phantom entry, not a legitimate part of the queue. Eligibility is now
+ * governed solely by the Business's per-product opt-in and the Product's own
+ * flag, regardless of `defaultSellingMode` — including a Business that
+ * stays in whole-Catalog `nfc` mode (a named, valid, reachable combination
+ * per D73). `business` is `null | undefined`-safe (defensive — every real
  * caller already holds a resolved Business by the time it reads Inventory
  * state) and returns `false` rather than throwing.
  */
 export function isNfcTaggingEligible(business: Business | null | undefined, product: Product): boolean {
   if (!business) return false;
-  if (business.defaultSellingMode === 'nfc') return true;
   return business.nfcPerProductEnabled === true && product.nfcTaggingEnabled === true;
 }
 
