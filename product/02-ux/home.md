@@ -269,6 +269,8 @@ show the new affordance's exact gating condition and position. This went
 through a full `architect` ruling (D71) — **not** an expedited live-bug-fix
 pass. `ux-critic`/`reviewer` review is pending, not skipped.
 
+**Further amended 2026-09-17 (`decision-log.md` D72 — Settings collapses its two NFC-related controls into one; `defaultSellingMode='nfc'` becomes unreachable via self-service):** §3.6a's fourth Session-start variant ("Ya tienes prendas con tag suficientes…", the one-time nudge toward `settings.md`'s now-retired "Cambiar a vender con tags") is retired outright, along with its backing field `Business.nfcAvailabilityNudgeShown` (`decision-log.md` D29) — reasoned in full in §10. §2's own Ready-branch resolution, the SELLER-suppression paragraph, the "Leer con NFC" overlay's own cross-reference to this case, the screen-state enumeration (§5 item 31), the minimum-step-count table (§6), automation opportunities (§7), and the principle-justification citations (§9) are all corrected to match. **`ux-critic`/`reviewer` review pending, not skipped — same live-urgency posture as tonight's other D71/D72 passes.**
+
 Scope: `Hoy`, the first of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Implementation-independent —
 low-fidelity only, no visual design.
@@ -537,15 +539,18 @@ plus the Business's stored `defaultSellingMode` and Selling Mode Capability
   with — and resolution stays silent, same as the common case.
 - **Ready, `nfc ∈ registrationMode`, but `defaultSellingMode` still reads
   `buttons`** → resolves silently in `buttons`, exactly like the common
-  case — this isn't a disagreement Session-start itself needs to flag,
-  since `buttons` is what she's asked for. But it is a real discoverability
-  gap worth closing once, not at every Session-start: a Paid-tier merchant
-  who has never once been told her tagged inventory is now sufficient to
-  sell with tags has no way to discover that fact anywhere in the product,
-  since D23's nudges only ever point away from `nfc`, never toward it. A
-  single, one-time (shown once ever, not once per Session-start) mention
-  closes this gap without touching Session-start's own resolution or
-  reopening D23's asymmetric-nudge architecture — see §3.6a.
+  case. **No discoverability mention is shown for this case any longer
+  (corrected 2026-09-17, `decision-log.md` D72 — see §10).** The one-time
+  nudge this branch used to produce pointed toward `settings.md`'s
+  "Cambiar a vender con tags," an action D72 retires outright.
+  Structurally, the state this branch describes can no longer arise for a
+  merchant who hasn't already self-service-activated
+  `Business.nfcPerProductEnabled`: tagging a unit at all requires that
+  field to already be on (`decision-log.md` D71, `inventory.md` §2's
+  composed eligibility test), so "enough tagged inventory to be worth
+  nudging toward NFC" necessarily implies NFC is already active — nothing
+  left to discover or activate. This resolution stays silent, exactly like
+  the common case above.
 - **Limited Ready** (some tagged inventory exists, below the readiness
   threshold, disagreeing with `defaultSellingMode`) → a single, lightweight
   inline recommendation appears at the same Session-start action, with one
@@ -919,10 +924,10 @@ already exists today (new — closes `architect-questions.md` Q19,
 - **Shown every time the condition currently holds, not once ever.**
   This is a live operational fact (which Events are active, and
   whether she's assigned to any of them), not a discretionary settings
-  nudge — the one case in this section that gets "shown once ever"
-  treatment (§3.6a's Ready-but-buttons-default nudge) is explicitly a
-  durable, merchant-controllable setting choice, not a fact that
-  changes hour to hour. Disappears automatically the moment it no
+  nudge — unlike a durable, merchant-controllable setting choice, the
+  kind of thing that would earn "shown once ever" treatment (the retired
+  fourth §3.6a variant was the one example of that shape in this
+  document; see §10). Disappears automatically the moment it no
   longer holds (an Event ends, or she's assigned to one) — never a
   standing badge or an unread-count.
 - "Iniciar Sesión Rápida" is completely unaffected either way — this
@@ -1507,64 +1512,24 @@ step, not a promise standing in for behavior that doesn't exist — it just no
 longer points at a screen of its own; it points at the same "Activar plan de
 pago" action any other Paid-tier benefit already routes through.
 
-**Ready, but `defaultSellingMode = buttons` and tagged inventory has just
-become sufficient (new — closes D27-CROSS-M1, the one mention in this
-section pointed toward `nfc` rather than away from it):**
-```
-┌───────────────────────────────┐
-│  Nahui                        ⚙ │
-│        ¿Vas a vender hoy?       │
-│   [   Iniciar Sesión Rápida  ]  │
-│   Ya tienes prendas con tag      │
-│   suficientes para vender con    │
-│   tags — actívalo cuando         │
-│   quieras en Configuración.       │
-│   [ Ir a Configuración ]          │
-├───────────────────────────────┤
-│ [Hoy]  Inventario Eventos Resultados │
-└───────────────────────────────┘
-```
-(the same line attaches beneath "Continuar Día 2" when reached via §3.6, and
-beneath "Iniciar Sesión Rápida" with the Event card still shown when reached
-via §3.5)
+**Ready, but `defaultSellingMode = buttons` and tagged inventory has
+crossed into full readiness — retired (superseded 2026-09-17,
+`decision-log.md` D72 — see status header and §10 for the full
+reasoning).**
 
-- Distinct trigger from every other case in this section: NFC Readiness has
-  crossed from Not Ready or Limited Ready into Ready — she now has enough
-  tagged inventory to sell with tags — while `defaultSellingMode` still
-  reads `buttons`, the value every real Onboarding path writes
-  unconditionally (`onboarding.md` §2.3, `decision-log.md` D27). Without
-  this mention, nothing anywhere in the product would ever tell her the
-  capability she's paying for is sitting dormant — a real discoverability
-  gap, not a case D23's asymmetric-nudge architecture already covers (D23's
-  nudges only ever point away from `nfc`; this is the one deliberate
-  exception, added for discoverability, not a reversal of that
-  architecture — nothing about Session-start's own resolution changes: the
-  Session still opens silently in `buttons` here, exactly as the Ready
-  branch in §2 already specifies).
-- No inline override offered here, unlike Limited Ready — tapping her way
-  into `nfc` for just this one Session isn't the fix: she'd hit this same
-  gap again tomorrow, since her stored `defaultSellingMode` would still
-  read `buttons`. "Ir a Configuración" routes to the actual, durable fix —
-  `settings.md`'s "Cambiar a vender con tags" (§2.2/§3.4) — the same
-  Configuración routing every other next-step link in this section already
-  uses.
-- **Shown once ever, not once per Session-start occurrence** — the one
-  deliberate exception to this section's usual "shown once per occurrence,
-  every time the condition holds" discipline (contrast Not Ready and
-  capability-revoked above). This is a discretionary opportunity to
-  surface, not an operational fact that changes what she can do right now —
-  she may genuinely prefer `botones`, and repeating this mention at every
-  Session-start from here on would read as the app second-guessing a choice
-  she's entitled to make, the opposite of *brand-guide.md*'s "respects the
-  vendor's intelligence." Tracked the same lightweight way `settings.md`
-  §2.4 already tracks its own one-time landing acknowledgment — no new
-  mechanism invented, the same shown-once pattern reused.
-- If she acts on it and switches to `nfc` in Configuración, this mention
-  never has a reason to show again (the condition it detects — `nfc`
-  available and unused — no longer holds). If she doesn't act on it, it
-  still never repeats — one honest heads-up, not a recurring nag.
+This was a fourth §3.6a variant, added to close D27-CROSS-M1 — a one-time
+nudge toward `settings.md`'s "Cambiar a vender con tags." That action is
+retired outright by D72: a normal Paid, `buttons`-mode merchant has no
+self-service way to enter whole-catalog `nfc` mode any more, so there is
+nothing left for this nudge to route her toward. Retired along with its
+backing field, `Business.nfcAvailabilityNudgeShown` (`decision-log.md`
+D29) — flagged for `architect`/`domain-model.md` to mark the field
+retired in turn, not done here per this folder's own "never modify
+`product/00-foundation/` from this folder" rule (§8). Kept as a named,
+non-deleted entry — full prior wireframe/copy/reasoning preserved at
+`home.changelog.md#section-3-6a-fourth-variant-retired`.
 
-**SELLER variants for the four cases above (new — `product-decisions.md` Q24/Q25).**
+**SELLER variants for the three cases above (new — `product-decisions.md` Q24/Q25; narrowed from four to three, 2026-09-17, `decision-log.md` D72 — the fourth case is retired above).**
 
 **Governing rule (stated once, applies to all four cases above):** every existing OWNER-facing next-step link in this section (`[ Asignar tags ]`, `[ Ir a Configuración ]`) points at a destination a SELLER cannot reach (Inventario, full Configuración). Per this document's own established discipline (§3.16, below), an unreachable destination is never shown as a live link. The informational line above each link stays — it's operationally true and useful regardless of who's about to sell — only the link itself is replaced or removed, case by case below.
 
@@ -1589,7 +1554,7 @@ No `[ Asignar tags ]` link — replaced by a passive note. The primary CTA is un
 ```
 No `[ Ir a Configuración ]` link — a SELLER has no path to restore this regardless; the passive note states the true, actionable fact (ask the OWNER) rather than a link she can't use.
 
-**Ready-but-`defaultSellingMode = buttons` discoverability nudge — suppressed entirely for SELLER, not shown in any form.** Unlike the two cases above, this mention is purely discretionary — an OWNER-only opportunity to discover a durable setting change only she can make. Showing any version of it to a SELLER, who has no way to act on it and whose own selling experience isn't operationally affected by it either way (she's already selling in `buttons`, matching whatever the current default is), would be a pure, unactionable nag — the opposite of *global-principles.md*, "the fastest interaction is the one that never happens."
+**The former fourth case's SELLER treatment is retired along with the case itself** — see above.
 
 ### 3.6b Elegir evento — idle Membership, more than one Event currently active (new — closes the `product-decisions.md` Q24/Q25 D53 remediation item)
 
@@ -2437,9 +2402,9 @@ all unreachable for a Free-tier Business.
       exists, below the full-readiness threshold. **Deliberately narrower
       than "≥1 tagged unit exists"**: a Business whose tagged inventory
       has actually crossed into Ready (full readiness) while
-      `defaultSellingMode` still reads `buttons` (§3.6a's own
-      "Ready-but-buttons-default" nudge case) does **not** get this
-      overlay in this pass — D71's own text scopes the new composition to
+      `defaultSellingMode` still reads `buttons` — the state §3.6a's
+      own now-retired fourth variant used to flag (`decision-log.md`
+      D72) — does **not** get this overlay in this pass — D71's own text scopes the new composition to
       "Limited Ready → buttons," not to every case where `buttons` mode
       and ≥1 tagged unit happen to coexist. This is a real, narrower
       exclusion, not an oversight — flagged as its own open item, §8.
@@ -3297,11 +3262,12 @@ Open app
               (§3.6a); the Session-start CTA underneath stays tappable
             → Not Ready: [ Asignar tags ] → inventory.md §3.14, leaving this
               screen without starting a Session
-            → Capability revoked / Ready-but-buttons-default: [ Ir a
-              Configuración ] → resolve (settings.md §3.1/§3.2) → vista
-              principal (settings.md §3.3a, or §3.6 if a pending change
-              already exists) → "← Hoy" → back to whichever of 3.4/3.5/3.6
-              (and its 3.6a variant, unchanged) was current
+            → Capability revoked (the former Ready-but-buttons-default case
+              is retired, `decision-log.md` D72, no longer reachable here):
+              [ Ir a Configuración ] → resolve (settings.md §3.1/§3.2) →
+              vista principal (settings.md §3.3a, or §3.6 if a pending
+              change already exists) → "← Hoy" → back to whichever of
+              3.4/3.5/3.6 (and its 3.6a variant, unchanged) was current
       → at least one `available` InventoryUnit exists → idle state; whether
           an upcoming-Event card (or, for a SELLER, its passive-line
           alternate) renders above "Iniciar Sesión Rápida" is now
@@ -3322,9 +3288,10 @@ From any of Home's four non-Session header states (3.3 cold start; 3.4/3.5
 idle, with or without an upcoming Event card; 3.6 Event-active-no-Session —
 applies settings.md §2.1's amendment) — including whichever §3.6a
 Session-start-moment variant (Limited Ready / Not Ready / capability
-revoked / Ready-but-`buttons`-default discoverability mention) happens to be
-showing on top of 3.4/3.5/3.6 at the time, since those are the same states
-with one extra line, not separate states:
+revoked — the former fourth, Ready-but-`buttons`-default discoverability
+mention, is retired, `decision-log.md` D72) happens to be showing on top of
+3.4/3.5/3.6 at the time, since those are the same states with one extra
+line, not separate states:
   → [always visible] ⚙ (header icon) → Configuración, no intermediate sheet
     (amended 2026-08-15 — retires the one-entry sheet that used to sit
     here, §3.6c)
@@ -3508,7 +3475,7 @@ and back to Hoy):
 28. Nav bar — role-scoped (§3.16), applied to every state above
 29. Header icon — role-scoped (§3.15); SELLER's own "Tu cuenta" minimal surface (§3.15a)
 30. Cold start — SELLER variant (§3.3)
-31. Session-start moment — SELLER variants for Not Ready and capability-revoked (§3.6a); Ready-but-buttons-default nudge suppressed entirely for SELLER
+31. Session-start moment — SELLER variants for Not Ready and capability-revoked (§3.6a); the former fourth variant (Ready-but-buttons-default discoverability nudge) is retired, `decision-log.md` D72 — see §10
 32. Mi actividad de hoy — own current-Session-context activity, both roles (§3.7c), including its empty state and its own near-instant/slow resolving pair
 33. Session active — tile carries an Event-scoped remaining-stock line when an EventAllocation applies (§3.9)
 34. Session active, Sale in progress — lost-race conflict, terminal (§3.8a extended): ambient notice, ⊗ marker, detail sheet, "Quitar de la venta"
@@ -3558,11 +3525,10 @@ Not-Ready-matching-a-`buttons`-default, or capability-revoked-matching-a-
 tap adds exactly 1 tap, making that one path 3 taps to first registered item.
 Not Ready never adds a tap — there's no override to offer, only a mention.
 Capability-revoked (§2/§3.6a) likewise never adds a tap, for the same
-reason — mention only, no override to offer. The new Ready-but-
-`defaultSellingMode=buttons` discoverability mention (§2/§3.6a) likewise
-never adds a tap — a mention and an optional "Ir a Configuración" link only,
-no override to offer, and shown just once ever rather than on every
-qualifying Session-start.
+reason — mention only, no override to offer. **The former fourth
+discoverability mention (Ready-but-`defaultSellingMode=buttons`) is
+retired, `decision-log.md` D72 — no longer part of this document at all,
+so no longer counted here either.**
 
 **Amended 2026-09-15:** §3.6/§3.6b's row in the table above is unaffected
 by the new secondary "Iniciar Sesión Rápida" action — it's an equally-fast,
@@ -3603,10 +3569,11 @@ her actual top sellers within the first screenful regardless of Catalog size.
   Business's stored `defaultSellingMode` and a computed NFC Readiness check
   (`decision-log.md` D23); never re-asked mid-Session. It can rarely surface
   *at* Session start itself — only the Limited Ready case shows a one-tap
-  override (§3.6a); Not Ready, a revoked Selling Mode Capability, and the
-  Ready-but-still-on-`botones` discoverability mention show a mention only,
-  never an override — but once resolved, it's exactly as invisible and
-  final as before. *architecture-principles.md* #1.
+  override (§3.6a); Not Ready and a revoked Selling Mode Capability show a
+  mention only, never an override (the former fourth, Ready-but-
+  still-on-`botones` discoverability mention, is retired — `decision-log.md`
+  D72, §10) — but once resolved, it's exactly as invisible and final as
+  before. *architecture-principles.md* #1.
 - Which Session to open (Event-linked vs. Quick) — computed from Event status +
   today's date, never a picker.
 - "Día N" — computed from existing Sessions under the `eventId`, never typed or
@@ -3717,18 +3684,26 @@ her actual top sellers within the first screenful regardless of Catalog size.
   named honestly rather than worked around silently; worth revisiting if
   real usage shows mis-adds (tap or scan) are common enough to need a
   lighter-weight per-item removal, independent of how the item was added.
-- **New (`decision-log.md` D71) — the "Ready, but `defaultSellingMode =
-  buttons`" edge case (§3.6a's own fourth variant) doesn't get "Leer con
-  NFC," by this amendment's own deliberate scoping to "Limited Ready"
-  only (§3.9).** A Business whose tagged inventory has crossed into full
-  Ready while she's still selling with `buttons` by choice is a real,
-  reachable state — D71's own text scopes the new overlay strictly to
-  "Limited Ready → buttons," so this state currently gets neither the
-  overlay nor any NFC-scan affordance during Selling, only the existing
-  one-time discoverability nudge at Session-start (§3.6a). Whether that's
-  the right outcome, or whether the overlay should extend to this case
-  too, isn't re-derived here — flagged for Architect/Product Owner rather
-  than silently widened past what D71 authorized.
+- **New (`decision-log.md` D71), sharpened 2026-09-17 (`decision-log.md`
+  D72) — the "Ready, but `defaultSellingMode = buttons`" edge case doesn't
+  get "Leer con NFC," by this amendment's own deliberate scoping to
+  "Limited Ready" only (§3.9).** A Business whose tagged inventory has
+  crossed into full Ready while she's still selling with `buttons` is a
+  real, reachable state — D71's own text scopes the new overlay strictly
+  to "Limited Ready → buttons," so this state gets neither the overlay
+  nor any NFC-scan affordance during Selling. **This gap is more pressing
+  than when first flagged, not resolved by this pass:** the fourth §3.6a
+  variant that used to at least mention this state once, with a link
+  toward activating NFC, is retired (§10) — its own destination no longer
+  exists — so a Business in this state now gets no signal anywhere in the
+  product. It's also, under D72's own reasoning (no remaining
+  merchant-facing reason to ever enter whole-catalog `nfc` mode),
+  arguably the *ordinary* long-run destination for any Paid `buttons`-mode
+  merchant who adopts NFC seriously, not a rare edge case. Whether the
+  overlay should extend to full Ready too isn't re-derived here — flagged
+  for Architect/Product Owner rather than silently widened past what D71
+  authorized, but with materially higher urgency than before.
+- **New (2026-09-17, `decision-log.md` D72) — `Business.nfcAvailabilityNudgeShown` (`decision-log.md` D29) is now a dead field.** Its own §3.6a consumer is retired (§10); `domain-model.md`'s own field entry needs a matching retirement note. Not corrected here — this folder's own rule is never to modify `product/00-foundation/` directly; flagged for `architect`.
 - **New (`decision-log.md` D71) — no NFC-hardware-unavailable/permission-
   denied state is designed for §3.9d, mirroring a pre-existing gap
   already present in §3.10's own full `nfc`-mode surface** (which
@@ -3757,10 +3732,10 @@ her actual top sellers within the first screenful regardless of Catalog size.
   question), Día N, and which Session to open are all computed, never asked.
   The capability-revoked mention (§3.6a) follows the same discipline as Not
   Ready's — shown once per Session-start occurrence, never repeated
-  mid-Session. The new Ready-but-`buttons`-default discoverability mention
-  (§3.6a) goes one step further, deliberately: shown once ever, not once per
-  occurrence — repeating an FYI about a discretionary choice she may not
-  want to change would itself violate this same principle.
+  mid-Session. The former fourth variant (Ready-but-`buttons`-default
+  discoverability mention) used to go one step further, deliberately: shown
+  once ever, not once per occurrence. Retired 2026-09-17 (`decision-log.md`
+  D72) along with the mention itself — see §10.
 - *"Technology should disappear"* — loading states stay silent unless
   genuinely slow; the selling surface shows only the one mode-appropriate
   input, never a technical toggle; tapping a product adds it to the tray
@@ -3858,7 +3833,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
 
 **SELLER-experience additions (`product-decisions.md` Q24/Q25):**
 - *global-principles.md*, "business language before technical language" — every SELLER-facing copy variant says "pídele a quien te invitó," "solo quien te invitó puede activar esto," never "role," "permission," "Membership," or "OWNER"/"SELLER" as literal on-screen terms.
-- *global-principles.md*, "never ask twice" — role is resolved once per Home open, never re-asked or re-confirmed mid-Session; the Ready-but-buttons-default nudge's full suppression for SELLER is this principle applied to an entire mention, not just a single re-ask.
+- *global-principles.md*, "never ask twice" — role is resolved once per Home open, never re-asked or re-confirmed mid-Session; the former Ready-but-buttons-default nudge's full suppression for SELLER (retired along with the nudge itself, `decision-log.md` D72) was this same principle applied to an entire mention, not just a single re-ask.
 - *global-principles.md*, "the best interface stays out of the merchant's way" — the cold-start SELLER variant and the Not-Ready/capability-revoked SELLER mentions state real, actionable next steps (ask the OWNER) rather than dead-ending her or showing an unreachable link.
 - *architecture-principles.md* #1 (capabilities resolved once, upstream) — role, exactly like `Session.operatingMode`, is resolved once and never re-evaluated mid-flow.
 - *architecture-principles.md* #4 (internal-only entities never leak into language) — `BusinessMembership`, `role`, `EventAllocation`, `performedByMembershipId` never appear as literal on-screen copy anywhere in this amendment.
@@ -3956,8 +3931,28 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **A fourth Session-start mention closes a D27 discoverability gap:** a
   Paid-tier merchant whose tagged inventory clears NFC Readiness while
   `defaultSellingMode` still reads `buttons` gets a one-time nudge toward
-  "Cambiar a vender con tags" (§2, §3.6a). **[see
+  "Cambiar a vender con tags" (§2, §3.6a). **Retired 2026-09-17
+  (`decision-log.md` D72) — see the new bullet below.** **[see
   home.changelog.md#decisions-2026-08-09-d27-cross-m1-buttons-to-nfc-nudge]**
+- **The fourth §3.6a variant (above) and its backing field,
+  `Business.nfcAvailabilityNudgeShown` (`decision-log.md` D29), are
+  retired outright, 2026-09-17 (`decision-log.md` D72) — not repointed
+  toward `nfcPerProductEnabled` activation.** D72 retires `settings.md`'s
+  "Cambiar a vender con tags" — the nudge's own destination — leaving
+  nothing left for it to route toward. Repointing was considered and
+  rejected: the nudge's trigger condition (enough tagged inventory to be
+  "Ready," while `defaultSellingMode` stays `buttons`) can no longer
+  arise for a merchant who hasn't already turned
+  `Business.nfcPerProductEnabled` on, since tagging any unit at all
+  requires that field to already be true (`decision-log.md` D71,
+  `Product.nfcTaggingEnabled`'s own gate) — a Business meeting this
+  nudge's trigger condition has, by construction, already activated NFC.
+  There is no remaining state where "you have enough tagged inventory but
+  haven't turned NFC on" is true; the nudge's premise is structurally
+  dead, not merely pointed at a stale destination. Every cross-reference
+  elsewhere in this document (§2, §5 item 31, §6, §7, §8, §9) is
+  corrected to match. **[see
+  home.changelog.md#decisions-2026-09-17-d72-nudge-retired]**
 - **A successful Finalizar Venta gets an explicit, ambient confirmation
   ("Venta finalizada ✓," §3.8e) — resolves HOME-Q1.** **[Superseded — see
   §3.8f.]** **[see
@@ -4053,7 +4048,7 @@ her actual top sellers within the first screenful regardless of Catalog size.
 - **New §3.6b "Elegir evento" added** — an idle Membership with 2+ simultaneously active Events picks one, folding into the existing §3.6/§3.6a machinery rather than inventing a parallel Session-start mechanism (`product-decisions.md` Q24/Q25, `decision-log.md` D53).
 - **New §2 step 0** — a revoked Membership resolves to `settings.md` §3.14 before any other Home state, cross-document per this folder's own §4 discipline.
 - **Nav bar and header icon are resolved once from role, per Home open** (§3.15/§3.16) — SELLER sees only "Hoy" (never a disabled/grayed tab) and a non-gear account icon routing to a minimal, hosted-here "Tu cuenta" surface, not full Configuración.
-- **Every OWNER-only next-step link in §3.6a is either replaced by a passive note (Not Ready, capability revoked) or fully suppressed (Ready-but-buttons-default discoverability nudge) for a SELLER** — the informational line stays where it's operationally true; only unreachable links are removed.
+- **Every OWNER-only next-step link in §3.6a's remaining three cases is replaced by a passive note (Not Ready, capability revoked) for a SELLER** — the former fourth case (Ready-but-buttons-default discoverability nudge) is retired outright, `decision-log.md` D72, not merely suppressed for SELLER any longer.
 - **"Mi actividad de hoy" is a new, small own-activity view, deliberately not a cut-down Resultados variant** — available to both roles, scoped to `performedByMembershipId` across the Session's own context, rendered as a full push-in specifically to avoid two simultaneously-visible "N ventas" figures reading as a discrepancy.
 - **An Event-scoped remaining-stock signal is added to buttons-mode tiles wherever an `EventAllocation` applies** — a pre-emptive, not guaranteed, reduction of concurrent-selling conflicts.
 - **A genuinely new terminal correction pattern ("lost the race") is designed for an already-added item invalidated by a background conflict** — `knowledge-mentor` consultation complete (§8): overall pattern confirmed well-grounded; one copy correction applied (detail-sheet text softened from "antes que tú" to a neutral, fact-only close, §3.8a).

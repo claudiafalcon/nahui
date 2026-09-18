@@ -64,7 +64,9 @@ Important findings). Folded back into Approved.
 
 **Further amended 2026-09-16/17 (`decision-log.md` D71, `product/02-ux/product-decisions.md` Q31 — NFC becomes a per-product opt-in composing with buttons/barcode):** a fifth self-service capability, `Business.nfcPerProductEnabled` ("Activar NFC por producto"/"Desactivar NFC por producto," new §2.8, new rows in §2.2's table), joins `subscriptionTier`/`defaultSellingMode` — same immediate-effect, no-pending-structure mutability class as `defaultSellingMode` (D27), offered only when `nfc ∈ registrationMode`, off by default even on an already-Paid Business. Turning it on makes a new per-Product toggle visible in `inventory.md`'s Catalog row (that document's own §3.4 amendment, not designed here); turning it off never untags or orphans an already-tagged `InventoryUnit` — existing NFC-tagged units stay exactly as they are, sellable via NFC — it only withdraws future tag-assignment eligibility for not-yet-enabled Products, and correspondingly withdraws the "Leer con NFC" overlay `home.md`'s own D71 amendment adds to `buttons`-mode Selling (that document's own scope, cited here only because this document must disclose the consequence honestly before she confirms). `home.md`/`events.md` are untouched by this pass — a parallel dispatch is designing those against the same D71 ruling. **This pass went through a full `architect` review, unlike some of tonight's earlier live-bug-fix passes — `ux-critic`/`reviewer` review is pending, to be run before/alongside build if time allows.**
 
-Scope: `Configuración`, the merchant-facing surface for the Business Capabilities `decision-log.md` D25/D27/D40 leave merchant-self-service: `subscriptionTier` (Free ↔ Paid) — two actions (both directions), a reusable "pending change" indicator, and a way to cancel a pending change before it lands — plus `decision-log.md` D27's `defaultSellingMode` control (Botones ↔ Etiquetas NFC), constrained to whichever modes `subscriptionTier` currently makes available: **four actions total**, not six. **Amended 2026-09-16/17 (`decision-log.md` D71):** a fifth capability, `nfcPerProductEnabled` ("Activar NFC por producto" ↔ "Desactivar NFC por producto," §2.8), joins this set, gated identically on `nfc ∈ registrationMode` — **six actions total across three capabilities**, not four across two. Both `defaultSellingMode` directions use the same immediate-effect template `subscriptionTier`'s "activate" direction already uses (§2.3, §3.4) — the only real difference is that neither carries a pending-value/effective-date pair, since the field has no billing-cycle implication for D25's deferred-timing rationale to apply to, not a differently-shaped UI. `registrationMode`'s `nfc` entitlement is no longer an independently self-service-toggleable capability of its own (D27 superseded that part of D25) — it is a pure read-time derivation from `subscriptionTier = paid`, so it has no dedicated action or row here; it changes only as an automatic consequence of the `subscriptionTier` actions below. **`loyaltyEnabled` is retired outright, not merely absent from self-service scope** (`decision-log.md` D40) — there is no Business-level field left to toggle, self-service or otherwise; Frequent Customers as a whole is entitled purely by `subscriptionTier`, present in full on Paid and structurally absent on Free, with no action of Ana's own anywhere in this document or any other. **Not a fifth nav tab** — per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, Configuración hangs off the existing session-controls affordance already specified in `home.md` — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon opening a sheet, then (2026-08-14, active Session; 2026-08-15, every other Home state) replaced by a direct gear icon ("⚙") with no intermediate sheet at all (Product Owner decisions; see status header above and `home.md`'s own status header/§10 for the full reasoning) — as of 2026-08-15, this single direct shape applies uniformly across every Home state with a persistent header (§2.1). This is the last of the five merchant-facing experiences to be designed (`product/02-ux/CLAUDE.md`). Implementation-independent — low-fidelity only, no visual design. A fifth action, added 2026-08-13, sits outside this four-capability count entirely: "Cerrar sesión" (§2.5) is an Identity-context, `User`-level action (RFC 0007) — it has no Business Capability to represent, changes nothing about her plan or how she sells, and is never conditioned on `subscriptionTier` or any pending change. It's placed in its own "Tu cuenta" section, not counted among, or confused with, the four capability actions above.
+**Further amended 2026-09-17 (`decision-log.md` D72 — the two NFC-related controls collapse into one, `defaultSellingMode='nfc'` becomes unreachable via self-service):** §2.2's capability table drops the `defaultSellingMode: buttons → nfc` row ("Cambiar a vender con tags") entirely — retired outright, no merchant-facing way to enter `nfc` mode from here forward. Its opposite direction, "Cambiar a vender con botones," survives as a one-way escape valve, visible only while `defaultSellingMode = 'nfc'` (grandfathered/demo Businesses only), never offered to a Business already in `buttons` mode. §2.3's framing corrected from bidirectional to this one-way shape. §2.6 ("what 'Cambiar a vender con tags' does beyond flipping the field") is retired along with the action it describes — kept as a named, non-deleted section per this document's own discipline, marked superseded, since `inventory.md`'s own auto-entry trigger this section fed (`decision-log.md` D46) can no longer fire from any live Settings action. §2.8 and its two actions rename/reframe to a single merchant-facing control, "Activar NFC"/"Desactivar NFC," writing `nfcPerProductEnabled` only — same RPC, same semantics as before — and gains a second gating condition, `defaultSellingMode !== 'nfc'`, so a grandfathered `nfc`-moded Business sees no per-Product NFC row at all until she uses the escape valve. §3.3a/§3.6's Paid-tier wireframes are corrected to two distinct, mutually exclusive states: a `buttons`-mode Business (the normal case going forward) shows only "Activar NFC"/"Desactivar NFC," no mode-switch action at all; an `nfc`-mode Business (grandfathered/demo only) shows only the one-way "Cambiar a vender con botones" escape valve, nothing else NFC-related until she uses it. **`ux-critic`/`reviewer` review pending, not skipped — same live-urgency posture as tonight's other D71/D72 passes.**
+
+Scope: `Configuración`, the merchant-facing surface for the Business Capabilities `decision-log.md` D25/D27/D40 leave merchant-self-service: `subscriptionTier` (Free ↔ Paid) — two actions (both directions), a reusable "pending change" indicator, and a way to cancel a pending change before it lands — plus `decision-log.md` D27's `defaultSellingMode` control (Botones ↔ Etiquetas NFC), constrained to whichever modes `subscriptionTier` currently makes available: **four actions total**, not six. **Amended 2026-09-16/17 (`decision-log.md` D71):** a fifth capability, `nfcPerProductEnabled` ("Activar NFC por producto" ↔ "Desactivar NFC por producto," §2.8), joins this set, gated identically on `nfc ∈ registrationMode` — **six actions total across three capabilities**, not four across two. Both `defaultSellingMode` directions use the same immediate-effect template `subscriptionTier`'s "activate" direction already uses (§2.3, §3.4) — the only real difference is that neither carries a pending-value/effective-date pair, since the field has no billing-cycle implication for D25's deferred-timing rationale to apply to, not a differently-shaped UI. `registrationMode`'s `nfc` entitlement is no longer an independently self-service-toggleable capability of its own (D27 superseded that part of D25) — it is a pure read-time derivation from `subscriptionTier = paid`, so it has no dedicated action or row here; it changes only as an automatic consequence of the `subscriptionTier` actions below. **Corrected 2026-09-17 (`decision-log.md` D72):** narrows again, to five actions across three capabilities — `defaultSellingMode`'s `buttons → nfc` direction ("Cambiar a vender con tags") is retired outright, leaving only its one-way reverse ("Cambiar a vender con botones," visible only to an already-`nfc`-moded Business) alongside `subscriptionTier`'s two directions and `nfcPerProductEnabled`'s two directions, renamed "Activar NFC"/"Desactivar NFC" — see §2.2/§2.3/§2.8. **`loyaltyEnabled` is retired outright, not merely absent from self-service scope** (`decision-log.md` D40) — there is no Business-level field left to toggle, self-service or otherwise; Frequent Customers as a whole is entitled purely by `subscriptionTier`, present in full on Paid and structurally absent on Free, with no action of Ana's own anywhere in this document or any other. **Not a fifth nav tab** — per `decision-log.md` D13 and `information-architecture.md`'s "Onboarding and Settings" section, Configuración hangs off the existing session-controls affordance already specified in `home.md` — originally the header's "▾," relocated 2026-08-09 to a top-right "⋯" icon opening a sheet, then (2026-08-14, active Session; 2026-08-15, every other Home state) replaced by a direct gear icon ("⚙") with no intermediate sheet at all (Product Owner decisions; see status header above and `home.md`'s own status header/§10 for the full reasoning) — as of 2026-08-15, this single direct shape applies uniformly across every Home state with a persistent header (§2.1). This is the last of the five merchant-facing experiences to be designed (`product/02-ux/CLAUDE.md`). Implementation-independent — low-fidelity only, no visual design. A fifth action, added 2026-08-13, sits outside this four-capability count entirely: "Cerrar sesión" (§2.5) is an Identity-context, `User`-level action (RFC 0007) — it has no Business Capability to represent, changes nothing about her plan or how she sells, and is never conditioned on `subscriptionTier` or any pending change. It's placed in its own "Tu cuenta" section, not counted among, or confused with, the four capability actions above.
 
 Out of scope by explicit instruction:
 - **No payment/checkout flow of any kind.** `company/CLAUDE.md`'s non-goals state "Payments/checkout — out of scope, do not build." Activating the paid plan here flips `subscriptionTier`, exactly as D25 resolves it — it never shows a price, a card field, or any payment-processing step. By what mechanism money actually changes hands, if any, is a distinct, unnamed question this document doesn't invent an answer to.
@@ -146,14 +148,13 @@ Concretely:
 |---|---|---|---|---|
 | `subscriptionTier` | free → paid | **Activar plan de pago** | §3.4 (immediate-effect, copy fixed — SET-M4, corrected again below) | Immediate — she's confirming a payment already arranged. |
 | `subscriptionTier` | paid → free | Volver al plan gratis | §3.5 (deferred-effect) | Deferred — Product Owner's own illustrative example (`decision-log.md` D25): may land at the end of the current billing period. |
-| `defaultSellingMode` | buttons → nfc | Cambiar a vender con tags | §3.4 (immediate-effect) | Immediate — offered only when `nfc ∈ registrationMode` (`decision-log.md` D27). |
-| `defaultSellingMode` | nfc → buttons | Cambiar a vender con botones | §3.4 (immediate-effect) | Immediate. |
-| `nfcPerProductEnabled` | false → true | **Activar NFC por producto** | §3.4 (immediate-effect) | Immediate — offered only when `nfc ∈ registrationMode` (`decision-log.md` D71). Off by default even on an already-NFC-capable Business — a deliberate opt-in, never automatic. |
-| `nfcPerProductEnabled` | true → false | Desactivar NFC por producto | §3.4 (immediate-effect) | Immediate. |
+| `defaultSellingMode` | nfc → buttons | Cambiar a vender con botones | §3.4 (immediate-effect) | Immediate — the one surviving direction, a one-way escape valve visible only while `defaultSellingMode = 'nfc'` (grandfathered/demo Businesses only — `decision-log.md` D72). |
+| `nfcPerProductEnabled` | false → true | **Activar NFC** | §3.4 (immediate-effect) | Immediate — offered only when `nfc ∈ registrationMode` AND `defaultSellingMode !== 'nfc'` (`decision-log.md` D71/D72). Off by default even on an already-NFC-capable Business — a deliberate opt-in, never automatic. |
+| `nfcPerProductEnabled` | true → false | Desactivar NFC | §3.4 (immediate-effect) | Immediate. |
 
-**`nfcPerProductEnabled` is a new, third self-service capability, added 2026-09-16/17 (`decision-log.md` D71) — see §2.8 for its full behavior.** Unlike `subscriptionTier`/`defaultSellingMode`, it doesn't replace or narrow anything that existed before; it's a genuinely new opt-in, off by default even for a Business that's already Paid and already has `defaultSellingMode` set to `nfc` or `buttons` — turning it on doesn't change either of those fields, and neither of those fields' own actions ever write it.
+**`nfcPerProductEnabled` is now the sole self-service NFC-related capability for a Business in `buttons` mode (the normal case going forward), corrected 2026-09-17 (`decision-log.md` D72 — collapsing what were briefly two separate NFC-related controls, `defaultSellingMode`'s `buttons → nfc` direction and `nfcPerProductEnabled`, into one).** Renamed "Activar NFC"/"Desactivar NFC" (dropping "por producto" — there's no longer a competing whole-catalog NFC control for the phrase to disambiguate against). Same field, same RPC, same semantics D71 already established. It still doesn't replace or narrow anything `subscriptionTier` controls; it's a genuinely new opt-in, off by default even for an already-Paid Business — turning it on doesn't change `defaultSellingMode`, and it's never written as a side effect of anything else.
 
-**`registrationMode`'s `nfc` entitlement is no longer its own row in this table, and no longer has a dedicated action anywhere in this document** (`decision-log.md` D27, superseding the relevant part of D25). It has no independent existence to toggle: `nfc ∈ registrationMode` is a pure read-time derivation from `subscriptionTier = paid`, so it changes automatically, as a side effect, whenever "Activar plan de pago" or "Volver al plan gratis" changes `subscriptionTier` — never through an action of its own. The earlier design's dedicated NFC-activation path (an activation code confirming a physical kit) is removed entirely, not merely relocated: D27 corrected the underlying assumption that kit possession was ever the thing granting the capability. What she can control directly is `defaultSellingMode` — which of her currently-available modes (always `buttons`; `nfc` only while `subscriptionTier = paid`) is her normal one — a distinct action, above.
+**`registrationMode`'s `nfc` entitlement is no longer its own row in this table, and no longer has a dedicated action anywhere in this document** (`decision-log.md` D27, superseding the relevant part of D25). It has no independent existence to toggle: `nfc ∈ registrationMode` is a pure read-time derivation from `subscriptionTier = paid`, so it changes automatically, as a side effect, whenever "Activar plan de pago" or "Volver al plan gratis" changes `subscriptionTier` — never through an action of its own. The earlier design's dedicated NFC-activation path (an activation code confirming a physical kit) is removed entirely, not merely relocated: D27 corrected the underlying assumption that kit possession was ever the thing granting the capability. What she can still control directly is `defaultSellingMode`'s one remaining direction — the `nfc → buttons` escape valve, offered only to a Business already `nfc`-moded (`decision-log.md` D72) — never the reverse; see §2.3 for the full reasoning.
 
 **`loyaltyEnabled` is no longer its own row either, and no longer has a dedicated action anywhere in this document** (`decision-log.md` D40, retiring the capability outright rather than narrowing it). Unlike `nfc`'s derivation (D27), there is nothing here for Ana to configure even indirectly — Frequent Customers isn't an option she selects; it's a plan-level consequence. What used to be "Activar clientes frecuentes"/"Desactivar clientes frecuentes" — a real, explicit action with its own confirmation screen — is now nothing at all: no row, no button, no confirmation, anywhere in Configuración. The moment "Activar plan de pago" confirms, Frequent Customers is available; the moment "Volver al plan gratis" lands, it isn't — see §3.4/§3.5's corrected copy below.
 
@@ -169,15 +170,15 @@ whether/how she's routed into tagging her existing Catalog. This action
 never reads or decides that itself (architect ruling,
 `architecture-principles.md` #6 — see §2.6 for the full reasoning).
 
-### 2.3 Why `defaultSellingMode`'s two directions are both immediate, with no pending-change structure (`decision-log.md` D27)
+### 2.3 Why `defaultSellingMode`'s one remaining direction is immediate, with no pending-change structure (`decision-log.md` D27, narrowed to one-way by D72)
 
-Unlike `subscriptionTier`, `defaultSellingMode` is not a commercial or billing capability — it's an operational fallback (`decision-log.md` D23) that Session-start already reads fresh, every time, alongside NFC Readiness. `decision-log.md` D25's deferred-timing rationale exists specifically to make a *commercial* change (one with billing-cycle implications, like a Paid→Free downgrade) honestly displayable before it lands; `defaultSellingMode` carries no such implication in either direction. Setting it to `nfc` or back to `buttons` changes nothing about what she's being charged, when, or under what plan — it only changes which mode Session-start resolves toward the next time she opens a Session, exactly the same way any other read of a Business-level fallback field already behaves.
+Unlike `subscriptionTier`, `defaultSellingMode` is not a commercial or billing capability — it's an operational fallback (`decision-log.md` D23) that Session-start already reads fresh, every time, alongside NFC Readiness. `decision-log.md` D25's deferred-timing rationale exists specifically to make a *commercial* change (one with billing-cycle implications, like a Paid→Free downgrade) honestly displayable before it lands; `defaultSellingMode` carries no such implication in either direction. Setting it back to `buttons` changes nothing about what she's being charged, when, or under what plan — it only changes which mode Session-start resolves toward the next time she opens a Session, exactly the same way any other read of a Business-level fallback field already behaves.
 
-This is why both directions — Botones → Etiquetas NFC and Etiquetas NFC → Botones — use the generic immediate-effect template (§3.4), never the deferred one (§3.5): there is nothing to defer. The change takes effect at her very next Session-open, automatically, with no separate scheduling mechanism and no pending-value/effective-date pair to track (`decision-log.md` D27 states this explicitly: this field "carries no pending-value/effective-date structure... an edit here takes effect immediately"). Nothing about `Session.operatingMode`'s own resolution changes as a result — D23's existing guarantee (resolved once, at Session-open, from `defaultSellingMode` plus NFC Readiness) already assumes `defaultSellingMode` can be read fresh at any moment; who's allowed to edit the fallback, or how often, was never part of what made that guarantee true.
+This is why the one remaining direction — Etiquetas NFC → Botones — uses the generic immediate-effect template (§3.4), never the deferred one (§3.5): there is nothing to defer. The reverse direction no longer exists as a merchant-facing action at all (`decision-log.md` D72) — see below. The change takes effect at her very next Session-open, automatically, with no separate scheduling mechanism and no pending-value/effective-date pair to track (`decision-log.md` D27 states this explicitly: this field "carries no pending-value/effective-date structure... an edit here takes effect immediately"). Nothing about `Session.operatingMode`'s own resolution changes as a result — D23's existing guarantee (resolved once, at Session-open, from `defaultSellingMode` plus NFC Readiness) already assumes `defaultSellingMode` can be read fresh at any moment; who's allowed to edit the fallback, or how often, was never part of what made that guarantee true.
 
-**The `nfc` option is constrained, not offered unconditionally.** Per D27's own wording, this control only ever offers modes "available to her" — `buttons` always, `nfc` only while `subscriptionTier = paid`. A Free-tier merchant sees a single, un-choosable "Botones" row rather than a picker with a disabled option: there is nothing to pick between yet, and showing a visibly-disabled `nfc` option would invite exactly the kind of "why can't I tap this" confusion `global-principles.md`'s "technology should disappear" argues against. The moment `subscriptionTier` becomes `paid` — immediately, via "Activar plan de pago" — this control gains its second option with no separate unlock step of its own; the derivation in §2.2 already makes `nfc` available the instant `subscriptionTier` flips, so there's nothing left for this control to wait on.
+**Corrected 2026-09-17 (`decision-log.md` D72) — this control is no longer a two-way picker for any Business, going forward.** A Business in `buttons` mode — the normal case for every new/typical Paid merchant — sees "Cómo vendes normalmente: Botones" as a plain, current-state line with no action beside it at all: the same "nothing to pick between yet" treatment §2.3 already gives a Free-tier merchant's single-mode row, applied here for a different reason (retirement of the write path, not unavailability). What she gets instead, immediately beside this now-inert row, is the real self-service control that matters going forward: "Activar NFC"/"Desactivar NFC" (§2.8), composing with `buttons` mode directly. A Business already `nfc`-moded (grandfathered, or demo-seeded per `onboarding.md` §2.2, D19's own contingency) is the one population that still sees this row as a real control: "Con tags," with a single available action, "Cambiar a vender con botones" — the one-way escape valve D72 requires under the non-deletion/no-silent-state-loss invariant (D25, restated D27 §1). The instant she uses it, `defaultSellingMode` flips to `buttons` and she lands in the normal case above, with "Activar NFC" reachable for the first time in the same visit.
 
-**`defaultSellingMode`'s stored value is never written by any action other than its own two rows above.** Specifically, "Volver al plan gratis" (§2.2, §3.5) writes only to `subscriptionTier` — it never resets, clears, or otherwise touches `defaultSellingMode`. If a merchant's `defaultSellingMode` reads `nfc` at the moment a Paid→Free downgrade lands, it simply stays `nfc` in storage; `nfc` just stops being an available mode for Session-start to resolve into, per the derivation in §2.2, until she either returns to Paid or changes `defaultSellingMode` herself. This is a direct consequence of `defaultSellingMode` and `subscriptionTier` being two independent stored fields with two independent write paths (`decision-log.md` D25/D27) — no separate reset rule was ever needed, or written, to make this true.
+**`defaultSellingMode`'s stored value is never written by any action other than its own one remaining row above.** Specifically, "Volver al plan gratis" (§2.2, §3.5) writes only to `subscriptionTier` — it never resets, clears, or otherwise touches `defaultSellingMode`. If a merchant's `defaultSellingMode` reads `nfc` at the moment a Paid→Free downgrade lands, it simply stays `nfc` in storage; `nfc` just stops being an available mode for Session-start to resolve into, per the derivation in §2.2, until she either returns to Paid or changes `defaultSellingMode` herself. This is a direct consequence of `defaultSellingMode` and `subscriptionTier` being two independent stored fields with two independent write paths (`decision-log.md` D25/D27) — no separate reset rule was ever needed, or written, to make this true.
 
 ### 2.4 When a deferred change actually lands (SET-M3 — resolved with a concrete mechanism, stated honestly as an addition, not a restatement)
 
@@ -216,6 +217,8 @@ The local Business record stays fully intact through a sign-out, so a successful
 ### 2.6 What "Cambiar a vender con tags" does beyond flipping the field —
 hand off into tagging, or guide her to register first (corrected —
 architect ruling, `decision-log.md` D46 Addendum)
+
+**Retired as a live merchant action, 2026-09-17 (`decision-log.md` D72) — kept below as a historical/mechanism record, not currently reachable from any Settings screen.** "Cambiar a vender con tags" itself no longer exists (§2.2/§2.3) — D72 retires the `buttons → nfc` direction outright, with no merchant-facing way to trigger it going forward. Everything below this note describes a handoff mechanism that fired only from that now-retired action; it cannot fire again for any Business that reaches `buttons` mode the ordinary way (every real Onboarding path, `onboarding.md` §2.3). The one population that ever reads `defaultSellingMode = 'nfc'` — a grandfathered/demo Business — never ran through this handoff either, since none of them arrived at `nfc` via this action. `inventory.md`'s own §2 step 0 trigger condition, keyed to the entry marker this section used to hand off, is a consequent dead path going forward — flagged here, not corrected in `inventory.md` itself (see that document's own §3.14 amendment note).
 
 `decision-log.md` D46 corrects a real, previously-unnoticed contradiction:
 `inventory.md`'s own auto-entry trigger into Asignar Tags read `nfc ∈
@@ -335,9 +338,11 @@ it already was (`buttons`, for every real Onboarding path, `onboarding.md`
 
 **Not designed here, flagged for the eventual Architecture Gap Analysis** (RFC 0013 §4/§7's own scope, unaffected by this section): `Referrer-Policy: no-referrer` on the invite-landing route, excluding that route from access logs/analytics capture, and rate-limiting the token-lookup endpoint per IP — real mitigations RFC 0013 already names as reducing the *exposure* these leakage vectors create, independent of whatever window this section sets. Choosing 24 hours doesn't substitute for those; it narrows the window they'd apply to.
 
-### 2.8 What "Activar NFC por producto" / "Desactivar NFC por producto" do (new — `decision-log.md` D71, `product-decisions.md` Q31)
+### 2.8 What "Activar NFC" / "Desactivar NFC" do (renamed from "…por producto," and now the single NFC-related control — `decision-log.md` D71, D72, `product-decisions.md` Q31)
 
-**Only offered at all when `nfc ∈ registrationMode`** — the same `subscriptionTier = paid`-derived gate that already decides whether `defaultSellingMode`'s `nfc` option exists (§2.3). A Free-tier or otherwise non-NFC-capable Business never sees this row, anywhere in this document — no locked/disabled hint, no upsell copy explaining what she'd get by upgrading. This is not a new gating philosophy invented for this capability: it's the identical posture §2.3 already reasons through for a disabled-but-visible `nfc` option ("would invite exactly the kind of 'why can't I tap this' confusion `global-principles.md`'s 'technology should disappear' argues against") and §2.7 already applies to "Tu equipo" ("structurally absent from the Free-tier vista principal — no row, no locked/disabled hint"). Discoverable, same as those two, only via "Activar plan de pago"'s own copy and by becoming Paid.
+**Renamed from "Activar NFC por producto"/"Desactivar NFC por producto," 2026-09-17 (`decision-log.md` D72).** The field this writes, `Business.nfcPerProductEnabled`, and the RPC it calls, are unchanged — same `change_nfc_per_product_enabled` write, same semantics D71 already established. What changes is only the name and its standing in this document: D72 collapses what were briefly two separate NFC-related controls (this one, and `defaultSellingMode`'s now-retired `buttons → nfc` direction, §2.3) into one. "Por producto" is dropped because there's no longer a second, whole-catalog NFC control for it to disambiguate against.
+
+**Only offered at all when `nfc ∈ registrationMode` AND `defaultSellingMode !== 'nfc'`** (second condition added 2026-09-17, `decision-log.md` D72) — a Business currently in `nfc` mode (grandfathered/demo only) sees no NFC-per-product row at all until she uses the one-way "Cambiar a vender con botones" escape valve (§2.3): whole-catalog `nfc` mode already sells everything ready-tagged automatically (D23's Ready branch), so there's nothing for this per-Product opt-in to compose with until she's back in `buttons` mode. The `nfc ∈ registrationMode` half of this gate is the same `subscriptionTier = paid`-derived condition that already decided whether `defaultSellingMode`'s `nfc` option existed (§2.3). A Free-tier or otherwise non-NFC-capable Business never sees this row, anywhere in this document — no locked/disabled hint, no upsell copy explaining what she'd get by upgrading. This is not a new gating philosophy invented for this capability: it's the identical posture §2.3 already reasons through for a disabled-but-visible `nfc` option ("would invite exactly the kind of 'why can't I tap this' confusion `global-principles.md`'s 'technology should disappear' argues against") and §2.7 already applies to "Tu equipo" ("structurally absent from the Free-tier vista principal — no row, no locked/disabled hint"). Discoverable, same as those two, only via "Activar plan de pago"'s own copy and by becoming Paid.
 
 **Off by default, even for an already-Paid, already-NFC-capable Business.** Unlike `nfc`'s own availability (a pure derivation from `subscriptionTier`, §2.2), `nfcPerProductEnabled` is never turned on as a side effect of anything else — not by "Activar plan de pago," not by "Cambiar a vender con tags." A Paid merchant who's never touched this row keeps her existing whole-session `buttons`/`nfc` behavior exactly as it already works, unchanged.
 
@@ -348,6 +353,8 @@ it already was (`buttons`, for every real Onboarding path, `onboarding.md`
 2. **The "Leer con NFC" overlay stops appearing in `buttons`-mode Selling, even for a Product with already-tagged units.** `Business.nfcPerProductEnabled` is the field D71 itself names as the gate deciding "whether `buttons`-mode Selling composes with a 'Leer con NFC' overlay" — so turning it off withdraws that overlay business-wide, the same way turning `defaultSellingMode` back to `buttons` already withdraws full `nfc` mode (§3.5's own precedent, "dejas de poder vender con tags"). An already-tagged unit doesn't stop being NFC-taggable in storage, but she loses the one screen-level mechanism (`home.md`'s own D71 amendment, that document's own scope) that lets her scan it mid-Sale. This is stated plainly in §3.4's own copy below, the same "never leave her to discover a real consequence only after the fact" discipline this document already holds itself to for "Volver al plan gratis" and "Cambiar a vender con tags."
 
 **Why this lives entirely inside this document, with nothing to hand off.** Unlike `defaultSellingMode`, whose `nfc` direction hands off into `inventory.md`'s own resolution because it creates real, actionable tagging work (§2.6), neither direction of `nfcPerProductEnabled` creates or removes work by itself — it only changes which per-Product choices Inventario currently offers. There's no dependency-cycle risk to guard against here the way `architecture-principles.md` #6 forced §2.6's own corrected design (D46 Addendum): this write never needs to read Inventory-owned state to decide anything, and Inventory's own §3.4/§3.14 amendments read this field directly, the same one-way Identity → Inventory edge every other capability in this table already uses.
+
+**Edge case, named not solved.** If a Business already has `nfcPerProductEnabled = true` while `defaultSellingMode` still reads `nfc` — a state this design offers no UI path to *reach* going forward, but not provably impossible for data seeded before this amendment shipped — this document offers no way to see or turn it off from the `nfc`-moded vista principal; she'd need to use the escape valve first. Not designed further here; flagged as a new item for §8.
 
 ## 3. Low-fidelity wireframes
 
@@ -411,7 +418,7 @@ No `defaultSellingMode` control shown while `subscriptionTier=free` — nothing 
 ```
 Both states open the identical §3.3b sheet.
 
-**Paid-tier state (new — this document previously never drew this state explicitly):**
+**Paid-tier state, `defaultSellingMode = buttons` (the normal case going forward — corrected 2026-09-17, `decision-log.md` D72):**
 ```
 ┌───────────────────────────────┐
 │ ← Hoy                          │
@@ -420,9 +427,8 @@ Both states open the identical §3.3b sheet.
 │  [ Volver al plan gratis ]       │
 │  Cómo vendes normalmente:         │
 │  Botones                          │
-│  [ Cambiar a vender con tags ]    │
-│  NFC por producto: No             │
-│  [ Activar NFC por producto ]     │
+│  NFC: No                          │
+│  [ Activar NFC ]                  │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu equipo                        │
 │  2 personas vendiendo contigo     │
@@ -437,7 +443,7 @@ Both states open the identical §3.3b sheet.
 ```
 **"Tu equipo" (new, §2.7 — `product-decisions.md` Q24/Q25), present identically on both Paid-tier vista-principal variants, absent entirely on the Free-tier vista principal.** Count line reads "2 personas vendiendo contigo" from `BusinessMembership.status = active` rows only — a pending invitation or a revoked row doesn't count toward it. Zero active members reads "Nadie más vendiendo contigo todavía," never a bare "0." Opens §3.11.
 
-**Paid-tier state, `defaultSellingMode = nfc` (mirror — completes the pair of reachable Paid-tier states):**
+**Paid-tier state, `defaultSellingMode = nfc` (grandfathered/demo only — corrected 2026-09-17, `decision-log.md` D72):**
 ```
 ┌───────────────────────────────┐
 │ ← Hoy                          │
@@ -447,8 +453,6 @@ Both states open the identical §3.3b sheet.
 │  Cómo vendes normalmente:         │
 │  Con tags                         │
 │  [ Cambiar a vender con botones ] │
-│  NFC por producto: Sí             │
-│  [ Desactivar NFC por producto ]  │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu equipo                        │
 │  2 personas vendiendo contigo     │
@@ -461,18 +465,18 @@ Both states open the identical §3.3b sheet.
 │  [ Cerrar sesión ]                │
 └───────────────────────────────┘
 ```
-Same shape as the Botones-current-mode state above, mirrored — the current
-mode reads "Con tags," and the button offers the only other available
-option, "Botones." Reached by any Paid-tier merchant whose
-`defaultSellingMode` currently reads `nfc`, whether because she just
-switched it here (§3.4's "Cambiar a vender con tags" copy variant) or
-because it arrived that way another way (e.g. the demo-path seed,
-`onboarding.md` §2.2) — this view is a pure read of current state,
-indifferent to how it got there.
+No "NFC"/"Activar NFC"/"Desactivar NFC" row anywhere in this state (§2.8's
+new second gate) — nothing else NFC-related shows until she taps "Cambiar a
+vender con botones," at which point `defaultSellingMode` flips and she
+lands on the state above, "Activar NFC" reachable for the first time in the
+same visit. Reached by any Paid-tier merchant whose `defaultSellingMode`
+currently reads `nfc` — grandfathered, or arrived via the demo-path seed
+(`onboarding.md` §2.2, D19's own contingency) — never a state a normal
+Onboarding path produces going forward.
 
 **Frequent Customers has no row anywhere in this view, in either tier** (`decision-log.md` D40) — structurally absent, not a demoted sub-note. A Free-tier merchant sees nothing suggesting she could turn it on; a Paid-tier merchant sees nothing suggesting she needs to. Whether it's active is answered entirely by "Tu plan," one line above. If she wants to see what it's actually collecting, that lives in Resultados' "Tus clientes" (`reports.md` §3.6/§3.12/§3.13), not here.
 
-Once `subscriptionTier=paid`, the mode row becomes a real, tappable control — "Botones" or "Con tags," whichever `defaultSellingMode` currently is, with a button offering the other option (§2.2, §2.3, `decision-log.md` D27).
+Once `subscriptionTier=paid`, "Cómo vendes normalmente" becomes visible, but only as a real two-way control for the grandfathered/demo `nfc`-mode state above — for the normal `buttons`-mode case it stays a plain, un-actioned line (`decision-log.md` D72).
 
 ### 3.3b Editar tu nombre — sheet (new, `decision-log.md` D69)
 ```
@@ -543,49 +547,26 @@ confirms, with nothing else for Ana to turn on afterward.
 
 **"Activar clientes frecuentes" and "Desactivar clientes frecuentes" — retired entirely, not corrected (`decision-log.md` D40).** Both actions no longer exist anywhere in this document. Kept here as a one-line record so the trail stays visible: D22 first introduced them as a real toggle; D34 corrected their copy to stop framing `loyaltyEnabled` as a Resultados-visibility precondition; D40 removes them altogether, since there is no longer a capability for either action to act on. Frequent Customers now turns on and off exactly when `subscriptionTier` does — see "Activar plan de pago" (above) and "Volver al plan gratis" (§3.5) for where that consequence is now disclosed.
 
-**Copy variant — Cambiar a vender con tags (`decision-log.md` D27;
-handoff disclosure added `decision-log.md` D46; both outcomes disclosed
-per `ux-critic` finding):**
-```
-Cambiar a vender con tags
-Desde tu próxima sesión, vas a empezar vendiendo con tags,
-siempre que tengas mercancía etiquetada lista. Si no tienes
-tags listos ese día, vendes con botones sin problema.
-Si tienes mercancía sin etiquetar, te llevamos a etiquetarla
-en cuanto confirmes. Si aún no has registrado mercancía,
-primero te pedimos que la registres.
-[ Cambiar ahora ]
-```
-New last two lines disclose §2.6's handoff plainly before she confirms —
-both real outcomes (untagged inventory exists; no inventory exists yet),
-not only the first — the same "never leave her to discover a real
-consequence only after the fact" discipline this document already applies
-to "Activar plan de pago"'s `nfc` disclosure and "Volver al plan gratis"'s
-consequence disclosure. **The third outcome (already fully tagged) needs no
-pre-confirmation disclosure of its own here** — unlike the other two,
-nothing about what happens next depends on anything she'd need to know
-before tapping "Cambiar ahora." That doesn't make it silent afterward,
-though (corrected — `ux-critic` finding SET-INV-D46-MAJ1; the previous
-version of this sentence claimed "exactly like every other row in this
-table," which wasn't true): per §2.6, she still lands on a different
-screen than every other row returns her to — `inventory.md`'s plain
-Catalog view (§3.4), not back on Configuración's own vista principal —
-carrying its own brief, one-time acknowledgment there. That acknowledgment
-is specified once, at its actual destination (`inventory.md` §3.4), not
-redescribed here, per this folder's own §4 discipline of citing shared
-states instead of duplicating them.
+**"Cambiar a vender con tags" — retired entirely, not corrected (`decision-log.md` D72).** This copy variant no longer exists anywhere in this document — D72 retires the `buttons → nfc` direction outright, since barcode/per-Product NFC now compose fully as overlays on `buttons` mode, leaving no remaining merchant-facing reason to enter whole-catalog `nfc` mode. Kept here as a one-line record so the trail stays visible: D27 first introduced it as a real, self-service action; D46 added the tagging handoff (§2.6, now itself marked retired); D72 removes the action altogether. See §2.6 for what the handoff used to do, and `inventory.md` §3.14 for the now-permanently-unreachable entry point it used to feed.
 
-**Copy variant — Cambiar a vender con botones (new — `decision-log.md` D27):**
+**Copy variant — Cambiar a vender con botones (corrected 2026-09-17, `decision-log.md` D72 — the previous copy's closing line was no longer true):**
 ```
 Cambiar a vender con botones
 Desde tu próxima sesión, vas a empezar vendiendo con
-botones. Puedes volver a cambiarlo cuando quieras.
+botones. Ya no vas a poder volver a vender con tags para
+todo tu catálogo — pero puedes seguir vendiendo con NFC,
+producto por producto, activándolo en Configuración
+cuando quieras.
 [ Cambiar ahora ]
 ```
+States the real, one-way consequence plainly before she confirms (this
+document's own "never leave her to discover a real consequence only after
+the fact" discipline), while reassuring her about what she isn't losing —
+the same tension §1 already names.
 
-**Copy variant — Activar NFC por producto (new — `decision-log.md` D71):**
+**Copy variant — Activar NFC (renamed 2026-09-17, `decision-log.md` D72):**
 ```
-Activar NFC por producto
+Activar NFC
 Vas a poder elegir, producto por producto, cuáles vender
 con tag NFC — solo en los que no tengan código de barras.
 Esto no cambia cómo vendes ahorita; nada se etiqueta
@@ -593,9 +574,9 @@ todavía, tú decides cuáles en Inventario.
 [ Activar ahora ]
 ```
 
-**Copy variant — Desactivar NFC por producto (new — `decision-log.md` D71):**
+**Copy variant — Desactivar NFC (renamed 2026-09-17, `decision-log.md` D72):**
 ```
-Desactivar NFC por producto
+Desactivar NFC
 Ya no vas a poder marcar más productos para vender con
 NFC, ni vas a ver la opción de leer tags NFC al vender con
 botones. La mercancía que ya etiquetaste sigue etiquetada
@@ -624,7 +605,7 @@ no se junta información nueva de tus clientas ni se muestra en
 Resultados. No perdemos tu historial.
 [ Confirmar cambio ]
 ```
-The date shown is illustrative — Q11 hasn't settled the exact deferred-timing rule yet. **New, previously-undisclosed consequence (`decision-log.md` D27):** under the pre-D27 model, `nfc` was independent of plan, so downgrading never touched it; now `nfc` is derived from `subscriptionTier`, so downgrading withdraws it too, at the same effective date. Already-assigned NFCTags stay inert but intact (D25's unchanged never-delete-history invariant) — the copy states this plainly rather than leaving her to discover it only once she can no longer sell with tags. **Further corrected (`decision-log.md` D40, 2026-08-09):** under the pre-D40 model, downgrading only ever withdrew "Tus clientes"'s *visibility* — `loyaltyEnabled` was independent, so Claims kept accumulating invisibly after a downgrade. That's no longer true: collection and visibility now share the identical gate, so downgrading genuinely stops Frequent Customers as a whole. The copy above states this plainly, not only the older "dejas de ver" framing. **Further corrected 2026-09-16/17 (`decision-log.md` D71).** If `nfcPerProductEnabled` is on, the copy also discloses that its dependent options stop: `"y si activaste NFC por producto, esa opción deja de estar disponible también — tu mercancía ya etiquetada sigue etiquetada, solo no vas a poder marcar productos nuevos ni leer tags mientras vendes con botones."` `nfcPerProductEnabled`'s own stored value is never reset by this action (the same "no reset rule needed" pattern above) — it simply stops being offered until she returns to Paid.
+The date shown is illustrative — Q11 hasn't settled the exact deferred-timing rule yet. **New, previously-undisclosed consequence (`decision-log.md` D27):** under the pre-D27 model, `nfc` was independent of plan, so downgrading never touched it; now `nfc` is derived from `subscriptionTier`, so downgrading withdraws it too, at the same effective date. Already-assigned NFCTags stay inert but intact (D25's unchanged never-delete-history invariant) — the copy states this plainly rather than leaving her to discover it only once she can no longer sell with tags. **Further corrected (`decision-log.md` D40, 2026-08-09):** under the pre-D40 model, downgrading only ever withdrew "Tus clientes"'s *visibility* — `loyaltyEnabled` was independent, so Claims kept accumulating invisibly after a downgrade. That's no longer true: collection and visibility now share the identical gate, so downgrading genuinely stops Frequent Customers as a whole. The copy above states this plainly, not only the older "dejas de ver" framing. **Further corrected 2026-09-16/17 (`decision-log.md` D71), renamed 2026-09-17 (`decision-log.md` D72).** If `nfcPerProductEnabled` is on, the copy also discloses that its dependent options stop: `"y si activaste NFC, esa opción deja de estar disponible también — tu mercancía ya etiquetada sigue etiquetada, solo no vas a poder marcar productos nuevos ni leer tags mientras vendes con botones."` `nfcPerProductEnabled`'s own stored value is never reset by this action (the same "no reset rule needed" pattern above) — it simply stops being offered until she returns to Paid.
 
 ### 3.6 Configuración — vista principal (con cambio pendiente)
 ```
@@ -636,9 +617,8 @@ The date shown is illustrative — Q11 hasn't settled the exact deferred-timing 
 │  [ Cancelar cambio ]              │
 │  Cómo vendes normalmente:         │
 │  Botones                          │
-│  [ Cambiar a vender con tags ]    │
-│  NFC por producto: No             │
-│  [ Activar NFC por producto ]     │
+│  NFC: No                          │
+│  [ Activar NFC ]                  │
 │ ── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ── │
 │  Tu cuenta                        │
 │  Tu nombre                        │
@@ -647,6 +627,7 @@ The date shown is illustrative — Q11 hasn't settled the exact deferred-timing 
 │  [ Cerrar sesión ]                │
 └───────────────────────────────┘
 ```
+The grandfathered/demo `nfc`-mode equivalent of this pending-change state mirrors §3.3a's `nfc`-mode state exactly — "Con tags" + "Cambiar a vender con botones," nothing NFC-related — with §3.6's own pending-change banner substituted for §3.3a's plain "Tu plan" line; not redrawn separately here, per this folder's own shared-state discipline.
 
 ### 3.7 Cancelar cambio pendiente — confirmar
 ```
