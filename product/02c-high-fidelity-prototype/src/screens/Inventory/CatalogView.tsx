@@ -395,6 +395,7 @@ export function CatalogView({
             }}
             onTapPhoto={() => openPhotoSheet(product.id)}
             onTapBarcode={canEditBarcode ? () => openBarcodeSheet(product.id) : undefined}
+            reserveNfcSlot={nfcPerProductAvailable}
             nfcToggle={
               nfcPerProductAvailable && !product.barcode
                 ? {

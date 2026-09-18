@@ -124,33 +124,86 @@
   line-height: 1;
 }
 
-/* Fifth tap zone (`decision-log.md` D71) — the NFC-eligibility switch. A
-   small labeled pill, not a bare glyph like `.overflow` — its own state
-   ("NFC: No"/"NFC: Sí"/"Guardando…") is the whole point of this control, so
-   it needs to read as text, not be inferred from an icon. Reuses
-   `settings.md` §3.9's own "fila atenuada" dim-while-saving mechanic via
-   `.nfcToggleSaving` below, composed onto this row's own existing
-   architecture rather than a new sheet. */
-.nfcToggle {
-  appearance: none;
-  border: 1px solid #D8CFC2;
-  border-radius: 999px;
-  background: none;
-  padding: 6px 12px;
-  font: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--color-obsidian);
-  cursor: pointer;
+/* Fifth tap zone (`decision-log.md` D71) — the NFC-eligibility switch,
+   sitting *before* the price tag (2026-09-17 visual-defect pass, Product
+   Owner report — was previously trailing after the barcode overflow
+   control). `.nfcSlot` is a fixed-width reserved column, rendered whenever
+   the caller says a row *could* carry the switch (`reserveNfcSlot`) even
+   when this particular row's own `nfcToggle` is `undefined` — this is the
+   actual fix for the reported misalignment: without a column that's the
+   same width whether or not it's occupied, `.price` (the next sibling)
+   drifts left/right per row depending on which rows happen to carry the
+   switch, since `.main` (flex: 1) absorbs whatever width is left over.
+   Width matches `.nfcSwitch` exactly (no internal padding) — spacing to
+   its neighbors comes from `.rowMain`'s own `gap`, the same spacing every
+   other zone in this row already relies on. */
+.nfcSlot {
+  width: 40px;
   flex-shrink: 0;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.nfcToggleSaving {
+/* The switch itself — a real on/off track + knob, not a bordered pill
+   mimicking `.price`'s own `.moneyTag` tag shape (the previous version's
+   reported problem: it read as a second price tag). Deliberately one of
+   this system's "kept conventional" controls (DESIGN-SYSTEM.md §8) — a
+   settings-style switch, not a Swing-Tag-themed device, since it represents
+   a per-Product *setting*, not money or the Product itself. */
+.nfcSwitch {
+  appearance: none;
+  position: relative;
+  width: 40px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--color-hilo);
+  border-radius: var(--radius-pill);
+  background: var(--color-hilo);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.nfcSwitch:disabled {
   cursor: default;
+}
+
+.nfcSwitchOn {
+  background: var(--color-tezontle-dark);
+  border-color: var(--color-tezontle-dark);
+}
+
+.nfcSwitchKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-white);
+  box-shadow: 0 1px 2px rgba(45, 45, 45, 0.24);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.nfcSwitchOn .nfcSwitchKnob {
+  transform: translateX(16px);
 }
 
 .nfcError {
   margin: 0 var(--space-1) 10px 4px;
   font: var(--text-body-sm);
   color: var(--color-error);
+}
+
+/* The slow-save caption (`nfcToggle.slow`, >~1.5s) — same position/shape as
+   `.nfcError` (a second line below the tappable-zones row) but neutral, not
+   red: this isn't a failure, just a longer-than-usual wait. Replaces the
+   previous version's in-place "Guardando…" text swap, which no longer has
+   anywhere to render now the switch itself carries no text label. */
+.nfcSavingHint {
+  margin: 0 var(--space-1) 10px 4px;
+  font: var(--text-body-sm);
+  color: #6B6259;
 }

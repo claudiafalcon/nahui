@@ -27,7 +27,24 @@ import styles from './CatalogRow.module.css';
  * AND this Product has no `barcode` (§3.4's own "precise gating condition,
  * stated in full"). A bare tap flips it directly, no sheet, no confirmation
  * — the one action on this row (or anywhere in `inventory.md`) with no
- * separate confirm step. */
+ * separate confirm step.
+ *
+ * **Layout, 2026-09-17 visual-defect pass (Product Owner report).** The
+ * switch sits *before* the price tag, not after — her explicit ask, and it
+ * also reads more naturally as "a property of this Product that affects
+ * how its price tag behaves" sitting immediately to price's left. It lives
+ * in a fixed-width slot (`.nfcSlot`) that's reserved (empty but still
+ * taking up its column width) whenever `reserveNfcSlot` is true, even on a
+ * specific row where `nfcToggle` itself is `undefined` (a barcoded Product
+ * in an NFC-per-product-enabled Business, say) — otherwise the price tag's
+ * left edge would drift left/right row to row depending on which rows
+ * happen to carry the switch, which is exactly the misalignment reported.
+ * `reserveNfcSlot` is a list-level signal (pass the same value, derived
+ * once, to every row in a given Catalog list) — see `CatalogView.tsx`. The
+ * barcode overflow ("⋯", after price) doesn't get the same reserved-slot
+ * treatment: unlike `nfcToggle`, `onTapBarcode` is already uniform across
+ * every row in a given list (gated only on `Business.subscriptionTier`,
+ * never per-Product), so it can't itself produce this row-to-row drift. */
 export function CatalogRow({
   name,
   photo,
@@ -39,6 +56,7 @@ export function CatalogRow({
   onTapPhoto,
   onTapBarcode,
   nfcToggle,
+  reserveNfcSlot,
 }: {
   name: string;
   /** `Product.photo` (`product-decisions.md` Q23) — rendered in the
@@ -60,9 +78,10 @@ export function CatalogRow({
   /** `inventory.md` §3.4's fifth tap zone — `undefined` renders nothing
    * (the gate this prop's own caller, `CatalogView.tsx`, enforces).
    * `saving`/`slow` distinguish the near-instant (silent dim) vs. slow
-   * (>~1.5s, "Guardando…" label) cases per §3.4's own save-state
-   * discipline; `error` renders the inline "No pudimos guardar" line below
-   * the row, with the switch itself staying tappable as its own retry. */
+   * (>~1.5s, "Guardando…" caption below the row) cases per §3.4's own
+   * save-state discipline; `error` renders the inline "No pudimos guardar"
+   * line below the row, with the switch itself staying tappable as its own
+   * retry. */
   nfcToggle?: {
     enabled: boolean;
     saving: boolean;
@@ -70,6 +89,11 @@ export function CatalogRow({
     error: boolean;
     onTap: () => void;
   };
+  /** Reserves this row's `.nfcSlot` column width even when `nfcToggle` is
+   * `undefined` for this specific row — see the layout note above. Pass the
+   * same list-level value (`CatalogView.tsx`'s own `nfcPerProductAvailable`)
+   * to every row in a given Catalog list; never derive it per-row. */
+  reserveNfcSlot?: boolean;
 }) {
   const dimmed = available <= 0;
   const caption = !everReceived ? 'sin registrar' : `${available} disponibles`;
@@ -100,6 +124,26 @@ export function CatalogRow({
           <span className={styles.name}>{name}</span>
           <span className={styles.caption}>{caption}</span>
         </button>
+        {(reserveNfcSlot || nfcToggle) && (
+          <div className={styles.nfcSlot}>
+            {nfcToggle && (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={nfcToggle.enabled}
+                className={`${styles.nfcSwitch} ${nfcToggle.enabled ? styles.nfcSwitchOn : ''}`}
+                disabled={nfcSaving}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nfcToggle.onTap();
+                }}
+                aria-label={`${nfcToggle.enabled ? 'Desactivar' : 'Activar'} venta con NFC para ${name}`}
+              >
+                <span className={styles.nfcSwitchKnob} />
+              </button>
+            )}
+          </div>
+        )}
         <button
           className={`${styles.price} moneyTag`}
           onClick={(e) => {
@@ -121,21 +165,11 @@ export function CatalogRow({
             ⋯
           </button>
         )}
-        {nfcToggle && (
-          <button
-            className={`${styles.nfcToggle} ${nfcSaving ? styles.nfcToggleSaving : ''}`}
-            disabled={nfcSaving}
-            onClick={(e) => {
-              e.stopPropagation();
-              nfcToggle.onTap();
-            }}
-            aria-label={`${nfcToggle.enabled ? 'Desactivar' : 'Activar'} venta con NFC para ${name}`}
-          >
-            {nfcSaving && nfcToggle.slow ? 'Guardando…' : nfcToggle.enabled ? 'NFC: Sí' : 'NFC: No'}
-          </button>
-        )}
       </div>
       {nfcToggle?.error && <p className={styles.nfcError}>No pudimos guardar. Intenta de nuevo.</p>}
+      {nfcToggle && nfcSaving && nfcToggle.slow && (
+        <p className={styles.nfcSavingHint}>Guardando cambio de NFC…</p>
+      )}
     </div>
   );
 }
