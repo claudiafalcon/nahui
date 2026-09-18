@@ -553,21 +553,35 @@ function SettingsMain({
               {/* settings.md §2.8/§3.4 "NFC por producto" — a fifth
                   self-service capability (`decision-log.md` D71), offered
                   only while `nfc ∈ registrationMode` (`subscriptionTier ===
-                  'paid'`) — same gate as the mode row immediately above,
-                  never a locked/disabled hint on Free (§2.8's own explicit
-                  posture). Off by default, never a side effect of any other
-                  action here. */}
-              <p className={styles.modeValue}>
-                NFC por producto: {business.nfcPerProductEnabled ? 'Sí' : 'No'}
-              </p>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  onNfcPerProductTap(business.nfcPerProductEnabled ? 'nfc-per-product-off' : 'nfc-per-product-on')
-                }
-              >
-                {business.nfcPerProductEnabled ? 'Desactivar NFC por producto' : 'Activar NFC por producto'}
-              </Button>
+                  'paid'`) AND `defaultSellingMode !== 'nfc'` — Product Owner
+                  correction (2026-09-17): once the whole-Catalog "Con tags"
+                  mode is active, every Product is already NFC-tagging-
+                  eligible via the original D46 rule (the composed test's
+                  first disjunct, `selectors.ts`'s `isNfcTaggingEligible`),
+                  so this per-product opt-in has nothing left to add and
+                  showing it is pure redundant clutter — it only ever means
+                  something for a `buttons`-mode Business selectively opting
+                  a few barcode-less Products in. The stored
+                  `nfcPerProductEnabled` value itself is untouched by this
+                  visibility change (never a side effect of switching mode,
+                  per this section's own standing invariant) — the row
+                  simply reappears, unchanged, if she switches back to
+                  Botones. */}
+              {business.defaultSellingMode !== 'nfc' && (
+                <>
+                  <p className={styles.modeValue}>
+                    NFC por producto: {business.nfcPerProductEnabled ? 'Sí' : 'No'}
+                  </p>
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      onNfcPerProductTap(business.nfcPerProductEnabled ? 'nfc-per-product-off' : 'nfc-per-product-on')
+                    }
+                  >
+                    {business.nfcPerProductEnabled ? 'Desactivar NFC por producto' : 'Activar NFC por producto'}
+                  </Button>
+                </>
+              )}
             </>
           ) : (
             <p className={styles.modeValue}>

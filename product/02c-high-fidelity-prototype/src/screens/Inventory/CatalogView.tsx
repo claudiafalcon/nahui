@@ -163,8 +163,15 @@ export function CatalogView({
   // keeps `nfcPerProductEnabled = true` stored but no longer has
   // `subscriptionTier = 'paid'` — §3.4's own reasoning for checking both).
   // The third clause (no `barcode`) is per-Product, applied per row below.
+  // Product Owner correction (2026-09-17), same reasoning as
+  // `SettingsScreen.tsx`'s own matching fix: also requires
+  // `defaultSellingMode !== 'nfc'` — once whole-Catalog "Con tags" mode is
+  // active, every Product already qualifies via the composed test's first
+  // disjunct (D46), so a per-row opt-in switch has nothing left to add.
   const nfcPerProductAvailable =
-    state.business?.nfcPerProductEnabled === true && state.business?.subscriptionTier === 'paid';
+    state.business?.nfcPerProductEnabled === true &&
+    state.business?.subscriptionTier === 'paid' &&
+    state.business?.defaultSellingMode !== 'nfc';
 
   // §3.4's own save-state discipline — a bare tap dims that one row
   // (near-instant: silent; slow >~1.5s: "Guardando…" label), reverting to
