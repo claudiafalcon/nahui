@@ -270,12 +270,32 @@ export function Selling({
   // mode) — `NDEFReader.scan()` requires its initial call to happen inside a
   // user-gesture handler, so this session is lazily started on the *first*
   // tap of `NFCScanPrompt`, never auto-started on mount. `scanStartedRef`
-  // guards it to exactly once per mount (a ref, not state — starting the
-  // session must never itself trigger a re-render); `nfcAbortRef` is the
+  // guards the *dispatch* — exactly one in-flight `scan()` attempt at a
+  // time (a ref, not state — this specific guard must stay synchronous, not
+  // wait for a re-render, so a second tap arriving before React flushes
+  // can't fire a second concurrent `scan()` call); `nfcAbortRef` is the
   // `AbortController` for that session's `scan()` call, aborted on unmount
   // so a stale listener never fires into an unmounted component.
   const scanStartedRef = useRef(false);
   const nfcAbortRef = useRef<AbortController | null>(null);
+  // Live-hardware correctness fix (2026-09-17) — `NFCScanPrompt`'s own
+  // reactive `state` (real `useState`, not `scanStartedRef` above), see that
+  // component's own top-of-file doc comment. `scanStartedRef` alone could
+  // never drive the UI (by design — it's deliberately non-reactive), so
+  // before this fix the ring rendered its "ready, listening" look
+  // unconditionally, even before any tap, and stayed that way even after a
+  // genuine `scan()` rejection silently flipped the ref back to `false`.
+  // Shared by both real-hardware NFC surfaces this screen can show
+  // (`operatingMode === 'nfc'`'s full surface and the `buttons`-mode "Leer
+  // con NFC" overlay) — both call the identical `handleScan` below and, per
+  // this file's own existing comment, only one is ever mounted at a time,
+  // so one shared piece of state is correct, not two independent copies.
+  // Simulated (non-hardware) browsers have no real session to represent, so
+  // this stays permanently `'listening'` there — the original, always-on
+  // look, unchanged (no real NFC radio for a dead session to misrepresent).
+  const [nfcSessionState, setNfcSessionState] = useState<'idle' | 'listening' | 'error'>(
+    nfcSupported ? 'idle' : 'listening',
+  );
   // Always points at this render's own `resolveTag` (below) — the mechanism
   // that keeps the persistent `ndef.onreading` handler (set up only once)
   // from ever dispatching through a stale closure. See `resolveTag`'s own
@@ -584,15 +604,24 @@ export function Selling({
       nfcAbortRef.current = null;
       scanStartedRef.current = false;
     }
+    // An explicit close/reset — a later re-open must show `'idle'`, not the
+    // stale `'listening'`/`'error'` look from whatever this session's status
+    // was right before she tapped "Volver a botones."
+    if (nfcSupported) setNfcSessionState('idle');
   }
 
-  // A transient hardware-read-failure hint — genuine hardware failure
-  // (weak signal, misalignment, permission/hardware rejection — nothing
-  // ever resolved to a `tagId`), routed to whichever surface is actually
-  // open. §3.9e's own copy ("No se pudo leer el tag. Acércalo de nuevo,"
-  // reused verbatim from `events.md` §3.22) for the overlay; §3.10's own,
-  // slightly different existing copy ("No pudimos leer el tag. Intenta de
-  // nuevo") is unchanged for the full `nfc`-mode surface.
+  // A transient, per-*tag* hardware-read-failure hint — a single bad
+  // physical read (weak signal, misalignment) while the underlying session
+  // stays genuinely alive and listening (`ndef.onreadingerror`, fired from
+  // inside the persistent `onreading`/`onreadingerror` handlers below, never
+  // from the initial `scan()` call itself — see `handleScan`'s own
+  // `catch`, which is the *session itself* failing and is handled
+  // separately via `nfcSessionState`, not this function). Routed to
+  // whichever surface is actually open. §3.9e's own copy ("No se pudo leer
+  // el tag. Acércalo de nuevo," reused verbatim from `events.md` §3.22) for
+  // the overlay; §3.10's own, slightly different existing copy ("No
+  // pudimos leer el tag. Intenta de nuevo") is unchanged for the full
+  // `nfc`-mode surface.
   function handleNfcReadError() {
     if (nfcOverlayOpen) {
       setNfcOverlayFeedback({ kind: 'error', message: 'No se pudo leer el tag. Acércalo de nuevo.' });
@@ -621,20 +650,31 @@ export function Selling({
           void handleTagResolvedRef.current(tagId);
         };
         ndef.onreadingerror = () => {
+          // A single bad physical read — the session itself stays alive and
+          // listening, so `nfcSessionState` is untouched here.
           handleNfcReadError();
         };
         // Hangs until this listening session is actually established —
         // resolves once, then `onreading` fires for every subsequent tap.
         await ndef.scan({ signal: controller.signal });
+        // The browser has genuinely granted and begun the session now —
+        // the one moment `NFCScanPrompt`'s pulsing "listening" ring is
+        // actually honest.
+        setNfcSessionState('listening');
       } catch {
         // `scan()` itself rejected on this first tap (permission denied,
         // hardware unavailable despite feature detection) — a failure of
         // this specific tap, not a permanently wedged session: leave
         // `scanStartedRef` un-set so the next tap retries starting the
-        // session from scratch.
+        // session from scratch. The session itself never started —
+        // `NFCScanPrompt`'s own `'error'` ring communicates that directly
+        // at the tap target; no separate ambient `handleNfcReadError()` hint
+        // here (that copy is reserved for a per-tag misread mid-session,
+        // above, a different, narrower fact than "nothing is listening at
+        // all right now").
         scanStartedRef.current = false;
         nfcAbortRef.current = null;
-        handleNfcReadError();
+        setNfcSessionState('error');
       }
       return;
     }
@@ -816,6 +856,7 @@ export function Selling({
             <div className={styles.nfcSurface}>
               <NFCScanPrompt
                 onTap={handleScan}
+                state={nfcSessionState}
                 ariaLabel="Acerca el tag del producto"
                 label={
                   <>
@@ -952,6 +993,7 @@ export function Selling({
             </p>
             <NFCScanPrompt
               onTap={handleScan}
+              state={nfcSessionState}
               ariaLabel="Acerca el tag del producto"
               label={
                 <>

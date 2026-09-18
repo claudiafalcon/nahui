@@ -174,9 +174,20 @@ export function MercanciaParaEsteEvento({
   // listening session this overlay's own first tap starts (mirrors
   // `Selling.tsx` §3.9d/§3.10's identical mechanism), so every subsequent
   // physical tap needs no further on-screen tap. Reset on close so a later
-  // re-open starts a genuinely fresh session.
+  // re-open starts a genuinely fresh session. `nfcScanStartedRef` guards the
+  // *dispatch* (exactly one in-flight `scan()` attempt — a ref, not state,
+  // so a second tap arriving before React re-renders can't fire a second
+  // concurrent `scan()` call).
   const nfcScanStartedRef = useRef(false);
   const nfcAbortRef = useRef<AbortController | null>(null);
+  // Live-hardware correctness fix (2026-09-17) — `NFCScanPrompt`'s own
+  // reactive `state`, see that component's own top-of-file doc comment and
+  // `Selling.tsx`'s identical `nfcSessionState` for the full rationale.
+  // Simulated (non-hardware) browsers stay permanently `'listening'` — no
+  // real session for a dead-session hazard to exist for.
+  const [nfcSessionState, setNfcSessionState] = useState<'idle' | 'listening' | 'error'>(
+    nfcSupported ? 'idle' : 'listening',
+  );
   useEffect(() => {
     return () => {
       nfcAbortRef.current?.abort();
@@ -271,13 +282,22 @@ export function MercanciaParaEsteEvento({
           void commitNfcScan(tagId);
         };
         ndef.onreadingerror = () => {
+          // A single bad physical read — the session itself stays alive and
+          // listening, so `nfcSessionState` is untouched here (same
+          // distinction `Selling.tsx`'s identical `handleScan` draws).
           setNfcFeedback({ kind: 'generic' });
         };
         await ndef.scan({ signal: controller.signal });
+        // The browser has genuinely granted and begun the session now.
+        setNfcSessionState('listening');
       } catch {
+        // `scan()` itself rejected — the session never started.
+        // `NFCScanPrompt`'s own `'error'` ring communicates that directly;
+        // no separate ambient "no se pudo leer" hint here, which is reserved
+        // for a per-tag misread mid-session, above.
         nfcScanStartedRef.current = false;
         nfcAbortRef.current = null;
-        setNfcFeedback({ kind: 'generic' });
+        setNfcSessionState('error');
       }
       return;
     }
@@ -316,6 +336,10 @@ export function MercanciaParaEsteEvento({
       nfcAbortRef.current = null;
       nfcScanStartedRef.current = false;
     }
+    // An explicit close/reset — a later re-open must show `'idle'`, not the
+    // stale `'listening'`/`'error'` look this session had right before
+    // "Terminar."
+    if (nfcSupported) setNfcSessionState('idle');
   }
 
   const ceilings = useMemo(() => {
@@ -582,7 +606,7 @@ export function MercanciaParaEsteEvento({
           )}
 
           <div className={styles.nfcQueuePrompt}>
-            <NFCScanPrompt onTap={handleNfcScan} />
+            <NFCScanPrompt onTap={handleNfcScan} state={nfcSessionState} />
           </div>
 
           <Button variant="secondary" onClick={closeNfcOverlay}>

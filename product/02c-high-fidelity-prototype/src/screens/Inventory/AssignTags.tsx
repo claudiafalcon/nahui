@@ -101,6 +101,34 @@ export function AssignTags({
 
   const [feedback, setFeedback] = useState<ScanFeedback>(null);
 
+  // Live-hardware correctness fix (2026-09-17) — `NFCScanPrompt`'s own
+  // reactive `state`, real `useState` rather than a ref (see that
+  // component's own top-of-file doc comment). **Write-flow specific
+  // asymmetry, disclosed rather than silently assumed:** unlike `scan()`
+  // (`Selling.tsx`/`MercanciaParaEsteEvento.tsx`), Web NFC's
+  // `NDEFReader.write()` exposes no intermediate "permission granted,
+  // now listening" signal separate from full completion — its one promise
+  // spans the entire wait for a physical tap through the write itself, so
+  // `'listening'` is set the moment `write()` is actually invoked (the
+  // earliest observable point), not after some later resolution the API
+  // simply doesn't expose. This is a genuine, narrow platform gap (a tap
+  // landing in the sliver between invocation and an actual permission grant
+  // on a browser's very first-ever request could still race Android's own
+  // dispatch), not something this fix invents or can close further without
+  // a browser API this codebase doesn't have. It's still a large, real
+  // improvement over the previous always-on ring, which showed "ready,
+  // listening" from mount regardless of whether `write()` had ever been
+  // called at all. Also unlike `scan()`'s one long-lived multi-tag session,
+  // every unit here needs its own fresh on-screen tap before each physical
+  // tag (`write()`'s own gesture-per-call requirement) — a successful
+  // commit resets back to `'idle'`, honestly requiring a new tap rather than
+  // implying the ring is still listening for the next tag on its own.
+  // Simulated (non-hardware) browsers have no real session to represent at
+  // all, so `nfcState` there stays permanently `'listening'` — the original,
+  // always-on look, unchanged, since there is no real dead-session hazard
+  // (no real NFC radio) for it to misrepresent.
+  const [nfcState, setNfcState] = useState<'idle' | 'listening' | 'error'>(nfcSupported ? 'idle' : 'listening');
+
   // Real-hardware write path only (`nfcSupported`) — the in-flight
   // `AbortController` for whichever `NDEFReader.write()` call is currently
   // hanging, waiting for her to physically tap a tag. Aborted on unmount so
@@ -218,6 +246,16 @@ export function AssignTags({
     // Stage 7 Backend Integration, Phase 1 — assignTagToNextPendingUnit is
     // now a real, awaitable Supabase RPC call.
     const result = await assignTagToNextPendingUnit(tagId);
+    // Either branch below means the physical write() itself already
+    // completed (real hardware genuinely wrote *something*, or the
+    // simulated path picked its outcome) — this write cycle is over either
+    // way, so a genuinely new on-screen tap is required before the *next*
+    // physical tag (write()'s own gesture-per-call requirement, see this
+    // file's own `nfcState` doc comment above). Never `'error'` here — a
+    // business-logic rejection (already-assigned) or a platform hiccup
+    // folded into existing copy is not "the session failed to start," the
+    // one thing `NFCScanPrompt`'s own `'error'` ring means.
+    if (nfcSupported) setNfcState('idle');
     if (!result.ok) {
       if (result.reason === 'already-assigned') {
         setFeedback({ kind: 'already-assigned' });
@@ -240,10 +278,20 @@ export function AssignTags({
 
   async function handleScan() {
     if (nfcSupported) {
+      if (nfcState === 'listening') {
+        // A write() call is already in flight, hanging on her physical tap
+        // — a second concurrent write() would just race the same tap.
+        // Harmless no-op, mirrors `Selling.tsx`'s identical guard.
+        return;
+      }
       // Real Web NFC write path (Chrome/Android). The app stays in control
       // of the ID format regardless of hardware — `makeId('tag')` is
       // generated here exactly as the simulated path does, then physically
-      // written onto whichever tag she taps.
+      // written onto whichever tag she taps. `setNfcState('listening')` here
+      // (rather than after `write()` resolves) is this call site's own
+      // disclosed asymmetry with `scan()` — see this file's own `nfcState`
+      // doc comment for why write() exposes no earlier signal to wait for.
+      setNfcState('listening');
       const tagId = makeId('tag');
       const controller = new AbortController();
       nfcAbortRef.current = controller;
@@ -258,8 +306,12 @@ export function AssignTags({
         // failure always means "show scan-failed, let her physically
         // retry," never a silent fall-back to the simulated random-tagId/
         // random-fail logic below, which would fabricate a tag assignment
-        // that was never actually written to any physical object.
+        // that was never actually written to any physical object. The
+        // session itself failed here — `NFCScanPrompt`'s own `'error'` ring,
+        // not just this line's existing (deliberately non-alarming, AT-M3)
+        // `scan-failed` copy.
         setFeedback({ kind: 'scan-failed' });
+        setNfcState('error');
         return;
       } finally {
         nfcAbortRef.current = null;
@@ -305,7 +357,7 @@ export function AssignTags({
           </p>
         </div>
 
-        <NFCScanPrompt onTap={handleScan} />
+        <NFCScanPrompt onTap={handleScan} state={nfcState} />
       </div>
 
       <div className={`${styles.footer} stitchTop`}>

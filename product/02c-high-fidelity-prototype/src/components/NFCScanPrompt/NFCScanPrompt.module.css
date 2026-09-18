@@ -15,33 +15,42 @@
   opacity: 0.6;
 }
 
-/* A soft, concentric halo behind the glyph — the same "ringed" device
-   ColdStart's own .mark already uses for its brand-mark watermark, reused
-   here rather than inventing a second halo treatment (README's own "no new
-   visual language should need inventing" instruction).
-
-   The glyph itself is now a TagStub silhouette (design-audit-2026-08-15
-   #1), not an SVG that reads `color` via currentColor — `color` stays set
-   here only because a future glyph swap could still want it; it has no
-   visual effect on the current TagStub child. */
+/* Shared ring geometry across every `state` — only background/box-shadow/
+   animation vary per state (below), so the state signal lives in exactly
+   one visual dimension rather than the ring changing shape too. Smoothly
+   transitions between states (e.g. `'idle'` → `'listening'` once `scan()`/
+   `write()` genuinely resolves) rather than snapping. */
 .ring {
   width: 88px;
   height: 88px;
   border-radius: var(--radius-pill);
-  background: var(--color-blush);
   color: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition:
+    background var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
+}
+
+.prompt:active:not(:disabled) .ring {
+  transform: scale(0.96);
+}
+
+/* `'listening'` — the original, only-ever treatment this component used to
+   render unconditionally. A soft, concentric halo behind the glyph — the
+   same "ringed" device ColdStart's own .mark already uses for its brand-mark
+   watermark, reused here rather than inventing a second halo treatment
+   (README's own "no new visual language should need inventing"
+   instruction). Now gated to only the genuinely-listening state — see
+   NFCScanPrompt.tsx's own top-of-file doc comment for why. */
+.ringListening {
+  background: var(--color-blush);
   box-shadow:
     0 4px 10px rgba(45, 45, 45, 0.14),
     0 0 0 12px color-mix(in srgb, var(--color-blush) 16%, transparent),
     0 0 0 26px color-mix(in srgb, var(--color-blush) 8%, transparent);
   animation: pulse 1.8s var(--ease-standard) infinite;
-}
-
-.prompt:active:not(:disabled) .ring {
-  transform: scale(0.96);
 }
 
 @keyframes pulse {
@@ -55,9 +64,33 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ring {
+  .ringListening {
     animation: none;
   }
+}
+
+/* `'idle'` — no session genuinely started yet. Static (no pulse, no halo —
+   neither is true), a muted tone deepened from --color-hilo (TagStub's own
+   already-established "inactive surface" family, `TagStub.module.css`'s own
+   `.tag.muted`) just enough that the constant white glyph silhouette stays
+   legible — the same soft, blended-tone-on-tone contrast the listening
+   ring's own white-on-blush combination already carries, not a new
+   legibility convention. */
+.ringIdle {
+  background: #a79c8d;
+  box-shadow: 0 2px 6px rgba(45, 45, 45, 0.12);
+}
+
+/* `'error'` — the session itself failed to start or died mid-flight: a real,
+   blocking failure (she can't scan at all until this recovers), not a
+   passive "try a different tag" miss — reuses brand-guide.md's Error color,
+   the same real-consequence-write-failure convention `CatalogRow.tsx`'s own
+   `.nfcError` already uses, applied here to the ring itself rather than
+   inventing a new color for this component. Static — no pulse, no halo:
+   this ring is not currently broadcasting anything. */
+.ringError {
+  background: var(--color-error);
+  box-shadow: 0 2px 6px rgba(167, 44, 44, 0.24);
 }
 
 .label {
@@ -66,4 +99,16 @@
   color: var(--color-obsidian);
   text-align: center;
   line-height: 1.35;
+}
+
+/* Same muted, deliberately non-alarming tone `AssignTags.module.css`'s own
+   `.errorLine` already established for a passive, retry-only, nothing-lost
+   moment (AT-M3) — `'idle'` is exactly that category: nothing has failed,
+   the session simply hasn't started yet. */
+.labelIdle {
+  color: #6b6259;
+}
+
+.labelError {
+  color: var(--color-error);
 }
