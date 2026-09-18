@@ -6,15 +6,36 @@ import styles from './QuantityStepper.module.css';
  * tappable/editable affordance (never plain display text), and a "revisa
  * antes de guardar" marker that disappears the instant she engages the
  * field in any way — even if the value stays 1.
+ *
+ * **`min`/`max`/`showMarker` (`decision-log.md` D77) — added for Cantidad
+ * actual, the correction stepper §3.6 reuses this exact component for,
+ * "with a ceiling in place of a floor-only rule."** Every existing caller
+ * (Cantidad itself, `SellingGroups.tsx`) omits all three and keeps its
+ * original floor-of-1/no-ceiling/marker-shown behavior unchanged — `min`
+ * defaults to 1, `max` to unbounded, `showMarker` to `true`.
  */
 export function QuantityStepper({
   value,
   touched,
   onChange,
+  min = 1,
+  /** D77 — Cantidad actual's ceiling (the `disponibles` count loaded when
+   * Producto resolved). `undefined` means no ceiling, the original
+   * behavior every other existing caller keeps. */
+  max,
+  /** D77 — Cantidad actual is a known, already-loaded fact, never a guess
+   * (§3.6), so it never carries the "· revisa antes de guardar" marker
+   * regardless of `touched`. */
+  showMarker = true,
+  ariaLabel = 'Cantidad',
 }: {
   value: number;
   touched: boolean;
   onChange: (next: number, touched: boolean) => void;
+  min?: number;
+  max?: number;
+  showMarker?: boolean;
+  ariaLabel?: string;
 }) {
   // Real-device testing found the floor-of-1 rule, when enforced on every
   // keystroke against the committed `value` prop directly, made it
@@ -34,15 +55,16 @@ export function QuantityStepper({
   }, [value, focused]);
 
   function set(next: number) {
-    onChange(Math.max(1, next), true);
+    const clamped = max !== undefined ? Math.min(max, next) : next;
+    onChange(Math.max(min, clamped), true);
   }
 
   return (
     <div className={styles.row}>
-      <button className={styles.stepBtn} onClick={() => set(value - 1)} disabled={value <= 1} aria-label="Menos">
+      <button className={styles.stepBtn} onClick={() => set(value - 1)} disabled={value <= min} aria-label="Menos">
         −
       </button>
-      <div className={`${styles.valueWrap} ${!touched ? styles.reviewMarker : ''}`}>
+      <div className={`${styles.valueWrap} ${showMarker && !touched ? styles.reviewMarker : ''}`}>
         <input
           className={styles.input}
           // `type="text"` + `inputMode="numeric"`, not `type="number"` —
@@ -79,32 +101,47 @@ export function QuantityStepper({
           onChange={(e) => {
             const digitsOnly = e.target.value.replace(/[^0-9]/g, '');
             setText(digitsOnly);
-            // Only commit upward once she's typed an actual positive
-            // number — an empty/mid-edit field is a real, allowed local
-            // state, not immediately clamped back to the floor (see the
-            // comment above `text`'s own declaration for why).
+            // Only commit while she's typed an actual valid-at-or-above-the-
+            // floor number — an empty/mid-edit field is a real, allowed
+            // local state, not immediately clamped back (see the comment
+            // above `text`'s own declaration for why). D77's Cantidad
+            // actual has `min = 0`, so typing "0" now commits immediately
+            // here too, unlike Cantidad's own `min = 1`, where it still
+            // waits for blur (below) the same way it always has.
             if (digitsOnly !== '') {
               const n = parseInt(digitsOnly, 10);
-              if (Number.isFinite(n) && n > 0) onChange(n, true);
+              if (Number.isFinite(n) && n >= min) onChange(n, true);
             }
           }}
           onBlur={() => {
             setFocused(false);
-            // She's done editing — this is the one moment the floor of 1
-            // actually applies. If she leaves the field empty or at 0,
-            // fall back to the last valid committed value (never below 1).
+            // She's done editing — this is the one moment the floor/ceiling
+            // actually apply. If she leaves the field empty or below the
+            // floor, fall back to the last valid committed value (never
+            // below the floor). D77 — a typed value above the ceiling
+            // (Cantidad actual only; every other caller has no `max`)
+            // reverts to the ceiling instead — "a no-op, nothing to
+            // correct" (§3.6), not an error.
             const n = parseInt(text, 10);
-            if (!Number.isFinite(n) || n < 1) {
-              const fallback = Math.max(1, value);
+            if (!Number.isFinite(n) || n < min) {
+              const fallback = Math.max(min, value);
               setText(String(fallback));
               onChange(fallback, true);
+            } else if (max !== undefined && n > max) {
+              setText(String(max));
+              onChange(max, true);
             }
           }}
-          aria-label="Cantidad"
+          aria-label={ariaLabel}
         />
-        {!touched && <span className={styles.marker}>· revisa antes de guardar</span>}
+        {showMarker && !touched && <span className={styles.marker}>· revisa antes de guardar</span>}
       </div>
-      <button className={styles.stepBtn} onClick={() => set(value + 1)} aria-label="Más">
+      <button
+        className={styles.stepBtn}
+        onClick={() => set(value + 1)}
+        disabled={max !== undefined && value >= max}
+        aria-label="Más"
+      >
         +
       </button>
     </div>

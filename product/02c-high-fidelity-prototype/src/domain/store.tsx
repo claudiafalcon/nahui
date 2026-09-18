@@ -738,6 +738,31 @@ interface StoreValue {
    * change happens in that case — `CatalogView.tsx`'s sheet stays open,
    * staged value intact, so she can retry). */
   setProductBarcode: (productId: ID, newBarcode: string) => Promise<boolean>;
+  /** inventory.md §3.6/§3.7 "Cantidad actual" (`decision-log.md` D77,
+   * `product/99-rfc/0015-inventory-unit-removal.md` Accepted) — the
+   * Registro de mercancía correction write: reduces a Product's live
+   * `available` count to `targetAvailableCount`, FIFO-selected (D5),
+   * releasing an `NFCTag` server-side wherever the FIFO-selected unit
+   * happened to carry one. **Target-based, not delta-based** — the RPC
+   * itself recomputes the real current count and only removes what's still
+   * actually there to remove, so this never errors on a race (a concurrent
+   * Sale elsewhere) and always converges toward what she asked for
+   * (`inventory.md` §3.6's own "never a blocking error screen, never a race-
+   * condition message shown to Ana"). Resolves the count actually removed
+   * (which may be less than requested, or 0, under a real race) on success,
+   * or `{ ok: false }` on any rejected/failed outcome (no local state
+   * change happens in that case — same "leave the draft alone, let her
+   * retry" posture `commitLot`'s own failure path already holds). The
+   * caller supplies its own idempotency key, same per-attempt discipline as
+   * every other keyed write here — `RegisterMerchandise.tsx`'s own "Guardar
+   * mercancía" may fire one of these per corrected line, alongside its
+   * existing `commitLot` call, so each needs its own key, not a single
+   * shared one. */
+  correctProductAvailableCount: (
+    productId: ID,
+    targetAvailableCount: number,
+    idempotencyKey: string,
+  ) => Promise<{ ok: true; removedCount: number } | { ok: false }>;
   /** inventory.md §3.14 — Asignar Tags' own write, one scan at a time
    * (`addItemToSale`'s per-event-write shape, not `commitLot`'s batch
    * shape). "Next pending unit" = FIFO-first (oldest `receivedAt`) unit,
@@ -2148,6 +2173,71 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
 
     return resolvedProductIds;
+  }
+
+  /**
+   * inventory.md §3.6/§3.7 "Cantidad actual" (`decision-log.md` D77,
+   * `product/99-rfc/0015-inventory-unit-removal.md` Accepted) — real,
+   * idempotency-keyed call to `correct_product_available_count`
+   * (`supabase/migrations/20260918010000_inventory_unit_removal.sql`), same
+   * "server-confirmed, then local mirror" shape as `editPrice`/
+   * `setProductPhoto`/`setProductBarcode` above, extended here to a status
+   * transition instead of a plain scalar field.
+   *
+   * The server tells us only *how many* units it actually removed
+   * (`removed_count`), never *which* ones — by design, this is the same
+   * "technology should disappear" property Cantidad actual's own ceiling
+   * carries (§3.6): she never resolves a race herself. The local mirror
+   * below re-derives the same FIFO selection the RPC itself just applied
+   * server-side (D5's existing consumption default, reused, not
+   * reinvented) over this device's own currently-cached `available` units
+   * for this Product, and marks exactly that many `removed` — correct
+   * whether or not the real count had drifted underneath her, since we only
+   * ever mark as many as the server confirms it actually removed. A
+   * removed unit's `tagId` is cleared to `null` in the same mirror update,
+   * matching the RPC's own server-side `nfc_tags` row deletion (D77: "the
+   * tag becomes unattached, reusable").
+   */
+  async function correctProductAvailableCount(
+    productId: ID,
+    targetAvailableCount: number,
+    idempotencyKey: string,
+  ): Promise<{ ok: true; removedCount: number } | { ok: false }> {
+    if (!state.business) return { ok: false };
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] correctProductAvailableCount: Supabase not configured. See supabase/README.md.');
+      return { ok: false };
+    }
+    const { data, error } = await supabase.rpc('correct_product_available_count', {
+      p_business_id: state.business.id,
+      p_product_id: productId,
+      p_target_available_count: targetAvailableCount,
+      p_idempotency_key: idempotencyKey,
+    });
+    if (error) {
+      console.error('[store] correct_product_available_count failed', error);
+      return { ok: false };
+    }
+    const removedCount = typeof data === 'number' ? data : 0;
+    if (removedCount > 0) {
+      applyWriteMirror((s) => {
+        const idsToRemove = new Set(
+          s.units
+            .filter((u) => u.productId === productId && u.status === 'available')
+            .sort((a, b) => a.receivedAt - b.receivedAt)
+            .slice(0, removedCount)
+            .map((u) => u.id),
+        );
+        return {
+          ...s,
+          units: s.units.map((u) =>
+            idsToRemove.has(u.id) ? { ...u, status: 'removed' as const, tagId: null } : u,
+          ),
+        };
+      });
+    }
+    return { ok: true, removedCount };
   }
 
   /** authentication.md §3.5 — Stage 7 Backend Integration: proxies straight
@@ -4555,6 +4645,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     editPrice,
     setProductPhoto,
     setProductBarcode,
+    correctProductAvailableCount,
     assignTagToNextPendingUnit,
     createEvent,
     cancelEvent,

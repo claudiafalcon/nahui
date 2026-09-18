@@ -107,6 +107,8 @@ inventory.changelog.md#status-2026-09-13-d65-barcode-scanning]**
 
 **Amended 2026-09-17 (`decision-log.md` D73, same day as D71/D72 — composed NFC-tagging-eligible test drops its first disjunct entirely).** The test §2 uses everywhere — steps 0/2/3, §3.4's fifth/sixth zones, §3.12/§3.13/§3.14, §6/§7/§9 — was `Business.defaultSellingMode === 'nfc'` **OR** (`Business.nfcPerProductEnabled === true` **AND** the unit's own `Product.nfcTaggingEnabled === true`); it becomes simply `nfcPerProductEnabled === true` **AND** `Product.nfcTaggingEnabled === true`, full stop — no `defaultSellingMode` read anywhere in the test. A Business in `nfc` mode with `nfcPerProductEnabled = false` (or with Products that haven't individually opted in) now correctly has nothing eligible for tagging, exactly like a `buttons`-mode Business in the same state — there is no more special-cased "whole-Catalog" behavior at all. `settings.md`'s own matching correction (§2.8's gate, D73) is what makes this safe: a grandfathered `nfc`-moded Business can now reach "Activar NFC" directly, without switching to `buttons` mode first, so opting specific Products in stays reachable for her too. §2's own dormant step-0 trigger (the D72-retired Settings-handoff entry point) is now doubly dead, not merely unreachable — its own premise, seeding "every untagged unit across the whole Catalog" the instant `defaultSellingMode` read `nfc`, is itself false under the corrected test, whether or not the entry point were ever reachable again. Kept, marked as such, per this document's non-deletion discipline — not rewritten as though it still describes live or even hypothetically-live behavior. **Expedited, live pass — `ux-critic`/`reviewer` review pending, not skipped, same posture as tonight's other D71/D72/D73 passes.**
 
+**Amended 2026-09-18 (`decision-log.md` D77, `product/99-rfc/0015-inventory-unit-removal.md` Accepted — correcting a Product's on-hand count, live production gap, Product Owner-directed, expedited) — the correction lives inside the existing Registro de mercancía screen, not behind a new menu action.** When Producto (§3.8) resolves to an *existing* Product that currently has ≥1 `available` unit, §3.6/§3.7 now show a second box above the existing one: **Cantidad actual** — the Product's live `disponibles` count, directly editable **downward only** (floor 0, ceiling = the count loaded when Producto resolved), reusing the identical `[−]`/`[+]`-plus-typed-entry stepper mechanism §3.6 already specifies, just with a ceiling instead of a floor-only affordance. This is the correction path (mistyped registration, defective units returned to supplier) — `InventoryUnit.status: available → removed`, FIFO-selected (D5's own existing consumption default, reused, not reinvented), releasing an `NFCTag` if the FIFO-selected unit happens to carry one, no reason field, no Supplier/cost field, **no tier gate** (available Free and Paid alike, same ungated posture §3.4a's Editar precio already establishes for a plain correction affordance — distinct from the genuinely premium barcode/NFC capabilities this document gates elsewhere). The existing **Cantidad** box is untouched in meaning — purely additive, creates a new Lot/InventoryEntry exactly as today — and is never folded into Cantidad actual's absolute number: the Product Owner's own reasoning, verbatim-equivalent — if 50 new units arrive while 12 are on hand, she should never have to mentally compute 62; a real shipment needs its own receipt record for Lot traceability regardless. "Guardar mercancía" commits whichever box she touched — a decrease (D77's removal write), an increase (today's existing `commitLot()` write), or both, composed as two independent writes behind one tap. For a genuinely new Product (§3.8a's create-new path, typed or via unmatched barcode scan), Cantidad actual never applies — the screen is byte-for-byte unchanged from today. **No new `decision-log.md` entry beyond D77** (already promoted from RFC 0015) — this pass only adds the entry-point/UI shape on top of an already-accepted mechanism. **Expedited — not yet run through `ux-critic`/`reviewer`, same posture as this document's other live-fix passes (D65, D71–D73).**
+
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -1070,6 +1072,8 @@ reference note above for why.
 - **Further amended 2026-09-16/17 (`decision-log.md` D71, `product-decisions.md` Q31).** This state's gate is extended, not replaced — reached when the composed NFC-tagging-eligible test (§2) is true for at least one untagged, `available` unit anywhere in the Catalog: `defaultSellingMode === 'nfc'` (unchanged, the original D46 case), **or** `Business.nfcPerProductEnabled === true` with at least one Product individually opted in (§3.4's new fifth tap zone) that still has an untagged unit. A Paid merchant with `defaultSellingMode = 'buttons'` who has opted, say, only Camisas into NFC now sees this nudge exactly when a Camisas unit is still untagged — never for Plumas or any other Product she hasn't individually opted in, and never at all if she hasn't turned on `nfcPerProductEnabled` in the first place.
 
 ### 3.6 Registrar mercancía — entry (first line, or shortcut-prefilled)
+
+**Producto not yet resolved (blank open):**
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │
@@ -1083,17 +1087,143 @@ reference note above for why.
 │                                │
 │  [ + Agregar otro producto ]     │
 │                                │
-│  [      Guardar mercancía    ]   │  enabled once Producto is chosen —
-│                                │  Cantidad defaults to 1, never blank
+│  [      Guardar mercancía    ]   │  enabled once Producto is chosen
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
+Unchanged from before this amendment — Cantidad actual cannot exist yet, since
+there's no resolved Product to hold a count.
+
+**Producto resolves to an existing Product with disponibles > 0** (typed
+exact-name match §3.8, Catalog-row shortcut §3.4, or barcode confirm-on-scan
+§3.8c):
+```
+┌───────────────────────────────┐
+│ ← Inventario                     │
+│  Registro de mercancía            │
+│                                │
+│ Producto                        │
+│  Bolsas                          │
+│                                │
+│ Cantidad actual                  │
+│  [ − ]  [ 17 ]  [ + ]             │
+│  Corrígela si algo no cuadra       │
+│  (por ejemplo, piezas defectuosas   │
+│  que regresaste)                  │
+│                                │
+│ Cantidad                        │
+│  [ − ]  [ 1 · revisa antes de guardar ]  [ + ]│
+│  Lo que te llegó nuevo             │
+│  (o escribe la cantidad)         │
+│                                │
+│  [ + Agregar otro producto ]     │
+│                                │
+│  [      Guardar mercancía    ]   │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- **New (`decision-log.md` D77, RFC 0015). Gating condition, stated in
+  full:** Cantidad actual appears iff Producto resolves to a Product that
+  already exists in the Catalog **and** that Product's live `disponibles` at
+  the moment of resolution is > 0. A brand-new Product (§3.8a, either path)
+  never shows it — nothing to correct, no history yet. An existing Product
+  currently at exactly 0 disponibles (sold out, or a legacy "sin registrar"
+  case) also doesn't show it — floor and ceiling would both be 0, a
+  degenerate, functionless control; omitted rather than shown-then-inert,
+  matching this document's own "not disabled, not shown-then-blocked, simply
+  absent" posture already established for tier-gated affordances elsewhere
+  (§2), applied here to a data-degenerate case instead of a capability gate.
+- **Default value: the Product's `disponibles` exactly as loaded — a known
+  fact, not a guess, so it carries no "revisa antes de guardar" marker.**
+  Same posture §3.4a's Editar precio already takes for a current, accurate
+  value shown editable — contrast with Cantidad's own default-to-1, which
+  *is* a guess about an unknown future count and therefore does need the
+  marker (INV-Q1).
+- **Stepper mechanics reuse §3.6's existing `[−]`/`[+]`-plus-`teclado
+  numérico` pattern verbatim, with a ceiling in place of a floor-only
+  rule:** `[−]` decrements toward 0, where it goes inert; `[+]` increments
+  back toward the loaded count, where it goes inert — it can never step
+  above the count she started with, since that's what the plain Cantidad
+  box below is for. Typed entry (tapping the bracketed value opens `teclado
+  numérico`, same hard requirement as Cantidad's own numeric affordance,
+  §3.6) is clamped the same way: a typed value above the loaded count
+  reverts to the loaded count (a no-op — nothing to correct); a typed
+  negative value or a cleared field reverts to 0 — the same "clamp to the
+  nearest valid boundary" rule Cantidad's own floor already establishes,
+  mirrored at both ends here instead of one.
+- **The stepper's ceiling is fixed to the count loaded when Producto
+  resolved — not re-fetched live while she stays on this screen**, the same
+  snapshot-until-Guardar convention every other field on this draft already
+  follows. If the real `disponibles` has moved by the time she taps "Guardar
+  mercancía" — the ordinary case this can arise from is a concurrent Sale on
+  another device, since Inventory and Selling are separate bounded contexts
+  reading and writing the same `InventoryUnit` pool — Guardar always
+  converges toward what she actually asked for, never surfaces a technical
+  conflict: if enough units are still `available`, it removes exactly enough
+  (FIFO, D5) to reach her target; if a Sale already consumed some of them
+  first, it removes only what's left to remove and simply reflects reality.
+  This is the identical "conditional write, zero-rows-affected = already
+  moved on" discipline `product/99-rfc/0015-inventory-unit-removal.md`
+  already specifies (same shape as `commitAllocation()`) — never a blocking
+  error screen, never a race-condition message shown to Ana. The Catalog
+  view she lands on afterward always shows the true, current count
+  (§3.12/§3.13).
+- **Only `available` units are ever eligible for removal — never
+  `reserved`** (an in-flight Sale elsewhere) — Inventario must never reach
+  into Selling's own in-progress write, the identical discipline
+  `product/99-rfc/0010` already protects for a different mechanism.
+  "Disponibles" (the Catalog's own displayed count) already means exactly
+  "`available`-status units," so Cantidad actual's ceiling and Selling's own
+  in-flight reservations never structurally collide.
+- **No reason field, no Supplier field, no per-unit picker.** FIFO selection
+  only (D5's existing default, reused), matching RFC 0015's own explicit v1
+  scope — a ledger/reason-code mechanism is a deliberately deferred future
+  item (§11), not designed here.
+- **Never delete historical data (D25), extended here (D77):** the original
+  Lot/InventoryEntry's received quantity is untouched by a correction — only
+  the derived, unit-status-driven `disponibles` count changes. A merchant who
+  receives 17, corrects to 12, still has a permanent record that 17 arrived.
+- **Ungated — no `subscriptionTier` check, unlike the barcode/NFC affordances
+  elsewhere in this document.** Correcting your own count is basic inventory
+  accuracy, not a premium capability; §3.4a's Editar precio is the closer
+  precedent here, not §3.8/§3.4c's Paid-tier gates.
+- **A named, accepted risk, not silently glossed over:** the plain Cantidad
+  box below keeps its existing default-to-1 + "revisa antes de guardar"
+  marker (INV-Q1) completely unchanged — including on a visit where her only
+  real intent is correcting Cantidad actual, with no new stock arriving.
+  Three things mitigate an unnoticed phantom +1: the marker itself
+  (already-established, purpose-built for exactly this "don't silently
+  accept an unreviewed default" risk); the two boxes sitting directly
+  adjacent, both visible at the moment she's editing one of them; and the
+  marker surviving into the §3.7 committed-lines review before Guardar ever
+  fires. Not eliminated to zero, deliberately — see §8's open item.
+- **Cantidad's own floor changes from 1 to 0 whenever Cantidad actual is
+  present (existing Product, disponibles > 0) — the one real behavioral
+  adjustment this amendment makes to the existing box.** The original
+  floor-of-1 rule ("0 units received isn't a real receiving event," §3.6)
+  was sound when this box was the *only* box, since being on this screen
+  always meant a receiving event was happening. That's no longer universally
+  true: a visit can now be pure correction, with genuinely nothing new
+  arriving. Floor 0 makes that save possible at all; the default value and
+  the marker are otherwise completely unchanged. For a brand-new Product (no
+  Cantidad actual on screen), the floor stays 1, exactly as before — that
+  path is unambiguously always a receiving event.
+- If reached by tapping a Catalog row (§3.4), Producto arrives already filled
+  with that row's Product; Cantidad actual (when applicable) arrives
+  pre-filled with that row's own current count, and Cantidad defaults to 1 —
+  both boxes complete the instant she lands, Guardar mercancía enabled with
+  zero further taps. *global-principles.md*, "capture business truth once,
+  reuse it forever."
+
 (The instant she interacts with Cantidad at all — `[−]`, `[+]`, typed entry, or
 tapping the number to open `teclado numérico` — the "· revisa antes de
 guardar" suffix disappears and the field renders as "1" (or whatever value
 she set) — still within the same tappable/editable treatment, just without
-the suffix. Only the untouched, still-default state carries the suffix.)
+the suffix. Only the untouched, still-default state carries the suffix. This
+also applies identically to Cantidad actual, minus the suffix itself, which
+it never carries per the "known fact, not a guess" reasoning above.)
 - **On-screen heading now reads "Registro de mercancía" rather than repeating the CTA's imperative "Registrar mercancía" verbatim (§3.7 and §3.8's dimmed backdrop carry the identical fix) — resolves HJR-INV-M1.** The CTA that leads here (`home.md` §3.3; this doc's own §3.3/§3.4/§3.5/§3.12/§3.13/§3.17) is unchanged — "Registrar mercancía" is still the right action-verb for a button she's about to tap. What was broken is that the screen she lands on used the identical string as a passive title, so "go do this" and "you're now doing this" had no visible difference at the very first productive moment in the product. A noun-form heading in the same vocabulary family ("registro," not "registrar") reads naturally in Mexican Spanish as a form/screen label, grammatically distinguishes it from the button she just tapped, and invents no new vocabulary. Both entry points that reach this screen — `home.md` §3.3's cold-start CTA and this doc's own §3.3 cold-start CTA — route to this identical destination (§10's routing decision), so this single heading correction closes the repeat for both at once, not just one of them. Section titles below (§3.6, §3.7) and every "Registrar Mercancía" reference in §4/§5/§6/§7/§9/§10 keep naming this as the *Registrar Mercancía flow* — that's the flow's editorial name, distinct from the literal on-screen heading text now shown; no renumbering or cross-reference changes are needed.
 - Only Producto + Cantidad are asked — no Supplier, no cost field, per
   `architecture-principles.md` #5 and `decision-log.md` D9 (see §8, item 1).
@@ -1203,6 +1333,42 @@ the suffix. Only the untouched, still-default state carries the suffix.)
 carrying through into the committed list per INV-Q1 above — "Bolsas" and
 "Accesorios" render plain because their quantities were deliberately
 typed/adjusted.)*
+
+**Committed-lines rendering, extended for a Cantidad actual correction
+(`decision-log.md` D77, new):**
+```
+│ Ya agregaste:                    │
+│  Bolsas — corregido a 12          │
+│  (antes 17)                [✕]  │  correction only, Cantidad left at 0
+│  Accesorios — 5            [✕] │  plain addition, unchanged rendering
+│  Camisas — corregido a 8          │
+│  (antes 10) + 50 nuevas    [✕] │  both facts in one commit
+```
+- **When Cantidad actual is untouched (still equals the loaded count — the
+  common, unchanged case), the committed line renders exactly as it always
+  has** — "Bolsas — 10," no mention of Cantidad actual at all. Zero visual
+  cost for the common case, the same "the fix targets silence, not speed"
+  property this document's own INV-Q1 marker already established.
+- **When Cantidad actual was moved down, the line states the correction
+  plainly — "corregido a N (antes M)" — using natural, direct language,
+  never "removed," "InventoryUnit," or a status name** (*global-
+  principles.md*, "business language before technical language").
+- **When both a correction and a real addition happened on the same line,
+  both render together** — "corregido a 8 (antes 10) + 50 nuevas" — two
+  independent facts stated together, not merged into one number, matching
+  §3.6's own "never fold into the same editable number" rule.
+- **`[✕]` on a corrected or mixed line undoes the entire line** — Cantidad
+  actual reverts to its loaded, unedited value and Cantidad reverts to its
+  own default (1, marked) — the identical "fix a miscount before saving"
+  behavior `[✕]` already gives a plain addition line, just now covering a
+  compound fact instead of a single one.
+- The existing marker-carry-through rule (INV-Q1: an unreviewed Cantidad
+  default of 1 carries its "· revisa" marker into this list) is unchanged
+  and composes directly with the above — "Bolsas — corregido a 12 (antes 17)
+  + 1 · revisa [✕]" is a real, expected rendering whenever she corrects
+  Cantidad actual without ever touching Cantidad below it, and is the third
+  layer §3.6 names against an unnoticed phantom addition.
+
 - "+ Agregar otro producto" commits the current row (now complete the moment
   Producto is chosen, since Cantidad defaults to 1) and opens a fresh blank
   one — exactly one tap per additional Product line, no more. Adjusting a
@@ -1328,6 +1494,15 @@ gated the same way `decision-log.md` D27 already gates NFC).
   variant of "nuevo producto," §3.8a); camera access denied (§3.8d); or a
   failed read (§3.8e). Every branch keeps the typed-search field one tap
   away, never a dead end.
+- **New (`decision-log.md` D77):** whenever Producto resolves to an existing
+  Product — typed exact-name match here, the Catalog-row shortcut (§3.4), or
+  a barcode confirm-on-scan (§3.8c, "Sí, es este") — that Product's live
+  `disponibles` count is carried forward into the draft as Cantidad actual's
+  initial value in the same motion, whenever it's > 0 (§3.6). Never a
+  separate fetch or question; the same "capture business truth once, reuse
+  it forever" discipline this section's own price/photo reuse already
+  follows. §3.8a (new-Product creation, either path) is unaffected —
+  Cantidad actual never applies there.
 
 ### 3.8b Elegir producto — escanear código de barras, cámara activa (`decision-log.md` D65, Paid tier only)
 ```
@@ -1918,6 +2093,9 @@ Registrar mercancía (3.6/3.7):
     trimmed — see §3.8) — Cantidad defaults to 1 the instant Producto
     resolves, marked "revisa antes de guardar" until touched (INV-Q1, §3.6),
     adjustable via [−]/[+] or typed entry (floor: 1)
+  [Producto resolves to an existing Product with disponibles > 0] Cantidad
+    actual box appears, pre-filled with that live count — adjustable down to
+    0, never above the loaded count (stepper ceiling, `decision-log.md` D77)
       within Elegir producto (3.8): typed text matches no existing Product
         → "+ Agregar '...' como producto nuevo" → 3.8a (Precio required,
           D33) → tap "Agregar '...'" (disabled until Precio has a value)
@@ -1943,7 +2121,11 @@ Registrar mercancía (3.6/3.7):
       → [any point in 3.8b/3.8c/3.8d/3.8e] "Escribir en su lugar" / back
         arrow → 3.8, typed-search field, nothing committed
   → tap "+ Agregar otro producto" → commits row, opens next blank row → repeat
-  → tap "Guardar mercancía"
+  → tap "Guardar mercancía" — composes up to two independent writes per
+    line: a decrease on Cantidad actual (`decision-log.md` D77 removal,
+    FIFO, releases an NFCTag if the removed unit carried one) and/or an
+    increase via Cantidad (existing commitLot() write, unchanged) — either,
+    neither, or both, per line, resolved together behind one tap
       → saving (3.10)
       → error (3.11) → Reintentar → saving again
       → success:
@@ -2017,8 +2199,12 @@ D46 Addendum):
 4f. Editar código de barras — permiso de cámara denegado (D65, Paid tier only)
 4g. Editar código de barras — no se pudo leer el código (D65, Paid tier only)
 5. [RETIRED 2026-09-17] Catalog view — pending tag work — see §3.4's sixth zone instead.
-6. Registrar mercancía — entry (blank or shortcut-prefilled)
-7. Registrar mercancía — with committed lines, editing the next
+6. Registrar mercancía — entry (blank or shortcut-prefilled); gains a
+   conditional Cantidad actual box for an existing Product with disponibles
+   > 0 (`decision-log.md` D77)
+7. Registrar mercancía — with committed lines, editing the next;
+   committed-line rendering extended to state a Cantidad actual correction
+   alongside or instead of a plain addition (D77)
 8. Elegir producto — picker sheet
 8a. Elegir producto — nuevo producto, precio inicial (D33; gains a "vía escaneo, sin coincidencia" variant, D65, Paid tier only)
 8b. Elegir producto — escanear código de barras, cámara activa (D65, Paid tier only)
@@ -2055,6 +2241,7 @@ D46 Addendum):
 | Activar/desactivar NFC por producto para un Producto ya existente (Catalog row, fifth zone, §3.4) | 1 (toque en el switch — sin sheet, sin confirmar) | The one action in this document with no separate save/confirm step at all: an inline, instantly-retriable boolean flip, the same low-stakes, easily-reversible reasoning `settings.md` §2.8 gives its own Business-level toggle's — one level lower-friction here, since neither direction discloses a consequence needing a full confirmation screen. |
 | Reanudar el etiquetado de un Producto con trabajo pendiente (tocar `[ N sin etiquetar ]` en su fila) | 1 | Sixth zone, pure navigation, no intermediate question — she already knows which Product, the app already knows how many remain. |
 | Activar NFC por producto cuando ya hay unidades disponibles sin etiquetar (toggle) | 1 (toque en el switch) — abre Asignar Tags directamente, sin pantalla intermedia | Mismo costo del switch de siempre; el escaneo posterior ya está contado en la fila "U scans, 1 per physical unit." |
+| Corregir el conteo de un Producto ya registrado, sin mercancía nueva (tocar la fila del Catálogo, bajar Cantidad actual, poner Cantidad en 0) | 1 (fila) + N taps en `[−]` (o 1 entrada tecleada) + 1 (poner Cantidad en 0, tocándola una vez) + 1 (Guardar) | The correction itself needs exactly as many taps as the size of the correction (or one typed entry for a large one) — same reasoning already governing Cantidad's own count-entry cost, above. The one extra, deliberate tap on Cantidad is the direct, visible cost of the phantom-addition safeguard named in §3.6 — not padding. `decision-log.md` D77. |
 
 Unlike Home's <3s-per-item bar (`company/backlog.md` #1, which is specifically
 about *sale* registration under live customer pressure), Inventario has no
@@ -2109,6 +2296,10 @@ comparable hard speed requirement — the floor above is about not adding
 - Whether a Catalog row shows the fifth NFC-eligibility zone at all — computed automatically from `Business.nfcPerProductEnabled` AND `nfc ∈ registrationMode` AND this Product having no `barcode`, the same multi-condition derivation discipline `settings.md` §2.3 already applies to `defaultSellingMode`'s own `nfc` option. Never a manual check Ana has to reason through herself.
 - The composed **NFC-tagging-eligible** test (`decision-log.md` D71, §2) — computed fresh, per unit, every time Asignar Tags' auto-entry or pending-nudge logic runs; Ana never has to remember which Products she's opted in, or reconcile it herself against her selling mode.
 - Assigning a fresh barcode via §3.4c automatically clears a conflicting `Product.nfcTaggingEnabled = true` in the same write — she never has to remember to turn the NFC switch off herself first (§3.4c's own new bullet).
+- Cantidad actual's write converges to whatever target she lands on, computed against real-time `disponibles` at Guardar, never a stale client-side subtraction — she never sees or resolves a race condition herself, the identical "technology should disappear" property this document already gives every other save path (§3.6, `decision-log.md` D77).
+- A Cantidad actual left untouched costs nothing — no correction write fires at all when the value matches what was loaded, the same zero-cost-for-the-common-case discipline INV-Q1's marker already established.
+- Which specific `InventoryUnit`s a correction actually consumes — FIFO, invisible, automatic (`decision-log.md` D5/D77) — she only ever types how many, never which ones, the identical "the merchant still just types a quantity, the platform expands it" discipline D3 already states, applied here to consumption instead of creation.
+- A removed, tagged unit's `NFCTag` release — automatic, invisible, no separate step (`decision-log.md` D77).
 
 ## 8. Open questions
 
@@ -2162,6 +2353,8 @@ comparable hard speed requirement — the floor above is about not adding
    actually needs it.
 
 4. **Whether toggling a Product's NFC-eligibility off, mid-Event, while some of its units are already committed to that Event's allocation (`events.md`'s own scope), needs any special handling — not designed in this document.** `events.md`'s own parallel D71 amendment is the authoritative source for that surface, not this one; this item exists only so the cross-document dependency is named rather than silently assumed solved. `product-decisions.md` Q31's own worked scenario flags this same seam explicitly ("remember review nfc assignment to the events because I'm [sure] this functionality could change").
+
+5. **A Cantidad actual correction left unreviewed alongside Cantidad's own default-to-1 could silently add one phantom unit she didn't intend, on a visit whose only real purpose was correcting a miscount.** Not designed away — three existing, already-established mechanisms mitigate it (the "revisa antes de guardar" marker, the two boxes' visual adjacency, and the marker surviving into §3.7's committed-lines review), the same class of deliberately-accepted, explicitly-named residual risk `reports.md`'s "Confirmar recompensa entregada" (D39) already carries in this document family. Not escalated — a reasonable, documented default was chosen; revisit only if real usage shows it's a genuine, recurring mistake, not a hypothetical one. `decision-log.md` D77.
 
 ## 9. Principle justification
 
@@ -2262,6 +2455,10 @@ comparable hard speed requirement — the floor above is about not adding
   only hands off a bare entry marker for this document's own,
   already-legitimate check to consume.
 - **§3.4's own tap-zone disambiguation discipline, extended a fourth time (Q23's marker/body/price split; D65's fourth, overflow zone; D71's fifth, NFC-eligibility zone; this 2026-09-17 amendment's sixth, pending-tag indicator zone)** — every new row-level control this document has added has been reasoned explicitly against merging into an existing, already-precedented zone before being given its own, rather than defaulting to nesting it inside the nearest existing affordance (§3.4's own reasoning above).
+- *"Never delete historical data" (D25), extended 2026-09-18 (`decision-log.md` D77, RFC 0015)* — a Cantidad actual correction never rewrites the original Lot/InventoryEntry's received quantity; only the derived, unit-status-driven `disponibles` count changes, and only `available` units are ever eligible (§3.6) — the identical FIFO default (D5) and conditional-write discipline already governing Sale consumption, reused rather than reinvented for a second caller.
+- *"Capture business truth once, reuse it forever"* — Cantidad actual's default is the Product's own real, current count, not re-derived or re-asked; §3.8's carry-forward rule (new) extends the exact same discipline already covering Product identity, price, and photo to this new fact.
+- *architecture-principles.md* #4 (internal-only entities never leak) — Cantidad actual never names `InventoryUnit`, `status`, or `removed` on screen; copy stays "corregido a N (antes M)," matching the same discipline governing every other Inventory-internal concept in this document.
+- *architecture-principles.md* #6 (one-way dependency direction) — the removal write stays entirely inside Inventory's own ownership of `InventoryUnit` (RFC 0015's own "no new bounded-context dependency edge" finding); Selling remains a read-only consumer of `InventoryUnit.status`, unchanged.
 
 ## 10. Decisions made
 
@@ -2438,6 +2635,7 @@ comparable hard speed requirement — the floor above is about not adding
 - **A mixed-Product Lot now seeds Asignar Tags with only its NFC-tagging-eligible lines, never the whole Lot** (`decision-log.md` D71) — a genuine new per-Lot filtering behavior, not only a per-Business gate correction; §3.13 gains a corrected completion-copy variant for this case.
 - **Assigning a fresh barcode via §3.4c now also clears a conflicting `Product.nfcTaggingEnabled`, in the same write** (`decision-log.md` D71's "never both" rule) — resolves the one remaining seam that could otherwise leave a Product both barcode-identified and NFC-tagging-eligible at once; never touches an already-tagged unit.
 - **Corrected 2026-09-17, same day (`decision-log.md` D73).** The composed test recorded above drops its first disjunct entirely — `defaultSellingMode === 'nfc'` is no longer read anywhere in the test. The test is now simply `nfcPerProductEnabled === true` **and** `Product.nfcTaggingEnabled === true`. Every downstream description in this document that referenced "the legacy whole-Catalog `defaultSellingMode = 'nfc'` case" as a distinct case is corrected to match — see §1, §2, §3.4, §3.12, §3.13, §3.14, §6, §7, §9, and this section's own note above (following the 2026-09-17 "Continuar etiquetando retired" entry).
+- **A way to correct a Product's on-hand count added directly inside Registro de mercancía, 2026-09-18 (`decision-log.md` D77, `product/99-rfc/0015-inventory-unit-removal.md` Accepted, Product Owner-directed, live production gap, expedited).** A new **Cantidad actual** box (§3.6/§3.7), shown only for an existing Product with disponibles > 0, editable downward only (floor 0, ceiling = the loaded count) — reuses the existing Cantidad stepper mechanism with a ceiling instead of a floor-only rule. The existing **Cantidad** box stays purely additive and unmerged, per the Product Owner's own explicit reasoning against making her mentally compute an absolute total; its floor drops from 1 to 0 only when Cantidad actual is present, the one real behavioral change made to it. "Guardar mercancía" composes up to two independent writes per line. No reason field, no Supplier field, no per-unit picker, no tier gate (D77/RFC 0015's own stated v1 scope). **An earlier, discarded draft of this same RFC proposed a Catalog-row "⋯" overflow action opening a separate sheet — the Product Owner redirected to this inline shape live before it was ever written to this document; §3.4 (Catalog view) is untouched by this amendment.** **[not yet run through `ux-critic`/`reviewer` — expedited, same posture as this document's D65/D71–D73 passes]**
 
 ## 11. Future considerations
 
@@ -2447,9 +2645,9 @@ comparable hard speed requirement — the floor above is about not adding
 - A named "borrador" (draft) affordance beyond simple auto-persistence, if real
   usage shows Lots are routinely split across multiple sittings (e.g., over
   several days) rather than counted in one pass.
-- Editing an already-saved Lot (correcting a quantity typo after Guardar) —
-  not designed; today's flow only catches mistakes before Guardar via the
-  inline `[✕]` on a committed row.
+- **Corrected 2026-09-18 (`decision-log.md` D77) — no longer accurate.** Editing an already-saved Lot's own received quantity is still not designed and still out of scope (that historical record stays immutable, per D25/D77) — but correcting a Product's current on-hand *count* after Guardar is now designed, via Cantidad actual (§3.6/§3.7). What §3.7's inline `[✕]` still uniquely covers is fixing a miscount *before* that same Guardar fires, on a still-in-progress draft — a different moment, kept for a different reason, not superseded by D77.
+- Reason-tracking for a Cantidad actual correction (why units were removed — defective, lost, given away) — deliberately deferred, per RFC 0015's own v1 scope (`decision-log.md` D77). If ever wanted, `EventAllocation`/`AllocationMovement`'s append-only-ledger pattern (D57/D59) is the established shape to reuse, not a new mechanism.
+- A per-unit picker for a Cantidad actual correction on an `nfcPerProductEnabled` Product, letting her scan or select the exact physical garment being returned rather than relying on FIFO — named explicitly as a v1 limitation (D77/RFC 0015) and out of scope here; revisit if real usage shows the FIFO/physical-unit mismatch causes confusion.
 - A lightweight low-stock indicator or restock nudge on Catalog view — a
   natural fit once the Intelligence context (`domain-model.md`) exists; out of
   scope for Inventario v1. **Distinct from the zero-stock dimming shipped in

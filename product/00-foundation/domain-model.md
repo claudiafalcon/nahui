@@ -110,6 +110,14 @@ Key point: `Product → InventoryUnit → Lot` is the traceability chain. The me
 ```
 InventoryUnit:  available → reserved (in an open Sale, or held by an
                              open EventAllocation) → sold
+                available → removed (defective/returned stock leaving
+                             sellable inventory without a Sale; never from
+                             reserved — that's Selling's in-flight write.
+                             Conditional write, zero-rows-affected = already
+                             moved on. A removed unit's NFCTag, if any,
+                             releases — the model's only non-sale NFCTag
+                             detachment case. See decision-log.md D77,
+                             RFC 0015.)
 Lot:            received → active (has available units) → depleted
 Event:          scheduled → active → closed  (or cancelled)
 Session:        not_started → active → closed → reviewed

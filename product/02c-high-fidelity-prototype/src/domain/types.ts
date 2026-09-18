@@ -671,7 +671,16 @@ export interface InventoryEntry {
   quantity: number;
 }
 
-export type InventoryUnitStatus = 'available' | 'reserved' | 'sold';
+/**
+ * `decision-log.md` D77, `product/99-rfc/0015-inventory-unit-removal.md`
+ * (Accepted) — `removed` is a new terminal status, parallel to `sold`: a
+ * unit that leaves sellable stock without going through a Sale (mistyped
+ * registration, defective units returned to supplier), written only via
+ * "Cantidad actual" (`inventory.md` §3.6/§3.7). `available -> removed`
+ * only, never from `reserved` (Selling's own in-flight write — Inventory
+ * must never reach into it, `product/99-rfc/0010`'s own discipline).
+ */
+export type InventoryUnitStatus = 'available' | 'reserved' | 'sold' | 'removed';
 
 export interface InventoryUnit {
   id: ID;
