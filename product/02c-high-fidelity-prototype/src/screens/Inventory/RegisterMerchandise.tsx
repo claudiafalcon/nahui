@@ -6,20 +6,18 @@ import type { AppState, Product } from '../../domain/types';
 import { ProductPicker } from '../../components/ProductPicker/ProductPicker';
 import { QuantityStepper } from '../../components/QuantityStepper/QuantityStepper';
 import { Button } from '../../components/Button/Button';
-import { Sheet } from '../../components/Sheet/Sheet';
-import { TagStub } from '../../components/TagStub/TagStub';
 import styles from './RegisterMerchandise.module.css';
 
 /**
- * Which Product this in-progress line refers to. `existing` names a real,
+ * Which Product this in-progress draft refers to. `existing` names a real,
  * already-written Product. `new` is a not-yet-real identity picked up in
  * "¿Qué llegó?" this same visit — inventory.md §3.8a: held here, in local
- * draft/committed state, and only actually written (atomically with the
- * rest of the Lot) at "Guardar mercancía" — see `commitLot` in `store.tsx`.
+ * draft state, and only actually written (atomically with the rest of the
+ * Lot) at "Guardar mercancía" — see `commitLot` in `store.tsx`.
  */
 type ProductRef =
   | { kind: 'existing'; productId: string }
-  /** `barcode` (`decision-log.md` D65) — set only when this line's Producto
+  /** `barcode` (`decision-log.md` D65) — set only when this draft's Producto
    * was resolved via the picker's "vía escaneo, sin coincidencia" path
    * (`inventory.md` §3.8a's scan variant); `undefined` for the typed path,
    * the same posture `photo` already has. Never shown or re-asked anywhere
@@ -28,7 +26,7 @@ type ProductRef =
   | { kind: 'new'; name: string; price: number; photo?: string; barcode?: string };
 
 interface Line {
-  key: string; // stable local identity for React lists/removal — a pending `new` line has no real productId yet
+  key: string; // stable local identity, mostly vestigial now that there is only ever one draft on screen
   product: ProductRef;
   productName: string;
   /**
@@ -42,11 +40,11 @@ interface Line {
   quantity: number;
   touched: boolean; // Cantidad recibida's own "revisa antes de guardar" state
   /**
-   * `decision-log.md` D78, `inventory.md` §3.6/§3.7/§3.8 — Cantidad
-   * disponible actual. Present whenever this line's Producto resolved to an
-   * *existing* Product — **regardless of its live `disponibles` value,
-   * including exactly 0** (D78 corrected D77's own ceiling>0 gate: 0 is now
-   * a legitimate correction starting point, bidirectional correction has no
+   * `decision-log.md` D78, `inventory.md` §3.6 — Cantidad disponible actual.
+   * Present whenever this draft's Producto resolved to an *existing*
+   * Product — **regardless of its live `disponibles` value, including
+   * exactly 0** (D78 corrected D77's own ceiling>0 gate: 0 is now a
+   * legitimate correction starting point, bidirectional correction has no
    * degenerate case left to omit). `undefined` only for a brand-new Product
    * (§3.8a, either path), which never shows this at all. `ceiling` is the
    * snapshot loaded once when Producto resolved and never re-fetched while
@@ -59,21 +57,21 @@ interface Line {
    */
   currentQuantity?: { ceiling: number; value: number };
   /** D78 — the pencil ("✎ Corregir") reveal state. Only ever meaningful
-   * when `currentQuantity` is set; ignored for a brand-new Product's line,
+   * when `currentQuantity` is set; ignored for a brand-new Product's draft,
    * which has no correction UI at all. Opening this alone (value still
    * equal to `ceiling`) is a genuine no-op — see `hasRealEffect` below. */
   correctionOpen: boolean;
-  /** D78 — the "+ Recibir lote" reveal state, for an *existing* line only.
-   * Always effectively true for a brand-new Product's line (its receiving
+  /** D78 — the "+ Recibir lote" reveal state, for an *existing* draft only.
+   * Always effectively true for a brand-new Product's draft (its receiving
    * stepper is unconditionally visible, §3.8a) — the flag still exists on
-   * that line for shape-consistency but is never read for it, since
+   * that draft for shape-consistency but is never read for it, since
    * `currentQuantity === undefined` already routes past every check of this
    * flag. */
   receiptOpen: boolean;
 }
 
 /**
- * `decision-log.md` D78 — builds a fresh line for an *existing* Product,
+ * `decision-log.md` D78 — builds a fresh draft for an *existing* Product,
  * carrying forward its live `disponibles` as Cantidad disponible actual's
  * snapshot in the same motion (§3.8's own carry-forward rule), the same
  * "capture business truth once, reuse it forever" discipline this screen's
@@ -114,16 +112,17 @@ function buildExistingLine(state: AppState, product: Product): Line {
 }
 
 /**
- * D78 — whether this line currently carries a real, nonzero staged effect:
+ * D78 — whether this draft currently carries a real, nonzero staged effect:
  * an open correction whose value differs from the loaded ceiling, and/or an
  * open (necessarily nonzero, floor-1) receipt. Drives every gate this
- * amendment adds — Producto's re-selectability, "+ Agregar otro producto,"
- * "Guardar mercancía," and which committed lines can ever exist at all
- * (§3.6/§3.7).
+ * amendment adds — Producto's re-selectability and "Guardar mercancía"
+ * (`decision-log.md`'s 2026-09-18 single-Product-focus amendment retired
+ * "+ Agregar otro producto" and the committed-lines list this used to also
+ * gate — see §3.6/§3.7's own retirement note).
  */
 function hasRealEffect(line: Line): boolean {
   if (!line.currentQuantity) {
-    // A brand-new Product's line has no correction UI at all — its
+    // A brand-new Product's draft has no correction UI at all — its
     // always-visible receiving stepper (floor 1) already carries a real
     // value the instant Producto resolves (§3.8a, unchanged from before
     // this amendment).
@@ -135,11 +134,11 @@ function hasRealEffect(line: Line): boolean {
 }
 
 /**
- * D78 — the actual receipt quantity this line contributes to a save. For a
+ * D78 — the actual receipt quantity this draft contributes to a save. For a
  * brand-new Product, always `quantity` (always-visible, always real). For
  * an existing Product, `quantity` only while `receiptOpen` is true —
  * otherwise 0, even though `quantity` itself still sits at its own default
- * internally. Every read of "how much is being received" on this line goes
+ * internally. Every read of "how much is being received" on this draft goes
  * through this function, never `line.quantity` directly, so a closed
  * receipt section can never leak a phantom default-1 receipt into a save.
  */
@@ -149,15 +148,26 @@ function effectiveReceiptQty(line: Line): number {
 }
 
 /**
- * inventory.md §3.6/§3.7 — Registro de mercancía. Producto + Cantidad
- * disponible actual (correction) + Cantidad recibida (receipt) only
- * (D9/architecture-principles.md #5 — no Supplier, no cost field).
- * Rewritten in full 2026-09-18 (`decision-log.md` D78, RFC 0016): an
- * existing Product's line now defaults to a read-only "Cantidad disponible
- * actual" + pencil + "+ Recibir lote" link, with no persistent "Guardar
- * mercancía" until she actually stages a real, nonzero effect on the active
- * row (or the committed list already holds one) — replaces the always-on
- * two-box shape D77 shipped only hours earlier the same day.
+ * inventory.md §3.6 — Registro de mercancía, Producto seleccionado, una
+ * operación enfocada. Producto + Cantidad disponible actual (correction) +
+ * Cantidad recibida (receipt) only (D9/architecture-principles.md #5 — no
+ * Supplier, no cost field).
+ *
+ * **Rewritten 2026-09-18, same day, Product Owner decision (live retest of
+ * D78's shipped version) — single-Product focus.** Once Producto resolves,
+ * this screen's own read-only/correction/receipt states are the entire
+ * interaction for this visit: check/correct the current count and/or
+ * receive new stock of that one Product, then "Guardar mercancía" returns
+ * her to Catalog view. "+ Agregar otro producto" and the "Ya agregaste"
+ * multi-line committed list (former §3.7) are retired outright — there is
+ * no longer a `committed: Line[]` array, only this one `draft`. §3.9's
+ * Descartar confirmation is retired as a direct consequence — it protected
+ * an already-committed line in that now-gone list, and nothing is ever
+ * "committed" short of the real "Guardar mercancía" write itself anymore;
+ * each staged fact already has its own instant, no-confirmation undo
+ * ("Cancelar"/"Quitar," below). To work on a different Product, she starts
+ * a fresh, independent Registro de mercancía from Catalog view — never a
+ * continuation of this one (§3.6's own "Amended 2026-09-18" bullet, §4, §10).
  */
 export function RegisterMerchandise({
   initialProductId,
@@ -165,154 +175,109 @@ export function RegisterMerchandise({
   onBack,
 }: {
   initialProductId?: string;
-  /** AT-M1 fix (`AssignTags.tsx`) — alongside the last-saved productId,
-   * hands back exactly what this specific `commitLot` call wrote (productId
-   * + quantity per line, existing lines with a repeated Product merged into
-   * one), so a caller auto-entering Asignar Tags right after can freeze a
-   * receipt scoped to only this commit — never the live, business-wide
-   * pending-tag queue, which may also hold an older, unrelated deferred
-   * Lot's own backlog. */
+  /** AT-M1 fix (`AssignTags.tsx`) — alongside the saved productId, hands
+   * back exactly what this specific `commitLot` call wrote (0 or 1 entries
+   * now that a draft is always exactly one Product), so a caller
+   * auto-entering Asignar Tags right after can freeze a receipt scoped to
+   * only this commit. */
   onSaved: (lastProductId: string, entryBreakdown: { productId: string; quantity: number }[]) => void;
   onBack: () => void;
 }) {
   const { state, commitLot, correctProductAvailableCount } = useStore();
   const initialProduct = state.products.find((p) => p.id === initialProductId);
 
-  const [committed, setCommitted] = useState<Line[]>([]);
   // D78 — the Catalog-row shortcut is one of §3.8's three carry-forward
   // entry points; `buildExistingLine` loads Cantidad disponible actual's
   // snapshot from this Product's live `disponibles` in the same motion, but
   // lands her on the read-only at-rest state, never pre-staged.
   const [draft, setDraft] = useState<Line | null>(initialProduct ? buildExistingLine(state, initialProduct) : null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [discardOpen, setDiscardOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   /** `reviewer` Blocker fix (2026-09-13) — the stable idempotency key for one
-   * logical "Guardar mercancía" attempt, mirroring `store.tsx`'s own
-   * `onboardingIdempotencyKeyRef` exactly: generated once when `handleSave`
-   * starts an attempt, reused unchanged across any retry of that same
-   * attempt (a failed save just resets `saving` and leaves `committed`/
+   * logical "Guardar mercancía" attempt (the receipt half of it), mirroring
+   * `store.tsx`'s own `onboardingIdempotencyKeyRef` exactly: generated once
+   * when `handleSave` starts an attempt, reused unchanged across any retry
+   * of that same attempt (a failed save just resets `saving` and leaves
    * `draft` untouched, so tapping "Guardar mercancía" again must replay the
-   * same key, never mint a fresh one — a fresh key on retry is exactly what
-   * let a lost-response retry mint a duplicate Lot/Products/InventoryUnits).
-   * Cleared on success (below) and on every action that actually changes
-   * what would be saved (`resetSaveAttempt`, used by `removeCommitted`/
-   * `handleAddAnother`/the picker callbacks/every stepper and toggle) —
-   * never on a mere failed-save retry, which is the one case this key must
-   * survive unchanged. */
+   * same key, never mint a fresh one). Cleared on success (below) and on
+   * every action that actually changes what would be saved
+   * (`resetSaveAttempt`, used by every stepper/link on this screen and the
+   * picker callbacks) — never on a mere failed-save retry, which is the one
+   * case this key must survive unchanged. */
   const commitIdempotencyKeyRef = useRef<string | null>(null);
 
-  /** D78 — one idempotency key per corrected line's own
-   * `correctProductAvailableCount` call (a single-product write, not a
-   * batch one like `commit_lot`), same generate-once-per-attempt/
-   * reused-across-retry discipline as `commitIdempotencyKeyRef` above,
-   * keyed by `Line.key` since more than one line can be corrected in the
-   * same "Guardar mercancía" tap. */
-  const correctionIdempotencyKeysRef = useRef<Map<string, string>>(new Map());
-  /** D78 — which lines' correction write has already succeeded *within
-   * this attempt*. Required for a correct retry after a partial failure
-   * (a correction succeeds, then `commitLot` fails): without this, a
-   * retry would re-run the already-applied line's local mirror a second
-   * time — over-removing on a decrease, or minting a second batch of
-   * phantom units on an increase. The server call itself is naturally safe
-   * to repeat (idempotency-keyed, RFC 0016's own "converges toward her
-   * target" design) — this guard exists only to protect the *local
-   * mirror*, which the server has no way to make idempotent on its own. */
-  const appliedCorrectionsRef = useRef<Set<string>>(new Set());
+  /** D78 — one idempotency key for this draft's own `correctProductAvailableCount`
+   * call (a single-Product write, not a batch one like `commit_lot`), same
+   * generate-once-per-attempt/reused-across-retry discipline as
+   * `commitIdempotencyKeyRef` above. */
+  const correctionIdempotencyKeyRef = useRef<string | null>(null);
+  /** D78 — whether this draft's correction write has already succeeded
+   * *within this attempt*. Required for a correct retry after a partial
+   * failure (the correction succeeds, then `commitLot` fails): without
+   * this, a retry would re-run the already-applied correction's local
+   * mirror a second time — over-removing on a decrease, or minting a second
+   * batch of phantom units on an increase. The server call itself is
+   * naturally safe to repeat (idempotency-keyed, RFC 0016's own "converges
+   * toward her target" design) — this guard exists only to protect the
+   * *local mirror*, which the server has no way to make idempotent on its
+   * own. */
+  const appliedCorrectionRef = useRef(false);
 
   function resetSaveAttempt() {
     commitIdempotencyKeyRef.current = null;
-    correctionIdempotencyKeysRef.current.clear();
-    appliedCorrectionsRef.current.clear();
+    correctionIdempotencyKeyRef.current = null;
+    appliedCorrectionRef.current = false;
   }
 
-  const canSave = committed.length > 0 || (draft !== null && hasRealEffect(draft));
-
-  // Resolves whichever photo this line's marker should show — a real
-  // Product's already-saved `photo` for an `existing` line, or the draft's
-  // own not-yet-written selection for a `new` one. Presentation-only, same
-  // "reuse the one TagStub component" discipline as every other marker in
-  // this codebase.
-  function photoForLine(line: Line): string | undefined {
-    const ref = line.product;
-    if (ref.kind === 'existing') {
-      return state.products.find((p) => p.id === ref.productId)?.photo;
-    }
-    return ref.photo;
-  }
-
-  /**
-   * D78 — a draft only ever joins the committed list (whether via
-   * "+ Agregar otro producto" or an implicit commit at "Guardar mercancía")
-   * while it carries a real, nonzero effect. There is no longer a "she
-   * opened the row and changed nothing" committed line (§3.7) — a draft
-   * with no real effect simply evaporates on save, by construction.
-   */
-  function commitDraftIfAny(next: Line[]): Line[] {
-    if (draft && hasRealEffect(draft)) return [...next, draft];
-    return next;
-  }
-
-  function handleAddAnother() {
-    if (!draft || !hasRealEffect(draft)) return;
-    resetSaveAttempt();
-    setCommitted((c) => [...c, draft]);
-    setDraft(null);
-    setPickerOpen(true);
-  }
+  const canSave = draft !== null && hasRealEffect(draft);
 
   async function handleSave() {
-    const lines = commitDraftIfAny(committed);
-    if (lines.length === 0) return;
+    if (!draft || !hasRealEffect(draft)) return;
     setSaving(true);
 
-    // D78 — up to two independent writes per line, composed behind this one
-    // tap (§3.6/§3.7): a correction (either direction) via Cantidad
-    // disponible actual, a real receipt via Cantidad recibida, or both.
-    // Corrections run first; each already-applied line (from a prior,
-    // partially-failed attempt) is skipped outright, not just re-sent —
-    // see `appliedCorrectionsRef`'s own doc comment above for why
-    // re-sending would be locally unsafe even though the RPC itself is
-    // idempotent.
-    const correctionLines = lines.filter(
-      (l) =>
-        l.currentQuantity !== undefined &&
-        l.currentQuantity.value !== l.currentQuantity.ceiling &&
-        !appliedCorrectionsRef.current.has(l.key),
-    );
-    for (const line of correctionLines) {
-      // Cantidad disponible actual only ever exists on an `existing` line
+    // D78 — up to two independent writes for this one Product, composed
+    // behind this one tap (§3.6): a correction (either direction) via
+    // Cantidad disponible actual, a real receipt via Cantidad recibida, or
+    // both. The correction runs first; if it already succeeded on a prior,
+    // partially-failed attempt, it's skipped outright, not just re-sent —
+    // see `appliedCorrectionRef`'s own doc comment above for why re-sending
+    // would be locally unsafe even though the RPC itself is idempotent.
+    const hasCorrection = draft.currentQuantity !== undefined && draft.currentQuantity.value !== draft.currentQuantity.ceiling;
+    if (hasCorrection && !appliedCorrectionRef.current) {
+      // Cantidad disponible actual only ever exists on an `existing` draft
       // (§3.8a: it never applies to a fresh Product) — this cast is always
       // safe by construction, same posture as this file's other
       // `kind === 'existing'` casts below.
-      const productId = (line.product as { kind: 'existing'; productId: string }).productId;
-      let key = correctionIdempotencyKeysRef.current.get(line.key);
-      if (!key) {
-        key = crypto.randomUUID();
-        correctionIdempotencyKeysRef.current.set(line.key, key);
+      const productId = (draft.product as { kind: 'existing'; productId: string }).productId;
+      if (!correctionIdempotencyKeyRef.current) {
+        correctionIdempotencyKeyRef.current = crypto.randomUUID();
       }
-      const result = await correctProductAvailableCount(productId, line.currentQuantity!.value, key);
+      const result = await correctProductAvailableCount(
+        productId,
+        draft.currentQuantity!.value,
+        correctionIdempotencyKeyRef.current,
+      );
       if (!result.ok) {
         console.error('[RegisterMerchandise] correctProductAvailableCount failed');
         setSaving(false);
         return;
       }
-      appliedCorrectionsRef.current.add(line.key);
+      appliedCorrectionRef.current = true;
     }
 
     // Cantidad recibida's own write — purely additive, unchanged in
-    // mechanism from before D78, but now only fires for a line whose
-    // *effective* receipt quantity is > 0 — a pure-correction line, whose
+    // mechanism from before D78, but only fires while the draft's
+    // *effective* receipt quantity is > 0 — a pure-correction draft, whose
     // receipt section was never opened, contributes nothing here even
     // though `quantity` still sits at its own internal default (§3.6's own
     // "never fold into the same editable number" rule). `commitLot` is
-    // skipped entirely, not called with an empty array, whenever every line
-    // in this save is a pure correction — no Lot/InventoryEntry is created
-    // for zero new stock.
-    const additiveLines = lines.filter((l) => effectiveReceiptQty(l) > 0);
-    let resolved: string[] = [];
-    if (additiveLines.length > 0) {
+    // skipped entirely, not called with an empty array, whenever this save
+    // is a pure correction — no Lot/InventoryEntry is created for zero new
+    // stock.
+    const receiptQty = effectiveReceiptQty(draft);
+    let resolvedProductId: string | null = null;
+    if (receiptQty > 0) {
       // `reviewer` Blocker fix — generated once per attempt, reused
       // unchanged across a retry (see `commitIdempotencyKeyRef`'s own doc
       // comment above).
@@ -320,33 +285,34 @@ export function RegisterMerchandise({
         commitIdempotencyKeyRef.current = crypto.randomUUID();
       }
       const idempotencyKey = commitIdempotencyKeyRef.current;
-      // The atomic write, per inventory.md §3.8a: any `new` line's Product
+      // The atomic write, per inventory.md §3.8a: a `new` draft's Product
       // identity is minted here, inside commitLot's own transaction — never
-      // before. `resolvedOrNull` mirrors `additiveLines`' order, so its last
-      // entry is the productId (real or freshly-minted) of the line just
-      // saved.
-      const resolvedOrNull = await commitLot(
-        additiveLines.map((l) => ({
-          quantity: effectiveReceiptQty(l),
-          product:
-            l.product.kind === 'existing'
-              ? { kind: 'existing' as const, productId: l.product.productId }
-              : {
-                  kind: 'new' as const,
-                  name: l.product.name,
-                  defaultPrice: l.product.price,
-                  photo: l.product.photo,
-                  barcode: l.product.barcode,
-                },
-        })),
+      // before. `resolved` is this one Product's real (or freshly-minted)
+      // id.
+      const resolved = await commitLot(
+        [
+          {
+            quantity: receiptQty,
+            product:
+              draft.product.kind === 'existing'
+                ? { kind: 'existing' as const, productId: draft.product.productId }
+                : {
+                    kind: 'new' as const,
+                    name: draft.product.name,
+                    defaultPrice: draft.product.price,
+                    photo: draft.product.photo,
+                    barcode: draft.product.barcode,
+                  },
+          },
+        ],
         idempotencyKey,
       );
-      if (!resolvedOrNull) {
+      if (!resolved) {
         console.error('[RegisterMerchandise] commitLot failed');
         setSaving(false);
         return;
       }
-      resolved = resolvedOrNull;
+      resolvedProductId = resolved[0];
       // Success — this logical attempt is over; a future, genuinely new
       // attempt (a fresh Lot registered after this one) must mint its own key.
       commitIdempotencyKeyRef.current = null;
@@ -355,74 +321,24 @@ export function RegisterMerchandise({
     // Every write for this attempt has now succeeded — clear the
     // correction bookkeeping too, the same "over, a future attempt mints
     // its own" reset `commitIdempotencyKeyRef` just got above.
-    correctionIdempotencyKeysRef.current.clear();
-    appliedCorrectionsRef.current.clear();
+    correctionIdempotencyKeyRef.current = null;
+    appliedCorrectionRef.current = false;
 
-    // AT-M1 — exactly what this commit wrote, merging any repeated
-    // Product across lines into a single quantity (defensive: the form
-    // itself never produces two lines for the same Product today, but the
-    // receipt should stay correct even if that ever changes).
-    const entryBreakdown: { productId: string; quantity: number }[] = [];
-    const entryTotals = new Map<string, number>();
-    additiveLines.forEach((l, i) => {
-      const productId = resolved[i];
-      entryTotals.set(productId, (entryTotals.get(productId) ?? 0) + effectiveReceiptQty(l));
-    });
-    entryTotals.forEach((quantity, productId) => entryBreakdown.push({ productId, quantity }));
+    // AT-M1 — exactly what this commit wrote, for this one Product.
+    const entryBreakdown: { productId: string; quantity: number }[] =
+      resolvedProductId !== null ? [{ productId: resolvedProductId, quantity: receiptQty }] : [];
     setSaving(false);
     // D78 — a save can now be pure correction, with `commitLot` never
-    // called and `resolved` empty. The confirmation this hands off to
-    // (§3.12/§3.13) still needs *a* productId to scope its ambient
-    // "registrada" line to — falls back to the last line's own productId,
-    // always an `existing` line's real id whenever `resolved` is empty
-    // (a brand-new Product's own line always has a real receipt, so it can
-    // only ever be absent from `resolved` by never existing in `lines` at
-    // all — this fallback path is only ever reached by an all-corrections
-    // save, which by construction has no `new` lines).
-    const lastLine = lines[lines.length - 1];
+    // called and `resolvedProductId` null. The confirmation this hands off
+    // to (§3.12/§3.13) still needs *a* productId to scope its ambient
+    // "registrada" line to — falls back to the draft's own `existing`
+    // productId whenever `resolvedProductId` is null (a brand-new Product's
+    // own draft always has a real receipt, so it can only ever reach this
+    // fallback as an `existing` draft — a pure correction never applies to
+    // a brand-new Product, §3.6).
     const lastProductId =
-      resolved.length > 0
-        ? resolved[resolved.length - 1]
-        : (lastLine.product as { kind: 'existing'; productId: string }).productId;
+      resolvedProductId ?? (draft.product as { kind: 'existing'; productId: string }).productId;
     onSaved(lastProductId, entryBreakdown);
-  }
-
-  function removeCommitted(key: string) {
-    resetSaveAttempt();
-    setCommitted((c) => c.filter((l) => l.key !== key));
-  }
-
-  /**
-   * `decision-log.md` D78, `inventory.md` §3.7 — the "Ya agregaste"
-   * committed-line rendering, rewritten for bidirectional correction
-   * (replaces D77's decrease-only rendering). A pure receipt (correction
-   * never opened, or opened-then-cancelled with no delta) renders exactly
-   * as it always has — "Bolsas — 10," zero visual cost for the common
-   * case. A pure correction, either direction, renders "corregido a N
-   * (antes M)" — natural, direct language, never "removed," "increased,"
-   * `InventoryUnit`, or any status/entity name (*global-principles.md*,
-   * "business language before technical language"). Both together render
-   * "corregido a N (antes M) + K nuevas," never merged into one number
-   * (§3.6's own "never fold into the same editable number" rule). The
-   * existing INV-Q1 marker-carry-through rule (an unreviewed default-1
-   * receipt carries its "· revisa" marker here) composes directly on top —
-   * gated on a *real* receipt quantity (`effectiveReceiptQty`), so a pure
-   * correction whose receipt section was never opened never shows a
-   * spurious marker for a default it never actually staged.
-   */
-  function committedLineText(line: Line): { text: string; showReviewMarker: boolean } {
-    const cq = line.currentQuantity;
-    const receiptQty = effectiveReceiptQty(line);
-    const corrected = cq !== undefined && cq.value !== cq.ceiling;
-    if (!corrected) {
-      return { text: `${line.productName} — ${receiptQty}`, showReviewMarker: receiptQty > 0 && !line.touched };
-    }
-    const correctionText = `corregido a ${cq!.value} (antes ${cq!.ceiling})`;
-    const addition = receiptQty > 0 ? ` + ${receiptQty} nueva${receiptQty === 1 ? '' : 's'}` : '';
-    return {
-      text: `${line.productName} — ${correctionText}${addition}`,
-      showReviewMarker: receiptQty > 0 && !line.touched,
-    };
   }
 
   if (saving) {
@@ -430,11 +346,10 @@ export function RegisterMerchandise({
   }
 
   // D78 — Producto stays tappable (reopens Elegir producto) only while
-  // nothing has been staged on the active row yet; locks (plain text) the
-  // instant it does. Closes a real gap this amendment's own removal of the
-  // always-on default introduced: under D77, a wrongly-resolved Producto
-  // had no way back short of "Descartar" (§3.9), which doesn't even exist
-  // yet on a first, only row.
+  // nothing has been staged on the draft yet; locks (plain text) the
+  // instant it does. To work with a different Product once locked, she
+  // finishes or backs out of this operation and opens a fresh Registro de
+  // mercancía from Catalog view (single-Product focus, 2026-09-18, §3.6/§4).
   const draftLocked = draft !== null && hasRealEffect(draft);
 
   return (
@@ -447,27 +362,6 @@ export function RegisterMerchandise({
       <h1 className={styles.heading}>Registro de mercancía</h1>
 
       <div className={styles.scroll}>
-        {committed.length > 0 && (
-          <div className={styles.committed}>
-            <span className={styles.committedTitle}>Ya agregaste:</span>
-            {committed.map((line) => {
-              const { text, showReviewMarker } = committedLineText(line);
-              return (
-                <div key={line.key} className={`${styles.committedRow} stitchBottom`}>
-                  <TagStub name={line.productName} photo={photoForLine(line)} size={28} />
-                  <span className={styles.committedName}>
-                    {text}
-                    {showReviewMarker && <span className={styles.reviewFlag}> · revisa</span>}
-                  </span>
-                  <button className={styles.removeBtn} onClick={() => removeCommitted(line.key)} aria-label={`Quitar ${line.productName}`}>
-                    ✕
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
         <div className={styles.field}>
           <span className={styles.label}>Producto</span>
           {draftLocked ? (
@@ -589,22 +483,11 @@ export function RegisterMerchandise({
             <span className={styles.hint}>(o escribe la cantidad)</span>
           </div>
         )}
-
-        {draft && hasRealEffect(draft) && (
-          <button className={styles.addAnother} onClick={handleAddAnother}>
-            + Agregar otro producto
-          </button>
-        )}
       </div>
 
       {canSave && (
         <div className={`${styles.footer} stitchTop`}>
           <Button onClick={handleSave}>Guardar mercancía</Button>
-          {committed.length > 0 && (
-            <button className={styles.discard} onClick={() => setDiscardOpen(true)}>
-              Descartar
-            </button>
-          )}
         </div>
       )}
 
@@ -639,30 +522,6 @@ export function RegisterMerchandise({
             setPickerOpen(false);
           }}
         />
-      )}
-
-      {discardOpen && (
-        <Sheet onDismiss={() => setDiscardOpen(false)}>
-          <p className={styles.heading} style={{ padding: 0, marginBottom: 16 }}>
-            ¿Descartar los {committed.length + (draft && hasRealEffect(draft) ? 1 : 0)} productos que ya agregaste?
-          </p>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Button variant="secondary" onClick={() => setDiscardOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                resetSaveAttempt();
-                setCommitted([]);
-                setDraft(null);
-                setDiscardOpen(false);
-              }}
-            >
-              Sí, descartar
-            </Button>
-          </div>
-        </Sheet>
       )}
     </>
   );

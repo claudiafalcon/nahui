@@ -735,7 +735,7 @@ interface StoreValue {
    * change happens in that case — `CatalogView.tsx`'s sheet stays open,
    * staged value intact, so she can retry). */
   setProductBarcode: (productId: ID, newBarcode: string) => Promise<boolean>;
-  /** inventory.md §3.6/§3.7 "Cantidad disponible actual" (`decision-log.md`
+  /** inventory.md §3.6 "Cantidad disponible actual" (`decision-log.md`
    * D78, `product/99-rfc/0016-inventory-unit-bidirectional-correction.md`
    * Accepted — supersedes D77/RFC 0015's decrease-only v1 scope) — the
    * Registro de mercancía correction write, now genuinely bidirectional:
@@ -762,9 +762,11 @@ interface StoreValue {
    * posture `commitLot`'s own failure path already holds). The caller
    * supplies its own idempotency key, same per-attempt discipline as every
    * other keyed write here — `RegisterMerchandise.tsx`'s own "Guardar
-   * mercancía" may fire one of these per corrected line, alongside its
-   * existing `commitLot` call, so each needs its own key, not a single
-   * shared one. */
+   * mercancía" may fire one of these, alongside its own `commitLot` call
+   * for the same Product's receipt half, so each needs its own key, not a
+   * single shared one (single-Product focus, `decision-log.md` 2026-09-18 —
+   * this screen composes at most one correction and one receipt write per
+   * visit now, never more). */
   correctProductAvailableCount: (
     productId: ID,
     targetAvailableCount: number,
@@ -2028,14 +2030,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * inventory.md §3.8a/§3.9: the entire Lot write — including minting any
-   * genuinely-new Product identities picked up in "¿Qué llegó?" this same
+   * inventory.md §3.8a: the entire Lot write — including minting any
+   * genuinely-new Product identity picked up in "¿Qué llegó?" this same
    * visit — happens atomically, only here, only at "Guardar mercancía."
    * Nothing before this point (picking/typing a new Product+price in the
-   * picker, adding it to the in-progress list, discarding, or backing out)
-   * may write a Product into the store — see `RegisterMerchandise.tsx`,
-   * which holds pending new-Product identities in its own local draft/
-   * committed state until it calls this.
+   * picker or backing out) may write a Product into the store — see
+   * `RegisterMerchandise.tsx`, which holds a pending new-Product identity in
+   * its own local draft state (single-Product focus, `decision-log.md`
+   * 2026-09-18 — there is no longer an in-progress list to add to or
+   * discard) until it calls this.
    *
    * As of `product-decisions.md` Q20, `onboarding.md` §2.2a/§3.5b–§3.5e's
    * "Define lo que vendes" step calls this same function at "Continuar" —

@@ -29,46 +29,6 @@
   gap: var(--space-4);
 }
 
-.committed {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.committedTitle {
-  font: var(--text-body-sm);
-  font-weight: 600;
-  color: #6B6259;
-}
-
-.committedRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 8px 4px 10px;
-  position: relative;
-}
-
-.committedName {
-  flex: 1;
-  font: var(--text-body);
-  color: var(--color-obsidian);
-}
-
-.reviewFlag {
-  color: var(--color-warning-aa);
-  font: var(--text-meta);
-}
-
-.removeBtn {
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: #8A8177;
-  font-size: 18px;
-  padding: 4px 8px;
-}
-
 .field {
   display: flex;
   flex-direction: column;
@@ -131,20 +91,9 @@
 
 /* D78 — the small link-style actions this rebuild introduces: "✎ Corregir,"
    "Cancelar" (correction mode), "+ Recibir lote," "Quitar" (receipt mode).
-   Same visual weight as `.addAnother`/`.back` — an existing, already-
-   established pattern in this component, not a new one. */
+   Same visual weight as `.back` — an existing, already-established pattern
+   in this component, not a new one. */
 .linkBtn {
-  align-self: flex-start;
-  border: none;
-  background: none;
-  color: var(--color-coral-aa);
-  font: var(--text-body-sm);
-  font-weight: 600;
-  cursor: pointer;
-  padding: 4px;
-}
-
-.addAnother {
   align-self: flex-start;
   border: none;
   background: none;
@@ -162,16 +111,6 @@
   flex-direction: column;
   gap: var(--space-2);
   position: relative;
-}
-
-.discard {
-  align-self: center;
-  border: none;
-  background: none;
-  color: var(--color-tezontle-dark);
-  font: var(--text-body-sm);
-  cursor: pointer;
-  padding: 4px;
 }
 
 .savingLine {
