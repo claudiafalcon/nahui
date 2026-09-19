@@ -370,57 +370,30 @@ export function pendingTagBreakdown(state: AppState, productId?: ID): { product:
 /** `decision-log.md` D27 — `nfc` capability derives from `subscriptionTier`
  * alone, never from kit/code activation. Gates whether "Assign Tags" exists
  * at all in Inventario (`inventory.md` §2's own capability check) — a
- * Business-level fact, independent of any single Session's resolved
- * `Session.operatingMode` (*architecture-principles.md* #1). */
+ * Business-level fact. **`decision-log.md` D79 — "Session Operating Mode"
+ * as a concept is retired, so this is no longer contrasted against it; a
+ * plain Business-level capability fact with no Session-scoped counterpart
+ * of any kind.** */
 export function nfcCapable(state: AppState): boolean {
   return state.business?.subscriptionTier === 'paid';
 }
 
-/** NFC Selling pass (Migration Workflow D43, `home.md` §2's "NFC Readiness
- * sub-step, folded into Session-start," `decision-log.md` D23). Distinct
- * from, and checked independently of, `nfcCapable` above — a Business can be
- * `nfc`-capable (Paid tier) with zero tagged stock (Not Ready), and §3.6a
- * treats "capability revoked" as a separate Session-start trigger from
- * readiness itself. */
-
-/** How many currently-sellable units already carry an assigned tag —
- * `taggedAvailableCount` in the Architecture Gap Analysis's own naming. */
-export function taggedAvailableCount(state: AppState): number {
-  return state.units.filter((u) => u.status === 'available' && u.tagId != null).length;
-}
-
-/** Every currently-sellable unit, tagged or not — `taggedAvailableCount` plus
- * `pendingTagCount` (the live untagged queue above), never a second,
- * independently-derived count of `state.units`. */
-export function totalAvailableCount(state: AppState): number {
-  return taggedAvailableCount(state) + pendingTagCount(state);
-}
-
 /**
- * Disclosed, illustrative constant (`decision-log.md` D23: the readiness
- * threshold is "a configurable product/business rule, not hard-coded into
- * the Foundation") — never surfaced to Ana as a number or percentage
- * anywhere in the UI (`home.md` §3.6a's own explicit rule: "the readiness
- * threshold itself stays invisible to Ana"). 0.8 (80% of sellable stock
- * already tagged) is this build's own illustrative choice, not a Product
- * Owner-set business rule — a future pass may make this a real Configuración
- * value without changing anything about how `nfcReadiness` below consumes it.
+ * **NFC Readiness — retired outright, `decision-log.md` D79
+ * (`product/99-rfc/0017-nfc-composable-selling-capability.md`).** This used
+ * to be the Ready/Limited Ready/Not Ready three-state computation
+ * (`home.md` §2's "NFC Readiness sub-step, folded into Session-start,"
+ * `decision-log.md` D23) that gated `Session.operatingMode`'s own
+ * Session-start resolution and the "Leer con NFC" overlay's Limited-Ready-
+ * only composition. D79 retires it, not merely narrows it — there is no
+ * aggregate-coverage computation left in the corrected model at all; "Leer
+ * con NFC" now gates on `Business.nfcPerProductEnabled` alone, re-read live
+ * on every render (`home.md` §3.9). `taggedAvailableCount`/
+ * `totalAvailableCount`/`NFC_READINESS_THRESHOLD`/`nfcReadiness` (the four
+ * functions/constant this computation used) are removed entirely along with
+ * it — confirmed via trace, zero remaining callers anywhere in this
+ * codebase as of this change.
  */
-export const NFC_READINESS_THRESHOLD = 0.8;
-
-export type NfcReadiness = 'ready' | 'limited' | 'not-ready';
-
-/** `home.md` §2's own three-way resolution: zero tagged sellable stock is
- * always Not Ready regardless of how much is still pending; otherwise
- * Ready/Limited Ready is a pure threshold comparison against
- * `NFC_READINESS_THRESHOLD` above. */
-export function nfcReadiness(state: AppState): NfcReadiness {
-  const tagged = taggedAvailableCount(state);
-  if (tagged === 0) return 'not-ready';
-  const total = totalAvailableCount(state);
-  if (total === 0) return 'not-ready'; // defensive — unreachable when tagged > 0
-  return tagged / total >= NFC_READINESS_THRESHOLD ? 'ready' : 'limited';
-}
 
 /** How many finalized SaleItems this Product has ever sold — drives the
  * selling grid's most-frequently-sold-first ordering (home.md §3.9).

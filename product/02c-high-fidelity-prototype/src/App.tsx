@@ -146,11 +146,15 @@ export default function App() {
                 setActiveTab('resultados');
               }}
               onNavigateToAssignTags={() => {
-                // home.md §3.6a's "Asignar tags" link — routes into
+                // Selling.tsx's own mid-Session "Asignar tags" hand-off (a
+                // scan that doesn't resolve to any tagged unit) — routes into
                 // Inventario's own Asignar Tags queue (inventory.md §3.14),
                 // the same whole-Catalog/Lot-scoped shape entry point 1 and
                 // the (dormant since D72) entry point 2 both use — not a
-                // Home-local stub. Unaffected by the 2026-09-17 live pass:
+                // Home-local stub. **The former §3.6a Session-start "Asignar
+                // tags" mention this callback also used to feed is retired
+                // outright, `decision-log.md` D79** — this is now its only
+                // caller. Unaffected by the 2026-09-17 live pass:
                 // that amendment only retired §3.5/§3.17's own Catalog-view
                 // "Continuar etiquetando" button and added the new
                 // Product-scoped entry point 3 (`onOpenAssignTagsForProduct`

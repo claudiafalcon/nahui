@@ -8,7 +8,6 @@ import {
   findProduct,
   findVenue,
   myActiveSession,
-  nfcReadiness,
   openSaleForSession,
   productByBarcode,
   sellingGridRows,
@@ -30,35 +29,41 @@ import { articulos, pesos, pluralize } from '../../domain/format';
 import styles from './Selling.module.css';
 
 /**
- * home.md §3.7/§3.8/§3.9/§3.10 — active Session, mode-agnostic shell
- * (SessionHeader + VentaActualTray, §3.7) with an exclusive registration
- * zone that branches on `Session.operatingMode` (§2/§3.6a: resolved once at
- * Session-start, never re-evaluated mid-Session):
- * - `'buttons'` (§3.9) — the scrollable, frequency-ordered ProductTile grid,
- *   unchanged since Slice 1.
- * - `'nfc'` (§3.10, NFC Selling pass, D43) — no product grid at all, not
- *   grayed out, not present: replaced entirely by `NFCScanPrompt` (reused
- *   from the Asignar Tags slice, per the Architecture Gap Analysis's own
- *   instruction), resolving `addItemToSaleByTag` against the real physical
- *   tag she taps.
+ * home.md §3.7/§3.8/§3.9 — active Session, one unconditional composable
+ * selling surface (`decision-log.md` D79,
+ * `product/99-rfc/0017-nfc-composable-selling-capability.md`) — supersedes
+ * the former `Session.operatingMode = buttons`/`= nfc` split this comment
+ * used to document. SessionHeader + VentaActualTray (§3.7) sit above a
+ * single registration zone (§3.9) that always shows the scrollable,
+ * frequency-ordered ProductTile grid, with two independent overlay entry
+ * points composed on top of it, each gated live on every render, never
+ * resolved once at Session-start:
+ * - "Escanear código de barras" (§3.9a) — `subscriptionTier === 'paid'`.
+ * - "Leer con NFC" (§3.9d) — `Business.nfcPerProductEnabled === true`.
  *
- *   **Real vs. simulated hardware, disclosed here rather than silently
- *   assumed** — `home.md` doesn't claim any exact NFC hardware mechanics,
- *   the same disclaimed-mechanics posture `inventory.md` §3.8b already
- *   holds for camera mechanics. On Chrome/Android (`nfcSupported`, the only
- *   browser that implements Web NFC as of this build), the gesture that
- *   enters this surface starts a real, persistent `NDEFReader.scan()`
- *   listening session (see `handleScan` below) — every physical tag she
- *   then holds near the phone resolves via its own factory-set hardware UID
- *   (`event.serialNumber`, `decision-log.md` D74 — the same UID
- *   `AssignTags.tsx`'s own real scan path captured), no further on-screen
- *   tap needed. Everywhere else (iPhone Safari, desktop, any browser without
- *   Web NFC), scanning stays the pure client-side simulation this comment
- *   previously described as the *only* mechanism — resolving
- *   `addItemToSaleByTag` against a randomly-picked currently-tagged-and-
- *   available unit, the same "mock the physical mechanism, keep the domain
- *   layer honest" posture `AssignTags.tsx`'s own scan simulation already
- *   established, not a new convention invented here.
+ * **The former full-screen, whole-catalog `nfc`-only surface (§3.10) is
+ * retired outright, D79** — not merely harder to reach the way D72's
+ * one-way escape valve had already left it. The composable surface above is
+ * a strict superset of what it ever offered, so no merchant loses any
+ * capability by its removal.
+ *
+ * **Real vs. simulated hardware, disclosed here rather than silently
+ * assumed** — `home.md` doesn't claim any exact NFC hardware mechanics,
+ * the same disclaimed-mechanics posture `inventory.md` §3.8b already
+ * holds for camera mechanics. On Chrome/Android (`nfcSupported`, the only
+ * browser that implements Web NFC as of this build), the gesture that
+ * enters the "Leer con NFC" overlay starts a real, persistent
+ * `NDEFReader.scan()` listening session (see `handleScan` below) — every
+ * physical tag she then holds near the phone resolves via its own
+ * factory-set hardware UID (`event.serialNumber`, `decision-log.md` D74 —
+ * the same UID `AssignTags.tsx`'s own real scan path captured), no further
+ * on-screen tap needed. Everywhere else (iPhone Safari, desktop, any
+ * browser without Web NFC), scanning stays the pure client-side simulation
+ * this comment previously described as the *only* mechanism — resolving
+ * `addItemToSaleByTag` against a randomly-picked currently-tagged-and-
+ * available unit, the same "mock the physical mechanism, keep the domain
+ * layer honest" posture `AssignTags.tsx`'s own scan simulation already
+ * established, not a new convention invented here.
  */
 // `nfcSupported` / `NFC_SIMULATION_ENABLED` / `nfcUnavailable` — the shared
 // capability + simulation switch (`src/domain/nfcSupport.ts`, Stage 7
@@ -66,8 +71,8 @@ import styles from './Selling.module.css';
 // `'NDEFReader' in window` constant. The simulated pool in `handleScan`
 // below is now only reachable when `NFC_SIMULATION_ENABLED` (dev / explicit
 // demo build) — a production build on a browser without Web NFC renders
-// `NFCScanPrompt`'s `'unsupported'` state on both of this screen's NFC
-// surfaces and never resolves a fake sale-by-tag.
+// `NFCScanPrompt`'s `'unsupported'` state and never resolves a fake
+// sale-by-tag.
 
 export function Selling({
   role,
@@ -83,10 +88,11 @@ export function Selling({
   onSessionClosed: (summary: { count: number; revenue: number }, sessionId: string) => void;
   onOpenAccountSurface: () => void;
   /** Fix round, `docs/passes/slice-7-nfc-selling.md` (ux-critic Major) —
-   * the same `HomeScreen.tsx`-owned hand-off `Idle.tsx`/`EventResume.tsx`
-   * already use for §3.6a's "Asignar tags" mention, threaded one level
-   * deeper so §3.10's no-match scan fallback can offer it too (see
-   * `handleScan`'s own doc comment below). */
+   * the same `HomeScreen.tsx`-owned hand-off so a no-match NFC scan can
+   * offer this "Asignar tags" hand-off (see `handleScan`'s own doc comment
+   * below). Formerly also shared with §3.6a's own Session-start "Asignar
+   * tags" mention (`Idle.tsx`/`EventResume.tsx`) — that mention is retired,
+   * `decision-log.md` D79; this is now its only caller. */
   onNavigateToAssignTags: () => void;
   /** home.md §3.7c "Ver mi actividad de hoy" (Slice 12) — opens the full
    * push-in own-activity screen; `HomeScreen.tsx` owns the actual mount
@@ -229,9 +235,8 @@ export function Selling({
   // in Eventos
   // (`EventsList.tsx`'s `toast`/`ambientMessage`), not a new UI primitive.
   // Fix round, `docs/passes/slice-7-nfc-selling.md` (ux-critic Major) —
-  // `stockHint` now optionally carries a tappable link, so the one
-  // sibling-less dead end in this file (§3.10's no-match scan fallback, see
-  // `handleScan` below) can offer a next step the same way every other
+  // `stockHint` now optionally carries a tappable link, so a no-match scan
+  // (see `handleScan` below) can offer a next step the same way every other
   // "you can't do X right now" moment in this file family already does,
   // without introducing a second hint mechanism.
   const [stockHint, setStockHint] = useState<{ message: string; link?: { label: string; onTap: () => void } } | null>(
@@ -239,14 +244,14 @@ export function Selling({
   );
   const stockHintTimeout = useRef<number | undefined>(undefined);
 
-  // home.md §3.9/§3.9a/§3.9a-i/§3.9b/§3.9c (`decision-log.md` D65) —
-  // "Escanear código de barras," `buttons`-mode-only, layered on top of the
-  // existing tile-tap mechanics rather than a new operating mode. 'active'
-  // mounts the shared camera (`BarcodeScanner.tsx`, real `getUserMedia`);
-  // 'no-match' is its own terminal dead-end screen (§3.9b) reached only
-  // once the camera has already closed. Deliberately does not exist at all
-  // in `nfc` mode (§3.10, unchanged) — that surface has its own, different
-  // hardware capability.
+  // home.md §3.9/§3.9a/§3.9a-i/§3.9b/§3.9c (`decision-log.md` D65, D79) —
+  // "Escanear código de barras," Paid tier only, layered on top of the
+  // existing tile-tap mechanics rather than a new operating mode — always
+  // reachable alongside "Leer con NFC," never mutually exclusive with it
+  // (`decision-log.md` D79). 'active' mounts the shared camera
+  // (`BarcodeScanner.tsx`, real `getUserMedia`); 'no-match' is its own
+  // terminal dead-end screen (§3.9b) reached only once the camera has
+  // already closed.
   const [scannerMode, setScannerMode] = useState<'closed' | 'active' | 'no-match'>('closed');
 
   // home.md §3.9d/§3.9e (`decision-log.md` D71, `product-decisions.md`
@@ -272,14 +277,10 @@ export function Selling({
 
   // Real Web NFC read path only (`nfcSupported`) — `NDEFReader.scan()`
   // requires its initial call to happen inside a user-gesture handler, never
-  // auto-started on mount. Two different entering gestures start it,
-  // depending on which of this screen's two NFC surfaces is in play
-  // (`decision-log.md` D74): §3.10's own full `nfc`-mode surface has no
-  // antecedent tap to enter it (the Session's `operatingMode` is already
-  // fixed before this screen ever mounts), so the *first tap of
-  // `NFCScanPrompt` itself* is genuinely the entering gesture there,
-  // unchanged; the `buttons`-mode "Leer con NFC" overlay's own entering tap
-  // ("Leer con NFC" itself, below) now calls `handleScan` directly, so the
+  // auto-started on mount. **`decision-log.md` D79 — the "Leer con NFC"
+  // overlay is now this screen's only NFC surface** (the former full-screen
+  // `nfc`-mode surface, §3.10, is retired outright); its own entering tap
+  // ("Leer con NFC" itself, below) calls `handleScan` directly, so the
   // overlay opens already listening rather than requiring a second tap on
   // the ring inside it. `scanStartedRef` guards the *dispatch* — exactly one
   // in-flight `scan()` attempt at a time (a ref, not state — this specific
@@ -297,11 +298,6 @@ export function Selling({
   // before this fix the ring rendered its "ready, listening" look
   // unconditionally, even before any tap, and stayed that way even after a
   // genuine `scan()` rejection silently flipped the ref back to `false`.
-  // Shared by both real-hardware NFC surfaces this screen can show
-  // (`operatingMode === 'nfc'`'s full surface and the `buttons`-mode "Leer
-  // con NFC" overlay) — both call the identical `handleScan` below and, per
-  // this file's own existing comment, only one is ever mounted at a time,
-  // so one shared piece of state is correct, not two independent copies.
   // Simulated (non-hardware, dev/demo-build only) browsers have no real
   // session to represent, so this stays permanently `'listening'` there —
   // the original, always-on look, unchanged (no real NFC radio for a dead
@@ -312,10 +308,10 @@ export function Selling({
   const [nfcSessionState, setNfcSessionState] = useState<'idle' | 'listening' | 'error' | 'unsupported'>(
     nfcSupported ? 'idle' : NFC_SIMULATION_ENABLED ? 'listening' : 'unsupported',
   );
-  // Always points at this render's own `resolveTag` (below) — the mechanism
-  // that keeps the persistent `ndef.onreading` handler (set up only once)
-  // from ever dispatching through a stale closure. See `resolveTag`'s own
-  // doc comment.
+  // Always points at this render's own `resolveOverlayTag` (below) — the
+  // mechanism that keeps the persistent `ndef.onreading` handler (set up
+  // only once) from ever dispatching through a stale closure. See
+  // `resolveOverlayTag`'s own doc comment.
   const handleTagResolvedRef = useRef<(tagId: string) => Promise<void>>(async () => {});
   useEffect(() => {
     return () => {
@@ -340,17 +336,12 @@ export function Selling({
   // *other* case that same day.
   //
   // Deliberately one listener for the component's whole mount lifetime
-  // (never re-subscribed per `nfcOverlayOpen`/`operatingMode` change) —
-  // `scanStartedRef.current` (already the synchronous, always-current
-  // ground truth `handleScan` itself relies on) is what actually gates the
-  // work inside the handler, so this is behaviorally identical to "active
-  // only while a session is genuinely open" without the extra complexity/
-  // re-subscription risk of tying the effect's own dependency array to
-  // either piece of state. Shared correctly across both real-hardware NFC
-  // surfaces this screen can show (`nfc`-mode's own full surface and the
-  // `buttons`-mode "Leer con NFC" overlay) since both already share this
-  // same `scanStartedRef`/`nfcAbortRef`/`nfcSessionState` trio and only one
-  // is ever mounted at a time (this file's own pre-existing comment above).
+  // (never re-subscribed per `nfcOverlayOpen` change) — `scanStartedRef.current`
+  // (already the synchronous, always-current ground truth `handleScan`
+  // itself relies on) is what actually gates the work inside the handler,
+  // so this is behaviorally identical to "active only while a session is
+  // genuinely open" without the extra complexity/re-subscription risk of
+  // tying the effect's own dependency array to that state.
   const wasSessionActiveBeforeHiddenRef = useRef(false);
   useEffect(() => {
     if (!nfcSupported) return;
@@ -426,19 +417,19 @@ export function Selling({
   // NFC" overlay immediately below it.
   const canScanBarcode = state.business?.subscriptionTier === 'paid';
 
-  // home.md §3.9's own new bullet (`decision-log.md` D71, `product-
-  // decisions.md` Q31) — a live-evaluated display condition, re-read on
-  // every render, never a fact committed once at Session-start the way
-  // `Session.operatingMode` itself is. Deliberately narrower than "≥1
-  // tagged unit exists": Limited Ready specifically, not Ready (a Business
-  // whose tagged inventory has crossed into full Ready while still
-  // defaulting to `buttons` gets §3.6a's own separate nudge instead, not
-  // this overlay — see §3.9's own annotation for why that's a real,
-  // narrower exclusion, not an oversight).
-  const showNfcOverlayEntry =
-    session.operatingMode === 'buttons' &&
-    state.business?.nfcPerProductEnabled === true &&
-    nfcReadiness(state) === 'limited';
+  // home.md §3.9's own bullet (`decision-log.md` D71, `product-decisions.md`
+  // Q31; gate simplified `decision-log.md` D79) — a live-evaluated display
+  // condition, re-read on every render, never a fact committed once at
+  // Session-start. **D79 strikes the composed gate this used to carry (a
+  // `Session.operatingMode === 'buttons'` check plus NFC Readiness's
+  // "Limited Ready specifically" threshold) entirely, not narrows it** —
+  // both retired mechanisms only ever existed to arbitrate an exclusive
+  // Session mode that no longer exists. `nfcPerProductEnabled` alone is now
+  // the whole gate — closes, by construction, the exact bug the Product
+  // Owner found live: a Session opened before any unit was tagged now shows
+  // "Leer con NFC" the instant `nfcPerProductEnabled`/a tagged unit both
+  // exist, on the very next render, with zero close/reopen.
+  const showNfcOverlayEntry = state.business?.nfcPerProductEnabled === true;
 
   // home.md §3.7b — Quick Session keeps "Venta rápida" (title stays
   // undefined, SessionHeader's own default); an Event-linked Session
@@ -544,77 +535,20 @@ export function Selling({
   }
 
   /**
-   * home.md §3.10's own scan resolution (see this file's top doc comment) —
-   * on real Web NFC hardware, starts (on the first tap only) a persistent
-   * `NDEFReader.scan()` listening session and resolves each physical tag
-   * read against `addItemToSaleByTag`; on every other browser, picks a
-   * random currently-tagged-and-available unit and resolves the simulated
-   * scan against it, exactly the way a real NFC read would resolve against
-   * whichever physical tag she actually holds near the phone.
+   * home.md §3.9d/§3.9e (`decision-log.md` D71, gate simplified D79) — the
+   * "Leer con NFC" overlay's own scan resolver, dispatched through
+   * `handleTagResolvedRef` (reassigned on every render, just below this
+   * function, so the persistent `ndef.onreading` handler — set up only
+   * once, on the first real-hardware tap — always dispatches through this
+   * render's current closure rather than a stale one captured back when the
+   * scan session was first started). **`decision-log.md` D79 — this is now
+   * this screen's only NFC scan resolver.** The former full-screen §3.10
+   * surface (and its own separate resolver, which used to handle a no-match
+   * scan via a persistent "Asignar tags" hint) is retired outright — the
+   * composable overlay below is a strict superset of what it offered.
    *
-   * **Genuine open gap at the wireframe level, `product/02-ux/
-   * product-decisions.md` Q2's own remaining task for `ux-designer`:** §3.10
-   * as Approved defines only the empty-tray idle prompt, and Q2 leaves the
-   * *exact placement* of a no-match resolution affordance on that screen
-   * formally undesigned. The *mechanism* itself, though, is already decided
-   * by Q2's own text — "the merchant is guided to tag the unit immediately
-   * when the situation arises," via "the redirect from Selling into
-   * Inventario's Asignar Tags flow," named there as "a sanctioned UI
-   * hand-off pattern already used elsewhere" (the same one §3.6a's own Not
-   * Ready mention already uses: "Todavía no tienes prendas con tag para
-   * hoy… [Asignar tags]," see `NfcSessionStartNote.tsx`'s `not-ready`
-   * variant). Fix round, `docs/passes/slice-7-nfc-selling.md` (ux-critic
-   * Major): a scan matching zero `available` tagged units (e.g. every
-   * tagged unit for a Product already sold this Session, or a customer
-   * wants a Product whose only remaining stock happens to be untagged —
-   * FIFO substitution doesn't apply in nfc mode) now offers that same
-   * hand-off — a tappable "Asignar tags" link inside this file's existing
-   * ambient-hint mechanism (`showHint`, already established above for a
-   * sold-out buttons-mode tile tap), not a new UI primitive and not a full
-   * modal interruption. This closes the "dead end" finding specifically;
-   * the exact wireframe placement on §3.10 itself remains Q2's own open
-   * item, not invented here.
-   */
-  // Shared by both the real-hardware and simulated paths below — takes a
-  // resolved `tagId` (however it was obtained: a real tag read, or the
-  // simulated random pick) through the one real, unchanged write:
-  // `addItemToSaleByTag`'s own `no-match` handling. Reassigned into
-  // `handleTagResolvedRef` on every render (see below) so the persistent
-  // `ndef.onreading` handler — set up only once, on the first real-hardware
-  // tap — always dispatches through this render's current closure
-  // (`addItemToSaleByTag`, `stockHint`, `showHint` all freshly bound) rather
-  // than a stale one captured back when the scan session was first started.
-  async function resolveTag(tagId: string) {
-    const noMatchLink = { label: 'Asignar tags', onTap: onNavigateToAssignTags };
-    const result = await addItemToSaleByTag(tagId);
-    if (!result.ok) {
-      // A real tag whose id was never assigned to any unit (or, on the
-      // simulated path, the defensively-unreachable case the old inline
-      // comment here already disclosed) — the same designed §3.10 no-match
-      // state either way.
-      showHint('No hay ninguna prenda con tag lista para escanear.', noMatchLink);
-      return;
-    }
-    // A real scan resolving successfully is one of the two events allowed
-    // to clear a persistent no-match hint (the other being the "Asignar
-    // tags" link navigating away) — see `showHint`'s own doc comment. Left
-    // in place unlikely to fire mid-Session (the no-match condition rarely
-    // self-resolves while scanning continues) but must clear correctly if
-    // it does, rather than leaving a stale "no match" message on screen
-    // next to a Sale that just gained an item.
-    if (stockHint?.link) {
-      window.clearTimeout(stockHintTimeout.current);
-      setStockHint(null);
-    }
-  }
-  /**
-   * home.md §3.9d/§3.9e (`decision-log.md` D71) — the overlay's own scan
-   * resolver, dispatched through the identical `handleTagResolvedRef`
-   * mechanism `resolveTag` above already uses (see `handleScan` below and
-   * this ref's own reassignment just under this function) — both real
-   * hardware and the simulated path acquire a `tagId` exactly the same way
-   * regardless of which surface is currently open; only what happens *once
-   * a tagId is in hand* differs.
+   * Both real hardware and the simulated path acquire a `tagId` exactly the
+   * same way; only what happens *once a tagId is in hand* differs here.
    *
    * **Classifies locally, then writes through the one real, unchanged
    * mechanism — `addItemToSaleByTag`, never a second write path.** §3.9e
@@ -671,12 +605,11 @@ export function Selling({
     nfcOverlaySuccessTimeout.current = window.setTimeout(() => setNfcOverlayFeedback(null), 2400);
   }
 
-  // Only one of the two scan surfaces can ever be mounted at a time
-  // (`nfc`-mode's own §3.10 surface vs. `buttons`-mode's §3.9d overlay — a
-  // Session's `operatingMode` never changes mid-Session, and the overlay
-  // only ever renders while it's `'buttons'`), so a single ref reassignment
-  // per render is sufficient — never both resolvers racing the same tap.
-  handleTagResolvedRef.current = nfcOverlayOpen ? resolveOverlayTag : resolveTag;
+  // `decision-log.md` D79 — this screen has exactly one NFC scan surface
+  // now (§3.9d's overlay), so this ref always points at its own resolver;
+  // still reassigned every render, matching `resolveOverlayTag`'s own doc
+  // comment above (fresh closure per render, never a stale one).
+  handleTagResolvedRef.current = resolveOverlayTag;
 
   /** §3.9d's own "Volver a botones" — always available while the overlay is
    * open, a pure navigation return (cart contents untouched, matching
@@ -705,12 +638,13 @@ export function Selling({
   // inside the persistent `onreading`/`onreadingerror` handlers below, never
   // from the initial `scan()` call itself — see `handleScan`'s own
   // `catch`, which is the *session itself* failing and is handled
-  // separately via `nfcSessionState`, not this function). Routed to
-  // whichever surface is actually open. §3.9e's own copy ("No se pudo leer
-  // el tag. Acércalo de nuevo," reused verbatim from `events.md` §3.22) for
-  // the overlay; §3.10's own, slightly different existing copy ("No
-  // pudimos leer el tag. Intenta de nuevo") is unchanged for the full
-  // `nfc`-mode surface.
+  // separately via `nfcSessionState`, not this function). §3.9e's own copy
+  // ("No se pudo leer el tag. Acércalo de nuevo," reused verbatim from
+  // `events.md` §3.22) covers the overlay, the only NFC surface this screen
+  // has (`decision-log.md` D79) — the `showHint(...)` fallback below is a
+  // defensive branch only, guarding a stale-`nfcOverlayOpen`-closure edge
+  // case on the persistent `onreadingerror` handler, not a second live
+  // surface to route to.
   function handleNfcReadError() {
     if (nfcOverlayOpen) {
       setNfcOverlayFeedback({ kind: 'error', message: 'No se pudo leer el tag. Acércalo de nuevo.' });
@@ -788,14 +722,14 @@ export function Selling({
     // Simulated path — a browser without Web NFC (iPhone Safari, desktop,
     // any browser lacking `NDEFReader`) **in a dev or explicit demo build
     // only** (`NFC_SIMULATION_ENABLED`; the `nfcUnavailable` guard above
-    // makes this unreachable in production). Unchanged for §3.10; for
-    // the §3.9d overlay, an empty simulated pool (nothing tagged-and-
-    // available to draw from in this build/demo environment) is the
-    // closest available meaning to §3.9e's "tag doesn't resolve to any
-    // unit" bucket — genuinely disclosed as a demo-environment limitation,
-    // not a claim that this is how a real unknown tag would classify on
-    // real hardware (there, any physical tag can be read regardless of
-    // whether it happens to belong to an `available` unit).
+    // makes this unreachable in production). For the §3.9d overlay (this
+    // screen's only NFC surface, `decision-log.md` D79), an empty simulated
+    // pool (nothing tagged-and-available to draw from in this build/demo
+    // environment) is the closest available meaning to §3.9e's "tag doesn't
+    // resolve to any unit" bucket — genuinely disclosed as a demo-environment
+    // limitation, not a claim that this is how a real unknown tag would
+    // classify on real hardware (there, any physical tag can be read
+    // regardless of whether it happens to belong to an `available` unit).
     const pool = state.units.filter((u) => u.status === 'available' && u.tagId != null);
     const candidate = pool[Math.floor(Math.random() * pool.length)];
     if (!candidate?.tagId) {
@@ -960,23 +894,12 @@ export function Selling({
             </p>
           )}
 
-          {session.operatingMode === 'nfc' ? (
-            <div className={styles.nfcSurface}>
-              <NFCScanPrompt
-                onTap={handleScan}
-                state={nfcSessionState}
-                ariaLabel="Acerca el tag del producto"
-                label={
-                  <>
-                    Acerca el tag del
-                    <br />
-                    producto
-                  </>
-                }
-              />
-            </div>
-          ) : (
-            <div className={styles.gridScroll}>
+          {/* home.md §3.9 — the one composable selling surface, unconditionally,
+              for every Session (`decision-log.md` D79 — supersedes the former
+              `Session.operatingMode = buttons`/`= nfc` split). Both overlay
+              entry points below are independently, live-gated on every
+              render — never a Session-start-resolved branch. */}
+          <div className={styles.gridScroll}>
               {canScanBarcode && (
                 <button className={styles.scanBtn} onClick={() => setScannerMode('active')}>
                   Escanear código de barras
@@ -1034,8 +957,7 @@ export function Selling({
                   })}
                 </div>
               )}
-            </div>
-          )}
+          </div>
 
           {items.length > 0 && (
             <div className={`${styles.footer} stitchTop`}>

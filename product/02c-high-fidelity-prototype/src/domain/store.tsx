@@ -8,8 +8,6 @@ import {
   currentUser,
   eventStatus,
   myActiveSession,
-  nfcCapable,
-  nfcReadiness,
   quantityRemaining,
   saleItemHasEventAllocationCommitment,
 } from './selectors';
@@ -32,7 +30,6 @@ import type {
   Sale,
   SaleItem,
   Session,
-  SessionOperatingMode,
   User,
   Venue,
 } from './types';
@@ -845,17 +842,11 @@ interface StoreValue {
    * `Session.openedByMembershipId` (see that field's own `types.ts` doc
    * comment), a real, permanent column as of D66, not the disclosed
    * prototype-only crutch that field's own doc comment previously described.
-   * **NFC Selling pass (D43):** `overrideToNfc` is Ana's own Limited Ready
-   * override choice (§3.6a's "Usar tags de todos modos"), resolved locally
-   * in the UI *before* this tap (`useNfcSessionStart.ts`) and threaded
-   * through here — it can't be derived from stored state, since it's a
-   * one-off, per-tap choice, never persisted. Defaults to `false` (no
-   * override) so every other existing call site stays correct with no
-   * change. `Session.operatingMode` itself is resolved client-side (never
-   * trusting a UI-computed value alone, same posture `setPriceOverride`
-   * above already establishes) and passed to the RPC already-resolved; the
-   * RPC re-checks the one entitlement-relevant boundary server-side ('nfc'
-   * requires `subscriptionTier='paid'`, D27). */
+   * **`decision-log.md` D79 — no `operatingMode` resolved or passed here any
+   * longer.** A Session simply opens; every Session shows the identical
+   * composable selling surface the instant it opens (`home.md` §3.9), with
+   * its component affordances (barcode, "Leer con NFC") re-read live on
+   * every render rather than resolved once at open. */
   /** Returns `true` on success (including "already active, resolved to the
    * existing Session" — §2.1's own "never ask twice" fast-path) and `false`
    * on a genuine platform/authorization failure, so a caller can show a
@@ -863,7 +854,7 @@ interface StoreValue {
    * real, live-found gap (2026-09-15): this was a bare fire-and-forget
    * `Promise<void>` with no way for `HomeScreen.tsx` to know a failure
    * happened at all. */
-  startSession: (eventId?: ID | null, overrideToNfc?: boolean) => Promise<boolean>;
+  startSession: (eventId?: ID | null) => Promise<boolean>;
   /** home.md §3.8a/§3.9 — FIFO tap-to-add (Buttons mode). Stage 7 Backend
    * Integration, Phase 2: a real, idempotency-keyed call to `add_item_to_sale`
    * — the FIFO pick (D5), price resolution (D33), Sale mint-or-find, and
@@ -883,8 +874,10 @@ interface StoreValue {
    * single highest-frequency write in the whole product, so this is where
    * that retry discipline matters most). */
   addItemToSale: (productId: ID, idempotencyKey: string) => Promise<'added' | 'exhausted' | 'failed'>;
-  /** home.md §3.10 — the nfc-mode counterpart to `addItemToSale` above.
-   * Stage 7 Backend Integration, Phase 2: a real call to
+  /** home.md §3.9d — the "Leer con NFC" overlay's own resolver, the NFC
+   * counterpart to `addItemToSale` above (former home.md §3.10, the
+   * whole-catalog `nfc`-only surface, is retired outright, `decision-log.md`
+   * D79). Stage 7 Backend Integration, Phase 2: a real call to
    * `add_item_to_sale_by_tag`, sharing `add_item_to_sale`'s own server-side
    * logic with one swap: the unit is resolved by the *specific* scanned
    * `tagId` rather than a FIFO scan. Mirrors `assignTagToNextPendingUnit`'s
@@ -963,10 +956,9 @@ interface StoreValue {
    * `subscriptionTier='paid'` directly, per Q11's own today-illustrative
    * assignment ("she's confirming a payment already arranged"). Reachable
    * only from the Free-tier vista principal (no pending change can exist
-   * there), so this never needs to touch the pending triple. Never touches
-   * `defaultSellingMode` — `nfc` becomes available only as a read-time
-   * derivation from the new `subscriptionTier` value (D27), never written
-   * here directly. Stage 7 Backend Integration — real call to
+   * there), so this never needs to touch the pending triple. `nfc` becomes
+   * available only as a read-time derivation from the new `subscriptionTier`
+   * value (D27). Stage 7 Backend Integration — real call to
    * `activate_paid_plan`, same "server-confirmed, then local mirror" shape
    * as `editPrice`. */
   activatePaidPlan: () => Promise<boolean>;
@@ -984,25 +976,24 @@ interface StoreValue {
    * the pending write never touched it either. Stage 7 Backend Integration —
    * real call to `cancel_pending_subscription_tier_change`. */
   cancelPendingSubscriptionTierChange: () => Promise<boolean>;
-  /** settings.md §2.3 "Cambiar a vender con tags/con botones" — immediate,
-   * no pending-value/effective-date pair at all (D27: this field carries no
-   * billing-cycle implication in either direction). Per §2.3's own explicit
-   * invariant, this is the *only* write path that may ever touch
-   * `defaultSellingMode` — never written as a side effect of any
-   * `subscriptionTier` action, in either direction. Stage 7 Backend
-   * Integration — real call to `change_default_selling_mode`. */
-  changeDefaultSellingMode: (mode: SessionOperatingMode) => Promise<boolean>;
+  /** settings.md §2.3 "Cómo vendes normalmente" — **retired in full,
+   * `decision-log.md` D79.** `Business.defaultSellingMode` is fully retired
+   * (the Product Owner's own explicit instruction: "there should simply be
+   * an NFC capability setting") — this write path, and the merchant-facing
+   * action that called it, no longer exist. Kept as a one-line record only;
+   * see `settings.md` §2.3's own status header for the full retirement note.
+   * `nfcPerProductEnabled` (below) is now the sole NFC-related control. */
   /** settings.md §2.8/§3.4 "Activar NFC por producto"/"Desactivar NFC por
    * producto" (`decision-log.md` D71, `product-decisions.md` Q31) —
-   * immediate, no pending-value/effective-date pair, same mutability class
-   * as `changeDefaultSellingMode` above (§2.8's own "same class" wording).
-   * Never touches `defaultSellingMode`, never touches any Product's own
-   * `nfcTaggingEnabled` in either direction — turning it off never untags or
-   * orphans an already-tagged `InventoryUnit` (§2.8's own explicit
-   * invariant), it only stops future Asignar Tags eligibility via the
-   * composed test (`selectors.ts`'s `isNfcTaggingEligible`). Real call to
+   * immediate, no pending-value/effective-date pair. Never touches any
+   * Product's own `nfcTaggingEnabled` in either direction — turning it off
+   * never untags or orphans an already-tagged `InventoryUnit` (§2.8's own
+   * explicit invariant), it only stops future Asignar Tags eligibility via
+   * the composed test (`selectors.ts`'s `isNfcTaggingEligible`). Real call to
    * `change_nfc_per_product_enabled`, same "server-confirmed, then local
-   * mirror" shape as `activatePaidPlan`/`changeDefaultSellingMode`. */
+   * mirror" shape as `activatePaidPlan`. **`decision-log.md` D79 — the sole
+   * remaining NFC-related capability write in this document, unconditionally,
+   * for every Paid-tier Business.** */
   changeNfcPerProductEnabled: (enabled: boolean) => Promise<boolean>;
   /** inventory.md §3.4's fifth Catalog-row tap zone (`decision-log.md` D71)
    * — a bare tap, no confirmation screen, writes `Product.nfcTaggingEnabled`
@@ -2518,20 +2509,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-    // onboarding.md §2.2's capability table — the only three combinations
-    // any Onboarding path may ever produce.
-    const capabilities: Pick<Business, 'subscriptionTier' | 'defaultSellingMode'> =
-      path === 'free'
-        ? { subscriptionTier: 'free', defaultSellingMode: 'buttons' }
-        : path === 'paid'
-          ? { subscriptionTier: 'paid', defaultSellingMode: 'buttons' }
-          : { subscriptionTier: 'paid', defaultSellingMode: 'nfc' }; // demo — §2.2's richest combination
+    // onboarding.md §2.2's capability table — `subscriptionTier` is the only
+    // capability a fresh Onboarding path still produces (`decision-log.md`
+    // D79 retires `defaultSellingMode` entirely — no code path writes it any
+    // longer, including here; `create_business_with_owner`'s own
+    // `p_default_selling_mode` parameter keeps its server-side default,
+    // unused going forward).
+    const capabilities: Pick<Business, 'subscriptionTier'> =
+      path === 'free' ? { subscriptionTier: 'free' } : { subscriptionTier: 'paid' }; // 'paid' or 'demo'
 
     const { data: rawData, error } = await supabase
       .rpc('create_business_with_owner', {
         p_idempotency_key: idempotencyKey,
         p_subscription_tier: capabilities.subscriptionTier,
-        p_default_selling_mode: capabilities.defaultSellingMode,
       })
       .single();
 
@@ -3018,19 +3008,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * home.md §2 — Stage 7 Backend Integration, Phase 2: a real call to
    * `start_session`, naturally safe under concurrent double-submission via
    * `ON CONFLICT` against the server's own `sessions_one_active_per_
-   * membership_idx` (D66) — no client-supplied idempotency key needed. NFC
-   * Readiness/Session-start resolution (home.md §2, `decision-log.md` D23)
-   * stays a client-side computation (unchanged) — `operatingMode` is
-   * resolved here, defensively, from the current local `state` (never
-   * trusting a UI-computed value, same posture this function always held)
-   * and passed to the RPC already-resolved; the RPC itself re-checks the one
-   * entitlement-relevant boundary server-side (`'nfc'` requires
-   * `subscriptionTier='paid'`, D27), correcting silently if the local mirror
-   * were ever stale. `overrideToNfc` is Ana's own per-tap choice, threaded
-   * through unchanged (no other honest source, see this function's own
-   * `StoreValue` doc comment).
+   * membership_idx` (D66) — no client-supplied idempotency key needed.
+   * **`decision-log.md` D79 — no `operatingMode` resolution happens here any
+   * longer.** A Session simply opens; nothing is resolved beyond the Session
+   * itself. `start_session` no longer takes (or writes anything meaningful
+   * into) an operating-mode parameter — the server-side `sessions.
+   * operating_mode` column stays in the schema as inert historical data
+   * (D25's non-deletion discipline), defaulted at the database level, never
+   * read or set from here.
    */
-  async function startSession(eventId: ID | null = null, overrideToNfc: boolean = false): Promise<boolean> {
+  async function startSession(eventId: ID | null = null): Promise<boolean> {
     if (!state.business) return false; // defensive — Home only mounts once onboarding is complete
     const membership = actingMembership(state);
     if (!membership) return false; // defensive — Home only mounts once a valid acting Membership resolves
@@ -3042,19 +3029,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return true;
     }
 
-    const capability = nfcCapable(state);
-    const readiness = nfcReadiness(state);
-    const defaultMode = state.business.defaultSellingMode;
-
-    let operatingMode: SessionOperatingMode = 'buttons';
-    if (defaultMode === 'nfc' && capability) {
-      if (readiness === 'ready') operatingMode = 'nfc';
-      else if (readiness === 'limited' && overrideToNfc) operatingMode = 'nfc';
-      // 'not-ready', or 'limited' without an override, both stay 'buttons'
-      // — an operational impossibility/a recommendation she didn't
-      // override, never a merchant-facing error (home.md §3.6a).
-    }
-
     const supabase = getSupabaseClient();
     if (!supabase) {
       console.error('[store] startSession: Supabase not configured. See supabase/README.md.');
@@ -3064,7 +3038,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .rpc('start_session', {
         p_business_id: state.business.id,
         p_event_id: eventId,
-        p_operating_mode: operatingMode,
       })
       .single();
 
@@ -3073,13 +3046,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    const row = data as { session_id: ID; event_id: ID | null; operating_mode: SessionOperatingMode; opened_at: string };
+    const row = data as { session_id: ID; event_id: ID | null; opened_at: string };
     applyWriteMirror((s) => {
       if (s.sessions.some((sess) => sess.id === row.session_id)) return s; // already mirrored (a replayed mint-or-find)
       const session: Session = {
         id: row.session_id,
         eventId: row.event_id,
-        operatingMode: row.operating_mode,
         status: 'active',
         openedAt: new Date(row.opened_at).getTime(),
         openedByMembershipId: membership.id,
@@ -3147,7 +3119,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * home.md §3.10 — nfc-mode's own registration write. Stage 7 Backend
+   * home.md §3.9d — the "Leer con NFC" overlay's own registration write
+   * (former §3.10, retired, `decision-log.md` D79). Stage 7 Backend
    * Integration, Phase 2: a real call to `add_item_to_sale_by_tag`, sharing
    * `add_item_to_sale`'s own server-side logic with one swap: the unit is
    * resolved by the *specific* scanned `tagId` rather than a FIFO scan.
@@ -3187,11 +3160,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     if (error || !data) {
       if (error?.message === 'no_active_session') return { ok: false, reason: 'no-active-session' };
-      // `no_match`, `wrong_operating_mode` (mapped to the same client
-      // reason, see the RPC's own comment), or a genuine platform error all
-      // fold into `'no-match'` — the one reason `Selling.tsx`'s own caller
-      // already handles ("this scan can't resolve to a sellable item right
-      // now").
+      // `no_match` or a genuine platform error both fold into `'no-match'` —
+      // the one reason `Selling.tsx`'s own caller already handles ("this
+      // scan can't resolve to a sellable item right now"). The RPC's own
+      // former `wrong_operating_mode` rejection is gone, `decision-log.md`
+      // D79 — an NFC scan is no longer conditional on any Session-level mode.
       return { ok: false, reason: 'no-match' };
     }
 
@@ -3524,31 +3497,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return true;
   }
 
-  /** settings.md §2.3 "Cambiar a vender con tags/con botones" — immediate,
-   * the *only* write path allowed to touch `defaultSellingMode` (§2.3's own
-   * "never written by any other action" invariant — never called as a side
-   * effect of any `subscriptionTier` action, and this function itself never
-   * reads or writes `subscriptionTier`). Stage 7 Backend Integration — real
-   * call to `change_default_selling_mode`. */
-  async function changeDefaultSellingMode(mode: SessionOperatingMode): Promise<boolean> {
-    if (!state.business) return false;
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      console.error('[store] changeDefaultSellingMode: Supabase not configured. See supabase/README.md.');
-      return false;
-    }
-    const { error } = await supabase.rpc('change_default_selling_mode', {
-      p_business_id: state.business.id,
-      p_idempotency_key: crypto.randomUUID(),
-      p_mode: mode,
-    });
-    if (error) {
-      console.error('[store] change_default_selling_mode failed', error);
-      return false;
-    }
-    applyWriteMirror((s) => (s.business ? { ...s, business: { ...s.business, defaultSellingMode: mode } } : s));
-    return true;
-  }
+  // settings.md §2.3 "Cómo vendes normalmente" — retired in full,
+  // `decision-log.md` D79. `changeDefaultSellingMode` (the write path this
+  // action used to call, `change_default_selling_mode` RPC) is removed —
+  // the RPC itself stays deployed and un-called (D25's non-deletion
+  // discipline applies to server-side write paths too, not only stored
+  // data), since no client code should reference it going forward.
 
   /** settings.md §2.8/§3.4 "Activar NFC por producto"/"Desactivar NFC por
    * producto" — see this function's own `StoreValue` doc comment above.
@@ -3636,9 +3590,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   /** settings.md §2.4 — see the `StoreValue` interface doc comment above for
    * the full reasoning. Reads only `state.business`'s own pending-change
-   * fields to detect landing; never touches `defaultSellingMode` (§2.3's
-   * invariant applies here too — this function has no reason to touch it and
-   * doesn't). Stage 7 Backend Integration — the actual land is a real call
+   * fields to detect landing. Stage 7 Backend Integration — the actual land is a real call
    * to `land_pending_subscription_tier`, fired here but not awaited by the
    * caller (this function keeps its synchronous `justLanded` return contract
    * so `SettingsScreen.tsx`'s own `useEffect` can render the acknowledgment
@@ -4711,7 +4663,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     activatePaidPlan,
     requestDowngradeToFree,
     cancelPendingSubscriptionTierChange,
-    changeDefaultSellingMode,
     changeNfcPerProductEnabled,
     setProductNfcTaggingEnabled,
     markNfcAvailabilityNudgeShown,

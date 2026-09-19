@@ -319,7 +319,6 @@ export interface Business {
   logo?: string;
   description?: string;
   subscriptionTier: 'free' | 'paid';
-  defaultSellingMode: 'buttons' | 'nfc';
   /**
    * True only once onboarding.md §3.6's "Todo listo" milestone has actually
    * been dismissed (tapped "Entrar," or auto-continued) — §2.1's own
@@ -343,39 +342,33 @@ export interface Business {
    * `land_pending_subscription_tier` RPC landing the change,
    * `reconcilePendingSubscriptionTier` in store.tsx) — never independently.
    * `null`/`false` when no change is pending, the common case.
-   * `defaultSellingMode` carries no equivalent pending pair at all (§2.3,
-   * D27) — both its directions are immediate, with nothing to defer.
    */
   pendingSubscriptionTier: 'free' | 'paid' | null;
   pendingSubscriptionTierEffectiveDate: string | null;
   pendingSubscriptionTierAcknowledged: boolean;
   /**
-   * NFC Selling pass (Migration Workflow D43, `home.md` §3.6a's fourth
-   * Session-start variant — "Ready, but `defaultSellingMode = buttons`...
-   * tags now available"). `true` once that one-time discoverability mention
-   * has actually been shown — the exact render `useNfcSessionStart.ts`
-   * (`src/screens/Home/`) fires its own one-time mutator for, mirroring
-   * `pendingSubscriptionTierAcknowledged`'s own "shown once ever" flag
-   * pattern above. Never reset once set — §3.6a's own explicit rule ("she
-   * may genuinely prefer botones... repeating this mention... would read as
-   * the app second-guessing a choice she's entitled to make"), so this stays
-   * `true` for the life of the Business even if the readiness/
-   * `defaultSellingMode` disagreement it flagged persists indefinitely.
+   * NFC Selling pass (Migration Workflow D43) — originally fed `home.md`
+   * §3.6a's fourth Session-start variant, itself retired 2026-09-17
+   * (`decision-log.md` D72). **Dead field as of D72, confirmed still dead
+   * (no functional reader anywhere) by `decision-log.md` D79's own trace** —
+   * kept in schema/type as inert historical data on any existing row (never
+   * deleted, D25), no code path reads or writes it going forward.
    */
   nfcAvailabilityNudgeShown: boolean;
   /**
    * `settings.md` §2.8/§3.4 (`decision-log.md` D71, `product-decisions.md`
    * Q31) — the master per-product-opt-in toggle. Off by default even on an
    * already-Paid, already-`nfc`-capable Business (never a side effect of
-   * "Activar plan de pago" or "Cambiar a vender con tags") — a deliberate
-   * opt-in, only offered while `nfc ∈ registrationMode`
-   * (`subscriptionTier === 'paid'`). Turning it off never resets any
-   * individual `Product.nfcTaggingEnabled` value (the same "two independent
-   * stored fields, no reset rule needed" pattern §2.3 already establishes
-   * between `defaultSellingMode`/`subscriptionTier`) — it only withdraws
-   * *future* tag-assignment eligibility while it reads `false`, per the
-   * composed NFC-tagging-eligible test (`selectors.ts`'s
-   * `isNfcTaggingEligible`).
+   * "Activar plan de pago") — a deliberate opt-in, only offered while
+   * `nfc ∈ registrationMode` (`subscriptionTier === 'paid'`). Turning it off
+   * never resets any individual `Product.nfcTaggingEnabled` value — it only
+   * withdraws *future* tag-assignment eligibility while it reads `false`,
+   * per the composed NFC-tagging-eligible test (`selectors.ts`'s
+   * `isNfcTaggingEligible`). **`decision-log.md` D79 — this is now the sole
+   * NFC-related capability field on `Business`; `defaultSellingMode` (the
+   * field this comment used to contrast it with) is retired outright, not
+   * merely narrowed — see `Session.operatingMode`'s own retirement note
+   * below for the matching Selling-side correction.**
    */
   nfcPerProductEnabled: boolean;
 }
@@ -705,19 +698,26 @@ export interface InventoryUnit {
 
 /** Selling context */
 
-export type SessionOperatingMode = 'buttons' | 'nfc';
-
+/**
+ * `Session.operatingMode` — removed entirely, `decision-log.md` D79
+ * (`product/99-rfc/0017-nfc-composable-selling-capability.md`). It used to
+ * resolve once at Session-open (buttons-vs-nfc, immutable for the Session's
+ * lifecycle) and gate which selling surface rendered; D79 retires it
+ * outright, no replacement field, since every Session now shows one
+ * unconditional composable surface (buttons + barcode + NFC overlays, each
+ * gate re-evaluated live on every render — `home.md` §3.9). The Supabase
+ * `sessions.operating_mode` column stays in the schema as inert historical
+ * data (never deleted, D25) but no client code reads or writes it as of
+ * this change.
+ */
 export interface Session {
   id: ID;
   // Generalized from a hardcoded `null` (Eventos build, D43) — `null` for a
-  // Quick Session, or the Event this Session's Día belongs to. Never set
-  // after the Session opens (`Session.operatingMode`'s own immutability
-  // precedent, D23) and never retroactively assignable — a Session only
-  // ever gets an `eventId` through Home's own resolution at open time
-  // (`home.md` §2, `events.md` §2's "note on what Session→Event linking is,
-  // and isn't").
+  // Quick Session, or the Event this Session's Día belongs to. Never
+  // retroactively assignable — a Session only ever gets an `eventId` through
+  // Home's own resolution at open time (`home.md` §2, `events.md` §2's "note
+  // on what Session→Event linking is, and isn't").
   eventId: ID | null;
-  operatingMode: SessionOperatingMode;
   status: 'active' | 'closed';
   openedAt: number;
   closedAt?: number;

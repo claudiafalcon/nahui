@@ -1,18 +1,37 @@
 import type { AppState, Business } from './types';
 import type { OnboardingPath } from './store';
 import { currentUser } from './selectors';
+import { DEMO_BUSINESS_NAME } from './demoSeed';
 
 /**
- * `onboarding.md` §2.2's capability table is injective — the three paths
- * produce three distinct `(subscriptionTier, defaultSellingMode)` pairs, so
- * the path a Business took is fully recoverable from its stored
- * capabilities alone. No separate `path` field needs to be persisted
- * anywhere — one more fact the router gets "for free" from data that
- * already has to exist, per this pass's own design instruction.
+ * `onboarding.md` §2.2's capability table used to be injective on
+ * `(subscriptionTier, defaultSellingMode)` alone, so the path a Business
+ * took was fully recoverable from its stored capabilities with no separate
+ * `path` field persisted anywhere. **`decision-log.md` D79 retires
+ * `Business.defaultSellingMode` entirely** — that pair collapses to just
+ * `subscriptionTier`, which is no longer injective (`paid` alone can't
+ * distinguish the real "Activar plan de pago" path from "Ver un ejemplo").
+ *
+ * **Disclosed, narrowly-scoped substitute signal, not a re-reading of the
+ * retired field:** the demo path's own atomic identity write
+ * (`OnboardingFlow.tsx`, `setBusinessIdentity({ name: DEMO_BUSINESS_NAME,
+ * ... })`, fired immediately after `completeOnboarding` resolves) already
+ * gives every demo Business a distinctive, known `name` before `path` is
+ * ever actually consulted downstream (SellingGroups/TodoListo copy — both
+ * gated behind `business.name === ''`'s own earlier branch, which never
+ * reads `path` itself). Matching on it is a pragmatic, low-risk stand-in:
+ * a real merchant coincidentally choosing this exact business name would
+ * misread as "demo" for onboarding-copy purposes only (cosmetic, this flow
+ * only) — not a data-integrity risk. **Flagged, not silently absorbed as a
+ * long-term design:** this reconstruction mechanism was never part of any
+ * Approved `product/02-ux/*.md` spec (its own prior doc comment named it "this
+ * pass's own design instruction," an implementer shortcut) — if a more
+ * honest signal is wanted, that's a `ux-designer`/`architect` follow-up
+ * against `onboarding.md`, out of D79's own scope (Selling/Settings only).
  */
 export function pathFromCapabilities(business: Business): OnboardingPath {
   if (business.subscriptionTier === 'free') return 'free';
-  return business.defaultSellingMode === 'nfc' ? 'demo' : 'paid';
+  return business.name === DEMO_BUSINESS_NAME ? 'demo' : 'paid';
 }
 
 /**

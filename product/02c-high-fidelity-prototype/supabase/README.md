@@ -1108,6 +1108,30 @@ supabase/
     live-invoked this pass (left to the Product Owner). `send-otp` remains
     blocked on step 4 below (no Twilio secrets exist yet) even after this
     fix.
+34. **Push the `d79_nfc_composable_selling` migration** — **NOT YET
+    PUSHED, no working `SUPABASE_ACCESS_TOKEN`/CLI login in this
+    environment.** `20260918030000_d79_nfc_composable_selling.sql`
+    (`decision-log.md` D79, `product/99-rfc/0017-nfc-composable-selling-
+    capability.md`): drops `start_session`'s 3-arg signature
+    (`p_operating_mode` required) and replaces it with a 2-arg version
+    (`p_business_id`, `p_event_id`); gives `sessions.operating_mode` a
+    database-level default (`'buttons'`); removes `add_item_to_sale`'s
+    `wrong_operating_mode` rejection and `add_item_to_sale_by_tag`'s
+    `operating_mode <> 'nfc'`-driven `no_match` rejection — both were the
+    real server-side enforcement of the exclusive Session-mode split D79
+    retires. **Critical deployment-ordering risk, not merely a "nice to
+    push eventually" item:** the client (`store.tsx`'s `startSession`)
+    already calls the 2-arg `start_session` RPC as of this same pass — until
+    this migration is applied, "Iniciar Venta Rápida"/"Continuar Día N" will
+    fail outright against the live database, because the currently-deployed
+    3-arg function has no default for `p_operating_mode`. This migration
+    must be pushed before (or atomically with) this client code reaching
+    production, not as a follow-up. Once pushed, this is also the fix that
+    makes the Product Owner's own reported scenario work (tag a unit
+    mid-Session, "Leer con NFC" appears immediately, no close/reopen) — the
+    client-side gate fix alone (`Selling.tsx`'s `showNfcOverlayEntry`)
+    isn't sufficient by itself, since `add_item_to_sale_by_tag` would still
+    reject the scan server-side without this migration.
 
 ## Judgment calls made building this (tune freely, not escalated)
 

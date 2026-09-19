@@ -12,12 +12,14 @@ import { TeamScreen } from './TeamScreen';
 import { ScreenTransition } from '../../components/ScreenTransition/ScreenTransition';
 import styles from './SettingsScreen.module.css';
 
-/** settings.md §2.2 — the four real capability actions, each reachable
- * through the generic immediate-effect confirm screen (§3.4) except
- * `downgrade`, which uses the deferred-effect one (§3.5). `cancel-pending`
- * (§3.7) has no confirm *screen* of its own — only the Sheet — but shares
- * the same §3.9/§3.10 write/error states as every other action. */
-type ConfirmAction = 'activate-paid' | 'tags-off' | 'downgrade' | 'nfc-per-product-on' | 'nfc-per-product-off';
+/** settings.md §2.2 — three real capability actions across two capabilities
+ * (`decision-log.md` D79 — `defaultSellingMode` fully retired, dropping this
+ * from four actions across three capabilities), each reachable through the
+ * generic immediate-effect confirm screen (§3.4) except `downgrade`, which
+ * uses the deferred-effect one (§3.5). `cancel-pending` (§3.7) has no
+ * confirm *screen* of its own — only the Sheet — but shares the same
+ * §3.9/§3.10 write/error states as every other action. */
+type ConfirmAction = 'activate-paid' | 'downgrade' | 'nfc-per-product-on' | 'nfc-per-product-off';
 type ActionKind = ConfirmAction | 'cancel-pending';
 
 type SubView =
@@ -48,14 +50,6 @@ function confirmCopy(action: ConfirmAction): { title: string; body: string[]; ct
           'Esto se activa confirmando tu pago fuera de la app — no se te cobra nada aquí. Si ya lo arreglaste, confirma abajo.',
         ],
         ctaLabel: 'Confirmar y activar',
-      };
-    case 'tags-off':
-      return {
-        title: 'Cambiar a vender con botones',
-        body: [
-          'Desde tu próxima sesión, vas a empezar vendiendo con botones. Ya no vas a poder volver a vender con tags para todo tu catálogo — pero puedes seguir vendiendo con NFC, producto por producto, activándolo en Configuración cuando quieras.',
-        ],
-        ctaLabel: 'Cambiar ahora',
       };
     case 'downgrade': {
       const effectiveDate = addDaysToKey(todayKey(), 30);
@@ -89,8 +83,9 @@ function confirmCopy(action: ConfirmAction): { title: string; body: string[]; ct
 
 /**
  * settings.md — Configuración, the merchant-facing surface for
- * `subscriptionTier`/`defaultSellingMode` (§2.2) plus the account-level
- * "Cerrar sesión" action (§2.5). §3.1/§3.2 (Resolving, near-instant/slow)
+ * `subscriptionTier`/`nfcPerProductEnabled` (§2.2, `decision-log.md` D79 —
+ * `defaultSellingMode` fully retired) plus the account-level "Cerrar
+ * sesión" action (§2.5). §3.1/§3.2 (Resolving, near-instant/slow)
  * are architecturally inapplicable in this build — state loads synchronously
  * from `localStorage`, the identical posture already established for every
  * other tab's own resolving/defensive-fallback states — see `BACKLOG.md`'s
@@ -118,7 +113,6 @@ export function SettingsScreen({
     activatePaidPlan,
     requestDowngradeToFree,
     cancelPendingSubscriptionTierChange,
-    changeDefaultSellingMode,
     changeNfcPerProductEnabled,
     reconcilePendingSubscriptionTier,
     signOut,
@@ -178,9 +172,6 @@ export function SettingsScreen({
     switch (action) {
       case 'activate-paid':
         ok = await activatePaidPlan();
-        break;
-      case 'tags-off':
-        ok = await changeDefaultSellingMode('buttons');
         break;
       case 'nfc-per-product-on':
         ok = await changeNfcPerProductEnabled(true);
@@ -346,7 +337,6 @@ export function SettingsScreen({
         onBack={onBack}
         onActivatePaidTap={() => setSubView({ kind: 'confirm', action: 'activate-paid' })}
         onDowngradeTap={() => setSubView({ kind: 'confirm', action: 'downgrade' })}
-        onModeChangeTap={(nextAction) => setSubView({ kind: 'confirm', action: nextAction })}
         onNfcPerProductTap={(nextAction) => setSubView({ kind: 'confirm', action: nextAction })}
         onViewTeamTap={() => setSubView({ kind: 'team' })}
         cancelPendingOpen={cancelPendingOpen}
@@ -386,7 +376,6 @@ function SettingsMain({
   onBack,
   onActivatePaidTap,
   onDowngradeTap,
-  onModeChangeTap,
   onNfcPerProductTap,
   onViewTeamTap,
   cancelPendingOpen,
@@ -424,16 +413,8 @@ function SettingsMain({
   onBack: () => void;
   onActivatePaidTap: () => void;
   onDowngradeTap: () => void;
-  /** settings.md §2.3 — `decision-log.md` D72 narrows this to a one-way
-   * escape valve: only ever called with `'tags-off'`, only ever rendered
-   * while `defaultSellingMode = 'nfc'` (grandfathered/demo Businesses).
-   * `'tags-on'` no longer exists as a reachable action. */
-  onModeChangeTap: (action: 'tags-off') => void;
   /** settings.md §2.8/§3.4 — "Activar NFC"/"Desactivar NFC" (`decision-log.md`
-   * D71, renamed D72), same shape as `onModeChangeTap` above, kept as its
-   * own prop rather than widening that one's action union — a distinct
-   * capability (`nfcPerProductEnabled`), not a third direction of
-   * `defaultSellingMode`. */
+   * D71, renamed D72, sole remaining NFC control D79). */
   onNfcPerProductTap: (action: 'nfc-per-product-on' | 'nfc-per-product-off') => void;
   onViewTeamTap: () => void;
   cancelPendingOpen: boolean;
@@ -519,63 +500,30 @@ function SettingsMain({
           )}
         </div>
 
-        {/* settings.md §2.3 — defaultSellingMode row. `decision-log.md` D72:
-            no longer a two-way picker for any Business. A `buttons`-mode
-            Business (the normal case going forward) sees a plain,
-            un-actioned line. Only an already-`nfc`-moded Business
-            (grandfathered/demo) sees a real control here: the one-way
-            "Cambiar a vender con botones" escape valve. Never conditioned on
-            a pending subscriptionTier change (§2.2's own "no capability with
-            a pending change offers a second, stacking action" applies only
-            to the capability that actually has one). */}
-        <div className={styles.section}>
-          <p className={styles.sectionLabel}>Cómo vendes normalmente:</p>
-          {business.subscriptionTier === 'paid' ? (
-            business.defaultSellingMode === 'nfc' ? (
-              <>
-                <p className={styles.modeValue}>Con tags</p>
-                <Button variant="secondary" onClick={() => onModeChangeTap('tags-off')}>
-                  Cambiar a vender con botones
-                </Button>
-              </>
-            ) : (
-              <p className={styles.modeValue}>Botones</p>
-            )
-          ) : (
-            <p className={styles.modeValue}>
-              Botones <span className={styles.modeNote}>(vender con tags requiere el plan de pago)</span>
-            </p>
-          )}
-
-          {/* settings.md §2.8/§3.4 "Activar NFC" (`decision-log.md` D71,
-              renamed D72, gate corrected D73) — offered whenever
-              `nfc ∈ registrationMode` (`subscriptionTier === 'paid'`),
-              regardless of `defaultSellingMode`. D73 drops the earlier
-              `defaultSellingMode !== 'nfc'` clause: whole-Catalog `nfc` mode
-              being moot for Selling-screen *composition* (nothing for
-              "Leer con NFC" to overlay onto there) never made
-              `nfcPerProductEnabled` itself unreachable for Inventario
-              tagging-prep purposes, which don't care what Selling currently
-              resolves to — an already-named, valid, reachable combination
-              (settings.md §2.8). So this row now renders alongside the
-              escape valve above, not in its place, whenever the Business is
-              `nfc`-moded. The stored `nfcPerProductEnabled` value is
-              untouched by any mode switch (never a side effect of one, per
-              this section's own standing invariant). */}
-          {business.subscriptionTier === 'paid' && (
-            <>
-              <p className={styles.modeValue}>NFC: {business.nfcPerProductEnabled ? 'Sí' : 'No'}</p>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  onNfcPerProductTap(business.nfcPerProductEnabled ? 'nfc-per-product-off' : 'nfc-per-product-on')
-                }
-              >
-                {business.nfcPerProductEnabled ? 'Desactivar NFC' : 'Activar NFC'}
-              </Button>
-            </>
-          )}
-        </div>
+        {/* settings.md §2.8/§3.4 "Activar NFC"/"Desactivar NFC" —
+            `decision-log.md` D79: "Cómo vendes normalmente" (this section's
+            former status line + "Cambiar a vender con botones"/"...con
+            tags" action) is retired in full, both directions, per the
+            Product Owner's own explicit instruction ("I do not want two
+            separate concepts... there should simply be an NFC capability
+            setting"). This row is now the *sole* NFC-related control in
+            this document, unconditionally, for every Paid-tier Business
+            regardless of its historical `defaultSellingMode` value —
+            structurally absent (no locked/disabled hint) for Free tier,
+            the identical posture "Tu equipo" already holds. */}
+        {business.subscriptionTier === 'paid' && (
+          <div className={styles.section}>
+            <p className={styles.modeValue}>NFC: {business.nfcPerProductEnabled ? 'Sí' : 'No'}</p>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                onNfcPerProductTap(business.nfcPerProductEnabled ? 'nfc-per-product-off' : 'nfc-per-product-on')
+              }
+            >
+              {business.nfcPerProductEnabled ? 'Desactivar NFC' : 'Activar NFC'}
+            </Button>
+          </div>
+        )}
 
         {/* settings.md §2.7 "Tu equipo" — Paid-tier only, structurally
             absent on Free (no row, no locked/disabled hint), the identical

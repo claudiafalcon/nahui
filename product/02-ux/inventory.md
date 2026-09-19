@@ -111,6 +111,8 @@ inventory.changelog.md#status-2026-09-13-d65-barcode-scanning]**
 
 **Amended 2026-09-18, same day (`decision-log.md` D78, `product/99-rfc/0016-inventory-unit-bidirectional-correction.md` Accepted — supersedes this document's own D77 UI shape, not RFC 0015/D77's underlying decrease mechanism, which D78 itself retains unmodified in shape) — the two-box-at-once layout (Cantidad actual + Cantidad, both always visible together the instant an existing Product resolves) is retired, replaced by a default read-only display plus two independent, explicitly-tapped reveals.** Product Owner-directed, live production testing of D77's shipped version, same day: two quantity boxes shown simultaneously read as confusing, and the underlying mechanism (decrease-only, no ledger) was already superseded same-day by D78/RFC 0016's bidirectional, ledger-backed correction (`InventoryCorrection`, `Lot.source`). §3.6/§3.7 rewritten in full to match: an existing Product — at any live `disponibles` value, including exactly 0, not gated on it being > 0 the way D77's box was — now shows **Cantidad disponible actual** as a plain, read-only figure with a pencil/edit action (§3.6). No "Guardar mercancía" CTA is shown at all until she deliberately taps either the pencil (opening a **bidirectional** `[−]`/`[+]`-plus-typed-entry correction stepper, floor 0, no fixed ceiling — see §3.6's own reasoning) or **+ Recibir lote** (revealing the pre-existing, unmodified additive stepper, renamed "Cantidad recibida" for terminology consistency, floor 1 — same mechanism as the old "Cantidad" box, just now hidden until this tap). Both may be open and staged at once — composing a defect correction and a new receipt in the same visit, explicitly preserved from the version being replaced (§10). **This also structurally eliminates §8 item 5's own named phantom-addition risk** — the two-boxes-visible-together scenario that risk was written against no longer exists by construction; marked resolved in §8, not deleted, per this document's non-deletion discipline. For a genuinely new Product (§3.8a, either path), this amendment doesn't apply at all — there's no existing count to display or correct, so the receiving stepper (same rename, "Cantidad recibida," no behavior change) stays always visible immediately, exactly as before. **Expedited — not yet run through `ux-critic`/`reviewer`, same posture as this document's other live-fix passes (D65, D71–D73, D77).**
 
+**Further amended 2026-09-18 (`decision-log.md` D79, `product/99-rfc/0017-nfc-composable-selling-capability.md`, Accepted — NFC becomes a live, composable selling capability elsewhere in this product; `Session.operatingMode`/NFC Readiness retired outright; `Business.defaultSellingMode` fully retired):** **narrow scope here — this document's own composed NFC-tagging-eligibility test (`nfcPerProductEnabled === true` AND `Product.nfcTaggingEnabled === true`, D71/D73) is completely unchanged by D79** and needed no logic edit anywhere it appears. What changed: every remaining live-sounding reference to `Session.operatingMode`, `defaultSellingMode`, or "NFC Readiness" as if still an active mechanism is corrected to note the retirement, or left untouched where already explicitly marked historical from the D72/D73 passes (a large majority already was). See each corrected passage below (§2's state-load list, §2's own `nfc ∈ registrationMode` reasoning paragraph, §9's two `Session.operatingMode` analogies, §9's one-way-dependency bullet's stale live-tense framing, §7's stale cross-reference to `settings.md §2.3`, §10's "is now `defaultSellingMode`" bullet, and two small historical footnotes added inside the already-retired §3.5/§3.17 sections). `nfc ∈ registrationMode` phrasing throughout this document is confirmed still correct under D79's boolean redefinition of `registrationMode` — `nfc` was always the only non-default entry in what was previously described as a set, so the phrasing's own logic never depended on set-framing being literally true; checked at every occurrence, none found load-bearing on the retired set framing.
+
 Scope: `Inventario`, the second of four top-level nav items per
 `product/00-foundation/information-architecture.md`. Covers the first three
 steps of the merchant workflow chain in `product/00-foundation/vision.md`
@@ -163,8 +165,8 @@ app does.
 
 Before any of the following resolves, the tab itself must load its own state
 (Catalog membership, `nfc ∈ registrationMode`, `Business.subscriptionTier` —
-also gating barcode-scanning availability, see below — `defaultSellingMode`,
-pending tag counts) — this can
+also gating barcode-scanning availability, see below — pending tag counts)
+— this can
 fail or take longer than expected under real bazaar/car/between-stalls
 connectivity, same as every other tab. See §3.1/§3.2 for the near-instant/slow
 presentation of that load, and §3.18 for the defensive fallback if it doesn't
@@ -245,11 +247,14 @@ in Inventario, per `information-architecture.md` ("`nfc ∉ registrationMode`
 in Inventario. Gated by capability availability, not by any single Session's
 resolved operating mode.") and `domain-model.md`'s business-capability table.
 This is resolved once, upstream, at the Business level — never a per-Lot
-question like "¿quieres usar NFC para este lote?", and independent of any
-single Session's `Session.operatingMode` (*architecture-principles.md* #1,
-`decision-log.md` D23). Every condition in this section is a Business-level
-capability check, not a Session-level one — Inventario isn't a Selling-context
-screen and never reads or depends on any particular Session's resolved mode.
+question like "¿quieres usar NFC para este lote?", and (**corrected
+2026-09-18, `decision-log.md` D79 — `Session.operatingMode` no longer
+exists as a concept**) never a Session-level question of any kind, since
+Selling itself no longer resolves a per-Session mode either
+(*architecture-principles.md* #1, `decision-log.md` D27, D79). Every
+condition in this section is a Business-level capability check, not a
+Session-level one — Inventario isn't a Selling-context screen and never
+reads or depends on any particular Session's state.
 This is a distinct fact from the auto-entry/pending-nudge gate corrected
 above: capability decides whether the Assign-Tags mechanism (§3.14 and its
 surrounding states) is reachable *at all* for this Business;
@@ -986,13 +991,12 @@ current tab in brackets.
 │ Hoy [Inventario] Eventos Resultados │
 └───────────────────────────────┘
 ```
-**Gate corrected, `decision-log.md` D46 — this state is now keyed to
+**Gate corrected, `decision-log.md` D46 — this state was keyed to
 `defaultSellingMode`, not capability.** Previously gated on `nfc ∈
-registrationMode` alone; now requires `defaultSellingMode === 'nfc'` as
-well, per §2 step 2's corrected test above. A Paid-tier Business that keeps
-`defaultSellingMode = 'buttons'` never sees this state, even with untagged
-inventory sitting in her Catalog — not an oversight, see §2's cross-
-reference note above for why.
+registrationMode` alone; then required `defaultSellingMode === 'nfc'` as
+well, per former §2 step 2's corrected test. A Paid-tier Business that kept
+`defaultSellingMode = 'buttons'` never saw this state, even with untagged
+inventory sitting in her Catalog. **[Further historical note, 2026-09-18: `defaultSellingMode` is separately, fully retired at the Foundation level by `decision-log.md` D79 — this whole passage was already non-live per D72's own retirement of this state, before that.]**
 - **Amended 2026-08-07 (Product-Owner-directed refinement — see §10):**
   "Continuar etiquetando" is now the primary action in this state — a plain
   status line ("Te faltan 7 artículos por etiquetar") directly under the
@@ -1062,15 +1066,15 @@ reference note above for why.
   open question this touches.
 - **Cross-reference to NFC Readiness (`decision-log.md` D23, added — no
   redesign):** this state's own "how many units still need tags" count and
-  Selling's NFC Readiness check — the "how many sellable units already have
-  tags" evaluation run at Session-open time (`home.md` §2/§3.6a) — are two
-  views of the identical underlying tagged/untagged split on `available`
-  `InventoryUnit`s. The two counts should read off the same underlying number
-  rather than drift into two independently-maintained figures. This is a
-  cross-reference note only: they remain two distinct UX moments in two
-  distinct documents — an ambient, mid-workflow Inventario nudge here, versus
-  a Session-start, Selling-context gate there — neither is redesigned by this
-  note.
+  Selling's former NFC Readiness check — the "how many sellable units
+  already have tags" evaluation once run at Session-open time (`home.md`
+  former §2/§3.6a) — were two views of the identical underlying
+  tagged/untagged split on `available` `InventoryUnit`s. **[Further
+  historical note, 2026-09-18: NFC Readiness itself is separately retired
+  outright at the Foundation level by `decision-log.md` D79 — not
+  re-thresholded — so this cross-reference now points at a retired
+  mechanism on both sides. Kept here as historical record only, alongside
+  the rest of this already-retired §3.5.]**
 - **Further amended 2026-09-16/17 (`decision-log.md` D71, `product-decisions.md` Q31).** This state's gate is extended, not replaced — reached when the composed NFC-tagging-eligible test (§2) is true for at least one untagged, `available` unit anywhere in the Catalog: `defaultSellingMode === 'nfc'` (unchanged, the original D46 case), **or** `Business.nfcPerProductEnabled === true` with at least one Product individually opted in (§3.4's new fifth tap zone) that still has an untagged unit. A Paid merchant with `defaultSellingMode = 'buttons'` who has opted, say, only Camisas into NFC now sees this nudge exactly when a Camisas unit is still untagged — never for Plumas or any other Product she hasn't individually opted in, and never at all if she hasn't turned on `nfcPerProductEnabled` in the first place.
 
 ### 3.6 Registrar mercancía — entry (first line, or shortcut-prefilled) (rewritten 2026-09-18, `decision-log.md` D78/RFC 0016)
@@ -2097,11 +2101,10 @@ gated the same way `decision-log.md` D27 already gates NFC).
   Catalog view that already knows work is pending and already reads as such;
   no separate "you stopped early" messaging.
 - **Gated identically to §3.5, corrected the same way (`decision-log.md`
-  D46): `defaultSellingMode === 'nfc'`, not mere capability.** This state is
+  D46): `defaultSellingMode === 'nfc'`, not mere capability.** This state was
   only ever reached from an already-active Asignar Tags queue (§3.14), which
-  itself now only ever opens for an NFC-tagging-eligible Business/Lot (§2's
-  composed test, `decision-log.md` D46/D71) — no separate gate to restate
-  here, only to confirm it's inherited, not independently checked.
+  itself only ever opened for an NFC-tagging-eligible Business/Lot (§2's
+  composed test, `decision-log.md` D46/D71) — no separate gate, only inherited. **[Further historical note, 2026-09-18: `defaultSellingMode` is separately, fully retired at the Foundation level by `decision-log.md` D79 — this whole passage was already non-live per D72's own retirement of this state, before that.]**
 
 ### 3.18 Defensive fallback / load error
 ```
@@ -2388,7 +2391,7 @@ comparable hard speed requirement — the floor above is about not adding
   shown as its own field, the identical "capture business truth once"
   discipline `decision-log.md` D3 already applies to InventoryUnit
   generation.
-- Whether a Catalog row shows the fifth NFC-eligibility zone at all — computed automatically from `Business.nfcPerProductEnabled` AND `nfc ∈ registrationMode` AND this Product having no `barcode`, the same multi-condition derivation discipline `settings.md` §2.3 already applies to `defaultSellingMode`'s own `nfc` option. Never a manual check Ana has to reason through herself.
+- Whether a Catalog row shows the fifth NFC-eligibility zone at all — computed automatically from `Business.nfcPerProductEnabled` AND `nfc ∈ registrationMode` AND this Product having no `barcode`, the same multi-condition derivation discipline `settings.md` §2.8 already applies to its own "Activar NFC" gate (**corrected 2026-09-18, `decision-log.md` D79 — `settings.md §2.3`'s `defaultSellingMode`-based precedent is retired; §2.8 is the live precedent now**). Never a manual check Ana has to reason through herself.
 - The composed **NFC-tagging-eligible** test (`decision-log.md` D71, §2) — computed fresh, per unit, every time Asignar Tags' auto-entry or pending-nudge logic runs; Ana never has to remember which Products she's opted in, or reconcile it herself against her selling mode.
 - Assigning a fresh barcode via §3.4c automatically clears a conflicting `Product.nfcTaggingEnabled = true` in the same write — she never has to remember to turn the NFC switch off herself first (§3.4c's own new bullet).
 - Cantidad disponible actual's decrease write converges to whatever target she lands on, computed against real-time `disponibles` at Guardar, never a stale client-side subtraction — she never sees or resolves a race condition herself. An increase carries no equivalent race at all, by construction (`decision-log.md` D78) — she never has to reason about the difference.
@@ -2484,8 +2487,8 @@ comparable hard speed requirement — the floor above is about not adding
   exactly once, here in Inventory (§3.8c), and never re-made downstream — a
   Sale-time scan of the same barcode (`home.md` §3.9a) inherits that
   already-established trust and resolves silently, the same "decide once,
-  let everything downstream inherit it" discipline this principle already
-  states for `Session.operatingMode`.
+  let everything downstream inherit it" discipline every live-read
+  capability gate in the Selling flow now follows (`decision-log.md` D79).
 - *architecture-principles.md #6 (one-way dependency direction), extended
   (D65)* — `Product.barcode` is only ever written from Inventory's own
   Product-creation/-matching path (§3.8b–§3.8e); Selling (`home.md`
@@ -2523,9 +2526,11 @@ comparable hard speed requirement — the floor above is about not adding
 **architecture-principles.md:**
 - *#1 (capabilities resolved once, upstream)* — `nfc ∈ registrationMode` gates
   whether Asignar Tags exists at all in Inventario, decided at the Business
-  level (Selling Mode Capability, `decision-log.md` D23), never a per-Lot
-  question, and independent of any single Session's resolved
-  `Session.operatingMode`.
+  level (Selling Mode Capability, `decision-log.md` D27, D79), never a
+  per-Lot question. **Corrected 2026-09-18 (`decision-log.md` D79) — no
+  longer stated as "independent of `Session.operatingMode`," since that
+  field no longer exists**; there is simply no Session-level concept left
+  for this Business-level check to be independent of.
 - *#2 (aggregate boundaries follow write-throughput)* — unlike Sale (its own
   root specifically for cheap, independent per-item writes), a Lot legitimately
   batches multiple InventoryEntries into a single "Guardar mercancía" commit,
@@ -2543,14 +2548,19 @@ comparable hard speed requirement — the floor above is about not adding
   the IA wording conflict flagged in §8, item 1 (since corrected).
 - *#6 (one-way dependency direction)* — Inventario never reads or writes
   Selling/Session/Sale state; Asignar Tags only ever writes to
-  InventoryUnit. Reading `Business.defaultSellingMode` here (§2 steps
-  0/2/3) is the existing, allowed direction — Inventory already depends on
-  Identity (`domain-model.md`'s Bounded Contexts table); nothing in this
-  document ever reverses that edge. The corrected `settings.md` §2.6
-  handoff (`decision-log.md` D46 Addendum) is what keeps the other
-  direction clean: `settings.md` never reads Inventory-owned state back,
-  only hands off a bare entry marker for this document's own,
-  already-legitimate check to consume.
+  InventoryUnit. **Corrected 2026-09-18 (`decision-log.md` D79) — this
+  document's own step 0 no longer reads `Business.defaultSellingMode`,
+  because nothing does anywhere in the Foundation any longer** (that
+  field is fully retired; step 0 itself has been marked "dormant, D72;
+  doubly dead, D73" since before this correction, and stays exactly as
+  marked). What remains true, unchanged: Inventory already legitimately
+  depends on Identity (`domain-model.md`'s Bounded Contexts table) for the
+  capability facts it *does* still read (`nfc ∈ registrationMode`,
+  `nfcPerProductEnabled`); nothing in this document ever reverses that
+  edge. `settings.md`'s own former §2.6 handoff mechanism (`decision-log.md`
+  D46 Addendum), which this bullet used to cite as the thing keeping the
+  reverse direction clean, is itself retired in full (`settings.md`'s own
+  D79 pass) — there is no longer a handoff for this bullet to describe.
 - **§3.4's own tap-zone disambiguation discipline, extended a fourth time (Q23's marker/body/price split; D65's fourth, overflow zone; D71's fifth, NFC-eligibility zone; this 2026-09-17 amendment's sixth, pending-tag indicator zone)** — every new row-level control this document has added has been reasoned explicitly against merging into an existing, already-precedented zone before being given its own, rather than defaulting to nesting it inside the nearest existing affordance (§3.4's own reasoning above).
 - *"Never delete historical data" (D25), extended 2026-09-18 (`decision-log.md` D78, RFC 0016, supersedes D77's own extension of this same principle)* — a correction, in either direction, never rewrites the original Lot/InventoryEntry's received quantity or any historical Sale; only the derived, unit-status-driven `disponibles` count changes. A decrease removes only `available` units (never `reserved`); an increase only ever mints new units through the unmodified Lot/InventoryEntry path — the identical FIFO default (D5) and conditional-write discipline already governing Sale consumption, plus the existing receipt-generation path, both reused rather than reinvented.
 - *"Capture business truth once, reuse it forever"* — Cantidad disponible actual's default is the Product's own real, current count, not re-derived or re-asked; §3.8's carry-forward rule extends the same discipline already covering Product identity, price, and photo to this fact, now regardless of whether it's 0.
@@ -2660,30 +2670,28 @@ comparable hard speed requirement — the floor above is about not adding
 - **Checked against `home.md`'s corrected §2 step 3 test (2026-08-08, `decision-log.md` D33) and found not to share its bug.** Inventario's Catalog view carries no "something is sellable right now" promise the way Home's "Iniciar Sesión Rápida" does — left unchanged. **[see inventory.changelog.md#decisions-checked-against-home-q2-step3-test-no-shared-bug]**
 - **A zero-`disponibles` Catalog row's caption distinguishes "never registered" from "sold out" (§3.4, applying identically to §3.5, §3.12, §3.13, and §3.17) — resolves a first-impression risk `ux-critic` found.** A never-stocked row reads "sin registrar," derived automatically from whether any Lot/InventoryEntry has ever been received against that Product — no new stored field. A previously-stocked, now-sold-out Product keeps the existing "0 disponibles" caption. Neither caption changes the row's dimming, tappability, or destination. **Narrowed to a legacy-data-only case, 2026-09-04 (`product-decisions.md` Q20)** — see §3.4's own correction; the mechanism above is unchanged, only which real merchants can still reach it. **[see inventory.changelog.md#decisions-zero-disponibles-sin-registrar-vs-sold-out]**
 - **Corrected 2026-08-14 (`decision-log.md` D46 — tag-assignment auto-entry
-  gates on merchant intent, not mere capability).** The bullet above ("After
+  gated on merchant intent, not mere capability).** The bullet above ("After
   Guardar mercancía, nfc-capable Businesses are taken directly into Asignar
-  Tags...") is superseded, not deleted — kept for the historical trail. The
-  actual gate, everywhere in this document (§2 steps 2–3, §3.5, §3.12,
-  §3.13, §3.14, §3.17, §4, §7), is now `Business.defaultSellingMode ===
-  'nfc'` — never `nfc ∈ registrationMode` alone. `settings.md` §2.6's
-  "Cambiar a vender con tags" hands off directly into this document's
-  Asignar Tags queue (§3.14) if untagged inventory already exists, or
-  guides her to register merchandise first (§3.3a) if zero InventoryUnits
-  have ever been received. NFC *availability* (`nfc ∈ registrationMode`) is
-  unchanged and still gates whether the Assign-Tags mechanism exists in
-  Inventario at all. **[see
+  Tags...") was superseded, not deleted — kept for the historical trail. The
+  gate this bullet described, at the time, everywhere in this document (§2
+  steps 2–3, §3.5, §3.12, §3.13, §3.14, §3.17, §4, §7), was
+  `Business.defaultSellingMode === 'nfc'` — never `nfc ∈ registrationMode`
+  alone. `settings.md` §2.6's "Cambiar a vender con tags" handed off
+  directly into this document's Asignar Tags queue (§3.14) if untagged
+  inventory already existed, or guided her to register merchandise first
+  (§3.3a) if zero InventoryUnits had ever been received. NFC *availability*
+  (`nfc ∈ registrationMode`) was unchanged and still gated whether the
+  Assign-Tags mechanism existed in Inventario at all. **[see
   inventory.changelog.md#decisions-2026-08-14-d46-corrected-defaultsellingmode-gate]**
 - **Further corrected, same day (architect ruling — see D46's own
-  Addendum).** `settings.md`'s action now only writes `defaultSellingMode`
-  and hands off a bare entry marker — never reading Inventory-owned state
+  Addendum).** `settings.md`'s action wrote only `defaultSellingMode`
+  and handed off a bare entry marker — never reading Inventory-owned state
   back, avoiding the dependency cycle `architecture-principles.md` #6
-  forbids. This document's §2 gains a new, highest-priority trigger
+  forbids. This document's §2 gained a new, highest-priority trigger
   condition (step 0) performing the identical whole-Catalog check step 2
-  already runs. An already-fully-tagged merchant reached via this entry
-  point lands on this document's own plain Catalog view (§3.4, "Inventory
-  Ready"), which now carries a one-time ambient acknowledgment for this
-  entry marker. **[see
+  already ran. **[see
   inventory.changelog.md#decisions-2026-08-14-d46-addendum-dependency-cycle-corrected]**
+- **Superseded twice more, both already reflected in §2's own current text: `decision-log.md` D73 (2026-09-17) dropped `defaultSellingMode` from the composed test entirely — step 0 became "dormant, D72; doubly dead, D73." `decision-log.md` D79 (2026-09-18) then retired `Business.defaultSellingMode` itself at the Foundation level, and retired `settings.md`'s own §2.6 handoff action in full — the entry marker this bullet's own mechanism depended on can no longer be produced by anything live.** Nothing further changes in this document as a result: step 0's own current text already correctly describes it as unreachable and premise-false, independent of D79 — this note only confirms the Foundation-level retirement is now complete on both ends (the writer, in `settings.md`; the field itself). **[see inventory.changelog.md#decisions-d79-defaultsellingmode-foundation-retired]**
 
 - **Phone-camera barcode scanning added as a second way to resolve
   Producto in Elegir producto (`decision-log.md` D65, 2026-09-13).** New

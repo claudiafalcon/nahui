@@ -32,8 +32,8 @@ import type { ID } from '../../domain/types';
 
 type HomeUiState =
   | { kind: 'resolved' }
-  | { kind: 'starting-session'; eventId: ID | null; overrideToNfc: boolean }
-  | { kind: 'starting-session-error'; eventId: ID | null; overrideToNfc: boolean }
+  | { kind: 'starting-session'; eventId: ID | null }
+  | { kind: 'starting-session-error'; eventId: ID | null }
   | { kind: 'receipt'; receipt: Receipt }
   | { kind: 'closed'; count: number; revenue: number; venueName?: string; dayNumber?: number; sessionId: string }
   | { kind: 'account' };
@@ -113,10 +113,10 @@ export function HomeScreen({
   // `startSession` now reports success/failure; this wraps both call
   // sites below in the same error/retry shape every other real write in
   // this codebase already uses (`WritingState`'s own error variant).
-  async function handleStartSession(eventId: ID | null, overrideToNfc: boolean) {
-    setUi({ kind: 'starting-session', eventId, overrideToNfc });
-    const ok = await startSession(eventId ?? undefined, overrideToNfc);
-    setUi(ok ? { kind: 'resolved' } : { kind: 'starting-session-error', eventId, overrideToNfc });
+  async function handleStartSession(eventId: ID | null) {
+    setUi({ kind: 'starting-session', eventId });
+    const ok = await startSession(eventId ?? undefined);
+    setUi(ok ? { kind: 'resolved' } : { kind: 'starting-session-error', eventId });
   }
 
   if (ui.kind === 'starting-session') {
@@ -132,7 +132,7 @@ export function HomeScreen({
         <WritingState
           error
           errorLabel="No pudimos iniciar tu sesión de venta. Intenta de nuevo."
-          onRetry={() => void handleStartSession(ui.eventId, ui.overrideToNfc)}
+          onRetry={() => void handleStartSession(ui.eventId)}
         />
       </ScreenTransition>
     );
@@ -264,14 +264,12 @@ export function HomeScreen({
     return (
       <ScreenTransition transitionKey="elegir-evento">
         <ElegirEvento
-          role={role}
           events={qualifyingEvents}
           headerIcon={headerIcon}
           quickSessionTodaySales={todaySalesSummary(state, null)}
           onOpenAccountSurface={openAccountSurface}
           onSelect={(eventId) => setPickedEventId(eventId)}
-          onStartQuickSession={(overrideToNfc) => void handleStartSession(null, overrideToNfc)}
-          onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
+          onStartQuickSession={() => void handleStartSession(null)}
         />
       </ScreenTransition>
     );
@@ -339,9 +337,8 @@ export function HomeScreen({
         upcomingEventStartDate={upcomingEvent?.startDate}
         onTapUpcomingEvent={upcomingEvent && role === 'OWNER' ? () => onNavigateToEvent(upcomingEvent.id) : undefined}
         todaySales={todaySalesSummary(state, null)}
-        onStartSession={(overrideToNfc) => void handleStartSession(null, overrideToNfc)}
+        onStartSession={() => void handleStartSession(null)}
         onOpenAccountSurface={openAccountSurface}
-        onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
         sellerEventsElsewhere={sellerEventsElsewhere}
         sellerEventsScheduledElsewhere={sellerEventsScheduledElsewhere}
       />
@@ -367,10 +364,9 @@ export function HomeScreen({
           dayNumber={dayNumber}
           todaySales={todaySalesSummary(state, eventId)}
           quickSessionTodaySales={todaySalesSummary(state, null)}
-          onContinue={(overrideToNfc) => void handleStartSession(eventId, overrideToNfc)}
-          onStartQuickSession={(overrideToNfc) => void handleStartSession(null, overrideToNfc)}
+          onContinue={() => void handleStartSession(eventId)}
+          onStartQuickSession={() => void handleStartSession(null)}
           onOpenAccountSurface={openAccountSurface}
-          onOpenAssignTagsPlaceholder={onNavigateToAssignTags}
         />
       </ScreenTransition>
     );

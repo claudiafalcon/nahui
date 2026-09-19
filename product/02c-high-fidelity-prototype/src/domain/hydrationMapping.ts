@@ -49,7 +49,6 @@ import type {
   Sale,
   SaleItem,
   Session,
-  SessionOperatingMode,
   Venue,
 } from './types';
 
@@ -64,7 +63,11 @@ export function mapBusinessRow(row: Record<string, unknown>): Business {
     logo: (row.logo as string | null) ?? undefined,
     description: (row.description as string | null) ?? undefined,
     subscriptionTier: row.subscription_tier as Business['subscriptionTier'],
-    defaultSellingMode: row.default_selling_mode as Business['defaultSellingMode'],
+    // `decision-log.md` D79 — `row.default_selling_mode` is left unread here
+    // on purpose. The `businesses.default_selling_mode` column stays in the
+    // schema as inert historical data (D25, never deleted); this mapper
+    // simply no longer surfaces it onto the client `Business` shape, since
+    // `Business.defaultSellingMode` itself is retired.
     onboardingAcknowledged: row.onboarding_acknowledged as boolean,
     pendingSubscriptionTier: (row.pending_subscription_tier as Business['pendingSubscriptionTier']) ?? null,
     pendingSubscriptionTierEffectiveDate: (row.pending_subscription_tier_effective_date as string | null) ?? null,
@@ -159,7 +162,10 @@ export function mapSessionRow(row: Record<string, unknown>): Session {
   return {
     id: row.id as ID,
     eventId: (row.event_id as ID | null) ?? null,
-    operatingMode: row.operating_mode as SessionOperatingMode,
+    // `decision-log.md` D79 — `row.operating_mode` is left unread here on
+    // purpose. The `sessions.operating_mode` column stays in the schema as
+    // inert historical data (D25, never deleted); `Session.operatingMode`
+    // itself is retired from the client type entirely.
     status: row.status as Session['status'],
     openedAt: toMs(row.opened_at as string),
     closedAt: row.closed_at ? toMs(row.closed_at as string) : undefined,

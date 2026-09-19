@@ -101,19 +101,12 @@
   color: var(--color-obsidian);
 }
 
-/* home.md §3.10 — the nfc-mode registration surface: no product grid at
-   all, replaced entirely by the shared NFCScanPrompt (Asignar Tags' own
-   component, inventory.md §3.14), centered in the same flexible region
-   .gridScroll occupies in buttons mode — same shell, mutually exclusive
-   content (architecture-principles.md #1: "the merchant never switches
-   between them while selling," vision.md). */
-.nfcSurface {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-4) var(--space-4) var(--space-8);
-}
+/* `.nfcSurface` — retired, `decision-log.md` D79. This rule used to style
+   the former full-screen, whole-catalog `nfc`-only registration surface
+   (home.md §3.10), replaced entirely by NFCScanPrompt with no product grid
+   at all. That surface is retired outright — the composable grid (.grid)
+   plus the "Leer con NFC" overlay (.nfcOverlay, below) is the one selling
+   surface now, for every Session. Removed rather than left dead. */
 
 .footer {
   padding: 14px var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
@@ -138,9 +131,9 @@
   color: var(--color-warning-aa);
 }
 
-/* Fix round, docs/passes/slice-7-nfc-selling.md (ux-critic Major) — the
-   §3.10 no-match scan fallback's own "Asignar tags" hand-off, inline within
-   the same sentence as .stockHint's warning text (mirrors
+/* Fix round, docs/passes/slice-7-nfc-selling.md (ux-critic Major) — a
+   no-match-scan "Asignar tags" hand-off, inline within the same sentence as
+   .stockHint's warning text (mirrors
    Idle.module.css's .readinessLinkInline: an inline link within one line of
    copy, not a stacked line+link — this hint is a single short line to begin
    with). Coral, not warning-colored: the surrounding text is flagging why

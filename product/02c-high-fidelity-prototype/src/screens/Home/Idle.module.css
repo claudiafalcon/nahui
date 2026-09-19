@@ -174,31 +174,12 @@
   color: #6B6259;
 }
 
-.readinessLink {
-  align-self: flex-start;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: var(--color-coral-aa);
-  font: var(--text-body-sm);
-  font-weight: 600;
-  padding: 2px;
-}
-
-/* home.md §3.6a's Limited Ready override, once flipped — "Vas a usar tags
-   esta sesión · [ Cambiar ]" is one line, not a stacked line+link the way
-   every other §3.6a variant renders (contrast .readinessLink above) — the
-   same link styling, inline within the sentence instead of on its own row. */
-.readinessLinkInline {
-  display: inline;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: var(--color-coral-aa);
-  font: var(--text-body-sm);
-  font-weight: 600;
-  padding: 0;
-}
+/* `.readinessLink`/`.readinessLinkInline` — retired, `decision-log.md`
+   D79. Both used to style the former §3.6a Session-start NFC-readiness
+   mention's own tappable links ("Cambiar," "Asignar tags," "Ir a
+   Configuración"), now deleted along with `NfcSessionStartNote.tsx`.
+   `.readinessNote`/`.readinessLine` above stay live — the SELLER
+   passive-awareness lines are plain text, never a link. */
 
 /* home.md §3.5 — the upcoming-Event card: "visually secondary," never a
    button masquerading as the primary CTA. A quiet paper-toned strip above

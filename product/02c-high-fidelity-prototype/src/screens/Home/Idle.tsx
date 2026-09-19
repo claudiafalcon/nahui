@@ -3,8 +3,6 @@ import { BrandMark } from '../../components/BrandMark/BrandMark';
 import { daysFromToday } from '../../domain/dates';
 import { pesos, pluralize } from '../../domain/format';
 import type { MembershipRole } from '../../domain/types';
-import { useNfcSessionStart } from './useNfcSessionStart';
-import { NfcSessionStartNote } from './NfcSessionStartNote';
 import styles from './Idle.module.css';
 
 /** home.md §3.4/§3.5 — idle, ready to sell, no Session open yet. Same
@@ -26,17 +24,15 @@ import styles from './Idle.module.css';
  * step to Quick Session ("Quick Session works regardless," domain-model.md).
  * "Iniciar Venta Rápida" keeps full prominence with or without the card.
  *
- * **§3.6a (NFC Selling pass, D43) — all four Session-start variants are now
- * real**, via the shared `useNfcSessionStart`/`NfcSessionStartNote` pair
- * (see those files' own doc comments): Limited Ready (inline override),
- * Not Ready, capability revoked, and the one-time Ready-but-`buttons`
- * discoverability nudge. `overrideToNfc` — Limited Ready's own local
- * override choice — is threaded through `onStartSession` at the moment of
- * *this* tap (§6's footnote: "before the existing Session-start tap"),
- * never gating or delaying it. "Asignar tags" routes into Inventario's real
- * Asignar Tags queue (`inventory.md` §3.14, via
- * `onOpenAssignTagsPlaceholder`, unrenamed from the Asignar Tags pass to
- * keep that diff scoped) instead of a Home-local Placeholder stub.
+ * **§3.6a (the former Session-start NFC-readiness sub-step) is retired
+ * outright, `decision-log.md` D79** — `Session.operatingMode` and NFC
+ * Readiness (the mechanisms §3.6a existed to arbitrate) no longer exist, so
+ * there is no Session-start moment left for any mention/override to
+ * compose with. `useNfcSessionStart`/`NfcSessionStartNote` (this
+ * component's own former composition here) are deleted along with it — a
+ * Session simply opens, with nothing to resolve. "Leer con NFC" is still
+ * fully reachable, just live-gated inside the Session itself (`Selling.tsx`
+ * §3.9), never at this Session-start moment.
  *
  * **Same-day resume line (§3.4/§3.5, closes `architect-questions.md` Q19).**
  * `todaySales` is `todaySalesSummary(state, null)` — the Quick Session scope
@@ -51,23 +47,20 @@ import styles from './Idle.module.css';
  * one-row Sheet ("⚙ Configuración" only) — that intermediate sheet is now
  * retired here too (already retired for the active-Session header a day
  * earlier, SessionHeader.tsx): the gear icon calls `onOpenSettings` directly,
- * no `Sheet`, no `menuOpen` state. Same shape as §3.6a's own gear icon below
- * (`NfcSessionStartNote`'s "Ir a Configuración" link is a separate,
- * secondary affordance, unaffected by this change).
+ * no `Sheet`, no `menuOpen` state.
  *
  * **SELLER passive-awareness line (§3.4/§3.5, further amended 2026-09-09,
  * `product/99-rfc/0011-event-assignment.md`/`decision-log.md` D60).** When
  * `sellerEventsElsewhere` is true, a two-line note renders beneath the
- * primary CTA, above `NfcSessionStartNote` (the stacking order §3.4/§3.5
- * both specify: same-day-resume line → CTA → this line → §3.6a's own
- * readiness line, if any) — "Hay eventos activos hoy y no estás asignada a
- * ninguno." / "Pídele a quien te invitó que te asigne a uno." Reuses the
- * existing `.readinessNote`/`.readinessLine` styling `NfcSessionStartNote`
- * already established for its own plain-text, no-link SELLER variants
- * (Not Ready / capability-revoked), rather than introducing new styling for
- * what's visually the identical shape. Plain text, no link — only an OWNER
- * can create an `EventAssignment`, so there is genuinely nothing to route
- * to from here. Shown every time the condition holds, not once ever;
+ * primary CTA (the last element on this screen as of `decision-log.md` D79
+ * — the former §3.6a mention this note used to sit above is retired) —
+ * "Hay eventos activos hoy y no estás asignada a ninguno." / "Pídele a
+ * quien te invitó que te asigne a uno." Reuses the `.readinessNote`/
+ * `.readinessLine` styling this codebase already established elsewhere for
+ * a plain-text, no-link SELLER note, rather than introducing new styling
+ * for what's visually the identical shape. Plain text, no link — only an
+ * OWNER can create an `EventAssignment`, so there is genuinely nothing to
+ * route to from here. Shown every time the condition holds, not once ever;
  * disappears the instant it no longer does.
  *
  * **Upcoming-Event card, role-scoped (§3.5, further amended 2026-09-10,
@@ -115,7 +108,6 @@ export function Idle({
   todaySales,
   onStartSession,
   onOpenAccountSurface,
-  onOpenAssignTagsPlaceholder,
   sellerEventsElsewhere,
   sellerEventsScheduledElsewhere,
 }: {
@@ -136,12 +128,8 @@ export function Idle({
    * as static display instead of a `<button>`. */
   onTapUpcomingEvent?: () => void;
   todaySales?: { total: number; count: number } | null;
-  /** NFC Selling pass (D43) — `overrideToNfc` is whatever
-   * `useNfcSessionStart`'s own local override state currently reads at the
-   * moment of this tap (always `false` outside the Limited Ready variant). */
-  onStartSession: (overrideToNfc: boolean) => void;
+  onStartSession: () => void;
   onOpenAccountSurface: () => void;
-  onOpenAssignTagsPlaceholder: () => void;
   /** `home.md` §3.4/§3.5's SELLER-only passive-awareness line
    * (`product/99-rfc/0011-event-assignment.md`, `decision-log.md` D60) —
    * true only when this SELLER's role-scoped qualifying-Event check (§2)
@@ -160,7 +148,6 @@ export function Idle({
    * 'OWNER'`. */
   sellerEventsScheduledElsewhere: boolean;
 }) {
-  const { variant, overrideToNfc, toggleOverride } = useNfcSessionStart();
   // 2026-09-10 amendment — no longer conditioned on `onTapUpcomingEvent`:
   // the card now also renders for a SELLER, who never receives a tap
   // handler (see `onTapUpcomingEvent`'s own doc comment above). Whether it
@@ -216,7 +203,7 @@ export function Idle({
               Ya vendiste {pesos(todaySales.total)} · {todaySales.count} {pluralize(todaySales.count, 'venta', 'ventas')} hoy
             </p>
           )}
-          <Button className={styles.cta} onClick={() => onStartSession(overrideToNfc)}>
+          <Button className={styles.cta} onClick={onStartSession}>
             Iniciar Venta Rápida
           </Button>
           {sellerEventsElsewhere && (
@@ -225,14 +212,6 @@ export function Idle({
               <p className={styles.readinessLine}>Pídele a quien te invitó que te asigne a uno.</p>
             </div>
           )}
-          <NfcSessionStartNote
-            variant={variant}
-            role={role}
-            overrideToNfc={overrideToNfc}
-            onToggleOverride={toggleOverride}
-            onOpenAssignTags={onOpenAssignTagsPlaceholder}
-            onOpenSettings={onOpenAccountSurface}
-          />
         </div>
       </div>
     </>

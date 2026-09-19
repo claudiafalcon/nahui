@@ -1,8 +1,6 @@
 import { Button } from '../../components/Button/Button';
 import { pesos, pluralize } from '../../domain/format';
 import type { MembershipRole } from '../../domain/types';
-import { useNfcSessionStart } from './useNfcSessionStart';
-import { NfcSessionStartNote } from './NfcSessionStartNote';
 import styles from './Idle.module.css';
 
 /**
@@ -25,16 +23,13 @@ import styles from './Idle.module.css';
  * Event's `eventId`, resolved once in `HomeScreen.tsx` and passed down.
  * Renders only when non-null (1+ finalized Sales already exist today under
  * this Event, e.g. a lunch-break resume), between the "Hoy es tu Día N"
- * headline and the primary CTA — the exact composition order the amendment
- * specifies (identity → Día N → same-day-sales line → primary CTA →
- * §3.6a's own lines, if any).
+ * headline and the primary CTA.
  *
- * **§3.6a (NFC Selling pass, D43) — shares `useNfcSessionStart`/
- * `NfcSessionStartNote` with `Idle.tsx`** rather than duplicating the same
- * four-variant branching a second time (§3.6a's own text: "applies
- * identically wherever a new Session is about to open — §3.4... §3.5...
- * §3.6"). `overrideToNfc` is threaded through `onContinue` at the moment of
- * *this* tap, same as `Idle.tsx`'s own `onStartSession`.
+ * **§3.6a (the former Session-start NFC-readiness sub-step) is retired
+ * outright, `decision-log.md` D79** — see `Idle.tsx`'s own doc comment for
+ * the full reasoning; this screen shared that mechanism and is corrected
+ * identically (`useNfcSessionStart`/`NfcSessionStartNote` deleted, no
+ * `overrideToNfc` threaded through `onContinue` any longer).
  *
  * **Direct gear (⚙) entry point (settings.md §2.1; amended 2026-08-15 — see
  * home.md's own status header/§2/§3.6c).** Previously a "⋯" icon opening a
@@ -53,12 +48,7 @@ import styles from './Idle.module.css';
  * primary/secondary composition `inventory.md` §3.5/§3.17's "Continuar
  * etiquetando"/"Registrar mercancía" already established in this codebase),
  * immediately beneath "Continuar Día {dayNumber}," which keeps its exact
- * position/size/destination — zero change to the fastest path. Shares this
- * component's single `useNfcSessionStart` instance with the primary CTA
- * (§3.6a's own 2026-09-15 "widened" note: one ambient, once-per-Home-open
- * computation, applying regardless of which of the two actions is tapped) —
- * `overrideToNfc` is threaded through `onStartQuickSession` at the moment of
- * *this* tap, exactly like `onContinue`.
+ * position/size/destination — zero change to the fastest path.
  *
  * **Stacking order (§3.6's own worked composition, unchanged by this
  * amendment):** identity → Día N → Event-scoped same-day-sales line →
@@ -69,8 +59,9 @@ import styles from './Idle.module.css';
  * Major finding this same amendment fixed), grouped together in
  * `.secondaryActionGroup` as of the 2026-09-15 remediation (ux-critic
  * MAJOR-1 — binds the caption visually to the CTA it qualifies rather than
- * letting it read as just the next line in the stack) → `NfcSessionStartNote`
- * (moved here from directly-after-primary-CTA to preserve this exact order).
+ * letting it read as just the next line in the stack). **`NfcSessionStartNote`,
+ * this stack's former final element, is retired along with §3.6a itself,
+ * `decision-log.md` D79** — nothing replaces its slot.
  */
 export function EventResume({
   role,
@@ -82,7 +73,6 @@ export function EventResume({
   onContinue,
   onStartQuickSession,
   onOpenAccountSurface,
-  onOpenAssignTagsPlaceholder,
 }: {
   role: MembershipRole;
   headerIcon: '⚙' | '⊚';
@@ -94,24 +84,14 @@ export function EventResume({
    * finalized Sales today), resolved once in `HomeScreen.tsx` and passed
    * down, never recomputed here. */
   quickSessionTodaySales?: { total: number; count: number } | null;
-  /** NFC Selling pass (D43) — `overrideToNfc` is whatever
-   * `useNfcSessionStart`'s own local override state currently reads at the
-   * moment of this tap (always `false` outside the Limited Ready variant). */
-  onContinue: (overrideToNfc: boolean) => void;
+  onContinue: () => void;
   /** §3.6's new secondary action (2026-09-15) — identical call shape to
    * `onContinue`, but always opens with `eventId = null` (wired in
    * `HomeScreen.tsx` to the same `handleStartSession` helper, just a
    * different `eventId` argument). */
-  onStartQuickSession: (overrideToNfc: boolean) => void;
+  onStartQuickSession: () => void;
   onOpenAccountSurface: () => void;
-  /** §3.6a's "Asignar tags" link — routes into Inventario's real Asignar
-   * Tags queue (inventory.md §3.14, Asignar Tags pass, D43). Prop name kept
-   * as-is (not a stub anymore) to keep that pass's diff scoped to wiring,
-   * not a cosmetic rename. */
-  onOpenAssignTagsPlaceholder: () => void;
 }) {
-  const { variant, overrideToNfc, toggleOverride } = useNfcSessionStart();
-
   return (
     <>
       <div className={styles.topbar}>
@@ -135,7 +115,7 @@ export function EventResume({
               Ya vendiste {pesos(todaySales.total)} · {todaySales.count} {pluralize(todaySales.count, 'venta', 'ventas')} hoy
             </p>
           )}
-          <Button className={styles.cta} onClick={() => onContinue(overrideToNfc)}>
+          <Button className={styles.cta} onClick={onContinue}>
             Continuar Día {dayNumber}
           </Button>
           {quickSessionTodaySales && (
@@ -145,19 +125,11 @@ export function EventResume({
             </p>
           )}
           <div className={styles.secondaryActionGroup}>
-            <Button className={styles.cta} variant="secondary" onClick={() => onStartQuickSession(overrideToNfc)}>
+            <Button className={styles.cta} variant="secondary" onClick={onStartQuickSession}>
               Iniciar Venta Rápida
             </Button>
             <p className={styles.qualifyingLine}>No se cuenta para {venueName}</p>
           </div>
-          <NfcSessionStartNote
-            variant={variant}
-            role={role}
-            overrideToNfc={overrideToNfc}
-            onToggleOverride={toggleOverride}
-            onOpenAssignTags={onOpenAssignTagsPlaceholder}
-            onOpenSettings={onOpenAccountSurface}
-          />
         </div>
       </div>
     </>
