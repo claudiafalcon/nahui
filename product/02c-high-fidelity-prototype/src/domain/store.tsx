@@ -738,23 +738,33 @@ interface StoreValue {
    * change happens in that case — `CatalogView.tsx`'s sheet stays open,
    * staged value intact, so she can retry). */
   setProductBarcode: (productId: ID, newBarcode: string) => Promise<boolean>;
-  /** inventory.md §3.6/§3.7 "Cantidad actual" (`decision-log.md` D77,
-   * `product/99-rfc/0015-inventory-unit-removal.md` Accepted) — the
-   * Registro de mercancía correction write: reduces a Product's live
-   * `available` count to `targetAvailableCount`, FIFO-selected (D5),
-   * releasing an `NFCTag` server-side wherever the FIFO-selected unit
-   * happened to carry one. **Target-based, not delta-based** — the RPC
-   * itself recomputes the real current count and only removes what's still
-   * actually there to remove, so this never errors on a race (a concurrent
-   * Sale elsewhere) and always converges toward what she asked for
-   * (`inventory.md` §3.6's own "never a blocking error screen, never a race-
-   * condition message shown to Ana"). Resolves the count actually removed
-   * (which may be less than requested, or 0, under a real race) on success,
-   * or `{ ok: false }` on any rejected/failed outcome (no local state
-   * change happens in that case — same "leave the draft alone, let her
-   * retry" posture `commitLot`'s own failure path already holds). The
-   * caller supplies its own idempotency key, same per-attempt discipline as
-   * every other keyed write here — `RegisterMerchandise.tsx`'s own "Guardar
+  /** inventory.md §3.6/§3.7 "Cantidad disponible actual" (`decision-log.md`
+   * D78, `product/99-rfc/0016-inventory-unit-bidirectional-correction.md`
+   * Accepted — supersedes D77/RFC 0015's decrease-only v1 scope) — the
+   * Registro de mercancía correction write, now genuinely bidirectional:
+   * moves a Product's live `available` count to `targetAvailableCount`,
+   * whichever direction that requires. A decrease FIFO-selects units (D5)
+   * and releases any `NFCTag` they carried, exactly as D77/RFC 0015 already
+   * did. An increase mints fresh `available` units through a real,
+   * `source='correction'` Lot/InventoryEntry — the same generation
+   * mechanism `commitLot()` already uses, no second write path — and is
+   * unconstrained by construction (D78: it never touches an existing row,
+   * so no race is reachable on this direction at all).
+   *
+   * **Target-based, not delta-based** — the RPC recomputes the real current
+   * count server-side and applies only the delta actually needed to reach
+   * the target, so a decrease never errors on a race (a concurrent Sale
+   * elsewhere) and always converges toward what she asked for
+   * (`inventory.md` §3.6's own "never a blocking error screen, never a
+   * race-condition message shown to Ana"). Resolves `{ ok: true,
+   * appliedDelta }` on success — the actual signed delta the RPC applied
+   * (negative = decrease, positive = increase, 0 = no-op; may differ from
+   * what was requested only on the decrease side, under a real race) — or
+   * `{ ok: false }` on any rejected/failed outcome (no local state change
+   * happens in that case — same "leave the draft alone, let her retry"
+   * posture `commitLot`'s own failure path already holds). The caller
+   * supplies its own idempotency key, same per-attempt discipline as every
+   * other keyed write here — `RegisterMerchandise.tsx`'s own "Guardar
    * mercancía" may fire one of these per corrected line, alongside its
    * existing `commitLot` call, so each needs its own key, not a single
    * shared one. */
@@ -762,7 +772,7 @@ interface StoreValue {
     productId: ID,
     targetAvailableCount: number,
     idempotencyKey: string,
-  ) => Promise<{ ok: true; removedCount: number } | { ok: false }>;
+  ) => Promise<{ ok: true; appliedDelta: number } | { ok: false }>;
   /** inventory.md §3.14 — Asignar Tags' own write, one scan at a time
    * (`addItemToSale`'s per-event-write shape, not `commitLot`'s batch
    * shape). "Next pending unit" = FIFO-first (oldest `receivedAt`) unit,
@@ -2176,33 +2186,54 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * inventory.md §3.6/§3.7 "Cantidad actual" (`decision-log.md` D77,
-   * `product/99-rfc/0015-inventory-unit-removal.md` Accepted) — real,
-   * idempotency-keyed call to `correct_product_available_count`
-   * (`supabase/migrations/20260918010000_inventory_unit_removal.sql`), same
-   * "server-confirmed, then local mirror" shape as `editPrice`/
-   * `setProductPhoto`/`setProductBarcode` above, extended here to a status
-   * transition instead of a plain scalar field.
+   * inventory.md §3.6/§3.7 "Cantidad disponible actual" (`decision-log.md`
+   * D78, `product/99-rfc/0016-inventory-unit-bidirectional-correction.md`
+   * Accepted) — real, idempotency-keyed call to the now-bidirectional
+   * `correct_product_available_count`
+   * (`supabase/migrations/20260918020000_inventory_correction_bidirectional.sql`),
+   * same "server-confirmed, then local mirror" shape as `editPrice`/
+   * `setProductPhoto`/`setProductBarcode` above.
    *
-   * The server tells us only *how many* units it actually removed
-   * (`removed_count`), never *which* ones — by design, this is the same
-   * "technology should disappear" property Cantidad actual's own ceiling
-   * carries (§3.6): she never resolves a race herself. The local mirror
-   * below re-derives the same FIFO selection the RPC itself just applied
-   * server-side (D5's existing consumption default, reused, not
-   * reinvented) over this device's own currently-cached `available` units
-   * for this Product, and marks exactly that many `removed` — correct
-   * whether or not the real count had drifted underneath her, since we only
-   * ever mark as many as the server confirms it actually removed. A
-   * removed unit's `tagId` is cleared to `null` in the same mirror update,
-   * matching the RPC's own server-side `nfc_tags` row deletion (D77: "the
-   * tag becomes unattached, reusable").
+   * The RPC now returns a single signed `appliedDelta` — negative for a
+   * decrease, positive for an increase, 0 for a no-op — never a bare
+   * always-≥0 count. The server tells us only *how many* units moved in
+   * which direction, never *which* ones (same "technology should disappear"
+   * property Cantidad disponible actual's own snapshot already carries,
+   * §3.6: she never resolves a race herself).
+   *
+   * **Decrease (`appliedDelta < 0`), unchanged from D77/RFC 0015:** the
+   * local mirror re-derives the same FIFO selection the RPC itself just
+   * applied server-side (D5, reused) over this device's own currently-
+   * cached `available` units for this Product, and marks exactly
+   * `|appliedDelta|` of them `removed` — correct whether or not the real
+   * count had drifted underneath her, since we only ever mark as many as
+   * the server confirms it actually removed. A removed unit's `tagId` is
+   * cleared to `null` in the same update, matching the RPC's own
+   * server-side `nfc_tags` row deletion.
+   *
+   * **Increase (`appliedDelta > 0`), new under D78/RFC 0016:** the RPC
+   * mints `appliedDelta` new `available` units through a real,
+   * `source='correction'` Lot/InventoryEntry, but — unlike `commitLot`,
+   * which gets real server-assigned ids back in its own response — this
+   * RPC's return shape is a bare signed integer, no ids at all. The local
+   * mirror therefore synthesizes its own client-side ids (`makeId`, the
+   * same convention `InventoryEntry.id`/every other locally-synthesized id
+   * in this file already uses) for one new local `Lot` row, one new local
+   * `InventoryEntry` row, and `appliedDelta` new local `InventoryUnit` rows
+   * (`status: 'available'`, `tagId: null`, `lotId`/`receivedAt` matching the
+   * synthetic Lot) — the same shape `commitLot`'s own post-write mirror
+   * builds, just with fabricated rather than server-returned ids, since
+   * none were given back to fabricate from. `Lot.source` isn't modeled
+   * client-side at all (`types.ts`'s `Lot` never shown to the merchant, per
+   * *architecture-principles.md* #4, and `everReceived`/D78's own "never
+   * shown to Ana" note on the server's own `source` column) — no client
+   * field needs adding for this to be correct.
    */
   async function correctProductAvailableCount(
     productId: ID,
     targetAvailableCount: number,
     idempotencyKey: string,
-  ): Promise<{ ok: true; removedCount: number } | { ok: false }> {
+  ): Promise<{ ok: true; appliedDelta: number } | { ok: false }> {
     if (!state.business) return { ok: false };
     const supabase = getSupabaseClient();
     if (!supabase) {
@@ -2219,8 +2250,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.error('[store] correct_product_available_count failed', error);
       return { ok: false };
     }
-    const removedCount = typeof data === 'number' ? data : 0;
-    if (removedCount > 0) {
+    const appliedDelta = typeof data === 'number' ? data : 0;
+    if (appliedDelta < 0) {
+      const removedCount = -appliedDelta;
       applyWriteMirror((s) => {
         const idsToRemove = new Set(
           s.units
@@ -2236,8 +2268,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ),
         };
       });
+    } else if (appliedDelta > 0) {
+      applyWriteMirror((s) => {
+        const lotId = makeId('lot');
+        const receivedAt = Date.now();
+        const newUnits: InventoryUnit[] = Array.from({ length: appliedDelta }, () => ({
+          id: makeId('unit'),
+          productId,
+          lotId,
+          status: 'available' as const,
+          receivedAt,
+          tagId: null,
+        }));
+        return {
+          ...s,
+          lots: [...s.lots, { id: lotId, receivedAt }],
+          entries: [...s.entries, { id: makeId('entry'), lotId, productId, quantity: appliedDelta }],
+          units: [...s.units, ...newUnits],
+        };
+      });
     }
-    return { ok: true, removedCount };
+    return { ok: true, appliedDelta };
   }
 
   /** authentication.md §3.5 — Stage 7 Backend Integration: proxies straight

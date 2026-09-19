@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
-import { catalogRows, availableCount } from '../../domain/selectors';
+import { catalogRows, availableCount, everReceived } from '../../domain/selectors';
 import { makeId } from '../../domain/id';
 import type { AppState, Product } from '../../domain/types';
 import { ProductPicker } from '../../components/ProductPicker/ProductPicker';
@@ -31,37 +31,75 @@ interface Line {
   key: string; // stable local identity for React lists/removal — a pending `new` line has no real productId yet
   product: ProductRef;
   productName: string;
-  quantity: number; // Cantidad — purely additive, never merged with currentQuantity below
-  touched: boolean; // Cantidad's own "revisa antes de guardar" state, unchanged by D77
   /**
-   * `decision-log.md` D77, `inventory.md` §3.6/§3.7/§3.8 — Cantidad actual.
-   * Present only when this line's Producto resolved to an *existing*
-   * Product whose live `disponibles` was > 0 at that exact moment
-   * (§3.6's gating condition) — `undefined` for a brand-new Product
-   * (§3.8a, either path) or an existing Product currently at 0
-   * disponibles. `ceiling` is that snapshot, loaded once and never
-   * re-fetched while she stays on this screen (§3.6's own
-   * "snapshot-until-Guardar" convention — Guardar itself converges against
-   * the real, live count server-side, never a stale client-side
-   * subtraction). `value` is her current edit, defaulting to `ceiling`
-   * untouched (a known fact, not a guess — never carries a "revisa" marker,
-   * unlike Cantidad's own default-to-1).
+   * Cantidad recibida — purely additive, never merged with `currentQuantity`
+   * below. For an `existing` line this value is only ever a real staged
+   * receipt while `receiptOpen` is true (§3.6's "+ Recibir lote" reveal);
+   * while closed it sits at its own default (1) but contributes nothing —
+   * always read through `effectiveReceiptQty` below, never directly, so a
+   * closed/never-opened receipt section can never leak into a save.
+   */
+  quantity: number;
+  touched: boolean; // Cantidad recibida's own "revisa antes de guardar" state
+  /**
+   * `decision-log.md` D78, `inventory.md` §3.6/§3.7/§3.8 — Cantidad
+   * disponible actual. Present whenever this line's Producto resolved to an
+   * *existing* Product — **regardless of its live `disponibles` value,
+   * including exactly 0** (D78 corrected D77's own ceiling>0 gate: 0 is now
+   * a legitimate correction starting point, bidirectional correction has no
+   * degenerate case left to omit). `undefined` only for a brand-new Product
+   * (§3.8a, either path), which never shows this at all. `ceiling` is the
+   * snapshot loaded once when Producto resolved and never re-fetched while
+   * she stays on this screen (§3.6's own "snapshot-until-Guardar"
+   * convention — Guardar itself converges against the real, live count
+   * server-side, never a stale client-side subtraction). `value` is her
+   * current edit, defaulting to `ceiling` untouched (a known fact, not a
+   * guess — never carries a "revisa" marker, unlike Cantidad recibida's own
+   * default-to-1).
    */
   currentQuantity?: { ceiling: number; value: number };
+  /** D78 — the pencil ("✎ Corregir") reveal state. Only ever meaningful
+   * when `currentQuantity` is set; ignored for a brand-new Product's line,
+   * which has no correction UI at all. Opening this alone (value still
+   * equal to `ceiling`) is a genuine no-op — see `hasRealEffect` below. */
+  correctionOpen: boolean;
+  /** D78 — the "+ Recibir lote" reveal state, for an *existing* line only.
+   * Always effectively true for a brand-new Product's line (its receiving
+   * stepper is unconditionally visible, §3.8a) — the flag still exists on
+   * that line for shape-consistency but is never read for it, since
+   * `currentQuantity === undefined` already routes past every check of this
+   * flag. */
+  receiptOpen: boolean;
 }
 
 /**
- * `decision-log.md` D77 — builds a fresh line for an *existing* Product,
- * carrying forward its live `disponibles` as Cantidad actual's initial
- * value in the same motion (§3.8's own new carry-forward rule), exactly
- * the same "capture business truth once, reuse it forever" discipline this
- * screen's price/photo carry-forward already follows. Shared by every path
- * that resolves Producto to an existing Product: the Catalog-row shortcut
+ * `decision-log.md` D78 — builds a fresh line for an *existing* Product,
+ * carrying forward its live `disponibles` as Cantidad disponible actual's
+ * snapshot in the same motion (§3.8's own carry-forward rule), the same
+ * "capture business truth once, reuse it forever" discipline this screen's
+ * price/photo carry-forward already follows. Shared by every path that
+ * resolves Producto to an existing Product: the Catalog-row shortcut
  * (`initialProductId`, below), a typed exact-name match, and a barcode
  * confirm-on-scan (§3.8c) — `ProductPicker`'s own `onSelectExisting` is the
- * single callback all three already funnel through.
+ * single callback all three already funnel through. Both correction and
+ * receipt open false by default — she lands on the read-only at-rest state
+ * (§3.6), never with anything pre-staged.
+ *
+ * **`currentQuantity` is gated on `everReceived`, not mere Catalog
+ * presence.** §3.6's own "Shared, unchanged" bullet preserves the legacy
+ * "sin registrar" case (`product-decisions.md` Q20, `inventory.md`
+ * §3.3a/§3.4 — a Product that exists as a row but has never actually had a
+ * real receipt) as still landing on "the always-visible receiving
+ * stepper," the same treatment as a brand-new Product — D78's own "0 is a
+ * legitimate correction starting point" language is about a Product *she'd
+ * registered* and later sold out or miscounted down to zero (D78's own
+ * worked example), never about a Product with no received history to
+ * correct *against* in the first place. `everReceived` (`selectors.ts`) is
+ * this codebase's own existing test for exactly that distinction, reused
+ * here rather than reinvented.
  */
 function buildExistingLine(state: AppState, product: Product): Line {
+  const registered = everReceived(state, product.id);
   const ceiling = availableCount(state, product.id);
   return {
     key: product.id,
@@ -69,15 +107,57 @@ function buildExistingLine(state: AppState, product: Product): Line {
     productName: product.name,
     quantity: 1,
     touched: false,
-    currentQuantity: ceiling > 0 ? { ceiling, value: ceiling } : undefined,
+    currentQuantity: registered ? { ceiling, value: ceiling } : undefined,
+    correctionOpen: false,
+    receiptOpen: !registered,
   };
 }
 
 /**
- * inventory.md §3.6/§3.7 — Registro de mercancía. Producto + Cantidad only
- * (D9/architecture-principles.md #5 — no Supplier, no cost field). Cantidad
- * defaults to 1 the instant Producto resolves; Guardar mercancía enables the
- * moment a Producto exists on the active row or the committed list.
+ * D78 — whether this line currently carries a real, nonzero staged effect:
+ * an open correction whose value differs from the loaded ceiling, and/or an
+ * open (necessarily nonzero, floor-1) receipt. Drives every gate this
+ * amendment adds — Producto's re-selectability, "+ Agregar otro producto,"
+ * "Guardar mercancía," and which committed lines can ever exist at all
+ * (§3.6/§3.7).
+ */
+function hasRealEffect(line: Line): boolean {
+  if (!line.currentQuantity) {
+    // A brand-new Product's line has no correction UI at all — its
+    // always-visible receiving stepper (floor 1) already carries a real
+    // value the instant Producto resolves (§3.8a, unchanged from before
+    // this amendment).
+    return line.quantity > 0;
+  }
+  const correctionEffect = line.correctionOpen && line.currentQuantity.value !== line.currentQuantity.ceiling;
+  const receiptEffect = line.receiptOpen && line.quantity > 0;
+  return correctionEffect || receiptEffect;
+}
+
+/**
+ * D78 — the actual receipt quantity this line contributes to a save. For a
+ * brand-new Product, always `quantity` (always-visible, always real). For
+ * an existing Product, `quantity` only while `receiptOpen` is true —
+ * otherwise 0, even though `quantity` itself still sits at its own default
+ * internally. Every read of "how much is being received" on this line goes
+ * through this function, never `line.quantity` directly, so a closed
+ * receipt section can never leak a phantom default-1 receipt into a save.
+ */
+function effectiveReceiptQty(line: Line): number {
+  if (!line.currentQuantity) return line.quantity;
+  return line.receiptOpen ? line.quantity : 0;
+}
+
+/**
+ * inventory.md §3.6/§3.7 — Registro de mercancía. Producto + Cantidad
+ * disponible actual (correction) + Cantidad recibida (receipt) only
+ * (D9/architecture-principles.md #5 — no Supplier, no cost field).
+ * Rewritten in full 2026-09-18 (`decision-log.md` D78, RFC 0016): an
+ * existing Product's line now defaults to a read-only "Cantidad disponible
+ * actual" + pencil + "+ Recibir lote" link, with no persistent "Guardar
+ * mercancía" until she actually stages a real, nonzero effect on the active
+ * row (or the committed list already holds one) — replaces the always-on
+ * two-box shape D77 shipped only hours earlier the same day.
  */
 export function RegisterMerchandise({
   initialProductId,
@@ -99,9 +179,10 @@ export function RegisterMerchandise({
   const initialProduct = state.products.find((p) => p.id === initialProductId);
 
   const [committed, setCommitted] = useState<Line[]>([]);
-  // D77 — the Catalog-row shortcut is one of §3.8's three carry-forward
-  // entry points; `buildExistingLine` loads Cantidad actual's ceiling from
-  // this Product's live `disponibles` in the same motion.
+  // D78 — the Catalog-row shortcut is one of §3.8's three carry-forward
+  // entry points; `buildExistingLine` loads Cantidad disponible actual's
+  // snapshot from this Product's live `disponibles` in the same motion, but
+  // lands her on the read-only at-rest state, never pre-staged.
   const [draft, setDraft] = useState<Line | null>(initialProduct ? buildExistingLine(state, initialProduct) : null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
@@ -117,25 +198,25 @@ export function RegisterMerchandise({
    * let a lost-response retry mint a duplicate Lot/Products/InventoryUnits).
    * Cleared on success (below) and on every action that actually changes
    * what would be saved (`resetSaveAttempt`, used by `removeCommitted`/
-   * `handleAddAnother`/the picker callbacks/the Cantidad stepper/discard) —
+   * `handleAddAnother`/the picker callbacks/every stepper and toggle) —
    * never on a mere failed-save retry, which is the one case this key must
    * survive unchanged. */
   const commitIdempotencyKeyRef = useRef<string | null>(null);
 
-  /** D77 — one idempotency key per corrected line's own
+  /** D78 — one idempotency key per corrected line's own
    * `correctProductAvailableCount` call (a single-product write, not a
    * batch one like `commit_lot`), same generate-once-per-attempt/
    * reused-across-retry discipline as `commitIdempotencyKeyRef` above,
    * keyed by `Line.key` since more than one line can be corrected in the
    * same "Guardar mercancía" tap. */
   const correctionIdempotencyKeysRef = useRef<Map<string, string>>(new Map());
-  /** D77 — which lines' correction write has already succeeded *within
+  /** D78 — which lines' correction write has already succeeded *within
    * this attempt*. Required for a correct retry after a partial failure
    * (a correction succeeds, then `commitLot` fails): without this, a
-   * retry would re-run the already-applied line's local FIFO mirror a
-   * second time over units the first pass already marked `removed`,
-   * silently over-removing. The server call itself is naturally safe to
-   * repeat (idempotency-keyed, D77/RFC 0015's own "converges toward her
+   * retry would re-run the already-applied line's local mirror a second
+   * time — over-removing on a decrease, or minting a second batch of
+   * phantom units on an increase. The server call itself is naturally safe
+   * to repeat (idempotency-keyed, RFC 0016's own "converges toward her
    * target" design) — this guard exists only to protect the *local
    * mirror*, which the server has no way to make idempotent on its own. */
   const appliedCorrectionsRef = useRef<Set<string>>(new Set());
@@ -146,7 +227,7 @@ export function RegisterMerchandise({
     appliedCorrectionsRef.current.clear();
   }
 
-  const canSave = committed.length > 0 || draft !== null;
+  const canSave = committed.length > 0 || (draft !== null && hasRealEffect(draft));
 
   // Resolves whichever photo this line's marker should show — a real
   // Product's already-saved `photo` for an `existing` line, or the draft's
@@ -161,13 +242,20 @@ export function RegisterMerchandise({
     return ref.photo;
   }
 
+  /**
+   * D78 — a draft only ever joins the committed list (whether via
+   * "+ Agregar otro producto" or an implicit commit at "Guardar mercancía")
+   * while it carries a real, nonzero effect. There is no longer a "she
+   * opened the row and changed nothing" committed line (§3.7) — a draft
+   * with no real effect simply evaporates on save, by construction.
+   */
   function commitDraftIfAny(next: Line[]): Line[] {
-    if (draft) return [...next, draft];
+    if (draft && hasRealEffect(draft)) return [...next, draft];
     return next;
   }
 
   function handleAddAnother() {
-    if (!draft) return;
+    if (!draft || !hasRealEffect(draft)) return;
     resetSaveAttempt();
     setCommitted((c) => [...c, draft]);
     setDraft(null);
@@ -179,23 +267,24 @@ export function RegisterMerchandise({
     if (lines.length === 0) return;
     setSaving(true);
 
-    // D77 — up to two independent writes per line, composed behind this one
-    // tap (§3.6/§3.7): a decrease via Cantidad actual, an increase via
-    // Cantidad, or both. Corrections run first; each already-applied line
-    // (from a prior, partially-failed attempt) is skipped outright, not
-    // just re-sent — see `appliedCorrectionsRef`'s own doc comment above
-    // for why re-sending would be locally unsafe even though the RPC
-    // itself is idempotent.
+    // D78 — up to two independent writes per line, composed behind this one
+    // tap (§3.6/§3.7): a correction (either direction) via Cantidad
+    // disponible actual, a real receipt via Cantidad recibida, or both.
+    // Corrections run first; each already-applied line (from a prior,
+    // partially-failed attempt) is skipped outright, not just re-sent —
+    // see `appliedCorrectionsRef`'s own doc comment above for why
+    // re-sending would be locally unsafe even though the RPC itself is
+    // idempotent.
     const correctionLines = lines.filter(
       (l) =>
         l.currentQuantity !== undefined &&
-        l.currentQuantity.value < l.currentQuantity.ceiling &&
+        l.currentQuantity.value !== l.currentQuantity.ceiling &&
         !appliedCorrectionsRef.current.has(l.key),
     );
     for (const line of correctionLines) {
-      // Cantidad actual only ever exists on an `existing` line (§3.8a:
-      // Cantidad actual never applies to a fresh Product) — this cast is
-      // always safe by construction, same posture as this file's other
+      // Cantidad disponible actual only ever exists on an `existing` line
+      // (§3.8a: it never applies to a fresh Product) — this cast is always
+      // safe by construction, same posture as this file's other
       // `kind === 'existing'` casts below.
       const productId = (line.product as { kind: 'existing'; productId: string }).productId;
       let key = correctionIdempotencyKeysRef.current.get(line.key);
@@ -212,14 +301,16 @@ export function RegisterMerchandise({
       appliedCorrectionsRef.current.add(line.key);
     }
 
-    // Cantidad's own write — purely additive, unchanged from before D77,
-    // except it now only fires for a line whose Cantidad is actually > 0
-    // (a pure-correction line, Cantidad left at its own new floor of 0,
-    // contributes nothing here — §3.6's own "Cantidad's own floor changes
-    // from 1 to 0" reasoning). `commitLot` is skipped entirely, not called
-    // with an empty array, whenever every line in this save is a pure
-    // correction — no Lot/InventoryEntry is created for zero new stock.
-    const additiveLines = lines.filter((l) => l.quantity > 0);
+    // Cantidad recibida's own write — purely additive, unchanged in
+    // mechanism from before D78, but now only fires for a line whose
+    // *effective* receipt quantity is > 0 — a pure-correction line, whose
+    // receipt section was never opened, contributes nothing here even
+    // though `quantity` still sits at its own internal default (§3.6's own
+    // "never fold into the same editable number" rule). `commitLot` is
+    // skipped entirely, not called with an empty array, whenever every line
+    // in this save is a pure correction — no Lot/InventoryEntry is created
+    // for zero new stock.
+    const additiveLines = lines.filter((l) => effectiveReceiptQty(l) > 0);
     let resolved: string[] = [];
     if (additiveLines.length > 0) {
       // `reviewer` Blocker fix — generated once per attempt, reused
@@ -234,19 +325,9 @@ export function RegisterMerchandise({
       // before. `resolvedOrNull` mirrors `additiveLines`' order, so its last
       // entry is the productId (real or freshly-minted) of the line just
       // saved.
-      //
-      // Stage 7 Backend Integration, Phase 1 — commitLot is now a real,
-      // awaitable Supabase RPC call; `saving`'s own "Guardando…" state covers
-      // the real network latency (the previous artificial 260ms delay is
-      // retired, no longer needed to simulate one). A rejected/failed
-      // outcome (`null`) leaves `committed`/`draft` untouched — nothing is
-      // lost (any correction already applied above stays applied, and
-      // `appliedCorrectionsRef` makes sure it isn't re-run), she can just
-      // tap "Guardar mercancía" again, and the retry replays the exact same
-      // idempotency key above.
       const resolvedOrNull = await commitLot(
         additiveLines.map((l) => ({
-          quantity: l.quantity,
+          quantity: effectiveReceiptQty(l),
           product:
             l.product.kind === 'existing'
               ? { kind: 'existing' as const, productId: l.product.productId }
@@ -285,16 +366,16 @@ export function RegisterMerchandise({
     const entryTotals = new Map<string, number>();
     additiveLines.forEach((l, i) => {
       const productId = resolved[i];
-      entryTotals.set(productId, (entryTotals.get(productId) ?? 0) + l.quantity);
+      entryTotals.set(productId, (entryTotals.get(productId) ?? 0) + effectiveReceiptQty(l));
     });
     entryTotals.forEach((quantity, productId) => entryBreakdown.push({ productId, quantity }));
     setSaving(false);
-    // D77 — a save can now be pure correction, with `commitLot` never
+    // D78 — a save can now be pure correction, with `commitLot` never
     // called and `resolved` empty. The confirmation this hands off to
     // (§3.12/§3.13) still needs *a* productId to scope its ambient
     // "registrada" line to — falls back to the last line's own productId,
     // always an `existing` line's real id whenever `resolved` is empty
-    // (a brand-new Product's own line always has Cantidad ≥ 1, so it can
+    // (a brand-new Product's own line always has a real receipt, so it can
     // only ever be absent from `resolved` by never existing in `lines` at
     // all — this fallback path is only ever reached by an all-corrections
     // save, which by construction has no `new` lines).
@@ -312,36 +393,49 @@ export function RegisterMerchandise({
   }
 
   /**
-   * `decision-log.md` D77, `inventory.md` §3.7 — the "Ya agregaste"
-   * committed-line rendering, extended for a Cantidad actual correction.
-   * When Cantidad actual is untouched (still equals the loaded ceiling —
-   * the common, unchanged case), this renders exactly as it always has,
-   * zero visual cost. When it was moved down, the correction is stated
-   * plainly ("corregido a N (antes M)"), never a status/entity name
-   * (*global-principles.md*, "business language before technical
-   * language" — *architecture-principles.md* #4). When both a correction
-   * and a real addition happened on the same line, both facts render
-   * together, never merged into one number (§3.6's own "never fold into
-   * the same editable number" rule) — the addition gets its own "N nueva/s"
-   * word here specifically to disambiguate which number means what, since
-   * a bare number reads unambiguously only when there's no competing
-   * "corrected to X" fact sharing the line. The existing INV-Q1
-   * marker-carry-through rule composes directly on top, unchanged.
+   * `decision-log.md` D78, `inventory.md` §3.7 — the "Ya agregaste"
+   * committed-line rendering, rewritten for bidirectional correction
+   * (replaces D77's decrease-only rendering). A pure receipt (correction
+   * never opened, or opened-then-cancelled with no delta) renders exactly
+   * as it always has — "Bolsas — 10," zero visual cost for the common
+   * case. A pure correction, either direction, renders "corregido a N
+   * (antes M)" — natural, direct language, never "removed," "increased,"
+   * `InventoryUnit`, or any status/entity name (*global-principles.md*,
+   * "business language before technical language"). Both together render
+   * "corregido a N (antes M) + K nuevas," never merged into one number
+   * (§3.6's own "never fold into the same editable number" rule). The
+   * existing INV-Q1 marker-carry-through rule (an unreviewed default-1
+   * receipt carries its "· revisa" marker here) composes directly on top —
+   * gated on a *real* receipt quantity (`effectiveReceiptQty`), so a pure
+   * correction whose receipt section was never opened never shows a
+   * spurious marker for a default it never actually staged.
    */
   function committedLineText(line: Line): { text: string; showReviewMarker: boolean } {
     const cq = line.currentQuantity;
-    const corrected = cq !== undefined && cq.value < cq.ceiling;
+    const receiptQty = effectiveReceiptQty(line);
+    const corrected = cq !== undefined && cq.value !== cq.ceiling;
     if (!corrected) {
-      return { text: `${line.productName} — ${line.quantity}`, showReviewMarker: !line.touched };
+      return { text: `${line.productName} — ${receiptQty}`, showReviewMarker: receiptQty > 0 && !line.touched };
     }
-    const correctionText = `corregido a ${cq.value} (antes ${cq.ceiling})`;
-    const addition = line.quantity > 0 ? ` + ${line.quantity} nueva${line.quantity === 1 ? '' : 's'}` : '';
-    return { text: `${line.productName} — ${correctionText}${addition}`, showReviewMarker: !line.touched };
+    const correctionText = `corregido a ${cq!.value} (antes ${cq!.ceiling})`;
+    const addition = receiptQty > 0 ? ` + ${receiptQty} nueva${receiptQty === 1 ? '' : 's'}` : '';
+    return {
+      text: `${line.productName} — ${correctionText}${addition}`,
+      showReviewMarker: receiptQty > 0 && !line.touched,
+    };
   }
 
   if (saving) {
     return <p className={styles.savingLine}>Guardando…</p>;
   }
+
+  // D78 — Producto stays tappable (reopens Elegir producto) only while
+  // nothing has been staged on the active row yet; locks (plain text) the
+  // instant it does. Closes a real gap this amendment's own removal of the
+  // always-on default introduced: under D77, a wrongly-resolved Producto
+  // had no way back short of "Descartar" (§3.9), which doesn't even exist
+  // yet on a first, only row.
+  const draftLocked = draft !== null && hasRealEffect(draft);
 
   return (
     <>
@@ -376,75 +470,150 @@ export function RegisterMerchandise({
 
         <div className={styles.field}>
           <span className={styles.label}>Producto</span>
-          <button
-            className={`${styles.pickerBtn} ${!draft ? styles.placeholder : ''}`}
-            onClick={() => setPickerOpen(true)}
-          >
-            {draft ? draft.productName : 'Elegir producto ▾'}
-          </button>
+          {draftLocked ? (
+            <span className={styles.productLocked}>{draft!.productName}</span>
+          ) : (
+            <button
+              className={`${styles.pickerBtn} ${!draft ? styles.placeholder : ''}`}
+              onClick={() => setPickerOpen(true)}
+            >
+              {draft ? draft.productName : 'Elegir producto ▾'}
+            </button>
+          )}
         </div>
 
         {draft && draft.currentQuantity && (
           <div className={styles.field}>
-            <span className={styles.label}>Cantidad actual</span>
-            <QuantityStepper
-              value={draft.currentQuantity.value}
-              touched
-              showMarker={false}
-              ariaLabel="Cantidad actual"
-              min={0}
-              max={draft.currentQuantity.ceiling}
-              onChange={(next) => {
-                resetSaveAttempt();
-                setDraft((d) => (d && d.currentQuantity ? { ...d, currentQuantity: { ...d.currentQuantity, value: next } } : d));
-              }}
-            />
-            <span className={styles.hint}>
-              Corrígela si algo no cuadra (por ejemplo, piezas defectuosas que regresaste)
-            </span>
+            <span className={styles.label}>Cantidad disponible actual</span>
+            {!draft.correctionOpen ? (
+              <div className={styles.readonlyRow}>
+                <span className={styles.readonlyValue}>{draft.currentQuantity.value}</span>
+                <button
+                  className={styles.linkBtn}
+                  onClick={() => {
+                    resetSaveAttempt();
+                    setDraft((d) => (d ? { ...d, correctionOpen: true } : d));
+                  }}
+                >
+                  ✎ Corregir
+                </button>
+              </div>
+            ) : (
+              <>
+                <QuantityStepper
+                  value={draft.currentQuantity.value}
+                  touched
+                  showMarker={false}
+                  ariaLabel="Cantidad disponible actual"
+                  min={0}
+                  onChange={(next) => {
+                    resetSaveAttempt();
+                    setDraft((d) =>
+                      d && d.currentQuantity ? { ...d, currentQuantity: { ...d.currentQuantity, value: next } } : d,
+                    );
+                  }}
+                />
+                <span className={styles.hint}>
+                  Corrígela si algo no cuadra — por ejemplo, piezas defectuosas que regresaste, o si contaste más de
+                  lo que dice Nahui.
+                </span>
+                <button
+                  className={styles.linkBtn}
+                  onClick={() => {
+                    resetSaveAttempt();
+                    setDraft((d) =>
+                      d && d.currentQuantity
+                        ? { ...d, correctionOpen: false, currentQuantity: { ...d.currentQuantity, value: d.currentQuantity.ceiling } }
+                        : d,
+                    );
+                  }}
+                >
+                  Cancelar
+                </button>
+              </>
+            )}
           </div>
         )}
 
-        {draft && (
+        {draft && draft.currentQuantity && !draft.receiptOpen && (
+          <button
+            className={styles.linkBtn}
+            onClick={() => {
+              resetSaveAttempt();
+              setDraft((d) => (d ? { ...d, receiptOpen: true } : d));
+            }}
+          >
+            + Recibir lote
+          </button>
+        )}
+
+        {draft && draft.currentQuantity && draft.receiptOpen && (
           <div className={styles.field}>
-            <span className={styles.label}>Cantidad</span>
+            <span className={styles.label}>Cantidad recibida</span>
             <QuantityStepper
               value={draft.quantity}
               touched={draft.touched}
-              min={draft.currentQuantity ? 0 : 1}
+              min={1}
+              ariaLabel="Cantidad recibida"
               onChange={(next, touched) => {
                 resetSaveAttempt();
                 setDraft((d) => (d ? { ...d, quantity: next, touched } : d));
               }}
             />
-            {draft.currentQuantity && <span className={styles.hint}>Lo que te llegó nuevo</span>}
+            <span className={styles.hint}>Lo que te llegó nuevo (o escribe la cantidad)</span>
+            <button
+              className={styles.linkBtn}
+              onClick={() => {
+                resetSaveAttempt();
+                setDraft((d) => (d ? { ...d, receiptOpen: false, quantity: 1, touched: false } : d));
+              }}
+            >
+              Quitar
+            </button>
           </div>
         )}
 
-        {draft && (
+        {draft && !draft.currentQuantity && (
+          <div className={styles.field}>
+            <span className={styles.label}>Cantidad recibida</span>
+            <QuantityStepper
+              value={draft.quantity}
+              touched={draft.touched}
+              min={1}
+              ariaLabel="Cantidad recibida"
+              onChange={(next, touched) => {
+                resetSaveAttempt();
+                setDraft((d) => (d ? { ...d, quantity: next, touched } : d));
+              }}
+            />
+            <span className={styles.hint}>(o escribe la cantidad)</span>
+          </div>
+        )}
+
+        {draft && hasRealEffect(draft) && (
           <button className={styles.addAnother} onClick={handleAddAnother}>
             + Agregar otro producto
           </button>
         )}
       </div>
 
-      <div className={`${styles.footer} stitchTop`}>
-        <Button disabled={!canSave} onClick={handleSave}>
-          Guardar mercancía
-        </Button>
-        {committed.length > 0 && (
-          <button className={styles.discard} onClick={() => setDiscardOpen(true)}>
-            Descartar
-          </button>
-        )}
-      </div>
+      {canSave && (
+        <div className={`${styles.footer} stitchTop`}>
+          <Button onClick={handleSave}>Guardar mercancía</Button>
+          {committed.length > 0 && (
+            <button className={styles.discard} onClick={() => setDiscardOpen(true)}>
+              Descartar
+            </button>
+          )}
+        </div>
+      )}
 
       {pickerOpen && (
         <ProductPicker
           rows={catalogRows(state)}
           onDismiss={() => setPickerOpen(false)}
           onSelectExisting={(product) => {
-            // D77/§3.8 — covers all three carry-forward entry points this
+            // D78/§3.8 — covers all three carry-forward entry points this
             // callback serves (typed exact-name match, list-item tap,
             // barcode confirm-on-scan's "Sí, es este") in one place.
             resetSaveAttempt();
@@ -464,6 +633,8 @@ export function RegisterMerchandise({
               productName: name,
               quantity: 1,
               touched: false,
+              correctionOpen: false,
+              receiptOpen: true,
             });
             setPickerOpen(false);
           }}
@@ -473,7 +644,7 @@ export function RegisterMerchandise({
       {discardOpen && (
         <Sheet onDismiss={() => setDiscardOpen(false)}>
           <p className={styles.heading} style={{ padding: 0, marginBottom: 16 }}>
-            ¿Descartar los {committed.length + (draft ? 1 : 0)} productos que ya agregaste?
+            ¿Descartar los {committed.length + (draft && hasRealEffect(draft) ? 1 : 0)} productos que ya agregaste?
           </p>
           <div style={{ display: 'flex', gap: 12 }}>
             <Button variant="secondary" onClick={() => setDiscardOpen(false)}>

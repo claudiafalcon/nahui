@@ -102,6 +102,48 @@
   color: #6B6259;
 }
 
+/* D78 — Producto locked (plain text, not tappable) once the active row
+   carries a real staged effect — inventory.md §3.6's own "renders as plain
+   text again, matching every other state in this document." Same vertical
+   rhythm as `.pickerBtn` (14px), no border — the doc's own "plain text =
+   passive/informational" convention (§3 intro). */
+.productLocked {
+  font: var(--text-body);
+  color: var(--color-obsidian);
+  padding: 14px 0;
+}
+
+/* D78 — "Cantidad disponible actual"'s at-rest, read-only display: the
+   loaded value beside its one tap target, "✎ Corregir." */
+.readonlyRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 8px 0;
+}
+
+.readonlyValue {
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+/* D78 — the small link-style actions this rebuild introduces: "✎ Corregir,"
+   "Cancelar" (correction mode), "+ Recibir lote," "Quitar" (receipt mode).
+   Same visual weight as `.addAnother`/`.back` — an existing, already-
+   established pattern in this component, not a new one. */
+.linkBtn {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px;
+}
+
 .addAnother {
   align-self: flex-start;
   border: none;
