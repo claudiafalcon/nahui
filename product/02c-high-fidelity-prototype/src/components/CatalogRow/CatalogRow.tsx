@@ -164,20 +164,33 @@ export function CatalogRow({
         {(reserveNfcSlot || nfcToggle) && (
           <div className={styles.nfcSlot}>
             {nfcToggle && (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={nfcToggle.enabled}
-                className={`${styles.nfcSwitch} ${nfcToggle.enabled ? styles.nfcSwitchOn : ''}`}
-                disabled={nfcSaving}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  nfcToggle.onTap();
-                }}
-                aria-label={`${nfcToggle.enabled ? 'Desactivar' : 'Activar'} venta con NFC para ${name}`}
-              >
-                <span className={styles.nfcSwitchKnob} />
-              </button>
+              <>
+                {/* inventory.md §3.4's fifth tap zone — the spec has always
+                    called for a visible text label, `[ NFC: No ]`/
+                    `[ NFC: Sí ]`, not just the switch's own visual on/off
+                    state (2026-09-19 live fix, Product Owner report: the
+                    label was never implemented, so the row gave no way to
+                    tell what the control did or its current state without
+                    tapping it). Same copy convention `SettingsScreen.tsx`'s
+                    own Business-level "NFC: Sí/No" row already uses. */}
+                <span className={styles.nfcLabel} aria-hidden="true">
+                  NFC: {nfcToggle.enabled ? 'Sí' : 'No'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={nfcToggle.enabled}
+                  className={`${styles.nfcSwitch} ${nfcToggle.enabled ? styles.nfcSwitchOn : ''}`}
+                  disabled={nfcSaving}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nfcToggle.onTap();
+                  }}
+                  aria-label={`${nfcToggle.enabled ? 'Desactivar' : 'Activar'} venta con NFC para ${name}`}
+                >
+                  <span className={styles.nfcSwitchKnob} />
+                </button>
+              </>
             )}
           </div>
         )}

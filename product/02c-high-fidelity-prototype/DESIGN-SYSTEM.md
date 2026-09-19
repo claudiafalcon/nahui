@@ -200,23 +200,28 @@ conventional control unless it specifically represents money, a Product, or
 a torn/perforated transition between two zones of a screen.
 
 **The on/off switch, added 2026-09-17 (`CatalogRow`'s NFC-eligibility
-toggle).** A small track-and-knob switch — `width: 40px`/`height: 24px`
-pill track, `border: 1px solid var(--color-hilo)`, `background:
-var(--color-hilo)` off / `var(--color-tezontle-dark)` on, an 18px white
-knob (`box-shadow: 0 1px 2px rgba(45,45,45,0.24)`) that translates 16px on
-`background-color`/`transform` transitions at `--duration-fast`/
-`--ease-standard`. One of this section's conventional controls, not a
-Swing-Tag device — it represents a per-Product *setting*, not money or the
-Product itself, so it deliberately doesn't reach for `.moneyTag` or any tag
-silhouette, the same reasoning that already keeps `Button`/`Sheet`/form
-inputs plain. Carries no in-track text label (state is conveyed visually,
-by position/color, plus `role="switch"`/`aria-checked` for assistive tech)
-— if a future consumer needs a slow-save affordance, render it as a caption
-*below* the row (see `CatalogRow.module.css`'s `.nfcSavingHint`), not
-squeezed inside the switch itself. The next component that needs a binary
+toggle), labeled 2026-09-19 (live fix, Product Owner report).** A small
+track-and-knob switch — `width: 40px`/`height: 24px` pill track, `border: 1px
+solid var(--color-hilo)`, `background: var(--color-hilo)` off /
+`var(--color-tezontle-dark)` on, an 18px white knob (`box-shadow: 0 1px 2px
+rgba(45,45,45,0.24)`) that translates 16px on `background-color`/`transform`
+transitions at `--duration-fast`/`--ease-standard`. One of this section's
+conventional controls, not a Swing-Tag device — it represents a per-Product
+*setting*, not money or the Product itself, so it deliberately doesn't reach
+for `.moneyTag` or any tag silhouette, the same reasoning that already keeps
+`Button`/`Sheet`/form inputs plain. Paired with its own adjacent text label
+(`.nfcLabel`, `var(--text-meta)`/600/`#6B6259`, dimming to `#9C9186` on a
+dimmed row) reading `NFC: No`/`NFC: Sí` — `inventory.md` §3.4 has specified
+this exact copy since before the switch was first built; the switch's own
+position/color is a reinforcing visual, never a substitute for it, since
+without the label there is no way to read the control's meaning or current
+state without tapping it. The slow-save affordance still renders as its own
+caption *below* the row (see `CatalogRow.module.css`'s `.nfcSavingHint`), not
+inside the switch or its label. The next component that needs a binary
 on/off control (not a multi-option picker — that's a different pattern)
-should reuse this shape rather than hand-rolling a bordered pill or a
-button that swaps its own text between two states.
+should reuse this shape — switch plus adjacent text label together, not the
+switch alone — rather than hand-rolling a bordered pill or a button that
+swaps its own text between two states.
 
 ## 9. Extending to screens not yet built (Loyalty, Eventos, Resultados)
 

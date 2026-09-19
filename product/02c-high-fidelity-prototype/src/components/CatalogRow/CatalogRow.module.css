@@ -134,15 +134,38 @@
    same width whether or not it's occupied, `.price` (the next sibling)
    drifts left/right per row depending on which rows happen to carry the
    switch, since `.main` (flex: 1) absorbs whatever width is left over.
-   Width matches `.nfcSwitch` exactly (no internal padding) — spacing to
-   its neighbors comes from `.rowMain`'s own `gap`, the same spacing every
-   other zone in this row already relies on. */
+   Width now fits `.nfcLabel` + `.nfcSwitch` together (2026-09-19 live fix
+   — the label was added back; see `.nfcLabel` below), sized for the wider
+   of "NFC: No"/"NFC: Sí" so the slot's own width never shifts between the
+   two states either. Spacing to its neighbors comes from `.rowMain`'s own
+   `gap`, the same spacing every other zone in this row already relies
+   on. */
 .nfcSlot {
-  width: 40px;
+  width: 84px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* `inventory.md` §3.4's own copy for this zone, "NFC: No" / "NFC: Sí" —
+   present in the spec since before this control was first built
+   (2026-09-19 live fix, Product Owner report: the built switch never
+   rendered it, leaving no way to read the control's state without tapping
+   it). Styled like this row's other secondary facts (`.caption`,
+   `.overflow`) rather than `.price`'s themed `.moneyTag` treatment — a
+   setting, not money or the Product itself, same reasoning
+   `DESIGN-SYSTEM.md` §8 already applies to the switch itself. */
+.nfcLabel {
+  font: var(--text-meta);
+  font-weight: 600;
+  color: #6B6259;
+  white-space: nowrap;
+}
+
+.row.dimmed .nfcLabel {
+  color: #9C9186;
 }
 
 /* The switch itself — a real on/off track + knob, not a bordered pill
@@ -223,9 +246,11 @@
 
 /* The slow-save caption (`nfcToggle.slow`, >~1.5s) — same position/shape as
    `.nfcError` (a second line below the tappable-zones row) but neutral, not
-   red: this isn't a failure, just a longer-than-usual wait. Replaces the
-   previous version's in-place "Guardando…" text swap, which no longer has
-   anywhere to render now the switch itself carries no text label. */
+   red: this isn't a failure, just a longer-than-usual wait. Kept as its own
+   line below the row rather than folded into `.nfcLabel` (which always
+   reflects the Product's actual saved-or-in-flight state, not a transient
+   "saving" message) — the whole row already dims via `.rowMainSaving` while
+   the write is in flight, so this caption is purely supplementary. */
 .nfcSavingHint {
   margin: 0 var(--space-1) 10px 4px;
   font: var(--text-body-sm);
