@@ -17,6 +17,50 @@ import pickerStyles from '../../components/ProductPicker/ProductPicker.module.cs
 const PHOTO_UNREADABLE_MESSAGE = 'No pudimos mostrar ese archivo.';
 
 /**
+ * inventory.md §3.4a/§3.4b/§3.4c each state that their own "Guardar" follows
+ * "the same near-instant/slow/error save convention as every other write in
+ * this document (§3.10/§3.11)." Before 2026-09-19 none of the three sheets
+ * actually had one: a failed save only reached `console.error`, the sheet
+ * just stayed open, and the merchant got no message, no retry, and nothing
+ * telling her it hadn't saved — a failed save that looked exactly like a
+ * successful one, minus the sheet closing.
+ *
+ * One shared state machine for all three sheets (they save the same way and
+ * fail the same way — three copies of it would be three things to drift):
+ * - `idle`   — at rest, or back at rest after a success.
+ * - `saving` — write in flight, under the slow threshold: **silent**,
+ *              §3.10's own "near-instant: silent" half. The only visible
+ *              effect is that the sheet's controls go inert, so a second tap
+ *              can't start a second attempt.
+ * - `slow`   — still in flight past ~1.5s: one plain "Guardando…" line,
+ *              §3.10's slow half, same copy/shape every other slow save in
+ *              this codebase already uses.
+ * - `error`  — the write came back rejected/failed: §3.11's plain-Spanish
+ *              line plus "Reintentar," with her staged value still on screen
+ *              and untouched.
+ */
+type SheetSaveState = 'idle' | 'saving' | 'slow' | 'error';
+
+/** §3.10's own ">~1.5s" slow threshold, the identical value this screen's
+ * NFC row toggle (`handleToggleNfc` below) and `PersonalParaEsteEvento.tsx`
+ * already use. */
+const SLOW_THRESHOLD_MS = 1500;
+
+/** §3.11's own failure line, adapted for an edit sheet. §3.11's literal
+ * wording names the merchandise being registered ("No se pudo guardar.
+ * Bolsas sigue aquí, intenta de nuevo."); what's preserved here isn't the
+ * Product — it never went anywhere — but her staged edit, so this reuses the
+ * exact string this codebase already uses for that same meaning in
+ * `MercanciaParaEsteEvento.tsx`/`EventDetail.tsx` rather than inventing a
+ * fourth phrasing. Same register, same "your work is still here" promise. */
+const SAVE_FAILED_MESSAGE = 'No se pudo guardar. Tus cambios siguen aquí, intenta de nuevo.';
+
+/** True while a write is genuinely in flight (either half of §3.10). */
+function isInFlight(saveState: SheetSaveState) {
+  return saveState === 'saving' || saveState === 'slow';
+}
+
+/**
  * inventory.md §3.4 — Catalog view. Product + available count only, never a
  * Lot/InventoryUnit reference. Price is its own tap target (§3.4a, D33).
  * **There is exactly one Catalog view now (2026-09-17 live pass)** —
@@ -73,6 +117,16 @@ export function CatalogView({
   const { state, editPrice, setProductPhoto, setProductBarcode, setProductNfcTaggingEnabled } = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftPrice, setDraftPrice] = useState('');
+  // §3.4a's own near-instant/slow/error save state (§3.10/§3.11).
+  const [priceSaveState, setPriceSaveState] = useState<SheetSaveState>('idle');
+  /** One idempotency key per logical "Guardar precio" attempt, mirroring
+   * `RegisterMerchandise.tsx`'s own `commitIdempotencyKeyRef` exactly:
+   * minted when an attempt starts, **reused unchanged across a "Reintentar"
+   * tap of that same attempt**, cleared on success and on any edit that
+   * changes what would be saved (a different typed price is a different
+   * attempt, not a retry of this one). `editPrice` no longer mints one
+   * internally, which is what made every retry look like a fresh request. */
+  const priceKeyRef = useRef<string | null>(null);
   const [toast, setToast] = useState<string | null>(confirmationMessage ?? null);
   const [toastDetail, setToastDetail] = useState<string | null>(confirmationDetail ?? null);
 
@@ -90,6 +144,16 @@ export function CatalogView({
   // instead of Cancelar) — only a real edit gets the "Foto guardada" toast.
   const openedPhotoRef = useRef<string | undefined>(undefined);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  // §3.4b's own near-instant/slow/error save state (§3.10/§3.11). Distinct
+  // from `photoError` immediately above, which is the *selection*-time
+  // "No pudimos mostrar ese archivo." failure — a different failure, at a
+  // different moment, with a different recovery.
+  const [photoSaveState, setPhotoSaveState] = useState<SheetSaveState>('idle');
+  /** One idempotency key per logical "Guardar foto" attempt — same
+   * discipline as `priceKeyRef` above. Cleared on success and whenever the
+   * staged photo itself changes (a different photo, or a "Quitar," is a
+   * different attempt). */
+  const photoKeyRef = useRef<string | null>(null);
   const [photoPreviewOpen, setPhotoPreviewOpen] = useState(false);
   const photoFileInputRef = useRef<HTMLInputElement | null>(null);
   // Live-found gap (2026-09-15) — `capture="environment"` alone no longer
@@ -129,6 +193,17 @@ export function CatalogView({
     available: number;
     everReceived: boolean;
   } | null>(null);
+  // §3.4c's own near-instant/slow/error save state (§3.10/§3.11). Only ever
+  // reached from `barcodeStage === 'sheet'` — the scanning/conflict/camera
+  // sub-states have no write of their own.
+  const [barcodeSaveState, setBarcodeSaveState] = useState<SheetSaveState>('idle');
+  /** One idempotency key per logical "Guardar código de barras" attempt —
+   * same discipline as `priceKeyRef`/`photoKeyRef` above. Cleared on success
+   * and whenever a *new* code is staged by a fresh scan. Matters more here
+   * than anywhere else on this screen: §3.4c's own "residual, accepted race"
+   * (another device claiming the identical code mid-attempt) is exactly the
+   * case where a retry must arrive as the same request, not a second one. */
+  const barcodeKeyRef = useRef<string | null>(null);
 
   // inventory.md §3.4's fifth tap zone (`decision-log.md` D71) — the
   // NFC-eligibility switch's own per-row save state. Per-row grain (a
@@ -269,9 +344,87 @@ export function CatalogView({
     // rule, restated at the per-Product level).
   }
 
+  /**
+   * The one save runner all three edit sheets (§3.4a/§3.4b/§3.4c) go
+   * through — §3.10's near-instant/slow split and §3.11's error state, in
+   * one place. Structurally the same `runWrite` shape
+   * `PersonalParaEsteEvento.tsx` already establishes for an identical
+   * "independent write, its own save/slow/error surface" case, and the same
+   * shape `handleToggleNfc` above uses for the row toggle — deliberately not
+   * a fourth pattern.
+   *
+   * The `commit` callback owns the actual store call, so each sheet keeps
+   * its own idempotency key and its own arguments; this function only owns
+   * the timing and the visible state. Resolves the write's own boolean so
+   * the caller can run its success path (close the sheet, fire the ambient
+   * confirmation) only when the write genuinely succeeded.
+   */
+  async function runSheetSave(
+    setSaveState: (next: SheetSaveState) => void,
+    label: string,
+    commit: () => Promise<boolean>,
+  ): Promise<boolean> {
+    setSaveState('saving');
+    const slowTimer = window.setTimeout(() => setSaveState('slow'), SLOW_THRESHOLD_MS);
+    const ok = await commit();
+    window.clearTimeout(slowTimer);
+    if (!ok) {
+      console.error(`[CatalogView] ${label} failed`);
+      setSaveState('error');
+      return false;
+    }
+    setSaveState('idle');
+    return true;
+  }
+
   const draftPriceValue = useMemo(() => parseFloat(draftPrice), [draftPrice]);
   const draftPriceValid =
     draftPrice.trim().length > 0 && !Number.isNaN(draftPriceValue) && draftPriceValue > 0;
+
+  // §3.4a — opened by the Catalog row's price tap zone. Resets any residue
+  // from a previous open (same reset discipline `openPhotoSheet`/
+  // `openBarcodeSheet` below already follow), including a stale save state
+  // and a stale idempotency key: a new open is always a new attempt.
+  function openPriceSheet(product: Product) {
+    setEditingId(product.id);
+    setDraftPrice(String(product.defaultPrice));
+    setPriceSaveState('idle');
+    priceKeyRef.current = null;
+  }
+
+  // "Cancelar" (§3.4a) — discards the edit and returns unchanged.
+  function closePriceSheet() {
+    setEditingId(null);
+    setPriceSaveState('idle');
+    priceKeyRef.current = null;
+  }
+
+  // Typing a different price makes this a different attempt, not a retry of
+  // the failed one — so the key is dropped and any error line clears, the
+  // same `resetSaveAttempt` discipline `RegisterMerchandise.tsx` applies to
+  // every control that changes what would be saved.
+  function handleDraftPriceChange(next: string) {
+    setDraftPrice(next);
+    priceKeyRef.current = null;
+    setPriceSaveState((s) => (s === 'error' ? 'idle' : s));
+  }
+
+  // "Guardar precio" (§3.4a) — writes `Product.defaultPrice` and closes back
+  // to the Catalog view, updated. A failed save leaves the sheet open with
+  // her typed value intact, now with §3.11's own visible message and
+  // "Reintentar" instead of the silent nothing this used to do.
+  async function handleGuardarPrecio() {
+    if (!editingId || !draftPriceValid) return;
+    if (!priceKeyRef.current) priceKeyRef.current = crypto.randomUUID();
+    const key = priceKeyRef.current;
+    const ok = await runSheetSave(setPriceSaveState, 'editPrice', () =>
+      editPrice(editingId, draftPriceValue, key),
+    );
+    if (!ok) return;
+    // Success — this attempt is over; a future edit mints its own key.
+    priceKeyRef.current = null;
+    setEditingId(null);
+  }
 
   function openPhotoSheet(productId: string) {
     const product = rows.find((r) => r.product.id === productId)?.product;
@@ -280,6 +433,8 @@ export function CatalogView({
     openedPhotoRef.current = product?.photo;
     setPhotoError(null);
     setPhotoPreviewOpen(false);
+    setPhotoSaveState('idle');
+    photoKeyRef.current = null;
   }
 
   function closePhotoSheet() {
@@ -287,6 +442,16 @@ export function CatalogView({
     setStagedPhoto(undefined);
     setPhotoError(null);
     setPhotoPreviewOpen(false);
+    setPhotoSaveState('idle');
+    photoKeyRef.current = null;
+  }
+
+  // Staging a different photo (or removing one) makes this a different
+  // attempt, not a retry — same reasoning as `handleDraftPriceChange` above.
+  function stagePhoto(next: string | undefined) {
+    setStagedPhoto(next);
+    photoKeyRef.current = null;
+    setPhotoSaveState((s) => (s === 'error' ? 'idle' : s));
   }
 
   // inventory.md §3.4c "Editar código de barras" — opened by the Catalog
@@ -297,6 +462,8 @@ export function CatalogView({
     setStagedBarcode(undefined);
     setBarcodeConflict(null);
     setBarcodeStage('sheet');
+    setBarcodeSaveState('idle');
+    barcodeKeyRef.current = null;
   }
 
   // "Cancelar" (§3.4c) — discards any staged (unsaved) scan and closes the
@@ -306,6 +473,8 @@ export function CatalogView({
     setStagedBarcode(undefined);
     setBarcodeConflict(null);
     setBarcodeStage('sheet');
+    setBarcodeSaveState('idle');
+    barcodeKeyRef.current = null;
   }
 
   // §3.4d → §3.4c/§3.4e — a successful scan. §3.4c's own text: "A scan
@@ -329,20 +498,27 @@ export function CatalogView({
     }
     setStagedBarcode(trimmed);
     setBarcodeStage('sheet');
+    // A freshly-scanned code is a different attempt, not a retry of the
+    // failed one — same reasoning as `handleDraftPriceChange`/`stagePhoto`.
+    barcodeKeyRef.current = null;
+    setBarcodeSaveState((s) => (s === 'error' ? 'idle' : s));
   }
 
   // "Guardar código de barras" — disabled until a fresh scan has been
   // staged (enforced by the button's own `disabled` prop below); replaces
   // `Product.barcode` outright, no merge, no history. A failed save leaves
-  // the sheet open with the staged value intact, the same convention
-  // `handleGuardarFoto`/`editPrice`'s own Guardar handler already follow.
+  // the sheet open with the staged value intact — and, since 2026-09-19,
+  // with §3.11's own visible message and "Reintentar" rather than the silent
+  // nothing this used to do; the same convention `handleGuardarPrecio`/
+  // `handleGuardarFoto` now follow.
   async function handleGuardarBarcode() {
     if (!editingBarcodeId || stagedBarcode === undefined) return;
-    const ok = await setProductBarcode(editingBarcodeId, stagedBarcode);
-    if (!ok) {
-      console.error('[CatalogView] setProductBarcode failed');
-      return;
-    }
+    if (!barcodeKeyRef.current) barcodeKeyRef.current = crypto.randomUUID();
+    const key = barcodeKeyRef.current;
+    const ok = await runSheetSave(setBarcodeSaveState, 'setProductBarcode', () =>
+      setProductBarcode(editingBarcodeId, stagedBarcode, key),
+    );
+    if (!ok) return;
     closeBarcodeSheet();
     // Added specifically because nothing in the Catalog row itself visibly
     // changes to confirm the write succeeded (`Product.barcode` isn't
@@ -362,7 +538,7 @@ export function CatalogView({
     }
     const reader = new FileReader();
     reader.onload = () => {
-      setStagedPhoto(typeof reader.result === 'string' ? reader.result : undefined);
+      stagePhoto(typeof reader.result === 'string' ? reader.result : undefined);
       setPhotoError(null);
     };
     reader.onerror = () => setPhotoError(PHOTO_UNREADABLE_MESSAGE);
@@ -379,17 +555,19 @@ export function CatalogView({
     // taken here, against `openedPhotoRef`, before the write.
     const photoChanged = stagedPhoto !== openedPhotoRef.current;
     if (!editingPhotoId) return;
-    // Stage 7 Backend Integration, Phase 1 — setProductPhoto is now a real,
-    // awaitable Supabase RPC call. On a genuine network/platform failure
-    // (no designed error state for this sheet in inventory.md §3.4b), the
-    // sheet stays open with her staged photo intact rather than closing on
-    // a write that didn't actually happen — logged so the failure is
-    // visible, never silently dropped.
-    const ok = await setProductPhoto(editingPhotoId, stagedPhoto);
-    if (!ok) {
-      console.error('[CatalogView] setProductPhoto failed');
-      return;
-    }
+    // Stage 7 Backend Integration, Phase 1 — setProductPhoto is a real,
+    // awaitable Supabase RPC call. On a genuine network/platform failure the
+    // sheet stays open with her staged photo intact rather than closing on a
+    // write that didn't actually happen — and, since 2026-09-19, that
+    // failure is now *visible* (§3.4b's own "same near-instant/slow/error
+    // save convention... §3.10/§3.11"), not merely logged to a console she
+    // will never open.
+    if (!photoKeyRef.current) photoKeyRef.current = crypto.randomUUID();
+    const key = photoKeyRef.current;
+    const ok = await runSheetSave(setPhotoSaveState, 'setProductPhoto', () =>
+      setProductPhoto(editingPhotoId, stagedPhoto, key),
+    );
+    if (!ok) return;
     closePhotoSheet();
     if (!photoChanged) return;
     // Same ambient near-instant confirmation convention as every other write
@@ -428,10 +606,7 @@ export function CatalogView({
               available={available}
               everReceived={everReceived}
               onTapRow={() => onRegisterProduct(product.id)}
-              onTapPrice={() => {
-                setEditingId(product.id);
-                setDraftPrice(String(product.defaultPrice));
-              }}
+              onTapPrice={() => openPriceSheet(product)}
               onTapPhoto={() => openPhotoSheet(product.id)}
               onTapBarcode={canEditBarcode ? () => openBarcodeSheet(product.id) : undefined}
               reserveNfcSlot={nfcPerProductAvailable}
@@ -497,7 +672,10 @@ export function CatalogView({
       </div>
 
       {editingProduct && (
-        <Sheet onDismiss={() => setEditingId(null)}>
+        // While a write is in flight the sheet can't be dismissed by
+        // backdrop tap or Escape (`onDismiss` withheld) — closing it
+        // mid-write is exactly how a save becomes silent again.
+        <Sheet onDismiss={isInFlight(priceSaveState) ? undefined : closePriceSheet}>
           <p className={pickerStyles.sheetTitle}>{editingProduct.name}</p>
           <p className={pickerStyles.newProductLabel}>Precio</p>
           <div className={pickerStyles.priceField}>
@@ -508,36 +686,39 @@ export function CatalogView({
               inputMode="decimal"
               autoFocus
               value={draftPrice}
-              onChange={(e) => setDraftPrice(e.target.value)}
+              disabled={isInFlight(priceSaveState)}
+              onChange={(e) => handleDraftPriceChange(e.target.value)}
             />
           </div>
+          {/* §3.10/§3.11 — her typed value stays on screen above these
+              lines, never cleared, never replaced by them. */}
+          {priceSaveState === 'slow' && <p className={styles.sheetSavingHint} role="status">Guardando…</p>}
+          {priceSaveState === 'error' && <p className={styles.sheetError} role="alert">{SAVE_FAILED_MESSAGE}</p>}
           <div style={{ display: 'flex', gap: 12 }}>
-            <Button variant="secondary" onClick={() => setEditingId(null)}>
+            <Button
+              variant="secondary"
+              disabled={isInFlight(priceSaveState)}
+              onClick={closePriceSheet}
+            >
               Cancelar
             </Button>
+            {/* One primary action, relabelled in the error state rather than
+                joined by a second button that would do the identical thing
+                — the same single-retry-affordance shape §3.11 and every
+                other error surface in this codebase already use. */}
             <Button
-              disabled={!draftPriceValid}
-              onClick={async () => {
-                // Stage 7 Backend Integration, Phase 1 — editPrice is now a
-                // real, awaitable Supabase RPC call. On a genuine
-                // network/platform failure (no designed error state for
-                // this sheet in inventory.md §3.4a), the sheet simply stays
-                // open with her typed value intact so tapping "Guardar
-                // precio" again retries — logged so the failure is visible,
-                // never silently dropped.
-                const ok = await editPrice(editingProduct.id, draftPriceValue);
-                if (ok) setEditingId(null);
-                else console.error('[CatalogView] editPrice failed');
-              }}
+              disabled={!draftPriceValid || isInFlight(priceSaveState)}
+              onClick={() => void handleGuardarPrecio()}
             >
-              Guardar precio
+              {priceSaveState === 'error' ? 'Reintentar' : 'Guardar precio'}
             </Button>
           </div>
         </Sheet>
       )}
 
       {editingPhotoProduct && (
-        <Sheet onDismiss={closePhotoSheet}>
+        // Same in-flight dismissal guard as the Precio sheet above.
+        <Sheet onDismiss={isInFlight(photoSaveState) ? undefined : closePhotoSheet}>
           <p className={pickerStyles.sheetTitle}>{editingPhotoProduct.name}</p>
           <p className={pickerStyles.newProductLabel}>Foto (opcional)</p>
           {stagedPhoto ? (
@@ -563,21 +744,34 @@ export function CatalogView({
                   // never "Cambiar"/"Quitar" against a thumbnail she can't
                   // see.
                   onError={() => {
-                    setStagedPhoto(undefined);
+                    stagePhoto(undefined);
                     setPhotoPreviewOpen(false);
                   }}
                 />
               </button>
-              <button className={styles.linkBtn} onClick={() => setCameraOpen(true)}>
+              {/* Every staging control goes inert while a write is in
+                  flight — otherwise she could swap the photo out from under
+                  an attempt that's still running, and the key replayed by a
+                  "Reintentar" would no longer match what's on screen. */}
+              <button
+                className={styles.linkBtn}
+                disabled={isInFlight(photoSaveState)}
+                onClick={() => setCameraOpen(true)}
+              >
                 Tomar foto
               </button>
-              <button className={styles.linkBtn} onClick={() => photoFileInputRef.current?.click()}>
+              <button
+                className={styles.linkBtn}
+                disabled={isInFlight(photoSaveState)}
+                onClick={() => photoFileInputRef.current?.click()}
+              >
                 Cambiar
               </button>
               <button
                 className={styles.linkBtn}
+                disabled={isInFlight(photoSaveState)}
                 onClick={() => {
-                  setStagedPhoto(undefined);
+                  stagePhoto(undefined);
                   setPhotoError(null);
                 }}
               >
@@ -587,10 +781,18 @@ export function CatalogView({
           ) : (
             <>
               <div style={{ display: 'flex', gap: 12 }}>
-                <button className={styles.uploadBtn} onClick={() => setCameraOpen(true)}>
+                <button
+                  className={styles.uploadBtn}
+                  disabled={isInFlight(photoSaveState)}
+                  onClick={() => setCameraOpen(true)}
+                >
                   Tomar foto
                 </button>
-                <button className={styles.uploadBtn} onClick={() => photoFileInputRef.current?.click()}>
+                <button
+                  className={styles.uploadBtn}
+                  disabled={isInFlight(photoSaveState)}
+                  onClick={() => photoFileInputRef.current?.click()}
+                >
                   Agregar foto
                 </button>
               </div>
@@ -615,7 +817,7 @@ export function CatalogView({
           {cameraOpen && (
             <PhotoCapture
               onCapture={(dataUrl) => {
-                setStagedPhoto(dataUrl);
+                stagePhoto(dataUrl);
                 setPhotoError(null);
                 setCameraOpen(false);
               }}
@@ -626,11 +828,25 @@ export function CatalogView({
               }}
             />
           )}
+          {/* §3.10/§3.11 — the staged photo (or the "Agregar foto" empty
+              state a "Quitar" leaves behind) stays exactly as it is above
+              these lines; nothing she staged is dropped by a failed save. */}
+          {photoSaveState === 'slow' && <p className={styles.sheetSavingHint} role="status">Guardando…</p>}
+          {photoSaveState === 'error' && <p className={styles.sheetError} role="alert">{SAVE_FAILED_MESSAGE}</p>}
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-            <Button variant="secondary" onClick={closePhotoSheet}>
+            <Button
+              variant="secondary"
+              disabled={isInFlight(photoSaveState)}
+              onClick={closePhotoSheet}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleGuardarFoto}>Guardar foto</Button>
+            <Button
+              disabled={isInFlight(photoSaveState)}
+              onClick={() => void handleGuardarFoto()}
+            >
+              {photoSaveState === 'error' ? 'Reintentar' : 'Guardar foto'}
+            </Button>
           </div>
         </Sheet>
       )}
@@ -679,7 +895,11 @@ export function CatalogView({
             alt={`Foto de ${editingPhotoProduct.name}`}
             onClick={(e) => e.stopPropagation()}
             onError={() => {
-              setStagedPhoto(undefined);
+              // Routed through `stagePhoto` like every other change to the
+              // staged value, so the idempotency key can't outlive the value
+              // it was minted for (this passive fallback silently changes
+              // what a "Reintentar" would write).
+              stagePhoto(undefined);
               setPhotoPreviewOpen(false);
             }}
           />
@@ -784,7 +1004,8 @@ export function CatalogView({
           until a fresh scan has actually been staged — there's no
           manually-editable field here to re-save. */}
       {editingBarcodeProduct && barcodeStage === 'sheet' && (
-        <Sheet onDismiss={closeBarcodeSheet}>
+        // Same in-flight dismissal guard as the other two sheets above.
+        <Sheet onDismiss={isInFlight(barcodeSaveState) ? undefined : closeBarcodeSheet}>
           <p className={pickerStyles.sheetTitle}>{editingBarcodeProduct.name}</p>
           <p className={pickerStyles.newProductLabel}>Código de barras</p>
           {stagedBarcode !== undefined ? (
@@ -803,16 +1024,30 @@ export function CatalogView({
           <Button
             variant="secondary"
             className={styles.rescanBtn}
+            disabled={isInFlight(barcodeSaveState)}
             onClick={() => setBarcodeStage('scanning')}
           >
             Volver a escanear
           </Button>
+          {/* §3.10/§3.11 — the staged "(nuevo, sin guardar)" value stays
+              right above these lines, still there to retry or rescan. */}
+          {barcodeSaveState === 'slow' && <p className={styles.sheetSavingHint} role="status">Guardando…</p>}
+          {barcodeSaveState === 'error' && (
+            <p className={styles.sheetError} role="alert">{SAVE_FAILED_MESSAGE}</p>
+          )}
           <div style={{ display: 'flex', gap: 12 }}>
-            <Button variant="secondary" onClick={closeBarcodeSheet}>
+            <Button
+              variant="secondary"
+              disabled={isInFlight(barcodeSaveState)}
+              onClick={closeBarcodeSheet}
+            >
               Cancelar
             </Button>
-            <Button disabled={stagedBarcode === undefined} onClick={handleGuardarBarcode}>
-              Guardar código de barras
+            <Button
+              disabled={stagedBarcode === undefined || isInFlight(barcodeSaveState)}
+              onClick={() => void handleGuardarBarcode()}
+            >
+              {barcodeSaveState === 'error' ? 'Reintentar' : 'Guardar código de barras'}
             </Button>
           </div>
         </Sheet>

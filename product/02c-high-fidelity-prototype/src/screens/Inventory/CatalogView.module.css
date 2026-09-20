@@ -101,6 +101,18 @@
   padding: 4px;
 }
 
+/* Both of §3.4b's staging controls go inert while a "Guardar foto" write is
+   in flight — the same dimmed, non-interactive treatment `Button.module.css`
+   already gives a disabled action, and the same wordless "this is busy right
+   now" signal `CatalogRow.module.css`'s `.rowMainSaving` gives the row's own
+   near-instant save (§3.10's silent half: no message, just inert). */
+.uploadBtn:disabled,
+.linkBtn:disabled {
+  color: #9C9186;
+  border-color: var(--color-hilo);
+  cursor: not-allowed;
+}
+
 .hiddenFileInput {
   display: none;
 }
@@ -115,6 +127,30 @@
   font: var(--text-body-sm);
   color: var(--color-error);
   margin-bottom: var(--space-2);
+}
+
+/* inventory.md §3.10's slow half (">~1.5s: one plain line"), rendered inside
+   the three edit sheets (§3.4a/§3.4b/§3.4c) rather than as a full-screen
+   takeover: a sheet's own staged value has to stay visible while its write
+   runs, so this sits as a quiet caption directly above the action row — the
+   same position and neutral tone `CatalogRow.module.css`'s own
+   `.nfcSavingHint` already uses for this screen's other in-place save. Not
+   red: a slow save isn't a failure. */
+.sheetSavingHint {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  margin: 0 0 var(--space-3);
+}
+
+/* inventory.md §3.11's failure line, same slot as `.sheetSavingHint` above
+   and the same type scale, in the error color every other write-failure line
+   in this codebase already uses (`.nfcError`, Eventos' own `.errorBody`).
+   The sheet's staged value renders above it and the "Reintentar" button
+   directly below it, so message and recovery read as one block. */
+.sheetError {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+  margin: 0 0 var(--space-3);
 }
 
 /* §3.4b's "simple full-viewport, non-editable large view" — dismissed by

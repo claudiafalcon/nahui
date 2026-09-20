@@ -709,16 +709,32 @@ interface StoreValue {
    * real, idempotency-keyed call to the `update_product_price` RPC, closing
    * the gap `BACKLOG.md` §F previously named. Resolves `true` on success,
    * `false` on any rejected/failed outcome (no local state change happens
-   * in that case — `CatalogView.tsx`'s sheet stays open so she can retry). */
-  editPrice: (productId: ID, newPrice: number) => Promise<boolean>;
+   * in that case — `CatalogView.tsx`'s sheet stays open so she can retry).
+   *
+   * **`idempotencyKey` is supplied by the caller (2026-09-19 silent-save
+   * defect fix), never minted here.** Previously this wrapper generated a
+   * fresh `crypto.randomUUID()` on every call, which meant a retry of the
+   * *same* failed attempt arrived server-side as a brand-new request — the
+   * exact hole `reviewer`'s own `commitLot` Blocker fix (2026-09-13) closed
+   * for the receipt path. `CatalogView.tsx` now holds one key per logical
+   * "Guardar precio" attempt, reused unchanged across a Reintentar tap and
+   * cleared only on success (or when her staged value actually changes,
+   * which makes it a genuinely different attempt). */
+  editPrice: (productId: ID, newPrice: number, idempotencyKey: string) => Promise<boolean>;
   /** inventory.md §3.4b "Guardar foto" (`product-decisions.md` Q23) — the
    * Catalog-row-level `Product.photo` write, same shape as `editPrice`
    * immediately above. `undefined` writes a removal ("Quitar" staged, then
    * committed). Stage 7 Backend Integration, Phase 1: a real,
    * idempotency-keyed call to the `update_product_photo` RPC, closing the
    * gap `BACKLOG.md` §F previously named. Resolves `true` on success,
-   * `false` on any rejected/failed outcome. */
-  setProductPhoto: (productId: ID, photo: string | undefined) => Promise<boolean>;
+   * `false` on any rejected/failed outcome. `idempotencyKey` is supplied by
+   * the caller, same per-attempt/replayed-on-retry discipline as
+   * `editPrice` above. */
+  setProductPhoto: (
+    productId: ID,
+    photo: string | undefined,
+    idempotencyKey: string,
+  ) => Promise<boolean>;
   /** inventory.md §3.4c-§3.4g "Editar código de barras" (`decision-log.md`
    * D65, 2026-09-16/17 amendment) — the Catalog-row-level `Product.barcode`
    * correction write, same "server-confirmed, then local mirror" shape as
@@ -733,8 +749,14 @@ interface StoreValue {
    * precedent for the identical race on the creation path. Resolves `true`
    * on success, `false` on any rejected/failed outcome (no local state
    * change happens in that case — `CatalogView.tsx`'s sheet stays open,
-   * staged value intact, so she can retry). */
-  setProductBarcode: (productId: ID, newBarcode: string) => Promise<boolean>;
+   * staged value intact, so she can retry). `idempotencyKey` is supplied by
+   * the caller, same per-attempt/replayed-on-retry discipline as
+   * `editPrice`/`setProductPhoto` above. */
+  setProductBarcode: (
+    productId: ID,
+    newBarcode: string,
+    idempotencyKey: string,
+  ) => Promise<boolean>;
   /** inventory.md §3.6 "Cantidad disponible actual" (`decision-log.md`
    * D78, `product/99-rfc/0016-inventory-unit-bidirectional-correction.md`
    * Accepted — supersedes D77/RFC 0015's decrease-only v1 scope) — the
@@ -2717,8 +2739,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * rejected/failed call leaves `Product.defaultPrice` exactly as it was,
    * and the caller (`CatalogView.tsx`) can tell the two apart via the
    * resolved boolean.
+   *
+   * 2026-09-19 silent-save defect fix — `idempotencyKey` now comes in from
+   * the caller instead of being minted per call here, so a "Reintentar" tap
+   * on §3.4a's own error state replays the identical request rather than
+   * issuing a second, unrelated one (see the interface doc above).
    */
-  async function editPrice(productId: ID, newPrice: number): Promise<boolean> {
+  async function editPrice(
+    productId: ID,
+    newPrice: number,
+    idempotencyKey: string,
+  ): Promise<boolean> {
     if (!state.business) return false;
     const supabase = getSupabaseClient();
     if (!supabase) {
@@ -2728,7 +2759,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.rpc('update_product_price', {
       p_business_id: state.business.id,
       p_product_id: productId,
-      p_idempotency_key: crypto.randomUUID(),
+      p_idempotency_key: idempotencyKey,
       p_new_price: newPrice,
     });
     if (error) {
@@ -2748,7 +2779,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * `update_product_photo`, same "server-confirmed, then local mirror"
    * shape as `editPrice` above.
    */
-  async function setProductPhoto(productId: ID, photo: string | undefined): Promise<boolean> {
+  async function setProductPhoto(
+    productId: ID,
+    photo: string | undefined,
+    idempotencyKey: string,
+  ): Promise<boolean> {
     if (!state.business) return false;
     const supabase = getSupabaseClient();
     if (!supabase) {
@@ -2758,7 +2793,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.rpc('update_product_photo', {
       p_business_id: state.business.id,
       p_product_id: productId,
-      p_idempotency_key: crypto.randomUUID(),
+      p_idempotency_key: idempotencyKey,
       p_photo: photo ?? null,
     });
     if (error) {
@@ -2793,7 +2828,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * barcode-less row to begin with), and matches exactly what the server
    * just did on the one seam where it could have been `true`.
    */
-  async function setProductBarcode(productId: ID, newBarcode: string): Promise<boolean> {
+  async function setProductBarcode(
+    productId: ID,
+    newBarcode: string,
+    idempotencyKey: string,
+  ): Promise<boolean> {
     if (!state.business) return false;
     const supabase = getSupabaseClient();
     if (!supabase) {
@@ -2803,7 +2842,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.rpc('update_product_barcode', {
       p_business_id: state.business.id,
       p_product_id: productId,
-      p_idempotency_key: crypto.randomUUID(),
+      p_idempotency_key: idempotencyKey,
       p_new_barcode: newBarcode,
     });
     if (error) {
