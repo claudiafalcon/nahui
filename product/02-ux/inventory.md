@@ -2152,21 +2152,51 @@ gated the same way `decision-log.md` D27 already gates NFC).
 
 The figures, plain text (§3 intro's "plain text = passive/informational"), in this order:
 
-- **`N disponibles` / `0 disponibles` / `sin registrar`** — the identical derivation §3.4 owns, read here, never re-derived.
-- **`N ya etiquetadas`** — the count of this Product's units still on hand that carry an attached `NFCTag`: `InventoryUnit.tagId != null AND status IN ('available','reserved')` — D10's sale-time side of dual-purpose tag resolution, stated as an allowlist so a future status added without a tag-release path cannot silently enter the count. A `sold` unit keeps its `tagId` (`finalize_sale` never deletes the `NFCTag` row), so an unqualified count would include garments she no longer has; `removed` needs no exclusion, since both paths producing it delete the row. No eligibility predicate and no Session/Event term is ever added — this line exists for the no-longer-eligible Product, and a Product-level figure must not shift with whichever jornada is open (`architect` ruling, 2026-09-19, binding). **Sourced from live unit state, never from `Product.nfcTaggingEnabled`** (`architect` ruling, 2026-09-19, binding). D71 draws this line in its own entry: the flag "never itself asserts unit-level sellability, which stays derived purely from `InventoryUnit.tagId`." The flag records a *future-eligibility choice*; it says nothing about whether a given garment sells by tag, and reading it here would misreport exactly the case this line exists for. A statement sourced from `tagId` is not the control, offers no opt-in and asserts no eligibility — it is compatible with D71, which governs the control, not the topic. **Rendered only while ≥1 such unit exists** (binding corollary); at zero it is absent entirely, since there is nothing to disclose and a standing line at zero would reintroduce the phantom-entry class D73 removed. **The condition is tagged units, never the barcode.**
-- **`N sin etiquetar`** — rendered only when this Product currently has ≥1 `available`, untagged, NFC-tagging-eligible unit (§2's composed test).
+- **`N disponibles` / `0 disponibles` / `sin registrar`** — the identical derivation §3.4 owns, read here, never re-derived. Counts units with status `available`.
+- **`N ya etiquetadas`** — the count of this Product's units that carry an attached `NFCTag` **and** are still on the sale-time side of the unit lifecycle: `tagId != null` **AND** `status IN ('available', 'reserved')`. **Stated as an allowlist, never as a denylist** (`architect` ruling, 2026-09-19) — an `NFCTag` row survives the sale (`finalize_sale` sets `status = 'sold'` and never deletes the tag), so an unscoped `tagId != null` would count garments she already sold. The status set is not chosen for this line: D10's dual-purpose tag resolution already partitions on exactly this boundary (`available`/`reserved` is the sale-time side, `sold` is the claim side), and the live `add_item_to_sale_by_tag` predicate agrees. **No narrower scope is computable here, by design** — the reason a unit is `reserved` lives in Selling's `EventAllocation`, and reading it would invert the dependency direction *architecture-principles.md* #6 fixes. **Sourced from live unit state, never from `Product.nfcTaggingEnabled`** — the flag records a *future-eligibility choice* and says nothing about whether a given garment sells by tag; D71 draws that line in its own entry ("never itself asserts unit-level sellability, which stays derived purely from `InventoryUnit.tagId`"). A statement sourced from `tagId` is not the control, offers no opt-in and asserts no eligibility — compatible with D71, which governs the control, not the topic. **No eligibility predicate is added** (this line exists precisely for a Product that is no longer eligible) and **no Session or Event term** (a Product-level figure must not shift with whichever jornada happens to be open). **Rendered only while ≥1 such unit exists**; at zero it is absent entirely, since there is nothing to disclose and a standing line at zero would reintroduce the phantom-entry class D73 removed. **The condition is tagged units, never the barcode.**
+- **`N sin etiquetar`** — unchanged: units that are `available`, untagged, and NFC-tagging-eligible under §2's composed test.
 
-**The last two lines are independent and answer different questions**, and both are kept: "how many garments already carry a tag" is stock on hand; "how many are still waiting" is unfinished work. They often render together; either can render without the other.
+**Three figures, three different bases — and they deliberately do not sum. Stated explicitly so no reader infers an arithmetic relationship that does not hold.** This follows D78's own "Named, not modeled" resolution of the identical cross-basis problem, which fixed it by making each figure's comparison basis explicit in its own copy rather than by forcing the figures onto one basis:
+- `sin etiquetar` is a strict subset of `disponibles` — every unit it counts is `available`.
+- `ya etiquetadas` is **not** a subset of `disponibles`. It spans `available` **and** `reserved`, so it counts garments that `disponibles` does not.
+- **`disponibles = ya etiquetadas + sin etiquetar` is therefore false, and is never true by coincidence in any state worth designing around.** `ya etiquetadas` can legitimately exceed `disponibles`, and at `0 disponibles` it can be the only nonzero figure on Level 1.
 
-**On a Product with no live NFC switch, `N ya etiquetadas` carries one added clause:**
+**Each figure is honest on its own terms and none is a correction of another.** `disponibles` answers "what can I sell from stock right now"; `ya etiquetadas` answers "how many of my garments carry a tag"; `sin etiquetar` answers "how much tagging work is waiting." A merchant with ten tagged garments committed to an open Event genuinely has `0 disponibles` and genuinely has ten tagged garments with her that sell by tag — both true, neither a contradiction, and Inventario cannot and should not reconcile them, because the fact that would reconcile them (where those units went) belongs to Selling.
+
+**`N ya etiquetadas` carries up to two added clauses, on independent conditions.** Both are basis statements, not warnings, and they compose into one sentence rather than stacking as fragments:
+
+- **Clause A — "se siguen vendiendo con su tag."** Rendered when **no live NFC switch is present on Level 2** (this Product has a `barcode`, or `nfcPerProductEnabled` is off). Where the switch is live and on, this is self-evident from the switch itself and saying it is noise; where there is no switch, it is the one fact nothing else on the page implies.
+- **Clause B — "aunque no todas aparezcan como disponibles."** Rendered when **`ya etiquetadas > disponibles`** — a plain comparison of two figures already on screen, never a read into Selling and never a check of why. This is the cross-basis disclosure: it states that the tagged count is not drawn from the available count, at the one moment the two figures visibly disagree.
+
+**The four resulting forms, exhaustively:**
 ```
-8 disponibles
-5 ya etiquetadas — se siguen
+10 ya etiquetadas                                  ninguna cláusula
+
+10 ya etiquetadas — se siguen                      solo A
 vendiendo con su tag
-```
-**Condition:** ≥1 tagged unit **and** no live NFC switch on Level 2 (i.e. this Product has a `barcode`, or `nfcPerProductEnabled` is off). **Why conditional:** where the switch is live and on, "the tagged ones still sell by tag" is self-evident from the switch itself and saying it is noise. Where there is no switch, it is the opposite — the one fact nothing else on the page implies, and the only place she can learn it.
 
-**Never framed as a conflict, a warning, or an error** (binding). No icon, no colour cue, no "atención," no offer to resolve anything. A Product identified by its barcode while some garments carry tags is an ordinary steady state and both halves keep working; the copy says so in one clause and stops.
+10 ya etiquetadas — aunque no todas                solo B
+aparezcan como disponibles
+
+10 ya etiquetadas — se siguen                      A y B
+vendiendo con su tag, aunque no todas
+aparezcan como disponibles
+```
+
+**Worked example, corrected (`reviewer` finding, 2026-09-19).** The example previously given here — `8 disponibles / 10 ya etiquetadas / 3 sin etiquetar` — was arithmetically impossible under the corrected scope: three `available` untagged units means at most five of the eight available units carry tags. The honest version of that same Camisas is `8 disponibles / 5 ya etiquetadas / 3 sin etiquetar`, and it renders **no clause at all** — `5 ≤ 8`, and the switch is live.
+
+**Worked example, the case this clause exists for.** Camisas with ten tagged garments committed to an open Event and nothing left in general stock:
+```
+0 disponibles
+10 ya etiquetadas — se siguen
+vendiendo con su tag, aunque no todas
+aparezcan como disponibles
+```
+`sin etiquetar` is absent (it counts `available` units, of which there are none), and Level 1 shows `[ Registrar mercancía ]` as primary, since there is no pending tag work. **Every line on that screen is true, and the clause is what keeps them from reading as a contradiction.**
+
+**Never framed as a conflict, a warning, or an error** — unchanged, and it governs clause B as much as clause A. No icon, no colour cue, no "atención," no offer to reconcile anything. Clause B states a fact about how two numbers are counted; it does not apologise for them disagreeing, does not imply something is wrong, and does not point her anywhere to fix it. It is the same plain, factual register as `sin registrar` and `0 disponibles`, which this document already holds to for exactly this kind of honest, unalarming zero.
+
+**Copy note.** "aunque no todas aparezcan como disponibles" is true at every value the condition fires on, including `0 disponibles` (where none of the ten appear), and it names the other figure by the label she just read one line above rather than introducing a second word for it. It deliberately avoids "apartadas" — that word belongs to the not-yet-started Apartado/reservation capability (`company/backlog.md`, "Later"), and borrowing it here would pre-empt a feature's vocabulary for an unrelated state. It also deliberately does not say *why* they are not available: Inventario does not know, and inventing a reason it cannot verify would be worse than the silence.
 
 **What is correctly absent on such a Product, and deliberately not restored:** the NFC switch (required by D71) and the `N sin etiquetar` figure with `[ Etiquetar ]` (required by D73 — those untagged garments genuinely stopped being taggable, and that figure persisting was the phantom-queue defect D73 fixed). Only the tagged-garments fact persists, and it is the entire gap this line closes.
 
@@ -3361,6 +3391,8 @@ comparable hard speed requirement — the floor above is about not adding
 - **The tagged-count line renders regardless of identification method, not only on barcoded Products** — one rule, no special case. The consequence is deliberate and is the better half of this design: the line does not *appear* when a barcode is assigned, it was already there and simply **stays** while the three untrue things disappear. Nothing new pops up at the moment of change; the constancy of the true fact is itself the reassurance. Only its one added clause ("— se siguen vendiendo con su tag") is conditional on there being no live toggle to make that obvious.
 - **Three disappearances, two of them correct and deliberately not restored.** The NFC toggle going absent is required by D71. `N sin etiquetar` and `[ Etiquetar ]` going absent is required by D73 — those untagged garments genuinely stopped being taggable, and that figure persisting was the phantom-queue defect D73 fixed. Only the third fact, that already-tagged garments keep selling, persists and was previously stated nowhere. The copy explains the first two rather than reversing them.
 - **Not carried on the Catalog card.** A reassurance fact she goes looking for, not a comparison fact she scans across Products; line 2 already carries `N disponibles · N sin etiquetar`, and §3.4's whole rewrite is about the card not accumulating.
+
+- **`N ya etiquetadas`'s status scope corrected before build (`reviewer` finding, `architect` ruling, 2026-09-19).** The derivation shipped in draft as a bare `tagId != null`, which counts already-sold garments, since an `NFCTag` row survives the sale. Corrected to `tagId != null AND status IN ('available','reserved')`, as an allowlist — the same boundary D10's dual-purpose tag resolution already partitions on, and the narrowest scope Inventory can compute without reading Selling's `EventAllocation` (*architecture-principles.md* #6). **The spec's own worked example was the evidence**: `8 disponibles / 10 ya etiquetadas / 3 sin etiquetar` cannot hold, since three available untagged units cap the available tagged ones at five. **The correction's real consequence is a cross-basis one** — `ya etiquetadas` and `disponibles` now sit on different status bases, so the former can legitimately exceed the latter, and at `0 disponibles` it can be the only nonzero figure on Level 1. Resolved the way D78 resolved the identical problem: the figure with the unusual basis names its own basis in its own copy, via a second conditional clause fired by a plain comparison of two figures already on screen (`ya etiquetadas > disponibles`), never by a read into Selling and never by a check of *why* a unit is `reserved` — which Inventory cannot know, and which it would be worse to guess at than to leave unsaid.
 
 **`ux-critic` finding resolution — traceable against both rounds of its audit:**
 
