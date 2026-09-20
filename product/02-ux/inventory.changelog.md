@@ -616,3 +616,303 @@ marker; §4/§5 corrected to match.
 Full reasoning lives inline at
 `status-2026-09-13-q20-barcode-scanning-paid-tier-gate` above — this
 decision was recorded there in full, not restated here.
+
+
+### status-2026-09-19-catalog-card-to-product-page
+**Date:** 2026-09-19 (Product Owner decision, live, following a `ux-designer` audit of the Catalog card and a `ux-critic` review).
+**Applies to:** `inventory.md` §3.4 (rewritten in full), §3.14's retired toggle-ON auto-entry, and the 84px reserved-slot requirement.
+
+The Catalog card stopped being a six-zone composite control and became one tap
+target into the new §3.19 Página de producto. The card had accumulated six
+independently-tappable zones across four separate amendments — marker/photo
+(→ §3.4b), row body (→ §3.6), price (→ §3.4a), "⋯" (→ §3.4c), an NFC switch
+writing `Product.nfcTaggingEnabled` inline, and the `[ N sin etiquetar ]`
+resume indicator. **Each was individually well-reasoned against this
+document's own tap-zone-disambiguation discipline, and each was individually
+correct.** What failed was the cumulative result: six decisions per row, with
+a live write among them, on the one screen whose entire job is scanning and
+comparing. The 2026-09-19 amendment reversed that accumulation rather than
+adding a seventh zone.
+
+**Why the full prior text is kept here rather than summarized.** This
+section had been superseded four times, each amendment stacking a new zone
+enumeration on top of the last. Preserving only the final six-zone version
+would lose the reasoning chain that explains how a disciplined process
+arrived at an undisciplined result — which is the substance of what this
+pass learned, and the reason §3.4 now carries a hard cap rather than only a
+filter.
+
+**The 84px reserved-slot reasoning, retired as part of this.** The fixed
+reserved slot that held the NFC switch's column width was the correct fix for
+the price-column-drift defect the Product Owner reported while a
+variable-presence control shared line 1 with the price. With no such control
+left on line 1 at all, the drift it protected against is structurally
+impossible and the reservation has nothing to reserve. **Retired, not
+relaxed** — and replaced by a stronger structural guarantee (the one
+permitted shortcut lives on line 2 and shares no horizontal space with the
+price at all), not by a weaker convention.
+
+**The 2026-09-17 toggle-ON auto-entry, retired outright.** Turning a
+Product's NFC switch on used to open Asignar Tags automatically. That is
+reversed at the Product Owner's explicit direction: the switch now only ever
+writes the setting, and `[ Etiquetar ]` is the sole explicit action that
+starts a tagging run. The 2026-09-17 reasoning that separated *resuming a
+tagging run* from *changing a Product's NFC setting* is itself retained
+unchanged in §3.4 — it is what makes the switch's removal from the card safe
+rather than a regression.
+
+---
+
+**Full prior text of `inventory.md` §3.4, as it stood immediately before the
+2026-09-19 rewrite, reproduced unmodified:**
+
+**§3.4 Catalog view — normal** *(heading demoted to bold on archival, so this reproduced text does not create a second anchor inside the changelog; the text itself is otherwise unmodified)*
+```
+┌───────────────────────────────┐
+│  Inventario                    │
+│  ┌───────────────────────────┐ │
+│  │[B] Bolsas    $350   12 disponibles [⋯]│ │  marker → §3.4b; row → §3.6,
+│  │[A] Accesorios $180 3 disponibles [⋯]│ │  prefilled; price [ $XXX ] → §3.4a
+│  │[P] Playeras $280   0 disponibles [⋯]│ │  sold out — dimmed, tappable
+│  │[D] Delantales $90      sin registrar [⋯]│ │  [⋯] → §3.4c (código de barras),
+│  │                                        │ │  never registered — dimmed, tappable    Paid tier only
+│  │[C] Camisas   $250   8 disponibles [NFC: No][⋯]│ │  fifth zone — Paid tier +
+│  │                                                │ │  nfcPerProductEnabled + sin
+│  │                                                │ │  código de barras only → §3.4
+│  └───────────────────────────┘ │
+│      [ Registrar mercancía ]    │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- **Exact on-row position/width of the fifth zone (inline, on a second line within the row, etc.) is illustrative** — `ui-designer`'s call at Medium-Fidelity, the same disclaimer this document already gives §3.12c's link-display width in `settings.md`.
+- List shows Product + available count only — never a Lot, InventoryEntry, or
+  InventoryUnit reference. *architecture-principles.md* #4; matches
+  *global-principles.md*, "she sees 'Hoodie (4 available)'."
+- A sold-out Product (Playeras, 0 disponibles) stays visible rather than
+  disappearing: Product persists independent of stock (`domain-model.md` D2).
+- Tapping a row is a real shortcut, not decoration — see §3.6 annotation and
+  §10.
+- **Each row now carries the same per-Product marker `home.md` §3.9
+  introduces on the selling grid — the first letter of `Product.name`,
+  uppercased and trimmed — reused verbatim, not re-derived.** Same
+  derivation, same source fact (`Product.name`), same rule; Inventario
+  doesn't invent its own logic for this. Gives the Catalog list the same
+  at-a-glance differentiation the selling grid now has, on the two screens
+  where Ana actually scans a list of what she sells. **Amended 2026-09-06
+  (`product-decisions.md` Q23) — the marker renders `Product.photo` in place
+  of the initial letter whenever one is set**, identical substitution rule to
+  `home.md` §3.9's own corrected marker (cross-referenced, not re-derived
+  here either). A photo that fails to render at read time falls back
+  silently to the plain initial-letter marker — see §3.4b for the fuller
+  reasoning, cross-referenced from here rather than restated.
+- **Amended 2026-09-06 (`product-decisions.md` Q23, remediating a Major
+  `ux-critic` found in the original design) — three independent,
+  non-overlapping tap zones exist on every Catalog row, now that the
+  marker/photo icon is a real destination, not just a passive glyph.**
+  Stated explicitly, following §3.4a's own established sub-row-tap-target
+  precedent, rather than left implicit:
+  1. **Marker/photo icon (leftmost, now bracketed `[ ]` per this document's
+     own tappability convention, §3 intro)** — opens §3.4b, "Editar foto."
+  2. **Row body** — the Product's name and its disponibles/sin-registrar
+     caption, everything between the marker and the price — unchanged:
+     opens §3.6, prefilled with that Product.
+  3. **Price figure `[ $XXX ]` (rightmost)** — unchanged: opens §3.4a.
+
+  A merchant reaching for "restock," "edit photo," or "open detail" lands in
+  a correctly-sized, non-ambiguous target for each — no tap resolves between
+  two of these three destinations. This three-zone disambiguation applies
+  identically on a dimmed ("sin registrar"/"0 disponibles") row — dimming
+  signals a restocking need here, not reduced functionality; all three zones
+  stay independently tappable regardless of stock level. Applies identically
+  wherever this row shape reappears — §3.5, §3.12, §3.13, §3.17 — the same
+  "specified once, reused everywhere" rule this document's own marker/
+  dimming treatment already established; no separate rewrite needed at each.
+- **Corrected 2026-09-16/17 — a fourth tap zone added, Paid tier only
+  (`decision-log.md` D65, live production defect fix).** The "three tap
+  zones" enumeration above is superseded, not deleted:
+  1. Marker/photo icon → §3.4b, unchanged.
+  2. Row body → §3.6, unchanged.
+  3. Price figure → §3.4a, unchanged.
+  4. **Overflow indicator ("⋯", rightmost, after the price figure) — opens
+     §3.4c, "Editar código de barras," directly.** A single destination
+     today, not an intermediate list — reuses the "⋯" glyph Ana already
+     recognizes from Home/Configuración as "secondary actions live here"
+     (`home.md`/`settings.md`'s own entry-point icon), rather than inventing
+     new iconography, and follows the same "collapse a single-item overflow
+     into a direct affordance" call `home.md`'s own header amendment
+     (2026-08-14) already made for an identical one-action-behind-the-icon
+     situation.
+  A merchant reaching for "restock," "edit photo," "open detail," or "fix a
+  misread barcode" now lands in a correctly-sized, non-ambiguous target for
+  each of these four — no tap resolves between two of them. **Paid tier
+  only**: a Free-tier Catalog row renders the original three zones alone —
+  the fourth is absent entirely, never shown-then-blocked, matching §3.8's
+  own Free-tier posture for the same underlying capability (§2). Applies
+  identically wherever this row shape reappears — §3.5, §3.12, §3.13,
+  §3.17 — the same "specified once, reused everywhere" rule already
+  governing zones 1–3.
+- **Corrected 2026-09-16/17 — a fifth tap zone added (`decision-log.md` D71, `product-decisions.md` Q31).** The "four tap zones" enumeration above is superseded again, not deleted:
+  1. Marker/photo icon → §3.4b, unchanged.
+  2. Row body → §3.6, unchanged.
+  3. Price figure → §3.4a, unchanged.
+  4. Overflow indicator ("⋯") → §3.4c, unchanged.
+  5. **NFC-eligibility switch (new, rightmost when present) — writes `Product.nfcTaggingEnabled` directly, inline, no sheet.** Rendered `[ NFC: No ]` when off, `[ NFC: Sí ]` when on; a bare tap flips it.
+
+  **Precise gating condition, stated in full:** `Business.nfcPerProductEnabled = true` **and** `nfc ∈ registrationMode` (i.e., `subscriptionTier = paid`) **and** this Product has no `barcode`. The middle clause is normally redundant — the only write path that can ever set `nfcPerProductEnabled = true` (`settings.md` §2.8) is itself only offered while `nfc ∈ registrationMode` — until a subsequent Paid→Free downgrade lands, which never resets `nfcPerProductEnabled`'s own stored value (the same "two independent fields, no reset needed" pattern governing `defaultSellingMode`, `settings.md` §2.3). Checking it explicitly here, rather than assuming it's always redundant, is what keeps this zone honestly absent for a since-downgraded Business, rather than surfacing a tagging affordance for a capability that no longer structurally exists for her.
+
+  **Reasoned explicitly why this is a fifth, independent zone rather than a state folded into the "⋯" overflow sheet, against this document's own tap-zone-disambiguation discipline (§3.4's own 2026-09-06 amendment) — not defaulted to one shape without checking.** "⋯" already resolves to exactly one, unconditional destination for every Paid-tier row today (§3.4c, directly, no intermediate list) — the same "collapse a single-item overflow into a direct affordance" call `home.md`'s own header amendment already made. Folding the NFC toggle in as a second, conditionally-present option inside that same sheet would make "⋯"'s own destination ambiguous exactly on the rows where both conditions are true at once (a Paid-tier, barcode-less row on an `nfcPerProductEnabled = true` Business) — the precise "no tap resolves between two destinations" failure this document's own disambiguation discipline already argues against, and the same class of defect `ux-critic` already found and fixed twice in this document (marker/body/price ambiguity, Q23; the barcode overflow itself needing its own zone rather than merging into the price or body zone, D65). A fifth, always-independently-tappable control keeps "⋯" doing exactly one thing, unconditionally, on every row that has it at all, and gives NFC eligibility its own honestly-labeled, non-overlapping target, visible only under its own gating condition — the same shape barcode's own fourth zone already established for a capability-gated, row-level control.
+
+  **Mutual exclusivity with `Product.barcode`, enforced at the point of conflict, not merely declared (`decision-log.md` D71's own "never both" rule).** This zone is never rendered at all on a barcoded row — the gating condition (`Product.barcode` absent) already makes the two structurally impossible to show together on the same row. The one real path that could still create a conflict — assigning a barcode, via §3.4c, to a Product currently `nfcTaggingEnabled = true` — is corrected at §3.4c itself (see that section): saving a fresh barcode there also clears `nfcTaggingEnabled` in the same write, never leaving both true at once. A newly-created Product resolved via barcode scan (§3.8b–§3.8e) is never a conflict risk by construction, since it starts with `barcode` already set and `nfcTaggingEnabled` at its own default (`false`) — the toggle in §3.4 was never visible for it to begin with.
+
+  **Save-state discipline — composes two already-approved primitives, no new pattern invented, no `knowledge-mentor` consultation needed.** A bare tap on the switch immediately dims that one row (reusing `settings.md` §3.9's own "fila atenuada" mechanic — a row dims in place while its own capability-level write is inflight — composed here onto this document's own existing four-zone row architecture, rather than a sheet). Near-instant: the row simply dims and un-dims silently. Slow (>~1.5s): the row's NFC label reads "Guardando…" in place of its Sí/No state, same calm, plain-language convention as every other write in this document (§3.10). A failed write reverts the switch to its last-saved state and shows a small inline line directly beneath that one row — "No pudimos guardar. Intenta de nuevo." — with the switch itself remaining tappable as its own retry (no separate "Reintentar" button, no full-screen error — this is a small, low-stakes, instantly-retriable boolean flip, the same reasoning `settings.md` §3.10 already gives its own toggle failures, scoped here to one row instead of one screen since nothing else on the Catalog view is affected by this one row's failed save).
+
+  **Corrected 2026-09-17 (Product Owner decision, live) — toggling this switch ON now auto-enters Asignar Tags directly, Product-scoped, exactly when there's already something to tag.** The write sequence: a tap dims the row (unchanged save mechanic, above) → on a successful save, if this Product currently has ≥1 `available`, untagged unit (i.e., it's immediately NFC-tagging-eligible under the composed test the instant `nfcTaggingEnabled` lands), she's taken straight into Asignar Tags (§3.14), scoped to only this Product's own pending units — no intermediate question, the same "obvious next action" reasoning §7 already gives the post-Guardar-mercancía auto-entry (D46), now extended to this toggle. If this Product has zero `available` units at that moment (nothing yet received, or everything already tagged), the row simply un-dims in place, exactly as before — an empty tagging queue is never shown as a landing state (D46's own rule, restated here at the per-Product level). **Toggling OFF never hands off anywhere, unchanged** — it only ever stops future eligibility, the same never-untag/never-orphan invariant restated below: an already-NFC-tagged Camisas unit stays exactly as tagged and sellable via NFC; only future eligibility for not-yet-tagged units of this Product stops.
+
+- **Corrected 2026-09-17 (Product Owner decision, live) — a sixth tap zone added, the resume affordance for an interrupted per-Product tagging queue.** The "five tap zones" enumeration above is superseded, not deleted:
+  1–5. Unchanged (marker, body, price, overflow, NFC-eligibility switch).
+  6. **Pending-tag indicator (new, rendered near the fifth zone when present, or in its place when absent — exact on-row position is illustrative, same disclaimer as the fifth zone's own) — `[ N sin etiquetar ]`, tappable, opens Asignar Tags (§3.14) scoped to only this Product's own pending untagged units.**
+
+  **Rendering condition, computed fresh on every Catalog view render, per row:** this Product currently has ≥1 `available`, untagged unit that is NFC-tagging-eligible under the single-condition composed test (§2, corrected `decision-log.md` D73) — `nfcPerProductEnabled = true` and this Product's own `Product.nfcTaggingEnabled = true`. **Corrected 2026-09-17 (`decision-log.md` D73) — the composed test no longer has a second disjunct for this zone to be agnostic between.** There is one mechanism, serving one condition, independent of `defaultSellingMode` entirely — not two mechanisms collapsed into one, as the pre-D73 test briefly required.
+
+  **Reasoned explicitly why this is a sixth, independent zone rather than folded into the fifth (the NFC toggle) — the exact gap this amendment exists to close.** Turning NFC off for a Product is a real, meaningful state change (withdraws future eligibility) that must never fire as a side effect of wanting to resume tagging; if resuming required tapping the toggle, a merchant who's already ON (which is what got her into this state in the first place) would have no way to re-enter without first turning NFC off — the wrong, and only, other thing that switch does. This is the identical "no tap resolves between two destinations" failure this document's own disambiguation discipline (§3.4's own precedent, Q23/D65/D71 each checked explicitly before adding a zone) already argues against. Nor is it folded into the fourth zone ("⋯") — that resolves unconditionally to the barcode sheet today, and this document's own §3.4 reasoning for the fifth zone already rejected overloading "⋯" with a second, conditionally-present destination for the identical reason.
+
+  **Never requires touching the toggle.** Tapping this indicator never reads or writes `Product.nfcTaggingEnabled` — pure navigation, into the identical Product-scoped Asignar Tags destination the toggle's own auto-open (above) reaches. Whether she got here by flipping the toggle just now or by resuming days later makes no difference to the destination.
+
+  **No save-state discipline needed** — unlike zones 1–5, this is a read-only navigation trigger, not a write; there's nothing to dim, retry, or fail beyond ordinary navigation.
+
+  **Disappears the moment its underlying condition stops holding** — either she finishes tagging this Product's units (queue reaches 0 pending, §3.13a) or she turns the Product's own NFC toggle off, which (per the existing, unmodified D71 invariant) instantly removes any remaining untagged units from eligibility. This is not a new rule; it's the already-approved consequence of the toggle's own semantics, simply now visible through a second zone.
+
+  Applies identically wherever this row shape reappears — §3.4's own the one, ordinary Catalog view (§3.5/§3.17 retired, see their own headers) — no separate variant exists anymore to restate it for.
+- **A zero-`disponibles` row (Playeras, 0 disponibles) now renders
+  dimmed** — the same visual dimming signal `home.md` §3.9 already applies
+  to a sold-out ProductTile, reused here rather than inventing a second
+  dimming rule. **Unlike the ProductTile case, this row stays fully
+  tappable**: tapping it still routes to §3.6, prefilled with that Product,
+  exactly like every other Catalog row (§3.6's shortcut annotation, §10).
+  Dimming here is a "needs restocking" signal, not a disabled state — this
+  is precisely the row Ana is most likely to want to tap, since it's where
+  she decides what to bring or replenish next. Contrast explicitly with
+  `home.md` §3.9, where dimming *does* pair with non-tappability (there's
+  genuinely nothing to do with zero sellable units); Inventario's zero-stock
+  row has the opposite relationship to tappability, because restocking is
+  exactly Inventario's job.
+- **A zero-`disponibles` row's caption now distinguishes two different
+  zero-stock causes that can each reach it** (`onboarding.md`'s 2026-08-08
+  "Define lo que vendes" amendment, `decision-log.md` D33). Before that
+  amendment, a Product could never exist without an accompanying Lot, so
+  "0 disponibles" only ever meant "previously stocked, now sold out" and
+  needed no further distinguishing. That's no longer the only path to
+  zero: a Product created through Onboarding's "Define lo que vendes" step
+  reaches the Catalog with a name and a `defaultPrice` but zero units ever
+  received (`onboarding.md` §2.2a) — and both cases rendered identically,
+  as plain "0 disponibles," with nothing to tell them apart. The gap is
+  most likely to surface for a merchant fresh out of Onboarding who taps
+  the Inventario nav tab directly, out of curiosity, before ever tapping
+  "Registrar mercancía": §2 step 1 ("at least one Product ever
+  registered?") already sends her to this ordinary Catalog view rather
+  than to the cold-start screen's explanatory framing (§3.3), so every
+  Product she just named there would otherwise read as if already sold
+  out — precisely the "first impression that reads as intimidating or
+  broken" risk `onboarding.md` §1 names as this whole document family's
+  highest-stakes concern.
+  - **Fix (unchanged by the correction below):** a zero-`disponibles` row's
+    caption reads "sin registrar" instead of "0 disponibles" when the
+    Product has never had any Lot/InventoryEntry received against it at
+    all — a plain, factual read of whether any receiving event has ever
+    happened for this Product, derived automatically the same way this doc
+    already derives "existing vs. new Product" at the picker (§3.8) — no
+    new stored field, no schema change, purely a read-side check. A Product
+    that was previously stocked and has since sold out in full keeps the
+    existing "0 disponibles" caption, unchanged.
+  - Both captions keep every other rule of the existing dimming treatment
+    identical: dimmed, fully tappable, routes to §3.6 prefilled with that
+    Product — "sin registrar" is not a new state, a disabled affordance,
+    or an extra tap; it's the identical row and destination, only the
+    caption text differs.
+  - Copy stays in this document's own established plain, factual,
+    non-judgmental register for a zero-data state — "sin registrar" states
+    a fact, not a shortfall.
+- **Corrected 2026-09-04 (`product/02-ux/product-decisions.md` Q20) — the
+  scenario that made "sin registrar" a real, expected outcome no longer
+  exists for any freshly-onboarded merchant.** `onboarding.md`'s "Define lo
+  que vendes" step (§2.2a) now captures each Selling Group's initial
+  quantity in the same interaction and writes it through the same
+  `commitLot()`-shaped write this document's own §3.10 uses — every
+  Product Onboarding creates now arrives with at least one `available`
+  InventoryUnit already on hand, the identical floor-of-1 Cantidad
+  guarantee this document's own §3.6 already enforces for Registrar
+  Mercancía. **`inventory.md`'s own "Registrar mercancía" flow was already
+  incapable of producing a zero-stock Product on its own** — §3.6's
+  Cantidad field has never accepted 0 or a blank value ("typing `0` or
+  clearing the field reverts to 1 rather than being accepted, since '0
+  units received' isn't a real receiving event") — so, as of this
+  amendment, there is no remaining real (non-legacy) write path anywhere
+  in this product that can create a Product with zero stock. **"Sin
+  registrar" is not retired outright**: the caption, its derivation, and
+  its dimmed-but-tappable treatment all stay exactly as specified above,
+  unchanged, because `decision-log.md` D25's "never delete historical
+  data" precedent means a Business that completed Onboarding before this
+  amendment shipped — under the old, Product-only `createProducts()`
+  write — may still be carrying a named-but-never-stocked Product today,
+  and that Product's row still needs an honest, non-alarming caption. What
+  changes is the *reachability* claim this bullet made before: "sin
+  registrar" is no longer an outcome any current, real Onboarding or
+  Inventario path can produce going forward — it survives only as the
+  correct caption for pre-existing (legacy) data, the same narrowing this
+  document's own §3.3 already applies to its "no Product ever registered"
+  cold-start state ("reachable in practice now only as a defensive/legacy
+  fallback").
+- **The marker, the zero-stock dimming rule, and the "sin registrar" /
+  "0 disponibles" caption distinction above all apply identically wherever
+  this same row shape reappears** — §3.5 (pending-tag-work variant),
+  §3.12/§3.13 (post-save confirmation views), and §3.17 (deferred-tagging
+  view, = §3.5) — unaffected by this amendment; no separate correction
+  needed for each, since none of them restates the derivation logic this
+  bullet owns.
+- **Also reached, with the same one-time ambient banner prepended, via
+  Settings' "Cambiar a vender con tags" handoff when this Business has named
+  Products but zero Lots ever received — see §3.3a.**
+- **Also reached, with a one-time ambient banner of its own prepended, via
+  the same Settings handoff when this Business is already fully tagged**
+  (`inventory.md` §2 step 0's NO branch, falling through steps 1–2 to land
+  here — `decision-log.md` D46 Addendum). A different real outcome from the
+  bullet above — she's arrived from Configuración having already finished
+  all her tagging, not being asked to register anything — so it carries its
+  own wording rather than reusing §3.3a's line verbatim:
+  ```
+  Cambiaste a vender con tags. Tu mercancía ya está toda
+  etiquetada — lista para la próxima sesión.
+  ```
+  Same shown-once discipline as §3.3a's own banner and this doc's other
+  landing acknowledgments (§2.4, §3.6a) — dismissed on this landing, never
+  repeated on a later Inventario open. Closes the gap `ux-critic` found
+  (SET-INV-D46-MAJ1): without it, this was the one outcome among D46's
+  three where she'd land on a different nav tab than the one she tapped
+  from, with nothing telling her why.
+- **Each row now also shows this Product's current `Product.defaultPrice`**
+  (`decision-log.md` D33), e.g. "$350" — plain informational text within
+  the row, except the price figure itself, which carries its own tap
+  target `[ $350 ]`, distinct from the rest of the row (which stays
+  tappable into §3.6, prefilled, exactly as before — unchanged). Tapping
+  the price opens the price-edit sheet (§3.4a), the Catalog-row-level edit
+  affordance D33 calls for — reusing this document's own existing
+  dimmed-backdrop sheet shape (§3.8; also §3.9, historically — see that
+  section's own 2026-09-18 retirement note) rather than inventing a new
+  interaction. Applies identically wherever this row shape reappears
+  (§3.5, §3.12, §3.13, §3.17), the same "specified once, reused
+  everywhere" rule this doc's own marker/dimming treatment already
+  established.
+
+
+**Retired §3.14 entry-point 3, as it stood immediately before the 2026-09-19
+correction, reproduced unmodified.** The live replacement names two entry
+points — §3.4's card-level `[ Etiquetar ]` shortcut and §3.19's Level-1
+`[ Etiquetar ]` action — and drops the toggle-ON auto-open entirely. This is
+the only block that moves out of §3.14; entry points 1 and 2, the wireframes,
+the scan mechanics and every error-state cross-reference stay in place and
+were edited in situ. §7's own retired toggle-ON bullet also stays in §7,
+marked retired in place rather than relocated — §7 is a running list where a
+struck entry is itself the record, and moving it would leave an unmarked gap.
+
+  3. **Product-scoped (new, 2026-09-17)** — via §3.4's fifth zone (toggle-ON, when ≥1 eligible unit already exists) or sixth zone (the `[ N sin etiquetar ]` resume indicator) — seeded with only that one Product's own NFC-tagging-eligible untagged units, drawn from however many Lots/receiving-events they originated in. This is the *only* entry point that survives an interruption: after any "Terminar después," from any of the three entry points above, resuming is always Product-scoped going forward — there is no persisted, ordered, cross-Product queue position to restore. Each row's own sixth-zone indicator always reflects the current, live count.
