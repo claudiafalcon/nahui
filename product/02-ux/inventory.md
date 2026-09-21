@@ -482,7 +482,7 @@ Rendered on a card only while that Product currently has ≥1 `available`, untag
 **Hit-area requirements, stated as binding, not illustrative (`ux-critic` M4):**
 1. **Structural separation from the price column, first.** `[ Etiquetar ]` lives on line 2, at the card's trailing edge; the price lives on line 1. They share no horizontal space at all, so the shortcut's presence or absence on any given card **cannot** move the price column on that card or any other — the same reasoning already applied when the `[ N sin etiquetar ]` indicator was deliberately placed on its own line rather than given a seventh horizontal column. This is the primary guarantee against the Product Owner-reported alignment defect, and it is structural, not a layout convention that could drift.
 2. **A fixed slot within line 2.** Within line 2 the shortcut occupies a fixed-width, fixed-position slot at the trailing edge, reserved on every card in a given list whenever at least one card in that list could carry a shortcut — the same list-level, derived-once signal the retired NFC slot used. This keeps the caption's own available width constant card to card, so a caption never reflows depending on whether its neighbour has pending tag work.
-3. **Minimum 48×48 hit area, with a real gap.** The shortcut's tap area is at least 48 density-independent units in both dimensions and is separated from the card's own tap area by a visible, non-zero gap that is itself outside both targets. A tap landing in that gap resolves to the card, not the shortcut — the safe default, since the card is reversible navigation and the shortcut opens a scan queue.
+3. **Minimum 48×48 hit area, with a real gap.** The shortcut's tap area is at least 48 density-independent units in both dimensions and is separated from the shortcut's own tap area by a **visible** non-zero gap. **The gap belongs to the card's rect** — a tap landing in it resolves to the card, not the shortcut, which is the safe default since the card is reversible navigation and the shortcut opens a scan queue. *(Corrected 2026-09-21, found during the build: this previously required the gap to be "itself outside both targets" **and**, one sentence later, that a tap in it "resolves to the card" — both cannot hold. The resolve-to-the-card half is the operative rule and is what shipped; the "outside both" phrasing was describing the visual separation, not the hit-test.)* — the safe default, since the card is reversible navigation and the shortcut opens a scan queue.
 4. **No nested-button semantics.** The card is **not** a control containing another control. The card's tap area and the shortcut's tap area are two sibling, non-overlapping regions within one visual block; the card's region explicitly **excludes** the shortcut's rect rather than sitting beneath it. Nothing about this arrangement may be built as an interactive element nested inside another interactive element.
 
 **The shortcut rule — a filter *and* a cap (`ux-critic` m2, resolved by the Product Owner's own "maximum one shortcut on a product card").** A control may appear on a Catalog card only if it passes **all four** filters:
@@ -504,11 +504,13 @@ A candidate that is not on this list does not render, regardless of how many fil
 
 **A dimmed card stays fully tappable — restated explicitly now that the whole card is the target (`ux-critic` m3).** A `0 disponibles` or `sin registrar` card renders dimmed, the same dimming signal `home.md` §3.9 applies to a sold-out ProductTile. **Unlike that case, dimming here never pairs with non-tappability, and this is now a statement about the entire card, not about one zone within it**: tapping anywhere on a dimmed card opens §3.19 exactly like any other card. Dimming here means "needs restocking," not "disabled" — and this is precisely the card Ana is most likely to want to open, since deciding what to replenish is exactly Inventario's job. The contrast with `home.md` §3.9 (where dimming *does* pair with non-tappability, because there is genuinely nothing to do with zero sellable units) is unchanged and still deliberate. Her one previous risk — reaching for a dimmed row and hitting a zone she did not mean — is now structurally gone, since there is only one thing to hit.
 
+**Count captions render their singular form at exactly N=1 (added 2026-09-21).** `1 disponible`, `1 ya etiquetada`. **`sin etiquetar` is invariant** — it is a prepositional phrase carrying no agreement, so `1 sin etiquetar` is already correct and must not be "fixed." **Zero keeps the plural** (`0 disponibles`), as Spanish requires. One derivation, one rule, applied identically wherever these captions appear: this card's own caption and every screen that renders this card (§3.12, §3.13, §3.13a), §3.19's Level 1, and the passive recognition displays at §3.4e/§3.8c/§3.19b. Stated here once and cited from §3.19 rather than written twice, so the card and the page can never disagree about one figure.
+
 **Caption derivation — unchanged, restated for completeness, not re-decided.** A zero-`disponibles` card reads `sin registrar` when no Lot/InventoryEntry has ever been received against that Product, and `0 disponibles` when it was previously stocked and has since sold out. A plain, factual read-side check, no stored field, no schema change; "sin registrar" states a fact, not a shortfall. **Reachable only as legacy data** since `onboarding.md` §2.2a began writing real stock in the same interaction (`product-decisions.md` Q20) — kept as the correct, non-alarming caption for a Business onboarded before that shipped, per D25.
 
 **The tagged-unit count is deliberately not carried here.** §3.19's Level 1 reports `N ya etiquetadas` for a Product with tagged units on hand; the card does not. That is a reassurance fact she goes looking for, not a comparison fact she scans across Products, and line 2 already carries `N disponibles · N sin etiquetar`. This section's whole rewrite is about the card not accumulating.
 
-**Ambient confirmation lines still render here, unchanged**, above the card list: §3.12's "Mercancía registrada ✓", §3.13's "Mercancía lista para vender ✓", §3.13a's "Camisas ya está etiquetada ✓", §3.4c's "Código de barras actualizado ✓", §3.19c's "Código de barras quitado ✓" — each still ambient, fading, no tap to dismiss. **What changes is only where each one lands**, now that "return to origin" governs (§3.6, §3.14, §4): a confirmation renders on whichever screen the operation actually returns to, §3.4 or §3.19, with identical copy and identical shape on both. §3.4c's own confirmation additionally has a two-shape rule of its own — see that section.
+**Ambient confirmation lines still render here, unchanged**, above the card list: §3.12's "Mercancía registrada ✓", §3.13's "Mercancía lista para vender ✓", §3.13a's "Terminaste de etiquetar Camisas ✓", §3.4c's "Código de barras actualizado ✓", §3.19c's "Código de barras quitado ✓" — each still ambient, fading, no tap to dismiss. **What changes is only where each one lands**, now that "return to origin" governs (§3.6, §3.14, §4): a confirmation renders on whichever screen the operation actually returns to, §3.4 or §3.19, with identical copy and identical shape on both. §3.4c's own confirmation additionally has a two-shape rule of its own — see that section.
 
 **§3.3a's two one-time Settings-handoff banners still render here**, prepended above the list, unchanged and still shown-once — both historical (dormant since D72, doubly dead since D73, §2's own step-0 note).
 
@@ -717,11 +719,27 @@ A candidate that is not on this list does not render, regardless of how many fil
 
   ```
   Código de barras actualizado ✓
-  Camisas ya no se etiqueta — ahora la
-  encuentras escaneando su código.
+  Ya no vas a etiquetar este producto —
+  ahora lo encuentras escaneando su
+  código.
   Las 5 prendas que ya tienen tag se
   siguen vendiendo igual.
   ```
+
+  **N=1 form of the third sentence** (the second sentence is invariant):
+
+  ```
+  Código de barras actualizado ✓
+  Ya no vas a etiquetar este producto —
+  ahora lo encuentras escaneando su
+  código.
+  La prenda que ya tiene tag se sigue
+  vendiendo igual.
+  ```
+
+  **Sentence 2 is anchored to "este producto," not to the Product's name, deliberately (corrected 2026-09-21).** The earlier draft read "Camisas ya no se etiqueta — ahora **la** encuentras," which breaks on **both gender and number** for a merchant-supplied name: "Delantales ya no se etiqueta — ahora la encuentras" is wrong twice, and merchants name Products plurally most of the time (every example in this document does). Agreement is unknowable at authoring time, so the sentence is given an invariant noun to hang on rather than a grammatical workaround — `producto` is masculine singular always, and is already-approved merchant vocabulary here (§3.19b). **Dropping the name costs nothing**, which is what makes this a fix rather than a compromise: this banner form only ever renders on §3.19, whose on-screen heading *is* the Product's name, in a larger size, one line above. Repeating it was always redundant.
+
+  **The N=1 third sentence carries no numeral at all** — `La prenda que ya tiene tag`, never "La 1 prenda," which is not Spanish. **It is a distinct string, not a count-plus-noun template**, so it must be registered as a full-string pair rather than a noun pair if a centralized pluralization helper renders it. An N-invariant phrasing was considered and rejected: the count *is* the reassurance (§3.4c's own "the one fact that persists through the change"), and at N=1 it is recoverable from "La prenda" anyway. N=0 needs no form — the sentence's render condition is ≥1 tagged unit.
 
   **Two independently-conditional clauses:**
   - **Second sentence — only when this save actually cleared `nfcTaggingEnabled = true`.** It names what stopped, because what she will notice is that the NFC row, the `N sin etiquetar` figure and `[ Etiquetar ]` all vanished at once. **Those three disappearances are correct and are not restored** — the switch's absence is required by D71, and the untagged units genuinely stopped being taggable, which is the phantom-queue defect D73 fixed. The sentence explains them; it does not apologise for them or offer to undo them.
@@ -1927,7 +1945,7 @@ gated the same way `decision-log.md` D27 already gates NFC).
 ```
 ┌───────────────────────────────┐
 │  Inventario                    │
-│  Camisas ya está etiquetada ✓    │  ambient, fades — not a separate screen
+│  Terminaste de etiquetar Camisas ✓    │  ambient, fades — not a separate screen
 │  ┌───────────────────────────────────────┐ │  requiring a tap to dismiss
 │  │  B   Bolsas                    $350   │ │  cada tarjeta completa → §3.19
 │  │      12 disponibles                    │ │
@@ -1941,6 +1959,7 @@ gated the same way `decision-log.md` D27 already gates NFC).
 └───────────────────────────────┘
 ```
 - **Reached whenever a Product-scoped Asignar Tags queue (§3.14) finishes with 0 units remaining.** **Entry points corrected 2026-09-19:** that queue is now started from §3.4's card-level `[ Etiquetar ]` shortcut or §3.19's Level-1 `[ Etiquetar ]` action — **not** from the retired fifth-zone toggle-ON auto-open (reversed outright, Product Owner decision) or the retired sixth-zone resume indicator (folded into the card shortcut). A distinct case from §3.13, which is specifically the post-Guardar-mercancía, Lot-scoped completion — this state carries no "just registered" framing, since a Product-scoped queue may resolve units received long before today. **It renders on the queue's origin** (§3.19 or §3.4), per §3.14's own corrected rule.
+- **Copy corrected 2026-09-21 — the Product name moves into object position.** This previously read `Camisas ya está etiquetada ✓`, which breaks on **both gender and number** for a merchant-supplied name (`Delantales ya está etiquetada`) — the same defect corrected in §3.4c's banner the same day, and pre-existing here rather than introduced by that amendment. `Terminaste de etiquetar Camisas ✓` carries zero agreement while keeping the name, which this section's own next bullet requires. Second person, plainly stated, never inflated (`brand/tone-of-voice.md`).
 - Names the specific Product, not a generic "lista para vender" — she just finished exactly one Product's stack, and the copy should say which one, matching this document's own precedent for naming specifics rather than a generic line whenever the underlying fact is already on hand (§3.13's own mixed-Lot variant, same reasoning).
 - Same ambient, fading, no-tap-to-dismiss shape as §3.12/§3.13 — no new confirmation pattern invented.
 - **Corrected 2026-09-19 (return to origin).** This ambient line is a property of the **destination**, not of Catalog view specifically: it renders on whichever screen the operation returns to — §3.4 or §3.19 — with identical copy and the identical ambient, fading, no-tap-to-dismiss shape on both. §3.13a's Product-named line is the most common case to land on §3.19, since a Product-scoped queue is usually started from that Product's own page.
@@ -1973,6 +1992,10 @@ gated the same way `decision-log.md` D27 already gates NFC).
   the physical mental model of working through one stack of garments at a
   time.
 - Each physical unit gets its own tag (`decision-log.md` D4) — this queue is
+  **Singular at exactly one remaining: `Falta 1 de 10`, not `Faltan 1 de 10`**
+  (added 2026-09-21 — same count-caption class as §3.4's own binding rule,
+  different surface). The verb agrees with the remaining count, never with
+  the total.
   necessarily per-unit, never per-Product-type; "Faltan 7 de 10" is exactly
   that granularity.
 - **Three entry points now reach this identical queue mechanism, differing only in what's seeded and the summary line shown — the scan mechanics, error states (§3.15/§3.16), and "Terminar después" behavior below are unchanged across all three:**
@@ -2158,6 +2181,7 @@ The figures, plain text (§3 intro's "plain text = passive/informational"), in t
 - **`N disponibles` / `0 disponibles` / `sin registrar`** — the identical derivation §3.4 owns, read here, never re-derived. Counts units with status `available`.
 - **`N ya etiquetadas`** — the count of this Product's units that carry an attached `NFCTag` **and** are still on the sale-time side of the unit lifecycle: `tagId != null` **AND** `status IN ('available', 'reserved')`. **Stated as an allowlist, never as a denylist** (`architect` ruling, 2026-09-19) — an `NFCTag` row survives the sale (`finalize_sale` sets `status = 'sold'` and never deletes the tag), so an unscoped `tagId != null` would count garments she already sold. The status set is not chosen for this line: D10's dual-purpose tag resolution already partitions on exactly this boundary (`available`/`reserved` is the sale-time side, `sold` is the claim side), and the live `add_item_to_sale_by_tag` predicate agrees. **No narrower scope is computable here, by design** — the reason a unit is `reserved` lives in Selling's `EventAllocation`, and reading it would invert the dependency direction *architecture-principles.md* #6 fixes. **Sourced from live unit state, never from `Product.nfcTaggingEnabled`** — the flag records a *future-eligibility choice* and says nothing about whether a given garment sells by tag; D71 draws that line in its own entry ("never itself asserts unit-level sellability, which stays derived purely from `InventoryUnit.tagId`"). A statement sourced from `tagId` is not the control, offers no opt-in and asserts no eligibility — compatible with D71, which governs the control, not the topic. **No eligibility predicate is added** (this line exists precisely for a Product that is no longer eligible) and **no Session or Event term** (a Product-level figure must not shift with whichever jornada happens to be open). **Rendered only while ≥1 such unit exists**; at zero it is absent entirely, since there is nothing to disclose and a standing line at zero would reintroduce the phantom-entry class D73 removed. **The condition is tagged units, never the barcode.**
 - **`N sin etiquetar`** — unchanged: units that are `available`, untagged, and NFC-tagging-eligible under §2's composed test.
+- **Singular at N=1**, per §3.4's own binding caption rule (stated there once, cited here, never re-derived): `1 disponible`, `1 ya etiquetada`; `sin etiquetar` is invariant and reads `1 sin etiquetar` unchanged; zero keeps the plural.
 
 **Three figures, three different bases — and they deliberately do not sum. Stated explicitly so no reader infers an arithmetic relationship that does not hold.** This follows D78's own "Named, not modeled" resolution of the identical cross-basis problem, which fixed it by making each figure's comparison basis explicit in its own copy rather than by forcing the figures onto one basis:
 - `sin etiquetar` is a strict subset of `disponibles` — every unit it counts is `available`.
@@ -2184,6 +2208,21 @@ aparezcan como disponibles
 10 ya etiquetadas — se siguen                      A y B
 vendiendo con su tag, aunque no todas
 aparezcan como disponibles
+```
+
+**The same four forms at N=1**, where both clauses take their singular. Clause B at N=1 is not merely grammatically singular but *more* precise: N=1 with clause B firing necessarily means `0 disponibles`, and "aunque no aparezca como disponible" says exactly that, still naming the figure by the label she read one line above and still avoiding "apartadas."
+```
+1 ya etiquetada                                    ninguna cláusula
+
+1 ya etiquetada — se sigue                         solo A
+vendiendo con su tag
+
+1 ya etiquetada — aunque no                        solo B
+aparezca como disponible
+
+1 ya etiquetada — se sigue                         A y B
+vendiendo con su tag, aunque no
+aparezca como disponible
 ```
 
 **Worked example, corrected (`reviewer` finding, 2026-09-19).** The example previously given here — `8 disponibles / 10 ya etiquetadas / 3 sin etiquetar` — was arithmetically impossible under the corrected scope: three `available` untagged units means at most five of the eight available units carry tags. The honest version of that same Camisas is `8 disponibles / 5 ya etiquetadas / 3 sin etiquetar`, and it renders **no clause at all** — `5 ≤ 8`, and the switch is live.
@@ -2517,7 +2556,7 @@ A prompt would also be asked at a moment she may not be deciding anything: clear
 
 **What she gets instead, and it is not nothing:** the ambient confirmation names the newly-available choice once, as a fact, without asking anything —
 
-> `Código de barras quitado ✓ — ahora puedes venderlo con tag, si quieres.`
+> `Código de barras quitado ✓ — ahora puedes vender este producto con tag, si quieres.`
 
 **The second clause renders only when the NFC row will actually be a live switch after the clear** (`nfcPerProductEnabled === true` and `nfc ∈ registrationMode`). For every other Business the line is plain `Código de barras quitado ✓` — mentioning a capability she does not have would be both untrue and the upsell posture §2 already rules out. Same ambient, fading, no-tap-to-dismiss shape as §3.4c's own "Código de barras actualizado ✓," and for the identical reason: nothing else visible confirms the write landed.
 
