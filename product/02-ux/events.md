@@ -1151,9 +1151,9 @@ registered no Products at all yet in Inventario:
 │  queda disponible para tus otros    │
 │  eventos.                        │
 │  [ Escanear código de barras ]     │  Paid tier only — opens §3.21a
-│  [ Leer con NFC ]                  │  NEW — §3.22a; only when ≥1 Product
-│                                │  on this screen has
-│                                │  nfcTaggingEnabled = true (D71)
+│  [ Leer con NFC ]                  │  §3.22a; solo si nfcPerProductEnabled
+│                                │  y ≥1 unidad con tag y disponible
+│                                │  (D81 — nunca desde el flag del Producto)
 │  ┌───────────────────────────┐ │
 │  │ Bolsas — 7 para este evento  ▾│ │  collapsed — tap to expand
 │  ├───────────────────────────┤ │
@@ -1215,7 +1215,7 @@ registered no Products at all yet in Inventario:
 - **Two entry points, one screen — a deliberate, real divergence from "Ajustar precios."** "Llevar mercancía" (§3.11, `scheduled`) and "Ver mercancía de este evento" (§3.14/§3.15, `active`) both land here, unchanged between them. This is a shared state per `product/02-ux/CLAUDE.md` §4's own rule (reference by canonical ID at every entry point, not restated). **Contrast with "Ajustar precios" (§3.19/§3.20), which is strictly `scheduled`-only and disappears entirely once an Event goes `active`:** Price Override is finalized-then-frozen, a one-time planning decision with no reason to revisit once selling starts. Allocation is the opposite — replenishing a Product that's running low, reallocating to a simultaneously-running Event, are things that specifically *only* make sense once selling is underway (`product-decisions.md` Q24/Q25's own lifecycle: "concurrent Sales consume against it → replenish() any number of times → reallocate(toEventId)"). Keeping this screen reachable throughout the Event's whole open life, unlike Price Override, is the correct application of the same underlying rule (D33's "finalized before activation, fixed for the duration"), not an exception to it — the two capabilities simply have opposite lifecycles by their own nature.
 - **One row per Catalog Product she's ever registered** — same source, same reasoning as §3.19 ("what she'd charge/bring... independent of that day's stock" for pricing; here, independent of whether she's decided to bring it at all).
 - **"Disponible en general" = Business-wide total minus whatever's allocated to every *other* open `EventAllocation`** — deliberately *includes* what's already allocated to *this* Event, since that stock is already hers to freely reassign within this screen, not "elsewhere." This is what makes the manual stepper's ceiling exactly equal to the displayed "Disponible en general" figure — no separate, unexplained cap.
-- **The "sin tag · con tag" split only renders when this Business has NFC capability *and* this specific Product has ≥1 available tagged unit** — otherwise a single plain "Disponible en general: N" figure, identical to `inventory.md` §3.4's own Catalog-row language, and the row shows only the manual stepper (no scan affordance at all). Reuses the exact "tienen tag" plain-language register `home.md` §3.6a already established for surfacing NFC state to Ana — never "NFCTag," "reserved," or "allocatedUnitIds."
+- **The "sin tag · con tag" split only renders when `Business.nfcPerProductEnabled = true` *and* this specific Product has ≥1 unit with `tagId != null AND status = 'available'`** *(capability clause restated 2026-09-20, `decision-log.md` D81 — "this Business has NFC capability" was pre-D79 wording from when `Session.operatingMode`/NFC Readiness still existed; the live Business-level gate is `nfcPerProductEnabled`. **The tagged-unit half was already correct and is deliberately unchanged** — it is the same live-unit-state derivation D81 applies to §3.22a's list-level gate, and this row-level rule already had it right. Note this row-level path is specified here but **not yet built**; `MercanciaParaEsteEvento.tsx` records §3.22 and this split as out of scope, which is why §3.22a's gate was the only one in the shipped prototype.)* — otherwise a single plain "Disponible en general: N" figure, identical to `inventory.md` §3.4's own Catalog-row language, and the row shows only the manual stepper (no scan affordance at all). Reuses the exact "tienen tag" plain-language register `home.md` §3.6a already established for surfacing NFC state to Ana — never "NFCTag," "reserved," or "allocatedUnitIds."
 - **Manual and NFC-scan input compose on the same row rather than forcing a choice** (`product-decisions.md` Q24/Q25: "a Product can have both simultaneously... the same mixed state NFC Readiness already models elsewhere"). This reuses the same disambiguation principle `inventory.md` §3.4's Catalog row already established for its own three independent, non-overlapping tap zones (marker/body/price) — two independently-operable affordances on one row here, each targeting its own distinct pool (manual → untagged units, scan → tagged units), never resolving ambiguously between them.
 - **Manual quantity stepper — reuses `inventory.md` §3.6's Cantidad stepper shape (`[−]`/`[+]`/typed entry via `teclado numérico`) with one deliberate difference: floor is 0, not 1.** Cantidad's floor-of-1 exists because "0 units received" isn't a real receiving event; here, "0 units allocated to this Event" *is* a real, valid decision (she may simply choose not to bring a Product at all) — the two fields share a shape, not an identical business meaning. Ceiling = the row's own "Disponible en general" figure; `[+]` goes inert at the ceiling (symmetric to Cantidad's own inert-at-floor `[−]` behavior), and typing past it clamps to the ceiling with a one-line inline message ("Solo tienes N disponibles.") rather than a rejected/blocked keystroke.
 - **A successful scan is a live, immediate write — reserves that specific unit to this Event's allocation the instant it's read, exactly like `inventory.md` §3.14's Asignar Tags convention ("no per-unit confirmation tap").** It is *not* staged behind "Guardar cambios." "Para este evento" and the "con tag" figure update immediately on each successful scan; "Disponible en general" decrements live in step, keeping the manual stepper's ceiling honest without her computing anything.
@@ -1231,9 +1231,28 @@ registered no Products at all yet in Inventario:
   `product-decisions.md` Q31) — positioned identically to the barcode
   shortcut immediately above: above the row list, in the same slot on
   both the default and expanded states, never per-row.** Present
-  unconditionally whenever ≥1 Product on this Business's Catalog has
-  `Product.nfcTaggingEnabled = true` — **absent entirely, not
+  whenever `Business.nfcPerProductEnabled = true` **and** ≥1
+  `InventoryUnit` on this Business's Catalog currently has
+  `tagId != null AND status = 'available'` — **absent entirely, not
   shown-then-disabled, for a Business/Event with nothing NFC-tagged**,
+  **[Gate corrected 2026-09-20, `decision-log.md` D81.** This previously
+  read "≥1 Product on this Business's Catalog has
+  `Product.nfcTaggingEnabled = true`," which stranded real stock: the
+  flag goes false by two ordinary routes — a barcode saved (D71's
+  clear-on-save) or the merchant simply switching it off — while
+  already-tagged units stay tagged and stay sellable (D71, D79). Because
+  the old gate was a Catalog-wide existential, the last flag going false
+  made **every** tagged unit of **every** Product uncommittable to any
+  allocation, business-wide. `Product.nfcTaggingEnabled` is now read
+  nowhere in this document: it gates Inventory's Asignar Tags eligibility
+  only, and never asserts unit-level anything (D71's own charter). The
+  commit-side allowlist is `status = 'available'` only, deliberately
+  narrower than D80's `('available','reserved')` — a `reserved` unit is
+  mid-Sale or already held by an allocation, so including it would render
+  an overlay whose every scan could only report "esta prenda ya está en
+  otro evento." **The write paths were never wrong** and are unchanged:
+  both scan RPCs and `_fifo_commit_to_allocation` are already pure
+  unit-state.**]**
   matching this screen's own existing gating posture for the barcode row
   above. Opens §3.22a, a new mixed-pile scan surface — **a materially
   different write behavior from the barcode shortcut immediately above**:
@@ -1487,7 +1506,7 @@ Product-agnostic, since nothing resolved yet):
   guarantee ("every scanned-so-far unit stays committed... a failing tag
   never traps her or discards prior progress"), unchanged.
 - **New backend requirement, named explicitly for the build dispatch that
-  follows this spec (not designed or built here):** today's
+  follows this spec — [SATISFIED 2026-09-20: `scan_unit_into_event_allocation_any_product` is built and shipped (`20260917010000_event_allocation_mixed_scan.sql`). Retained as the record of what was required and why.]** today's
   `scan_unit_into_event_allocation` RPC requires and validates a
   pre-known `productId`, returning `tag_wrong_product` when the scanned
   unit belongs to a different Product than the one passed in — a
@@ -2009,9 +2028,11 @@ floor above is about not adding unnecessary steps, the same posture
   live on every successful scan — never a figure Ana reconciles by hand
   across Events.
 - Whether a Product row shows the "sin tag · con tag" split at all (§3.21)
-  is automatic, gated on Business NFC capability and that Product having at
-  least one available tagged unit — never asked, never shown for a
-  Buttons-only Business.
+  is automatic, gated on `Business.nfcPerProductEnabled` and that Product
+  having at least one unit with `tagId != null AND status = 'available'` —
+  never asked, never shown for a Business without NFC. *(Restated
+  2026-09-20, D81; derived from live unit state, never from
+  `Product.nfcTaggingEnabled`.)*
 - Which of `initial_allocation` / `replenish` / `adjustment` applies to a
   given save (§3.23) is inferred entirely from current state — Ana only
   ever sees a number change, never a movement-type choice.
@@ -2115,6 +2136,10 @@ active-status toggling) are non-blocking scope deferrals, not open questions
   pass. §3.22 itself is left completely unchanged, both entry points
   (a row's own button and the new list-level one) stay live side by side
   until this is actually decided.
+
+- **[Resolved 2026-09-20 — `architect` ruling, `decision-log.md` D81. Product Owner-directed: "Inventory/Event allocation correctness is an invariant, not backlog UX polish."]** The list-level "Leer con NFC" entry point (§3.22a) gated on `Product.nfcTaggingEnabled`, as a Catalog-wide existential, while both scan RPCs and `_fifo_commit_to_allocation` were already pure unit-state. Because the flag goes false by two ordinary routes — a barcode saved (D71's clear-on-save) or the merchant switching it off — while already-tagged units stay tagged and stay sellable (D71, D79), the last flag going false made **every** tagged unit of **every** Product uncommittable to any allocation, business-wide. **Corrected:** the gate is re-derived from `Business.nfcPerProductEnabled` + ≥1 unit with `tagId != null AND status = 'available'`; `Product.nfcTaggingEnabled` is read nowhere in this document. D80's sourcing rule was widened from *shown* to *shown or gated on* to cover it (an affordance whose presence is itself the disclosure), and the commit-side allowlist deliberately narrows to `available` only. **No RPC changed and no migration was required** — the write paths were never wrong. Explicitly ruled out: relaxing `_fifo_commit_to_allocation`'s untagged predicate, which would break the manual/scan pool partition and corrupt D59's reconciliation evidence split (a tagged unit committed as `fifo_assignment` would be reconciled by quantity, for a garment the system can identify exactly).
+
+- **Open, found during the D81 pass, deliberately not bundled — the manual stepper's ceiling is not honest on a Product with residual tagged units.** `disponibleEnGeneral()` counts **all** available units, tagged and untagged, and §3.21 makes it the manual stepper's ceiling — but the manual commit pool is untagged-only by server-side predicate, and `_fifo_commit_to_allocation` is deliberately partial-fulfillment tolerant ("fewer candidates than requested is not an error... never raises"). So she can type 8 against an honest-looking ceiling of 8, tap Guardar, receive a success confirmation, and have 5 units committed. §3.21's own "sin tag · con tag" split exists precisely to keep that ceiling honest, and it is **unbuilt**. **More merchant-visible than the defect D81 fixed** — a wrong number under a success message, rather than a missing button. Fixing the gate does not close it. Routed as its own entry and its own fix, per the Product Owner's standing no-bundling instruction.
 
 ## 9. Principle justification
 
