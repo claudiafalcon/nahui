@@ -1821,6 +1821,9 @@ variant below for the other reachable state, zero Claims recorded yet,
 │  (pantalla anterior atenuada)      │        │  (pantalla anterior atenuada)  │
 │                                │        │      Guardando… (sin atenuar)  │
 └───────────────────────────────┘        └───────────────────────────────┘
+   near-instant: silent, brief dim            slow (>~1.5s): one plain line,
+                                              rendered over the dim, never
+                                              within it
 
 ┌───────────────────────────────┐
 │  No pudimos guardar tu           │
