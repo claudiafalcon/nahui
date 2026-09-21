@@ -25,6 +25,13 @@ type ProductRef =
    * Product-creation write at "Guardar mercancía." */
   | { kind: 'new'; name: string; price: number; photo?: string; barcode?: string };
 
+/**
+ * §3.6's two pre-expanded entry modes (new 2026-09-19) — see the
+ * `entryMode` prop's own doc comment below for what each one lands on and
+ * why. `undefined` is every pre-existing entry point, unchanged.
+ */
+export type EntryMode = 'receipt' | 'correction';
+
 interface Line {
   key: string; // stable local identity, mostly vestigial now that there is only ever one draft on screen
   product: ProductRef;
@@ -96,7 +103,7 @@ interface Line {
  * this codebase's own existing test for exactly that distinction, reused
  * here rather than reinvented.
  */
-function buildExistingLine(state: AppState, product: Product): Line {
+function buildExistingLine(state: AppState, product: Product, entryMode?: EntryMode): Line {
   const registered = everReceived(state, product.id);
   const ceiling = availableCount(state, product.id);
   return {
@@ -106,8 +113,19 @@ function buildExistingLine(state: AppState, product: Product): Line {
     quantity: 1,
     touched: false,
     currentQuantity: registered ? { ceiling, value: ceiling } : undefined,
-    correctionOpen: false,
-    receiptOpen: !registered,
+    // §3.19's two pre-expanded entry modes (2026-09-19). Each lands on a
+    // state this screen **already defines**, reached without the tap that
+    // normally reveals it, because she declared that intent by tapping a
+    // labelled action one screen earlier (*global-principles.md*, "never ask
+    // twice" and "the fastest interaction is the one that never happens").
+    // **Nothing is ever pre-*staged* by an entry point** — a pre-expanded
+    // reveal shows a box at its already-defined default; it does not put a
+    // value into the draft she did not ask for. For a "sin registrar" legacy
+    // Product (`registered === false`), neither mode applies at all: the
+    // always-visible receiving-stepper variant governs, exactly as already
+    // specified, and `correctionOpen` is never read for such a draft.
+    correctionOpen: registered && entryMode === 'correction',
+    receiptOpen: !registered || entryMode === 'receipt',
   };
 }
 
@@ -171,10 +189,50 @@ function effectiveReceiptQty(line: Line): number {
  */
 export function RegisterMerchandise({
   initialProductId,
+  entryMode,
+  backLabel = 'Inventario',
   onSaved,
   onBack,
 }: {
   initialProductId?: string;
+  /**
+   * §3.6's four live entry points, amended 2026-09-19 — **two of them now
+   * arrive pre-expanded**, each landing on a different, already-defined state
+   * of this screen:
+   * - `undefined` — Catalog view's own "Registrar mercancía" CTA (blank,
+   *   Producto unresolved) or Home's cold-start CTA. Unchanged. Also the
+   *   shape a Producto resolved *inside* this screen (§3.8's picker) always
+   *   takes: she lands on the read-only at-rest state, nothing revealed.
+   * - `'receipt'` — §3.19's `[ Registrar mercancía ]`. Producto arrives
+   *   already resolved **with the receipt stepper ("Cantidad recibida")
+   *   already revealed**: default 1, carrying INV-Q1's "· revisa antes de
+   *   guardar" marker, floor 1, "Guardar mercancía" visible and enabled.
+   *   Exactly the state this screen already defines after a "+ Recibir lote"
+   *   tap, reached without that tap. **This is what keeps a one-unit restock
+   *   at three taps despite the Product Page adding a hop** (§6) — deliberate,
+   *   not a coincidence: it is why the pre-expansion exists.
+   * - `'correction'` — §3.19's `[ Corregir cantidad ]`. Producto arrives
+   *   already resolved **with correction mode already revealed**: stepper
+   *   defaulting to the loaded count, delta 0, and — per this screen's own
+   *   existing rule — **no "Guardar mercancía" rendered**, since an untouched
+   *   correction is a genuine no-op. Keeps a count correction at its current
+   *   step count rather than regressing it by the page's +1.
+   *
+   * Only ever meaningful alongside `initialProductId`; ignored otherwise,
+   * since there is no resolved Producto for a box to belong to.
+   */
+  entryMode?: EntryMode;
+  /**
+   * The back arrow names the screen it actually returns to — this screen's
+   * own exits all follow "return to origin" now (§3.6, 2026-09-19), so a
+   * fixed "← Inventario" would be dishonest when the origin is a Product
+   * Page. §3.6's wireframes predate that amendment and were not restated for
+   * this label; the convention applied here is this document family's own
+   * (§3.19's "← Inventario", §3.19a/§3.19c's "← Camisas"): **the back label
+   * names the destination.** Defaults to "Inventario," so every pre-existing
+   * entry point renders byte-identically to before.
+   */
+  backLabel?: string;
   /** AT-M1 fix (`AssignTags.tsx`) — alongside the saved productId, hands
    * back exactly what this specific `commitLot` call wrote (0 or 1 entries
    * now that a draft is always exactly one Product), so a caller
@@ -190,7 +248,9 @@ export function RegisterMerchandise({
   // entry points; `buildExistingLine` loads Cantidad disponible actual's
   // snapshot from this Product's live `disponibles` in the same motion, but
   // lands her on the read-only at-rest state, never pre-staged.
-  const [draft, setDraft] = useState<Line | null>(initialProduct ? buildExistingLine(state, initialProduct) : null);
+  const [draft, setDraft] = useState<Line | null>(
+    initialProduct ? buildExistingLine(state, initialProduct, entryMode) : null,
+  );
   const [pickerOpen, setPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -356,7 +416,7 @@ export function RegisterMerchandise({
     <>
       <div className={styles.topbar}>
         <button className={styles.back} onClick={onBack}>
-          ← Inventario
+          ← {backLabel}
         </button>
       </div>
       <h1 className={styles.heading}>Registro de mercancía</h1>

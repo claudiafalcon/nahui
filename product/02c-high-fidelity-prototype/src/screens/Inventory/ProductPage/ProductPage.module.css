@@ -1,0 +1,173 @@
+/*
+  ProductPage — `inventory.md` §3.19 "Página de producto."
+
+  Composition note. This is a first-class screen, peer to Catalog view and
+  Registro de mercancía — not a sheet — so it reuses those two screens' own
+  chrome (`.topbar`/`.back`, a scrolling body) rather than Sheet's
+  bottom-drawer panel. Nothing new is invented visually: the header marker is
+  the same `TagStub` at a larger scale, the price is the same `.moneyTag`
+  primitive, the level break is the shared `.stitchTop` rule, and every
+  Level-2 row is the shared `DetailRow`.
+
+  Hierarchy, top to bottom: one large product name (the page's only heading),
+  a quiet block of live figures, a stack of actions, then a visually quieter
+  stack of detail rows. The page is deliberately front-loaded — everything
+  above the stitched divider answers "what do I have and what do I do about
+  it," which is the question she opened the card to ask; everything below it
+  is maintenance she reaches for rarely.
+*/
+.topbar {
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+
+.back {
+  border: none;
+  background: none;
+  padding: 0;
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-coral-aa);
+  cursor: pointer;
+}
+
+/* §3.12/§3.13/§3.13a's ambient line, and this page's own local ones. Same
+   copy, same shape, same fading lifecycle as `CatalogView.module.css`'s —
+   these confirmations are a property of the destination, so the two screens
+   must render them identically. */
+.confirmation {
+  margin: 0 var(--space-4) var(--space-2);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.confirmationDetail {
+  margin: calc(-1 * var(--space-1)) var(--space-4) var(--space-2);
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+/* §3.4c's one-time acknowledgment banner (the second confirmation shape) —
+   the §3.3a pattern, reused: non-fading, no tap to dismiss, no tap required
+   to proceed, gone the moment she leaves the page. Plain factual register,
+   never a warning: no red, no icon, no "atención." */
+.ackBanner {
+  margin: 0 var(--space-4) var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-blush);
+}
+
+.ackHead {
+  margin: 0 0 4px;
+  font: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--color-obsidian);
+}
+
+.ackBody {
+  margin: 0 0 4px;
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.ackBody:last-child {
+  margin-bottom: 0;
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) 0 var(--space-4);
+}
+
+.headerMarker {
+  flex-shrink: 0;
+  display: flex;
+}
+
+.headerText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+/* The page's own heading is the Product's name. Inter, not Fredoka — this is
+   neither brand identity nor money-that-matters-right-now (DESIGN-SYSTEM §5's
+   restraint rule), so it earns its weight from size and boldness instead. */
+.heading {
+  margin: 0;
+  font: var(--text-display-lg);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  color: var(--color-obsidian);
+  overflow-wrap: anywhere;
+}
+
+/* A price that belongs to one specific Product — the `.moneyTag` rule
+   (DESIGN-SYSTEM §3), same as the card's, just sitting under the name rather
+   than at a row's trailing edge. */
+.headerPrice {
+  margin: 0;
+  padding: 8px 14px;
+  font: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--color-coral-aa);
+  transform: rotate(-2deg);
+}
+
+/* Level 1's figures — plain text, no trailing slot, no target. Quiet enough
+   that they never read as rows, close enough together that they read as one
+   block of live status rather than three unrelated lines. */
+.figures {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: var(--space-4);
+}
+
+.figure {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-obsidian);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-5);
+}
+
+/* The level break: the shared stitched rule, not a section heading. */
+.level2 {
+  position: relative;
+  padding-top: var(--space-2);
+}
+
+/* The NFC row's standing caption (rendered only while the value reads `Sí`)
+   and its inline failure line both sit directly beneath that one row, as
+   their own lines — the same "conventional caption below the row" placement
+   DESIGN-SYSTEM §8 already established for this control's own slow-save
+   hint. Neutral, not alarming: the caption states a fact about a reversible
+   setting. */
+.rowCaption {
+  margin: calc(-1 * var(--space-2)) 4px var(--space-3);
+  font: var(--text-body-sm);
+  color: #6B6259;
+}
+
+.rowError {
+  margin: calc(-1 * var(--space-2)) 4px var(--space-3);
+  font: var(--text-body-sm);
+  color: var(--color-error);
+}

@@ -78,7 +78,8 @@ import styles from './NFCScanPrompt.module.css';
  *   (permission denial, hardware rejection, a genuine platform error) — a
  *   real, blocking failure of the reading mechanism itself, distinct from
  *   `'idle'`. Reuses this codebase's own real-consequence write-failure
- *   color (`--color-error`, `CatalogRow.tsx`'s own `.nfcError`), not a new
+ *   color (`--color-error`, `ProductPage.module.css`'s own `.rowError`), not
+ *   a new
  *   color, with a short, purely mechanical retry nudge — the specific
  *   diagnostic reason (a genuine hardware read failure, an already-assigned
  *   tag, a tag already in another Event, etc.) keeps living entirely in each

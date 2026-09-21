@@ -88,8 +88,8 @@
 /* `'error'` — the session itself failed to start or died mid-flight: a real,
    blocking failure (she can't scan at all until this recovers), not a
    passive "try a different tag" miss — reuses brand-guide.md's Error color,
-   the same real-consequence-write-failure convention `CatalogRow.tsx`'s own
-   `.nfcError` already uses, applied here to the ring itself rather than
+   the same real-consequence-write-failure convention `ProductPage.module
+   .css`'s own `.rowError` already uses, applied here to the ring itself rather than
    inventing a new color for this component. Static — no pulse, no halo:
    this ring is not currently broadcasting anything. */
 .ringError {

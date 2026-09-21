@@ -757,6 +757,38 @@ interface StoreValue {
     newBarcode: string,
     idempotencyKey: string,
   ) => Promise<boolean>;
+  /** inventory.md §3.19c "Quitar código de barras" (`decision-log.md` D80,
+   * Paid tier only) — returns `Product.barcode` to its already-legal empty
+   * state. **A single-column write: zero `InventoryUnit` rows and zero
+   * `NFCTag` rows are touched, and `Product.nfcTaggingEnabled` is not
+   * changed in either direction** (D80's second and fourth binding
+   * constraints). Distinct from `setProductBarcode` above in every respect
+   * that matters: that one *replaces* a value and, per D71, clears
+   * `nfcTaggingEnabled` in the same write; this one only ever clears the
+   * barcode itself and leaves the flag exactly where it already was
+   * (`false`, whichever path produced the barcode). Clearing a barcode and
+   * opting into NFC stay two separate merchant actions with two separate
+   * writes — never combined, never automatic (D80's third constraint). Same
+   * "server-confirmed, then local mirror" shape, and the same
+   * caller-supplied per-attempt idempotency key, as every sibling write
+   * above. */
+  clearProductBarcode: (productId: ID, idempotencyKey: string) => Promise<boolean>;
+  /** inventory.md §3.19a "Guardar nombre" — the Product rename this
+   * amendment newly supports. Writes `Product.name` directly; every
+   * `InventoryUnit`, `NFCTag`, `SaleItem`, `Lot`, `EventAllocation` and
+   * `Claim` references this Product **by ID, never by name** (D2), so the
+   * rename is complete and retroactive by construction and no historical row
+   * is altered or deleted (D25). No name history is kept and no "antes: ..."
+   * renders anywhere — the same plain-mutable-current-scalar posture D33
+   * already fixed for `defaultPrice`, D54 for `photo`, D65 for `barcode`.
+   * `Product.barcode`, `defaultPrice`, `photo`, `nfcTaggingEnabled`, every
+   * `InventoryUnit` and every attached `NFCTag` are completely untouched.
+   * The conflict case (§3.19b) is caught client-side first, against §3.8's
+   * own case-insensitive/trimmed matching rule; the server re-runs the
+   * identical check so a **concurrent rename on another device** surfaces as
+   * an ordinary failed save (`false`) through §3.19a's existing save-error
+   * path, never as a silent duplicate and never through a separate branch. */
+  renameProduct: (productId: ID, newName: string, idempotencyKey: string) => Promise<boolean>;
   /** inventory.md §3.6 "Cantidad disponible actual" (`decision-log.md`
    * D78, `product/99-rfc/0016-inventory-unit-bidirectional-correction.md`
    * Accepted — supersedes D77/RFC 0015's decrease-only v1 scope) — the
@@ -1023,16 +1055,31 @@ interface StoreValue {
    * remaining NFC-related capability write in this document, unconditionally,
    * for every Paid-tier Business.** */
   changeNfcPerProductEnabled: (enabled: boolean) => Promise<boolean>;
-  /** inventory.md §3.4's fifth Catalog-row tap zone (`decision-log.md` D71)
-   * — a bare tap, no confirmation screen, writes `Product.nfcTaggingEnabled`
-   * directly. Real call to `set_product_nfc_tagging_enabled`, same
-   * "server-confirmed, then local mirror" shape as `editPrice`/
-   * `setProductPhoto`/`setProductBarcode`. Resolves `true` on success,
-   * `false` on any rejected/failed outcome (no local state change happens in
-   * that case — `CatalogRow.tsx`'s own switch reverts to its last-saved
-   * state and shows the inline "No pudimos guardar" line, per §3.4's own
-   * text — the switch itself stays tappable as its own retry). */
-  setProductNfcTaggingEnabled: (productId: ID, enabled: boolean) => Promise<boolean>;
+  /** inventory.md **§3.19's NFC row** ("Vender con tag NFC," Level 2,
+   * shape 3) — a bare tap on the whole row, no sheet, no confirmation, no
+   * separate save; writes `Product.nfcTaggingEnabled` directly. Real call to
+   * `set_product_nfc_tagging_enabled`, same "server-confirmed, then local
+   * mirror" shape as `editPrice`/`setProductPhoto`/`setProductBarcode`.
+   * Resolves `true` on success, `false` on any rejected/failed outcome — and
+   * **no local state change happens in that case, which is load-bearing**:
+   * §3.19's row displays the *attempted* value optimistically the instant she
+   * taps, and that is only safe because failure is guaranteed to revert it to
+   * the last value actually stored, which is exactly what "mirror only on
+   * success" gives it. The row itself is the retry; there is no separate
+   * `[ Reintentar ]`.
+   *
+   * **Moved 2026-09-19** from §3.4's retired fifth Catalog-row tap zone. The
+   * card is now one tap target and carries no write at all (§3.4's own
+   * filter 4), so this is the control's only caller.
+   *
+   * `idempotencyKey` is supplied by the caller (2026-09-19), same
+   * per-attempt/replayed-on-retry discipline as `editPrice`/
+   * `setProductPhoto`/`setProductBarcode`: this write is explicitly exposed
+   * to a client-initiated retry — the row *is* the retry affordance — so
+   * *architecture-principles.md* #7 applies and a fresh key per call would
+   * make every retry arrive as an unrelated second request. This closes, for
+   * this one write, the standing gap `BACKLOG.md` §F tracks. */
+  setProductNfcTaggingEnabled: (productId: ID, enabled: boolean, idempotencyKey: string) => Promise<boolean>;
   /** home.md §3.6a's fourth variant (Ready-but-`buttons`, shown once ever) —
    * sets `Business.nfcAvailabilityNudgeShown = true`, permanently. Fired
    * once, via a `useEffect`, the first time that variant actually renders
@@ -2901,6 +2948,101 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   /**
+   * inventory.md §3.19c "Sí, quitarlo" (`decision-log.md` D80) — real call to
+   * `clear_product_barcode`
+   * (`supabase/migrations/20260921010000_product_page_writes.sql`), same
+   * "server-confirmed, then local mirror" shape as every sibling write above.
+   *
+   * **The mirror clears `barcode` and nothing else — deliberately.** Unlike
+   * `setProductBarcode` immediately above (which mirrors D71's
+   * clear-on-save of `nfcTaggingEnabled`), this write must leave the flag
+   * exactly where it already was, in either direction: D80's second binding
+   * constraint. It is already `false` on every Product this action can
+   * reach — either the barcode's own save cleared it, or the Product was
+   * created barcode-identified and never opted in — and mirroring a change
+   * the server did not make would be the client deciding the NFC opt-in on
+   * her behalf, the exact thing D80's third constraint rules out. She opts
+   * in separately, through §3.19's now-live NFC row, with its own write.
+   *
+   * **Zero `state.units` and zero tag rows are touched here either** (D80's
+   * fourth constraint) — no cleanup, no detachment, no cascade. An
+   * already-tagged unit keeps its tag and keeps selling
+   * (`add_item_to_sale_by_tag` carries no Product-flag and no barcode
+   * predicate, D79), which is precisely the fact §3.19's Level-1
+   * `N ya etiquetadas` line and §3.19c's own third copy line report.
+   */
+  async function clearProductBarcode(productId: ID, idempotencyKey: string): Promise<boolean> {
+    if (!state.business) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] clearProductBarcode: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('clear_product_barcode', {
+      p_business_id: state.business.id,
+      p_product_id: productId,
+      p_idempotency_key: idempotencyKey,
+    });
+    if (error) {
+      console.error('[store] clear_product_barcode failed', error);
+      return false;
+    }
+    applyWriteMirror((s) => ({
+      ...s,
+      products: s.products.map((p) => (p.id === productId ? { ...p, barcode: undefined } : p)),
+    }));
+    return true;
+  }
+
+  /**
+   * inventory.md §3.19a "Guardar nombre" — real call to
+   * `update_product_name`
+   * (`supabase/migrations/20260921010000_product_page_writes.sql`), same
+   * "server-confirmed, then local mirror" shape as `editPrice`/
+   * `setProductPhoto`/`setProductBarcode` above.
+   *
+   * **Mirrors the trimmed literal, matching exactly what the server stores.**
+   * §3.19a: leading/trailing whitespace is the one automatic normalization;
+   * internal casing and internal spacing are preserved exactly as typed. The
+   * trim is applied here as well as server-side so the local mirror can never
+   * disagree with the stored value by a stray space — the same
+   * write-what-the-server-wrote discipline `setProductBarcode`'s own
+   * `btrim`-mirroring already follows.
+   *
+   * **No other field is touched, and no historical row changes** — a rename
+   * is retroactive by construction because everything references this Product
+   * by ID (D2). `false` on any rejected/failed outcome, including the
+   * concurrent-rename collision the server re-checks
+   * (`product_name_already_registered`): §3.19a's sheet stays open with her
+   * typed value intact, through the ordinary save-error path.
+   */
+  async function renameProduct(productId: ID, newName: string, idempotencyKey: string): Promise<boolean> {
+    if (!state.business) return false;
+    const trimmed = newName.trim();
+    if (trimmed.length === 0) return false;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('[store] renameProduct: Supabase not configured. See supabase/README.md.');
+      return false;
+    }
+    const { error } = await supabase.rpc('update_product_name', {
+      p_business_id: state.business.id,
+      p_product_id: productId,
+      p_idempotency_key: idempotencyKey,
+      p_new_name: trimmed,
+    });
+    if (error) {
+      console.error('[store] update_product_name failed', error);
+      return false;
+    }
+    applyWriteMirror((s) => ({
+      ...s,
+      products: s.products.map((p) => (p.id === productId ? { ...p, name: trimmed } : p)),
+    }));
+    return true;
+  }
+
+  /**
    * inventory.md §3.14 — one scan, one write. §3.16 ("scan failed," a
    * genuine physical read failure) never reaches this function at all —
    * it's simulated entirely client-side in `AssignTags.tsx`, the same
@@ -3656,15 +3798,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return true;
   }
 
-  /** inventory.md §3.4's fifth Catalog-row tap zone — see this function's
+  /** inventory.md §3.19's NFC row (Level 2, shape 3) — see this function's
    * own `StoreValue` doc comment above. Real call to
    * `set_product_nfc_tagging_enabled`, OWNER-only, server-side-rejects
    * `enabled=true` while the Business's own `nfc_per_product_enabled` is
    * false, or while this Product already has a `barcode`
    * (`nfc_per_product_not_enabled`/`product_has_barcode`) — both defensive
-   * backstops, since `CatalogRow.tsx`'s own gating condition already keeps
-   * this zone from rendering at all outside either case. */
-  async function setProductNfcTaggingEnabled(productId: ID, enabled: boolean): Promise<boolean> {
+   * backstops, since `ProductPage.tsx`'s own gating condition already keeps
+   * the row from rendering at all outside either case (D71: absent entirely,
+   * never disabled). */
+  async function setProductNfcTaggingEnabled(
+    productId: ID,
+    enabled: boolean,
+    idempotencyKey: string,
+  ): Promise<boolean> {
     if (!state.business) return false;
     const supabase = getSupabaseClient();
     if (!supabase) {
@@ -3674,7 +3821,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.rpc('set_product_nfc_tagging_enabled', {
       p_business_id: state.business.id,
       p_product_id: productId,
-      p_idempotency_key: crypto.randomUUID(),
+      p_idempotency_key: idempotencyKey,
       p_enabled: enabled,
     });
     if (error) {
@@ -4772,6 +4919,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     editPrice,
     setProductPhoto,
     setProductBarcode,
+    clearProductBarcode,
+    renameProduct,
     correctProductAvailableCount,
     assignTagToNextPendingUnit,
     createEvent,

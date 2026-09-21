@@ -83,7 +83,27 @@ export function AssignTags({
   scopeProductId,
   nfcSession,
 }: {
+  /**
+   * §3.14's "Terminar después" — **returns to the operation's origin
+   * (corrected 2026-09-19), never unconditionally to Catalog view and never
+   * to a retired §3.5/§3.17.** The full origin set is §3.6's — §3.19, §3.4,
+   * §3.3/§3.3a or Home — and §3.6's own "origin untrue" exception applies
+   * identically here. Resolved entirely by the caller
+   * (`InventoryScreen.tsx`/`App.tsx`), which is the only layer that knows
+   * where this queue was started from; this component just calls it. On §3.4,
+   * every still-pending Product's card shows its own live
+   * `· N sin etiquetar` caption and `[ Etiquetar ]` shortcut; on §3.19,
+   * Level 1 reflects what is left. Independently resumable from either.
+   */
   onDefer: () => void;
+  /**
+   * 0 pending units left. Same "return to origin" rule and same exception as
+   * `onDefer` — a **Lot-scoped** queue completes into §3.12/§3.13 rendered on
+   * the origin of the operation that produced the Lot; a **Product-scoped**
+   * queue completes into §3.13a rendered on the screen it was started from,
+   * §3.19 or §3.4. Which confirmation is which is decided by the caller, from
+   * `scopeProductId`; this component only reports that the queue emptied.
+   */
   onComplete: () => void;
   /** AT-M1 fix — the receipt of exactly what the specific `commitLot` call
    * that triggered *this* entry into Asignar Tags actually wrote, captured
@@ -109,10 +129,12 @@ export function AssignTags({
    * and remounting when she taps "Continuar etiquetando." */
   segmentTotals: Record<string, number>;
   onSegmentTotalsChange: (updater: (totals: Record<string, number>) => Record<string, number>) => void;
-  /** `inventory.md` §3.14's entry point 3 (2026-09-17 live pass) — Asignar
-   * Tags entered via §3.4's fifth zone (toggle-ON auto-open, when ≥1
-   * eligible unit already exists) or sixth zone (the `[ N sin etiquetar ]`
-   * resume indicator). `undefined` is the existing, completely unchanged
+  /** `inventory.md` §3.14's entry point 3 — Asignar Tags entered via one of
+   * the **two live `[ Etiquetar ]` controls (corrected 2026-09-19)**: §3.4's
+   * card-level shortcut, or §3.19's Level-1 action. Both carry the identical
+   * label and reach this identical destination. The 2026-09-17 toggle-ON
+   * auto-open and the `[ N sin etiquetar ]` resume indicator that used to
+   * reach it are both retired. `undefined` is the existing, completely unchanged
    * Lot-scoped shape (entry point 1, `inventory.md` §2 step 3) — the whole-
    * Catalog live queue, exactly as before this amendment. Set, it narrows
    * every live read below (`breakdown`, and therefore `current`,
@@ -152,11 +174,10 @@ export function AssignTags({
   // that doesn't originate in `CatalogView.tsx` and so can't call
   // `startScan()` from its own click handler ahead of time:
   // `RegisterMerchandise.tsx`'s post-save auto-entry (Lot-scoped, entry
-  // point 1). For the two `CatalogView.tsx`-originated entry points
-  // (toggle-ON auto-open, the "[ N sin etiquetar ]" resume tap), `startScan`
-  // has already been called synchronously (or as the first step of the
-  // resolved-RPC continuation) inside that component's own tap handler by
-  // the time this effect runs — `nfcSession`'s own internal
+  // point 1). For the two `[ Etiquetar ]` entry points (§3.4's card shortcut
+  // and §3.19's Level-1 action), `startScan` has already been called
+  // synchronously inside that control's own tap handler by the time this
+  // effect runs — `nfcSession`'s own internal
   // `scanStartedRef` guard makes this call a harmless no-op then, never a
   // second concurrent `scan()`. `useLayoutEffect`, not `useEffect`
   // (2026-09-18 real-device fix) — fires synchronously after this
@@ -282,9 +303,10 @@ export function AssignTags({
   }, [breakdownKey]);
 
   useEffect(() => {
-    // inventory.md §2 step 4 — 0 pending units left: return to Catalog view
-    // with the "lista para vender" confirmation (§3.13). A live check, so
-    // this fires the instant the last scan lands, not on a separate poll.
+    // inventory.md §2 step 4 — 0 pending units left. A live check, so this
+    // fires the instant the last scan lands, not on a separate poll. Where it
+    // lands, and which confirmation renders there, is the caller's to resolve
+    // ("return to origin," §3.14's own corrected rule) — see `onComplete`.
     if (breakdown.length === 0) onComplete();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [breakdown.length]);

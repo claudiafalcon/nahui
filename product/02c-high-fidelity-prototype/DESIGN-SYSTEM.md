@@ -199,8 +199,23 @@ because it's on screen. When adding a new component, default to a plain,
 conventional control unless it specifically represents money, a Product, or
 a torn/perforated transition between two zones of a screen.
 
-**The on/off switch, added 2026-09-17 (`CatalogRow`'s NFC-eligibility
-toggle), labeled 2026-09-19 (live fix, Product Owner report).** A small
+**The on/off switch — superseded 2026-09-19 by §10's instant-write row.
+Retained as the record of why its own rule existed, because that rule
+survives the component.** `inventory.md`'s Catalog card became one tap target
+and carries no write at all, so the switch-plus-label pair this paragraph
+described no longer exists anywhere in the codebase; the binary setting it
+carried moved to the Product Page, where the **whole row** is the target and
+the row's own trailing `Sí`/`No` **is** the label (§10). What carries forward
+unchanged is the reasoning, not the shape: a binary setting is one of this
+section's conventional controls, never a Swing-Tag device, and **its current
+state must be readable in words at rest, never only from a control's position
+or colour** — that is exactly what §10's closed `Sí`/`No` vocabulary
+enforces, one layer up. **A new binary on/off control should reach for §10's
+instant-write row first**, and only fall back to a standalone switch if it
+genuinely cannot live on a full-width row; if it does, the original
+specification follows.
+
+*(Original, 2026-09-17, labeled 2026-09-19 — historical.)* A small
 track-and-knob switch — `width: 40px`/`height: 24px` pill track, `border: 1px
 solid var(--color-hilo)`, `background: var(--color-hilo)` off /
 `var(--color-tezontle-dark)` on, an 18px white knob (`box-shadow: 0 1px 2px
@@ -242,3 +257,81 @@ produced a system, not five one-off decorations):
 
 No new visual language should need inventing for any of these — only a new
 consumer of the tokens/primitives already in `tokens.css`/`patterns.css`.
+
+## 10. The detail-row vocabulary (`DetailRow`, added 2026-09-19)
+
+Added with `inventory.md` §3.19's Product Page, and recorded here rather than
+left inside that one screen because the shape is screen-agnostic: **any
+surface that shows one entity and a stack of its stored details** — some
+edited through a sheet, some written in place — should reuse it rather than
+re-deriving three near-identical rows.
+
+Three shapes, and only three. `src/components/DetailRow/` is the single
+implementation; its props make the fourth combination unrepresentable.
+
+| Shape | Renders as | Behaviour |
+|---|---|---|
+| **1. Value row that opens a sheet** | `Label            valor ›` | Opens a staged sheet with a Cancelar/Guardar pair. Writes nothing on tap. |
+| **2. Action row that opens a sheet** | `Acción                  ›` | Same, with no value to show. |
+| **3. Instant-write row** | `Label                Sí` | Writes immediately on tap. **Never carries "›".** |
+
+**Every row is a tap target — there is no passive row shape, deliberately.**
+A passive fact placed among rows that all read as controls gets pulled toward
+control-shaped copy by its neighbours, and — the failure actually observed —
+tends to get sourced from whatever stored flag sits nearest rather than from
+live state. **Passive facts belong one level up**, as plain figures with no
+trailing slot and no target. **A row with no live control is absent, never
+present-and-inert.**
+
+**Two independent signals, and why not one.**
+- **The forward indicator, stated affirmatively.** *Every* row that opens a
+  separate surface carries a trailing "›" after its value, unconditionally.
+  The instant-write row never carries it, and a sheet-opening row may never
+  omit it. A rule about one row's *absence* would be no signal at all — with
+  no row carrying an indicator, its absence distinguishes nothing.
+- **What kind of thing the trailing element is.** A sheet-opening row trails
+  an **open-ended value** she can read but not change from here (`$250`,
+  `Con foto`, `7501234567890`, `Camisas`). The instant-write row trails a
+  **two-position state from a closed, binary vocabulary — `Sí` or `No`, never
+  anything else, ever** (typed as a literal union, so widening it requires
+  editing the rule). One is a fact being reported; the other is the current
+  position of a control.
+
+The chevron is a small mark at the far edge of a row; the binary-vocabulary
+rule holds even if she never looks there. They fail independently, which is
+the point. **Neither is a visual-design decision** — one is the presence of a
+forward affordance, the other the cardinality of a value's vocabulary — so
+both survive any restyling.
+
+**No row may mix shapes.** A sheet-opening row with a binary value (a
+hypothetical `Vender con tag NFC   Sí ›`) is forbidden outright: it would
+carry both signals and resolve to neither. If a future surface needs a binary
+fact edited through a sheet, it renders the value as something *other* than
+`Sí`/`No` and carries the "›" — the vocabulary is what's reserved, not the
+fact.
+
+**Save discipline for shape 3** (the only shape that writes, so the only one
+that needs it — `ProductPage.tsx` is the reference implementation):
+- **On tap** the row dims in place (`settings.md` §3.9's "fila atenuada"
+  mechanic, reused via `.busy`) and **immediately displays the attempted new
+  value.** It is not tappable again while a write is inflight; a second tap is
+  ignored, never queued.
+- **Near-instant:** dims and un-dims silently, landing on the new value. No
+  message.
+- **Slow (>~1.5s):** the trailing value reads `Guardando…` in place of
+  `Sí`/`No`, row still dimmed. Plain language, never a spinner label, never a
+  technical status string.
+- **Failure:** the row **reverts to the last value actually stored** — never
+  left displaying the attempted value. This is the load-bearing half: the
+  optimistic display is only safe because failure is guaranteed to undo it,
+  which falls out for free from a store that mirrors only on success. An
+  inline failure line renders beneath that row only; nothing else is blocked.
+  **The row itself is the retry** — no separate `[ Reintentar ]`, no
+  full-screen error — so the write is exposed to a client-initiated retry and
+  *architecture-principles.md* #7 applies: one stable idempotency key per
+  attempt, replayed unchanged on retry.
+
+Visually this is one of §8's **conventional** controls: a plain full-width
+list row divided by the shared `.stitchBottom` rule, no tag silhouette, no
+tone wash, no tilt. It represents a stored attribute of an entity — not
+money, not the entity itself — so it never reaches for `.moneyTag`.

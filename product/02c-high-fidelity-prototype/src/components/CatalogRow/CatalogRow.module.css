@@ -1,258 +1,194 @@
 /*
-  CatalogRow — v3: the thin per-Product accent rail is dropped (the marker
-  itself now carries full color at real size, so a separate sliver was
-  redundant, see README "Design System — v3" §3/"what's dropped"). The
-  divider is the shared stitch-rule (patterns.css .stitchBottom) instead of
-  a plain hilo hairline — the discipline this build's own "flat list, no
-  card-per-row" rule keeps intact (no bordered/shadowed row was
-  introduced), just with a divider that's specific to a clothing vendor's
-  own material world instead of a generic gray line.
+  CatalogRow — `inventory.md` §3.4's card, rewritten in full 2026-09-19.
+
+  What's gone, and why it is gone rather than relaxed:
+  - `.nfcSlot`'s fixed 84px reserved column, `.nfcLabel`, `.nfcSwitch`,
+    `.nfcSwitchOn`, `.nfcSwitchKnob`, `.nfcError`, `.nfcSavingHint`. The
+    reservation was the correct fix for the price-column-drift defect while a
+    variable-presence control shared line 1 with the price. With no such
+    control left on line 1 at all, the drift it protected against is
+    structurally impossible and the reservation has nothing to reserve. The
+    switch and its "NFC: Sí/No" label both move to §3.19's NFC row, where the
+    row's own trailing `Sí`/`No` **is** the label (see DetailRow).
+  - `.pendingTagLink` — the `[ N sin etiquetar ]` tap zone. The count survives
+    as passive text inside `.caption`; the action survives as `.shortcut`.
+  - `.overflow` ("⋯") — retired with the zone; §3.19 has a named row instead,
+    which is itself the gain.
+  - `.marker`/`.price` stop being buttons; `.rowMain`/`.rowMainSaving` are
+    gone with the last write this card could perform.
+
+  The v3 decisions this card keeps unchanged: no bordered/shadowed row (a
+  flat list, divided by the shared stitch-rule `.stitchBottom`, never a plain
+  hilo hairline), and the same per-Product tone as the selling tile, so a
+  merchant learns "Playeras is the clay tag" once, in Inventario, and meets
+  that same colour again on the grid she sells from.
 */
-/* Outer row wrapper — a plain flex column now (`decision-log.md` D71's
-   fifth tap zone needs an optional second line, the inline NFC save-error
-   message, below the tappable-zones line rather than crammed into it).
-   `.rowMain` below carries every property this element used to own
-   directly, unchanged in appearance. */
-.row {
+
+/*
+  Layout — a two-row grid, which is what makes hit-area guarantee 4
+  ("no nested-button semantics") structural rather than a convention:
+  three sibling buttons inside a plain div, each its own rectangle, none
+  inside another, none overlaying another.
+
+      ┌──────────────────────────────────────────┐
+      │ .line1   (marker · name · price)         │  row 1, full width
+      ├───────────────────────────────┬──────────┤
+      │ .line2Main (caption + gap)    │ .shortcutSlot │  row 2
+      └───────────────────────────────┴──────────┘
+
+  `.line1` and `.line2Main` are the card's own tap area; `.shortcutSlot` is
+  outside it by construction, in a column of its own.
+*/
+.card {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  /* background-color, not the `background` shorthand — the shorthand would
-     reset the .stitchBottom global class's own background-image (patterns
-     .css), since both target the same property family on this element. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   background-color: transparent;
   border: none;
   position: relative;
 }
 
-.rowMain {
+/* Guarantee 2 — the fixed slot. A list-level flag, so every card in a given
+   list reserves the identical trailing column whether or not this particular
+   card carries a shortcut; the caption's own available width is therefore
+   constant card to card and never reflows because a neighbour happens to
+   have pending tag work. Sized for the widest the one listed candidate can
+   ever be ("Etiquetar"), plus its own 48px-minimum padding. */
+.withSlot {
+  grid-template-columns: minmax(0, 1fr) 104px;
+}
+
+.line1 {
+  grid-column: 1 / -1;
+  grid-row: 1;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-1) 14px 4px;
-  text-align: left;
-  transition: opacity var(--duration-fast) var(--ease-standard);
-}
-
-/* `settings.md` §3.9's "fila atenuada" mechanic — the whole row dims while
-   its own fifth-zone (NFC toggle) write is in flight (`decision-log.md`
-   D71). */
-.rowMainSaving {
-  opacity: 0.55;
-}
-
-.row.dimmed .name,
-.row.dimmed .caption {
-  color: #9C9186;
-}
-
-.row.dimmed .overflow {
-  color: #9C9186;
-}
-
-/* Marker/photo tap target (`product-decisions.md` Q23) — a bare button
-   reset around `TagStub`, its own independent zone, distinct from `.main`
-   and `.price` below. */
-.marker {
+  padding: var(--space-3) var(--space-1) 2px 4px;
   border: none;
-  background: none;
-  padding: 0;
+  background-color: transparent;
+  text-align: left;
   cursor: pointer;
+}
+
+.line2Main {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  /* Guarantee 3 — the gap. The visible separation between the caption and
+     the shortcut is this padding, which means the gap's own pixels belong to
+     the **card's** tap rect: "A tap landing in that gap resolves to the card,
+     not the shortcut — the safe default, since the card is reversible
+     navigation and the shortcut opens a scan queue" (§3.4). §3.4 also
+     describes that gap as "itself outside both targets," which cannot be
+     simultaneously true of a gap that resolves to the card; the operative
+     rule — where a tap in it lands — is the one implemented here, and the
+     divergence is disclosed rather than quietly reconciled. */
+  padding: 0 var(--space-3) 14px 4px;
+  min-height: 24px;
+  border: none;
+  background-color: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.card:not(.withSlot) .line2Main {
+  grid-column: 1 / -1;
+}
+
+.marker {
   flex-shrink: 0;
   display: flex;
 }
 
-.main {
+.name {
   flex: 1;
   min-width: 0;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.name {
   font: var(--text-body);
   font-weight: 600;
   color: var(--color-obsidian);
 }
 
+/* Line 2's caption — `N disponibles` / `0 disponibles` / `sin registrar`,
+   extended with ` · N sin etiquetar`. One string, one element, plain: it is a
+   fact she scans, never something she acts on. Rendered in the same secondary
+   tone it always had; the ` · N sin etiquetar` half deliberately gets no
+   accent colour of its own, since colouring it would re-suggest the tap
+   target this amendment just removed. */
 .caption {
   font: var(--text-body-sm);
   color: #6B6259;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* the price tag — money that belongs to this specific Product, so it sits
-   inside the shared .moneyTag primitive (patterns.css) rather than a plain
-   outlined pill. */
+/* The price tag — money that belongs to this specific Product, so it stays
+   inside the shared `.moneyTag` primitive (patterns.css), unchanged in
+   appearance. No longer a button: no `:active` press state, no cursor of its
+   own, no pointer target. */
 .price {
-  appearance: none;
   padding: 8px 14px;
   font: var(--text-body-sm);
   font-weight: 700;
   color: var(--color-coral-aa);
-  cursor: pointer;
   flex-shrink: 0;
-  transition: transform var(--duration-fast) var(--ease-standard);
   transform: rotate(-2deg);
 }
 
-.price:active {
-  transform: rotate(-2deg) scale(0.94);
-}
-
-/* Fourth tap zone (`decision-log.md` D65, Paid tier only) — the overflow
-   indicator opening "Editar código de barras" (inventory.md §3.4c),
-   rightmost, after the price figure. Reuses the same "⋯" glyph Ana already
-   recognizes from Home/Configuración as "secondary actions live here"
-   (inventory.md §3.4's own cross-reference), rather than inventing new
-   iconography. */
-.overflow {
-  border: none;
-  background: none;
-  padding: 8px 4px;
-  margin: 0 -4px 0 -8px;
-  font: var(--text-body);
-  font-weight: 700;
-  color: #6B6259;
-  cursor: pointer;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-/* Fifth tap zone (`decision-log.md` D71) — the NFC-eligibility switch,
-   sitting *before* the price tag (2026-09-17 visual-defect pass, Product
-   Owner report — was previously trailing after the barcode overflow
-   control). `.nfcSlot` is a fixed-width reserved column, rendered whenever
-   the caller says a row *could* carry the switch (`reserveNfcSlot`) even
-   when this particular row's own `nfcToggle` is `undefined` — this is the
-   actual fix for the reported misalignment: without a column that's the
-   same width whether or not it's occupied, `.price` (the next sibling)
-   drifts left/right per row depending on which rows happen to carry the
-   switch, since `.main` (flex: 1) absorbs whatever width is left over.
-   Width now fits `.nfcLabel` + `.nfcSwitch` together (2026-09-19 live fix
-   — the label was added back; see `.nfcLabel` below), sized for the wider
-   of "NFC: No"/"NFC: Sí" so the slot's own width never shifts between the
-   two states either. Spacing to its neighbors comes from `.rowMain`'s own
-   `gap`, the same spacing every other zone in this row already relies
-   on. */
-.nfcSlot {
-  width: 84px;
-  flex-shrink: 0;
+/* Guarantee 1 — structural separation from the price column. This slot is in
+   grid row 2; the price is in grid row 1. They share no horizontal space, so
+   nothing about this slot's occupancy can move the price on this card or any
+   other. */
+.shortcutSlot {
+  grid-column: 2;
+  grid-row: 2;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  padding-bottom: 10px;
 }
 
-/* `inventory.md` §3.4's own copy for this zone, "NFC: No" / "NFC: Sí" —
-   present in the spec since before this control was first built
-   (2026-09-19 live fix, Product Owner report: the built switch never
-   rendered it, leaving no way to read the control's state without tapping
-   it). Styled like this row's other secondary facts (`.caption`,
-   `.overflow`) rather than `.price`'s themed `.moneyTag` treatment — a
-   setting, not money or the Product itself, same reasoning
-   `DESIGN-SYSTEM.md` §8 already applies to the switch itself. */
-.nfcLabel {
-  font: var(--text-meta);
-  font-weight: 600;
-  color: #6B6259;
-  white-space: nowrap;
-}
-
-.row.dimmed .nfcLabel {
-  color: #9C9186;
-}
-
-/* The switch itself — a real on/off track + knob, not a bordered pill
-   mimicking `.price`'s own `.moneyTag` tag shape (the previous version's
-   reported problem: it read as a second price tag). Deliberately one of
-   this system's "kept conventional" controls (DESIGN-SYSTEM.md §8) — a
-   settings-style switch, not a Swing-Tag-themed device, since it represents
-   a per-Product *setting*, not money or the Product itself. */
-.nfcSwitch {
-  appearance: none;
-  position: relative;
-  width: 40px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid var(--color-hilo);
+/* Guarantee 3 — at least 48 density-independent units in both dimensions.
+   Styled as this system's conventional control (DESIGN-SYSTEM §8): a plain
+   bordered pill, not a tag silhouette — it is an action, not money and not
+   the Product. Coral accent, matching `.price`'s own "a fact specific to this
+   Product" treatment and the `.pendingTagLink` it replaces, so the one
+   actionable element on the card reads as actionable at a glance. */
+.shortcut {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--color-hilo);
   border-radius: var(--radius-pill);
-  background: var(--color-hilo);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background-color var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
-}
-
-.nfcSwitch:disabled {
-  cursor: default;
-}
-
-.nfcSwitchOn {
-  background: var(--color-tezontle-dark);
-  border-color: var(--color-tezontle-dark);
-}
-
-.nfcSwitchKnob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
   background: var(--color-white);
-  box-shadow: 0 1px 2px rgba(45, 45, 45, 0.24);
+  font: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--color-coral-aa);
+  cursor: pointer;
+  white-space: nowrap;
   transition: transform var(--duration-fast) var(--ease-standard);
 }
 
-.nfcSwitchOn .nfcSwitchKnob {
-  transform: translateX(16px);
+.shortcut:active {
+  transform: scale(0.96);
 }
 
-/* Sixth tap zone (2026-09-17 live pass) — the `[ N sin etiquetar ]` resume
-   affordance, rendered as a second line below `.rowMain` rather than a
-   seventh horizontal column (see `CatalogRow.tsx`'s own top-of-file doc
-   comment for why: a variable-length string can't be given a fixed reserved
-   width the way `.nfcSlot`'s single switch glyph can, and placing it on its
-   own line shares no horizontal space with price/marker/switch, so there's
-   nothing here for the reserved-column fix to protect). Coral, link-styled
-   — the same "settings-style, plain, conventional control" posture
-   `DESIGN-SYSTEM.md` §8 already applies to `.nfcSavingHint` immediately
-   below, but tappable, matching `.price`'s own coral accent for "a fact
-   specific to this Product she can act on." */
-.pendingTagLink {
-  display: block;
-  margin: 0 var(--space-1) 10px 4px;
-  border: none;
-  background: none;
-  padding: 0;
-  font: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--color-coral-aa);
-  cursor: pointer;
-  text-align: left;
+@media (prefers-reduced-motion: reduce) {
+  .shortcut {
+    transition: none;
+  }
+  .shortcut:active {
+    transform: none;
+  }
 }
 
-.nfcError {
-  margin: 0 var(--space-1) 10px 4px;
-  font: var(--text-body-sm);
-  color: var(--color-error);
-}
-
-/* The slow-save caption (`nfcToggle.slow`, >~1.5s) — same position/shape as
-   `.nfcError` (a second line below the tappable-zones row) but neutral, not
-   red: this isn't a failure, just a longer-than-usual wait. Kept as its own
-   line below the row rather than folded into `.nfcLabel` (which always
-   reflects the Product's actual saved-or-in-flight state, not a transient
-   "saving" message) — the whole row already dims via `.rowMainSaving` while
-   the write is in flight, so this caption is purely supplementary. */
-.nfcSavingHint {
-  margin: 0 var(--space-1) 10px 4px;
-  font: var(--text-body-sm);
-  color: #6B6259;
+/* A dimmed card is "needs restocking," never "disabled" — every region stays
+   fully tappable, including the shortcut. Only the text quiets down; nothing
+   loses its target, and this is now a statement about the whole card rather
+   than one zone within it. */
+.card.dimmed .name,
+.card.dimmed .caption {
+  color: #9C9186;
 }

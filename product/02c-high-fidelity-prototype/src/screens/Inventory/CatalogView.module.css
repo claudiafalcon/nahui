@@ -1,3 +1,18 @@
+/*
+  CatalogView — `inventory.md` §3.4.
+
+  Trimmed 2026-09-19 alongside the screen itself: every sheet-only class
+  (`.uploadBtn`, `.photoRow`, `.photoThumbBtn`, `.photoThumb`, `.linkBtn`,
+  `.hiddenFileInput`, `.photoHint`, `.error`, `.sheetSavingHint`,
+  `.sheetError`, `.previewOverlay`, `.previewImg`, `.previewClose`,
+  `.barcodeValues`, `.barcodeCurrent`, `.barcodeStaged`, `.barcodeTag`,
+  `.rescanBtn`, `.barcodeConflictText`) moved, values unchanged, to
+  `ProductPage/ProductSheets.module.css` — §3.4a/§3.4b/§3.4c are reached from
+  the Product Page now, and leaving their styles behind here would be a
+  second, silently diverging copy. What remains is exactly what this screen
+  still renders: its own chrome, the confirmation/banner lines, the card
+  list, and the footer CTA.
+*/
 .topbar {
   padding: var(--space-4) var(--space-4) var(--space-2);
 }
@@ -46,209 +61,4 @@
   padding: 12px var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
   background-color: var(--color-balanced);
   position: relative;
-}
-
-/* inventory.md §3.4b "Editar foto" (`product-decisions.md` Q23) — same
-   device-upload composition `onboarding.md` §3.9's Logo field already
-   established (`BusinessIdentity.module.css`), reused here with its own
-   class names since this sheet is a separate component tree. */
-.uploadBtn {
-  align-self: flex-start;
-  border: 1.5px solid var(--color-hilo);
-  border-radius: var(--radius-md);
-  background: var(--color-white);
-  padding: 12px 18px;
-  font: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--color-coral-aa);
-  cursor: pointer;
-  margin-bottom: var(--space-2);
-}
-
-.photoRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-2);
-}
-
-.photoThumbBtn {
-  border: none;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.photoThumb {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  border: 1.5px solid var(--color-hilo);
-  display: block;
-}
-
-.linkBtn {
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: var(--color-coral-aa);
-  font: var(--text-body-sm);
-  font-weight: 600;
-  padding: 4px;
-}
-
-/* Both of §3.4b's staging controls go inert while a "Guardar foto" write is
-   in flight — the same dimmed, non-interactive treatment `Button.module.css`
-   already gives a disabled action, and the same wordless "this is busy right
-   now" signal `CatalogRow.module.css`'s `.rowMainSaving` gives the row's own
-   near-instant save (§3.10's silent half: no message, just inert). */
-.uploadBtn:disabled,
-.linkBtn:disabled {
-  color: #9C9186;
-  border-color: var(--color-hilo);
-  cursor: not-allowed;
-}
-
-.hiddenFileInput {
-  display: none;
-}
-
-.photoHint {
-  font: var(--text-meta);
-  color: #8A8177;
-  margin-bottom: var(--space-2);
-}
-
-.error {
-  font: var(--text-body-sm);
-  color: var(--color-error);
-  margin-bottom: var(--space-2);
-}
-
-/* inventory.md §3.10's slow half (">~1.5s: one plain line"), rendered inside
-   the three edit sheets (§3.4a/§3.4b/§3.4c) rather than as a full-screen
-   takeover: a sheet's own staged value has to stay visible while its write
-   runs, so this sits as a quiet caption directly above the action row — the
-   same position and neutral tone `CatalogRow.module.css`'s own
-   `.nfcSavingHint` already uses for this screen's other in-place save. Not
-   red: a slow save isn't a failure. */
-.sheetSavingHint {
-  font: var(--text-body-sm);
-  color: #6B6259;
-  margin: 0 0 var(--space-3);
-}
-
-/* inventory.md §3.11's failure line, same slot as `.sheetSavingHint` above
-   and the same type scale, in the error color every other write-failure line
-   in this codebase already uses (`.nfcError`, Eventos' own `.errorBody`).
-   The sheet's staged value renders above it and the "Reintentar" button
-   directly below it, so message and recovery read as one block. */
-.sheetError {
-  font: var(--text-body-sm);
-  color: var(--color-error);
-  margin: 0 0 var(--space-3);
-}
-
-/* §3.4b's "simple full-viewport, non-editable large view" — dismissed by
-   tapping again or the back arrow, no Cambiar/Quitar controls inside it.
-   Backdrop color matches Sheet.module.css's own established backdrop
-   (`rgba(45, 45, 45, 0.32)`, derived from --color-obsidian) rather than an
-   ad-hoc value — this overlay isn't built on Sheet itself (its full-viewport,
-   centered-image shape doesn't match Sheet's bottom-drawer panel), but it
-   still reuses this codebase's one dimmed-backdrop treatment. */
-.previewOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(45, 45, 45, 0.32);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  cursor: pointer;
-}
-
-.previewImg {
-  max-width: 88vw;
-  max-height: 76vh;
-  object-fit: contain;
-  border-radius: var(--radius-lg);
-  cursor: default;
-}
-
-/* inventory.md §3.4c-§3.4e "Editar código de barras" (`decision-log.md`
-   D65, 2026-09-16/17 amendment) — the current/staged value pair and its
-   supporting copy. */
-.barcodeValues {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: var(--space-3);
-}
-
-.barcodeCurrent {
-  font: var(--text-body);
-  font-weight: 600;
-  color: var(--color-obsidian);
-  margin-bottom: var(--space-3);
-}
-
-.barcodeValues .barcodeCurrent {
-  margin-bottom: 0;
-}
-
-/* The freshly-scanned, not-yet-saved value (§3.4c's own "(nuevo, sin
-   guardar)" pair) — the same coral accent .moneyTag/.price already use for
-   "money/facts specific to this Product," reused here for "the fact that's
-   about to replace what's saved," giving her a real before/after
-   comparison she can actually distinguish at a glance. */
-.barcodeStaged {
-  font: var(--text-body);
-  font-weight: 600;
-  color: var(--color-coral-aa);
-}
-
-.barcodeTag {
-  font: var(--text-body-sm);
-  font-weight: 400;
-  color: #6B6259;
-}
-
-.rescanBtn {
-  width: 100%;
-  margin-bottom: var(--space-4);
-}
-
-/* §3.4e's own explanatory line, beneath the recognition display. */
-.barcodeConflictText {
-  font: var(--text-body-sm);
-  color: #6B6259;
-  margin: 0 0 var(--space-4);
-}
-
-.previewClose {
-  position: absolute;
-  top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
-  left: var(--space-4);
-  border: none;
-  background: none;
-  /* Was --color-white (legible against the overlay's old near-opaque dark
-     scrim), then --color-coral-aa (matching .linkBtn's "Cambiar"/"Quitar"
-     dismiss-text color) — but --color-coral-aa's "WCAG AA safe" designation
-     in tokens.css was established for opaque surfaces (like .linkBtn's, sat
-     directly on --color-white). This overlay's backdrop is the translucent
-     rgba(45, 45, 45, 0.32) scrim over --color-balanced (#F4F4F4), a real
-     content-bleed-through composite (~rgb(180,180,180)), a materially
-     different context. --color-coral-aa (#C13F26) against that composite
-     computes to ~2.5:1, below the 4.5:1 normal-text AA minimum.
-     --color-obsidian (#2D2D2D) — this codebase's standard body-text-on-
-     light-surface token — clears ~6.6:1 against the same composite, so it's
-     used here instead. */
-  color: var(--color-obsidian);
-  font: var(--text-body);
-  font-weight: 600;
-  cursor: pointer;
 }

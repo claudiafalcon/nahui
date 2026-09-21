@@ -28,7 +28,8 @@ function joinNombres(names: string[]): string {
  * one non-eligible Product); generalized here to name every Product on each
  * side of a Lot that mixed more than one of either, with the matching
  * singular/plural conjugation. Built once, at the moment tagging completes
- * (`onTagsComplete` below), from the exact eligible/non-eligible lines
+ * (`onReturnToOrigin` below, on §3.13's own `tagsComplete` branch), from
+ * the exact eligible/non-eligible lines
  * `commitLot` wrote for this specific Lot — never guessed or re-derived from
  * the live Catalog. */
 function buildMixedLotDetail(
@@ -89,9 +90,11 @@ export default function App() {
   // "Terminar después" → resume defer/resume cycle — which unmounts/
   // remounts `<AssignTags>` (`InventoryScreen.tsx` swaps it out whenever
   // `inventoryView.mode` leaves `'assign-tags'`) — never loses either.
-  // (Resuming is now always via `inventory.md` §3.4's sixth-zone
-  // `[ N sin etiquetar ]` indicator, Product-scoped — §3.5/§3.17's former
-  // whole-Catalog "Continuar etiquetando" button is retired, 2026-09-17.)
+  // (Resuming is now always Product-scoped, via one of the two `[ Etiquetar ]`
+  // controls — §3.4's card shortcut or §3.19's Level-1 action, 2026-09-19.
+  // §3.5/§3.17's whole-Catalog "Continuar etiquetando" button was retired
+  // 2026-09-17; §3.4's own `[ N sin etiquetar ]` tap zone was retired
+  // 2026-09-19, its count surviving as passive caption text.)
   // `assignTagsEntry` is replaced only when a fresh `commitLot` actually
   // triggers a new entry (AT-M1); `assignTagsSegmentTotals` is updated by
   // `AssignTags` itself, per-Product, as its own doc comment describes
@@ -127,7 +130,14 @@ export default function App() {
               onNavigateToRegister={() => {
                 // inventory.md §10: Home's cold-start CTA routes directly into
                 // Registrar Mercancía, not Inventario's own cold-start screen.
-                setInventoryView({ mode: 'register' });
+                // **Origin: Home** (`inventory.md` §3.6's "return to origin,"
+                // 2026-09-19) — the one origin that lives on another tab, and
+                // the one the save's own named exception applies to: its
+                // precondition ("no Product ever registered") is false the
+                // instant the save succeeds, so a successful save returns to
+                // Catalog view instead. A back arrow with nothing written
+                // still returns here, because the origin is still true.
+                setInventoryView({ mode: 'register', origin: { screen: 'home' } });
                 setActiveTab('inventario');
               }}
               onNavigateToEvent={(eventId) => {
@@ -159,7 +169,15 @@ export default function App() {
                 // "Continuar etiquetando" button and added the new
                 // Product-scoped entry point 3 (`onOpenAssignTagsForProduct`
                 // below), neither of which this Home-originated link uses.
-                setInventoryView({ mode: 'assign-tags' });
+                // Origin: Catalog view. This Selling-originated handoff is
+                // **not** one of the four origins `inventory.md` §3.6/§3.14
+                // enumerate (§3.19, §3.4, §3.3/§3.3a, Home) — it comes from a
+                // different document's flow, `home.md`'s own mid-Session
+                // handoff — so returning to Catalog view keeps its existing,
+                // already-approved behaviour exactly as it was rather than
+                // inventing a fifth origin for it. Named here so the omission
+                // reads as a decision, not a miss.
+                setInventoryView({ mode: 'assign-tags', origin: { screen: 'catalog' } });
                 setActiveTab('inventario');
               }}
               onNavigateToInventarioViaSettingsTagsOn={() => {
@@ -180,9 +198,78 @@ export default function App() {
           <ScreenTransition transitionKey="inventario">
             <InventoryScreen
               view={inventoryView}
-              onOpenRegister={(prefillProductId) => setInventoryView({ mode: 'register', prefillProductId })}
-              onSaved={(lastProductId) => setInventoryView({ mode: 'catalog', justSaved: lastProductId })}
-              onOpenAssignTags={(entryBreakdown, nonEligibleBreakdown) => {
+              onOpenRegister={({ origin, prefillProductId, entryMode }) =>
+                // `origin` comes from whichever screen the merchant actually
+                // tapped from — captured at open and held for the whole
+                // operation (`inventory.md` §3.6), never inferred here.
+                setInventoryView({ mode: 'register', prefillProductId, entryMode, origin })
+              }
+              onOpenProduct={(productId) =>
+                // §3.4's one card tap → §3.19. The Product Page's own back
+                // arrow returns to Catalog view, always — it is reached from
+                // exactly one place today, so its back destination needs no
+                // origin logic of its own (§3.19).
+                setInventoryView({ mode: 'product', productId })
+              }
+              onReturnToOrigin={({ origin, afterWrite, confirmation }) => {
+                // **"Return to origin," applied at every exit** — §3.6's back
+                // arrow, §3.6's save, and §3.14's completion and deferral
+                // alike (§3.6/§3.14, 2026-09-19, closing `ux-critic` M3). One
+                // rule, one exception, resolved in exactly one place.
+                let resolved = confirmation;
+                if (confirmation?.tagsComplete) {
+                  // §3.13's mixed-Lot completion-copy variant
+                  // (`decision-log.md` D71) — built here, once, from exactly
+                  // what this specific Lot's own commit wrote (both still
+                  // held in state at this moment, right before they're
+                  // cleared below), never re-derived from the live Catalog.
+                  const mixedLotDetail =
+                    assignTagsEntry && assignTagsEntry.length > 0 && assignTagsMixedNonEligible
+                      ? buildMixedLotDetail(state, assignTagsEntry, assignTagsMixedNonEligible)
+                      : null;
+                  resolved = { ...confirmation, mixedLotDetail };
+                  // Tagging queue reached zero — nothing left to freeze a
+                  // receipt or a denominator against until a future commitLot
+                  // starts a genuinely new session.
+                  setAssignTagsEntry(null);
+                  setAssignTagsMixedNonEligible(null);
+                  setAssignTagsSegmentTotals({});
+                } else if (confirmation?.productTagsCompleteId) {
+                  // §3.13a — a Product-scoped queue reaching 0 pending. Clears
+                  // the frozen segment-total map the same way the Lot-scoped
+                  // completion does; never touches `assignTagsEntry`/
+                  // `assignTagsMixedNonEligible`, which that entry point never
+                  // set in the first place (it carries no "Lo que registraste"
+                  // line and no mixed-Lot copy).
+                  setAssignTagsSegmentTotals({});
+                }
+
+                // **The one exception, stated as a rule rather than a special
+                // case: if the save itself makes the origin untrue, return to
+                // the nearest still-true state instead.** Exactly one case
+                // exists today — an operation opened from Home's cold-start
+                // CTA, whose origin is a cold-start state whose precondition
+                // ("no Product ever registered") is false the instant the save
+                // succeeds. §3.3/§3.3a's own CTA needs no branch here: its
+                // origin is `'catalog'`, and Inventario's own resolution
+                // renders the cold start for exactly as long as it is still
+                // true.
+                if (origin.screen === 'home' && !afterWrite) {
+                  setInventoryView({ mode: 'catalog' });
+                  setActiveTab('hoy');
+                  return;
+                }
+                if (origin.screen === 'product' && !afterWrite) {
+                  setInventoryView({ mode: 'product', productId: origin.productId });
+                  return;
+                }
+                if (origin.screen === 'product') {
+                  setInventoryView({ mode: 'product', productId: origin.productId, confirmation: resolved });
+                  return;
+                }
+                setInventoryView({ mode: 'catalog', confirmation: resolved });
+              }}
+              onOpenAssignTags={({ origin, entryBreakdown, nonEligibleBreakdown }) => {
                 // AT-M1 — only a fresh `commitLot` (RegisterMerchandise's own
                 // save, threading its breakdown through) replaces the frozen
                 // receipt; step 0's own dormant whole-Catalog seed (D72 —
@@ -195,62 +282,34 @@ export default function App() {
                 // mixed, `null` otherwise (a plain eligible-only Lot, or step
                 // 0's whole-Catalog seed, neither of which ever passes a
                 // second argument at all). **Untouched by the 2026-09-17 live
-                // pass** — Product-scoped entry (toggle-ON / the sixth zone's
-                // resume tap) never calls this; see
+                // pass** — Product-scoped entry never calls this; see
                 // `onOpenAssignTagsForProduct` below.
                 if (entryBreakdown) {
                   setAssignTagsEntry(entryBreakdown);
                   setAssignTagsMixedNonEligible(nonEligibleBreakdown ?? null);
                 }
-                setInventoryView({ mode: 'assign-tags' });
+                // The originating operation's own origin propagates through
+                // the queue (§3.6 exit 3 / §3.14) — its completion and its
+                // "Terminar después" both return to it, not to Catalog view
+                // unconditionally.
+                setInventoryView({ mode: 'assign-tags', origin });
               }}
-              onOpenAssignTagsForProduct={(productId) => {
-                // inventory.md §3.14's entry point 3 (new, 2026-09-17 live
-                // pass) — §3.4's fifth zone (toggle-ON auto-open, when this
-                // Product already has ≥1 eligible unit) or sixth zone (the
-                // `[ N sin etiquetar ]` resume indicator). Scoped strictly to
-                // this one Product — never touches `assignTagsEntry`/
-                // `assignTagsMixedNonEligible` (the Lot-scoped receipt,
-                // AT-M1/D71's own frozen state), since this entry point never
-                // shows a "Lo que registraste" summary line at all
-                // (`InventoryScreen.tsx` enforces `entryBreakdown={null}`
-                // whenever `scopeProductId` is set, regardless of whatever's
-                // still frozen here from a possibly-unrelated earlier Lot).
-                setInventoryView({ mode: 'assign-tags', scopeProductId: productId });
+              onOpenAssignTagsForProduct={({ productId, origin }) => {
+                // inventory.md §3.14's entry point 3 — reached from **two live
+                // places as of 2026-09-19, neither of which is a settings
+                // toggle**: §3.4's card-level `[ Etiquetar ]` shortcut and
+                // §3.19's Level-1 `[ Etiquetar ]` action. Both carry the
+                // identical label and reach the identical destination. The
+                // former toggle-ON auto-open is **retired outright** (Product
+                // Owner decision, reversing the 2026-09-17 behaviour): the
+                // switch, now §3.19's NFC row, only ever writes the setting
+                // and never navigates. Scoped strictly to this one Product —
+                // never touches `assignTagsEntry`/`assignTagsMixedNonEligible`
+                // (the Lot-scoped receipt, AT-M1/D71's own frozen state),
+                // since this entry point shows no "Lo que registraste" line at
+                // all.
+                setInventoryView({ mode: 'assign-tags', scopeProductId: productId, origin });
               }}
-              onTagsComplete={() => {
-                // inventory.md §3.13's mixed-Lot completion-copy variant
-                // (`decision-log.md` D71) — built here, once, from exactly
-                // what this specific Lot's own commit wrote (both still held
-                // in state at this exact moment, right before they're
-                // cleared below), never re-derived from the live Catalog.
-                const mixedLotDetail =
-                  assignTagsEntry && assignTagsEntry.length > 0 && assignTagsMixedNonEligible
-                    ? buildMixedLotDetail(state, assignTagsEntry, assignTagsMixedNonEligible)
-                    : null;
-                // Tagging queue reached zero — nothing left to freeze a
-                // receipt or a denominator against until a future commitLot
-                // starts a genuinely new session.
-                setAssignTagsEntry(null);
-                setAssignTagsMixedNonEligible(null);
-                setAssignTagsSegmentTotals({});
-                setInventoryView({ mode: 'catalog', tagsComplete: true, mixedLotDetail });
-              }}
-              onProductTagsComplete={(productId) => {
-                // inventory.md §3.13a (new, 2026-09-17 live pass) — a
-                // Product-scoped queue reaching 0 pending. Distinct from
-                // `onTagsComplete`'s Lot-scoped §3.13: names the specific
-                // Product, ambient/fading, no mixed-Lot copy, no "just
-                // registered" framing. Clears the frozen segment-total map
-                // the same way the Lot-scoped completion above does — a
-                // finished queue leaves nothing worth freezing a denominator
-                // against until a future commit/toggle starts a new one.
-                // Never touches `assignTagsEntry`/`assignTagsMixedNonEligible`
-                // — this entry point never set them in the first place.
-                setAssignTagsSegmentTotals({});
-                setInventoryView({ mode: 'catalog', productTagsCompleteId: productId });
-              }}
-              onBackToCatalog={() => setInventoryView({ mode: 'catalog' })}
               onSettingsTagsOnMarkerHandled={() =>
                 setInventoryView((v) => (v.mode === 'catalog' ? { ...v, enteredViaSettingsTagsOn: false } : v))
               }

@@ -1,0 +1,95 @@
+/*
+  DetailRow — the Level-2 row vocabulary (`inventory.md` §3.19, DESIGN-SYSTEM
+  §10). One row shape, three variants, differing only in what they trail.
+
+  Deliberately conventional (DESIGN-SYSTEM §8): a plain full-width list row,
+  no tag silhouette, no tone wash, no tilt. It represents a stored attribute
+  of a Product — not money, not the Product itself — so it never reaches for
+  `.moneyTag` or any Swing-Tag device. The one signature element it does use
+  is the shared stitched divider (`.stitchBottom`, patterns.css), which is
+  this system's replacement for every plain 1px hairline.
+*/
+.row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  /* A full 56px+ row: the whole row is the tap target, so its own height is
+     the hit area — no smaller sub-target to aim at anywhere in this shape. */
+  min-height: 56px;
+  padding: var(--space-3) var(--space-1) var(--space-3) 4px;
+  border: none;
+  /* background-color, not the `background` shorthand — the shorthand would
+     reset `.stitchBottom`'s own background-image (patterns.css), since both
+     target the same property family on this element. Same reason
+     CatalogRow.module.css states it. */
+  background-color: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-obsidian);
+}
+
+/* The trailing element. Quieter than the label on purpose: on a value row
+   this is a fact being reported, not the row's subject — she reads the label
+   to find the row and the value to check it. Same secondary tone this
+   codebase already uses for a row's supporting fact (`CatalogRow`'s
+   `.caption`/`.nfcLabel`). */
+.value {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: #6B6259;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* A long value (a 13-digit barcode) yields before the label does, rather
+     than pushing the chevron off the row. */
+  max-width: 55%;
+}
+
+/* Signal one — the forward indicator. Present on every sheet-opening row,
+   unconditionally; structurally absent from `.instant`, which never renders
+   this element at all (not merely hides it). */
+.chevron {
+  font: var(--text-body);
+  font-weight: 700;
+  color: #9C9186;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Shape 3 — the instant-write row. Its trailing value carries a little more
+   weight than a reported value does: it is the current position of a control,
+   the one thing on the row she is about to change, so it reads at the same
+   strength as the label rather than as a footnote to it. This is the visual
+   half of signal two; the load-bearing half is the closed `Sí`/`No`
+   vocabulary itself (see DetailRow.tsx), which survives any restyling. */
+.instant .value {
+  font: var(--text-body);
+  font-weight: 700;
+  color: var(--color-coral-aa);
+  max-width: none;
+}
+
+/* `settings.md` §3.9's "fila atenuada" mechanic, reused verbatim — the row
+   dims in place while its own write is in flight (§3.19's save-state
+   discipline). Near-instant: dims and un-dims silently, no message. */
+.busy {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* While pending, the trailing slot reads "Guardando…" — plain language, the
+   same neutral tone as every other slow-save caption in this codebase, never
+   the coral accent the live value carries. */
+.busy .value {
+  color: #6B6259;
+  font-weight: 600;
+}

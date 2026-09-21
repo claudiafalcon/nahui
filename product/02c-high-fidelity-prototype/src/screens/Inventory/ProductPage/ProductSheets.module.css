@@ -1,0 +1,257 @@
+/*
+  ProductSheets — the shared styles for every sheet the Product Page opens:
+  §3.4a Editar precio, §3.4b Editar foto (+ its preview overlay), §3.4c–§3.4g
+  Editar código de barras, §3.19a/§3.19b Editar nombre, §3.19c Quitar código
+  de barras.
+
+  Moved here from `CatalogView.module.css` along with the sheets themselves
+  (2026-09-19 Catalog-card → Product-Page amendment). **Values are unchanged**
+  — the sheets' interiors are explicitly untouched by that amendment; only
+  where they are reached from changed. Two classes are new, for the two new
+  sheets: `.nameInput` (§3.19a) and `.removeBody` (§3.19c). `.sheetActions`
+  is new only as a class: it replaces the inline `style={{display:'flex',
+  gap:12}}` these sheets previously carried, so the one action-row shape every
+  sheet uses lives in CSS like everything else.
+*/
+
+/* The Cancelar/Guardar pair every sheet ends with. */
+.sheetActions {
+  display: flex;
+  gap: 12px;
+}
+
+.sheetActionsSpaced {
+  margin-top: 16px;
+}
+
+/* §3.19b's two paths — a different name or backing out. Stacked rather than
+   side by side because neither is a "cancel vs. confirm" pair: "Escribir otro
+   nombre" is the real way forward and "Cancelar" is the exit, so they read as
+   an ordered list of two options, not as opposites. */
+.sheetActionsStacked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* inventory.md §3.4b "Editar foto" (`product-decisions.md` Q23) — the same
+   device-upload composition `onboarding.md` §3.9's Logo field established. */
+.uploadRow {
+  display: flex;
+  gap: 12px;
+}
+
+.uploadBtn {
+  align-self: flex-start;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  padding: 12px 18px;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-coral-aa);
+  cursor: pointer;
+  margin-bottom: var(--space-2);
+}
+
+.photoRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.photoThumbBtn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.photoThumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-hilo);
+  display: block;
+}
+
+.linkBtn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-coral-aa);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  padding: 4px;
+}
+
+/* Both of §3.4b's staging controls go inert while a "Guardar foto" write is
+   in flight — the same dimmed, non-interactive treatment `Button.module.css`
+   already gives a disabled action. */
+.uploadBtn:disabled,
+.linkBtn:disabled {
+  color: #9C9186;
+  border-color: var(--color-hilo);
+  cursor: not-allowed;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.photoHint {
+  font: var(--text-meta);
+  color: #8A8177;
+  margin-bottom: var(--space-2);
+}
+
+.error {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+  margin-bottom: var(--space-2);
+}
+
+/* inventory.md §3.10's slow half (">~1.5s: one plain line"), rendered inside
+   the sheet rather than as a full-screen takeover: a sheet's own staged value
+   has to stay visible while its write runs, so this sits as a quiet caption
+   directly above the action row. Not red — a slow save isn't a failure. */
+.sheetSavingHint {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  margin: 0 0 var(--space-3);
+}
+
+/* inventory.md §3.11's failure line, same slot and type scale as
+   `.sheetSavingHint` above, in the error color every other write-failure line
+   in this codebase already uses. The staged value renders above it and
+   "Reintentar" directly below, so message and recovery read as one block. */
+.sheetError {
+  font: var(--text-body-sm);
+  color: var(--color-error);
+  margin: 0 0 var(--space-3);
+}
+
+/* §3.4b's "simple full-viewport, non-editable large view" — dismissed by
+   tapping again or the back arrow, no Cambiar/Quitar controls inside it.
+   Backdrop color matches Sheet.module.css's own established backdrop rather
+   than an ad-hoc value. */
+.previewOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 45, 45, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  cursor: pointer;
+}
+
+.previewImg {
+  max-width: 88vw;
+  max-height: 76vh;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  cursor: default;
+}
+
+.previewClose {
+  position: absolute;
+  top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
+  left: var(--space-4);
+  border: none;
+  background: none;
+  /* --color-coral-aa's "WCAG AA safe" designation was established for opaque
+     surfaces; against this overlay's translucent scrim composite it computes
+     to ~2.5:1, below the 4.5:1 minimum. --color-obsidian clears ~6.6:1
+     against the same composite, so it's used here instead. */
+  color: var(--color-obsidian);
+  font: var(--text-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* inventory.md §3.4c–§3.4e "Editar código de barras" — the current/staged
+   value pair and its supporting copy. Also the plain literal value §3.19c
+   shows before removing it. */
+.barcodeValues {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--space-3);
+}
+
+.barcodeCurrent {
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-obsidian);
+  margin-bottom: var(--space-3);
+}
+
+.barcodeValues .barcodeCurrent {
+  margin-bottom: 0;
+}
+
+/* The freshly-scanned, not-yet-saved value (§3.4c's "(nuevo, sin guardar)"
+   pair) — the same coral accent `.moneyTag`/`.price` already use for "a fact
+   specific to this Product," reused here for "the fact that's about to
+   replace what's saved," giving her a real before/after comparison. */
+.barcodeStaged {
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--color-coral-aa);
+}
+
+.barcodeTag {
+  font: var(--text-body-sm);
+  font-weight: 400;
+  color: #6B6259;
+}
+
+.rescanBtn {
+  width: 100%;
+  margin-bottom: var(--space-4);
+}
+
+/* §3.4e's and §3.19b's explanatory line, beneath the recognition display.
+   One class for both: the two states are the same pattern ("this identifier
+   already belongs to something else — pick a different one, nothing is
+   reassigned") applied to a barcode and to a name. */
+.barcodeConflictText {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  margin: 0 0 var(--space-4);
+}
+
+/* §3.19a — plain text entry, no casing help, no suggestions, no autocomplete.
+   Matches `ProductPicker`'s own search field and the price input: an
+   ordinary, unthemed control (DESIGN-SYSTEM §8), because a merchant should
+   never have to relearn what a text field does. */
+.nameInput {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1.5px solid var(--color-hilo);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  padding: 14px 16px;
+  font: var(--text-body);
+  color: var(--color-obsidian);
+  margin-bottom: var(--space-4);
+}
+
+.nameInput:disabled {
+  color: #9C9186;
+}
+
+/* §3.19c's body copy. Plain, factual, unalarming — no warning language, no
+   red, no "esta acción no se puede deshacer" (that would be false, since D80
+   confirms it can be undone by rescanning). */
+.removeBody {
+  font: var(--text-body-sm);
+  color: #6B6259;
+  margin: var(--space-3) 0 var(--space-4);
+}

@@ -1360,6 +1360,63 @@ export function taggedAvailableUnitCount(state: AppState, productId?: ID): numbe
 }
 
 /**
+ * `decision-log.md` D80 — **"N ya etiquetadas," the Product Page's Level-1
+ * status line** (`inventory.md` §3.19), and the identical live count
+ * §3.19c's "Las prendas que ya tienen tag siguen funcionando igual" line and
+ * §3.4c's own third acknowledgment sentence both render on.
+ *
+ * `tagId != null` **AND** `status IN ('available', 'reserved')` — D80's own
+ * allowlist, stated as an allowlist and never as a denylist. An `NFCTag` row
+ * survives the sale (`finalize_sale` sets `status = 'sold'` and never deletes
+ * the attachment, because D10's claim-side resolution still reads it), so an
+ * unscoped `tagId != null` would count garments she already sold. The status
+ * set is not chosen for this line: D10's dual-purpose tag resolution already
+ * partitions on exactly this boundary — `available`/`reserved` is the
+ * sale-time side, `sold` is the claim side.
+ *
+ * **Deliberately a separate selector from `taggedAvailableUnitCount` above,
+ * not a widening of it.** The two answer different questions and D81's
+ * `available`-only narrowing is deliberate and load-bearing: that selector
+ * feeds an allocation **commit** entry point, where a `reserved` unit is
+ * mid-Sale or already held by an allocation and therefore not a commit
+ * candidate. This one answers "does this Product have NFC as a live fact,"
+ * where a `reserved` unit genuinely still counts — it is a garment she has,
+ * carrying a tag, that sells by tag. Widening D81's selector to serve both
+ * would silently re-open the defect D81 exists to close.
+ *
+ * **Never sourced from `Product.nfcTaggingEnabled`** (D80, binding, and D71's
+ * own charter sentence): the flag records a *future-eligibility choice* and
+ * says nothing about whether a given garment sells by tag. On a barcoded
+ * Product the flag is always `false`, which is precisely the case this count
+ * exists for — a flag-sourced condition would render the line **never**.
+ *
+ * **`decision-log.md` D83 / RFC 0018 — no `detachedAt` check belongs here.**
+ * The client `NFCTag`/`InventoryUnit` types carry no such field by design;
+ * "open attachment" is enforced once, at the hydration boundary
+ * (`store.tsx`'s `hydrateFromBackend` reads `nfc_tags` with
+ * `.is('detached_at', null)`), so `tagId != null` already denotes an open
+ * attachment everywhere downstream. Within this allowlist the distinction is
+ * additionally moot: a closed attachment can only ever belong to a `sold` or
+ * `removed` unit, so inside `('available','reserved')` "has an attachment"
+ * and "has an *open* attachment" denote the identical set (D83's own named,
+ * checkable invariant).
+ *
+ * **No narrower scope is computable here, by design** — the reason a unit is
+ * `reserved` lives in Selling's `EventAllocation`, and reading it from
+ * Inventory would invert the dependency direction *architecture-principles.md*
+ * #6 fixes. `productId` optional/additive, same precedent as every selector
+ * above it.
+ */
+export function taggedOnHandUnitCount(state: AppState, productId?: ID): number {
+  return state.units.filter((u) => {
+    if (u.tagId == null) return false;
+    if (u.status !== 'available' && u.status !== 'reserved') return false;
+    if (productId != null && u.productId !== productId) return false;
+    return true;
+  }).length;
+}
+
+/**
  * `decision-log.md` D82 — this Product's `available` **untagged** units:
  * the pool `_fifo_commit_to_allocation` can actually consume, mirroring its
  * own server-side predicate exactly (`iu.status = 'available'` `and not

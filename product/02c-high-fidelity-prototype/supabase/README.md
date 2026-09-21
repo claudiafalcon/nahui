@@ -1556,3 +1556,75 @@ Both migrations were initially written with no working `SUPABASE_ACCESS_TOKEN` i
 **Client-side wiring is complete and builds clean**: `store.tsx` gains `setUserDisplayName`/`updateInvitationTargetHint`, both `peekInvitation`/`acceptInvitation` widened for `targetHint`/`invitation_identity_mismatch`, and `hydrateFromBackend` now also queries `public.users` (no `business_id` filter — RLS alone scopes what comes back) to fold real cross-device `display_name` values into the local `users` mirror, the one place this build learns about *other* people's names (an OWNER reading her own team's). Full UI build (Onboarding's "¿Cómo te llamas?", Settings' and the SELLER's own "Tu cuenta" "Tu nombre" field, Team screen's required-email invite form and new "Editar correo"/"Agregar correo" sheet, `authentication.md` §3.2g/§3.10f's new screens) is documented in `docs/passes/slice-18-displayname-target-hint.md`.
 
 **Push checklist — complete, see the four numbered items above.** The one item left open is the live cross-device round-trip (item 4, above) — real merchant testing, not something this environment can simulate.
+
+## Product Page writes — `update_product_name` / `clear_product_barcode` — WRITTEN, NOT PUSHED (2026-09-21)
+
+`supabase/migrations/20260921010000_product_page_writes.sql` adds the two
+writes `inventory.md`'s 2026-09-19 Catalog-card → Product-Page amendment
+requires. **It has not been pushed to the hosted project** — no CLI auth
+credential in the environment this was built in, the same disclosed posture
+the Slice 14 and Slice 18 migrations were written under. Until it is pushed,
+both merchant actions fail closed (the RPC simply doesn't exist), which the
+UI already surfaces correctly as an ordinary failed save with the sheet left
+open and retriable — never a silent success.
+
+1. **`update_product_name(p_business_id, p_product_id, p_idempotency_key,
+   p_new_name)`** — `inventory.md` §3.19a "Guardar nombre." OWNER-only,
+   idempotency-keyed, single-column `UPDATE`, same shape as
+   `update_product_price`/`update_product_photo`/`update_product_barcode`.
+   - Stores `btrim(p_new_name)` — §3.19a's one automatic normalization.
+     Internal casing and internal spacing are preserved exactly as typed.
+   - Rejects empty/whitespace-only (`name_required`), defensively; the client
+     already keeps "Guardar nombre" disabled in that state.
+   - Re-runs §3.8's matching rule server-side against **every other** Product
+     in this Business (`lower(btrim(name))`), raising
+     `product_name_already_registered`. This is what makes a **concurrent
+     rename on another device** surface through §3.19a's ordinary save-error
+     path rather than as a silent duplicate. The ordinary conflict (§3.19b)
+     is still caught client-side first, so this branch is the race only.
+   - **No unique index on `(business_id, name)` is added, deliberately.**
+     `products` has never carried one; name uniqueness is a §3.8 *matching*
+     rule enforced at the write paths that can create or change a name, not a
+     storage invariant, and adding an index now would retroactively
+     invalidate any legacy row pair predating the rule.
+
+2. **`clear_product_barcode(p_business_id, p_product_id,
+   p_idempotency_key)`** — `inventory.md` §3.19c, `decision-log.md` D80.
+   OWNER-only, idempotency-keyed, and **a single-column write**: it sets
+   `products.barcode = null` and touches nothing else.
+   - `update_product_barcode`'s existing `barcode_required` guard **stays
+     exactly as it is and is not weakened** — clearing is its own deliberate
+     action with its own function, never an implicit consequence of saving a
+     blank value (D80 constraint 1).
+   - `nfc_tagging_enabled` is **not** in the `SET` list, in either direction
+     (constraint 2). It is already `false` on every Product this action can
+     reach, and `set_product_nfc_tagging_enabled`'s existing
+     `product_has_barcode` guard is never bypassed — it simply stops applying
+     once the barcode is genuinely gone.
+   - **Zero `inventory_units` rows and zero `nfc_tags` rows are touched**
+     (constraint 4). No tag cleanup, no detachment, no cascade: any "clean up
+     tags when identification changes" behaviour would be a second non-sale
+     tag-detachment case and needs its own RFC. It must not be added here.
+   - No guard conditions, stated affirmatively rather than left silent: D80
+     found none to impose. Removal is permitted regardless of `available`
+     count, `reserved` units, open `EventAllocation`s, or how many units carry
+     tags.
+   - Safe to repeat in effect as well as by key — a second call sets an
+     already-null column to null.
+
+**Also changed client-side, no migration needed:**
+`set_product_nfc_tagging_enabled` is unchanged server-side, but its client
+wrapper (`store.tsx`) now takes a **caller-supplied** `idempotencyKey`
+instead of minting a fresh one per call. The Product Page's NFC row is
+explicitly its own retry affordance, so a fresh key per call made every retry
+arrive as an unrelated second request — the same hole `reviewer`'s 2026-09-13
+`commitLot` Blocker fix closed for the receipt path. This closes
+`BACKLOG.md` §F for that one write.
+
+**Push checklist:** `supabase db push` (or apply the single migration file),
+then verify both functions exist and are `execute`-granted to `authenticated`
+only, and smoke-test each once from the running prototype — a rename that
+collides with another Product (expect `product_name_already_registered` →
+§3.19b is client-caught, so this path should only be reachable by racing two
+devices), and a barcode clear on a Product with ≥1 tagged unit (expect the
+tag rows untouched and `nfc_tagging_enabled` still `false`).
