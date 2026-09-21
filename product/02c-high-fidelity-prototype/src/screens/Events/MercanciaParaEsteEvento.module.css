@@ -140,6 +140,21 @@
   color: var(--color-warning-aa);
 }
 
+/* `decision-log.md` D84 (C) — the expanded row's committed-scan disclosure
+   ("2 escaneadas", §3.21's own wireframe line). Reads as a settled fact
+   about units already committed server-side, not as helper text: full
+   obsidian at body-sm, one step below the "Cantidad sin tag" label's own
+   600 weight so it never competes with the control it explains. The extra
+   top margin, on top of `.rowDetail`'s own gap, is §3.21's blank-line
+   grouping device between independent clusters inside one row — this is a
+   different pool from the stepper directly above it, and the spacing is
+   what says so. */
+.scannedNote {
+  margin-top: var(--space-1);
+  font: var(--text-body-sm);
+  color: var(--color-obsidian);
+}
+
 .footer {
   padding: var(--space-4);
 }

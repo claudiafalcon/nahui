@@ -5,7 +5,13 @@ import {
   disponibleEnGeneral,
   eventAllocationFor,
   productByBarcode,
-  quantityRemaining,
+  // `quantityRemaining` (the combined, both-`unitSource` figure) is
+  // deliberately no longer imported here — `decision-log.md` D84. This
+  // screen reads the two halves by name (`quantityRemainingBySource`) and
+  // composes the combined total itself for the collapsed summary only; the
+  // stepper's value and ceiling are both strictly `fifo_assignment`. Its
+  // absence from this import list is the guard against the two bases
+  // silently merging back together.
   quantityRemainingBySource,
   taggedAvailableUnitCount,
 } from '../../domain/selectors';
@@ -106,6 +112,27 @@ const NFC_SCAN_FAIL_CHANCE = 0.15;
  * ahead of the write, since the RPC's own `unit_already_committed`
  * exception (a bare Postgres error, per its own documented contract) never
  * carries a payload to read a Product identity back from.
+ *
+ * **`decision-log.md` D84 (2026-09-21) — the manual stepper's *value* is on
+ * the `fifo_assignment` basis, closing a silent over-commit.** Three parts,
+ * all of them correctness rather than polish: (A) `staged` initialises from
+ * `quantityRemainingBySource(..., 'fifo_assignment')` and `commitNfcScan`'s
+ * `staged + 1` is removed outright; (B) the stepper label reads "Cantidad
+ * sin tag," §3.21's own already-approved wireframe copy; (C) the collapsed
+ * summary is derived live as `staged + quantityRemainingBySource(...,
+ * 'scan')`, with the scan-source count disclosed on the expanded row ("N
+ * escaneadas") on its own condition — `scan`-source remaining > 0, **never**
+ * the availability split's tagged-and-`available` condition, which would
+ * hide the disclosure precisely when every tagged unit has been scanned into
+ * this allocation. See each site's own comment for the full reasoning. No
+ * migration, no RPC change, no new selector, no new state, no new write
+ * path — the server contract was already correct and already documented in
+ * `save_event_allocations`' own header; only the client failed to honour it.
+ * D81's gate and D82's ceiling are both untouched and both confirmed
+ * correct; this defect was downstream of neither. The "Disponible en
+ * general: N sin tag · N con tag" *availability* decomposition, §3.22's
+ * per-row scan queue and §3.24's "Mover a otro evento" all remain out of
+ * scope and deliberately unbuilt here.
  */
 export function MercanciaParaEsteEvento({
   eventId,
@@ -121,19 +148,54 @@ export function MercanciaParaEsteEvento({
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [confirmation, setConfirmation] = useState(false);
 
-  // Staged manual quantities — initialized once from each Product's current
-  // live-remaining committed count (`quantityRemaining`, 0 if no
+  // Staged **manual** quantities — initialized once from each Product's
+  // current live-remaining `fifo_assignment`-source count (0 if no
   // EventAllocation exists yet for this pair). **Corrected, RFC 0010/D59:**
   // never `quantityAllocated`, which is now a monotonic lifetime total that
   // never decreases — reading it here would silently ignore any prior
   // mid-Event release and redisplay a stale, too-high number. Collapsing/
   // expanding a row is a pure display toggle, never a commit (§3.21's own
   // annotation) — this map persists whichever row is shown expanded or not.
+  //
+  // **Basis corrected 2026-09-21, `decision-log.md` D84.** This previously
+  // read the combined `quantityRemaining`, which counts *both* `unitSource`
+  // values, and `commitNfcScan` additionally did `staged + 1` on every
+  // successful scan. But this number is submitted verbatim to
+  // `save_event_allocations` as the `fifo_assignment` **target**, and that
+  // RPC's own header states the contract: it "compute[s] the signed delta
+  // between the requested quantity and that allocation's current
+  // live-remaining `fifo_assignment`-sourced count." A combined number sent
+  // against a manual-only baseline inflates the delta by exactly the
+  // scan-committed count, and `_fifo_commit_to_allocation`'s (correct,
+  // deliberate) partial-fulfillment tolerance made the over-commit silent.
+  //
+  // Reachable in a single session with no stepper touched at all: 2 tagged +
+  // 3 untagged `available`, no allocation yet → scan both tagged garments
+  // (server commits 2 `scan`-source units; the old code set `staged = 2`) →
+  // "Guardar cambios" sends 2, server sees `v_remaining = 0`, `v_delta = 2`,
+  // FIFO-commits **2 untagged units**. Two garments carried, four reserved,
+  // success message rendered. It then *ratcheted* on each visit-and-save,
+  // since the next mount re-read the combined figure including what the last
+  // save wrongly committed — and because `handleSave` sends every Product
+  // unconditionally, the triggering save could be an edit to a different row.
+  //
+  // Why it was an invariant breach rather than a display bug: the
+  // over-committed units carry `unit_source = 'fifo_assignment'`, exactly the
+  // field D59's Event-close reconciliation filters on — so she'd be asked to
+  // confirm a *returned quantity* for garments she never took. Only partly
+  // reversible: `AllocationMovement` is append-only and `quantityAllocated`
+  // monotonic, so each occurrence wrote permanent false ledger history.
+  //
+  // This also cures D82's own introduced mount-above-ceiling symptom **by
+  // construction**: `staged_init = fifo_remaining ≤ availableUntagged +
+  // fifo_remaining = ceiling`, always.
   const [staged, setStaged] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
     for (const product of state.products) {
       const allocation = eventAllocationFor(state, eventId, product.id);
-      initial[product.id] = allocation ? quantityRemaining(state, allocation) : 0;
+      initial[product.id] = allocation
+        ? quantityRemainingBySource(state, allocation, 'fifo_assignment')
+        : 0;
     }
     return initial;
   });
@@ -348,23 +410,38 @@ export function MercanciaParaEsteEvento({
       next[idx] = { ...next[idx], count: next[idx].count + 1 };
       return next;
     });
+    // **`staged + 1` removed outright, 2026-09-21, `decision-log.md` D84 —
+    // and nothing replaces it.** A scan is already committed server-side and
+    // is *not* a manual stage: `staged` is the `fifo_assignment` target
+    // `save_event_allocations` diffs against, so incrementing it here made
+    // the very next "Guardar cambios" FIFO-commit that many *untagged* units
+    // on top of the tagged ones she actually scanned. This line was the half
+    // of the defect that made the no-stepper-touched single-session path
+    // reachable.
+    //
     // §3.21's own row-level annotation ("a successful scan is a live,
-    // immediate write... 'Para este evento' figure updates immediately") —
-    // a scan always adds exactly one unit to the resolved Product's own
-    // allocation, so a plain relative +1 is correct and, being relative,
-    // never clobbers any of her own not-yet-saved manual edit already
-    // staged on that same row. **Neither `disponibleEnGeneralByProduct` nor
-    // `ceilings` is touched, and both are still correct after this scan**
-    // (comment updated for D82's split of the two): "Disponible en general"
-    // is net-zero by construction, since moving a unit from the general pool
-    // into *this* Event's own allocation leaves that figure unchanged
-    // (§3.21's own "Disponible en general... deliberately includes what's
-    // already allocated to this Event"); and the manual ceiling is untouched
-    // because a scan only ever consumes a **tagged** unit and only ever
-    // writes a `scan`-source commitment — neither half of the ceiling
-    // (available *untagged* units, outstanding `fifo_assignment` units) can
-    // move as a result of it.
-    setStaged((prev) => ({ ...prev, [result.productId]: (prev[result.productId] ?? 0) + 1 }));
+    // immediate write... 'Para este evento' figure updates immediately") is
+    // still honoured, and now honoured *correctly*: the collapsed summary is
+    // derived live in the row map below as `staged +
+    // quantityRemainingBySource(allocation, 'scan')`, and
+    // `mirrorAllocationMovement` (`store.tsx`) has already inserted this
+    // scan's own `eventAllocationUnits` row with `unitSource: 'scan'` by the
+    // time this resolves — so the summary and the expanded row's "N
+    // escaneadas" disclosure both move on the next render with no local
+    // counter to keep in sync, and no risk of clobbering her staged manual
+    // edit on that same row (nothing writes to `staged` here at all).
+    //
+    // **Neither `disponibleEnGeneralByProduct` nor `ceilings` is touched,
+    // and both are still correct after this scan** (comment kept from D82's
+    // split of the two): "Disponible en general" is net-zero by
+    // construction, since moving a unit from the general pool into *this*
+    // Event's own allocation leaves that figure unchanged (§3.21's own
+    // "Disponible en general... deliberately includes what's already
+    // allocated to this Event"); and the manual ceiling is untouched because
+    // a scan only ever consumes a **tagged** unit and only ever writes a
+    // `scan`-source commitment — neither half of the ceiling (available
+    // *untagged* units, outstanding `fifo_assignment` units) can move as a
+    // result of it.
   }
 
   async function handleNfcScan() {
@@ -633,7 +710,30 @@ export function MercanciaParaEsteEvento({
           const ceiling = ceilings[product.id] ?? 0;
           const available = disponibleEnGeneralByProduct[product.id] ?? 0;
           const expanded = expandedProductId === product.id;
-          const summary = quantity > 0 ? `${quantity} para este evento` : 'nada para este evento todavía';
+          // **`decision-log.md` D84 (C).** The scan-committed half of this
+          // row, re-read live on every render (never memoized, unlike
+          // `ceilings`/`disponibleEnGeneralByProduct`): a scan is a live
+          // server-side write, and `mirrorAllocationMovement` (`store.tsx`)
+          // inserts its `eventAllocationUnits` row with `unitSource: 'scan'`
+          // and flips the unit's status the instant the RPC returns — so
+          // this derivation is correct client-side with no new state, no new
+          // selector and no new write path. `eventAllocationFor` is also
+          // re-read here rather than captured at mount, because a mixed-pile
+          // scan can *mint* this Product's allocation mid-session.
+          const liveAllocation = eventAllocationFor(state, eventId, product.id);
+          const scanned = liveAllocation
+            ? quantityRemainingBySource(state, liveAllocation, 'scan')
+            : 0;
+          // §3.21: "The collapsed summary line reflects the current live
+          // total — already-committed scans plus any staged-but-unsaved
+          // manual edit." Derived, never stored. Before D84 this printed
+          // `staged` alone, which was only accidentally right because
+          // `staged` was itself wrongly carrying the scan count; now the two
+          // halves are named separately and added here, which is what lets
+          // the stepper hold the manual basis it always owed the server.
+          const forThisEvent = quantity + scanned;
+          const summary =
+            forThisEvent > 0 ? `${forThisEvent} para este evento` : 'nada para este evento todavía';
 
           return (
             <div
@@ -656,7 +756,16 @@ export function MercanciaParaEsteEvento({
               {expanded && (
                 <div className={styles.rowDetail}>
                   <p className={styles.available}>Disponible en general: {available}</p>
-                  <p className={styles.stepperLabel}>Cantidad</p>
+                  {/* **"Cantidad sin tag," not plain "Cantidad" —
+                      `decision-log.md` D84 (B).** Already-approved copy,
+                      verbatim from §3.21's own expanded-row wireframe; this
+                      restores spec text rather than inventing any. It is
+                      part of the correctness fix, not polish: now that the
+                      stepper holds the manual (`fifo_assignment`) basis, a
+                      box labelled plain "Cantidad" reading 0 on a row
+                      summarised "3 para este evento" would be a lie by
+                      omission. */}
+                  <p className={styles.stepperLabel}>Cantidad sin tag</p>
                   <div className={styles.stepperRow}>
                     <button
                       className={styles.stepBtn}
@@ -689,6 +798,48 @@ export function MercanciaParaEsteEvento({
                     </button>
                   </div>
                   {clamped[product.id] && <p className={styles.clampNote}>Solo tienes {ceiling} disponibles.</p>}
+
+                  {/* **The committed-scan disclosure — `decision-log.md`
+                      D84 (C), §3.21's own "2 escaneadas" wireframe line.**
+                      Required rather than cosmetic: §3.21 justifies the
+                      collapsed summary's combined simplification *by
+                      pointing at* this breakdown existing, so without it the
+                      summary ("3 para este evento") and the stepper
+                      ("Cantidad sin tag: 0") would show different numbers
+                      with nothing on screen explaining the gap.
+
+                      **Render condition, and why it is deliberately NOT the
+                      availability split's condition (the gap D84 fixes).**
+                      §3.21 previously gave one condition to two different
+                      displays. The "sin tag · con tag" *availability*
+                      decomposition asks about the **scan candidate pool**,
+                      so it correctly conditions on `nfcPerProductEnabled`
+                      AND ≥1 unit with `tagId != null AND status =
+                      'available'`. This line asks a different question —
+                      what this allocation has **already committed by scan**
+                      — so it conditions on `quantityRemainingBySource(...,
+                      'scan') > 0` alone. Inheriting the availability
+                      condition would hide it at exactly the moment she most
+                      needs it: a row whose tagged units have *all* been
+                      scanned into this allocation has zero tagged-available
+                      units left, so she'd have committed garments by scan
+                      with nothing on screen saying so.
+
+                      Separated from the stepper cluster above by its own
+                      spacing — §3.21's own blank-line grouping device
+                      between independent control clusters within one row,
+                      matching the wireframe's own layout. The per-row
+                      "Escanear las que te llevas" button the wireframe puts
+                      immediately above this line is §3.22's per-Product scan
+                      queue, still out of scope for this file (§3.22a's
+                      list-level entry point is what commits these units) —
+                      this line stands on its own rather than a dead control
+                      being drawn to host it. */}
+                  {scanned > 0 && (
+                    <p className={styles.scannedNote}>
+                      {scanned} escaneada{scanned === 1 ? '' : 's'}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
