@@ -471,9 +471,9 @@ fact.
 
 **Save discipline for shape 3** (the only shape that writes, so the only one
 that needs it — `ProductPage.tsx` is the reference implementation):
-- **On tap** the row quiets in place (`settings.md` §3.9's "fila atenuada"
-  mechanic, reused via `.busy`) and **immediately displays the attempted new
-  value, in both the word and the control.** It is not tappable again while a
+- **On tap** the row's label quiets in place (`settings.md` §3.9's "fila
+  atenuada" mechanic, reused via `.busy`) and the row **immediately displays
+  the attempted new value, in both the word and the control.** It is not tappable again while a
   write is inflight; a second tap is ignored, never queued.
 - **What "atenuada" may and may not take down with it** (added 2026-09-21,
   `ux-critic` Minor 3). The quieting is a **colour substitution on the label
@@ -487,12 +487,15 @@ that needs it — `ProductPage.tsx` is the reference implementation):
   while the write is in flight — so it carries the whole signal, dropping
   12.52:1 → 4.60:1, the same device and the same numbers a dimmed Catalog
   card's name already uses.
-- **Near-instant:** dims and un-dims silently, landing on the new value. No
-  message.
+- **Near-instant:** the label quiets and un-quiets silently — nothing else on
+  the row changes tone — landing on the new value. No message.
 - **Slow (>~1.5s):** the trailing value reads `Guardando…` in place of
-  `Sí`/`No`, **the control holding the attempted position**, row still
-  dimmed. Plain language, never a spinner label, never a technical status
-  string.
+  `Sí`/`No`, **the control holding the attempted position**, and **both stay
+  at full strength for the whole inflight window** — `Guardando…` at its
+  stated `#6B6259`, ~5.43:1 on the shell; the control's outline unchanged and
+  still clearing §10's 3:1 floor. Only the label is quieted, for as long as
+  the write runs. Plain language, never a spinner label, never a technical
+  status string.
 - **Failure:** the row **reverts to the last value actually stored** — never
   left displaying the attempted value. This is the load-bearing half: the
   optimistic display is only safe because failure is guaranteed to undo it,

@@ -228,8 +228,8 @@
   transform: translateX(16px);
 }
 
-/* `settings.md` §3.9's "fila atenuada" mechanic — the row quiets in place
-   while its own write is in flight (§3.19's save-state discipline).
+/* `settings.md` §3.9's "fila atenuada" mechanic — the row's label quiets in
+   place while its own write is in flight (§3.19's save-state discipline).
    Near-instant: quiets and un-quiets silently, no message.
 
    **Expressed as a colour substitution on the label, not as `opacity` on the

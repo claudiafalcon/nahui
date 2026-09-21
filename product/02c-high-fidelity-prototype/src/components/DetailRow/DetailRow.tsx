@@ -163,14 +163,19 @@ export type DetailRowProps<V extends string = string> =
       value: InstantRowValue;
       /**
        * §3.19's slow half (>~1.5s): the trailing value reads `Guardando…` in
-       * place of `Sí`/`No`, row still dimmed. Never a spinner label, never a
-       * technical status string — the same calm, plain-language convention as
-       * every other write in `inventory.md` (§3.10).
+       * place of `Sí`/`No`, with the control holding the attempted position.
+       * Both stay at **full strength** for the whole inflight window — only
+       * the label is quieted (see `busy` below). Never a spinner label, never
+       * a technical status string — the same calm, plain-language convention
+       * as every other write in `inventory.md` (§3.10).
        */
       pending?: boolean;
       /**
-       * A write is in flight (either half of §3.10). The row dims in place
-       * (`settings.md` §3.9's "fila atenuada" mechanic, reused) and is not
+       * A write is in flight (either half of §3.10). The row's **label**
+       * quiets in place (`settings.md` §3.9's "fila atenuada" mechanic,
+       * reused as a colour substitution on the label only — never `opacity`
+       * on the row; see `DetailRow.module.css`'s `.busy` for why nothing
+       * that states the write's state may be inside it) and the row is not
        * tappable again until it resolves — **a second tap is ignored, never
        * queued.** `value` still carries the *attempted* new value throughout,
        * which is only safe because failure is guaranteed to revert it (the
