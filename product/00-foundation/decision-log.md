@@ -2,6 +2,30 @@
 
 Chronological. Each entry: the decision, why it was made, and what it superseded if anything. Don't edit past entries when a decision changes later — add a new entry that supersedes it, so the reasoning trail stays intact.
 
+## D82 — the manual allocation stepper's ceiling counts only units the manual pool can actually commit; a success message must never hide a short commit
+
+Found by `architect` during D81's investigation, 2026-09-20, and deliberately **not bundled** with it — a distinct defect in the same aggregate, per the Product Owner's standing no-bundling instruction. Fixed under her own framing that *"Inventory/Event allocation correctness is an invariant."*
+
+`architect`-class, no RFC: no aggregate boundary moves, no term is redefined, no bounded context changes. A derived read is corrected to agree with a server-side predicate that was already right.
+
+**The defect.** `events.md` §3.21 makes "Disponible en general: N" the manual quantity stepper's ceiling, and `disponibleEnGeneral()` counts **all** available units of that Product — tagged and untagged alike — plus this Event's own remaining. But the manual commit pool is **untagged-only**, enforced server-side in `_fifo_commit_to_allocation` (`and not exists (select 1 from public.nfc_tags nt where nt.unit_id = iu.id)`), and that RPC is deliberately partial-fulfillment tolerant: *"fewer candidates than requested is not an error... never raises."*
+
+So on a Product with 8 available units of which 5 carry tags, the ceiling reads 8, the `[+]` stepper allows 8, "Guardar" succeeds, a success confirmation renders — and 3 units are committed. **The merchant is shown a wrong number underneath a success message.** That is a worse failure mode than D81's, which was a missing affordance: a missing button is visible, a silently short commit is not, and she will discover it at the bazaar with fewer garments than her own screen promised.
+
+**Why the two mechanisms are not at fault.** The untagged-only predicate is correct and must stay (D81's own "trap" ruling: relaxing it breaks the manual/scan pool partition and corrupts D59's reconciliation evidence split). Partial tolerance is also correct — it is the same "conditional write, zero-rows-affected = already moved on" convergence `assign_tag_to_next_pending_unit` and `correct_product_available_count` use, and it is what keeps concurrent allocation from erroring. **The ceiling is the thing that is wrong.**
+
+**Decision.** The manual stepper's ceiling is derived from the pool the manual write can actually consume:
+
+> **manual ceiling = this Product's `available` **untagged** units + this allocation's own outstanding `fifo_assignment`-source units.**
+
+Both halves already exist as concepts: the second is `quantityRemainingBySource(allocation, 'fifo_assignment')`, built for §3.21's "sin tag · con tag" split. The first needs one new selector — available **and** untagged, with **no NFC-eligibility predicate**: eligibility governs *future tagging work* (D71/D73), and a unit that is merely untagged is manually committable regardless of whether its Product ever opted into tagging. Reusing `pendingTagUnits` here would be wrong for exactly that reason.
+
+**`disponibleEnGeneral()` itself is not changed or deleted.** It remains correct for its own question — "how many of this Product are available to this Event across the business" — which `home.md` §3.9's Event-scoped tile and §3.21's own informational line both legitimately ask. What changes is that the *stepper's ceiling* stops being the same number as that display figure. Two questions, two derivations.
+
+**This does not build §3.21's "sin tag · con tag" split**, which remains specified-but-unbuilt and is the fuller answer (it would show both pools separately rather than only capping the manual one). This entry closes the honesty defect — the number she can type against is now a number the write can honour — without pre-empting that larger slice.
+
+**Applied:** `product/02-ux/events.md` §3.21 (the ceiling's own derivation sentence, plus its §8 entry moved from open to resolved); `src/domain/selectors.ts` (new untagged-available selector); `MercanciaParaEsteEvento.tsx` (`ceilings` re-derived). No RPC change and no migration — the server was already right.
+
 ## D81 — Event allocation surfaces NFC affordances from live tagged-unit state, never from `Product.nfcTaggingEnabled`; widens D80's sourcing rule from *shown* to *shown or gated on*
 
 Product Owner decision to fix now, 2026-09-20: *"Eventos tagged-unit allocation bug: Fix it now. Inventory/Event allocation correctness is an invariant, not backlog UX polish."* Deliberately **not bundled** with the D79/D80 work that surfaced it, per `architect`'s own 2026-09-18 instruction.
