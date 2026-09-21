@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useStore } from '../../../domain/store';
 import { taggedOnHandUnitCount } from '../../../domain/selectors';
+import { taggedUnitsKeepSelling } from '../../../domain/format';
 import { Sheet } from '../../../components/Sheet/Sheet';
 import { Button } from '../../../components/Button/Button';
 import type { Product } from '../../../domain/types';
@@ -91,10 +92,19 @@ export function RemoveBarcodeSheet({
           a bare "¿quitar el código?" would ask her to confirm something she
           cannot see. */}
       <p className={styles.barcodeCurrent}>{product.barcode}</p>
+      {/* Three sentences, the middle one conditional. **It takes its singular
+          at N=1 and is §3.4c's own sentence, reused from one place**
+          (corrected 2026-09-21, `ux-critic` m5): it previously read "Las
+          prendas que ya tienen tag siguen funcionando igual" at every N,
+          which carries plural agreement three times over (article, noun,
+          verb) and so was wrong at N=1 even though it contains no numeral —
+          and it said *funcionando*, which is what a tag does, not what a
+          garment does. What she needs to know is that she can still *sell*
+          them. The other two sentences are invariant. */}
       <p className={styles.removeBody}>
         Si quitas este código, ya no vas a poder encontrar este producto escaneándolo.
-        {taggedOnHand > 0 && ' Las prendas que ya tienen tag siguen funcionando igual.'} Si te equivocas, puedes
-        volver a escanearlo.
+        {taggedOnHand > 0 && ` ${taggedUnitsKeepSelling(taggedOnHand, { withCount: false })}`} Si te equivocas,
+        puedes volver a escanearlo.
       </p>
       {saveState === 'slow' && (
         <p className={styles.sheetSavingHint} role="status">

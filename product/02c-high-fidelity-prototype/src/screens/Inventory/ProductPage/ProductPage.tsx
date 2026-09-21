@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useStore } from '../../../domain/store';
 import { availableCount, everReceived, pendingTagCount, taggedOnHandUnitCount } from '../../../domain/selectors';
-import { pluralize, stockCaption } from '../../../domain/format';
+import { pluralize, stockCaption, taggedUnitsKeepSelling } from '../../../domain/format';
 import { AmbientConfirmation } from '../../../components/AmbientConfirmation/AmbientConfirmation';
 import { Button } from '../../../components/Button/Button';
 import { DetailRow } from '../../../components/DetailRow/DetailRow';
@@ -183,17 +183,60 @@ export function ProductPage({
   const nfcSwitchLive = business?.nfcPerProductEnabled === true && paid && !product.barcode;
 
   /**
+   * What the NFC row currently *reads*. **On tap it immediately displays the
+   * attempted new value** — she sees `Sí` the instant she taps `No` — and the
+   * moment the write resolves this falls straight back to live stored state.
+   * That optimistic display is only safe because failure is guaranteed to
+   * undo it: the store mirrors nothing on a failed write, so dropping
+   * `nfcAttempted` *is* the revert to "the last value actually stored," with
+   * no second piece of local truth to go stale. The row is never left
+   * displaying the attempted value after a failure.
+   *
+   * It is also what the standing caption below the row and **Level 1's own
+   * clause A** both follow — each belongs to what the row *says*, not to what
+   * the server has confirmed, so neither flickers out and back during an
+   * ordinary flip, and the two swap in the same beat as the word and the
+   * control (§3.19: "the swap happens in the same beat as the write").
+   *
+   * Computed before the clauses below because clause A reads it.
+   */
+  const nfcDisplayed = nfcBusy && nfcAttempted !== null ? nfcAttempted : product.nfcTaggingEnabled;
+
+  /**
    * §3.19's two independently-conditional clauses on `N ya etiquetadas`.
    * Both are **basis statements, not warnings**, and they compose into one
    * sentence rather than stacking as fragments. Never framed as a conflict, a
    * warning or an error: no icon, no colour cue, no "atención," no offer to
    * reconcile anything.
    *
-   * - **Clause A** renders when **no live NFC switch is present on Level 2**
-   *   (this Product has a `barcode`, or `nfcPerProductEnabled` is off). Where
-   *   the switch is live and on, this is self-evident from the switch itself
-   *   and saying it is noise; where there is no switch, it is the one fact
-   *   nothing else on the page implies.
+   * - **Clause A** renders in **every state except one: a live NFC switch
+   *   reading `Sí`** (condition corrected 2026-09-21, `ux-critic` m4). The
+   *   condition is the rationale stated directly rather than a proxy for it:
+   *   the fact is self-evident only while the switch is live *and* on,
+   *   because only then does the page already say, in the caption directly
+   *   beneath that row, that tagged garments keep selling. In every other
+   *   state — no switch at all (this Product has a `barcode`, or
+   *   `nfcPerProductEnabled` is off) **and** a live switch reading `No` —
+   *   nothing else on the page implies it, so the clause renders. **The
+   *   earlier `!nfcSwitchLive` test was strictly narrower than its own stated
+   *   reason**, so a Product whose garments already carry tags and whose
+   *   switch she has since turned off rendered `5 ya etiquetadas` directly
+   *   above `[ Vender con tag NFC   No ]` with nothing reconciling the two —
+   *   a state D71 explicitly blesses and §3.19c's own post-clear landing
+   *   produces deliberately.
+   *
+   *   **Exactly one statement about already-tagged garments renders at a
+   *   time, and the two are complementary by construction.** While the row
+   *   reads `Sí`, its caption carries the *conditional* form ("Si lo apagas,
+   *   las prendas que ya tienen tag siguen igual"); in every other state
+   *   Level 1 carries the *present-tense* form. They never render together
+   *   and never both go missing — which is why both read `nfcDisplayed`, the
+   *   same single value the row's word and control are drawn from.
+   *
+   *   **After a §3.19c barcode clear the clause is KEPT, not dropped**
+   *   (corrected 2026-09-21): the newly-live switch reads `No`, so it carries
+   *   no caption of its own and makes nothing self-evident. "A live switch is
+   *   now present" was never the operative reason.
    * - **Clause B** renders when **`ya etiquetadas > disponibles`** — a plain
    *   comparison of two figures already on screen, never a read into Selling
    *   and never a check of *why*. This is the cross-basis disclosure: the
@@ -209,7 +252,7 @@ export function ProductPage({
    * figure by the label she read one line above, still avoiding "apartadas"
    * (a word reserved for the not-yet-started Apartado capability).
    */
-  const clauseA = taggedOnHand > 0 && !nfcSwitchLive;
+  const clauseA = taggedOnHand > 0 && !(nfcSwitchLive && nfcDisplayed);
   const clauseB = taggedOnHand > 0 && taggedOnHand > available;
   const one = taggedOnHand === 1;
   const clauseAText = one ? 'se sigue vendiendo con su tag' : 'se siguen vendiendo con su tag';
@@ -229,22 +272,6 @@ export function ProductPage({
    * can never disagree about one figure": `1 disponible` at exactly N=1,
    * `0 disponibles` at zero. */
   const stockLine = stockCaption(available, registered);
-
-  /**
-   * What the NFC row currently *reads*. **On tap it immediately displays the
-   * attempted new value** — she sees `Sí` the instant she taps `No` — and the
-   * moment the write resolves this falls straight back to live stored state.
-   * That optimistic display is only safe because failure is guaranteed to
-   * undo it: the store mirrors nothing on a failed write, so dropping
-   * `nfcAttempted` *is* the revert to "the last value actually stored," with
-   * no second piece of local truth to go stale. The row is never left
-   * displaying the attempted value after a failure.
-   *
-   * It is also what the standing caption below the row follows — the caption
-   * belongs to what the row says, not to what the server has confirmed, so it
-   * doesn't flicker out and back during an ordinary flip.
-   */
-  const nfcDisplayed = nfcBusy && nfcAttempted !== null ? nfcAttempted : product.nfcTaggingEnabled;
 
   async function handleToggleNfc() {
     if (nfcBusy) return; // a second tap is ignored, never queued
@@ -330,15 +357,17 @@ export function ProductPage({
       //
       // **The N=1 form carries no numeral at all** — "La prenda que ya tiene
       // tag," never "La 1 prenda," which is not Spanish. It is therefore a
-      // **distinct full string, not a count-plus-noun template**, and is
-      // written out here as one rather than routed through `pluralize`, which
-      // would imply a noun pair that does not exist. N=0 needs no form: the
-      // sentence's render condition is ≥1 tagged unit.
-      lines.push(
-        tagged === 1
-          ? 'La prenda que ya tiene tag se sigue vendiendo igual.'
-          : `Las ${tagged} prendas que ya tienen tag se siguen vendiendo igual.`,
-      );
+      // **distinct full string, not a count-plus-noun template**, which is
+      // why it comes from `taggedUnitsKeepSelling`'s own string pair rather
+      // than from `pluralize`'s noun pair. N=0 needs no form: the sentence's
+      // render condition is ≥1 tagged unit.
+      //
+      // **Shared with §3.19c's sheet, from one place** (`ux-critic` m5,
+      // 2026-09-21): the same fact, on two screens that sit directly over one
+      // another, is one string. `withCount` is the only legitimate difference
+      // — here the count *is* the reassurance (§3.4c's own note), and it
+      // appears only in the plural.
+      lines.push(taggedUnitsKeepSelling(tagged, { withCount: true }));
     }
     setBarcodeAck(lines);
   }
@@ -353,7 +382,14 @@ export function ProductPage({
    * occupied, at the moment it becomes real, with no extra screen and no
    * extra tap (D80 permits an offer and forbids auto-enabling; this is the
    * same mechanism the reverse direction uses, which is what makes the page
-   * predictable). */
+   * predictable).
+   *
+   * **Nothing here touches Level 1's clause A, and it must not.** `N ya
+   * etiquetadas` is unchanged (the write touches zero units and zero tags)
+   * and **keeps its clause**: the newly-live switch reads `No`, so it carries
+   * no caption and makes nothing self-evident (§3.19c, corrected
+   * 2026-09-21). That falls out of the clause's own live condition — there is
+   * no post-clear special case, and adding one would be the defect. */
   function handleBarcodeRemoved() {
     const willOfferNfc = business?.nfcPerProductEnabled === true && paid;
     setBarcodeAck(null);
@@ -521,11 +557,20 @@ export function ProductPage({
               {/* **The one control on this page that writes directly.** The
                   whole row is the tap target: a bare tap anywhere on it flips
                   the value — no smaller switch-shaped sub-target to aim at,
-                  no sheet, no confirmation, no separate save. It carries no
-                  "›" and trails only `Sí` or `No`, both halves of the shape-3
-                  contract and both readable at rest, before she commits to
+                  the two-position control included, no sheet, no
+                  confirmation, no separate save. It carries no "›", trails
+                  only `Sí` or `No`, and ends in a control shown in its
+                  current position — the three halves of the shape-3
+                  contract, all readable at rest, before she commits to
                   anything. She can tell this row writes and the ones above it
-                  don't without touching any of them. */}
+                  don't without touching any of them.
+
+                  The word and the control are both drawn from this single
+                  `value` prop, so they cannot disagree in any state: they
+                  move together on tap, hold the attempted position together
+                  through `Guardando…`, and revert together on failure
+                  (§3.19's save-state discipline; `DetailRow` states the
+                  construction). */}
               <DetailRow
                 shape="instant"
                 label="Vender con tag NFC"

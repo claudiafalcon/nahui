@@ -40,3 +40,48 @@ export function stockCaption(available: number, everReceived: boolean): string {
   if (!everReceived) return 'sin registrar';
   return `${available} ${pluralize(available, 'disponible', 'disponibles')}`;
 }
+
+/**
+ * **The already-tagged-garments sentence — one string, two surfaces**
+ * (added 2026-09-21, `ux-critic` m5). `inventory.md` §3.4c's third banner
+ * sentence and §3.19c's third sheet sentence state the identical fact on two
+ * screens that sit directly over one another, and the spec now says in as
+ * many words that **one helper should serve both**: "Two surfaces, one fact,
+ * one string — the same 'specified once, reused everywhere' discipline this
+ * document applies to states, applied to copy."
+ *
+ * **It is a full-string pair, not a count-plus-noun template.** The N=1 form
+ * carries **no numeral at all** — `La prenda que ya tiene tag`, never
+ * "La 1 prenda," which is not Spanish — and its article, noun *and* verb all
+ * take the singular, so it cannot be assembled from `pluralize`'s noun pair
+ * without implying a template that does not exist. Both spec sections state
+ * that requirement independently; this is where it is honoured.
+ *
+ * **The verb is `se sigue(n) vendiendo`, never `sigue(n) funcionando`**
+ * (corrected 2026-09-21). A tag functions; a garment does not — and what she
+ * needs to know is that she can still *sell* them (*global-principles.md*,
+ * "business language always comes before technical language").
+ *
+ * **`withCount` is the one thing that legitimately differs between the two
+ * callers**, and only in the plural:
+ * - §3.4c's banner names the count (`Las 5 prendas…`) — there "the count *is*
+ *   the reassurance," per that section's own rejected-alternative note.
+ * - §3.19c's sheet does not (`Las prendas…`) — its own wireframes carry no
+ *   numeral in either form, and the sheet already shows the barcode as its
+ *   subject rather than a count.
+ * At N=1 the two are byte-identical, which is exactly why the singular form
+ * lives in one place instead of two.
+ *
+ * N=0 needs no form: both render conditions are ≥1 tagged unit.
+ *
+ * §3.19's NFC-switch caption ("Si lo apagas, las prendas que ya tienen tag
+ * siguen igual") is deliberately **not** routed through here — it is a
+ * conditional about a future action, not this present-tense sentence, and the
+ * spec leaves it unchanged on purpose.
+ */
+export function taggedUnitsKeepSelling(count: number, { withCount }: { withCount: boolean }): string {
+  if (count === 1) return 'La prenda que ya tiene tag se sigue vendiendo igual.';
+  return withCount
+    ? `Las ${count} prendas que ya tienen tag se siguen vendiendo igual.`
+    : 'Las prendas que ya tienen tag se siguen vendiendo igual.';
+}

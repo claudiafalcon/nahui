@@ -68,14 +68,89 @@
 /* Shape 3 — the instant-write row. Its trailing value carries a little more
    weight than a reported value does: it is the current position of a control,
    the one thing on the row she is about to change, so it reads at the same
-   strength as the label rather than as a footnote to it. This is the visual
-   half of signal two; the load-bearing half is the closed `Sí`/`No`
-   vocabulary itself (see DetailRow.tsx), which survives any restyling. */
+   strength as the label rather than as a footnote to it.
+
+   **This weight and colour are emphasis, and nothing in this system may
+   describe them as a signal** (corrected 2026-09-21). The three signals are
+   the absent chevron, the closed `Sí`/`No` vocabulary, and the control's
+   position below — all three readable with no colour perception at all.
+   Colour could not carry one here even if we wanted it to: DESIGN-SYSTEM §8
+   bars state readable from colour, coral already means brand/Product
+   identity on the display-only elements of this same screen (`.moneyTag` in
+   the header), and `.busy .value` deliberately drops the coral mid-write, so
+   a colour "signal" would vanish at exactly the moment the row is least
+   stable. */
 .instant .value {
   font: var(--text-body);
   font-weight: 700;
   color: var(--color-coral-aa);
   max-width: none;
+  /* The control is `flex-shrink: 0` and sits last, so the trailing edge is
+     fixed: a longer word ("Guardando…") is absorbed by `.label`'s flex, and
+     the control never moves between states. The word shifts, the geometry
+     doesn't. */
+  text-align: right;
+}
+
+/* The word and the control are one unit — the row's state, stated twice, in
+   two registers — so they sit closer to each other than the row's default
+   12px gap would put them. The label absorbs the difference through its own
+   flex, so nothing else on the row moves. */
+.instant {
+  gap: var(--space-2);
+}
+
+/* Signal three — the two-position control (§3.19, 2026-09-21). **The
+   `DESIGN-SYSTEM.md` §8 switch, relocated rather than superseded**: §8's own
+   2026-09-17 geometry, verbatim (40×24 pill track, 1px hilo border, hilo off
+   / tezontle-dark on, an 18px white knob translating 16px at
+   `--duration-fast`/`--ease-standard`), moved from a standalone control into
+   the trailing edge of the full-width row §8 itself said a binary setting
+   should live on. It is a `<span>`, never a nested `<button>` — the row's own
+   56px height stays the only hit area in this shape. */
+.instant .switch {
+  position: relative;
+  /* Stated rather than inherited from flex-item blockification: this span
+     carries a width and a height, and a future refactor that takes it out of
+     a flex context must not silently collapse it to an inline box. */
+  display: inline-block;
+  width: 40px;
+  height: 24px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-hilo);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-hilo);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+/* ON keeps §8's own `--color-tezontle-dark`, deliberately rather than by
+   inheritance: it now sits ~8px from a `--color-coral-aa` word, which the
+   Catalog-row original never did. Two *near*-identical reds would read as a
+   mismatch; these two are a documented step apart on the same
+   coral→terracotta→clay ramp (`tokens.css`), the same relationship a primary
+   button already has with its own hover, so they read as one family at two
+   depths. Neither carries state — the words do (§8). */
+.instant .switchOn {
+  background-color: var(--color-tezontle-dark);
+  border-color: var(--color-tezontle-dark);
+}
+
+.instant .switchKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--color-white);
+  box-shadow: 0 1px 2px rgba(45, 45, 45, 0.24);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.instant .switchOn .switchKnob {
+  transform: translateX(16px);
 }
 
 /* `settings.md` §3.9's "fila atenuada" mechanic, reused verbatim — the row

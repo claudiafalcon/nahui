@@ -12,7 +12,7 @@ import styles from './DetailRow.module.css';
  * |---|---|---|
  * | `value`   | `Label            valor ›` | Opens a staged sheet with a Cancelar/Guardar pair. Writes nothing on tap. |
  * | `action`  | `Acción                  ›` | Same, with no value to show. |
- * | `instant` | `Label                Sí`   | Writes immediately on tap. **Never carries "›".** |
+ * | `instant` | `Label         Sí  (—●)`    | Writes immediately on tap. **Never carries "›".** The two-position control is a signifier *inside* the row's one target, never a second target. |
  *
  * **Every row is a tap target — there is no passive row shape, deliberately**
  * (§3.19). A passive fact placed on this level sits among rows that all read
@@ -39,11 +39,39 @@ import styles from './DetailRow.module.css';
  * `InstantRowValue` below is a literal union rather than a `string`. One is a
  * fact being reported; the other is the current position of a control.
  *
- * **Why two signals and not one.** The chevron is a small mark at the far edge
- * of a row; the binary-vocabulary rule holds even if she never looks there.
- * They fail independently, which is the point. Neither is a visual-design
- * decision — one is the presence of a forward affordance, the other the
- * cardinality of a value's vocabulary.
+ * **Signal three — the control's own position** (added 2026-09-21, §3.19's
+ * "the trailing edge states the row's kind, affirmatively, on every row").
+ * The chevron was always stated affirmatively, for the right reason: a rule
+ * about one row's *absence* is no signal at all. That reasoning was then not
+ * applied to shape 3, which was left defined by two absences — no chevron, no
+ * control — plus one inference: that a trailing `Sí`/`No` reads as a
+ * control's position rather than as a reported fact. **That inference is what
+ * a merchant's transferred expectation runs against.** On her own phone's
+ * Ajustes, in WhatsApp, in Mercado Libre, a chevron-less row of
+ * label-and-trailing-value is what a *read-only fact* looks like; an
+ * instantly-applied binary setting is what carries visible two-position
+ * geometry. So the instant-write row ends in a visible control shown in its
+ * current position, unconditionally. **No row ends in nothing, and no row
+ * carries both marks.**
+ *
+ * **Why three signals and not one.** The chevron is a small mark at the far
+ * edge of a row; the control is a shape she recognises without reading it;
+ * the words state the state even if she looks at neither. They fail
+ * independently, which is the point. **The words stay, and they are what make
+ * the control admissible** — this row's state must be readable *in words* at
+ * rest, never only from a control's position, and never from colour or weight
+ * at all (DESIGN-SYSTEM §8's retained rule). The control accompanies the
+ * words; a rendering that dropped `Sí`/`No` in favour of the control alone
+ * would be a defect, not a simplification.
+ *
+ * **The control is a signifier, never a second tap target.** It is a
+ * `<span>`, inside the row's single `<button>`, `aria-hidden` — a tap on the
+ * label, on the word, on the control, or on the empty space between them does
+ * the same one thing. Recreating a sub-target here is precisely what the
+ * Catalog card's retired NFC hit zone was, and what this shape exists to
+ * avoid; restoring the geometry without the hit area restores a signal that
+ * retirement discarded by accident, and adds back nothing the retirement was
+ * for.
  *
  * **No row may mix shapes.** A sheet-opening row with a binary value (a
  * hypothetical `Vender con tag NFC   Sí ›`) is forbidden outright: it would
@@ -78,8 +106,13 @@ import styles from './DetailRow.module.css';
  * represents a stored *setting or attribute* of a Product, not money, not the
  * Product itself, and not a torn transition between two zones of a screen —
  * the identical reasoning that already keeps `Button`/`Sheet`/form inputs
- * plain, and that DESIGN-SYSTEM §8 applied to the on/off switch this row's
- * `instant` shape replaces.
+ * plain, and that DESIGN-SYSTEM §8 applied to the on/off switch whose
+ * geometry this row's `instant` shape now carries. That switch was
+ * **relocated, not superseded**: §8's own prospective rule named "a button
+ * that swaps its own text between two states" as the thing *not* to
+ * hand-roll, and the first build of this row was exactly that. The track and
+ * knob are back, in the one place the rule always pointed them — inside the
+ * full-width row, as a signifier rather than as its own control.
  */
 
 /** The closed, two-position vocabulary an instant-write row may trail — and
@@ -159,9 +192,31 @@ export function DetailRow<V extends string>(props: DetailRowProps<V>) {
         onClick={onTap}
       >
         <span className={styles.label}>{label}</span>
-        {/* No "›" here, ever — half of the shape-3 contract, and the half a
-            future edit is most likely to break by copying the row above. */}
+        {/* No "›" here, ever — one third of the shape-3 contract, and the
+            part a future edit is most likely to break by copying the row
+            above. */}
         <span className={styles.value}>{pending ? 'Guardando…' : value}</span>
+        {/* The two-position control. **Its position and the word can never
+            disagree, in any state, by construction** — both are computed from
+            the same single `value` prop, which carries the *attempted* value
+            for the whole time a write is in flight and falls straight back to
+            stored state when it resolves. So they move together on tap,
+            together into `Guardando…` (the control holds the attempted
+            position while the word is replaced), and together on the revert.
+            The control is never the only thing that changes and can never lag
+            the word — the one failure mode that would make having this
+            geometry worse than not having it (§3.19's save-state discipline).
+
+            `aria-hidden` and non-interactive on purpose: the row is already
+            exposed as a toggle whose pressed state is the value, so reading
+            this out would be the same fact twice, and giving it a target of
+            its own would reinstate the hit zone this shape exists to avoid. */}
+        <span
+          className={`${styles.switch} ${value === 'Sí' ? styles.switchOn : ''}`}
+          aria-hidden="true"
+        >
+          <span className={styles.switchKnob} />
+        </span>
       </button>
     );
   }
