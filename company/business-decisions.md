@@ -8,6 +8,14 @@ Entries are never deleted once resolved; mark them Resolved with the outcome ins
 
 ## Open
 
+### Q21 — Does supported physical tag reuse change the "tags are a recurring consumable" revenue framing?
+
+- **Raised by:** `architect`, 2026-09-21, while ruling on `product/99-rfc/0018-nfc-tag-attachment-lifecycle.md` (`decision-log.md` D83). Flagged deliberately rather than resolved — it is a pricing/commercialization question, not an architectural one.
+- **Context.** `decision-log.md` D11 frames NFC tags as *"a recurring consumable — merchants buy additional tag packs as they keep selling,"* and D11's own text calls that *"a business-model decision, not an architectural one."* Until D83, the domain model made physical tag reuse structurally impossible: a sold unit's `nfc_tags` row permanently claimed that identifier. D83 makes reuse expressible and supported.
+- **The question.** Most tags still leave with customers and are never seen again, so the consumable framing largely holds. But some now legitimately come back and get re-attached, which reduces tag-pack consumption at the margin. Whether that matters to pricing, and whether it changes how tag packs are positioned to merchants, is a Business Decision.
+- **Explicitly not blocking.** D83 shipped without waiting on this, correctly: D11 itself states the domain model *"supports either resolution."* Nothing about the lifecycle fix depends on the answer.
+- **Status:** Open, low urgency — resolve whenever pricing is next touched.
+
 ### Q20 — Should phone-camera barcode scanning be a Free-tier or Paid-tier capability?
 
 - **Raised by:** `product/00-foundation/decision-log.md` D65 (2026-09-13) — barcode scanning was added for a prospective client selling toys with pre-existing manufacturer barcodes. D65 explicitly named this as unresolved: "nothing in the domain model requires gating it... whether Nahui *chooses* to offer it universally or use it as a paid differentiator is pricing/positioning."
