@@ -123,7 +123,23 @@ export function mapEntryRow(row: Record<string, unknown>): InventoryEntry {
  * — `nfc_tags` is its own table server-side, Phase 1's deliberate refinement
  * from this prototype's earlier inlined scalar, see `types.ts`'s own
  * `InventoryUnit.tagId` doc comment) — this function alone never has that
- * fact available. */
+ * fact available.
+ *
+ * **`decision-log.md` D83 / RFC 0018 — that join is over *open* attachments
+ * only, and the qualifier is load-bearing.** `nfc_tags` is no longer one row
+ * per unit: it is an attachment record with a validity window
+ * (`assigned_at -> detached_at`), so one unit may carry closed history plus
+ * at most one open row (`nfc_tags_unit_open_unique_idx`). The caller
+ * (`store.tsx`'s `hydrateFromBackend`) filters its read with
+ * `.is('detached_at', null)` precisely so that the `tagId` this shape is
+ * completed with keeps meaning "the identifier of this unit's *open*
+ * attachment" — the semantics every consumer (D80/D81/D82's selectors,
+ * `pendingTagUnits`, the scan-resolution lookups) already assumes. Folding a
+ * closed row in here would make a genuinely-untagged unit read as tagged.
+ *
+ * A `sold` unit legitimately keeps an *open* attachment (D10's claim
+ * resolution reads it; `finalize_sale` never detaches), so a non-null
+ * `tagId` says "not superseded," never "on hand" — on-hand is `status`. */
 export function mapUnitRow(row: Record<string, unknown>): Omit<InventoryUnit, 'tagId'> {
   return {
     id: row.id as ID,

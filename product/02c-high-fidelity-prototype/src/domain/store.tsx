@@ -802,7 +802,11 @@ interface StoreValue {
    * — resolved server-side now, not by scanning the local `state.units`
    * array. `already-assigned` is checked before `queue-empty` — a
    * business-logic conflict (§3.15) is distinct from there being nothing
-   * left to tag (§2 step 4/§3.13).
+   * left to tag (§2 step 4/§3.13). **`decision-log.md` D83:**
+   * `already-assigned` now means "this identifier's *open* attachment sits
+   * on a unit that is still `available`/`reserved`"; a tag returned from a
+   * `sold`/`removed` unit re-attaches successfully instead (close-then-open,
+   * server-side, one transaction) rather than being refused forever.
    *
    * Stage 7 Backend Integration, Phase 1: a real, idempotency-keyed call
    * (fresh key per scan — each scan is its own logical attempt) to the
@@ -1647,7 +1651,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       supabase.from('lots').select('*').eq('business_id', businessId),
       supabase.from('inventory_entries').select('*').eq('business_id', businessId),
       supabase.from('inventory_units').select('*').eq('business_id', businessId),
-      supabase.from('nfc_tags').select('*').eq('business_id', businessId),
+      // `decision-log.md` D83 / RFC 0018 — **open attachments only, and this
+      // `.is('detached_at', null)` is load-bearing, not a defensive
+      // nicety.** `nfc_tags` is no longer one row per unit: it carries an
+      // attachment window, so a unit may legitimately hold closed history
+      // (superseded by a re-attachment, or detached by `available ->
+      // removed`, D77/D78) *plus* at most one open row. Without this filter
+      // `tagByUnitId` below would fold closed history into `tagId` and a
+      // genuinely-untagged unit would read as tagged — over-counting D81's
+      // allocation gate (`taggedAvailableUnitCount`), under-counting D82's
+      // manual ceiling (`availableUntaggedCount`, which must stay in step
+      // with `_fifo_commit_to_allocation`'s own `and nt.detached_at is
+      // null`), and hiding the unit from Asignar Tags' queue
+      // (`pendingTagUnits`). Filtered here, at the one hydration boundary,
+      // rather than patched into each consumer: `InventoryUnit.tagId` then
+      // keeps meaning exactly what every existing caller already assumes it
+      // means — "the identifier of this unit's *open* attachment."
+      supabase.from('nfc_tags').select('*').eq('business_id', businessId).is('detached_at', null),
       supabase.from('venues').select('*').eq('business_id', businessId),
       supabase.from('events').select('*').eq('business_id', businessId),
       supabase.from('price_overrides').select('*').eq('business_id', businessId),
@@ -1698,7 +1718,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     // `tagId` is a join, not a column, on the client-side `InventoryUnit`
     // shape (Phase 1's `nfc_tags` table refinement — see
-    // `hydrationMapping.ts`'s own `mapUnitRow` doc comment).
+    // `hydrationMapping.ts`'s own `mapUnitRow` doc comment). **D83:** the
+    // read above is already narrowed to open attachments, so this map is a
+    // map of *open* attachments and `tagId` means "on this unit now" — a
+    // closed row never reaches it. The map is still safely one-entry-per-
+    // unit under the new schema: `nfc_tags_unit_open_unique_idx` enforces at
+    // most one open attachment per unit server-side.
+    //
+    // A `sold` unit deliberately keeps an *open* attachment (D10's claim
+    // resolution depends on it — `finalize_sale` never detaches), so a
+    // non-null `tagId` here is never by itself evidence the unit is on hand.
+    // "Open" means "not superseded"; possession is `status`, and every
+    // D80/D81/D82 selector scopes by `status` for exactly that reason.
     const tagByUnitId = new Map<ID, string>(
       (tagsRes.data ?? []).map((row: Record<string, unknown>) => [row.unit_id as ID, row.tag_identifier as string]),
     );
@@ -2225,7 +2256,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * count had drifted underneath her, since we only ever mark as many as
    * the server confirms it actually removed. A removed unit's `tagId` is
    * cleared to `null` in the same update, matching the RPC's own
-   * server-side `nfc_tags` row deletion.
+   * server-side tag release — which, as of `decision-log.md` D83 / RFC 0018,
+   * **closes the attachment window (`detached_at = now()`) instead of
+   * deleting the row**, so the unit keeps its attachment history for D59's
+   * "was this physically verified" question while the identifier becomes
+   * free to re-attach. The client mirror is unchanged by that and stays
+   * correct: `tagId` carries the *open* attachment only, and this unit's
+   * attachment is now closed, so `null` is exactly right. `available ->
+   * removed` is one of D83's two window-closing events (the other is
+   * re-attachment, mirrored in `assignTagToNextPendingUnit`); notably
+   * `finalize_sale` is *not* one of them — a sold unit deliberately keeps an
+   * open attachment, which is why `finalizeSale`'s own mirror leaves `tagId`
+   * alone.
    *
    * **Increase (`appliedDelta > 0`), new under D78/RFC 0016:** the RPC
    * mints `appliedDelta` new `available` units through a real,
@@ -2870,6 +2912,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * (`assign_tag_to_next_pending_unit`, `supabase/migrations/
    * 20260913030000_inventory_persistence_layer.sql`), replacing the
    * previous client-side scan of `state.units`.
+   *
+   * **`decision-log.md` D83 / RFC 0018 — `'already-assigned'` narrows.** The
+   * RPC now rejects only when the identifier's *open* attachment sits on an
+   * `available`/`reserved` unit (two garments claiming one physical tag,
+   * `inventory.md` §3.15, Spanish copy unchanged). A tag whose prior holder
+   * is `sold`/`removed` came legitimately back to her hand: the server
+   * closes that window and opens a new one in the same transaction and this
+   * call succeeds, with no new outcome, no new state and nothing asked of
+   * her — holding the tag *is* the proof it came back. See the mirror below
+   * for the client half of that close-then-open.
    */
   async function assignTagToNextPendingUnit(
     tagId: ID,
@@ -2902,9 +2954,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!data) return { ok: false, reason: 'platform-error' };
 
     const { unit_id: unitId, product_id: productId } = data as { unit_id: ID; product_id: ID };
+    // `decision-log.md` D83 / RFC 0018 — the mirror reproduces the server's
+    // **close-then-open** transition, not just the open half. When this
+    // identifier had a prior open attachment on a `sold`/`removed` unit, the
+    // RPC closed that window (`detached_at = now()`) in the same transaction
+    // before inserting the new row. Mirroring only the insert would leave
+    // this device holding the identifier on *two* units at once — a state
+    // the server's own `nfc_tags_identifier_open_unique_idx` makes
+    // impossible — and any `state.units.find((u) => u.tagId === tagId)`
+    // lookup could then resolve to the stale prior holder until the next
+    // hydration cycle. Clearing the prior holder's `tagId` is exactly what
+    // "closed" means on this side of the wire, since `tagId` here represents
+    // the *open* attachment only.
+    //
+    // The prior holder is never `available`/`reserved`: that case is still a
+    // hard `tag_already_assigned` conflict (`inventory.md` §3.15, unchanged)
+    // and returns above, so this can only ever clear a terminal unit's
+    // superseded tag — it can never remove a live unit from a count.
     applyWriteMirror((s) => ({
       ...s,
-      units: s.units.map((u) => (u.id === unitId ? { ...u, tagId } : u)),
+      units: s.units.map((u) => {
+        if (u.id === unitId) return { ...u, tagId };
+        if (u.tagId === tagId) return { ...u, tagId: null };
+        return u;
+      }),
     }));
     return { ok: true, unitId, productId };
   }
@@ -3341,6 +3414,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     applyWriteMirror((s) => {
       const unitIds = new Set(openSale.items.map((i) => i.unitId));
+      // `decision-log.md` D83 / RFC 0018 — `tagId` is deliberately left
+      // untouched here, matching `finalize_sale`, which is explicitly *not*
+      // one of the two attachment-window-closing events. The moment a
+      // customer peels a tag off is unobservable and whether she returns it
+      // is unknowable, so the window stays open until a re-attachment
+      // supersedes it. D10's claim resolution reads exactly this open
+      // attachment on a `sold` unit. Open means "not superseded," never "in
+      // the merchant's possession" — possession is `status`, which is what
+      // every D80/D81/D82 selector scopes by.
       const units = s.units.map((u) =>
         unitIds.has(u.id) ? { ...u, status: 'sold' as InventoryUnitStatus } : u,
       );

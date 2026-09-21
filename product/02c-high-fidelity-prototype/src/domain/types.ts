@@ -682,16 +682,35 @@ export interface InventoryUnit {
   status: InventoryUnitStatus;
   receivedAt: number; // inherited from Lot.receivedAt — drives FIFO ordering (D5)
   /**
-   * Asignar Tags (`inventory.md` §3.14-§3.17, Migration Workflow D43) — the
-   * domain-model's 1:1 NFCTag attribute, modeled here as a nullable scalar
-   * rather than a separate `NFCTag` entity (no other field/behavior needs to
-   * hang off a tag besides "which unit does it belong to," so a second
-   * aggregate would be pure ceremony). `null` = untagged (every unit
-   * `commitLot` mints starts here, regardless of `nfc` capability — tagging
-   * is optional at the capability level, never a precondition for
-   * `status = 'available'`, `inventory.md` §8 item 2/Q2). Set exactly once,
-   * by `assignTagToNextPendingUnit` (`store.tsx`) — never cleared or
-   * reassigned by any other write path in this slice.
+   * Asignar Tags (`inventory.md` §3.14-§3.17, Migration Workflow D43) —
+   * **the identifier of this unit's one *open* `NFCTag` attachment**, or
+   * `null` when it has none. Modeled here as a nullable scalar rather than a
+   * client-side `NFCTag` entity: server-side `nfc_tags` is a real table, and
+   * this field is the flattened result of a join the hydration boundary
+   * already narrows to open rows (`store.tsx`'s `hydrateFromBackend`,
+   * `hydrationMapping.ts`'s `mapUnitRow`).
+   *
+   * `null` = untagged (every unit `commitLot` mints starts here, regardless
+   * of `nfc` capability — tagging is optional at the capability level, never
+   * a precondition for `status = 'available'`, `inventory.md` §8 item 2/Q2).
+   *
+   * **`decision-log.md` D83 / RFC 0018 — no longer "a 1:1 NFCTag attribute,"
+   * and no longer set exactly once.** `NFCTag` became an attachment record
+   * with an explicit validity window (`assignedAt -> detachedAt`); the
+   * invariant is "at most one *open* attachment per unit and per
+   * `(businessId, tagIdentifier)`," with closed rows kept as history that
+   * collides with nothing. This scalar therefore tracks the open window
+   * only, and it genuinely does change after its first write, by exactly two
+   * routes, both mirrored in `store.tsx`: `available -> removed` (D77/D78)
+   * clears it, and re-attaching the same identifier to a new unit clears it
+   * on the prior holder while setting it on the new one.
+   *
+   * **Non-null does not mean "on hand."** A `sold` unit deliberately keeps
+   * an *open* attachment — `finalize_sale` never detaches, because the
+   * moment a customer peels a tag off is unobservable, and D10's claim
+   * resolution reads that very row. Open means "not superseded"; possession
+   * is `status`, which is why D80/D81/D82's selectors all scope by `status`
+   * and must keep doing so.
    */
   tagId: string | null;
 }

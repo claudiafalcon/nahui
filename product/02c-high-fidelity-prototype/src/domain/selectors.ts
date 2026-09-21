@@ -320,7 +320,20 @@ export function isNfcTaggingEligible(business: Business | null | undefined, prod
  * unaffected. Passed, it narrows the same composed-eligibility filter to one
  * Product's own units only — the exact test `inventory.md` §3.4's new sixth
  * tap zone and §3.14's new Product-scoped entry point both require, reusing
- * this one function rather than duplicating its filter logic a second time. */
+ * this one function rather than duplicating its filter logic a second time.
+ *
+ * **`decision-log.md` D83 / RFC 0018 — `u.tagId != null` must mean "has an
+ * *open* attachment," which the hydration boundary guarantees** (`store.tsx`
+ * reads `nfc_tags` with `.is('detached_at', null)`). A unit whose only
+ * attachment is closed history — detached by `available -> removed`
+ * (D77/D78), or superseded by a re-attachment — genuinely needs a tag and
+ * must appear in this queue. If a closed row ever leaked into `tagId`, this
+ * filter would treat that unit as already tagged and it would simply become
+ * invisible in Asignar Tags: not an error state, not an empty state, just a
+ * garment silently missing from the queue, with the server's own
+ * `assign_tag_to_next_pending_unit` (whose untagged predicate is likewise
+ * open-only) still happily handing it out. Same qualifier, same reason, as
+ * `availableUntaggedCount` below. */
 export function pendingTagUnits(state: AppState, productId?: ID): InventoryUnit[] {
   return state.units.filter((u) => {
     if (u.status !== 'available' || u.tagId != null) return false;
@@ -1315,6 +1328,28 @@ export function disponibleEnGeneral(state: AppState, eventId: ID, productId: ID)
  * §3.22a's list-level "Leer con NFC" gate asks; passed, it narrows to one
  * Product's own units — the identical derivation §3.21's row-level scan
  * affordance and "sin tag · con tag" split need (specified, not yet built).
+ *
+ * **`decision-log.md` D83 / RFC 0018 — `tagId != null` means an *open*
+ * attachment, and that is guaranteed at the hydration boundary, not here.**
+ * `nfc_tags` now carries an attachment window (`detached_at`), so a unit can
+ * hold closed history plus at most one open row; `store.tsx`'s
+ * `hydrateFromBackend` reads open rows only (`.is('detached_at', null)`), so
+ * `tagId` never reflects a closed attachment. Were a closed row ever to leak
+ * into it, this count would **over-count** — opening a "Leer con NFC"
+ * overlay whose scans cannot resolve, the exact failure mode this selector's
+ * `available`-only narrowing exists to prevent. Do not relax the hydration
+ * filter on the assumption this selector re-checks it; it cannot, because
+ * the client type carries no `detachedAt`.
+ *
+ * **D80's allowlist is why no rule changed here.** A closed attachment can
+ * only ever belong to a `sold` or `removed` unit, so within `available`
+ * "has an attachment" and "has an *open* attachment" denote the identical
+ * set. That is a checkable invariant, not a coincidence: *a closed NFCTag
+ * attachment never belongs to a unit whose status is in the sale-time
+ * allowlist.* Note the converse is not true — a `sold` unit keeps an open
+ * attachment deliberately (`finalize_sale` never detaches; D10's claim
+ * resolution reads it), so "open" is never a proxy for "on hand," and the
+ * `status` scope above is what answers the possession question.
  */
 export function taggedAvailableUnitCount(state: AppState, productId?: ID): number {
   return state.units.filter((u) => {
@@ -1328,9 +1363,39 @@ export function taggedAvailableUnitCount(state: AppState, productId?: ID): numbe
  * `decision-log.md` D82 — this Product's `available` **untagged** units:
  * the pool `_fifo_commit_to_allocation` can actually consume, mirroring its
  * own server-side predicate exactly (`iu.status = 'available'` `and not
- * exists (select 1 from public.nfc_tags nt where nt.unit_id = iu.id)`). The
- * first of the manual allocation ceiling's two halves; the second is
+ * exists (select 1 from public.nfc_tags nt where nt.unit_id = iu.id and
+ * nt.detached_at is null)`). The first of the manual allocation ceiling's
+ * two halves; the second is
  * `quantityRemainingBySource(state, allocation, 'fifo_assignment')` above.
+ *
+ * **These two expressions must stay textually in step — keeping them
+ * identical *is* the D82 invariant.** The ceiling the merchant can type
+ * against has to be a number the server-side write can honour; the instant
+ * the two predicates disagree, "Guardar" succeeds, a success message
+ * renders, and fewer garments are committed than her own screen promised —
+ * a silently short commit she discovers at the bazaar. If
+ * `_fifo_commit_to_allocation`'s predicate is ever changed again, change
+ * this filter in the same pass, and vice versa.
+ *
+ * **`decision-log.md` D83 / RFC 0018 — "untagged" means "has no *open*
+ * attachment," and that qualifier is required, not defensive.** `nfc_tags`
+ * now carries an attachment window (`detached_at`), so a unit can hold
+ * closed history and still be genuinely untagged and genuinely committable:
+ * a tag detached by `available -> removed` (D77/D78) or superseded by a
+ * re-attachment leaves history behind on a row that must never read as a
+ * live attachment. The server's own `not exists` gained
+ * `and nt.detached_at is null` in D83's caller sweep for exactly this
+ * reason; client-side the same narrowing is enforced once, at the hydration
+ * boundary (`store.tsx`'s `hydrateFromBackend` reads open rows only), so
+ * `tagId == null` here already denotes "no open attachment." Leaving that
+ * read unqualified would **under-count** this pool — excluding a unit the
+ * server would happily commit — which is the client/server disagreement D82
+ * exists to close, arriving through the other half of the same formula.
+ *
+ * **Do not conflate "open" with "on hand" when reasoning about this.** A
+ * `sold` unit keeps an *open* attachment deliberately (D10), so the
+ * `status === 'available'` scope above is doing its own separate job and
+ * must stay.
  *
  * **No NFC-eligibility predicate is applied here, deliberately.**
  * Eligibility (`nfcPerProductEnabled` + `Product.nfcTaggingEnabled`,
@@ -1339,7 +1404,11 @@ export function taggedAvailableUnitCount(state: AppState, productId?: ID): numbe
  * Product ever opted into tagging. **Do not "simplify" this into
  * `pendingTagUnits`** — that selector is eligibility-filtered and would
  * silently drop every untagged unit of a never-opted-in Product out of the
- * merchant's own manual ceiling.
+ * merchant's own manual ceiling. **Extending that same warning to D83's
+ * semantics:** do not "simplify" the untagged test into "has no `nfc_tags`
+ * row at all" either, in this filter or in the server predicate it mirrors.
+ * Both simplifications fail the same way and are invisible in the same way —
+ * they quietly shrink the manual pool under a success message.
  */
 export function availableUntaggedCount(state: AppState, productId: ID): number {
   return state.units.filter((u) => u.productId === productId && u.status === 'available' && u.tagId == null)
