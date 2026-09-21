@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { TagStub } from '../TagStub/TagStub';
+import { stockCaption } from '../../domain/format';
 import { toneForProduct } from '../../styles/productIdentity';
 import styles from './CatalogRow.module.css';
 
@@ -137,11 +138,17 @@ export function CatalogRow({
   reserveShortcutSlot?: boolean;
 }) {
   const dimmed = available <= 0;
-  const stockCaption = !everReceived ? 'sin registrar' : `${available} disponibles`;
+  // §3.4's binding count-caption rule (2026-09-21): singular at exactly N=1
+  // (`1 disponible`), plural at zero (`0 disponibles`). Derived in one shared
+  // place (`format.ts`) so this card and §3.19's own Level-1 figure can never
+  // disagree about the same number.
+  const stock = stockCaption(available, everReceived);
   // §3.4: "the caption extends with ` · N sin etiquetar`" — one caption, one
   // string, so it can never be mistaken for two elements, one of which might
-  // be tappable.
-  const caption = pendingTagCount > 0 ? `${stockCaption} · ${pendingTagCount} sin etiquetar` : stockCaption;
+  // be tappable. **`sin etiquetar` is invariant** — a prepositional phrase
+  // carrying no agreement, so `1 sin etiquetar` is already correct and is
+  // deliberately not pluralized here.
+  const caption = pendingTagCount > 0 ? `${stock} · ${pendingTagCount} sin etiquetar` : stock;
   const tone = toneForProduct(name);
   const priceLabel = `$${price.toLocaleString('es-MX')}`;
 

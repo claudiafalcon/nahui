@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useStore } from '../../../domain/store';
 import { availableCount, everReceived, matchProductByBarcode } from '../../../domain/selectors';
+import { stockCaption } from '../../../domain/format';
 import { Sheet } from '../../../components/Sheet/Sheet';
 import { Button } from '../../../components/Button/Button';
 import { BarcodeScanner } from '../../../components/BarcodeScanner/BarcodeScanner';
@@ -171,7 +172,9 @@ export function EditBarcodeSheet({
           <div>
             <p className={pickerStyles.confirmProductName}>{conflict.product.name}</p>
             <p className={pickerStyles.confirmProductCaption}>
-              {!conflict.everReceived ? 'sin registrar' : `${conflict.available} disponibles`}
+              {/* §3.4's count-caption rule, which names §3.4e's recognition
+                  display among the surfaces it governs. */}
+              {stockCaption(conflict.available, conflict.everReceived)}
             </p>
           </div>
         </div>

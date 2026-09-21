@@ -24,22 +24,11 @@
   color: var(--color-obsidian);
 }
 
-.confirmation {
-  margin: 0 var(--space-4) var(--space-2);
-  font: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--color-success);
-}
-
-/* inventory.md §3.13's mixed-Lot completion-copy variant (`decision-log.md`
-   D71) — the optional second line under `.confirmation`, plain factual
-   register (not bold/success-colored — it's explaining, not re-announcing
-   success), same ambient fade lifecycle as `.confirmation` itself. */
-.confirmationDetail {
-  margin: calc(-1 * var(--space-1)) var(--space-4) var(--space-2);
-  font: var(--text-body-sm);
-  color: #6B6259;
-}
+/* §3.12/§3.13/§3.13a's ambient line and §3.13's mixed-Lot second line both
+   moved to `components/AmbientConfirmation/` (2026-09-21, `ux-critic` Major
+   2) — rule for rule, unchanged. The spec binds this screen and §3.19's
+   Product Page to render them "with identical copy and identical shape on
+   both," which two private copies of the same CSS cannot guarantee. */
 
 /* inventory.md §3.3a/§3.4 (`decision-log.md` D46 Addendum) — the one-time
    ambient banner acknowledging "Cambiar a vender con tags," plain factual

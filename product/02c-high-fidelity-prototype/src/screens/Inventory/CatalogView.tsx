@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
 import { useStore } from '../../domain/store';
 import { catalogRows, pendingTagCount } from '../../domain/selectors';
 import { CatalogRow } from '../../components/CatalogRow/CatalogRow';
+import { AmbientConfirmation } from '../../components/AmbientConfirmation/AmbientConfirmation';
 import { Button } from '../../components/Button/Button';
 import styles from './CatalogView.module.css';
 
@@ -42,6 +42,7 @@ export function CatalogView({
   onStartNfcAssignScan,
   confirmationMessage,
   confirmationDetail,
+  confirmationToken,
   settingsTagsBanner,
 }: {
   /** §3.4's single tap target — the whole card, every card, one destination
@@ -64,11 +65,18 @@ export function CatalogView({
    * literal, synchronous user gesture (no `await` in between), the same shape
    * `Selling.tsx`'s "Leer con NFC" button already uses. */
   onStartNfcAssignScan: () => Promise<void>;
+  /** Arrives complete, "✓" included, composed once by `InventoryScreen` and
+   * handed identically to this screen and to `ProductPage` — whichever one
+   * the operation returned to. */
   confirmationMessage?: string | null;
   /** §3.13's mixed-Lot completion-copy variant (`decision-log.md` D71) — an
    * optional second line beneath `confirmationMessage`, on the same fade
    * lifecycle. */
   confirmationDetail?: string | null;
+  /** One fresh value per *delivered* confirmation — see
+   * `AmbientConfirmation`. Without it, a second save producing byte-identical
+   * copy on a screen that never remounted would show nothing at all. */
+  confirmationToken?: string | number | null;
   /** §3.3a/§3.4 (`decision-log.md` D46 Addendum) — the one-time ambient
    * banner shown when this view was reached via `settings.md` §2.6's handoff
    * and step 0 found nothing to auto-route her into. The caller owns the
@@ -77,20 +85,6 @@ export function CatalogView({
   settingsTagsBanner?: string | null;
 }) {
   const { state } = useStore();
-  const [toast, setToast] = useState<string | null>(confirmationMessage ?? null);
-  const [toastDetail, setToastDetail] = useState<string | null>(confirmationDetail ?? null);
-
-  useEffect(() => {
-    if (confirmationMessage) {
-      setToast(confirmationMessage);
-      setToastDetail(confirmationDetail ?? null);
-      const t = window.setTimeout(() => {
-        setToast(null);
-        setToastDetail(null);
-      }, 2400);
-      return () => window.clearTimeout(t);
-    }
-  }, [confirmationMessage, confirmationDetail]);
 
   const rows = catalogRows(state);
   const pendingByProduct = rows.map(({ product }) => pendingTagCount(state, product.id));
@@ -109,8 +103,13 @@ export function CatalogView({
       <div className={styles.topbar}>
         <span className={styles.wordmark}>Inventario</span>
       </div>
-      {toast && <p className={styles.confirmation}>{toast} ✓</p>}
-      {toast && toastDetail && <p className={styles.confirmationDetail}>{toastDetail}</p>}
+      {/* The shared line — identical component, identical lifecycle, on this
+          screen and on `ProductPage` alike (§3.12/§3.13/§3.13a). */}
+      <AmbientConfirmation
+        message={confirmationMessage}
+        detail={confirmationDetail}
+        token={confirmationToken}
+      />
 
       {settingsTagsBanner && <p className={styles.settingsBanner}>{settingsTagsBanner}</p>}
 

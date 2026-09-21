@@ -38,6 +38,27 @@
 
   `.line1` and `.line2Main` are the card's own tap area; `.shortcutSlot` is
   outside it by construction, in a column of its own.
+
+  **The gap is two-dimensional, and both halves belong to the card's rect**
+  (corrected 2026-09-21, `ux-critic` Major 3). §3.4's guarantee 3 asks for a
+  visible non-zero separation between the card and the shortcut, with "a tap
+  landing in it resolving to the card, not the shortcut." The card/shortcut
+  boundary is an L, so it has two segments and each one needs its own gap:
+
+  - **horizontal** — `.line2Main`'s right padding, the caption↔shortcut
+    separation (12px);
+  - **vertical** — `.line1`'s bottom padding, the seam running *directly
+    beneath the right-aligned price pill* and directly above the shortcut's
+    top edge (10px). This one was 2px in the first build, which is the more
+    dangerous of the two: the price was a tap zone for six weeks before this
+    amendment retired it, it is rotated −2° so its visual bottom edge sits
+    lower still, and a reach for it landing a few pixels low would have
+    dropped her into a scan queue (`startScan()` fires in the same tap) on
+    the one screen whose entire job is scanning.
+
+  Both gaps are *padding on the card's own elements*, never a margin between
+  them, so their pixels are inside the card's tap rect and a tap in either one
+  resolves to the card — reversible navigation — rather than to the shortcut.
 */
 .card {
   width: 100%;
@@ -64,11 +85,42 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-1) 2px 4px;
+  /* Guarantee 3, vertical half. This row spans the full width — including the
+     column directly above the shortcut — so its bottom padding *is* the seam
+     between the card's rect and the shortcut's top edge. 10px, unconditional
+     (never keyed on whether this particular list happens to reserve a slot),
+     so the card's internal rhythm is identical in every list and the
+     guarantee can't lapse in one. */
+  padding: var(--space-3) var(--space-1) 10px 4px;
   border: none;
   background-color: transparent;
   text-align: left;
   cursor: pointer;
+}
+
+/* s2 — the focus ring outlines the **card**, not its top row. The card's tap
+   area is two rects for the purely geometric reason that "all of line 1 plus
+   the leading part of line 2" is an L-shape; they are one logical target, and
+   the one place that implementation detail would otherwise become visible is
+   the ring. Same ring as `global.css`'s, moved up one element. */
+.line1:focus-visible {
+  outline: none;
+}
+
+.card:has(.line1:focus-visible) {
+  outline: 3px solid var(--color-tezontle-dark);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Without `:has()` the ring stays where the browser can draw it — a smaller
+   ring is a lesser defect than no ring at all for a keyboard/AT user. */
+@supports not selector(:has(*)) {
+  .line1:focus-visible {
+    outline: 3px solid var(--color-tezontle-dark);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
 }
 
 .line2Main {
@@ -76,15 +128,16 @@
   grid-row: 2;
   display: flex;
   align-items: center;
-  /* Guarantee 3 — the gap. The visible separation between the caption and
-     the shortcut is this padding, which means the gap's own pixels belong to
-     the **card's** tap rect: "A tap landing in that gap resolves to the card,
-     not the shortcut — the safe default, since the card is reversible
-     navigation and the shortcut opens a scan queue" (§3.4). §3.4 also
-     describes that gap as "itself outside both targets," which cannot be
-     simultaneously true of a gap that resolves to the card; the operative
-     rule — where a tap in it lands — is the one implemented here, and the
-     divergence is disclosed rather than quietly reconciled. */
+  /* Guarantee 3, horizontal half. The visible separation between the caption
+     and the shortcut is this right padding, which means the gap's own pixels
+     belong to the **card's** tap rect: "A tap landing in that gap resolves to
+     the card, not the shortcut — the safe default, since the card is
+     reversible navigation and the shortcut opens a scan queue" (§3.4). The
+     vertical half of the same boundary is `.line1`'s bottom padding above —
+     see this file's own layout note. (§3.4's now-corrected "itself outside
+     both targets" phrasing described the visual separation, not the hit-test;
+     the resolve-to-the-card half is the operative rule and is what's built
+     here, in both dimensions.) */
   padding: 0 var(--space-3) 14px 4px;
   min-height: 24px;
   border: none;
@@ -187,8 +240,17 @@
 /* A dimmed card is "needs restocking," never "disabled" — every region stays
    fully tappable, including the shortcut. Only the text quiets down; nothing
    loses its target, and this is now a statement about the whole card rather
-   than one zone within it. */
+   than one zone within it.
+
+   **The dim tone clears WCAG AA, deliberately (`ux-critic` m3, 2026-09-21).**
+   It was #9C9186 — ~3.08:1 on white, ~2.8:1 on this app's own `--color-
+   balanced` shell, below AA — on precisely the card §3.4 says she is *most*
+   likely to open, and which must never read as disabled. #776D62 is the same
+   warm neutral family, one step quieter than the caption's own #6B6259, at
+   ~5.06:1 on white and ~4.6:1 on the shell. The name still drops hard (from
+   obsidian's ~12.5:1), which is where the dimming signal actually comes from,
+   and the muted marker (`TagStub muted`) carries the rest. */
 .card.dimmed .name,
 .card.dimmed .caption {
-  color: #9C9186;
+  color: #776D62;
 }

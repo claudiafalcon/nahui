@@ -1,0 +1,25 @@
+/*
+  AmbientConfirmation — the one visual definition of `inventory.md`'s ambient
+  confirmation line, lifted out of `CatalogView.module.css` and
+  `ProductPage.module.css` unchanged (same margins, same type, same tone) so
+  the two screens the spec binds to render it "with identical copy and
+  identical shape on both" can no longer drift into two of either.
+
+  Quiet by design: a short success-toned line in the page's own margin, never
+  a banner, never a panel, never a dismissable surface. It states that
+  something landed and then gets out of the way.
+*/
+.line {
+  margin: 0 var(--space-4) var(--space-2);
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+/* §3.13's mixed-Lot second line — subordinate to the line above it, so it
+   reads as detail on the same event rather than a second announcement. */
+.detail {
+  margin: calc(-1 * var(--space-1)) var(--space-4) var(--space-2);
+  font: var(--text-body-sm);
+  color: #6B6259;
+}

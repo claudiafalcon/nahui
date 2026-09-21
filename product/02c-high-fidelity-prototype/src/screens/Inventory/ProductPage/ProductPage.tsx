@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore } from '../../../domain/store';
 import { availableCount, everReceived, pendingTagCount, taggedOnHandUnitCount } from '../../../domain/selectors';
-import { pluralize } from '../../../domain/format';
+import { pluralize, stockCaption } from '../../../domain/format';
+import { AmbientConfirmation } from '../../../components/AmbientConfirmation/AmbientConfirmation';
 import { Button } from '../../../components/Button/Button';
 import { DetailRow } from '../../../components/DetailRow/DetailRow';
 import { TagStub } from '../../../components/TagStub/TagStub';
@@ -70,6 +71,7 @@ export function ProductPage({
   product,
   confirmationMessage,
   confirmationDetail,
+  confirmationToken,
   onBack,
   onRegisterMerchandise,
   onCorrectQuantity,
@@ -82,9 +84,19 @@ export function ProductPage({
    * §3.13a's own 2026-09-19 correction), so the copy and shape here are
    * identical to `CatalogView`'s — same string, same ambient/fading/
    * no-tap-to-dismiss behaviour, composed once by `InventoryScreen` and
-   * handed to whichever screen is the origin. */
+   * handed to whichever screen is the origin. **Rendered through the shared
+   * `AmbientConfirmation`, not a local copy of it** (`ux-critic` Major 2,
+   * 2026-09-21): the spec requires the two screens to stay identical forever,
+   * and the first build had already drifted — Catalog view faded at 2400ms
+   * while this page rendered the prop straight through and never faded at
+   * all, leaving a stale success claim standing over current state, including
+   * over a failure line beneath it. */
   confirmationMessage?: string | null;
   confirmationDetail?: string | null;
+  /** One fresh value per delivered confirmation — what makes a *second*,
+   * byte-identical save visibly confirm on a page that never remounts
+   * (`ScreenTransition`'s key is stable per Product). */
+  confirmationToken?: string | number | null;
   /** §3.19: "Back arrow '← Inventario' returns to Catalog view (§3.4),
    * always" — this page is reached from exactly one place today, so its own
    * back destination needs no origin logic. */
@@ -103,9 +115,17 @@ export function ProductPage({
   const [openSheet, setOpenSheet] = useState<OpenSheet>(null);
   /** Ambient, fading, no-tap-to-dismiss — this page's own local writes
    * (§3.4b's "Foto guardada", §3.4c's ordinary one-line case, §3.19c's
-   * "Código de barras quitado"). Same shape and lifecycle as the
-   * origin-delivered confirmations above; they simply originate here. */
-  const [toast, setToast] = useState<string | null>(null);
+   * "Código de barras quitado"). **The same shared component, and therefore
+   * literally the same shape and lifecycle** as the origin-delivered
+   * confirmations above; these simply originate here. The token is minted per
+   * *showing*, not per string, so saving the same photo twice confirms twice
+   * — the identical reason the origin-delivered ones carry one. */
+  const [toast, setToast] = useState<{ text: string; token: number } | null>(null);
+  const toastSeqRef = useRef(0);
+  function showToast(text: string) {
+    toastSeqRef.current += 1;
+    setToast({ text, token: toastSeqRef.current });
+  }
   /**
    * §3.4c's **second confirmation shape** (amended 2026-09-19): when a
    * barcode save actually cleared `nfcTaggingEnabled` and/or this Product has
@@ -136,12 +156,6 @@ export function ProductPage({
    * client-initiated retry, since the row itself *is* the retry). Cleared on
    * success; a later, genuinely new flip mints its own. */
   const nfcKeyRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 2400);
-    return () => window.clearTimeout(t);
-  }, [toast]);
 
   const available = availableCount(state, product.id);
   const registered = everReceived(state, product.id);
@@ -187,18 +201,34 @@ export function ProductPage({
    *   subset of `disponibles`; `ya etiquetadas` spans `available` **and**
    *   `reserved`, so it counts garments `disponibles` does not), and this
    *   states that fact at the one moment the two figures visibly disagree.
+   *
+   * **Both clauses take their singular at N=1** (§3.19's "the same four forms
+   * at N=1"). Clause B's singular is not merely grammatical but *more*
+   * precise: N=1 with clause B firing necessarily means `0 disponibles`, and
+   * "aunque no aparezca como disponible" says exactly that — still naming the
+   * figure by the label she read one line above, still avoiding "apartadas"
+   * (a word reserved for the not-yet-started Apartado capability).
    */
   const clauseA = taggedOnHand > 0 && !nfcSwitchLive;
   const clauseB = taggedOnHand > 0 && taggedOnHand > available;
+  const one = taggedOnHand === 1;
+  const clauseAText = one ? 'se sigue vendiendo con su tag' : 'se siguen vendiendo con su tag';
+  const clauseBText = one
+    ? 'aunque no aparezca como disponible'
+    : 'aunque no todas aparezcan como disponibles';
   const taggedClause = clauseA
     ? clauseB
-      ? ' — se siguen vendiendo con su tag, aunque no todas aparezcan como disponibles'
-      : ' — se siguen vendiendo con su tag'
+      ? ` — ${clauseAText}, ${clauseBText}`
+      : ` — ${clauseAText}`
     : clauseB
-      ? ' — aunque no todas aparezcan como disponibles'
+      ? ` — ${clauseBText}`
       : '';
 
-  const stockLine = !registered ? 'sin registrar' : `${available} disponibles`;
+  /** §3.4's binding count-caption rule, cited from §3.19 and derived in the
+   * one shared place `CatalogRow` reads it from, "so the card and the page
+   * can never disagree about one figure": `1 disponible` at exactly N=1,
+   * `0 disponibles` at zero. */
+  const stockLine = stockCaption(available, registered);
 
   /**
    * What the NFC row currently *reads*. **On tap it immediately displays the
@@ -266,7 +296,7 @@ export function ProductPage({
       // The common case — correcting a misread code on a Product with no
       // tagged units and no NFC flag to clear. Byte-identical to before this
       // amendment: one fading line.
-      setToast('Código de barras actualizado ✓');
+      showToast('Código de barras actualizado ✓');
       return;
     }
     const lines = ['Código de barras actualizado ✓'];
@@ -276,13 +306,34 @@ export function ProductPage({
       // Those three disappearances are correct and are not restored (D71,
       // D73); this sentence explains them, it does not apologise for them or
       // offer to undo them.
-      lines.push(`${product.name} ya no se etiqueta — ahora la encuentras escaneando su código.`);
+      //
+      // **Anchored to "este producto," never to the Product's name**
+      // (§3.4c, corrected 2026-09-21). The first build interpolated the name
+      // — "Camisas ya no se etiqueta — ahora **la** encuentras" — which
+      // breaks on **both gender and number** for a merchant-supplied name
+      // ("Delantales ya no se etiqueta — ahora la encuentras" is wrong
+      // twice), and plural names are the common case, not the edge: every
+      // example in the spec, and most of Ana's catalog, is plural. Agreement
+      // is unknowable at authoring time, so the sentence hangs on an
+      // invariant noun instead of a grammatical workaround — `producto` is
+      // masculine singular always, and is already-approved merchant
+      // vocabulary here (§3.19b). **Dropping the name costs nothing**: this
+      // banner form only ever renders on §3.19, whose on-screen heading *is*
+      // the name, larger, one line above.
+      lines.push('Ya no vas a etiquetar este producto — ahora lo encuentras escaneando su código.');
     }
     if (tagged > 0) {
       // The one fact that persists through the change and that nothing else
       // on screen would otherwise tell her — a Product can be
       // barcode-identified while some of its units still carry tags, and
       // those units keep selling (D79/D80).
+      //
+      // **The N=1 form carries no numeral at all** — "La prenda que ya tiene
+      // tag," never "La 1 prenda," which is not Spanish. It is therefore a
+      // **distinct full string, not a count-plus-noun template**, and is
+      // written out here as one rather than routed through `pluralize`, which
+      // would imply a noun pair that does not exist. N=0 needs no form: the
+      // sentence's render condition is ≥1 tagged unit.
       lines.push(
         tagged === 1
           ? 'La prenda que ya tiene tag se sigue vendiendo igual.'
@@ -306,7 +357,7 @@ export function ProductPage({
   function handleBarcodeRemoved() {
     const willOfferNfc = business?.nfcPerProductEnabled === true && paid;
     setBarcodeAck(null);
-    setToast(
+    showToast(
       willOfferNfc
         ? 'Código de barras quitado ✓ — ahora puedes venderlo con tag, si quieres.'
         : 'Código de barras quitado ✓',
@@ -321,11 +372,16 @@ export function ProductPage({
         </button>
       </div>
 
-      {confirmationMessage && <p className={styles.confirmation}>{confirmationMessage} ✓</p>}
-      {confirmationMessage && confirmationDetail && (
-        <p className={styles.confirmationDetail}>{confirmationDetail}</p>
-      )}
-      {toast && <p className={styles.confirmation}>{toast}</p>}
+      {/* The origin-delivered line (§3.12/§3.13/§3.13a) and this page's own
+          local ones (§3.4b/§3.4c/§3.19c) render through the *same* component,
+          which is what keeps "identical copy and identical shape on both"
+          true by construction rather than by two matching edits. */}
+      <AmbientConfirmation
+        message={confirmationMessage}
+        detail={confirmationDetail}
+        token={confirmationToken}
+      />
+      <AmbientConfirmation message={toast?.text} token={toast?.token} />
       {barcodeAck && (
         <div className={styles.ackBanner}>
           {barcodeAck.map((line, i) => (
@@ -517,7 +573,7 @@ export function ProductPage({
         <EditPhotoSheet
           product={product}
           onClose={() => setOpenSheet(null)}
-          onSaved={() => setToast('Foto guardada ✓')}
+          onSaved={() => showToast('Foto guardada ✓')}
         />
       )}
       {openSheet === 'barcode' && (
@@ -531,19 +587,20 @@ export function ProductPage({
         />
       )}
       {openSheet === 'name' && (
-        <EditNameSheet
-          product={product}
-          onClose={() => setOpenSheet(null)}
-          // §3.19a specifies no ambient confirmation for a rename, and none is
-          // added: the page's own heading, its Nombre row and its marker all
-          // update at once, which is a larger and more legible change than any
-          // line could announce. What a rename *does* do is invalidate a
-          // §3.4c acknowledgment banner still standing from earlier in this
-          // visit — its first sentence names the Product by its old name — so
-          // that banner is dropped rather than left stating a name that no
-          // longer exists.
-          onSaved={() => setBarcodeAck(null)}
-        />
+        // §3.19a specifies no ambient confirmation for a rename, and none is
+        // added: the page's own heading, its Nombre row and its marker all
+        // update at once, which is a larger and more legible change than any
+        // line could announce.
+        //
+        // **The rename no longer drops a standing §3.4c banner** (2026-09-21).
+        // That drop existed for one reason — the banner's second sentence
+        // interpolated the Product's name, so a rename left it stating a name
+        // that no longer existed. §3.4c's corrected copy is anchored to
+        // "este producto" and names nothing, so every sentence in the banner
+        // stays true across a rename and there is nothing left to invalidate.
+        // Dismissing it anyway would be a dismissal rule the spec does not
+        // define, on a banner it explicitly specifies as "no tap to dismiss."
+        <EditNameSheet product={product} onClose={() => setOpenSheet(null)} />
       )}
     </>
   );

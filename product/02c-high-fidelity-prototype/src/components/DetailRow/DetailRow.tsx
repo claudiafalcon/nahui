@@ -47,10 +47,31 @@ import styles from './DetailRow.module.css';
  *
  * **No row may mix shapes.** A sheet-opening row with a binary value (a
  * hypothetical `Vender con tag NFC   Sí ›`) is forbidden outright: it would
- * carry both signals and resolve to neither. The type below makes that
- * unrepresentable. If a future amendment needs a binary fact edited through a
- * sheet, it renders the value as something other than `Sí`/`No` and carries
- * the "›" — the vocabulary is what's reserved, not the fact.
+ * carry both signals and resolve to neither. If a future amendment needs a
+ * binary fact edited through a sheet, it renders the value as something other
+ * than `Sí`/`No` and carries the "›" — the vocabulary is what's reserved, not
+ * the fact.
+ *
+ * **What the types actually guarantee, stated precisely (`ux-critic` m1,
+ * 2026-09-21).** The first build claimed the props "make the fourth
+ * combination unrepresentable." That was overstated: the closed vocabulary
+ * was enforced on `instant` only, and `<DetailRow shape="value" value="Sí"/>`
+ * compiled and rendered the exact forbidden row. Two guards now stand, and
+ * neither is described as more than it is:
+ * 1. **Compile time** — the `value` shape is generic in its own literal type
+ *    and a `Sí`/`No` literal resolves it to a variant demanding a prop that
+ *    cannot be supplied, so that call is a type error at the call site. This
+ *    catches the realistic mistake: a literal typed into JSX. It does **not**
+ *    catch a value whose type is merely `string` (`product.barcode`, a
+ *    template literal) that happens to hold "Sí" at runtime — no type can.
+ * 2. **Runtime, dev only** — that residual case is asserted below, where the
+ *    actual string is known. It is a `console.error`, not a thrown error or a
+ *    swapped-in fallback row: a mixed row is a design defect to fix in the
+ *    caller, never something this component should silently "correct" into a
+ *    different shape than the caller asked for.
+ *
+ * Overstated safety is worse than stated risk — a future author who believes
+ * the type covers everything stops looking for the case it doesn't.
  *
  * Deliberately one of this design system's **conventional** controls
  * (`DESIGN-SYSTEM.md` §8): a plain list row, not a Swing-Tag device. It
@@ -67,14 +88,24 @@ import styles from './DetailRow.module.css';
  * string without editing this line and confronting the rule. */
 export type InstantRowValue = 'Sí' | 'No';
 
-export type DetailRowProps =
-  | {
+/** Guard 1, compile time. `V` is inferred from the literal passed as `value`;
+ * when that literal is one of the two reserved words, the intersection
+ * demands a property no caller can supply and the call fails to type-check,
+ * naming the rule in the error text. A `value` whose type is merely `string`
+ * resolves the conditional to `unknown` and is unaffected — that case is what
+ * guard 2, below, exists for. */
+type ForbidInstantVocabulary<V extends string> = V extends InstantRowValue
+  ? { 'a value row may never trail Sí or No — see §3.19 shape 3': never }
+  : unknown;
+
+export type DetailRowProps<V extends string = string> =
+  | ({
       shape: 'value';
       label: string;
       /** The open-ended value she can read but not change from here. */
-      value: string;
+      value: V;
       onTap: () => void;
-    }
+    } & ForbidInstantVocabulary<V>)
   | {
       shape: 'action';
       label: string;
@@ -103,14 +134,23 @@ export type DetailRowProps =
       onTap: () => void;
     };
 
-export function DetailRow(props: DetailRowProps) {
+export function DetailRow<V extends string>(props: DetailRowProps<V>) {
   if (props.shape === 'instant') {
     const { label, value, pending, busy, onTap } = props;
     return (
       <button
         type="button"
         className={`${styles.row} ${styles.instant} ${busy ? styles.busy : ''} stitchBottom`}
-        disabled={busy}
+        // **`aria-disabled`, never `disabled`** — this codebase's own
+        // convention (`ux-critic` MIN-1, 2026-09-07, `AccesoRevocado.tsx`),
+        // and it matters most precisely here: `disabled` blurs the button the
+        // instant she taps it and drops focus to `document.body`. On the one
+        // control in this system whose failure path *is* "tap the row again,"
+        // that would force a keyboard or assistive-technology user to
+        // re-navigate the whole level to retry a write that just failed. The
+        // row stays focused and announced; the caller's own `if (busy) return`
+        // guard is what actually ignores the second tap (never queues it).
+        aria-disabled={busy || undefined}
         // `aria-pressed`, not `role="switch"`: the whole row is the target and
         // its accessible name is the label, so the row genuinely is a toggle
         // button whose pressed state is the value — there is no separate
@@ -127,6 +167,16 @@ export function DetailRow(props: DetailRowProps) {
   }
 
   const isValueRow = props.shape === 'value';
+  // Guard 2, runtime, dev only — the residual case no type can reach: a
+  // `string`-typed value that happens to hold one of the two reserved words.
+  if (import.meta.env.DEV && isValueRow && (props.value === 'Sí' || props.value === 'No')) {
+    console.error(
+      `[DetailRow] "${props.label}" is a sheet-opening row trailing "${props.value}". ` +
+        '§3.19 reserves the Sí/No vocabulary for the instant-write shape: this row would ' +
+        'carry both signals (a "›" and a binary value) and resolve to neither. Render a ' +
+        'different value, or make it shape="instant".',
+    );
+  }
   return (
     <button type="button" className={`${styles.row} stitchBottom`} onClick={props.onTap}>
       <span className={styles.label}>{props.label}</span>

@@ -30,45 +30,52 @@
   cursor: pointer;
 }
 
-/* §3.12/§3.13/§3.13a's ambient line, and this page's own local ones. Same
-   copy, same shape, same fading lifecycle as `CatalogView.module.css`'s —
-   these confirmations are a property of the destination, so the two screens
-   must render them identically. */
-.confirmation {
-  margin: 0 var(--space-4) var(--space-2);
+/* §3.12/§3.13/§3.13a's ambient line and this page's own local ones both moved
+   to `components/AmbientConfirmation/` (2026-09-21, `ux-critic` Major 2) —
+   same margins, same type, same tone, now literally the same rule Catalog
+   view renders, since the spec binds the two screens to "identical copy and
+   identical shape on both." */
+
+/* §3.4c's one-time acknowledgment banner (the second confirmation shape) —
+   the §3.3a pattern, reused: non-fading, no tap to dismiss, no tap required
+   to proceed, gone the moment she leaves the page. Plain factual register,
+   never a warning: no red, no icon, no "atención."
+
+   **Rebuilt 2026-09-21 (`ux-critic` Major 1) to actually be that pattern.**
+   The first build filled it with `--color-blush` and set #6B6259 body text on
+   it — ~2.4:1, below AA and below even the 3:1 large-text bar, on a token
+   `tokens.css` scopes to "tints, badge fills — never body text," and on the
+   copy that carries the *only* explanation of why the NFC row, the
+   `N sin etiquetar` figure and `[ Etiquetar ]` all vanished at once. Read on
+   a phone in bazaar glare, that is the worst place in this screen to spend
+   contrast. It also invented a panel the §3.3a banner it claims to reuse
+   does not have (`CatalogView.module.css`'s `.settingsBanner` is a plain
+   line, no fill).
+
+   So: no fill, the same margin rhythm as the ambient line above it, and the
+   hierarchy carried by type and tone instead of a container —
+   - the head is the *identical* string the ordinary one-line shape renders,
+     so it is given the identical treatment (success tone, 600) and the two
+     shapes read as one confirmation family, the longer one simply saying
+     more;
+   - the body is plain obsidian at body-sm — ~12.5:1 on this shell — because
+     these two sentences are the point of the whole banner, not a footnote to
+     the head. */
+.ackBanner {
+  margin: 0 var(--space-4) var(--space-3);
+}
+
+.ackHead {
+  margin: 0 0 var(--space-1);
   font: var(--text-body-sm);
   font-weight: 600;
   color: var(--color-success);
 }
 
-.confirmationDetail {
-  margin: calc(-1 * var(--space-1)) var(--space-4) var(--space-2);
-  font: var(--text-body-sm);
-  color: #6B6259;
-}
-
-/* §3.4c's one-time acknowledgment banner (the second confirmation shape) —
-   the §3.3a pattern, reused: non-fading, no tap to dismiss, no tap required
-   to proceed, gone the moment she leaves the page. Plain factual register,
-   never a warning: no red, no icon, no "atención." */
-.ackBanner {
-  margin: 0 var(--space-4) var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-blush);
-}
-
-.ackHead {
-  margin: 0 0 4px;
-  font: var(--text-body-sm);
-  font-weight: 700;
-  color: var(--color-obsidian);
-}
-
 .ackBody {
-  margin: 0 0 4px;
+  margin: 0 0 var(--space-1);
   font: var(--text-body-sm);
-  color: #6B6259;
+  color: var(--color-obsidian);
 }
 
 .ackBody:last-child {

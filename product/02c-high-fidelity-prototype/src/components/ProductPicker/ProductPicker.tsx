@@ -5,6 +5,7 @@ import { TagStub } from '../TagStub/TagStub';
 import { BarcodeScanner } from '../BarcodeScanner/BarcodeScanner';
 import { PhotoCapture } from '../PhotoCapture/PhotoCapture';
 import { matchProductByBarcode } from '../../domain/selectors';
+import { stockCaption } from '../../domain/format';
 import type { Product } from '../../domain/types';
 import styles from './ProductPicker.module.css';
 
@@ -284,7 +285,9 @@ export function ProductPicker({
   // author or control the way a typed name is.
   if (mode.kind === 'confirmScan') {
     const { product, available, everReceived } = mode.row;
-    const caption = !everReceived ? 'sin registrar' : `${available} disponibles`;
+    // §3.4's binding count-caption rule, which names this recognition
+    // display (§3.8c) among the surfaces it governs: singular at exactly N=1.
+    const caption = stockCaption(available, everReceived);
     return (
       <Sheet onDismiss={onDismiss}>
         <p className={styles.sheetTitle}>Encontramos este producto:</p>

@@ -267,7 +267,27 @@ edited through a sheet, some written in place — should reuse it rather than
 re-deriving three near-identical rows.
 
 Three shapes, and only three. `src/components/DetailRow/` is the single
-implementation; its props make the fourth combination unrepresentable.
+implementation.
+
+**What stops the fourth combination, stated as what it actually is
+(corrected 2026-09-21, `ux-critic` m1).** This section previously said the
+props "make the fourth combination unrepresentable." They did not: the closed
+`Sí`/`No` vocabulary was enforced on the instant-write shape only, and
+`<DetailRow shape="value" value="Sí" …/>` compiled and rendered the exact
+mixed row the rule forbids. Two guards now stand, and each is worth exactly
+what it covers:
+
+- **Compile time** — the value shape is generic in its own literal type, so a
+  `Sí`/`No` **literal** written at a call site is a type error naming the
+  rule. This catches the realistic mistake.
+- **Runtime, dev only** — a value typed merely as `string` that *holds* one of
+  those words at runtime is beyond any type, and is asserted with a
+  `console.error` where the actual string is known. Never a thrown error and
+  never a silently substituted shape: a mixed row is a defect to fix in the
+  caller.
+
+Stated this way on purpose — **overstated safety is worse than stated risk**,
+because it stops the next author from looking for the case the type misses.
 
 | Shape | Renders as | Behaviour |
 |---|---|---|
@@ -335,3 +355,44 @@ Visually this is one of §8's **conventional** controls: a plain full-width
 list row divided by the shared `.stitchBottom` rule, no tag silhouette, no
 tone wash, no tilt. It represents a stored attribute of an entity — not
 money, not the entity itself — so it never reaches for `.moneyTag`.
+
+**Shape 3 never uses the `disabled` attribute** while a write is in flight.
+`aria-disabled` plus the caller's own early-return guard, per this codebase's
+standing convention (`ux-critic` MIN-1, 2026-09-07): `disabled` blurs the
+just-tapped button and drops focus to `document.body`, which on a control
+whose documented failure path *is* "tap the row again" would force a keyboard
+or AT user to re-navigate the level to retry.
+
+## 11. The ambient confirmation (`AmbientConfirmation`, added 2026-09-21)
+
+One line, one lifecycle, one implementation — `src/components/AmbientConfirmation/`.
+
+`inventory.md`'s confirmations (§3.12, §3.13, §3.13a, §3.4b, §3.4c's ordinary
+case, §3.19c) are all the same thing: **ambient, fading, no tap to dismiss,
+never a separate screen requiring a tap**, rendered in the page's own margin
+above the content. They are also a property of the **destination** — under
+"return to origin," the same operation can land on two different screens, and
+the spec binds it to render there "with identical copy and identical shape on
+both."
+
+Three rules that came out of getting this wrong first:
+
+- **The fade belongs to the component, not to each screen.** Two screens each
+  holding a private prop→state→timeout pair is how "identical forever"
+  drifts, and it did: Catalog view faded at 2400ms while the Product Page
+  rendered its prop straight through and never faded at all, leaving a stale
+  success claim standing over current state — including over a failure line
+  beneath it.
+- **A repeat of the same confirmation needs a token.** Identical copy, on a
+  screen that didn't remount, changes no prop and therefore shows nothing. On
+  a screen whose confirmation is the only evidence a write landed, that means
+  the second save appears not to have happened. The caller mints one fresh
+  value per *delivered* confirmation, at the single place they funnel through.
+- **The message arrives complete, "✓" included.** Composed once, where the
+  copy is owned, never half in a helper and half in each screen's JSX.
+
+**When it is the wrong vehicle:** two or three sentences explaining *why*
+something changed. That is the one-time acknowledgment banner (§3.3a's
+pattern) — non-fading, no tap to dismiss, no fill, plain body text at full
+contrast. A fading line cannot carry an explanation, and an explanation must
+not be tinted into illegibility to look like a panel.

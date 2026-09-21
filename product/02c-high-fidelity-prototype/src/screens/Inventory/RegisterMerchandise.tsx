@@ -32,7 +32,40 @@ type ProductRef =
  */
 export type EntryMode = 'receipt' | 'correction';
 
-interface Line {
+/**
+ * **`inventory.md` §3.6 exit 1, made real (`ux-critic` Major 4, 2026-09-21):
+ * "Anything staged is preserved silently and resumes exactly as she left it."**
+ *
+ * §3.6 states that as a guarantee, §4 restates it, and §7 lists draft
+ * preservation across any interruption as an automation this journey relies
+ * on. The first build held the draft in `RegisterMerchandise`'s own state,
+ * and `InventoryScreen` mounts that component only while
+ * `view.mode === 'register'` — so **every** back-arrow path unmounted it and
+ * silently discarded her staged correction and receipt. Pre-existing, but the
+ * Catalog-card → Product Page slice made it far more likely to be hit: the
+ * back arrow now leads somewhere she has a real reason to go mid-operation —
+ * the Product Page she came from, to re-check a figure before committing.
+ *
+ * So the draft is owned by `App.tsx`, exactly as `assignTagsEntry` and
+ * `assignTagsSegmentTotals` already are (AT-M1/AT-M2), and for exactly the
+ * same reason: the state has to outlive a component that navigation unmounts.
+ *
+ * `slot` is the identity of the *operation* the draft belongs to — the same
+ * `prefillProductId:entryMode` key `InventoryScreen` already remounts this
+ * screen on. A draft is only ever resumed into the operation that created it;
+ * opening a different Product, or the same Product in the other pre-expanded
+ * mode, is a genuinely different operation and builds its own fresh draft
+ * rather than inheriting one built for the previous one.
+ */
+export interface RegisterDraftState {
+  slot: string;
+  /** `null` is a real, preservable state: she opened the blank form and has
+   * not resolved Producto yet. Distinct from *no stored draft at all*, which
+   * is what lets a pre-expanded entry rebuild its own default. */
+  line: Line | null;
+}
+
+export interface Line {
   key: string; // stable local identity, mostly vestigial now that there is only ever one draft on screen
   product: ProductRef;
   productName: string;
@@ -191,6 +224,8 @@ export function RegisterMerchandise({
   initialProductId,
   entryMode,
   backLabel = 'Inventario',
+  preservedDraft,
+  onDraftChange,
   onSaved,
   onBack,
 }: {
@@ -233,6 +268,16 @@ export function RegisterMerchandise({
    * entry point renders byte-identically to before.
    */
   backLabel?: string;
+  /** §3.6 exit 1 — this operation's own previously-staged draft, when she is
+   * returning to an operation she backed out of, and `null` when this is a
+   * fresh one. Owned by `App.tsx` (see `RegisterDraftState`), because every
+   * back-arrow path unmounts this component. `InventoryScreen` is what
+   * decides whether a stored draft belongs to *this* operation. */
+  preservedDraft: RegisterDraftState | null;
+  /** Every change to the draft, forwarded straight up — this screen keeps no
+   * second, local copy of it, so there is no state to lose on unmount and no
+   * way for the two to disagree. */
+  onDraftChange: (line: Line | null) => void;
   /** AT-M1 fix (`AssignTags.tsx`) — alongside the saved productId, hands
    * back exactly what this specific `commitLot` call wrote (0 or 1 entries
    * now that a draft is always exactly one Product), so a caller
@@ -248,9 +293,26 @@ export function RegisterMerchandise({
   // entry points; `buildExistingLine` loads Cantidad disponible actual's
   // snapshot from this Product's live `disponibles` in the same motion, but
   // lands her on the read-only at-rest state, never pre-staged.
-  const [draft, setDraft] = useState<Line | null>(
-    initialProduct ? buildExistingLine(state, initialProduct, entryMode) : null,
-  );
+  //
+  // §3.6 exit 1 — **the draft lives one level up now** (`RegisterDraftState`).
+  // Resume it when this operation has one; otherwise derive this operation's
+  // own opening state. The derived value is deliberately *not* written up on
+  // render — an untouched opening state is not a draft, and writing it would
+  // both be a render-phase side effect and make "she has staged nothing"
+  // indistinguishable from "she resolved Producto and then cleared it." The
+  // first real change commits it, with the whole draft, through `setDraft`.
+  const draft: Line | null = preservedDraft
+    ? preservedDraft.line
+    : initialProduct
+      ? buildExistingLine(state, initialProduct, entryMode)
+      : null;
+
+  /** Same call shape `useState`'s setter had, so every staging site below
+   * reads exactly as it did — the difference is only where the value lands. */
+  function setDraft(next: Line | null | ((current: Line | null) => Line | null)) {
+    onDraftChange(typeof next === 'function' ? next(draft) : next);
+  }
+
   const [pickerOpen, setPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 

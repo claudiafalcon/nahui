@@ -3,7 +3,7 @@ import { useStore } from '../../domain/store';
 import { catalogRows, findProduct, isNfcTaggingEligible, pendingTagBreakdown, pendingTagCount } from '../../domain/selectors';
 import { InventoryColdStart } from './InventoryColdStart';
 import { CatalogView } from './CatalogView';
-import { RegisterMerchandise, type EntryMode } from './RegisterMerchandise';
+import { RegisterMerchandise, type EntryMode, type RegisterDraftState } from './RegisterMerchandise';
 import { ProductPage } from './ProductPage/ProductPage';
 import { AssignTags, type AssignTagsEntryLine } from './AssignTags';
 import type { NfcAssignSession } from '../../domain/useNfcAssignTagSession';
@@ -62,9 +62,16 @@ export interface InventoryConfirmation {
    * alongside `tagsComplete`. Historical in practice: a Lot from §3.6 now
    * always contains exactly one Product's units. */
   mixedLotDetail?: string | null;
-  /** §3.13a "Camisas ya está etiquetada ✓" — a Product-scoped queue reached
-   * zero. Mutually exclusive with `tagsComplete`. */
+  /** §3.13a "Terminaste de etiquetar Camisas ✓" — a Product-scoped queue
+   * reached zero. Mutually exclusive with `tagsComplete`. */
   productTagsCompleteId?: string | null;
+  /** One fresh value per *delivered* confirmation, minted where every
+   * confirmation funnels through (`App.tsx`'s `onReturnToOrigin`). Without
+   * it, a second save of the same Product — identical copy, on a screen whose
+   * `ScreenTransition` key is stable per Product, so no remount — would
+   * confirm nothing at all, on the one screen where the confirmation is the
+   * only evidence the write landed (`ux-critic` Major 2). */
+  token?: number;
 }
 
 export type InventoryView =
@@ -129,6 +136,8 @@ export function InventoryScreen({
   assignTagsEntry,
   assignTagsSegmentTotals,
   onAssignTagsSegmentTotalsChange,
+  registerDraft,
+  onRegisterDraftChange,
   nfcAssignSession,
 }: {
   view: InventoryView;
@@ -189,6 +198,13 @@ export function InventoryScreen({
   assignTagsEntry: AssignTagsEntryLine[] | null;
   assignTagsSegmentTotals: Record<string, number>;
   onAssignTagsSegmentTotalsChange: (updater: (totals: Record<string, number>) => Record<string, number>) => void;
+  /** §3.6 exit 1's "anything staged is preserved silently" — owned by
+   * `App.tsx` for the same reason the two above are: `RegisterMerchandise` is
+   * mounted only while `view.mode === 'register'`, and **every** exit from it
+   * (back arrow to Catalog view, to a Product Page, or across tabs to Home)
+   * unmounts it. See `RegisterDraftState`. */
+  registerDraft: RegisterDraftState | null;
+  onRegisterDraftChange: (next: RegisterDraftState | null) => void;
   /** 2026-09-18 architecture fix (`decision-log.md` D74/D75 follow-up) — the
    * live Web NFC session (`useNfcAssignTagSession`), owned by `App.tsx` one
    * level up. Forwarded whole to `AssignTags`; only its `startScan` function
@@ -257,17 +273,28 @@ export function InventoryScreen({
   if (view.mode === 'register') {
     const origin = view.origin;
     const originProduct = origin.screen === 'product' ? findProduct(state, origin.productId) : undefined;
+    // The identity of *this* operation: a different Product, or the same
+    // Product in the other pre-expanded entry mode, is a genuinely different
+    // operation. It is both the remount key and — now that the draft outlives
+    // this component (§3.6 exit 1) — what decides whether a preserved draft
+    // belongs to the operation she is opening or to an earlier, unrelated one.
+    const draftSlot = `${view.prefillProductId ?? 'blank'}:${view.entryMode ?? 'default'}`;
     return (
       <ScreenTransition transitionKey="register">
         <RegisterMerchandise
-          // A different Product, or a different pre-expanded entry mode, is a
-          // genuinely different operation — remount rather than carry a draft
-          // built for the previous one.
-          key={`${view.prefillProductId ?? 'blank'}:${view.entryMode ?? 'default'}`}
+          key={draftSlot}
           initialProductId={view.prefillProductId}
           entryMode={view.entryMode}
           backLabel={originProduct ? originProduct.name : 'Inventario'}
+          preservedDraft={registerDraft?.slot === draftSlot ? registerDraft : null}
+          onDraftChange={(line) => onRegisterDraftChange({ slot: draftSlot, line })}
           onSaved={(lastProductId, entryBreakdown) => {
+            // The draft was just committed — it is no longer "staged," so it
+            // is dropped here rather than left to resume as a phantom the
+            // next time this same operation is opened. This is the one exit
+            // where §3.6's preservation guarantee does not apply, because
+            // there is nothing left un-saved to preserve.
+            onRegisterDraftChange(null);
             // inventory.md §2 step 3, corrected `decision-log.md` D71 — gates
             // on the composed NFC-tagging-eligible test, per line, not a
             // single whole-Lot check. Read from this render's own state
@@ -366,6 +393,7 @@ export function InventoryScreen({
             product={product}
             confirmationMessage={message}
             confirmationDetail={detail}
+            confirmationToken={view.confirmation?.token}
             onBack={() => onReturnToOrigin({ origin: { screen: 'catalog' }, afterWrite: false })}
             onRegisterMerchandise={() =>
               onOpenRegister({
@@ -435,6 +463,7 @@ export function InventoryScreen({
         onStartNfcAssignScan={nfcAssignSession.startScan}
         confirmationMessage={message}
         confirmationDetail={detail}
+        confirmationToken={view.mode === 'catalog' ? view.confirmation?.token : undefined}
         settingsTagsBanner={settingsTagsBanner}
       />
     </ScreenTransition>
@@ -456,12 +485,24 @@ function confirmationCopy(
     ? findProduct(state, confirmation.productTagsCompleteId)?.name
     : null;
   const savedName = confirmation.savedProductId ? findProduct(state, confirmation.savedProductId)?.name : null;
+  // Each string arrives at its screen complete, "✓" included — composed here,
+  // in one place, rather than half here and half in each screen's JSX.
+  //
+  // §3.13a's copy was corrected 2026-09-21: **the Product name moves into
+  // object position.** It read `Camisas ya está etiquetada ✓`, which breaks
+  // on both gender and number for a merchant-supplied name (`Delantales ya
+  // está etiquetada`) — the same defect corrected in §3.4c's banner the same
+  // day, pre-existing here rather than introduced by that amendment.
+  // `Terminaste de etiquetar Camisas ✓` carries zero agreement while keeping
+  // the name, which §3.13a requires ("names the specific Product, not a
+  // generic 'lista para vender'"). Second person, plainly stated, never
+  // inflated (`brand/tone-of-voice.md`).
   const message = confirmation.tagsComplete
-    ? 'Mercancía lista para vender'
+    ? 'Mercancía lista para vender ✓'
     : productTagsCompleteName
-      ? `${productTagsCompleteName} ya está etiquetada`
+      ? `Terminaste de etiquetar ${productTagsCompleteName} ✓`
       : savedName
-        ? 'Mercancía registrada'
+        ? 'Mercancía registrada ✓'
         : null;
   // The mixed-Lot second line only ever accompanies §3.13's own Lot-scoped
   // completion, never a plain "registrada" and never §3.13a's Product-scoped

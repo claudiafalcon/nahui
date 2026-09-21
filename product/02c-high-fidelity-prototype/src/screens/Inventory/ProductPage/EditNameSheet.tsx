@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useStore } from '../../../domain/store';
 import { availableCount, everReceived } from '../../../domain/selectors';
+import { stockCaption } from '../../../domain/format';
 import { Sheet } from '../../../components/Sheet/Sheet';
 import { Button } from '../../../components/Button/Button';
 import { TagStub } from '../../../components/TagStub/TagStub';
@@ -61,7 +62,12 @@ export function EditNameSheet({
 }: {
   product: Product;
   onClose: () => void;
-  onSaved: () => void;
+  /** §3.19a specifies **no ambient confirmation for a rename**, and none is
+   * added: the page's heading, its Nombre row and its marker all update at
+   * once, which is a larger and more legible change than any line could
+   * announce. The hook stays available for a future caller that genuinely
+   * needs to react to a rename; today none does. */
+  onSaved?: () => void;
 }) {
   const { state, renameProduct } = useStore();
   const [draftName, setDraftName] = useState(product.name);
@@ -106,7 +112,7 @@ export function EditNameSheet({
     if (!ok) return;
     keyRef.current = null;
     onClose();
-    onSaved();
+    onSaved?.();
   }
 
   // §3.19b — conflicto. Extends two already-approved patterns rather than
@@ -129,9 +135,9 @@ export function EditNameSheet({
           <div>
             <p className={pickerStyles.confirmProductName}>{conflict.name}</p>
             <p className={pickerStyles.confirmProductCaption}>
-              {!everReceived(state, conflict.id)
-                ? 'sin registrar'
-                : `${availableCount(state, conflict.id)} disponibles`}
+              {/* §3.4's count-caption rule, which names §3.19b's recognition
+                  display among the surfaces it governs. */}
+              {stockCaption(availableCount(state, conflict.id), everReceived(state, conflict.id))}
             </p>
           </div>
         </div>

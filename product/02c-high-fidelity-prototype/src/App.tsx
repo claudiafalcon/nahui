@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore } from './domain/store';
 import { currentUser, findMembership } from './domain/selectors';
 import { useNfcAssignTagSession } from './domain/useNfcAssignTagSession';
@@ -6,6 +6,7 @@ import type { AppState } from './domain/types';
 import { NavBar, type TabKey } from './components/NavBar/NavBar';
 import { HomeScreen } from './screens/Home/HomeScreen';
 import { InventoryScreen, type InventoryView } from './screens/Inventory/InventoryScreen';
+import type { RegisterDraftState } from './screens/Inventory/RegisterMerchandise';
 import { EventsScreen, type EventsView } from './screens/Events/EventsScreen';
 import { ResultadosScreen, type ResultadosView } from './screens/Resultados/ResultadosScreen';
 import { AccesoRevocado } from './screens/Settings/AccesoRevocado';
@@ -119,6 +120,18 @@ export default function App() {
   // navigation into `AssignTags.tsx`, a different component instance. See
   // `useNfcAssignTagSession.ts`'s own top-of-file doc comment for the full
   // "why this moved out of `AssignTags.tsx`'s own state" reasoning.
+  // `inventory.md` §3.6 exit 1 — "Anything staged is preserved silently and
+  // resumes exactly as she left it." Owned here for the identical reason
+  // `assignTagsEntry`/`assignTagsSegmentTotals` are (AT-M1/AT-M2): the
+  // component that stages it is unmounted by every exit that is supposed to
+  // preserve it. See `RegisterDraftState` for the full note, including why
+  // this slice made a pre-existing gap much more likely to be hit.
+  const [registerDraft, setRegisterDraft] = useState<RegisterDraftState | null>(null);
+  // One fresh value per *delivered* ambient confirmation (`ux-critic` Major
+  // 2). Minted at the single point every confirmation funnels through, below,
+  // so a second save producing byte-identical copy on a screen that never
+  // remounted still visibly confirms.
+  const confirmationSeqRef = useRef(0);
   const nfcAssignSession = useNfcAssignTagSession();
 
   return (
@@ -244,6 +257,15 @@ export default function App() {
                   setAssignTagsSegmentTotals({});
                 }
 
+                // Every confirmation that will actually be *shown* passes
+                // through here exactly once, which is what makes this the
+                // right place to stamp it — the screens below stay unaware of
+                // how many times the same thing has been confirmed.
+                if (resolved) {
+                  confirmationSeqRef.current += 1;
+                  resolved = { ...resolved, token: confirmationSeqRef.current };
+                }
+
                 // **The one exception, stated as a rule rather than a special
                 // case: if the save itself makes the origin untrue, return to
                 // the nearest still-true state instead.** Exactly one case
@@ -316,6 +338,8 @@ export default function App() {
               assignTagsEntry={assignTagsEntry}
               assignTagsSegmentTotals={assignTagsSegmentTotals}
               onAssignTagsSegmentTotalsChange={setAssignTagsSegmentTotals}
+              registerDraft={registerDraft}
+              onRegisterDraftChange={setRegisterDraft}
               nfcAssignSession={nfcAssignSession}
             />
           </ScreenTransition>
