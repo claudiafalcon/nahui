@@ -1089,12 +1089,22 @@ inventory sitting in her Catalog. **[Further historical note, 2026-09-18: `defau
   action affordance entirely rather than showing it inert (§2's "not
   disabled, not shown-then-blocked, simply absent" posture, applied here to
   a data-state instead of a capability gate).
-- **Producto stays tappable while nothing has been staged yet.** Tapping
+- **Producto stays tappable while the draft carries no real effect.** Tapping
   the Product's name re-opens Elegir producto (§3.8) to change the
   selection, as long as neither the correction stepper nor Cantidad
   recibida currently holds a real, nonzero staged value. The instant
-  either does, Producto locks (renders as plain text, matching every
-  other state in this document) for the rest of this operation.
+  either does, Producto locks and renders as plain text, matching every
+  other state in this document. **The lock is derived live from the
+  draft's current content, not latched for the remainder of the operation
+  (corrected 2026-09-21, `ux-critic` m6; verified against the build, where
+  `draftLocked` is recomputed from current draft state rather than set on
+  arrival).** It is the *same* predicate that governs whether "Guardar
+  mercancía" renders at all — one predicate, two consequences, evaluated
+  at every moment rather than once — so collapsing a staged box via its own
+  "Quitar"/"Cancelar" empties the draft, hides Guardar, and returns Producto
+  to being tappable, together and in the same beat. The earlier "for the
+  rest of this operation" phrasing implied a one-way latch the Guardar rule
+  never had, and would have made the two halves of one predicate disagree.
   **Amended 2026-09-18 (Product Owner decision, single-Product focus) —
   there is no longer an "+ Agregar otro producto" to fall back on if she
   wants to work on a different Product after staging something here.**
@@ -1337,7 +1347,15 @@ To register a different Product next, she starts over from Catalog view — neve
   3. **§3.19's `[ Corregir cantidad ]` (Level 1)** — Producto arrives already resolved, **with correction mode already revealed**: stepper defaulting to the loaded count, delta 0, and — per this screen's own existing rule — **no "Guardar mercancía" rendered**, since an untouched correction is a genuine no-op. Nothing is staged by the pre-expansion itself. Origin: §3.19.
   4. **Home's cold-start CTA (`home.md` §3.3, this document's §3.3 annotation and §10)** — opens blank. Unchanged. Origin: Home (see the exception in the exit rule below).
 
-  For a "sin registrar" legacy Product reached via (2) or (3), the always-visible receiving-stepper variant applies exactly as already specified. **Nothing is ever pre-*staged* by any entry point** — a pre-expanded reveal shows a box at its already-defined default; it does not put a nonzero value into the draft that she did not ask for.
+  For a "sin registrar" legacy Product reached via (2) or (3), the always-visible receiving-stepper variant applies exactly as already specified.
+
+  **What a pre-expanded reveal does to the draft — corrected 2026-09-21 (`ux-critic` m6), because the two pre-expanding entry points differ and the earlier blanket sentence described only one of them.** Each pre-expansion shows its box at that box's already-defined default and adds nothing beyond it; what differs is whether that default is itself a real effect:
+  - **Entry (3), `[ Corregir cantidad ]` — pre-expanded, not pre-staged.** Correction mode's default *is* the loaded count, so the delta is 0 and the draft carries no effect. "Guardar mercancía" is correctly absent, and **Producto stays tappable/re-pickable**, exactly as the read-only state's own rule says.
+  - **Entry (2), `[ Registrar mercancía ]` — pre-expanded *and* pre-staged, deliberately.** A floor-1 receipt at its default of 1 is a real, savable quantity — this screen's own Guardar rule already says so in as many words ("an open (floor-1) receipt") — which is why Guardar arrives visible and enabled, and why a restock-at-1 stays at three taps (§6). **It therefore also locks Producto on arrival, by the same single predicate that makes Guardar visible.** One predicate, two consequences, evaluated identically at every moment of the operation — never a special arrival rule.
+
+  **The earlier sentence — "Nothing is ever pre-*staged* by any entry point" — is withdrawn as written.** It was true of entry (3), false of entry (2), and it contradicted both the Guardar rule it sits beneath and the lock rule it was meant to protect. The guarantee it was actually reaching for survives intact: **a pre-expansion never puts any value into the draft other than that box's own already-defined, already-reviewed default** — never a quantity inferred from stock on hand, from past receipts, or from anything she did not ask for. The default 1 arrives carrying its "· revisa antes de guardar" marker (INV-Q1) for exactly this reason: it is an unreviewed default, marked as one, identically on both of its paths in.
+
+  **The lock's consequence is named rather than left to be discovered: a merchant who opened the wrong Product's page and tapped `[ Registrar mercancía ]` cannot re-pick Producto from the picker.** Accepted deliberately, for three reasons. (a) The alternative is worse — re-pointing an already-savable draft at a different Product silently transplants a staged effect between two Product identities, the exact thing the lock exists to prevent and that single-Product focus rules out (§10). (b) Nothing is written and nothing is lost, and recovery is cheap in both directions: "Quitar" collapses the receipt box, which empties the draft and returns Producto to tappable in the same beat, and the back arrow returns to origin (§3.19, that same wrong Product's page) with the draft preserved, one further tap from Catalog and the right card. (c) The screen is honest about it at rest — Producto renders as plain text (this document's passive convention) and Guardar renders visible and enabled, so before she touches anything the screen truthfully reads "there is something to save here, for this Product."
 - On-screen heading reads "Registro de mercancía" (HJR-INV-M1, unchanged).
 - Only Producto + Cantidad (disponible actual / recibida) are ever asked —
   no Supplier, no cost field (*architecture-principles.md* #5, D9).
@@ -2153,7 +2171,7 @@ gated the same way `decision-log.md` D27 already gates NFC).
 │  [ Precio               $250 › ] │  forma 1 → §3.4a
 │  [ Foto             Con foto › ] │  forma 1 → §3.4b
 │  [ Código de barras Sin código › ]│ forma 1 → §3.4c   (solo plan de pago)
-│  [ Vender con tag NFC      Sí ]  │  forma 3 — sin "›", cambia aquí mismo
+│  [ Vender con tag NFC   Sí (—●) ] │  forma 3 — sin "›", cambia aquí mismo
 │   Si lo apagas, las prendas que    │
 │   ya tienen tag siguen igual.      │
 │   Solo dejas de etiquetar las que  │
@@ -2192,7 +2210,10 @@ The figures, plain text (§3 intro's "plain text = passive/informational"), in t
 
 **`N ya etiquetadas` carries up to two added clauses, on independent conditions.** Both are basis statements, not warnings, and they compose into one sentence rather than stacking as fragments:
 
-- **Clause A — "se siguen vendiendo con su tag."** Rendered when **no live NFC switch is present on Level 2** (this Product has a `barcode`, or `nfcPerProductEnabled` is off). Where the switch is live and on, this is self-evident from the switch itself and saying it is noise; where there is no switch, it is the one fact nothing else on the page implies.
+- **Clause A — "se siguen vendiendo con su tag."** Rendered in **every state except one: a live NFC switch reading `Sí`** (condition corrected 2026-09-21, `ux-critic` m4). The condition is now the rationale stated directly, rather than a proxy for it: the fact is self-evident only while the switch is live *and* on, because only then does the page already say, in the caption directly beneath that row, that tagged garments keep selling. In every other state — no switch at all (this Product has a `barcode`, or `nfcPerProductEnabled` is off) **and** a live switch reading `No` — nothing else on the page implies it, so the clause renders.
+  - **The live-and-off state is real, and the earlier condition did not cover it.** "No live NFC switch is present on Level 2" was strictly narrower than the reason given for it, so a Product whose garments already carry tags and whose switch she has since turned off rendered `5 ya etiquetadas` directly above `[ Vender con tag NFC      No ]`, with nothing reconciling the two. That state is not an edge case to design around: `decision-log.md` D71 explicitly blesses it ("turning it off never retroactively untags or orphans already-tagged units"), and §3.19c's own post-clear landing produces it deliberately.
+  - **Exactly one statement about already-tagged garments renders at a time, and the two are complementary by construction.** While the switch reads `Sí`, the caption beneath it carries the *conditional* form ("Si lo apagas, las prendas que ya tienen tag siguen igual"); in every other state Level 1 carries the *present-tense* form ("se siguen vendiendo con su tag"). They never render together and never both go missing. That complementarity — not the presence or absence of a row — is what the condition encodes.
+  - **The swap happens in the same beat as the write.** Turning the switch off removes its caption and adds this clause simultaneously, alongside the already-specified disappearance of `N sin etiquetar` and `[ Etiquetar ]`. The one moment she is most likely to wonder what happens to the garments she already tagged is answered on the screen she is already on, with no confirmation dialog and no extra tap (*global-principles.md*, "the fastest interaction is the one that never happens"). No step count changes — §6's NFC row remains at 2 taps.
 - **Clause B — "aunque no todas aparezcan como disponibles."** Rendered when **`ya etiquetadas > disponibles`** — a plain comparison of two figures already on screen, never a read into Selling and never a check of why. This is the cross-basis disclosure: it states that the tagged count is not drawn from the available count, at the one moment the two figures visibly disagree.
 
 **The four resulting forms, exhaustively:**
@@ -2225,7 +2246,7 @@ vendiendo con su tag, aunque no
 aparezca como disponible
 ```
 
-**Worked example, corrected (`reviewer` finding, 2026-09-19).** The example previously given here — `8 disponibles / 10 ya etiquetadas / 3 sin etiquetar` — was arithmetically impossible under the corrected scope: three `available` untagged units means at most five of the eight available units carry tags. The honest version of that same Camisas is `8 disponibles / 5 ya etiquetadas / 3 sin etiquetar`, and it renders **no clause at all** — `5 ≤ 8`, and the switch is live.
+**Worked example, corrected (`reviewer` finding, 2026-09-19).** The example previously given here — `8 disponibles / 10 ya etiquetadas / 3 sin etiquetar` — was arithmetically impossible under the corrected scope: three `available` untagged units means at most five of the eight available units carry tags. The honest version of that same Camisas is `8 disponibles / 5 ya etiquetadas / 3 sin etiquetar`, and it renders **no clause at all** — `5 ≤ 8`, and the switch is live *and* reads `Sí` — necessarily so, since the `3 sin etiquetar` figure only renders while it does. (Precision added 2026-09-21: liveness alone is no longer the test.)
 
 **Worked example, the case this clause exists for.** Camisas with ten tagged garments committed to an open Event and nothing left in general stock:
 ```
@@ -2266,25 +2287,36 @@ Destinations and behaviour, identical in both orderings:
 
 Separated from Level 1 by a plain divider, with **no section heading** — the level break is carried by the divider plus the uniform row shape, and an added heading would be a label that informs nothing (`events.md` §3.4's own rule: nothing on screen that isn't informative).
 
-**Level-2 row shapes — three, each readable before the tap. Binding, not illustrative.**
+**Level-2 row shapes — three, each readable before the tap, each carrying an affirmative mark of its own kind. Binding, not illustrative.**
 
 | Shape | Renders as | Behaviour |
 |---|---|---|
 | **1. Value row that opens a sheet** | `[ Label            valor › ]` | Opens a staged sheet with a Cancelar/Guardar pair. Writes nothing on tap. |
 | **2. Action row that opens a sheet** | `[ Acción                  › ]` | Same, with no value to show. |
-| **3. Instant-write row** | `[ Label                Sí ]` | Writes immediately on tap. **Never carries "›".** |
+| **3. Instant-write row** | `[ Label        Sí  (—●) ]` | Writes immediately on tap. The whole row is the tap target; the two-position control is a signifier *inside* that one target, never a second target. **Never carries "›".** |
+
+**`(—●)` / `(●—)` is wireframe notation, not a rendering instruction.** It stands for *a control shown in one of exactly two positions* — right for `Sí`, left for `No`. What is binding is that the row carries a visible two-position control at its trailing edge, in its current position. What that control looks like is a visual-design decision and belongs downstream.
 
 **Every Level-2 row is a tap target — there is no passive row shape, deliberately.** A passive fact on this level sits among rows that all read as controls and is pulled toward control-shaped copy by its neighbours. Not hypothetical: an earlier draft of this amendment put a read-only NFC statement here and, in taking the row shape, drew its subject from `Product.nfcTaggingEnabled` — rendering "No" for a Product with ten tagged garments that were selling perfectly well. **Passive facts belong on Level 1**, alongside `N disponibles` and `N sin etiquetar`: a plain figure, derived from live unit state, no trailing slot, no target. The level split is what keeps the sourcing honest — Level 1 reports what is true of the units right now; Level 2 edits what is stored about the Product.
 
 **A row with no live control is absent from Level 2, never present-and-inert.** On a barcode-identified Product the NFC switch is gone entirely — `decision-log.md` D71, unchanged and not reinterpreted.
 
-**Signal one — the forward indicator, stated affirmatively.** **Every Level-2 row that opens a separate surface carries a trailing "›" after its value.** Precio, Foto, Código de barras, `[ Quitar código de barras ]`, and Nombre all carry it, unconditionally. **The instant-write row never carries it, and a sheet-opening row may never omit it.** A rule about one row's *absence* would be no signal at all — with no row carrying an indicator, its absence distinguishes nothing. A trailing directional glyph is established vocabulary in this document family, not new notation: §3.8's `[ Elegir producto ▾ ]` and `events.md` §3.15's `[ Vendiendo ahora · Día 2 ▸ ]` both already use one.
+**The trailing edge states the row's kind, affirmatively, on every row.** One rule with three instances, not a rule plus an exception:
+- A row that **opens a separate surface** ends in a forward indicator, "›", unconditionally — Precio, Foto, Código de barras, `[ Quitar código de barras ]` and Nombre all carry it, always.
+- A row that **writes in place** ends in a two-position control, shown in its current position, unconditionally.
+- **No row ends in nothing**, and no row carries both marks.
 
-**Signal two — what kind of thing the trailing element is.** A sheet-opening row trails an **open-ended value** she can read but not change from here: `$250`, `Con foto`, `7501234567890`, `Camisas`. The instant-write row trails a **two-position state from a closed, binary vocabulary** — `Sí` or `No`, never anything else, ever. That is a different kind of trailing element, visible at rest: one is a fact being reported, the other is the current position of a control.
+**This corrects an inconsistency in this section's own earlier reasoning (2026-09-21).** The chevron was already stated affirmatively here, for exactly the right reason: "a rule about one row's *absence* would be no signal at all." That reasoning was then not applied to shape 3, which was left defined by two absences — no chevron, no control — plus one inference: that a trailing `Sí`/`No` reads as a control's position rather than as a reported fact. **That inference is the thing a merchant's transferred expectation runs against.** On her own phone's Ajustes, in WhatsApp, in Mercado Libre, a chevron-less row of label-and-trailing-value is what a *read-only fact* looks like; an instantly-applied binary setting is what carries visible two-position geometry. A row that asks her to read "this writes" out of the absence of a mark is asking her to run our rule instead of hers.
 
-**Why two signals and not one.** The chevron alone is a small mark at the far edge of a row; the binary-vocabulary rule holds even if she never looks there, and holds in every future rendering of this page. They fail independently, which is the point. **Neither is a visual-design decision** — one is the presence of a forward affordance, the other is the cardinality of a value's vocabulary; both are hierarchy and affordance, and both survive intact into any visual treatment.
+**Three signals now, still independent.** The closed vocabulary is unchanged and still load-bearing: the instant-write row trails a **two-position state from a closed, binary vocabulary — `Sí` or `No`, never anything else, ever** — while a sheet-opening row trails an **open-ended value** she can read but not change from here (`$250`, `Con foto`, `7501234567890`, `Camisas`). The control's position is the third. They fail independently, which is the point: the chevron is a small mark at the far edge; the control is a shape she recognises without reading it; the words state the state even if she looks at neither.
 
-**No row may mix shapes.** A sheet-opening row with a binary value (a hypothetical `[ Vender con tag NFC   Sí › ]`) is forbidden outright: it would carry both signals and resolve to neither. If a future amendment ever needs a binary fact edited through a sheet, it renders the value as something other than `Sí`/`No` and carries the "›" — the vocabulary is what's reserved, not the fact.
+**The words stay, and they are what makes the control admissible.** This row's current state must be readable **in words** at rest — never only from a control's position, and never from colour or weight at all. The control accompanies the words; it never replaces them, and a rendering that dropped `Sí`/`No` in favour of the control alone would be a defect, not a simplification.
+
+**No colour, weight, size or other visual emphasis counts toward any of the three signals.** Emphasis may exist — a downstream visual decision — but no signal in this specification may rest on it, and no document may describe one as doing so. A signal that lives in colour is not readable at rest in words, and colour already carries unrelated meaning on display-only elements of this same page, so it cannot also mean "control."
+
+**The control is a signifier, never a second tap target.** The whole row stays one target; a tap on the label, on the word, on the control, or on the empty space between them does the same one thing. **It is explicitly not a sibling region and explicitly not a control inside a control** — the exact distinction §3.4's `[ Etiquetar ]` slot draws, in the opposite direction. This is what keeps the amendment's own constraint intact: the Catalog card's retired NFC zone was a separate small hit area inside a larger card, and *that* is what made it a hidden zone. Restoring the geometry without the hit area restores a signal the retirement discarded by accident, and adds back nothing the retirement was for.
+
+**No row may mix shapes.** A sheet-opening row with a binary value (a hypothetical `[ Vender con tag NFC   Sí › ]`) is forbidden outright: it would carry two contradictory kind-marks and resolve to neither. If a future amendment ever needs a binary fact edited through a sheet, it renders the value as something other than `Sí`/`No`, carries the "›", and carries **no** control — the vocabulary and the geometry are both reserved, not the fact.
 
 Row order is **frequency of real use, most-used first** — the Product Owner's own listed order, and the honest one: price changes with the season, a photo gets added once and rarely touched, a barcode is corrected only when misread, an NFC setting is decided once per Product, a name is changed almost never.
 
@@ -2303,7 +2335,9 @@ Row order is **frequency of real use, most-used first** — the Product Owner's 
 
 **Gate.** Rendered — as a live switch, the only form it has — when `Business.nfcPerProductEnabled === true` **and** `nfc ∈ registrationMode` (i.e. `subscriptionTier = paid`) **and** this Product has **no** `barcode`. Absent entirely otherwise. The middle clause is normally redundant — the only write path that can set `nfcPerProductEnabled = true` (`settings.md` §2.8) is itself only offered while `nfc ∈ registrationMode` — until a Paid→Free downgrade lands, which never resets that stored value. Checking it explicitly keeps this row honestly absent for a since-downgraded Business.
 
-**The whole row is the tap target — shape 3, above.** A bare tap anywhere on the row flips the value; there is no smaller switch-shaped sub-target to aim at, no sheet, no confirmation, and no separate save. It carries **no "›"** and trails **only `Sí` or `No`** — both halves of the shape-3 contract, and both readable at rest, before she commits to anything. She can tell this row writes and the three above it don't without touching any of them.
+**The whole row is the tap target — shape 3, above.** A bare tap anywhere on the row flips the value; there is **no smaller sub-target to aim at anywhere in this shape**, the control included — it is a signifier inside the row's single target and never a target of its own. No sheet, no confirmation, no separate save. The row carries **no "›"**, trails **only `Sí` or `No`**, and ends in a **two-position control shown in its current position** — the three halves of the shape-3 contract, all readable at rest, before she commits to anything. She can tell this row writes and the rows around it don't without touching any of them.
+
+**The visual layer must declare what the accessibility layer already declares.** This row is exposed to assistive technology as a two-position control whose state is its value, so a merchant using a screen reader is *told* what the row is. A sighted merchant must be told the same thing, by the same screen, and the control is how. A design in which one layer names the row a toggle and the other deliberately declines to is not a design decision; it is one audience getting a fact the other has to guess.
 
 **Copy beneath the row, rendered only while the value reads `Sí`:**
 ```
@@ -2315,23 +2349,24 @@ This is `decision-log.md` D71's own invariant, already settled and not reopened 
 
 **Turning it ON writes the setting and nothing else — the 2026-09-17 auto-entry is reversed and retired (Product Owner decision, 2026-09-19).** A successful ON save never navigates anywhere. Her own words: "Reverse the previous NFC behavior: turning NFC on should only change the product setting. It should NOT automatically enter tagging. [Etiquetar] is the explicit action that starts the tagging flow." **What she sees instead, immediately, without leaving this page:** if this Product already has ≥1 `available` untagged unit, the `N sin etiquetar` figure and the `[ Etiquetar ]` action both appear on Level 1 in the same beat the row finishes saving, and Level 1's ordering switches to its pending-work form. The consequence of the setting becomes visible one level up on the screen she is already on — which is what makes withholding the navigation honest rather than merely quieter. If she has nothing yet received, nothing appears, and no empty tagging queue is ever reachable (D46's own rule, preserved at the Product level).
 
-**Turning it OFF never hands off anywhere** — unchanged. `[ Etiquetar ]` and the `N sin etiquetar` figure both disappear in the same beat, since every still-untagged unit leaves eligibility (D71). `N ya etiquetadas` is unaffected, because it was never sourced from this flag.
+**Turning it OFF never hands off anywhere** — unchanged. `[ Etiquetar ]` and the `N sin etiquetar` figure both disappear in the same beat, since every still-untagged unit leaves eligibility (D71). `N ya etiquetadas` is unaffected, because it was never sourced from this flag — but **it gains clause A in that same beat**, since this row's own caption disappears with the `Sí` value and Level 1 becomes the only place the persistence fact is stated (§3.19's Level-1 clause A condition, corrected 2026-09-21). The count does not move; the sentence beside it appears.
 
 **Save-state discipline — composes two already-approved primitives, invents nothing.** This is the only control on this page that saves instantly, so it is the only one that needs this stated:
-- **On tap:** the row dims in place (`settings.md` §3.9's "fila atenuada" mechanic, reused) and **immediately displays the attempted new value** — she sees `Sí` the instant she taps `No`. The row is not tappable again while a write is inflight; a second tap is ignored, never queued.
+- **On tap:** the row dims in place (`settings.md` §3.9's "fila atenuada" mechanic, reused) and **immediately displays the attempted new value in both the word and the control** — she sees `Sí (—●)` the instant she taps `No (●—)`. The row is not tappable again while a write is inflight; a second tap is ignored, never queued.
 - **Near-instant:** the row dims and un-dims silently, landing on the new value. No message.
 - **Slow (>~1.5s) — the pending state:**
   ```
-  [ Vender con tag NFC  Guardando… ]
+  [ Vender con tag NFC  Guardando…  (—●) ]
   ```
-  The trailing value reads `Guardando…` in place of `Sí`/`No`, row still dimmed. Same calm, plain-language convention as every other write in this document (§3.10) — never a spinner label, never a technical status string.
+  The trailing value reads `Guardando…` in place of `Sí`/`No`, the control holds the **attempted** position, row still dimmed. Same calm, plain-language convention as every other write in this document (§3.10) — never a spinner label, never a technical status string.
 - **Failure — the failure state and the revert:**
   ```
-  [ Vender con tag NFC      No  ] │  revertido al último valor guardado
+  [ Vender con tag NFC      No  (●—) ] │  revertido al último valor guardado
    No pudimos guardar. Intenta de
    nuevo.
   ```
   **The row reverts to the last value actually stored — never left displaying the attempted value.** This is the load-bearing half: the optimistic display above is only safe because failure is guaranteed to undo it. The inline line renders directly beneath that row only; nothing else on the page is affected, nothing is blocked, and the rest of the page stays fully interactive. The row itself becomes tappable again and **is** the retry — no separate `[ Reintentar ]` button, no full-screen error. Same reasoning `settings.md` §3.10 gives its own toggle failures, and the same reasoning §3.4's retired fifth zone already carried, scoped here to one row: a small, low-stakes, instantly-retriable boolean flip. The line clears on the next tap of that row, successful or not. No tap is required to dismiss it.
+- **The control's position and the word never disagree, in any state.** They move together on tap, together into `Guardando…`, and together on the revert. The control is never the only thing that changes and never lags the word — otherwise the geometry would be capable of contradicting the words `DESIGN-SYSTEM.md` §8's retained rule makes authoritative, which is the one failure mode that would make adding it worse than not having it.
 - **Interruption mid-write (app backgrounded, connection lost, tab killed):** on returning to this page, the row renders whatever the server actually holds, re-read as part of the page's own load — **never a persisted `Guardando…`**, and never a locally-remembered attempt replayed silently. If the write landed, she sees the new value; if it did not, she sees the old one. Nothing is staged on this page across an interruption, because nothing on this page is ever staged at all.
 - **Idempotency.** This write is exposed to a client-initiated retry (the row itself), so *architecture-principles.md* #7 applies: it must carry a stable idempotency key generated once per attempt and reused on every retry of that attempt. **Stated as a requirement on the build, not as a claim about what exists** — this document has twice been corrected for asserting a key that was not actually generated (§3.4a/§3.4b's own `reviewer` corrections, `product/02c-high-fidelity-prototype/BACKLOG.md` §F). The same standing gap covers this write until §F is closed.
 
@@ -2379,7 +2414,7 @@ One further question this page's own existence raises for whoever designs it: an
 │  [ Precio               $350 › ] │
 │  [ Foto             Sin foto › ] │
 │  [ Código de barras Sin código › ]│  (solo plan de pago)
-│  [ Vender con tag NFC      No ]  │  forma 3
+│  [ Vender con tag NFC   No (●—) ] │  forma 3
 │  [ Nombre             Bolsas › ] │
 ├───────────────────────────────┤
 │ Hoy [Inventario] Eventos Resultados │
@@ -2433,6 +2468,32 @@ No NFC row on Level 2 at all (D71). `3 sin etiquetar` and `[ Etiquetar ]` correc
 │  [ Nombre             Bolsas › ] │
 ```
 Nothing about NFC renders anywhere — no row, no line, no trace.
+
+**Con el switch NFC vivo pero apagado, con prendas ya etiquetadas — el estado que la cláusula A cubre (añadido 2026-09-21):**
+```
+┌───────────────────────────────┐
+│ ← Inventario                     │
+│  ┌────┐                          │
+│  │IMG │  Camisas                  │
+│  └────┘  $250                     │
+│                                │
+│  8 disponibles                    │
+│  5 ya etiquetadas — se siguen     │  Nivel 1, cláusula A
+│  vendiendo con su tag             │
+│                                │
+│  [   Registrar mercancía     ]   │  primaria — no hay [ Etiquetar ]
+│  [   Corregir cantidad       ]   │
+│  ─────────────────────────      │
+│  [ Precio               $250 › ] │
+│  [ Foto             Con foto › ] │
+│  [ Código de barras Sin código › ]│
+│  [ Vender con tag NFC   No (●—) ] │  forma 3 — sin leyenda debajo
+│  [ Nombre            Camisas › ] │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+`3 sin etiquetar` and `[ Etiquetar ]` are correctly absent (D73) — those units genuinely stopped being taggable. The switch is live and reads `No`, so it carries no caption, and clause A on Level 1 is the only thing reconciling the two lines. **Reached two ways:** she turns the switch off on this page, or she clears a barcode at §3.19c on a Product with tagged units. Clause B does not fire here (`5 ≤ 8`).
 
 ### 3.19a Editar nombre — sheet (new 2026-09-19)
 ```
@@ -2520,7 +2581,18 @@ Nothing about NFC renders anywhere — no row, no line, no trace.
 │  vas a poder encontrar este       │
 │  producto escaneándolo.          │
 │  Las prendas que ya tienen tag     │
-│  siguen funcionando igual.        │
+│  se siguen vendiendo igual.       │
+│  Si te equivocas, puedes volver   │
+│  a escanearlo.                    │
+```
+
+**Forma N=1 de esa línea (las otras dos oraciones son invariantes):**
+```
+│  Si quitas este código, ya no     │
+│  vas a poder encontrar este       │
+│  producto escaneándolo.          │
+│  La prenda que ya tiene tag       │
+│  se sigue vendiendo igual.        │
 │  Si te equivocas, puedes volver   │
 │  a escanearlo.                    │
 ```
@@ -2533,7 +2605,10 @@ Nothing about NFC renders anywhere — no row, no line, no trace.
 - **On-screen heading is the Product's name ("Bolsas"), never "Quitar el código de barras de Bolsas"** — the rule §3.19/§3.19a/§3.4a/§3.4b/§3.4c all hold, avoiding the CTA/heading-collision defect class (`ux-critic-findings.md` HJR-INV-M1, HJR-EVT-M1). The action lives in the body sentence, where it reads as a consequence rather than a restated label.
 - **The confirm button is `[ Sí, quitarlo ]`, deliberately not a third near-identical action string.** A chain of row `[ Quitar código de barras ]` → heading → button `[ Quitar código ]` would say almost the same thing three times in three sizes. `[ Sí, quitarlo ]` answers the sentence directly above it instead of repeating the row she tapped, reusing §3.8c's own established `[ Sí, es este ]` affirmative-confirm shape rather than inventing one.
 - **The sheet shows the exact code being removed, plainly and unformatted, exactly as §3.4c displays it.** Seeing the literal value before removing it is the same reasoning §3.4c's own staged "(actual)/(nuevo, sin guardar)" comparison rests on: the value is the whole point of the screen, and a bare "¿quitar el código?" would ask her to confirm something she cannot see.
-- **The "Las prendas que ya tienen tag siguen funcionando igual" line renders only when ≥1 unit of this Product currently carries an attached `NFCTag`** (`InventoryUnit.tagId != null AND status IN ('available','reserved')`), counted live — the same allowlist scope §3.19's Level-1 line carries, since a `sold` unit keeps its `tagId`. **It must never be conditioned on `Product.nfcTaggingEnabled`** — on a barcoded Product that flag is always `false` (either §3.4c's clear-on-save cleared it, or the Product was created barcode-identified), so a flag-sourced condition would render this line **never**, in exactly the case it exists for. Same binding sourcing rule as §3.19's Level-1 `N ya etiquetadas` line (`architect` ruling, 2026-09-19). At zero tagged units the sheet shows the two-sentence form above, unchanged.
+- **The tagged-units line renders only when ≥1 unit of this Product currently carries an attached `NFCTag`** (`InventoryUnit.tagId != null AND status IN ('available','reserved')`), counted live — the same allowlist scope §3.19's Level-1 line carries, since a `sold` unit keeps its `tagId`. **It must never be conditioned on `Product.nfcTaggingEnabled`** — on a barcoded Product that flag is always `false` (either §3.4c's clear-on-save cleared it, or the Product was created barcode-identified), so a flag-sourced condition would render this line **never**, in exactly the case it exists for. Same binding sourcing rule as §3.19's Level-1 `N ya etiquetadas` line (`architect` ruling, 2026-09-19). At zero tagged units the sheet shows the two-sentence form above, unchanged.
+- **This line takes its singular at N=1, and the sentence is §3.4c's own, reused verbatim (corrected 2026-09-21, `ux-critic` m5).** It previously read `Las prendas que ya tienen tag siguen funcionando igual.` at every N, which carries plural agreement three times over (article, noun, verb) and so was wrong at N=1 even though it contains no numeral. Two things are corrected together:
+  - **The verb is now `se sigue(n) vendiendo`, not `sigue(n) funcionando`.** A tag functions; a garment does not — and what she needs to know is that she can still *sell* them (*global-principles.md*, "business language always comes before technical language"). This also makes the sentence byte-identical to §3.4c's third banner sentence, which states the identical fact on the screen this sheet sits over. Two surfaces, one fact, one string — the same "specified once, reused everywhere" discipline this document applies to states, applied to copy. §3.19's switch caption ("Si lo apagas, las prendas que ya tienen tag siguen igual") is deliberately left unchanged: it is a conditional about a future action, not this same present-tense sentence, and it reads correctly as written.
+  - **The N=1 form carries no numeral at all** — `La prenda que ya tiene tag`, never "La 1 prenda," which is not Spanish. **It is a distinct string, not a count-plus-noun template**, so it must be registered as a full-string pair rather than a noun pair if a centralized pluralization helper renders it — the identical requirement §3.4c states for its own pair, and the same helper should serve both, since the strings are now the same. N=0 needs no form: the render condition is ≥1 tagged unit. Unlike §3.4c's sentence, this one carries no count in either form, so nothing else about it varies with N.
 
 **Decision: this keeps a confirmation, and the reason survives the ruling.**
 
@@ -2570,7 +2645,7 @@ A prompt would also be asked at a moment she may not be deciding anything: clear
 - The Código de barras row reads `Sin código`.
 - `[ Quitar código de barras ]` is gone — its rendering condition no longer holds.
 - The NFC row is now a **live switch reading `No`** (when her Business has NFC available), in the position it already occupied.
-- `N ya etiquetadas` is unchanged, since it was never sourced from the flag — but it **drops its added clause**, because a live switch is now present to make the fact self-evident (§3.19's Level-1 condition).
+- `N ya etiquetadas` is unchanged, since it was never sourced from the flag, **and it keeps clause A** — the newly-live switch reads `No`, not `Sí`, so it carries no caption of its own and makes nothing self-evident (§3.19's Level-1 condition, corrected 2026-09-21). **Corrected from this section's original text**, which said the clause drops "because a live switch is now present": presence alone was never the operative reason, and a clear lands in precisely the live-and-off state the corrected condition covers.
 - The ambient confirmation renders above, once, fading.
 
 **Save discipline.** Near-instant / slow / error per §3.10/§3.11's existing convention; a failed removal leaves this sheet open, unchanged and retriable, with nothing written. Exposed to a client-initiated retry, so *architecture-principles.md* #7's stable-idempotency-key requirement applies — stated as a requirement on the build, against the same standing `product/02c-high-fidelity-prototype/BACKLOG.md` §F gap named at §3.4a/§3.4b/§3.19a and §3.19's NFC switch.
@@ -2640,7 +2715,9 @@ Página de producto (3.19) — understand/manage one Product:
               nfcPerProductEnabled + nfc ∈ registrationMode); never
               auto-flipped to "Sí" — two separate actions, two separate
               writes (D80)
-            · "N ya etiquetadas" unchanged, but drops its added clause
+            · "N ya etiquetadas" unchanged, and KEEPS clause A — the
+              newly-live switch reads "No", so it carries no caption
+              (corrected 2026-09-21, ux-critic m4)
             · ambient "Código de barras quitado ✓ — ahora puedes venderlo
               con tag, si quieres." (second clause only when the NFC row
               will actually be live; otherwise plain "Código de barras
@@ -2650,12 +2727,14 @@ Página de producto (3.19) — understand/manage one Product:
           guard conditions on available/reserved/Event-allocated/tagged
           units (D80)
     tap the NFC row — LIVE SWITCH ONLY (shape 3; gated nfcPerProductEnabled
-      + nfc ∈ registrationMode + NO barcode; no "›") → writes
+      + nfc ∈ registrationMode + NO barcode; no "›"; trailing two-position
+      control + word, one tap target across the whole row) → writes
       Product.nfcTaggingEnabled directly, in place
         → row dims, immediately shows the attempted value; further taps
           ignored while inflight
         → near-instant → un-dims on the new value, silently — DONE
-        → slow (>~1.5s) → trailing value reads "Guardando…", row dimmed
+        → slow (>~1.5s) → trailing value reads "Guardando…", control holds
+            the attempted position, row dimmed
         → success, ON, ≥1 available untagged unit exists → stays on 3.19;
           Level 1 gains "N sin etiquetar" + [ Etiquetar ] and switches to
           its pending-work ordering — NO navigation (2026-09-17 auto-entry
@@ -2873,10 +2952,10 @@ flow. Full prior text at
 16. Asignar tags — error, scan failed
 17. [RETIRED 2026-09-17] Asignar tags — "Terminar después" — see §3.4's Catalog view (state 4) plus its `· N sin etiquetar` caption and `[ Etiquetar ]` shortcut, and §3.19's Level 1. **[Cross-reference corrected 2026-09-19.]** "Terminar después" now returns to origin (§3.14), not unconditionally to Catalog view.
 18. Defensive fallback / load error
-19. **Página de producto** (new 2026-09-19) — one Product, three levels: stock/status + primary inventory actions; product details and identification; a named, reserved, undesigned Level 3. **Five defined variants:** default with pending tag work (NFC live switch, no barcode, `[ Etiquetar ]` primary); default without pending tag work (`[ Registrar mercancía ]` primary); barcode-identified with ≥1 tagged unit (Level-1 persistence line with its added clause, no NFC row, `[ Quitar código de barras ]` present); barcode-identified with 0 tagged units (no NFC anything); Free-tier/reduced (Precio, Foto, Nombre only). Plus the NFC switch's own **pending** (`Guardando…`, row dimmed) and **failure** (reverted value + inline retry line) states. **There is no passive Level-2 row shape** — passive facts render on Level 1.
+19. **Página de producto** (new 2026-09-19) — one Product, three levels: stock/status + primary inventory actions; product details and identification; a named, reserved, undesigned Level 3. **Six defined variants:** default with pending tag work (NFC live switch, no barcode, `[ Etiquetar ]` primary); default without pending tag work (`[ Registrar mercancía ]` primary); **NFC switch live and reading `No` with ≥1 tagged unit** (clause A present on Level 1, no caption beneath the switch — added 2026-09-21, `ux-critic` m4; reached by turning the switch off, or by clearing a barcode at §3.19c); barcode-identified with ≥1 tagged unit (Level-1 persistence line with its added clause, no NFC row, `[ Quitar código de barras ]` present); barcode-identified with 0 tagged units (no NFC anything); Free-tier/reduced (Precio, Foto, Nombre only). Plus the NFC switch's own **pending** (`Guardando…`, control holding the attempted position, row dimmed) and **failure** (word *and* control both reverted, plus inline retry line) states. **There is no passive Level-2 row shape** — passive facts render on Level 1. **Every Level-2 row ends in an affirmative mark of its kind:** "›" on a row that opens, a two-position control on the one row that writes.
 19a. **Editar nombre — sheet** (new 2026-09-19) — validated on save against §3.8's existing case-insensitive/trimmed matching rule.
 19b. **Editar nombre — ya tienes un producto con ese nombre** (new 2026-09-19) — conflict, no merge, no reassignment; extends §3.4e/§3.15's pattern.
-19c. **Quitar código de barras — confirmación** (new 2026-09-19, `decision-log.md` D80, Paid tier only) — two copy forms (with and without the tagged-units line). Single-column write, no cascade, `nfcTaggingEnabled` untouched, no guard conditions.
+19c. **Quitar código de barras — confirmación** (new 2026-09-19, `decision-log.md` D80, Paid tier only) — two copy forms (with and without the tagged-units line), and the tagged-units form itself takes a singular at N=1 (corrected 2026-09-21, string shared verbatim with §3.4c). Single-column write, no cascade, `nfcTaggingEnabled` untouched, no guard conditions.
 
 ## 6. Minimum step count
 
@@ -3413,7 +3492,8 @@ comparable hard speed requirement — the floor above is about not adding
 - **"Return to origin" becomes this document's single navigation rule (Product Owner decision, closes `ux-critic` M3).** Applied to all three of Registro de mercancía's exits — back arrow, "Guardar mercancía" success, and the completion or deferral of any tagging run, including a Lot-scoped queue auto-entered from a save (origin propagates through the queue; it belongs to the operation, not to the preceding screen). **One exception, stated as a rule rather than a special case:** if the save itself makes the origin untrue, return to the nearest still-true state — exactly one case today, a Home cold-start-originated save, whose origin's own precondition ("no Product ever registered") the save falsifies. This closes the gap where a tagging run started from the page ended somewhere that was not the page.
 - **`[ Etiquetar ]`'s hit area is specified as binding, not illustrative (closes `ux-critic` M4).** Structural separation first — the shortcut is on line 2, the price on line 1, so they share no horizontal space and the shortcut's presence can never move the price column, the exact defect the Product Owner reported and the retired 84px reserved slot existed to fix. Within line 2: a fixed-width, fixed-position trailing slot, reserved list-wide. Minimum 48×48 hit area with a real, non-zero gap, where a tap in the gap resolves to the card (the reversible destination). **No nested-button semantics** — the card's tap region explicitly excludes the shortcut's rect; these are two sibling regions in one visual block, never a control inside a control.
 - **The NFC row's pending, failure, and revert-on-failure behaviour are fully specified (closes `ux-critic` M1).** It is the only control on §3.19 that saves instantly and had the same silent-failure gap already flagged elsewhere. Optimistic display on tap, dimmed row, silent when near-instant, `Guardando…` when slow, **revert to the last stored value on failure** plus one inline sentence scoped to that row, the row itself as the retry, and a defined interruption behaviour (re-read from the server at page load, never a persisted `Guardando…`, never a silently replayed attempt). The optimistic display is only safe *because* the revert is guaranteed; the two are one decision.
-- **The NFC row is tappable across its whole width and carries no "›" (closes `ux-critic` m1).** Every other Level-2 row opens something; this one changes something in place. A chevron says "opens"; a current `Sí`/`No` value that flips under her finger says "changes here." No row on this page may carry both signals.
+- **The NFC row is tappable across its whole width, carries no "›", and carries a two-position control (closes `ux-critic` m1; geometry added 2026-09-21).** Every other Level-2 row opens something; this one changes something in place. A chevron says "opens"; a two-position control beside a current `Sí`/`No` says "changes here." No row on this page may carry both marks, and no row may carry neither.
+- **The instant-write row's geometry is restored, and this is a correction to the 2026-09-19 pass rather than a new idea (2026-09-21, following a `knowledge-mentor` consultation requested by `ui-designer` and endorsed by `ux-critic` as s1).** `DESIGN-SYSTEM.md` §8's original entry already forbade, by name, "a button that swaps its own text between two states" as the shape for the next binary on/off control — shape 3 was that next control and was built as exactly that shape. **The rule was not argued against; it fell out of scope when the Catalog card's NFC *hit zone* was retired as one of the card's six, and the geometry went with the zone. What was defective was the separate small target inside a card, never the shape.** Restoring the control as a signifier inside the row's single target restores the signal without restoring the zone, which is why this satisfies rather than strains the Product Owner's constraint for this amendment ("simplifying the interaction model, not replacing six hidden tap zones with a different collection of hidden behaviours"): shape 3 defined only by absences *was* such a hidden behaviour. **§8's "readable in words at rest, never only from a control's position or colour" is honoured in full and was never the obstacle** — it requires words to be present; it never forbade geometry from accompanying them. Supported by NN/g's clickability-signifier eyetracking (weak signifiers: +22% time on task, +25% fixations, both p<0.05; 9 of 24 participants stopped at an element they misread as the wrong kind of thing and never reached the real one) and by both major mobile platforms reserving chevron-less label-plus-trailing-value for read-only display. **The failure that decided it is the silent one** — a merchant who reads the row as a fact never taps, never discovers the setting, and generates no signal at all; the ICTD literature on novice and low-literacy mobile users documents exactly the non-exploratory behaviour that failure requires, while the recoverable failure requires exploration they are documented as not performing. **No step count changes** (§6's NFC row stays at 2 taps), no copy changes, no state is added or removed. Every other Level-2 row opens something; this one changes something in place. A chevron says "opens"; a current `Sí`/`No` value that flips under her finger says "changes here." No row on this page may carry both signals.
 - **A sold-out card stays dimmed *and* tappable — restated at card level (closes `ux-critic` m3).** Dimming here means "needs restocking," never "disabled," and this is now a statement about the whole card rather than one zone within it. Her previous risk (reaching for a dimmed row and hitting a zone she did not mean) is structurally gone. The contrast with `home.md` §3.9, where dimming *does* pair with non-tappability, is unchanged and still deliberate.
 - **Product rename added and fully specified (§3.19a/§3.19b), 2026-09-19.** `Product.name` is a plain mutable scalar; every dependent references the Product by ID, so a rename is retroactive by construction and no historical row is altered or deleted (D25 fully satisfied). Validated on save — not as she types — against §3.8's existing case-insensitive/trimmed rule, reused verbatim; a conflict with a *different* Product is refused with §3.4e/§3.15's established "identifier already claimed, no reassignment" pattern; a pure casing/spacing change of this same Product's own name saves normally. **No merge, ever** — merging would silently combine two independent identities' stock, price, photo, barcode, and sales history, which D2 exists to prevent. **No name history kept**, matching D33/D54/D65's "plain mutable current scalar" posture for `defaultPrice`/`photo`/`barcode`; the consequence (past sales report under the new name) is logged as §8 item 8 rather than left to be discovered.
 - **A way to remove an existing `Product.barcode` added as an entry point (§3.19c), with consequence copy and guard conditions deliberately left unwritten.** Product Owner's own instruction: design the entry point and interaction shape now, and check the implications for existing inventory and tagged units before specifying behaviour. The `architect` ruling on exactly that is in flight. Settled now: the row's location (page, not card), its rendering condition, the confirmation and why it earns one when §3.4a/§3.4b do not, the decline branch, and the fact that the NFC row appears afterwards reading `No` and is **never** auto-flipped to `Sí`. Pending: everything about what she is told and what is guarded (§8 item 7).
