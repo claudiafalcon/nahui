@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../domain/store';
 import {
+  availableUntaggedCount,
   disponibleEnGeneral,
   eventAllocationFor,
   productByBarcode,
   quantityRemaining,
+  quantityRemainingBySource,
+  taggedAvailableUnitCount,
 } from '../../domain/selectors';
 import { NFC_SIMULATION_ENABLED, nfcSupported, nfcUnavailable } from '../../domain/nfcSupport';
 import { Button } from '../../components/Button/Button';
@@ -89,8 +92,12 @@ const NFC_SCAN_FAIL_CHANCE = 0.15;
  * unit's own `productId` directly, mints-or-finds that Product's own
  * `EventAllocation` for this Event) and commits it live — never staged
  * behind "Guardar cambios," the identical immediacy convention §3.21's own
- * row-level scan annotation already establishes. Present only when ≥1
- * Product on this Business's Catalog has `nfcTaggingEnabled = true`.
+ * row-level scan annotation already establishes. Present only when
+ * `Business.nfcPerProductEnabled = true` **and** ≥1 `InventoryUnit` on this
+ * Business's Catalog has `tagId != null AND status = 'available'`
+ * (`decision-log.md` D81 — live unit state, never
+ * `Product.nfcTaggingEnabled`; see `canScanNfc` below for the full
+ * reasoning).
  * Reuses §3.22's own two-state error register verbatim (a named conflict —
  * "[Producto]: esta prenda ya está en otro evento. Usa otra." — or a
  * generic "No se pudo leer el tag. Acércalo de nuevo.") rather than
@@ -163,11 +170,36 @@ export function MercanciaParaEsteEvento({
   // `CatalogView.tsx`'s own `canEditBarcode`) — Paid tier only.
   const canScanBarcode = state.business?.subscriptionTier === 'paid';
 
-  // §3.22a — present only when ≥1 Product on this Business's Catalog is
-  // NFC-tagging-eligible enough to have actually been tagged
-  // (`Product.nfcTaggingEnabled`), matching this section's own "absent
-  // entirely, not shown-then-disabled" posture for the barcode row above.
-  const canScanNfc = state.products.some((p) => p.nfcTaggingEnabled === true);
+  // §3.22a — **gate corrected 2026-09-20, `decision-log.md` D81.** Present
+  // when `Business.nfcPerProductEnabled === true` AND ≥1 `InventoryUnit` on
+  // this Business's Catalog currently has `tagId != null AND status ===
+  // 'available'` — absent entirely, not shown-then-disabled, matching this
+  // section's own posture for the barcode row above. Re-read live on every
+  // render (never memoized): a scan inside the overlay flips a unit to
+  // `reserved`, and the gate must follow that on its own.
+  //
+  // This previously read `state.products.some((p) => p.nfcTaggingEnabled ===
+  // true)`, which was wrong twice over. (1) It read `Product
+  // .nfcTaggingEnabled`, whose charter (D71) is to gate Inventory's Asignar
+  // Tags eligibility *only* — it "never itself asserts unit-level
+  // sellability, which stays derived purely from `InventoryUnit.tagId`." The
+  // flag goes false by two ordinary routes (a barcode saved, D71's
+  // clear-on-save; or the merchant simply switching it off) while
+  // already-tagged units stay tagged and stay sellable — and because this
+  // was a *Catalog-wide existential*, the last flag going false made every
+  // tagged unit of every Product uncommittable to any allocation,
+  // business-wide. (2) The Business-level conjunct was missing entirely.
+  //
+  // `available` only, deliberately narrower than D80's
+  // `('available','reserved')` display allowlist: a `reserved` unit is
+  // mid-Sale or already held by an allocation and is not a commit candidate,
+  // so counting it would open an overlay whose every scan could only report
+  // "esta prenda ya está en otro evento."
+  //
+  // The write paths were never wrong and are untouched — both scan RPCs and
+  // `_fifo_commit_to_allocation` are already pure unit-state. This is an
+  // entry-point visibility fix only.
+  const canScanNfc = state.business?.nfcPerProductEnabled === true && taggedAvailableUnitCount(state) > 0;
   // Growing, insertion-ordered tally — one row per Product actually scanned
   // this overlay session, "Bolsas: 2 escaneadas" (§3.22a's own wireframe).
   const [nfcOverlayOpen, setNfcOverlayOpen] = useState(false);
@@ -321,11 +353,17 @@ export function MercanciaParaEsteEvento({
     // a scan always adds exactly one unit to the resolved Product's own
     // allocation, so a plain relative +1 is correct and, being relative,
     // never clobbers any of her own not-yet-saved manual edit already
-    // staged on that same row. "Disponible en general" (`ceilings`) is
-    // deliberately left untouched — moving a unit from the general pool
-    // into *this* Event's own allocation is a net-zero change to that
-    // figure by construction (§3.21's own "Disponible en general...
-    // deliberately includes what's already allocated to this Event").
+    // staged on that same row. **Neither `disponibleEnGeneralByProduct` nor
+    // `ceilings` is touched, and both are still correct after this scan**
+    // (comment updated for D82's split of the two): "Disponible en general"
+    // is net-zero by construction, since moving a unit from the general pool
+    // into *this* Event's own allocation leaves that figure unchanged
+    // (§3.21's own "Disponible en general... deliberately includes what's
+    // already allocated to this Event"); and the manual ceiling is untouched
+    // because a scan only ever consumes a **tagged** unit and only ever
+    // writes a `scan`-source commitment — neither half of the ceiling
+    // (available *untagged* units, outstanding `fifo_assignment` units) can
+    // move as a result of it.
     setStaged((prev) => ({ ...prev, [result.productId]: (prev[result.productId] ?? 0) + 1 }));
   }
 
@@ -423,16 +461,60 @@ export function MercanciaParaEsteEvento({
     if (nfcSupported) setNfcSessionState('idle');
   }
 
+  // **The manual stepper's ceiling — re-derived 2026-09-20,
+  // `decision-log.md` D82.** It used to be `disponibleEnGeneral()`, which
+  // counts *all* available units, tagged and untagged. But the manual commit
+  // pool is untagged-only, enforced server-side in
+  // `_fifo_commit_to_allocation` (`and not exists (select 1 from
+  // public.nfc_tags nt where nt.unit_id = iu.id)`), and that RPC is
+  // deliberately partial-fulfillment tolerant — "fewer candidates than
+  // requested is not an error... never raises." So on a Product with 8
+  // available units of which 5 carry tags, the ceiling read 8, `[+]` allowed
+  // 8, Guardar succeeded, a success confirmation rendered, and 3 units
+  // committed: a wrong number underneath a success message, which she would
+  // only discover at the bazaar.
+  //
+  // The ceiling is now the pool the manual write can actually consume: this
+  // Product's `available` **untagged** units, plus this allocation's own
+  // outstanding `fifo_assignment`-source units (already hers, and the exact
+  // baseline `save_event_allocations` itself diffs the sent quantity
+  // against). **No NFC-eligibility predicate** — eligibility governs future
+  // tagging work (D71/D73); a merely-untagged unit is manually committable
+  // regardless of whether its Product ever opted into tagging.
   const ceilings = useMemo(() => {
     const map: Record<string, number> = {};
     for (const product of state.products) {
-      map[product.id] = disponibleEnGeneral(state, eventId, product.id);
+      const allocation = eventAllocationFor(state, eventId, product.id);
+      map[product.id] =
+        availableUntaggedCount(state, product.id) +
+        (allocation ? quantityRemainingBySource(state, allocation, 'fifo_assignment') : 0);
     }
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- recomputed
     // once per mount, matching the same "ceiling read at open time" posture
     // `staged`'s own initializer already uses; a live merchant edit to
     // Inventario mid-visit here is out of this screen's own scope to react to.
+  }, []);
+
+  // **"Disponible en general" — a separate figure from the ceiling above,
+  // deliberately (D82). Do not collapse the two back into one.** This is
+  // still the honest answer to its own question ("how many of this Product
+  // are available to this Event across the business"), which §3.21's own
+  // informational line and `home.md` §3.9's tile both legitimately ask, so
+  // it is unchanged and stays displayed. Where it differs from the ceiling,
+  // the difference is exactly this Product's tagged units, which belong to
+  // the scan pool. Two questions, two derivations. (§3.21's fuller answer —
+  // the "sin tag · con tag" split, which would show *both* pools rather than
+  // capping one — remains specified and out of scope here; D82 deliberately
+  // does not pre-empt it.)
+  const disponibleEnGeneralByProduct = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const product of state.products) {
+      map[product.id] = disponibleEnGeneral(state, eventId, product.id);
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- same
+    // once-per-mount posture as `ceilings` above, for the same reason.
   }, []);
 
   function setQuantity(productId: string, raw: number) {
@@ -513,8 +595,10 @@ export function MercanciaParaEsteEvento({
       )}
 
       {/* §3.22a — identical list-level position, same default/expanded
-          persistence as the barcode shortcut above. Present only when ≥1
-          Product on this Catalog is NFC-tagging-eligible. */}
+          persistence as the barcode shortcut above. Present only when this
+          Business has NFC on and ≥1 tagged, still-available unit exists on
+          its Catalog (`canScanNfc`, `decision-log.md` D81 — live unit
+          state, never `Product.nfcTaggingEnabled`). */}
       {canScanNfc && (
         <button
           className={styles.scanBtn}
@@ -541,7 +625,13 @@ export function MercanciaParaEsteEvento({
       <div className={styles.list}>
         {state.products.map((product) => {
           const quantity = staged[product.id] ?? 0;
+          // Two numbers on purpose (D82): `ceiling` caps the manual stepper
+          // (untagged pool only — what the write can honour), `available` is
+          // §3.21's own informational "Disponible en general" line (all
+          // available units). They are equal on any Product with no tagged
+          // units, which is every Product on a Business without NFC.
           const ceiling = ceilings[product.id] ?? 0;
+          const available = disponibleEnGeneralByProduct[product.id] ?? 0;
           const expanded = expandedProductId === product.id;
           const summary = quantity > 0 ? `${quantity} para este evento` : 'nada para este evento todavía';
 
@@ -565,7 +655,7 @@ export function MercanciaParaEsteEvento({
 
               {expanded && (
                 <div className={styles.rowDetail}>
-                  <p className={styles.available}>Disponible en general: {ceiling}</p>
+                  <p className={styles.available}>Disponible en general: {available}</p>
                   <p className={styles.stepperLabel}>Cantidad</p>
                   <div className={styles.stepperRow}>
                     <button

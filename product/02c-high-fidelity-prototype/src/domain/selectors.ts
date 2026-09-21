@@ -1251,8 +1251,25 @@ export function hasPriorFifoReconciliation(state: AppState, eventAllocationId: I
 /** `events.md` §3.21 — "Disponible en general": Business-wide `available`
  * stock for this Product, plus this Event's own already-committed units
  * (hers to freely reassign within this screen, "not elsewhere," §3.21's own
- * annotation) — which is what makes the manual stepper's ceiling exactly
- * equal to this figure. **Corrected, RFC 0010/D59:** no longer subtracts
+ * annotation).
+ *
+ * **This is a display figure only, `decision-log.md` D82 — it is no longer
+ * the manual stepper's ceiling, and must not be collapsed back into one.**
+ * This comment used to say the two were exactly equal; they are two
+ * different questions with two different derivations, and a future reader
+ * "helpfully" re-merging them would reintroduce D82's defect verbatim.
+ * "Disponible en general" answers *"how many of this Product are available
+ * to this Event across the business"* and counts **all** available units,
+ * tagged and untagged — which `events.md` §3.21's informational line and
+ * `home.md` §3.9's Event-scoped tile both legitimately ask, so it stays
+ * exactly as it is, still displayed, unchanged. The manual stepper's
+ * ceiling answers *"how many can the manual write actually commit"* and is
+ * untagged-only (`availableUntaggedCount` below, plus this allocation's own
+ * outstanding `fifo_assignment` units — composed in
+ * `MercanciaParaEsteEvento.tsx`'s own `ceilings`), because
+ * `_fifo_commit_to_allocation` commits
+ * from the untagged pool only and is deliberately partial-fulfillment
+ * tolerant. **Corrected, RFC 0010/D59:** no longer subtracts
  * every *other* open EventAllocation's committed count — once a commit
  * genuinely flips committed units to `reserved` (server-side,
  * `_fifo_commit_to_allocation`, Stage 7 Backend Integration Phase 2b),
@@ -1265,6 +1282,68 @@ export function disponibleEnGeneral(state: AppState, eventId: ID, productId: ID)
   const thisEventAllocation = eventAllocationFor(state, eventId, productId);
   const thisEventOwnRemaining = thisEventAllocation ? quantityRemaining(state, thisEventAllocation) : 0;
   return Math.max(0, businessWide + thisEventOwnRemaining);
+}
+
+/**
+ * `decision-log.md` D81 — **the live tagged-unit state Event allocation
+ * sources every NFC affordance from, for display *or* for gating; never
+ * `Product.nfcTaggingEnabled`.** Counts this Business's `InventoryUnit`s
+ * with `tagId != null AND status === 'available'`, read live on every call,
+ * never cached (same discipline as the tagging-queue selectors above: a
+ * unit that sells, or gets committed to an allocation, must drop out of
+ * this count on its own).
+ *
+ * **`available` only — deliberately narrower than D80's
+ * `('available','reserved')` allowlist, and not an inconsistency with it.**
+ * D80's question is "does this Product have NFC as a live fact," where a
+ * `reserved` unit still counts. This selector feeds an allocation **commit**
+ * entry point, where a `reserved` unit is mid-Sale or already held by an
+ * allocation and is therefore not a commit candidate: including it would
+ * render an overlay whose every scan could only report "esta prenda ya está
+ * en otro evento." Same sourcing rule, question-appropriate scope.
+ *
+ * Why not the Product flag: D71's own charter sentence says it "gates
+ * Inventory's Asignar Tags eligibility only" and "never itself asserts
+ * unit-level sellability, which stays derived purely from
+ * `InventoryUnit.tagId`." The flag goes false by two ordinary routes — a
+ * barcode saved (D71's clear-on-save) or the merchant simply switching it
+ * off — while already-tagged units stay tagged and stay sellable, so gating
+ * on it stranded real stock.
+ *
+ * `productId` is optional and additive, mirroring `pendingTagUnits`' own
+ * precedent: omitted, it answers the Catalog-wide question `events.md`
+ * §3.22a's list-level "Leer con NFC" gate asks; passed, it narrows to one
+ * Product's own units — the identical derivation §3.21's row-level scan
+ * affordance and "sin tag · con tag" split need (specified, not yet built).
+ */
+export function taggedAvailableUnitCount(state: AppState, productId?: ID): number {
+  return state.units.filter((u) => {
+    if (u.status !== 'available' || u.tagId == null) return false;
+    if (productId != null && u.productId !== productId) return false;
+    return true;
+  }).length;
+}
+
+/**
+ * `decision-log.md` D82 — this Product's `available` **untagged** units:
+ * the pool `_fifo_commit_to_allocation` can actually consume, mirroring its
+ * own server-side predicate exactly (`iu.status = 'available'` `and not
+ * exists (select 1 from public.nfc_tags nt where nt.unit_id = iu.id)`). The
+ * first of the manual allocation ceiling's two halves; the second is
+ * `quantityRemainingBySource(state, allocation, 'fifo_assignment')` above.
+ *
+ * **No NFC-eligibility predicate is applied here, deliberately.**
+ * Eligibility (`nfcPerProductEnabled` + `Product.nfcTaggingEnabled`,
+ * `isNfcTaggingEligible`) governs *future tagging work* (D71/D73); a unit
+ * that is merely untagged is manually committable regardless of whether its
+ * Product ever opted into tagging. **Do not "simplify" this into
+ * `pendingTagUnits`** — that selector is eligibility-filtered and would
+ * silently drop every untagged unit of a never-opted-in Product out of the
+ * merchant's own manual ceiling.
+ */
+export function availableUntaggedCount(state: AppState, productId: ID): number {
+  return state.units.filter((u) => u.productId === productId && u.status === 'available' && u.tagId == null)
+    .length;
 }
 
 /** `home.md` §3.9's own new Event-scoped tile line ("N en este evento") —
