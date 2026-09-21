@@ -641,10 +641,19 @@ A retried attempt replays the same already-confirmed action, never re-asking her
 ### 3.9 Guardando cambio — near-instant / slow (shared by every action's actual write)
 ```
 ┌───────────────────────────────┐        ┌───────────────────────────────┐
-│  ▢▢▢▢▢▢▢▢▢▢▢▢ (fila atenuada)      │        │      Guardando…                │
+│  ▢▢▢▢▢▢▢▢▢▢▢▢ (fila atenuada)      │        │  ▢▢▢▢▢▢▢▢▢▢ (atenuado)          │
+│                                │        │       Guardando… (sin atenuar) │
 └───────────────────────────────┘        └───────────────────────────────┘
+   near-instant: silent, brief dim            slow (>~1.5s): one plain line.
+                                              The attenuation covers only the
+                                              row's already-read content; the
+                                              status word sits outside it.
 ```
 Same near-instant/slow convention as `inventory.md` §3.10, `events.md` §3.9, `home.md` §3.8c, `onboarding.md` §3.5.
+
+- **The attenuation applies to the row's already-read content, never to the element that states the write's status (corrected 2026-09-21).** The status word — and any control holding an attempted position — stays at full strength for the whole inflight window. The quieting is applied to the label she has already read and that does not change during the write; it is never applied to the row as a whole, because the row as a whole contains the only two things on screen that are new information at that moment. The same rule governs §3.10: a failure message and its retry affordance are never attenuated, because a failed row is not finished content, it is the retry target.
+- **This constraint binds every reuse of this mechanic, not only this document.** `inventory.md` §3.10 and §3.19, `events.md` §3.9, `home.md` §3.8c, `onboarding.md` §3.5 and `reports.md` §3.18 all cite this section for the shape; they inherit this sentence with it. `inventory.md` §3.19's NFC row is the case that makes it concrete — its control's attempted position is required to be perceivable *at exactly the moment* the row is quieted, which a row-wide attenuation defeats. That requirement is already approved there ("the control's position and the word never disagree, in any state"); this section states its general form so the next reuse doesn't have to rediscover it.
+- **Scope of the attenuation is a Low-Fidelity decision; its device and its numbers are not.** Which elements the quieting may cover, and which it may never cover, is specified here. What device performs the quieting, and any contrast figure, belongs to the visual layer (`product/02-ux/CLAUDE.md`'s implementation-independence rule) — a substitution applied to the label alone is one conforming shape, and so is any other device that leaves the status word and the attempted position at full strength.
 
 ### 3.10 Error al guardar cambio
 ```
@@ -1246,6 +1255,7 @@ None of the items below block this document's completion.
 - **"Tu nombre" (§2.5/§3.3a/§3.3b), self-service `User.displayName` capture/edit, added 2026-09-15, resolving `decision-log.md` D69/`product-decisions.md` Q29.** Deliberately not added to `authentication.md`'s Invitation-acceptance flow — reasoned explicitly in §2.5 against "the fastest interaction is the one that never happens." "Tu equipo" (§2.7/§3.11) now resolves identity through it first. **[see settings.changelog.md#status-2026-09-15-displayname-capture]**
 - **RFC 0014/D70, 2026-09-15: `targetHint` becomes required at invite-creation, not optional — supersedes the earlier "optional, non-blocking, never gating the primary action, never matched against anything (RFC 0013 §1)" bullet above, on that one point only.** §3.12's field drops its "(opcional)" label, gates "Generar invitación" on a well-formed email, and its helper copy states the real reason. A new OWNER-side repair path (§3.12e) lets her correct a typo'd or missing `targetHint` on a still-pending row with one edit, writing `targetHint` in place with no token/expiry reset — the exact mechanism RFC 0014 names. A `pending` row created before this shipped, with `targetHint = null`, is exempt from the acceptance-time check (RFC 0014's own backward-compatibility rule) — §3.11 now distinguishes this legacy state with honest copy and an optional `[ Agregar correo ]` path to opt it in. **[see settings.changelog.md#status-2026-09-15-targethint-enforced]**
 - **New §2.8, `nfcPerProductEnabled` capability added 2026-09-16/17 (`decision-log.md` D71, `product-decisions.md` Q31).** Off by default even on an already-Paid Business; offered only when `nfc ∈ registrationMode`, same gating posture as `defaultSellingMode`'s own `nfc` option and "Tu equipo"'s Free-tier absence. Immediate-effect both directions, same mutability class as `defaultSellingMode` (no pending-value structure). Turning it off never untags/orphans an already-tagged unit and is stated to also withdraw the "Leer con NFC" overlay from `buttons`-mode Selling (that document's own scope) — both consequences disclosed plainly in §3.4's own confirmation copy before she confirms.
+- **2026-09-21: §3.9's attenuation is scoped, not row-wide.** The "fila atenuada" mechanic covers the row's already-read content only; the element stating the write's status, and any control holding an attempted position, stay at full strength. Found during the Product Page build, where a row-wide reading of §3.9's own wireframe made `Guardando…` and an NFC switch's attempted position both imperceptible. A perceptibility constraint on an existing pattern — the near-instant/slow/error shape itself is unchanged. **[see settings.changelog.md#decisions-2026-09-21-attenuation-scoped-not-row-wide]**
 
 ## 11. Future considerations
 

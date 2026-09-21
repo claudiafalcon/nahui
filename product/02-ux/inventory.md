@@ -2352,13 +2352,13 @@ This is `decision-log.md` D71's own invariant, already settled and not reopened 
 **Turning it OFF never hands off anywhere** — unchanged. `[ Etiquetar ]` and the `N sin etiquetar` figure both disappear in the same beat, since every still-untagged unit leaves eligibility (D71). `N ya etiquetadas` is unaffected, because it was never sourced from this flag — but **it gains clause A in that same beat**, since this row's own caption disappears with the `Sí` value and Level 1 becomes the only place the persistence fact is stated (§3.19's Level-1 clause A condition, corrected 2026-09-21). The count does not move; the sentence beside it appears.
 
 **Save-state discipline — composes two already-approved primitives, invents nothing.** This is the only control on this page that saves instantly, so it is the only one that needs this stated:
-- **On tap:** the row dims in place (`settings.md` §3.9's "fila atenuada" mechanic, reused) and **immediately displays the attempted new value in both the word and the control** — she sees `Sí (—●)` the instant she taps `No (●—)`. The row is not tappable again while a write is inflight; a second tap is ignored, never queued.
-- **Near-instant:** the row dims and un-dims silently, landing on the new value. No message.
+- **On tap:** the row's already-read label quiets in place (`settings.md` §3.9's "fila atenuada" mechanic, reused, with that section's own scoping rule: the attenuation never reaches the status word or the control) and **immediately displays the attempted new value in both the word and the control** — she sees `Sí (—●)` the instant she taps `No (●—)`. The row is not tappable again while a write is inflight; a second tap is ignored, never queued.
+- **Near-instant:** the label quiets and un-quiets silently, landing on the new value. The word and the control are at full strength throughout, including in this brief window — the attempted position is displayed the instant she taps, and a window too short for a message is not too short for her to look at the control. No message.
 - **Slow (>~1.5s) — the pending state:**
   ```
   [ Vender con tag NFC  Guardando…  (—●) ]
   ```
-  The trailing value reads `Guardando…` in place of `Sí`/`No`, the control holds the **attempted** position, row still dimmed. Same calm, plain-language convention as every other write in this document (§3.10) — never a spinner label, never a technical status string.
+  The trailing value reads `Guardando…` in place of `Sí`/`No`, the control holds the **attempted** position, and the row's label is the only part that quiets — per `settings.md` §3.9, the attenuation reaches neither the status word nor the control, both of which stay at full strength for the whole inflight window. A row-wide quieting would make the attempted position imperceptible at exactly the moment this section requires it to be visible, which is the outcome the bullet below forbids. Same calm, plain-language convention as every other write in this document (§3.10) — never a spinner label, never a technical status string.
 - **Failure — the failure state and the revert:**
   ```
   [ Vender con tag NFC      No  (●—) ] │  revertido al último valor guardado

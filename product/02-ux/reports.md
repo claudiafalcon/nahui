@@ -1818,7 +1818,8 @@ variant below for the other reachable state, zero Claims recorded yet,
 ### 3.18 Confirmar recompensa entregada — guardando / error
 ```
 ┌───────────────────────────────┐        ┌───────────────────────────────┐
-│  (pantalla anterior atenuada)      │        │      Guardando…                │
+│  (pantalla anterior atenuada)      │        │  (pantalla anterior atenuada)  │
+│                                │        │      Guardando… (sin atenuar)  │
 └───────────────────────────────┘        └───────────────────────────────┘
 
 ┌───────────────────────────────┐
@@ -1830,6 +1831,22 @@ variant below for the other reachable state, zero Claims recorded yet,
 - **Same near-instant/slow/error/retry convention already shared across
   `home.md` §3.8c, `inventory.md` §3.10, `events.md` §3.9,
   `onboarding.md` §3.5, `settings.md` §3.9/§3.10** — not reinvented here.
+- **The attenuation covers the previous screen, never the line stating the
+  write's status** (`settings.md` §3.9's scoping rule, cited here with the rest
+  of this shape; corrected 2026-09-21). §3.17 qualifies as already-read content
+  for exactly the duration of this write: she has read it and acted on it,
+  nothing on it changes while the write is inflight, no control on it holds a
+  position she attempted, and it is not the retry target — the retry lives in
+  the failure frame above, at full strength. Success routes to §3.16, not back
+  to it. **The dim's scope is therefore correct as drawn and unchanged by this
+  correction; only `Guardando…`'s exemption from it needed stating.**
+  **The general test, for any future reuse:** a dim is legitimate when
+  everything under it is content she has already read and cannot act on until
+  the write resolves. It stops being legitimate the moment something under it
+  (a) states the write's status, (b) holds a position she attempted, or (c) is
+  the retry target. A state that dims a screen still carrying an instruction
+  she needs *during* the write is a different design problem, and is not solved
+  by raising the contrast of a dim.
 - **Idempotent, keyed retry — `architecture-principles.md` #7, cited by
   name.** This is Resultados' first-ever write, so this principle has
   never been exercised in this document before: a stable idempotency key

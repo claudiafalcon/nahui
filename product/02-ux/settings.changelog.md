@@ -498,3 +498,17 @@ resolving identity through it).
 §4's interaction flow, §5's screen-state enumeration (new 15e), §6's step-count table (Invitar a alguien's own row corrected, one new row added), §7 (new automation bullet), §8 item 17 (superseded — resolved as a hard block, not a soft warning), §9 (two citations corrected/added), §10 (new decision bullet) all updated to match.
 
 `authentication.md`'s own companion amendment (the acceptance-side mismatch handling — new §3.2g locked-email sub-flow, new §3.10f defensive state) is that document's own scope, cited here, not restated. Not yet run through `ux-critic`/`reviewer`.
+
+
+## decisions-2026-09-21-attenuation-scoped-not-row-wide
+
+Replaced 2026-09-21. §3.9's prior body, in full:
+
+```
+┌───────────────────────────────┐        ┌───────────────────────────────┐
+│  ▢▢▢▢▢▢▢▢▢▢▢▢ (fila atenuada)      │        │      Guardando…                │
+└───────────────────────────────┘        └───────────────────────────────┘
+```
+Same near-instant/slow convention as `inventory.md` §3.10, `events.md` §3.9, `home.md` §3.8c, `onboarding.md` §3.5.
+
+**Why replaced:** the two panels drew the same row, so "the row is attenuated" and "the row reads `Guardando…`" were the same region. A literal implementation therefore dimmed the status word itself — which is what shipped on `inventory.md` §3.19's NFC row, at 2.25:1, along with the switch's own attempted position at ~2.10:1. The replacement scopes the attenuation to already-read content and adds the missing near-instant/slow captions every sibling section already carries.

@@ -1987,8 +1987,8 @@ tapping the flagged item →
 │ Plaza Norte · Día 2         ⚙  │        │ Plaza Norte · Día 2         ⚙  │
 │ Hoy: $850 · 6 ventas  [ Cerrar jornada de venta ] │        │ Hoy: $850 · 6 ventas  [ Cerrar jornada de venta ] │
 ├───────────────────────────────┤        ├───────────────────────────────┤
-│ Venta actual: 2 artículos          │        │        Cerrando venta…          │
-│  ▢▢▢▢▢▢▢▢▢▢▢▢ (zona atenuada)      │        │                                │
+│ Venta actual: 2 artículos          │        │  Cerrando venta… (sin atenuar) │
+│  ▢▢▢▢▢▢▢▢▢▢▢▢ (zona atenuada)      │        │  ▢▢▢▢▢▢▢▢▢▢▢▢ (zona atenuada)  │
 ├───────────────────────────────┤        ├───────────────────────────────┤
 │ [Hoy]  Inventario Eventos Resultados │   │ [Hoy]  Inventario Eventos Resultados │
 └───────────────────────────────┘        └───────────────────────────────┘
@@ -1998,6 +1998,16 @@ tapping the flagged item →
   unless genuinely slow, one calm plain-language line, never a technical
   status string. Nav bar and header stay live throughout: this never blocks
   navigating away or the running totals from being visible.
+- **"Cerrando venta…" is never inside the attenuation** (`settings.md` §3.9's
+  scoping rule, which this state cites for its shape; corrected 2026-09-21).
+  The zone quiets because its contents are already-read items and affordances
+  she cannot act on until the write resolves; the line stating the write's
+  status is the one new thing on the screen and renders at full strength
+  beside it, not within it. Nothing in this zone holds an attempted position,
+  so the zone's own scope is unchanged. **The slow panel previously dropped the
+  `Venta actual: 2 artículos` line and still does** — the status line takes
+  that position. Restoring the count would be a behavioural change, not a
+  perceptibility one, and is deliberately not made here.
 
 ### 3.8d Finalizar Venta — error (new — resolves HOME-B1)
 ```
