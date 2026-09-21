@@ -1559,6 +1559,42 @@ Both migrations were initially written with no working `SUPABASE_ACCESS_TOKEN` i
 
 ## Product Page writes — `update_product_name` / `clear_product_barcode` — WRITTEN, NOT PUSHED (2026-09-21)
 
+`supabase/migrations/20260921000000_nfc_tag_attachment_window.sql` promotes
+`decision-log.md` D83 / RFC 0018. **Applied to production 2026-09-21 and
+verified.** *(This entry was written 2026-09-21, after `ui-designer` flagged that
+the migration had been applied with no README entry at all — a real gap in this
+file's own record, not a formatting nit.)*
+
+`NFCTag` stops being a 1:1 attribute of `InventoryUnit` and becomes an
+attachment record with a validity window: the table gains `detached_at`, and
+both uniques become **partial** indexes on the open interval
+(`where detached_at is null`). A unit may now carry closed history plus at most
+one open attachment, and an identifier is claimed only for the duration of its
+open window — which is what makes legitimate reuse of a returned physical tag
+expressible at all.
+
+**Purely additive at the data level.** Every existing row backfills to
+`detached_at = null`, all currently open, which is correct under the new model.
+No destructive statement, no manual Dashboard cleanup.
+
+**Caller sweep, done in one pass.** Six live functions read `nfc_tags`; four
+were patched via `pg_get_functiondef` + `replace` with a guard that RAISES on
+any missed substitution, `assign_tag_to_next_pending_unit` was rewritten in full
+for its close-then-open transition, and `correct_product_available_count`'s tag
+release converted from `DELETE` to setting `detached_at`. The guard earned its
+keep immediately: it caught three drifted function signatures on the first dry
+run. One property worth knowing before touching any of it — the two scan RPCs
+use `select … into` with **no `LIMIT`** and relied on the old *global* unique
+index for their single-row guarantee; under the partial index that survives only
+with the `detached_at is null` qualifier.
+
+**Verified against production in a rolled-back transaction before applying**,
+using the real case: a tag sitting on a sold unit. Reuse succeeded, the prior
+window was preserved as history, and a second *open* attachment on the same
+identifier was still correctly refused. Post-apply confirmed: column present,
+both partial indexes live, old absolute index gone, all existing tags backfilled
+to open, nothing closed.
+
 `supabase/migrations/20260921010000_product_page_writes.sql` adds the two
 writes `inventory.md`'s 2026-09-19 Catalog-card → Product-Page amendment
 requires. **It has not been pushed to the hosted project** — no CLI auth
@@ -1628,3 +1664,68 @@ collides with another Product (expect `product_name_already_registered` →
 §3.19b is client-caught, so this path should only be reachable by racing two
 devices), and a barcode clear on a Product with ≥1 tagged unit (expect the
 tag rows untouched and `nfc_tagging_enabled` still `false`).
+
+## D83 follow-up — `assign_tag_to_next_pending_unit`'s prior-holder guard becomes an allowlist — WRITTEN, NOT PUSHED (2026-09-21)
+
+`supabase/migrations/20260921020000_assign_tag_prior_holder_allowlist.sql`
+closes `reviewer`'s Foundation-consistency finding I-2 against
+`20260921000000_nfc_tag_attachment_window.sql` (D83). One predicate changes
+and nothing else:
+
+```
+before:  if v_prior_unit_status in ('available', 'reserved') then
+after:   if v_prior_unit_status not in ('sold', 'removed') then
+```
+
+**Behaviourally identical today**, because `inventory_units.status` carries a
+CHECK over a closed four-value set. No error string, caller, client mirror or
+UI state changes; no table is touched.
+
+**Why it is worth a migration.** D83's own text permits closing a prior
+attachment *"only when the prior open attachment's unit is `sold` or
+`removed`"* — an allowlist. The shipped code expressed it as a denylist. D80's
+entry rules against exactly that form in its own words (*"the scope is stated
+as an allowlist so that a future status added without a tag-release path
+cannot silently enter the count"*), and D81/D82/D83 inherit the reasoning.
+This is the **one write in the entire schema that can create a closed
+attachment**, so it is the single place D83's composition invariant — *a
+closed `NFCTag` attachment never belongs to a unit in the sale-time
+allowlist* — is established rather than merely relied on. D77 already added a
+fifth-status precedent (`removed`) once.
+
+**A new migration, not an edit to `20260921000000`.** That file is already
+applied to the hosted project; editing an applied migration and re-pushing is
+a silent no-op — the CLI skips it by version, production keeps the denylist,
+and the repository then claims a correction production does not have. Same
+reason `20260913061000` exists as its own file.
+
+**Patched in place, not hand-copied.** `create or replace` replaces the whole
+body, so this reuses `20260921000000`'s own sweep technique: read the
+*deployed* definition via `pg_get_functiondef`, substitute exactly one
+predicate, and RAISE if the substitution does not match exactly once, if the
+function is missing, or if the allowlist is already present. A drifted body
+fails the migration loudly instead of shipping a quietly-reverted function.
+The `nfc_tags.detached_at` column comment is restated in the same file, so the
+prose rule and the predicate are now written down together in the same form —
+their divergence is what I-2 found.
+
+**Verification scripts live in `supabase/verification/`** (new folder, see its
+own README — outside `migrations/` deliberately, never picked up by
+`supabase db push`). Script A proves behaviour is unchanged (reuse path,
+conflict path, partial unique indexes, preserved grant, full body carried
+across); Script B is the regression proof, simulating a fifth status to show
+the guard now denies where the denylist would have permitted.
+
+**Push checklist:** `supabase db push`, then run
+`supabase/verification/20260921020000_verify_a_allowlist.sql` and, optionally,
+`…_verify_b_fifth_status.sql` (that one does rolled-back DDL and holds ACCESS
+EXCLUSIVE on `inventory_units` — not during a live bazaar session). **Not
+applied or executed by the pass that wrote it** — no DB credential and no
+running Docker daemon in this environment, so the substitution logic was
+verified statically against `20260921000000`'s stored body (exactly one match,
+all six body landmarks surviving) rather than live. Same disclosed posture the
+Slice 14/18 and Product Page migrations were written under.
+
+**Documentation gap, flagged not fixed:** `20260921000000_nfc_tag_attachment_window.sql`
+itself has **no entry in this file**, despite being applied to production.
+Reconstructing its entry is not this pass's to do — routed to Main.

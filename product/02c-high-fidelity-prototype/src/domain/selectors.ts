@@ -1362,8 +1362,11 @@ export function taggedAvailableUnitCount(state: AppState, productId?: ID): numbe
 /**
  * `decision-log.md` D80 — **"N ya etiquetadas," the Product Page's Level-1
  * status line** (`inventory.md` §3.19), and the identical live count
- * §3.19c's "Las prendas que ya tienen tag siguen funcionando igual" line and
- * §3.4c's own third acknowledgment sentence both render on.
+ * §3.19c's "Las prendas que ya tienen tag se siguen vendiendo igual" line
+ * and §3.4c's own third acknowledgment sentence both render on. (That
+ * sentence is a singular/plural pair, not one string — `format.ts`'s
+ * `taggedUnitsKeepSelling` owns both forms. It previously read "siguen
+ * funcionando igual" at every N; corrected 2026-09-21, `ux-critic` m5.)
  *
  * `tagId != null` **AND** `status IN ('available', 'reserved')` — D80's own
  * allowlist, stated as an allowlist and never as a denylist. An `NFCTag` row
