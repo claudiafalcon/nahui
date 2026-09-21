@@ -50,17 +50,35 @@ export type EntryMode = 'receipt' | 'correction';
  * `assignTagsSegmentTotals` already are (AT-M1/AT-M2), and for exactly the
  * same reason: the state has to outlive a component that navigation unmounts.
  *
- * `slot` is the identity of the *operation* the draft belongs to — the same
- * `prefillProductId:entryMode` key `InventoryScreen` already remounts this
- * screen on. A draft is only ever resumed into the operation that created it;
- * opening a different Product, or the same Product in the other pre-expanded
- * mode, is a genuinely different operation and builds its own fresh draft
- * rather than inheriting one built for the previous one.
+ * A draft belongs to one *operation* — identified by the same
+ * `prefillProductId:entryMode` slot key `InventoryScreen` already remounts
+ * this screen on. A draft is only ever resumed into the operation that
+ * created it; opening a different Product, or the same Product in the other
+ * pre-expanded mode, is a genuinely different operation and builds its own
+ * fresh draft rather than inheriting one built for the previous one.
+ *
+ * **One draft per operation, not one draft total (`ux-critic` Minor 5,
+ * 2026-09-21).** The first build of this fix held a single
+ * `{ slot, line } | null` and compared its `slot` on the way back in — so a
+ * draft staged for Camisas survived a trip to the Product Page (the sequence
+ * the fix was written for), but was silently overwritten the moment she
+ * staged anything in *any other* operation, and was then gone with no
+ * indication it had existed. §3.6 exit 1's guarantee is stated without
+ * qualification, so the store is keyed by that same slot rather than holding
+ * one entry and checking whether it is the right one. The store is bounded by
+ * the operations she has actually opened and left un-saved (at most one per
+ * Product per entry mode), and a slot is dropped the moment its own operation
+ * commits — nothing here grows with time rather than with unfinished work.
+ * `RegisterDraftStore`'s
+ * key **is** the slot, so `slot` is no longer carried inside the value — one
+ * place for that fact, not two that can disagree.
  */
+export type RegisterDraftStore = Record<string, RegisterDraftState>;
+
 export interface RegisterDraftState {
-  slot: string;
   /** `null` is a real, preservable state: she opened the blank form and has
-   * not resolved Producto yet. Distinct from *no stored draft at all*, which
+   * not resolved Producto yet. Distinct from *no stored draft at all* —
+   * which is this slot being absent from `RegisterDraftStore` entirely, and
    * is what lets a pre-expanded entry rebuild its own default. */
   line: Line | null;
 }

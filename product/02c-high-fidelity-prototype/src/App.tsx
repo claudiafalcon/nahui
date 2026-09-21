@@ -6,7 +6,7 @@ import type { AppState } from './domain/types';
 import { NavBar, type TabKey } from './components/NavBar/NavBar';
 import { HomeScreen } from './screens/Home/HomeScreen';
 import { InventoryScreen, type InventoryView } from './screens/Inventory/InventoryScreen';
-import type { RegisterDraftState } from './screens/Inventory/RegisterMerchandise';
+import type { RegisterDraftState, RegisterDraftStore } from './screens/Inventory/RegisterMerchandise';
 import { EventsScreen, type EventsView } from './screens/Events/EventsScreen';
 import { ResultadosScreen, type ResultadosView } from './screens/Resultados/ResultadosScreen';
 import { AccesoRevocado } from './screens/Settings/AccesoRevocado';
@@ -126,7 +126,27 @@ export default function App() {
   // component that stages it is unmounted by every exit that is supposed to
   // preserve it. See `RegisterDraftState` for the full note, including why
   // this slice made a pre-existing gap much more likely to be hit.
-  const [registerDraft, setRegisterDraft] = useState<RegisterDraftState | null>(null);
+  //
+  // **Keyed by operation slot, not a single entry (`ux-critic` Minor 5,
+  // 2026-09-21)** — a lone `{ slot, line } | null` made the guarantee
+  // conditional on her not having staged anything anywhere else in between.
+  // See `RegisterDraftStore`.
+  const [registerDrafts, setRegisterDrafts] = useState<RegisterDraftStore>({});
+  /** Store or drop exactly one slot's draft. `null` means "this operation has
+   * nothing staged" — the slot leaves the store entirely rather than lingering
+   * as an empty entry, so "absent" keeps its one meaning (no draft at all) and
+   * `{ line: null }` keeps its own (opened blank, Producto not yet resolved). */
+  function setRegisterDraft(slot: string, next: RegisterDraftState | null) {
+    setRegisterDrafts((drafts) => {
+      if (next === null) {
+        if (!(slot in drafts)) return drafts;
+        const rest = { ...drafts };
+        delete rest[slot];
+        return rest;
+      }
+      return { ...drafts, [slot]: next };
+    });
+  }
   // One fresh value per *delivered* ambient confirmation (`ux-critic` Major
   // 2). Minted at the single point every confirmation funnels through, below,
   // so a second save producing byte-identical copy on a screen that never
@@ -338,7 +358,7 @@ export default function App() {
               assignTagsEntry={assignTagsEntry}
               assignTagsSegmentTotals={assignTagsSegmentTotals}
               onAssignTagsSegmentTotalsChange={setAssignTagsSegmentTotals}
-              registerDraft={registerDraft}
+              registerDrafts={registerDrafts}
               onRegisterDraftChange={setRegisterDraft}
               nfcAssignSession={nfcAssignSession}
             />

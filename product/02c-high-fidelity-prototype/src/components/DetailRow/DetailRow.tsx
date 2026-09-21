@@ -57,7 +57,17 @@ import styles from './DetailRow.module.css';
  * **Why three signals and not one.** The chevron is a small mark at the far
  * edge of a row; the control is a shape she recognises without reading it;
  * the words state the state even if she looks at neither. They fail
- * independently, which is the point. **The words stay, and they are what make
+ * independently, which is the point.
+ *
+ * **Which is why the two mark-signals carry a perceptibility floor**
+ * (DESIGN-SYSTEM §10, added 2026-09-21): each clears 3:1 against the surface
+ * it renders on, **in every state it can be in, the off/default state
+ * included**. A mark below that bar is not an independent signal, it is an
+ * absent one — and as first built, both of them were below it: the chevron at
+ * ~2.80:1 on this app's own shell, and the control at ~1.20:1 in the `No`
+ * state that `nfcTaggingEnabled`'s `false` default makes the first one any
+ * merchant ever sees. See `DetailRow.module.css` for the tokens and the
+ * numbers. **The words stay, and they are what make
  * the control admissible** — this row's state must be readable *in words* at
  * rest, never only from a control's position, and never from colour or weight
  * at all (DESIGN-SYSTEM §8's retained rule). The control accompanies the
@@ -112,7 +122,10 @@ import styles from './DetailRow.module.css';
  * that swaps its own text between two states" as the thing *not* to
  * hand-roll, and the first build of this row was exactly that. The track and
  * knob are back, in the one place the rule always pointed them — inside the
- * full-width row, as a signifier rather than as its own control.
+ * full-width row, as a signifier rather than as its own control. Its
+ * *geometry* is §8's, unchanged; two of its three colours are not, because
+ * §8's original sat beside its own text label and was never held to the
+ * floor above (see `DetailRow.module.css`'s `.instant .switch`).
  */
 
 /** The closed, two-position vocabulary an instant-write row may trail — and

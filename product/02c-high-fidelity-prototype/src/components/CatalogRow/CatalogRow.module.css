@@ -249,8 +249,14 @@
    warm neutral family, one step quieter than the caption's own #6B6259, at
    ~5.06:1 on white and ~4.6:1 on the shell. The name still drops hard (from
    obsidian's ~12.5:1), which is where the dimming signal actually comes from,
-   and the muted marker (`TagStub muted`) carries the rest. */
+   and the muted marker (`TagStub muted`) carries the rest.
+
+   That hex is now `--color-ink-muted` (promoted 2026-09-21): the same value
+   turned out to be the answer to three findings in two components — this
+   dim, §10's chevron, and the outline of §10's two-position control — so it
+   is stated once in `tokens.css` rather than copied a third time. No visual
+   change here. */
 .card.dimmed .name,
 .card.dimmed .caption {
-  color: #776D62;
+  color: var(--color-ink-muted);
 }

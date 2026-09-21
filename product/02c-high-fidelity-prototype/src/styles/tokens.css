@@ -31,6 +31,22 @@
   /* ---- Additive extensions (this prototype only — named, not shipped tokens) ---- */
   --color-paper: #FFFCF8;   /* warm card surface for tag/ticket-shaped elements — extension */
   --color-hilo: #E8DFD3;    /* warm sand divider/border — extension, replaces cold gray */
+  /* The hilo family's ink: the same warm neutral, dark enough to be *read*
+     rather than only sensed. Promoted to a token 2026-09-21 (`ux-critic`
+     Major 1 / Minor 1) from the raw hex `ux-critic` m3 had already
+     introduced one file away, because it turned out to have two distinct
+     jobs and both need the same guarantee:
+     - **quieted text that must still clear AA** — a dimmed Catalog card's
+       name/caption, a row's label while its own write is in flight;
+     - **a mark-signal that must clear WCAG 1.4.11's 3:1** — §10's chevron,
+       and the outline of §10's two-position control in its off state.
+     ~4.60:1 on `--color-balanced` (#F4F4F4, the shell nearly everything in
+     this app actually renders on), ~5.06:1 on white, ~3.84:1 on
+     `--color-hilo` itself. It replaced #9C9186 (~2.80:1 on the shell), which
+     this codebase still uses for genuinely *inactive* controls only — where
+     WCAG exempts it — and which must never again be used for a mark or a
+     word that carries meaning. */
+  --color-ink-muted: #776D62;
 
   /* ---- Product identity — "the tag drawer" (v2, additive extension) ----
      A closed set of 12 hand-picked swatches, every one of them either an

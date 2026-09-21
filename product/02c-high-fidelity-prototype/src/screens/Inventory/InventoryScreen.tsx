@@ -3,7 +3,12 @@ import { useStore } from '../../domain/store';
 import { catalogRows, findProduct, isNfcTaggingEligible, pendingTagBreakdown, pendingTagCount } from '../../domain/selectors';
 import { InventoryColdStart } from './InventoryColdStart';
 import { CatalogView } from './CatalogView';
-import { RegisterMerchandise, type EntryMode, type RegisterDraftState } from './RegisterMerchandise';
+import {
+  RegisterMerchandise,
+  type EntryMode,
+  type RegisterDraftState,
+  type RegisterDraftStore,
+} from './RegisterMerchandise';
 import { ProductPage } from './ProductPage/ProductPage';
 import { AssignTags, type AssignTagsEntryLine } from './AssignTags';
 import type { NfcAssignSession } from '../../domain/useNfcAssignTagSession';
@@ -136,7 +141,7 @@ export function InventoryScreen({
   assignTagsEntry,
   assignTagsSegmentTotals,
   onAssignTagsSegmentTotalsChange,
-  registerDraft,
+  registerDrafts,
   onRegisterDraftChange,
   nfcAssignSession,
 }: {
@@ -202,9 +207,11 @@ export function InventoryScreen({
    * `App.tsx` for the same reason the two above are: `RegisterMerchandise` is
    * mounted only while `view.mode === 'register'`, and **every** exit from it
    * (back arrow to Catalog view, to a Product Page, or across tabs to Home)
-   * unmounts it. See `RegisterDraftState`. */
-  registerDraft: RegisterDraftState | null;
-  onRegisterDraftChange: (next: RegisterDraftState | null) => void;
+   * unmounts it. Keyed by operation slot, so a draft staged for one Product
+   * is not evicted by one staged for another (`ux-critic` Minor 5). See
+   * `RegisterDraftStore`. */
+  registerDrafts: RegisterDraftStore;
+  onRegisterDraftChange: (slot: string, next: RegisterDraftState | null) => void;
   /** 2026-09-18 architecture fix (`decision-log.md` D74/D75 follow-up) — the
    * live Web NFC session (`useNfcAssignTagSession`), owned by `App.tsx` one
    * level up. Forwarded whole to `AssignTags`; only its `startScan` function
@@ -275,9 +282,9 @@ export function InventoryScreen({
     const originProduct = origin.screen === 'product' ? findProduct(state, origin.productId) : undefined;
     // The identity of *this* operation: a different Product, or the same
     // Product in the other pre-expanded entry mode, is a genuinely different
-    // operation. It is both the remount key and — now that the draft outlives
-    // this component (§3.6 exit 1) — what decides whether a preserved draft
-    // belongs to the operation she is opening or to an earlier, unrelated one.
+    // operation. It is both the remount key and — now that drafts outlive
+    // this component (§3.6 exit 1) — the key each one is stored under, so
+    // every operation keeps its own and none can evict another's.
     const draftSlot = `${view.prefillProductId ?? 'blank'}:${view.entryMode ?? 'default'}`;
     return (
       <ScreenTransition transitionKey="register">
@@ -286,15 +293,15 @@ export function InventoryScreen({
           initialProductId={view.prefillProductId}
           entryMode={view.entryMode}
           backLabel={originProduct ? originProduct.name : 'Inventario'}
-          preservedDraft={registerDraft?.slot === draftSlot ? registerDraft : null}
-          onDraftChange={(line) => onRegisterDraftChange({ slot: draftSlot, line })}
+          preservedDraft={registerDrafts[draftSlot] ?? null}
+          onDraftChange={(line) => onRegisterDraftChange(draftSlot, { line })}
           onSaved={(lastProductId, entryBreakdown) => {
             // The draft was just committed — it is no longer "staged," so it
             // is dropped here rather than left to resume as a phantom the
             // next time this same operation is opened. This is the one exit
             // where §3.6's preservation guarantee does not apply, because
             // there is nothing left un-saved to preserve.
-            onRegisterDraftChange(null);
+            onRegisterDraftChange(draftSlot, null);
             // inventory.md §2 step 3, corrected `decision-log.md` D71 — gates
             // on the composed NFC-tagging-eligible test, per line, not a
             // single whole-Lot check. Read from this render's own state

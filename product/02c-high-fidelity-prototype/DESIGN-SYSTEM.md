@@ -30,7 +30,7 @@ color. See README "Design System — v3" §1–§2 for the full derivation.
 | Category | Tokens | Rule |
 |---|---|---|
 | Brand color | `--color-coral`, `--color-coral-aa`, `--color-tezontle`, `--color-tezontle-dark`, `--color-blush`, `--color-obsidian`, `--color-balanced`, `--color-white` | Verbatim from `company/brand/brand-guide.md`. Never reinvented. `--color-coral` (raw, non-AA hex) is decorative/illustration-only, per brand-guide.md's own note — never text or a fill behind text. |
-| Extensions | `--color-paper` (`#FFFCF8`), `--color-hilo` (`#E8DFD3`) | Named, flagged additions — a warm cardstock surface and a warm sand divider, used *instead of* stark white / cold gray anywhere this build renders a literal paper/cardstock object. Never a silent replacement for a shipped brand value. |
+| Extensions | `--color-paper` (`#FFFCF8`), `--color-hilo` (`#E8DFD3`), `--color-ink-muted` (`#776D62`) | Named, flagged additions — a warm cardstock surface, a warm sand divider, and that family's **ink**. Used *instead of* stark white / cold gray anywhere this build renders a literal paper/cardstock object. `--color-ink-muted` is this system's one quiet-but-still-legible neutral: ~4.60:1 on `--color-balanced`, ~5.06:1 on white, ~3.84:1 on `--color-hilo`. Reach for it for **quieted text that must still clear AA** (a dimmed Catalog card, a row whose write is in flight) and for **any mark whose meaning is its shape** (§10's chevron and two-position control). It replaced `#9C9186` (~2.80:1 on the shell) in all three of those roles; `#9C9186` survives only on genuinely *inactive* controls, where WCAG exempts it. Never a silent replacement for a shipped brand value. |
 | Product identity | `--tag-1-bg/-ink` … `--tag-12-bg/-ink` | The "tag drawer" — 12 hand-picked tones inside the shipped warm coral→terracotta→clay→sand family (never an outside hue: no blue/green/violet). Consumed only via `productIdentity.ts`, never referenced directly by a component. |
 | Texture | `--pattern-grain` | A genuine cardstock/paper fiber grain (SVG `feTurbulence`). Applied via the `.grain` primitive (§3) — never inline, never as a bare background-image on a component. |
 | Line | `--stitch-line` | The dashed "sewing machine" divider. Applied via `.stitchTop`/`.stitchBottom` (§3) — never redrawn per component. |
@@ -221,11 +221,26 @@ for.
 
 **So the switch now lives inside §10's instant-write row**, at the trailing
 edge, beside the `Sí`/`No` words rather than instead of them
-(`DetailRow.module.css`'s `.instant .switch`, the 2026-09-17 geometry below
-carried across verbatim). **It is a `<span>`, never a nested `<button>`:** a
-signifier inside the row's one 56px tap target, never a sub-target of its
-own. That distinction is the whole difference between this and the retired
-zone.
+(`DetailRow.module.css`'s `.instant .switch`). **It is a `<span>`, never a
+nested `<button>`:** a signifier inside the row's one 56px tap target, never
+a sub-target of its own. That distinction is the whole difference between
+this and the retired zone.
+
+**The geometry below carried across; two of its three colours did not
+(2026-09-21, `ux-critic` Major 1 / Minor 2).** The sizes, the radius, the
+knob and its 16px travel are the original's, unchanged. The fills are not:
+the track is `--color-obsidian` on and `--color-hilo` **outlined in
+`--color-ink-muted`** off, with that same outline ringing the knob in the off
+state. Two things changed underneath the original spec, and both are §10's
+doing rather than anything wrong with the 2026-09-17 note on its own terms:
+it was written for a switch that **sat beside its own `NFC: Sí`/`NFC: No`
+text label** — so its own legibility was never load-bearing and it was never
+contrast-checked — and §10 then promoted it to one of three independently
+failing **signals**, with a word *beside* it rather than under it, an error
+line 8px below it, and a stated 3:1 floor in every state. Same shape, held to
+a bar its original was never asked to clear. **A standalone reuse of the
+original specification below must adopt the corrected colours**, not the
+1.20:1 off-state track printed there.
 
 What carries forward unchanged is the reasoning: a binary setting is one of
 this section's conventional controls, never a Swing-Tag device, and **its
@@ -369,6 +384,46 @@ The chevron is a small mark at the far edge of a row; the control is a shape
 she recognises without reading it; the words state the state even if she
 looks at neither. They fail independently, which is the point.
 
+**The perceptibility floor for the two mark-signals (added 2026-09-21,
+`ux-critic` Major 1 / Minor 1 — and this omission is *how* both of them
+happened).** Two of the three signals are marks rather than words. Until now
+this section declared them independent and set them no legibility bar at all,
+while the words beside them inherited every text-contrast rule in the
+document. So:
+
+> **A mark-signal clears 3:1 against the surface it actually renders on —
+> `--color-balanced` (#F4F4F4) for anything on an ordinary screen shell, not
+> white — in *every* state it can be in, the off/default state named
+> explicitly.**
+
+WCAG 1.4.11's bar for the parts of a graphical object required to understand
+it, applied to the two elements this section calls signals. Three things the
+wording is doing deliberately:
+
+- **"In every state"**, because a mark that is legible in one position and
+  invisible in the other does not signal a two-position control — it signals
+  *whether the control exists*, which is a different and much worse thing to
+  read off a row.
+- **"The off/default state named explicitly"**, because that is the one that
+  was missed. `nfcTaggingEnabled` defaults to `false`, so `No` is what every
+  Product shows until she deliberately turns tagging on: it is the state a
+  first-time merchant meets, and precisely where the row most needs to say
+  "this is a control you can flip." As first built the off-state track was
+  1.20:1 on the shell with a 1.24:1 knob inside it, and the chevron beside it
+  2.80:1 — two of three declared signals imperceptible at once, in the
+  default state, in files whose comments were otherwise careful about
+  contrast. A floor stated only for the "interesting" state is a floor for
+  the state nobody ships in.
+- **"Against the surface it renders on"**, because every one of these
+  numbers was ~10% better on white, and none of these rows render on white.
+
+This binds the marks, not the words: `Sí`/`No`, the label, `Guardando…` and
+the inline failure line are text and carry the ordinary AA obligation, which
+the floor never substitutes for. It is also not a general rule about faint
+borders — `CatalogRow`'s `.shortcut` keeps an equally quiet hilo border and
+is fine, because the pill contains the word `Etiquetar`. **The floor applies
+to a mark whose meaning is carried by its shape alone.**
+
 **The words stay, and they are what make the control admissible.** §8's
 retained rule requires a binary setting's state to be readable **in words** at
 rest — never only from a control's position, and never from colour or weight
@@ -382,6 +437,22 @@ emphasis only: §8 bars state readable from colour, coral already carries
 brand/Product identity on display-only elements of the same screen, and
 `.busy .value` deliberately drops it mid-write — so a colour "signal" would
 vanish at exactly the moment the row is least stable.
+
+**Which is why the control is a neutral ink, not a brand accent** (changed
+2026-09-21, `ux-critic` Minor 2). Its ON fill was `--color-tezontle-dark`,
+inherited from §8's standalone switch — byte-identical to `--color-error`,
+and sitting ~8px above a `.rowError` line rendered in that same #A72C2C. On a
+failure from `Sí` the row reverts to `Sí`, so the affirmation of "on" and the
+announcement of "failed" were the same colour, touching, at the moment the
+row is least stable. The fix is not a *different* red: a saturated accent on
+the track invites the reading this section just forbade — that the colour is
+the state — and any near-red would then have to be defended as a family
+rather than a mismatch against both the coral word beside it and the error
+line below it. So the track is `--color-obsidian` on, `--color-hilo` with a
+`--color-ink-muted` outline off. **The knob's position is the mark; the words
+are the state; the fill is only the channel the knob moved along.** Red on
+this row now means exactly one thing, which is what makes the failure line
+legible as one.
 
 **The control is a signifier, never a second tap target.** A `<span>` inside
 the row's single `<button>`, `aria-hidden`: a tap on the label, the word, the
@@ -400,10 +471,22 @@ fact.
 
 **Save discipline for shape 3** (the only shape that writes, so the only one
 that needs it — `ProductPage.tsx` is the reference implementation):
-- **On tap** the row dims in place (`settings.md` §3.9's "fila atenuada"
+- **On tap** the row quiets in place (`settings.md` §3.9's "fila atenuada"
   mechanic, reused via `.busy`) and **immediately displays the attempted new
   value, in both the word and the control.** It is not tappable again while a
   write is inflight; a second tap is ignored, never queued.
+- **What "atenuada" may and may not take down with it** (added 2026-09-21,
+  `ux-critic` Minor 3). The quieting is a **colour substitution on the label
+  only**, never `opacity` on the row. Row-level opacity took `Guardando…`
+  down to ~2.25:1 and the control's own outline to ~2.10:1 — below AA and
+  below the mark floor above, on the two elements whose whole job is to be
+  read during that exact interval, and with no `disabled` attribute to invoke
+  WCAG's inactive-component exemption (shape 3 deliberately never sets one;
+  see below). **Nothing that states the write's state may be inside the dim.**
+  The label can afford it — she has already read it, and it does not change
+  while the write is in flight — so it carries the whole signal, dropping
+  12.52:1 → 4.60:1, the same device and the same numbers a dimmed Catalog
+  card's name already uses.
 - **Near-instant:** dims and un-dims silently, landing on the new value. No
   message.
 - **Slow (>~1.5s):** the trailing value reads `Guardando…` in place of

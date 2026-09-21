@@ -26,7 +26,6 @@
   background-color: transparent;
   text-align: left;
   cursor: pointer;
-  transition: opacity var(--duration-fast) var(--ease-standard);
 }
 
 .label {
@@ -35,6 +34,10 @@
   font: var(--text-body);
   font-weight: 600;
   color: var(--color-obsidian);
+  /* The busy state's quieting transitions here rather than on the row: it is
+     now a colour change on this one element, not an opacity change on the
+     whole row (see `.busy` below). */
+  transition: color var(--duration-fast) var(--ease-standard);
 }
 
 /* The trailing element. Quieter than the label on purpose: on a value row
@@ -52,15 +55,26 @@
   /* A long value (a 13-digit barcode) yields before the label does, rather
      than pushing the chevron off the row. */
   max-width: 55%;
+  transition: color var(--duration-fast) var(--ease-standard);
 }
 
 /* Signal one — the forward indicator. Present on every sheet-opening row,
    unconditionally; structurally absent from `.instant`, which never renders
-   this element at all (not merely hides it). */
+   this element at all (not merely hides it).
+
+   **Clears the mark-signal floor, deliberately (`ux-critic` Minor 1,
+   2026-09-21 — DESIGN-SYSTEM §10.)** It was #9C9186: ~3.08:1 on white and
+   ~2.80:1 on `--color-balanced`, the shell the Product Page actually renders
+   on — the identical hex, to the digit, that m3 had just condemned on
+   `.card.dimmed` one component away, and below WCAG 1.4.11's 3:1 bar for the
+   parts of a graphical object needed to understand it. §10 calls this signal
+   *independent*; a mark below the floor isn't independent, it's absent, and
+   it renders on four or five rows of every Product Page. `--color-ink-muted`
+   is m3's own substitution: same warm neutral family, ~4.60:1 on the shell. */
 .chevron {
   font: var(--text-body);
   font-weight: 700;
-  color: #9C9186;
+  color: var(--color-ink-muted);
   line-height: 1;
   flex-shrink: 0;
 }
@@ -102,12 +116,42 @@
 
 /* Signal three — the two-position control (§3.19, 2026-09-21). **The
    `DESIGN-SYSTEM.md` §8 switch, relocated rather than superseded**: §8's own
-   2026-09-17 geometry, verbatim (40×24 pill track, 1px hilo border, hilo off
-   / tezontle-dark on, an 18px white knob translating 16px at
-   `--duration-fast`/`--ease-standard`), moved from a standalone control into
-   the trailing edge of the full-width row §8 itself said a binary setting
-   should live on. It is a `<span>`, never a nested `<button>` — the row's own
-   56px height stays the only hit area in this shape. */
+   2026-09-17 *geometry* (40×24 pill track, 1px border, an 18px white knob
+   translating 16px at `--duration-fast`/`--ease-standard`), moved from a
+   standalone control into the trailing edge of the full-width row §8 itself
+   said a binary setting should live on. It is a `<span>`, never a nested
+   `<button>` — the row's own 56px height stays the only hit area in this
+   shape.
+
+   **The geometry came across; two of its three colours did not, and the
+   difference is the point (`ux-critic` Major 1 / Minor 2, 2026-09-21.)** §8's
+   original sat beside its own `NFC: Sí`/`NFC: No` label, was never
+   contrast-checked, and carried no declared obligation. §10 promoted this
+   control to one of three *independently failing* signals, which raises a bar
+   the 2026-09-17 spec was never held to — and §10 now states that bar
+   outright: **a mark-signal clears 3:1 against the surface it renders on, in
+   every state it can be in.** As inherited it cleared that in exactly one
+   state:
+   - **off** — a `--color-hilo` track on the `--color-balanced` shell was
+     1.20:1, its white knob 1.24:1 against that track and 1.10:1 against the
+     shell. About a quarter of the bar, three times over, in the state
+     `nfcTaggingEnabled`'s `false` default makes **the one every Product shows
+     until she deliberately turns it on** — the state a first-time merchant
+     meets, and the whole reason shape 3 needed an affirmative mark instead of
+     being defined by absences. Left as built, signal three collapsed back
+     into an absence exactly where it was most needed, and `Sí` vs `No` at a
+     glance in bazaar glare became *whether the control is visible at all*.
+   - **on** — 6.28:1, perceptible, but byte-identical to `--color-error`, ~8px
+     above a `.rowError` line rendered in that same #A72C2C. On a failure from
+     `Sí` the row reverts to `Sí`, so the affirmation of "on" and the
+     announcement of "failed" were the same colour, touching, at the moment
+     the row is least stable.
+
+   Note this does *not* generalise to every faint hilo border in the system:
+   `CatalogRow`'s `.shortcut` has an equally quiet one and is fine, because
+   that pill contains the word `Etiquetar` in coral-aa. This control has no
+   word inside it — its whole meaning is the shape, so the shape has to be
+   visible. */
 .instant .switch {
   position: relative;
   /* Stated rather than inherited from flex-item blockification: this span
@@ -117,7 +161,13 @@
   width: 40px;
   height: 24px;
   flex-shrink: 0;
-  border: 1px solid var(--color-hilo);
+  /* The fill stays `--color-hilo` — an empty warm channel is the right
+     *fill* for "off," and it is not what carried the failure. What the
+     object needs is a perceptible **boundary**: `--color-ink-muted` at
+     ~4.60:1 against the #F4F4F4 shell outside it and ~3.84:1 against the
+     hilo fill inside it, so the track reads as a closed two-position
+     channel from either side. */
+  border: 1px solid var(--color-ink-muted);
   border-radius: var(--radius-pill);
   background-color: var(--color-hilo);
   transition:
@@ -125,16 +175,24 @@
     border-color var(--duration-fast) var(--ease-standard);
 }
 
-/* ON keeps §8's own `--color-tezontle-dark`, deliberately rather than by
-   inheritance: it now sits ~8px from a `--color-coral-aa` word, which the
-   Catalog-row original never did. Two *near*-identical reds would read as a
-   mismatch; these two are a documented step apart on the same
-   coral→terracotta→clay ramp (`tokens.css`), the same relationship a primary
-   button already has with its own hover, so they read as one family at two
-   depths. Neither carries state — the words do (§8). */
+/* ON is a neutral ink, not a red — changed from `--color-tezontle-dark`
+   (`ux-critic` Minor 2). Two reasons, and the second is the stronger one:
+   1. It ends the collision with `--color-error` above. `.rowError`'s red is
+      now the only red on this row, which is what makes it legible *as* an
+      error line.
+   2. **This system's own rule says the control may not carry state in
+      colour** — §8's retained rule and §10's "colour and weight are emphasis,
+      never a signal." A brand accent on the track invites exactly the reading
+      the rule forbids (red = on), and a *second* accent ~8px from the
+      coral-aa word would have had to be defended as a family rather than a
+      mismatch. A neutral ink asks for neither defence: the position of the
+      knob is the mark, the words are the state, and the fill is just the
+      channel it moved along. `--color-obsidian` at 12.52:1 on the shell,
+      with a 13.77:1 knob on it, also puts the ON state furthest of any
+      option from the floor it has to clear. */
 .instant .switchOn {
-  background-color: var(--color-tezontle-dark);
-  border-color: var(--color-tezontle-dark);
+  background-color: var(--color-obsidian);
+  border-color: var(--color-obsidian);
 }
 
 .instant .switchKnob {
@@ -146,24 +204,69 @@
   border-radius: 50%;
   background-color: var(--color-white);
   box-shadow: 0 1px 2px rgba(45, 45, 45, 0.24);
-  transition: transform var(--duration-fast) var(--ease-standard);
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+/* One step past the prescribed minimum, on purpose. A ring on the track
+   alone would leave the knob at 1.32:1 against the hilo fill it sits in —
+   and **the knob's position is the mark**, not the track's outline, so a
+   visible track holding an invisible knob still fails to say which way the
+   control is set. The same token, as an outline rather than a fill, puts the
+   knob's edge at ~3.84:1 against that fill while the knob face stays white
+   (~5.06:1 against its own ring). Off-state only: on `--color-obsidian` the
+   white knob already reads at 13.77:1, and a dark ring there would do
+   nothing but shave a pixel off it. */
+.instant .switch:not(.switchOn) .switchKnob {
+  box-shadow:
+    0 0 0 1px var(--color-ink-muted),
+    0 1px 2px rgba(45, 45, 45, 0.24);
 }
 
 .instant .switchOn .switchKnob {
   transform: translateX(16px);
 }
 
-/* `settings.md` §3.9's "fila atenuada" mechanic, reused verbatim — the row
-   dims in place while its own write is in flight (§3.19's save-state
-   discipline). Near-instant: dims and un-dims silently, no message. */
+/* `settings.md` §3.9's "fila atenuada" mechanic — the row quiets in place
+   while its own write is in flight (§3.19's save-state discipline).
+   Near-instant: quiets and un-quiets silently, no message.
+
+   **Expressed as a colour substitution on the label, not as `opacity` on the
+   row (`ux-critic` Minor 3, 2026-09-21).** `opacity: 0.55` on the row took
+   the whole row down with it, including `.busy .value`'s #6B6259 → an
+   effective ≈#A9A49F, ~2.25:1 on the shell: below AA and below even the 3:1
+   large-text bar, on the one word that tells her a slow write is still in
+   progress. WCAG's exemption for inactive components does not cover it,
+   because this row is deliberately **not** `disabled` (see `DetailRow.tsx`'s
+   `aria-disabled` note — the row stays focused and announced precisely
+   because tapping it again *is* the retry). It also would have dragged the
+   control below the §10 mark floor mid-write (~2.10:1 on the ring), at the
+   exact moment §10 requires the attempted position to be visible.
+
+   So the quieting is carried by the one element that can afford it: the
+   label, which she has already read and which does not change during the
+   write. #776D62 is the same device and the same numbers `CatalogRow`'s
+   dimmed card already uses — 12.52:1 → 4.60:1, a hard, obvious drop that
+   still clears AA. The word and the control stay at full strength, which is
+   what the state of an in-flight write is supposed to be.
+
+   **The pattern itself is `ux-designer`'s** — `settings.md` §3.9 specifies
+   "fila atenuada" generically, and any other row that reuses it with
+   meaning-carrying content inside the dim has the same defect. Fixed here for
+   this row; flagged upstream for the pattern. */
 .busy {
-  opacity: 0.55;
   cursor: default;
+}
+
+.busy .label {
+  color: var(--color-ink-muted);
 }
 
 /* While pending, the trailing slot reads "Guardando…" — plain language, the
    same neutral tone as every other slow-save caption in this codebase, never
-   the coral accent the live value carries. */
+   the coral accent the live value carries. At full opacity now, so what
+   reaches the eye is the stated #6B6259: ~5.43:1 on the shell. */
 .busy .value {
   color: #6B6259;
   font-weight: 600;
