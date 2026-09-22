@@ -586,10 +586,15 @@ function SettingsMain({
         <Sheet onDismiss={onEditNameCancel}>
           <p className={styles.confirmTitle}>Tu nombre</p>
           <div className={styles.field}>
+            {/* Pre-filled with her current display name when she has one, so
+                it gets the same select-on-focus guard as every other
+                "edit this existing value" field (see EditPriceSheet.tsx).
+                No-op in the "Agregar tu nombre" case, where it opens empty. */}
             <input
               className={styles.input}
               type="text"
               autoFocus
+              onFocus={(e) => e.target.select()}
               placeholder="Escribe tu nombre…"
               value={nameDraft}
               onChange={(e) => onNameDraftChange(e.target.value)}

@@ -174,10 +174,15 @@ export function EditNameSheet({
           Catalog — she is naming her own merchandise, and the app has nothing
           to add to that (*global-principles.md*: never talk down to her about
           a task she already knows how to do better than the app does). */}
+      {/* Opens focused with the current name selected, so her first keystroke
+          replaces it (see EditPriceSheet.tsx for the walkthrough defect this
+          closes — identical pattern here, it just costs less when a rename
+          goes wrong than when a price does). */}
       <input
         className={styles.nameInput}
         type="text"
         autoFocus
+        onFocus={(e) => e.target.select()}
         value={draftName}
         disabled={isInFlight(saveState)}
         onChange={(e) => handleChange(e.target.value)}

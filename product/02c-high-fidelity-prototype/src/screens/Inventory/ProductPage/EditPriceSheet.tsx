@@ -63,11 +63,24 @@ export function EditPriceSheet({ product, onClose }: { product: Product; onClose
       <p className={pickerStyles.newProductLabel}>Precio</p>
       <div className={pickerStyles.priceField}>
         <span className={pickerStyles.pesoSign}>$</span>
+        {/* The field opens focused **and** with the current price selected, so
+            her first keystroke *replaces* it. Without the select, a pre-filled
+            + autoFocused field puts the caret inside the existing text and
+            typing **inserts**: editing $10 to $12 produced `$1012`, one tap
+            from being saved as her real price (merchant walkthrough,
+            2026-09-21). This is the only point in the Product Page flow where
+            a slip of hers reached money silently, and the fix is to stop
+            producing the wrong number — not to ask her about it afterwards.
+            `select()` is verified working on `type="number"` in Blink, Gecko
+            and WebKit; `setSelectionRange` is *not* — it throws
+            `InvalidStateError` on number inputs in all three, so it must not
+            be used here. Same guard on every sibling pre-filled edit field. */}
         <input
           className={pickerStyles.priceInput}
           type="number"
           inputMode="decimal"
           autoFocus
+          onFocus={(e) => e.target.select()}
           value={draftPrice}
           disabled={isInFlight(saveState)}
           onChange={(e) => handleChange(e.target.value)}

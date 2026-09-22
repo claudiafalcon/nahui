@@ -86,11 +86,16 @@ export function AdjustPrices({
           <p className={styles.overrideLabel}>Precio para este evento</p>
           <div className={styles.priceField}>
             <span className={styles.pesoSign}>$</span>
+            {/* Pre-filled by the row tap with the price in force, so the same
+                append defect EditPriceSheet.tsx documents applies here — and
+                this one is money too (the event price override). Selected on
+                focus so her first keystroke replaces it. */}
             <input
               className={styles.priceInput}
               type="number"
               inputMode="decimal"
               autoFocus
+              onFocus={(e) => e.target.select()}
               value={draftPrice}
               onChange={(e) => setDraftPrice(e.target.value)}
             />

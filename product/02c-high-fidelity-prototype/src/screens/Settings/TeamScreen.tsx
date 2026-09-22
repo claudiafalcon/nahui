@@ -692,6 +692,10 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
           <p className={styles.confirmTitle}>Invitación pendiente</p>
           <div className={styles.field}>
             <span className={styles.label}>Correo electrónico</span>
+            {/* Pre-filled with the invitation's current email hint when there
+                is one, so it gets the same select-on-focus guard as every
+                other "edit this existing value" field (see
+                EditPriceSheet.tsx). No-op when the hint is unset. */}
             <input
               className={styles.input}
               type="email"
@@ -699,6 +703,7 @@ export function TeamScreen({ onBack }: { onBack: () => void }) {
               autoCapitalize="none"
               autoCorrect="off"
               autoFocus
+              onFocus={(e) => e.target.select()}
               placeholder="ana@correo.com"
               value={hintDraft}
               onChange={(e) => {

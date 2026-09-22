@@ -108,12 +108,20 @@ export function EmailStep({
         <label className={styles.label} htmlFor="email-step-input">
           Correo electrónico
         </label>
+        {/* Empty on first arrival, but pre-filled with the address she just
+            submitted when she comes *back* here from the code step to change
+            it (AuthenticationFlow's `prefill`) — which is the "edit this
+            existing value" case, so it gets the same select-on-focus guard
+            (see EditPriceSheet.tsx). No-op on the empty first-arrival path,
+            which is untouched. Unlike PhoneStep there is no `maxLength` here
+            to bound an accidental append. */}
         <input
           id="email-step-input"
           className={styles.input}
           type="email"
           inputMode="email"
           autoFocus
+          onFocus={(e) => e.target.select()}
           autoCapitalize="none"
           autoCorrect="off"
           placeholder="ana@correo.com"
