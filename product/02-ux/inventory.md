@@ -1031,7 +1031,7 @@ inventory sitting in her Catalog. **[Further historical note, 2026-09-18: `defau
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │
-│  Registro de mercancía            │
+│  Cantidad de mercancía            │
 │                                │
 │ Producto                        │
 │  [ Elegir producto ▾ ]           │
@@ -1053,7 +1053,7 @@ inventory sitting in her Catalog. **[Further historical note, 2026-09-18: `defau
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │
-│  Registro de mercancía            │
+│  Cantidad de mercancía            │
 │                                │
 │ Producto                        │
 │  Bolsas                          │
@@ -1126,7 +1126,7 @@ inventory sitting in her Catalog. **[Further historical note, 2026-09-18: `defau
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │
-│  Registro de mercancía            │
+│  Cantidad de mercancía            │
 │                                │
 │ Producto                        │
 │  Bolsas                          │
@@ -1215,7 +1215,7 @@ inventory sitting in her Catalog. **[Further historical note, 2026-09-18: `defau
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │
-│  Registro de mercancía            │
+│  Cantidad de mercancía            │
 │                                │
 │ Producto                        │
 │  Bolsas                          │
@@ -1261,7 +1261,7 @@ supported, order-independent:**
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │
-│  Registro de mercancía            │
+│  Cantidad de mercancía            │
 │                                │
 │ Producto                        │
 │  Bolsas                          │
@@ -1300,7 +1300,7 @@ supported, order-independent:**
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │
-│  Registro de mercancía            │
+│  Cantidad de mercancía            │
 │                                │
 │ Producto                        │
 │  Chalecos                        │
@@ -1325,6 +1325,8 @@ supported, order-independent:**
 
 **"Guardar mercancía" — what it does and where it goes, stated explicitly (Product Owner-directed, 2026-09-18).** Visible and enabled only once this Product's draft carries at least one real, nonzero staged effect — an open correction whose value differs from the loaded count, and/or an open (floor-1) receipt. Tapping it commits whichever is staged, composed as up to two independent writes behind one tap (a correction — `InventoryCorrection` + FIFO removal, or a `source='correction'` Lot, RFC 0016 — and/or a receipt — `source='supplier_delivery'` Lot, the existing `commitLot()` write) — for this one Product, never a list. Its navigation is governed by the rule below — no intermediate "add another?" prompt, since there's nothing left to add from this screen.
 
+**The label "Guardar mercancía" is unchanged, decided rather than overlooked (2026-09-21).** The same walkthrough that produced the heading change counted it as one of three *registrar/mercancía* statements on the correction path. It stays, for three reasons. **(a) It names the object, not the operation** — it saves a fact about her mercancía, which is true of a receipt, of an increase and of a decrease alike; nothing she does on this screen stops the merchandise being hers. **(b) It never contradicted her.** It renders only after she has moved a stepper, directly beneath the box whose own label and helper already say which operation is open, and the walkthrough reports no confusion at it — her confusion was entirely at arrival. **(c) A rename would cascade across §2 step 3, §3.10, §3.11, §4, §5, §6, §10, `home.md`, and the built prototype**, spending a large cross-document change on the one of the three repetitions that was never the problem. The two that were — a heading that named the other button, and a confirmation that claimed an arrival — are both fixed (§3.6's heading rule above, §3.12a).
+
 **"Return to origin" — this document's single navigation rule for this screen, applied to all three of its exits (Product Owner decision, 2026-09-19; closes `ux-critic` M3).** Her own words: "Navigation after Guardar mercancía should return to the context the user came from. If the flow was started from Product Page, return to that Product Page. If it was started from the general Catalog flow, return to Catalog. Treat 'return to origin' as the consistent rule."
 
 **Origin** is the screen this Registro de mercancía was opened from — §3.19, §3.4, §3.3/§3.3a, or Home — captured when it opens and held for the whole operation. It is never asked and never chosen; she is shown no "¿a dónde quieres volver?" anywhere (§7).
@@ -1332,6 +1334,8 @@ supported, order-independent:**
 All three exits, no exceptions beyond the one named below:
 1. **Back arrow "←"** — returns to origin. Anything staged is preserved silently and resumes exactly as she left it (unchanged from today, including an open-but-uncommitted correction/receipt state).
 2. **"Guardar mercancía" success** — returns to origin, already showing this Product's fresh `disponibles`, with the existing ambient confirmation rendered **on that origin screen**: §3.12 ("Mercancía registrada ✓") or §3.13 ("Mercancía lista para vender ✓"), same copy, same ambient/fading/no-tap-to-dismiss shape, on §3.19 exactly as on §3.4.
+
+   **The refreshed count on the origin screen is the primary evidence the write landed; the ambient line is secondary (stated 2026-09-21, after a `merchant-user-tester` walkthrough in which the merchant never read the ambient line and named the changed count as what convinced her).** Both are specified and both render; the ranking is stated so the ambient line is never "strengthened" into a blocking, tap-to-dismiss, or persistent confirmation on the evidence that it went unread. It is redundancy for the case where the changed number is not visually obvious — landing on §3.4, where one card's count among many has moved — not the sole proof of the write. Its ambient, fading, no-tap-to-dismiss shape is unchanged (§3.12/§3.12a/§3.13/§3.13a).
 3. **A tagging run auto-entered from this save** (§2 step 3) — origin propagates through the queue; §3.14's own completion and "Terminar después" both return to **this operation's** origin, not to Catalog view unconditionally (§3.14).
 
 **The one exception, stated as a rule rather than a special case: if the save itself makes the origin untrue, return to the nearest still-true state instead.** Exactly one case exists today — a Registro de mercancía opened from Home's cold-start CTA (or from §3.3/§3.3a's own CTA). Its origin is a cold-start state whose precondition ("no Product ever registered") is false the instant the save succeeds, so the save returns to **Catalog view (§3.4)** with the ambient confirmation, unchanged from today's behaviour. The back arrow from that same screen, with nothing saved, still returns to Home — the origin is still true while nothing has been written.
@@ -1356,7 +1360,12 @@ To register a different Product next, she starts over from Catalog view — neve
   **The earlier sentence — "Nothing is ever pre-*staged* by any entry point" — is withdrawn as written.** It was true of entry (3), false of entry (2), and it contradicted both the Guardar rule it sits beneath and the lock rule it was meant to protect. The guarantee it was actually reaching for survives intact: **a pre-expansion never puts any value into the draft other than that box's own already-defined, already-reviewed default** — never a quantity inferred from stock on hand, from past receipts, or from anything she did not ask for. The default 1 arrives carrying its "· revisa antes de guardar" marker (INV-Q1) for exactly this reason: it is an unreviewed default, marked as one, identically on both of its paths in.
 
   **The lock's consequence is named rather than left to be discovered: a merchant who opened the wrong Product's page and tapped `[ Registrar mercancía ]` cannot re-pick Producto from the picker.** Accepted deliberately, for three reasons. (a) The alternative is worse — re-pointing an already-savable draft at a different Product silently transplants a staged effect between two Product identities, the exact thing the lock exists to prevent and that single-Product focus rules out (§10). (b) Nothing is written and nothing is lost, and recovery is cheap in both directions: "Quitar" collapses the receipt box, which empties the draft and returns Producto to tappable in the same beat, and the back arrow returns to origin (§3.19, that same wrong Product's page) with the draft preserved, one further tap from Catalog and the right card. (c) The screen is honest about it at rest — Producto renders as plain text (this document's passive convention) and Guardar renders visible and enabled, so before she touches anything the screen truthfully reads "there is something to save here, for this Product."
-- On-screen heading reads "Registro de mercancía" (HJR-INV-M1, unchanged).
+- **On-screen heading reads "Cantidad de mercancía" (changed 2026-09-21, `merchant-user-tester` walkthrough against production; supersedes the 2026-08-07 HJR-INV-M1 heading, which it strengthens rather than contradicts).** The section title stays "Registro de mercancía," and this document keeps using that name for the screen throughout its prose — the same title≠heading relationship §3.19, §3.4a, §3.4b, §3.4c and §3.19a already hold to, for the same reason: the section title names the flow for whoever reads this document, the heading tells Ana which screen she is on.
+  - **Why it changed.** A merchant tapped `[ Corregir cantidad ]` on §3.19 and landed on a screen titled "Registro de mercancía" — the name of the button directly above the one she deliberately chose. Her first thought, verbatim: *"¿le di al que no era?"* HJR-INV-M1's own fix differentiated the heading from its CTA by nominalization alone ("Registrar mercancía" → "Registro de mercancía"); that is enough to stop a heading reading as an echo of the CTA she just tapped, and not enough to stop it reading as the name of a *different* CTA she just declined. This screen has served two entry modes since 2026-09-19 (entry points 2 and 3 above) and its heading still named only one of them.
+  - **Why this string.** It takes one noun from each Level-1 action — `cantidad` from `[ Corregir cantidad ]`, `mercancía` from `[ Registrar mercancía ]` — and is identical to neither, so neither entry point can read it as the other one's name. It is also the honest common subject of every state this screen has: a receipt, a correction, and both at once all change one Product's quantity, which is the only thing this screen ever does. It carries no gender/number agreement to a merchant-supplied Product name (§3.13a/§3.4c, 2026-09-21).
+  - **The heading deliberately does not confirm which operation is open — the box she arrives in does.** Entry (2) lands with "Cantidad recibida" open ("Lo que te llegó nuevo"); entry (3) lands with "Cantidad disponible actual" open ("Corrígela si algo no cuadra — por ejemplo, piezas defectuosas que regresaste, o si contaste más de lo que dice Nahui"). Both are already-reviewed copy sitting one line below the heading, and the walkthrough confirmed the correction helper carries: the merchant named that exact clause as her own case, and it is what stopped her backing out to verify. What failed was not a missing confirmation; it was a contradicting one above it. One screen keeps one identity, and the pre-expanded box says which job is open.
+  - **A heading varying by entry mode was considered and rejected.** It re-creates HJR-INV-M1 one screen over (a `[ Corregir cantidad ]` entry landing on any heading close to that phrase), it would have to mutate mid-flow the instant she opens the second box — a state this screen explicitly supports, order-independent — and it gives one screen two identities for nothing the pre-expanded box does not already deliver.
+  - **Accepted cost, named rather than discovered later.** On the blank open (entry points 1 and 4) the heading no longer restates the receiving intent she declared one tap earlier. Accepted: that state carries no contradicting signal, only a less confirming one; its single control ("Elegir producto") and the picker's own "¿Qué llegó?" both sit in the receiving frame. A heading that actively names the wrong operation is a different class of defect from one that names neither.
 - Only Producto + Cantidad (disponible actual / recibida) are ever asked —
   no Supplier, no cost field (*architecture-principles.md* #5, D9).
 - Price is never asked on this screen — resolved upstream in Elegir
@@ -1468,7 +1477,7 @@ it. `decision-log.md` D3/D78.)*
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │  dimmed, visible underneath
-│  Registro de mercancía            │
+│  Cantidad de mercancía            │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  ¿Qué llegó?                    │
 │  [ Buscar o escribir… ]          │
@@ -1489,7 +1498,7 @@ it. `decision-log.md` D3/D78.)*
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │  dimmed, visible underneath
-│  Registro de mercancía            │
+│  Cantidad de mercancía            │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  ¿Qué llegó?                    │
 │  [ Buscar o escribir… ]          │
@@ -1716,7 +1725,7 @@ gated the same way `decision-log.md` D27 already gates NFC).
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │  dimmed, visible underneath
-│  Registro de mercancía            │
+│  Cantidad de mercancía            │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  ¿Qué llegó?                    │
 │  [ Chalecos ]                    │
@@ -1768,7 +1777,7 @@ gated the same way `decision-log.md` D27 already gates NFC).
 ```
 ┌───────────────────────────────┐
 │ ← Inventario                     │  dimmed, visible underneath
-│  Registro de mercancía            │
+│  Cantidad de mercancía            │
 ├── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ──┤
 │  Código escaneado — no lo          │
 │  tenemos registrado todavía        │
@@ -1923,6 +1932,26 @@ gated the same way `decision-log.md` D27 already gates NFC).
 - **Further amended 2026-09-16/17 (`decision-log.md` D71).** The original condition ("`Business.defaultSellingMode ≠ 'nfc'`") is subsumed by the composed test (§2), not replaced by an unrelated one: reached whenever this specific Lot contains zero NFC-tagging-eligible units. For a Business with `defaultSellingMode = 'buttons'` and `nfcPerProductEnabled = false`, that's every Lot, exactly as before. For a Business with `nfcPerProductEnabled = true`, it's now also the correct destination for a Lot made up entirely of Products she hasn't individually opted into NFC (a pure-Plumas restock, even while Camisas is opted in elsewhere) — "Inventory Ready" remains fully honest for this Lot specifically, without implying anything about Camisas' own, separate tagging status.
 - **Further corrected 2026-09-17 (`decision-log.md` D73).** The composed test above no longer reads `defaultSellingMode` at all — so a grandfathered/demo Business whose `defaultSellingMode = 'nfc'` reaches this same "Inventory Ready" state (not §3.13) for any Lot where she hasn't individually opted the relevant Product(s) into NFC via `nfcPerProductEnabled`, exactly like a `buttons`-mode Business in the same state. There is no more mode-based special case: reaching §3.12 vs. §3.13 depends entirely on whether this Lot's units are NFC-tagging-eligible under the single, per-Product condition, never on which selling mode she happens to be in.
 - **Corrected 2026-09-19 (return to origin).** This ambient line is a property of the **destination**, not of Catalog view specifically: it renders on whichever screen the operation returns to — §3.4 or §3.19 — with identical copy and the identical ambient, fading, no-tap-to-dismiss shape on both. §3.13a's Product-named line is the most common case to land on §3.19, since a Product-scoped queue is usually started from that Product's own page.
+
+### 3.12a Post-save confirmation — corrección sin recepción (new 2026-09-21)
+```
+┌───────────────────────────────┐
+│  Inventario                    │
+│  Cantidad corregida ✓            │  ambient, fades — not a separate screen
+│  ┌───────────────────────────────────────┐ │  requiring a tap to dismiss
+│  │  B   Bolsas                    $350   │ │  cada tarjeta completa → §3.19
+│  │      19 disponibles                    │ │
+│  └───────────────────────────────────────┘ │
+│      [ Registrar mercancía ]    │
+├───────────────────────────────┤
+│ Hoy [Inventario] Eventos Resultados │
+└───────────────────────────────┘
+```
+- **§3.12's "Mercancía registrada ✓" is now reserved for a save in which mercancía was actually received.** A "Guardar mercancía" whose only staged effect was a correction — in either direction — renders this line instead. A save that includes a real receipt, with or without a correction alongside it, keeps §3.12/§3.13 exactly as they are: something did arrive, that is the headline fact, and the correction rode along and is visible in the count on the same screen. **No third, combined string is introduced** — the only case that was ever false is the arrival claim, and only the arrival claim is re-scoped.
+- **Found by a `merchant-user-tester` walkthrough against production, 2026-09-21.** A merchant corrected a count upward and was told "Mercancía registrada ✓" — the third of three *registrar/mercancía* statements on a path she had entered to *corregir*. **This one was not merely repetitive but false:** nothing arrived, and on a downward correction it would claim an arrival while units were removed. With §3.6's heading and this line corrected, the correction path carries one such statement instead of three (the save button, deliberately unchanged — see §3.6).
+- **The one case that still reaches §3.13, unchanged and correctly.** A positive correction on an NFC-opted-in Product mints fresh untagged `available` units, which are NFC-tagging-eligible under §2 step 3, so the save auto-enters Asignar tags (§3.14) and completes into §3.13's "Mercancía lista para vender ✓". That line is about sellability, not arrival — it claims nothing arrived, and by the time it renders she has genuinely tagged garments. Only §3.12's line makes an arrival claim.
+- Same ambient, fading, no-tap-to-dismiss shape as §3.12/§3.13/§3.13a — no new confirmation pattern invented. **It renders on the operation's origin** (§3.19 or §3.4), identical copy and identical shape on both, per §3.6's "return to origin" rule. In practice §3.19 is the common landing, since a correction is normally started from that Product's own page.
+- **"corregida" carries no agreement to a merchant-supplied Product name** — it agrees with `cantidad`, invariably feminine. Reuses the "corregido a N (antes M)" vocabulary this document already established at §3.11 and the retired §3.7, so the confirmation and the staged-effect summary use one word for one fact.
 
 ### 3.13 Post-save confirmation — this Lot's NFC-tagging-eligible units are now tagged (`decision-log.md` D46/D71)
 ```
@@ -2165,8 +2194,14 @@ gated the same way `decision-log.md` D27 already gates NFC).
 │  3 sin etiquetar                  │
 │                                │
 │  [       Etiquetar           ]   │  primaria en este estado
+│   Le pones su tag a cada prenda   │
+│   que falta, para venderla con    │
+│   solo acercar el tag. Puedes     │
+│   parar cuando quieras.           │
 │  [   Registrar mercancía     ]   │  secundaria en este estado
 │  [   Corregir cantidad       ]   │  secundaria
+│   Para cuadrar la cuenta con lo   │
+│   que tienes.                     │
 │  ─────────────────────────      │
 │  [ Precio               $250 › ] │  forma 1 → §3.4a
 │  [ Foto             Con foto › ] │  forma 1 → §3.4b
@@ -2280,6 +2315,27 @@ Destinations and behaviour, identical in both orderings:
 - **`[ Corregir cantidad ]`** — opens §3.6 with Producto resolved and **correction mode already revealed**: stepper defaulting to the loaded count, delta 0, and — per §3.6's own existing rule — **no "Guardar mercancía" rendered**, since an untouched correction is a genuine no-op. Same "never ask twice" reasoning, and it keeps a count correction at its current step count rather than regressing it by the page's +1 (§6). **Design note, stated as mine under the Product Owner's hierarchy constraint** ("stock/status and primary inventory actions" on Level 1): a new entry point into an already-approved state, not a new capability — §3.6's pencil is unchanged and still reachable. Reversible if review disagrees; nothing else depends on it.
 
 **Nothing on Level 1 writes anything.** All three are navigation into flows that own their own writes.
+
+**Level-1 captions — which actions carry one, and why (new 2026-09-21, `merchant-user-tester` walkthrough against production).**
+
+A Level-1 action carries a short caption directly beneath it **only when its own label does not already name both what opens and what it covers.** Two of the three do not and are captioned; the third does and deliberately is not. No new pattern is introduced — this is the same primitive already standing on this page (the NFC row's caption), in §3.6 (each stepper's own helper line), and in `home.md` §3.6 (the qualifying line rendered directly beneath "Iniciar Sesión Rápida," added 2026-09-15 to close the same class of problem: a CTA whose scope was not readable from its label).
+
+- **`[ Etiquetar ]` — captioned.** Of seven controls on this page the merchant predicted five correctly before touching anything; this was one of the two she could not, and it is the page's primary action whenever pending tag work exists. She inferred *"me pondría a ponerle tags una por una"* from the `N sin etiquetar` figure directly above it, called that inference **"adivinanza pura,"** never tapped it, and only resolved it later by opening a different Product that had no such button. The inference was right — the count is doing its job — but the label names a verb whose object, purpose and shape all live elsewhere on the page. The caption states all three: what she will be doing (one tag per garment, one at a time), why (so those garments sell by tag), and that it is a process she can leave and come back to (§3.14's "Terminar después"): `Le pones su tag a cada prenda que falta, para venderla con solo acercar el tag. Puedes parar cuando quieras.` Rendered only while `[ Etiquetar ]` renders — i.e. only while pending tag work exists. **Agreement-safe by construction:** every inflection in it agrees with `prenda` or `tag`, never with a merchant-supplied Product name (the defect class corrected at §3.13a and §3.4c on 2026-09-21), and it reads correctly at N=1 unchanged.
+- **`[ Corregir cantidad ]` — captioned.** The same merchant said the two Level-1 buttons read as very similar, sit adjacent, and both end up moving the same number — she distinguishes them from experience, but not quickly. The caption is that distinction, stated one screen *before* she has to commit to it: the "told before I touched it" property she explicitly named as a reason she trusted the NFC row. `Para cuadrar la cuenta con lo que tienes.` Deliberately a router, not an explanation. The full, already-reviewed explanation ("Corrígela si algo no cuadra — por ejemplo, piezas defectuosas que regresaste, o si contaste más de lo que dice Nahui") is one tap away at §3.6, at the moment she acts on it; stating it at full length here as well would be the same fact twice across two screens. Rendered in every state in which `[ Corregir cantidad ]` renders — i.e. always. **No agreement to a Product name.**
+- **`[ Registrar mercancía ]` — not captioned, deliberately.** The merchant predicted this one correctly and unprompted; its label already names its object and its destination, and its own pre-expanded box on arrival ("Cantidad recibida" / "Lo que te llegó nuevo") confirms it. A caption on a control that is already understood is reading she has to do for nothing (*global-principles.md*, "the fastest interaction is the one that never happens"; `events.md` §3.4's "nothing on screen that isn't informative"). The resulting caption / no-caption / caption rhythm is accepted and mildly useful — it puts a line of text between the two actions she said read alike.
+
+**Level 1 has no open-vs-act vocabulary because it has no open-vs-act ambiguity — stated now as a binding invariant rather than left as an internal design note.** Every Level-1 action is a full-width labelled action that **opens a flow and writes nothing in place.** There is no instant-write action on Level 1 and none may be added: a future candidate that would write in place belongs on Level 2 as shape 3, or it does not belong on this page at all. Level 2 needs three row shapes because two kinds of row genuinely coexist there; Level 1 needs none because only one kind exists.
+
+**But an invariant she cannot learn is not a signal.** The merchant read the NFC row's kind correctly, before touching it, from geometry *relative to its neighbours* — "es la única fila que no tiene flechita, tiene un switch prendido, y está metida entre puras filas que sí abren algo." Level 1 offers no such contrast: all three actions are the same shape and all three mean the same thing, so there is nothing for a shape to distinguish against. The invariant above is therefore carried in **words**, by the captions, and never by geometry — which is why "you can stop whenever you want" (a statement only true of something that opens) is part of what the `[ Etiquetar ]` caption says, rather than an aside.
+
+**The label stays `[ Etiquetar ]`, on both surfaces, still with no count — the 2026-09-19 decision re-checked against this walkthrough and re-affirmed, not merely inherited.** Three alternatives were considered and rejected:
+- **Adding the count** (`[ Etiquetar 3 ]`) — the count is not what failed. She read `3 sin etiquetar` correctly and *derived* her guess from it, and still could not name what the button did. It would also restate a figure sitting one line above it, on both surfaces.
+- **Changing the verb** (e.g. `[ Poner tags ]`, close to her own phrasing) — rejected because "etiquetar" is the stem every count on this page and every confirmation in this document already uses (`N sin etiquetar`, `N ya etiquetadas`, "Terminaste de etiquetar Camisas ✓"). A button that stopped sharing that stem would sever the count from the action and break §3.4's own filter 2 — a card shortcut is self-explaining precisely because the fact that produced it is already on the card.
+- **Captioning §3.4's card shortcut too** — rejected. The card is deliberately at its structural floor after the 2026-09-19 rewrite, under the Product Owner's own "keep the card structurally stable rather than gradually adding shortcuts again." A caption is accumulation by another name.
+
+**Residual, logged rather than solved.** A merchant can still meet `[ Etiquetar ]` for the first time on a Catalog card, where it remains a bare word; the two surfaces keep the identical label by design, so this page's caption cannot be assumed to have been read first. Accepted for now — every card tap lands on this page, so the explained encounter is the more likely first one, and the card's own `· N sin etiquetar` caption sits directly beside the shortcut. Named here so a future Catalog review does not rediscover it as new.
+
+**Prominence is unchanged.** `[ Etiquetar ]` stays primary whenever pending tag work exists (this document's 2026-08-07 task-priority precedent, §10). The walkthrough gives no reason to reorder: her difficulty was with meaning, not with rank. **One observation routed rather than designed** — she described it as "the largest, reddest element on the page." Visual treatment is not specified here and never has been; whether a primary action reads as *priority* or as *alarm* is a `ui-designer` question against the built prototype and `company/brand/brand-guide.md`, not a Low-Fidelity one.
 
 ---
 
@@ -2410,6 +2466,8 @@ One further question this page's own existence raises for whoever designs it: an
 │                                │
 │  [   Registrar mercancía     ]   │  primaria
 │  [   Corregir cantidad       ]   │  secundaria
+│   Para cuadrar la cuenta con lo   │
+│   que tienes.                     │
 │  ─────────────────────────      │
 │  [ Precio               $350 › ] │
 │  [ Foto             Sin foto › ] │
@@ -2442,6 +2500,8 @@ One further question this page's own existence raises for whoever designs it: an
 │                                │
 │  [   Registrar mercancía     ]   │  primaria — ya no hay [ Etiquetar ]
 │  [   Corregir cantidad       ]   │
+│   Para cuadrar la cuenta con lo   │
+│   que tienes.                     │
 │  ─────────────────────────      │
 │  [ Precio               $250 › ] │
 │  [ Foto             Con foto › ] │
@@ -2460,6 +2520,8 @@ No NFC row on Level 2 at all (D71). `3 sin etiquetar` and `[ Etiquetar ]` correc
 │                                │
 │  [   Registrar mercancía     ]   │
 │  [   Corregir cantidad       ]   │
+│   Para cuadrar la cuenta con lo   │
+│   que tienes.                     │
 │  ─────────────────────────      │
 │  [ Precio               $350 › ] │
 │  [ Foto             Con foto › ] │
@@ -2483,6 +2545,8 @@ Nothing about NFC renders anywhere — no row, no line, no trace.
 │                                │
 │  [   Registrar mercancía     ]   │  primaria — no hay [ Etiquetar ]
 │  [   Corregir cantidad       ]   │
+│   Para cuadrar la cuenta con lo   │
+│   que tienes.                     │
 │  ─────────────────────────      │
 │  [ Precio               $250 › ] │
 │  [ Foto             Con foto › ] │
@@ -2684,12 +2748,15 @@ Página de producto (3.19) — understand/manage one Product:
   Level 1 (ordering switches when pending tag work exists):
     tap "Etiquetar" (only while pending tag work exists; primary in that
       state) → 3.14, Product-scoped — origin: 3.19
+      [caption beneath: states that a per-garment tagging process opens
+       and can be left — §3.19]
     tap "Registrar mercancía" (primary otherwise; secondary while tag work
       is pending) → 3.6, Producto resolved, receipt stepper pre-revealed
       (default 1, "revisa antes de guardar", Guardar enabled) — origin: 3.19
     tap "Corregir cantidad" → 3.6, Producto resolved, correction mode
       pre-revealed (default = loaded count, delta 0, Guardar NOT rendered)
       — origin: 3.19
+      [caption beneath: "Para cuadrar la cuenta con lo que tienes." — §3.19]
 
   Level 2:
     tap "Precio" (shape 1, "›") → 3.4a → Cancelar → 3.19 unchanged
@@ -2839,10 +2906,18 @@ Registro de mercancía (3.6) — single Product, one focused operation:
           this Lot's unit(s) are NFC-tagging-eligible (§2 step 3) →
             Asignar tags (3.14), Lot-scoped, auto-entered; origin
             propagates through the queue
-          not NFC-tagging-eligible → back to ORIGIN (3.19, 3.4, 3.3/3.3a
-            or Home), ambient confirmation (3.12) rendered there — DONE
+          not NFC-tagging-eligible, a real receipt was staged (with or
+            without a correction alongside it) → back to ORIGIN (3.19,
+            3.4, 3.3/3.3a or Home), ambient "Mercancía registrada ✓"
+            (3.12) rendered there — DONE
+          not NFC-tagging-eligible, the only staged effect was a
+            correction (either direction) → back to ORIGIN, ambient
+            "Cantidad corregida ✓" (3.12a) rendered there — DONE
           exception: origin was Home's cold start (or 3.3/3.3a), which
-            this save itself makes untrue → 3.4 + ambient confirmation
+            this save itself makes untrue → 3.4 + whichever of the two
+            confirmations above applies (in practice always 3.12's — a
+            cold-start-originated save necessarily receives, since no
+            Product exists yet to correct)
   → [any point] back arrow / leave without saving → back to ORIGIN, draft
     preserved silently, resumes later at §3.6 exactly as she left it
   → to work on a different Product: finish (Guardar mercancía) or back
@@ -2933,7 +3008,7 @@ flow. Full prior text at
    receiving stepper (`decision-log.md` D78, RFC 0016 for the mechanism
    inside each box; Product Owner decision 2026-09-18 for the
    single-Product screen shape — supersedes D78's own multi-line
-   composition)
+   composition; on-screen heading changed to "Cantidad de mercancía" 2026-09-21 — the section title stays "Registro de mercancía")
 7. [RETIRED 2026-09-18] Registrar mercancía — con líneas comprometidas,
    editando la siguiente — folded entirely into state 6; there is no
    longer a "next" row.
@@ -2948,6 +3023,7 @@ flow. Full prior text at
 10. Guardar mercancía — saving (near-instant / slow)
 11. Guardar mercancía — error
 12. Post-save confirmation — no NFC-tagging-eligible unit in this Lot (`decision-log.md` D46/D71)
+12a. Post-save confirmation — corrección sin recepción (new 2026-09-21) — "Cantidad corregida ✓". §3.12's "Mercancía registrada ✓" is now reserved for a save that actually received something.
 13. Post-save confirmation — this Lot's NFC-tagging-eligible units are now tagged (`decision-log.md` D46/D71), including a mixed-Lot copy variant
 13a. Post-tagging confirmation — Product-scoped queue complete (new 2026-09-17)
 14. Asignar tags — active queue, three entry points (Lot-scoped / retired-Settings-handoff / Product-scoped), seeded with only NFC-tagging-eligible units (`decision-log.md` D46/D71, amended 2026-09-17)
@@ -2955,7 +3031,7 @@ flow. Full prior text at
 16. Asignar tags — error, scan failed
 17. [RETIRED 2026-09-17] Asignar tags — "Terminar después" — see §3.4's Catalog view (state 4) plus its `· N sin etiquetar` caption and `[ Etiquetar ]` shortcut, and §3.19's Level 1. **[Cross-reference corrected 2026-09-19.]** "Terminar después" now returns to origin (§3.14), not unconditionally to Catalog view.
 18. Defensive fallback / load error
-19. **Página de producto** (new 2026-09-19) — one Product, three levels: stock/status + primary inventory actions; product details and identification; a named, reserved, undesigned Level 3. **Six defined variants:** default with pending tag work (NFC live switch, no barcode, `[ Etiquetar ]` primary); default without pending tag work (`[ Registrar mercancía ]` primary); **NFC switch live and reading `No` with ≥1 tagged unit** (clause A present on Level 1, no caption beneath the switch — added 2026-09-21, `ux-critic` m4; reached by turning the switch off, or by clearing a barcode at §3.19c); barcode-identified with ≥1 tagged unit (Level-1 persistence line with its added clause, no NFC row, `[ Quitar código de barras ]` present); barcode-identified with 0 tagged units (no NFC anything); Free-tier/reduced (Precio, Foto, Nombre only). Plus the NFC switch's own **pending** (`Guardando…`, control holding the attempted position, and only the already-read label quieted — `settings.md` §3.9's scoping rule; the attenuation never reaches the status word or the control) and **failure** (word *and* control both reverted, plus inline retry line) states. **There is no passive Level-2 row shape** — passive facts render on Level 1. **Every Level-2 row ends in an affirmative mark of its kind:** "›" on a row that opens, a two-position control on the one row that writes.
+19. **Página de producto** (new 2026-09-19) — one Product, three levels: stock/status + primary inventory actions; product details and identification; a named, reserved, undesigned Level 3. **Six defined variants:** default with pending tag work (NFC live switch, no barcode, `[ Etiquetar ]` primary); default without pending tag work (`[ Registrar mercancía ]` primary); **NFC switch live and reading `No` with ≥1 tagged unit** (clause A present on Level 1, no caption beneath the switch — added 2026-09-21, `ux-critic` m4; reached by turning the switch off, or by clearing a barcode at §3.19c); barcode-identified with ≥1 tagged unit (Level-1 persistence line with its added clause, no NFC row, `[ Quitar código de barras ]` present); barcode-identified with 0 tagged units (no NFC anything); Free-tier/reduced (Precio, Foto, Nombre only). Plus the NFC switch's own **pending** (`Guardando…`, control holding the attempted position, and only the already-read label quieted — `settings.md` §3.9's scoping rule; the attenuation never reaches the status word or the control) and **failure** (word *and* control both reverted, plus inline retry line) states. **Level-1 captions added 2026-09-21** (`merchant-user-tester`): `[ Etiquetar ]` and `[ Corregir cantidad ]` each carry one; `[ Registrar mercancía ]` deliberately does not. **Binding Level-1 invariant, stated the same day:** every Level-1 action opens a flow and writes nothing in place; no instant-write action may be added to Level 1 — it belongs on Level 2 as shape 3 or not on this page. Level 1 carries no shape vocabulary because it has only one kind of action; the invariant is carried in words, never in geometry. **There is no passive Level-2 row shape** — passive facts render on Level 1. **Every Level-2 row ends in an affirmative mark of its kind:** "›" on a row that opens, a two-position control on the one row that writes.
 19a. **Editar nombre — sheet** (new 2026-09-19) — validated on save against §3.8's existing case-insensitive/trimmed matching rule.
 19b. **Editar nombre — ya tienes un producto con ese nombre** (new 2026-09-19) — conflict, no merge, no reassignment; extends §3.4e/§3.15's pattern.
 19c. **Quitar código de barras — confirmación** (new 2026-09-19, `decision-log.md` D80, Paid tier only) — two copy forms (with and without the tagged-units line), and the tagged-units form itself takes a singular at N=1 (corrected 2026-09-21, string shared verbatim with §3.4c). Single-column write, no cascade, `nfcTaggingEnabled` untouched, no guard conditions.
@@ -3520,6 +3596,10 @@ comparable hard speed requirement — the floor above is about not adding
 - **Not carried on the Catalog card.** A reassurance fact she goes looking for, not a comparison fact she scans across Products; line 2 already carries `N disponibles · N sin etiquetar`, and §3.4's whole rewrite is about the card not accumulating.
 
 - **`N ya etiquetadas`'s status scope corrected before build (`reviewer` finding, `architect` ruling, 2026-09-19).** The derivation shipped in draft as a bare `tagId != null`, which counts already-sold garments, since an `NFCTag` row survives the sale. Corrected to `tagId != null AND status IN ('available','reserved')`, as an allowlist — the same boundary D10's dual-purpose tag resolution already partitions on, and the narrowest scope Inventory can compute without reading Selling's `EventAllocation` (*architecture-principles.md* #6). **The spec's own worked example was the evidence**: `8 disponibles / 10 ya etiquetadas / 3 sin etiquetar` cannot hold, since three available untagged units cap the available tagged ones at five. **The correction's real consequence is a cross-basis one** — `ya etiquetadas` and `disponibles` now sit on different status bases, so the former can legitimately exceed the latter, and at `0 disponibles` it can be the only nonzero figure on Level 1. Resolved the way D78 resolved the identical problem: the figure with the unusual basis names its own basis in its own copy, via a second conditional clause fired by a plain comparison of two figures already on screen (`ya etiquetadas > disponibles`), never by a read into Selling and never by a check of *why* a unit is `reserved` — which Inventory cannot know, and which it would be worse to guess at than to leave unsaid.
+
+- **§3.6's on-screen heading changed from "Registro de mercancía" to "Cantidad de mercancía" (2026-09-21, `merchant-user-tester` walkthrough against production).** The screen has served two entry modes since 2026-09-19 and its heading named only one of them, so a merchant arriving via `[ Corregir cantidad ]` was met by the name of the button she had deliberately not tapped — *"¿le di al que no era?"*. The heading now takes one noun from each Level-1 action and belongs to neither. The section title, every prose reference, both Level-1 CTAs and the save button are all unchanged. **Strengthens HJR-INV-M1** — the heading now shares no stem with either entry point, where the 2026-08-07 nominalization shared one with both. **[SUPERSEDES this section's own 2026-08-07 HJR-INV-M1 heading bullet; that rule is unchanged and better satisfied, not relaxed.]**
+- **§3.12's "Mercancía registrada ✓" re-scoped to a save that actually received something; a correction-only save renders "Cantidad corregida ✓" (new §3.12a, 2026-09-21).** Previously every successful save routed to §3.12, so a recount was confirmed as an arrival — and on a downward correction it claimed an arrival while units were removed. **This was a correctness defect, not merely a repetition.** No combined string exists for a save carrying both effects — a real receipt keeps §3.12/§3.13 unchanged.
+- **`[ Etiquetar ]` and `[ Corregir cantidad ]` gained captions on §3.19's Level 1 (2026-09-21); `[ Registrar mercancía ]` deliberately did not.** `[ Etiquetar ]` was the least-predicted control on the page and its most prominent; the merchant deduced its meaning from the `N sin etiquetar` figure and called that "adivinanza pura," and could not tell whether it acted immediately or opened a process. The label, its lack of a count, its identity with §3.4's card shortcut, and its primary rank are all unchanged — re-checked against this evidence, not merely inherited. **Level 1's open-vs-act invariant is stated as binding in the same pass:** every Level-1 action opens a flow and writes nothing in place, and no instant-write action may be added there. Carried in words, not geometry — Level 1 has no neighbouring contrast for a shape to be read against, which is exactly what made the Level-2 shape vocabulary legible.
 
 **`ux-critic` finding resolution — traceable against both rounds of its audit:**
 

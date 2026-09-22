@@ -35,6 +35,8 @@ Added 2026-08-12, as part of `company/CLAUDE.md`'s UX Remediation exit criteria.
 
 *No entries yet — this section is established as of the 2026-08-12 exit-criteria addition; nothing has been triaged through it since.*
 
+**`[ Etiquetar ]` on §3.4's Catalog card remains a bare word (2026-09-21).** §3.19's Level-1 instance gained an explanatory caption after a `merchant-user-tester` walkthrough found it was the least-predicted control on the page. The two surfaces keep an identical label by design (the 2026-09-19 decision, re-affirmed), so a merchant can still meet the action for the first time on the card, unexplained. **Accepted rather than fixed** — a caption on the card is accumulation the 2026-09-19 rewrite and the Product Owner's own "keep the card structurally stable rather than gradually adding shortcuts again" both rule out. Mitigating: every card tap lands on §3.19, so the explained encounter is the more likely first one, and the card's own `· N sin etiquetar` caption sits directly beside the shortcut. Revisit if a walkthrough finds a merchant meeting the shortcut on a card first.
+
 ## `authentication.md` — first-pass review (2026-08-13)
 
 New document (Phone → OTP → Owner-identity access gate preceding `onboarding.md`, `decision-log.md` D44/D45). First-pass `ux-critic` review found 1 Major + 2 Minor, all fixed and independently re-verified clean in the same round — no Blockers, no remediation cycle needed beyond one pass.
