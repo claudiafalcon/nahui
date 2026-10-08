@@ -331,24 +331,20 @@ h3 { font-size: 1.25rem; line-height: 1.3; }
    shadow above are untouched — this is a swap inside the same box. */
 .phone video {
   height: auto;
-  aspect-ratio: 540 / 1054;    /* stated here, NOT left to the width/height
-                                  attributes: those resolve to `auto 540/1054`,
-                                  and the poster (540×1170) is a natural ratio
-                                  that would win until the video loads — the
-                                  box would then resize under the reader. This
-                                  declaration locks it from first paint. */
-  object-fit: cover;
-  object-position: 50% 42%;    /* The poster is the same screen, 116px taller,
-                                  because it still carries the phone's own
-                                  status bar (ends row 51) and navigation bar
-                                  (starts row 1103) and the loop carries
-                                  neither. Cover must drop those 116px, and 42%
-                                  is where it drops them: 49 off the top, 67 off
-                                  the bottom. The black navigation bar goes
-                                  entirely — it is the only part that would
-                                  read as a seam — at the cost of ~3px of light
-                                  grey left at the top, which is the page's own
-                                  surface colour. Measured, not guessed. */
+  aspect-ratio: 540 / 1024;    /* stated here, NOT left to the width/height
+                                  attributes: those resolve to `auto 540/1024`,
+                                  and whatever natural ratio the poster has
+                                  would win until the video loads — the box
+                                  would then resize under the reader. This
+                                  declaration locks it from first paint, and it
+                                  is the one line to change if the loop is ever
+                                  recut to another height. */
+  object-fit: cover;           /* The poster is a frame of the loop, so this is
+                                  an exact match and cover does nothing today.
+                                  It stays as the failure mode: if a future
+                                  recut ever leaves the two at different sizes,
+                                  the still gets cropped, never stretched. No
+                                  object-position: there is nothing to crop. */
   background: var(--surface);  /* a decoding video is never a black box */
   pointer-events: none;        /* evidence, not media: nothing to click */
 }

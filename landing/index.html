@@ -87,7 +87,7 @@
 <!-- The hero video's poster: the first thing painted in the phone, and the
      whole of it for a reader who asked for less motion. It replaces the
      fetchpriority="high" the <img> used to carry — a poster cannot take one. -->
-<link rel="preload" href="assets/app-hoy.png" as="image" fetchpriority="high">
+<link rel="preload" href="assets/app-loop-poster.png" as="image" fetchpriority="high">
 <link rel="stylesheet" href="styles.css">
 
 <noscript><style>
@@ -210,21 +210,29 @@
                  the attribute is the one thing that would make the
                  reduced-motion promise unkeepable. preload="none" means a
                  reader who asked for less motion downloads none of it.
-               · poster is the still that used to be here. It is the same
-                 screen, 116px taller, because it still carries the phone's own
-                 status and navigation bars and the loop carries neither;
-                 object-position in styles.css crops those away so the still is
-                 framed like the loop. It is also the whole hero when there is
-                 no JavaScript, no video support, or no motion wanted.
+               · poster is a FRAME OF THIS LOOP (at 7.2s, the sale standing at
+                 two items), not the old `app-hoy` screenshot. Measured, after
+                 the 2026-10-08 recut: the screenshot and the recording are two
+                 different captures of the same screen — the screenshot carries
+                 146px of status and navigation bar the recording does not, and
+                 its app content sits 22px lower. Its clean app screen is 1051
+                 rows (52→1102) and this box is 1024, so NO crop of it clears
+                 both bars without slicing either «VENTA RÁPIDA» (rows 68–82)
+                 or the bottom tab bar (rows 1044–1102). A frame of the loop
+                 needs no crop at all, cannot drift if either file is recut
+                 again, and makes the handoff invisible by construction. It is
+                 also the whole hero when there is no JavaScript, no video
+                 support, or no motion wanted — so it is a still that shows a
+                 sale in progress, with its chips, its badges and its total.
                · role="img" + aria-label: a <video> takes no alt, and this is a
                  moving screenshot, not media to operate. The label is
                  assistive chrome, not product copy — not in CONTENT.md,
                  provisional pending `marketing`, same standing as the alt it
                  replaces. The screen itself stays in Spanish in both
                  versions (BRIEF §6). No <track>: there is no audio. -->
-        <video id="hero-loop" width="540" height="1054"
+        <video id="hero-loop" width="540" height="1024"
                loop muted playsinline preload="none" disablepictureinpicture
-               poster="assets/app-hoy.png"
+               poster="assets/app-loop-poster.png"
                role="img"
                aria-label="Grabación de la app, sin sonido y en bucle: se registran dos productos en una venta, se cierra la venta y aparece el recibo con su código QR."
                data-aria-en="A silent, looping screen recording of the app: two products are added to a sale, the sale is closed, and the receipt appears with its QR code.">

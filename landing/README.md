@@ -119,9 +119,10 @@ beside it.
 | File | Source |
 |---|---|
 | `assets/mark.svg` | Geometry unchanged from `company/brand/raw-assets/Component 1.svg`. Colours exposed as CSS variables so the halo can match the surface it sits on. |
-| `assets/app-loop.{webm,mp4}` | **The hero.** A silent 12.5s loop of the real product registering a sale — empty grid, Plumas, Papas, total $32, "Cerrando venta…", the finished-sale receipt with its QR code — then back to the empty grid, which reads as the next sale. 540×1054, 30fps, no audio stream at all. VP9 **150 KB** / H.264 **113 KB**. Cut by the Product Owner from her own screen recording on her own test account, 2026-10-08, seconds **5.0–17.5** of the source below. The phone's status and navigation bars are cropped out, which is why it is 116px shorter than `app-hoy.png`. See "The hero loop" below. |
+| `assets/app-loop.{webm,mp4}` | **The hero.** A silent 12.5s loop of the real product registering a sale — empty grid, Plumas, Papas, total $32, "Cerrando venta…", the finished-sale receipt with its QR code — then back to the empty grid, which reads as the next sale. 540×1024, 30fps, no audio stream at all. VP9 **146 KB** / H.264 **111 KB**. Cut by the Product Owner from her own screen recording on her own test account, 2026-10-08, seconds **5.0–17.5** of the source below. The phone's status and navigation bars are cropped out, which is why it is 146px shorter than `app-hoy.png`. **Recut the same day** (60px off the source before scaling, so the fix cost no quality) because the first cut sliced the app's own bottom tab bar through the middle of its icons. See "The hero loop" below. |
+| `assets/app-loop-poster.png` | The video's `poster`, and therefore the entire hero for a reader who asked for less motion, has no video support or has no JavaScript. It is **frame 7.2s of `app-loop` itself** — the sale standing at two items, with its chips, its badges, its total and its "Finalizar Venta" button. 540×1024, so it matches the loop exactly: no crop, no scaling, no distortion, and a handoff that is invisible because it is the same recording. 256-colour PNG, **76 KB** (max channel delta 0.61 mean against the source frame — no visible banding at any size this page renders). PNG, not WebP, because a `poster` takes one URL and a browser without WebP would get the empty box this hero must never be. |
 | `assets/Screen_Recording_20261008_081439_Chrome.mp4` | The uncut original, ~76 MB, the Product Owner's own screen recording of her test account. It is the source `app-loop.*` was cut from, and the source for the full 45-second video still to be produced per `video-script.md`. **It must not be committed at that size** — it is deliberately left untracked, and keeping it out of git is the Product Owner's to handle, not this folder's. |
-| `assets/app-hoy.{webp,png}` | A real production capture of the running product mid-sale, 540×1170, supplied by the Product Owner from her own test account (replaced the earlier idle-screen capture, 2026-10-08). **The `.png` is now the hero video's `poster`** — the first frame painted, and the entire hero for a reader who asked for less motion, has no video support or has no JavaScript. The `.webp` is retained but no longer referenced: a `poster` takes one URL, and the `.png` is the one that cannot fail. Stays in Spanish in both language versions (`BRIEF.md` §6). **Open item:** the screen shows merchandise — Plumas, Cerveza, Camisas, Papas — which is not the pilot merchant's assortment, but is also not the substitution map `CONTENT.md` §6.3 names as binding for this surface (Bolsas, Accesorios, Playeras, Gorras). It is the same assortment in the loop. Flagged for the Product Owner rather than resolved here. |
+| `assets/app-hoy.{webp,png}` | A real production capture of the running product mid-sale, 540×1170, supplied by the Product Owner from her own test account. It was the hero until the loop replaced it on 2026-10-08, and was then the loop's `poster` for one pass. **Both files are now kept but unreferenced** — see "Why the poster is not `app-hoy.png`" below; it is a measurement, not a preference. Stays in Spanish in both language versions (`BRIEF.md` §6) if it is ever used again. **Open item, which applies to the loop too:** the screen shows merchandise — Plumas, Cerveza, Camisas, Papas — which is not the pilot merchant's assortment, but is also not the substitution map `CONTENT.md` §6.3 names as binding for this surface (Bolsas, Accesorios, Playeras, Gorras). Flagged for the Product Owner rather than resolved here. |
 | `assets/og-image.png` | 1200×630. Identity lockup only — no claim, so it serves both languages. |
 | `assets/favicon*` | Derived from `mark.svg`. |
 | `assets/fonts/*` | Fredoka (variable) and Inter 400/500, subset to Latin, converted to woff2. ~97 KB total. |
@@ -150,14 +151,36 @@ undo by accident:
   direction for a failure, and the reason the gate is not "remove autoplay if
   reduce" but "add playback if no preference".
 
-**The poster is `app-hoy.png`, not a frame of the loop**, because it shows a
-sale in progress with its total and its "Finalizar Venta" button: it is the
-stronger single image, and it is what a reduced-motion reader is left with. It
-is 116px taller than the loop (it still carries the phone's status and
-navigation bars), so `styles.css` crops those away with
-`object-fit: cover; object-position: 50% 42%` — measured, not guessed. The box
-is locked with an explicit `aspect-ratio`, not left to the `width`/`height`
-attributes, so the hero cannot reflow when the video loads.
+### Why the poster is not `app-hoy.png`
+
+It was, for one pass, and the intent was right: reuse the still that was
+already there. The pixels say it cannot work. The screenshot and the recording
+are **two different captures of the same screen**, and they disagree twice —
+the screenshot carries 146px of phone status and navigation bar that the
+recording does not, and its app content sits **22px lower**. Measured
+landmarks in `app-hoy.png`:
+
+| Row | What is there |
+|---|---|
+| 0–51 | the phone's status bar — must be cropped away |
+| 68–82 | «VENTA RÁPIDA» — cropping past row ~57 slices it |
+| 1044–1102 | the app's own bottom tab bar — cropping into it slices the icons |
+| 1103–1169 | the phone's black navigation bar — must be cropped away |
+
+So the clean app screen is rows 52–1102, **1051 rows**, and the box is
+**1024**. It is 27 rows short: every `object-position` either leaves device
+chrome showing or cuts a UI element. There is no correct percentage, and that
+held for the 1054-tall first cut too — the 42% used then left a 3px grey edge
+and only looked clean because the loop was taller.
+
+**So the poster is a frame of the loop itself** (7.2s, the sale at two items).
+It needs no crop, it cannot drift if either file is ever recut again, and the
+handoff is invisible by construction rather than by tuning. The box is still
+locked with an explicit `aspect-ratio: 540 / 1024` rather than left to the
+`width`/`height` attributes, so the hero cannot reflow when the video loads —
+**that one line is what to change if the loop is recut to another height.**
+`object-fit: cover` stays with no `object-position`: it does nothing while the
+two match, and if they ever stop matching it crops rather than stretches.
 
 `::-webkit-media-controls` is hidden deliberately: with JavaScript disabled,
 Chrome and Safari force their own controls onto a `<video>` that carries none,
@@ -165,12 +188,11 @@ and they land across the middle of the screenshot.
 
 **Weight.** The loop is in the hero, not deferred: the hero *is* the argument,
 and a deferred hero is a hero that arrives late. With `preload="none"` the cost
-is only paid by readers who will actually see it move. Two things worth knowing
-if the page ever needs to be lighter: the sources are WebM-first as specified,
-so Chrome takes the 150 KB VP9 rather than the 113 KB H.264; and the `.png`
-poster is 142 KB where the unreferenced `.webp` is 40 KB. Both are deliberate —
-quality and "never an empty box" over the last 100 KB on a page that is still
-well under half a megabyte.
+is only paid by readers who will actually see it move — a reduced-motion reader
+pays **76 KB** for the poster and nothing else. The sources are WebM-first as
+specified, so Chrome takes the 146 KB VP9 rather than the 111 KB H.264; that is
+the one place left where the page could shed ~35 KB by reordering, and it is
+deliberate, because VP9 is the better-looking encode here.
 
 ## Colour
 
