@@ -1351,12 +1351,23 @@ lesson does not depend on who they were. Identities live in the production
 database, which is where they belong.
 
 *Impact:* The first honest adoption read Nahui has had, and it is not a
-technical one: the product was up the whole time. Two of three pilot merchants
-were blocked or lapsed for reasons no monitoring would surface — an undocumented
+technical one: the product was up the whole time. Both pilot merchants were
+blocked or lapsed for reasons no monitoring would surface — an undocumented
 exact-email requirement in the invite flow, and simple disengagement. Worth
 stating plainly because `backlog.md` #1's success bar (≥90% of sales registered,
 <3s each) cannot be measured at all while the merchants who would generate that
 evidence can't get in. Destructive SQL was, as standing practice, never executed
 by Main — validated and handed to the Product Owner to run in the Dashboard.
+*Count corrected 2026-10-08.* This entry originally read "two of three pilot
+merchants." The Product Owner confirmed the real figure is **two merchant
+businesses, not three** — the two additional blank-name rows found that night were
+invited sellers who landed in their own onboarding, which is what this entry
+already describes, and counting one of them as a third merchant was an inference
+made while backfilling, not a fact from the database. Recorded rather than
+silently fixed, because the same inflated count independently reached a draft of
+Nahui's public investor-facing page and was caught only when she read it back.
+The lesson is the one the page itself argues: a countable figure gets counted
+from the source, never inferred from artifacts.
+
 *References:* `company/backlog.md` #1; `product/02-ux/inventory.md` §3.19;
 `decision-log.md` D75; commit `d3d7826` (still unpushed as of 2026-10-07).
