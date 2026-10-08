@@ -126,7 +126,7 @@ Cross-checked against `company/marketing-operating-environment.md`'s actual asse
 
 | Field | Recommendation | Status |
 |---|---|---|
-| Email | `hola@nahui.app` | **Contingent, not confirmed live.** §1 of `marketing-operating-environment.md` lists Google Workspace on `nahui.app` (which this email depends on) as "worth setting up now" — not confirmed as actually provisioned as of this writing. **Do not list this email on the Page until Workspace is live and the mailbox can actually receive mail.** Flag this as a dependency to close before publishing, not something to assume is already true. |
+| Email | `ihola@nahui.app` | **Confirmed live 2026-10-08** (test message sent and received by the Product Owner); published as the ARCO channel in the live Aviso de Privacidad. Previously recorded as contingent. §1 of `marketing-operating-environment.md` lists Google Workspace on `nahui.app` (which this email depends on) as "worth setting up now" — not confirmed as actually provisioned as of this writing. **Do not list this email on the Page until Workspace is live and the mailbox can actually receive mail.** Flag this as a dependency to close before publishing, not something to assume is already true. |
 | Phone / WhatsApp | None | §7 explicitly defers WhatsApp Business provisioning "until interview scheduling actually starts." No dedicated business number exists. Leave blank rather than listing a personal number (governance doc is explicit that mixing personal and business contact is a risk to avoid). |
 | Website | None yet | The `nahui.app` domain is owned (per `marketing-operating-environment.md` fact #2) but no live landing page/site is confirmed built. Don't list a URL that doesn't resolve to anything real — leave the field blank until a real page exists, or confirm with the Product Owner whether a placeholder/coming-soon page is already live at the domain before filling this in. |
 | Address | None | No physical business location — correctly omitted for an itinerant-merchant-facing software company. |
@@ -150,7 +150,7 @@ Cross-checked against `company/marketing-operating-environment.md`'s actual asse
 
 Every one of the 11 items above is a **recommendation awaiting approval**, not an action taken. Nothing has been created. Two dependencies worth resolving before this can actually go live even after approval:
 
-1. **Email (`hola@nahui.app`)** depends on Google Workspace being provisioned on the `nahui.app` domain — confirm that's actually done before it's listed as a live contact channel.
+1. **Email (`ihola@nahui.app`)** — **Resolved 2026-10-08.** Confirmed live by the Product Owner: a test message was sent and received. It is published as the ARCO contact channel in the live Aviso de Privacidad. Note the leading `i`; `hola@nahui.app` is not Nahui's address.
 2. **Website field** depends on confirming whether anything currently resolves at `nahui.app`, or leaving it blank until a real landing page exists.
 
 Once approved, actual account creation, username registration, image upload, and publishing are Product Owner actions per `marketing-operating-environment.md` — not something Marketing or Main can execute.

@@ -24,7 +24,7 @@ Design for the minimum set of accounts, assets, permissions, and operating proce
 ## Per-asset design
 
 ### 1. Business email
-- **Owner:** Product Owner personally (pending incorporation), on the real domain already owned — `nahui.app`. No need for a placeholder Gmail; set up directly as e.g. `hola@nahui.app`. This requires Google Workspace (or another email host) configured against the domain's DNS — a real setup step, not automatic just because the domain exists.
+- **Owner:** Product Owner personally (pending incorporation), on the real domain already owned — `nahui.app`. No need for a placeholder Gmail; set up directly as e.g. `ihola@nahui.app`. This requires Google Workspace (or another email host) configured against the domain's DNS — a real setup step, not automatic just because the domain exists.
 - **Access model:** Google Workspace delegation lets a second identity access the mailbox without ever seeing the password — this is the target state from day one, since Workspace is needed anyway to use the domain for email. Credentials live in the password manager only.
 - **Autonomous:** none directly (Marketing can draft email copy into a file for review).
 - **Needs approval:** every send, any account-recovery/security setting change.
