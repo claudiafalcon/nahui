@@ -1335,12 +1335,20 @@ the field exactly as documented.
 Separately, she reported that a seller had tried to use the app that day and
 couldn't. Investigation: the site returned 200, Supabase `auth/v1/health` and REST
 both 200 — **not an outage**. The actual finding was in the data:
-**WenPijamas had only an OWNER row and no SELLER**, plus two blank-name
-businesses consistent with invited sellers landing in their own onboarding
-instead of joining an existing business. The invite flow requires an exact email
-match, and nobody had told the owner that. A tier change to paid for WenPijamas
-was prepared as validated SQL for her to run herself. A second pilot merchant,
-AndyToys, had gone quiet with no captures.
+**the merchant who reported the problem had only an OWNER row and no
+SELLER**, plus two blank-name businesses consistent with invited sellers landing
+in their own onboarding instead of joining an existing business. The invite flow
+requires an exact email match, and nobody had told the owner that. A tier change
+to paid for that merchant was prepared as validated SQL for her to run herself. A
+second pilot merchant had gone quiet with no captures.
+
+*Merchant identities are deliberately not recorded here (corrected 2026-10-08).*
+Real customer business names were written into this entry on 2026-10-07 and
+removed the next day: this repository is **public**, and naming a paying customer
+in it serves no purpose the Log needs. The Product Owner's own 2026-08-10 ruling
+on the pilot merchant's privacy is the governing precedent. The entry's actual
+lesson does not depend on who they were. Identities live in the production
+database, which is where they belong.
 
 *Impact:* The first honest adoption read Nahui has had, and it is not a
 technical one: the product was up the whole time. Two of three pilot merchants

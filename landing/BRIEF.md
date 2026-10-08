@@ -65,7 +65,7 @@ Esa decisión **gobierna aquí también**, y con más razón: una URL entregada 
 
 ## 7. Qué tiene que existir para el 15 de octubre
 
-El entregable del curso solo necesita una línea: nombre de la empresa y su URL, accesible. Una versión mínima aprobada alcanza si la completa se tarda. **Sin tocar DNS**: ni raíz, ni `www`, ni `demo`, ni `loyalty` — hay vendedoras reales en producción detrás de esos dominios (`company/business-decisions.md` Q26).
+El entregable del curso solo necesita una línea: nombre de la empresa y su URL, accesible. Una versión mínima aprobada alcanza si la completa se tarda. **Sin tocar DNS**: ni raíz, ni `www`, ni `demo`, ni `loyalty` — hay vendedoras reales en producción detrás de esos dominios (ver `company/bitacora.md`, 2026-09-21/23).
 
 ## 8. Lo que la versión anterior enseñó
 
