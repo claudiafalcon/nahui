@@ -3,7 +3,9 @@
 Business identity and how we operate as a team of AI agents to build it — read both parts before doing work.
 
 ## What Nahui is
-Sales registration + business intelligence app for itinerant vendors (bazares) in Mexico. Pilot user: Ana, sells clothing (pajamas, hoodies/maxys, socks) at private bazares in Estado de México.
+Sales registration + business intelligence app for itinerant vendors (bazares) in Mexico. Pilot user: Ana (persona name, not the merchant's own), an apparel vendor at private bazares in the Estado de México / CDMX metro area.
+
+*Privacy, 2026-10-08 — read this before adding detail here.* This line previously named the merchant's exact product categories alongside her zone. Neither detail was load-bearing for anything downstream, and together with the zone they identify a specific person inside her own community — this repository is **public**. The Product Owner ruled on the same combination on 2026-08-10 (real business name and product mix removed from the public demo, substitutes approved) and again on 2026-10-08 (*"I don't want to reveal the real merchant name by privacy"*). Demo and spec surfaces use the approved substitutes — business name **Luna Mercado**, categories Bolsas / Accesorios / Playeras / Gorras. Field-observation detail belongs in `company/market-validation.md`, which carries the 2026-08-05 standard (observed patterns, not a biography) and was scrubbed to it on 2026-10-08. **The test before adding a merchant detail anywhere: does a named hypothesis rest on it?** If not, it is precision that identifies without informing.
 
 ## Core thesis
 Validated via interview with Ana: her top-priority friction is sale registration — customer flow is unpredictable, so any registration step over a few seconds competes with attending the next customer, and she loses the sale record. She caps her own catalog size to keep mental control, which caps growth.
