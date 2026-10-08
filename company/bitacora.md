@@ -1118,3 +1118,237 @@ The NFC-blocked item was closed by synthesizing real test data (a product, lot, 
 
 *Impact:* All six bugs found tonight (three earlier in the evening, three more overnight) are deployed and individually re-verified live through the exact branch or call that broke — no bug fixed tonight was accepted on a code read alone. This closes the very last open execution-verification item from Stage 7's SQL layer. The overnight discovery is also the clearest evidence yet for the standing "execution before done" rule adopted earlier the same day: two of these three bugs aren't even the same defect class as anything found before — they were only caught because the rule was applied broadly to every remaining unverified function, not narrowly re-checked for the one pattern already known.
 *References:* `product/02c-high-fidelity-prototype/supabase/migrations/20260915080000_add_item_to_sale_by_tag_column_ambiguity_fix.sql`, `20260915090000_save_event_allocations_column_ambiguity_fix.sql`, `20260915100000_fifo_commit_for_update_aggregate_fix.sql`, `20260915110000_release_from_allocation_for_update_aggregate_fix.sql`; `product/02c-high-fidelity-prototype/supabase/README.md`; `context/stage-7-backend-integration.md`; commits `2522cf8`, `d98f251`, `440a665`.
+
+---
+**2026-10-07 — Backfill notice: the six entries below were written on 2026-10-07, not on the dates they carry**
+
+*Context:* A Session Recovery on 2026-10-07 found this Log's last entry dated
+2026-09-15, while `git log` showed ~60 commits, fourteen `decision-log.md`
+entries (D71–D84) and four RFCs (0015–0018) landed since. Three weeks of real
+project history was invisible to a future session — exactly the failure mode the
+2026-08-05 entry above established this Log to prevent.
+
+*Decision:* Backfill, honestly dated. Each entry below carries the date of the
+work it records; all six were authored on 2026-10-07 from `decision-log.md`,
+the RFCs and `git log`, not from contemporaneous notes. Treat them as accurate
+about *what* and *why*, and as reconstructed about emphasis — a contemporaneous
+entry would have caught things these may not.
+
+*Impact:* The gap was Main's, not the Product Owner's: `company/CLAUDE.md` makes
+maintaining this Log Main's standing job "proactively, without waiting for the
+Product Owner to ask," and the Definition of Done lists it as a closing step for
+every approved decision. Fourteen decision-log entries closed without it. The
+corrective is not a new rule — the rule already existed and was simply not run.
+*References:* `company/CLAUDE.md` ("Project Log", "Session Recovery Protocol");
+`company/lessons.md`.
+
+---
+**2026-09-16/17 — NFC reworked from a selling *mode* into a per-product opt-in, and Web NFC's real platform limits accepted rather than papered over**
+
+*Context:* NFC had been modeled as a Session-scoped exclusive selling mode
+(D23) with a capability gate derived from `subscriptionTier` (D27). Live work on
+real tags showed the model didn't survive contact with either the hardware or
+the merchant's actual mental model.
+
+*Discovery/Decision:* Six decisions, in sequence: `Product.nfcTaggingEnabled` +
+`Business.nfcPerProductEnabled` make NFC a per-product opt-in that *composes*
+with buttons and barcode instead of excluding them (D71); Settings collapses two
+NFC controls into one "Activar NFC" (D72); tagging eligibility drops
+`defaultSellingMode` entirely (D73); **tag identity becomes the tag's factory
+serial number and Nahui never writes to a tag** (D74); the FIFO tag queue is
+scoped per-Product with a server-side eligibility check, having been silently
+business-wide (D76).
+
+D75 is the one worth reading: Android dispatches NFC tags to its own handler
+whenever the web app isn't actively listening, and no amount of UI can make the
+"listening" ring a 100% guarantee. **Accepted as a genuine platform limitation**
+rather than hidden — everything actually inside Nahui's control was closed
+instead (honest unsupported state in production, no simulation, session re-arm
+on `visibilitychange`).
+
+*Impact:* NFC stopped being an either/or mode a merchant commits to and became
+a capability she turns on per garment. The honesty discipline in D75 is the
+transferable part: the ring's limits are documented in the spec, not discovered
+later by a merchant whose tag opened a browser tab instead.
+*References:* `product/00-foundation/decision-log.md` D71–D76;
+`product/99-rfc/0017-nfc-composable-selling-capability.md`;
+`product/02-ux/inventory.md`, `settings.md`; commits `563c3de`, `9e8071a`,
+`bdab340`, `28a4963`, `5f2ae21`, `8b11bba`.
+
+---
+**2026-09-18 — A merchant can correct her on-hand count without inventing a Sale, backed by an append-only ledger**
+
+*Context:* `InventoryUnit` had no way to leave sellable inventory except by
+being sold. A defective or returned garment left the merchant either lying to
+the system or keeping phantom stock.
+
+*Discovery/Decision:* D77 added a `removed` terminal status. D78 then widened it
+— correction became **bidirectional** and got a real `InventoryCorrection`
+append-only ledger, superseding D77's own decrease-only v1 scope the same week it
+landed. The ledger is the load-bearing half: a correction is evidence, not a
+silent mutation, which is what keeps D59's Event-close reconciliation honest.
+
+*Impact:* Closed a gap that would have corrupted every downstream number the
+merchant actually trusts. Also a clean example of this project's supersede-forward
+discipline working at speed — D77 wasn't edited, D78 replaced its scope and said so.
+*References:* `decision-log.md` D77, D78;
+`product/99-rfc/0015-inventory-unit-removal.md`,
+`product/99-rfc/0016-inventory-unit-bidirectional-correction.md`;
+commits `9265d6f`, `3a57e73`.
+
+---
+**2026-09-18 — `Session.operatingMode` retired: NFC becomes a live, composable capability (D79, RFC 0017)**
+
+*Context:* The direct architectural consequence of D71–D76. Once NFC composed
+per-product with buttons and barcode, a Session-scoped *exclusive* mode and NFC
+Readiness's threshold/tri-state resolution both described a product that no
+longer existed.
+
+*Discovery/Decision:* D79 retires `Session.operatingMode` outright, supersedes
+and narrows D23, and touches D27. Capability resolution moves to live state
+rather than a mode chosen at Session start.
+
+*Impact:* Worth flagging for any future agent: `Session.operatingMode` appears
+throughout older Approved specs and older decision-log entries as the *current*
+model. It is not. A follow-on Foundation cleanup on 2026-09-20 (commit `60b6ab3`)
+removed the retired model from `domain-model.md` and rewrote
+`architecture-principles.md` #1, whose worked example had been
+`Session.operatingMode` itself — Foundation was still teaching the retired
+architecture a week after retiring it, caught by the Product Owner, not by a
+review. One known residue is still open: a `nfc ∈ registrationMode` set-notation
+sweep with the D79 cascade.
+*References:* `decision-log.md` D79;
+`product/99-rfc/0017-nfc-composable-selling-capability.md`;
+`product/00-foundation/domain-model.md`, `architecture-principles.md` #1;
+commits `9f0f9c9`, `60b6ab3`.
+
+---
+**2026-09-19/21 — The Catalog card's six hidden tap zones collapse into one tap target and a real Product Page (D80)**
+
+*Context:* Inventario's Catalog row had accumulated six distinct tap zones
+(marker, body, price, photo, NFC toggle, barcode) one amendment at a time, each
+individually justified. A Product Owner-commissioned audit was asked to
+challenge the accumulated interaction model rather than rearrange it.
+
+*Discovery/Decision:* The card becomes **one tap target** into a new Product
+Page (§3.19), with a single `[ Etiquetar ]` shortcut under a hard cap and an
+ordered precedence list. D80 made `Product.barcode` clearable as part of it, so a
+Product is never permanently locked into its original identification method. The
+Product Owner's binding framing for the whole slice: *"we are simplifying the
+interaction model, not replacing six hidden tap zones with a different collection
+of hidden behaviors."*
+
+*Impact:* The slice's value is the standard it set, not the screen. Several
+findings were closed only because that framing was applied as a test — a
+three-shape Level-2 vocabulary with an enforced type-level guard against
+instant-save vocabulary drift, and four binding hit-area requirements, exist
+specifically so the simplification can't quietly re-accumulate. A merchant
+walkthrough on production hardware then found three further real defects
+(pre-filled edit fields inserting instead of replacing, a false confirmation,
+unlabeled Level-1 captions) that no code review had caught.
+*References:* `decision-log.md` D80; `product/02-ux/inventory.md` §3.4/§3.19;
+`product/02c-high-fidelity-prototype/src/screens/ProductPage/`,
+`src/components/DetailRow/`; commits `760547a`, `10b1b84`, `f87a72e`, `d3d7826`.
+
+---
+**2026-09-21 — Event allocation correctness treated as an invariant, not UX polish: three client-side defects, one silently corrupting the ledger (D81, D82, D84)**
+
+*Context:* The audit above surfaced an Eventos tagged-unit allocation bug. The
+Product Owner ruled on it directly: *"Inventory/Event allocation correctness is an
+invariant, not backlog UX polish."* Fix now, unbundled.
+
+*Discovery/Decision:* Three separate decisions, deliberately not bundled. D81 —
+allocation NFC affordances derive from **live tagged-unit state**, never from
+`Product.nfcTaggingEnabled`, widening D80's sourcing rule from *shown* to *shown
+or gated on*. D82 — the manual stepper's **ceiling** counts only what the manual
+pool can actually commit, because a success message must never hide a short
+commit. D84 — the stepper's **value** moves to the `fifo_assignment` basis,
+closing a silent over-commit.
+
+D84 is the one to read in full. The client sent a combined-basis figure against a
+manual-only server baseline, so a merchant who scanned two tagged garments and
+saved could have **four** units reserved, with a success message rendered. It
+ratcheted on every subsequent save, and because the over-committed units were
+written with `unit_source = 'fifo_assignment'` — exactly what D59's Event-close
+reconciliation filters on — she would later be asked to confirm returned
+quantities for garments she never took. `AllocationMovement` is append-only, so
+every occurrence wrote permanent false ledger history.
+
+*Impact:* All three were **client-only**; the server contract was already correct
+and, in D84's case, already documented verbatim in `save_event_allocations`' own
+header. The client simply didn't honor it. The real lesson is where the defect
+lived: D82 amended §3.21's stepper bullet to define the *ceiling's* basis and
+passed directly over the *value's* basis in the same sentence. Both halves of the
+same number are now named together so they can't drift again.
+*References:* `decision-log.md` D81, D82, D84; `product/02-ux/events.md` §3.21;
+`MercanciaParaEsteEvento.tsx`; commits `9ba8770`, `1130bf2`, `cbfe7ea`,
+`f533b35`, `ef2cd68`.
+
+---
+**2026-09-21 — Sold NFC tags stop being permanently claimed: `NFCTag` gains an attachment window (D83, RFC 0018)**
+
+*Context:* `finalize_sale` never deletes `nfc_tags`, so a sold unit keeps its
+`tagId` forever. Since D11 makes tags consumable — each stays with the customer
+as part of the loyalty journey — a tag's serial number was permanently claimed
+even after the physical tag came back. The Product Owner rejected the cheap fix
+explicitly: *"Please solve the lifecycle correctly rather than special-casing the
+validation error... the domain model should not make reuse structurally
+impossible."*
+
+*Discovery/Decision:* D83 gives `NFCTag` an explicit attachment window
+(`detachedAt`), superseding D74 §(C) and amending D11. Reuse becomes structurally
+possible; the returns/reuse *UX* stays deferred, as she allowed.
+
+*Impact:* Two things worth carrying forward. First, `ubiquitous-language.md` was
+the tiebreaker and was itself wrong — its "consumable… released (deleted)" clause
+had to be corrected to "detached" before anything downstream could be consistent
+(`reviewer` I-1). Second, the migration's `pg_get_functiondef` sweep was written
+with `RAISE` guards that fail loudly when an expected pattern isn't present, and
+**the guards caught three drifted function signatures on the first dry run** — a
+silent `replace`-based sweep would have shipped three no-ops. A companion fix
+turned a close-then-open denylist into an allowlist (`reviewer` I-2), and a new
+`supabase/verification/` folder now holds the assertion scripts (11 assertions,
+all passing) rather than leaving verification as a transcript artifact.
+*References:* `decision-log.md` D83;
+`product/99-rfc/0018-nfc-tag-attachment-lifecycle.md`;
+`product/00-foundation/ubiquitous-language.md`, `domain-model.md`;
+`supabase/migrations/20260921000000_nfc_tag_attachment_window.sql`,
+`20260921020000_assign_tag_prior_holder_allowlist.sql`;
+`supabase/verification/README.md`; commits `bcbc1f7`, `02060bd`, `d352c47`.
+
+---
+**2026-09-21/23 — First merchant walkthrough on real production hardware, and the first real adoption signal: silence**
+
+*Context:* The Product Owner directed that the Product Page walkthrough be run
+**on production, on her own account and device**, not against a dev server — the
+first time Nahui's own review pipeline tested the real deployment with a real
+merchant identity.
+
+*Discovery/Decision:* The walkthrough found three defects no code review had
+caught (see the D80 entry above), the most instructive being that `autoFocus`
+without `select()` makes a pre-filled edit field *insert* rather than replace —
+invisible in source, obvious in one tap on a phone. She also confirmed from her
+own device that tags now scan in Inventario but that Selling still sometimes lost
+to Android's own tag dispatch, which is D75's accepted limitation showing up in
+the field exactly as documented.
+
+Separately, she reported that a seller had tried to use the app that day and
+couldn't. Investigation: the site returned 200, Supabase `auth/v1/health` and REST
+both 200 — **not an outage**. The actual finding was in the data:
+**WenPijamas had only an OWNER row and no SELLER**, plus two blank-name
+businesses consistent with invited sellers landing in their own onboarding
+instead of joining an existing business. The invite flow requires an exact email
+match, and nobody had told the owner that. A tier change to paid for WenPijamas
+was prepared as validated SQL for her to run herself. A second pilot merchant,
+AndyToys, had gone quiet with no captures.
+
+*Impact:* The first honest adoption read Nahui has had, and it is not a
+technical one: the product was up the whole time. Two of three pilot merchants
+were blocked or lapsed for reasons no monitoring would surface — an undocumented
+exact-email requirement in the invite flow, and simple disengagement. Worth
+stating plainly because `backlog.md` #1's success bar (≥90% of sales registered,
+<3s each) cannot be measured at all while the merchants who would generate that
+evidence can't get in. Destructive SQL was, as standing practice, never executed
+by Main — validated and handed to the Product Owner to run in the Dashboard.
+*References:* `company/backlog.md` #1; `product/02-ux/inventory.md` §3.19;
+`decision-log.md` D75; commit `d3d7826` (still unpushed as of 2026-10-07).
