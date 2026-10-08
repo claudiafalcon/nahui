@@ -140,6 +140,26 @@ A governance rule change is not adopted the moment it's written — it's adopted
 
 Under the React-first workflow, `ux-critic`/`reviewer`/`merchant-user-tester` increasingly review the running prototype (`product/02c-high-fidelity-prototype/`) directly, per the standard Review Pipeline — but `ubiquitous-language.md` and the Approved `product/02-ux/*.md`/`product/02-ux-loyalty/*.md` specs remain the actual frozen source of truth for terminology, not the prototype. Any terminology or copy decision made directly inside the prototype that diverges from an Approved spec (Nahui's own prior example: "Sesión rápida" → "Venta rápida," "Cerrar sesión" → "Cerrar jornada de venta," both self-disclosed as prototype-only in `product/02c-high-fidelity-prototype/README.md`) must be flagged back through `ux-designer`/`architect` before it's treated as canonical — never silently absorbed as fact merely because it's what everyone reviewing sees running live. A prototype-only naming decision stays disclosed as exactly that until it's actually landed back in the approved spec.
 
+### Dispatch economy — added 2026-10-08, Product Owner instruction
+
+Specialist dispatches are the dominant cost of this project. A single `marketing` dispatch consumed over half a million tokens on 2026-10-08; `ui-designer` ran four passes on one page. The Product Owner raised this directly after a prior session's handover prompt — which asked only to "run the Session Recovery Protocol, then route through our normal governance" — was interpreted by Main as four full specialist reviews in parallel, and exhausted her credits in half an hour.
+
+**That interpretation was Main's choice, not the prompt's instruction.** These rules exist so the same choice is made deliberately next time, with its cost visible.
+
+**1. Scope the dispatch to the question, not to the artifact.** A full review is for a deliverable heading to approval. A question gets a question-shaped dispatch, with the specific files named. An agent that has to discover which files matter reads most of the repository first, and that discovery is the expensive part — not the thinking.
+
+**2. Don't parallelize work that might be discarded.** On 2026-10-08, four reviews ran concurrently on a landing page that was rebuilt from scratch three hours later; two of the four reviewed copy that no longer existed. When an artifact's survival is genuinely uncertain, sequence: establish that it survives, then review it. Parallelism is for independent work that is certainly needed, which is what the Maximize parallel execution section above already says — the failure mode is treating "independent" as sufficient without also asking "certainly needed."
+
+**3. Freeze the contract before dispatching a builder.** `ui-designer` was dispatched against the third revision of a copy contract while the fourth was committed ten minutes later. It correctly stopped rather than absorbing a spec change mid-task, but the pass had to be redone. **Before dispatching a build, confirm no upstream agent is still revising its input.**
+
+**4. Verify directly rather than dispatching, where no specialist judgment is involved.** Resolving a URL, measuring a video, counting occurrences of a string, reading a schema, checking whether a file exists — Main does these. This is not a loosening of "Main never performs a specialist's job": those are facts, not judgments. A dispatch to establish a fact costs orders of magnitude more than running the check.
+
+**5. Prefer resuming an agent over dispatching a fresh one.** A resumed agent keeps its context; a new one re-reads everything to rebuild it. When follow-up work is continuous with what an agent just did, resume it.
+
+**6. Name the cost before incurring it.** When a piece of work will take several dispatches, say so and let the Product Owner choose, rather than doing it and reporting afterwards. This is a genuine exception to the Autonomous coordination posture above — that section authorises proceeding without asking on *sequencing and already-decided work*, and cost is neither. Silence about an expensive choice is not the same as authorisation for it.
+
+**What this does not license.** Skipping a review a deliverable genuinely needs, accepting a specialist's output unverified because re-dispatching costs money, or Main doing specialist work to save a dispatch. The 2026-10-08 session's expensive reviews also found a live privacy notice that had been false for a month, a merchant count inflated by fifty percent, and a page that apologised for its own existence. **The lesson is to aim the spend, not to stop spending.**
+
 ### Delegation
 
 - Low-Fidelity UX work (behavior, flows, ASCII wireframes — also covering the standing feature workflow's Product Definition and UX Flow Review stages, D42) → `ux-designer`
