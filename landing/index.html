@@ -1,0 +1,569 @@
+<!doctype html>
+<!--
+  Nahui — public presentation page.
+
+  Copy:        landing/CONTENT.md  (owner: `marketing`; not written or revised here)
+  Definition:  landing/BRIEF.md
+  Voice:       brand/tone-of-voice.md §"Speaking about Nahui to an investor or evaluator"
+  Tokens:      company/brand/brand-guide.md
+  Write grant: company/infrastructure-decisions.md ID019
+
+  HOW BILINGUAL WORKS — read this before editing a string.
+  Every translatable unit exists EXACTLY ONCE, in this file, as a pair of
+  adjacent elements:
+      <p class="t" data-l="es">…</p>
+      <p class="t" data-l="en" lang="en">…</p>
+  There is no string table in JavaScript. The script only writes data-lang on
+  <html>; CSS decides which of the two shows. Consequences, all deliberate:
+    · Spanish is the static content of the page (BRIEF §6) — with JS off the
+      page renders complete, in words, not placeholders.
+    · Nothing can silently diverge, because nothing is duplicated.
+    · With JavaScript disabled, BOTH languages render (see <noscript> below),
+      so the English reader is never left without a page.
+    · Each claim and its translation sit on adjacent lines, which is the
+      line-by-line parity check CONTENT.md §10 row 5 asks a reviewer to run.
+  data-l says which language VERSION an element belongs to; lang says what
+  language its text actually is. They differ on the language button, whose
+  Spanish-version label is the English word "English".
+
+  TWO PUBLICATION GATES, on <html> below. Each is a one-word edit.
+    data-repo-link="off"     hides every link to the public repository.
+                             Flip to "on" once the privacy scrub lands
+                             (CONTENT.md §8.2). The auditability claim in
+                             "Cómo está construido" stays either way; only
+                             the three links go.
+    data-privacy-link="off"  hides the privacy-notice link in the footer.
+                             Flip to "on" once the notice has a URL of its
+                             own. It must not be the retired demo subdomain
+                             D61 pulled (CONTENT.md §8.3, BRIEF §6).
+
+  STILL OPEN, deliberately not invented here:
+    · The page's own URL (CONTENT.md §8.11). og:url is absent and og:image is
+      relative; both need the absolute base before the page is shared.
+-->
+<html lang="es"
+      data-repo-link="off"
+      data-privacy-link="off"
+      data-title-en="Nahui — Sales registration and business intelligence for bazares in Mexico">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+
+<title>Nahui — Registro de ventas e inteligencia de negocio para bazares en México</title>
+<meta name="description"
+      content="Nahui es una app de registro de ventas e inteligencia de negocio para quienes venden en bazares en México. Está construida, corre en producción con dos negocios reales y está en piloto."
+      data-en="Nahui is a sales-registration and business-intelligence app for people who sell at bazares in Mexico. It is built, it runs in production with two real businesses, and it is in pilot.">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nahui">
+<meta property="og:title" content="Nahui">
+<meta property="og:description"
+      content="Construida y corriendo en producción con dos negocios reales. En piloto, aprendiendo."
+      data-en="Built and running in production with two real businesses. In pilot, learning.">
+<!-- TODO(url): make absolute, and add og:url, once the page's own domain is decided (CONTENT.md §8.11). -->
+<meta property="og:image" content="assets/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Nahui — The path to what's next">
+<meta property="og:locale" content="es_MX">
+<meta property="og:locale:alternate" content="en">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Nahui">
+<meta name="twitter:description"
+      content="Construida y corriendo en producción con dos negocios reales. En piloto, aprendiendo."
+      data-en="Built and running in production with two real businesses. In pilot, learning.">
+<meta name="twitter:image" content="assets/og-image.png">
+<meta name="twitter:image:alt" content="Nahui — The path to what's next">
+
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/favicon-180.png">
+<meta name="theme-color" content="#F4F4F4">
+
+<link rel="preload" href="assets/fonts/fredoka-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+
+<noscript><style>
+  /* No JavaScript: reveal the English that is already in the document rather
+     than hiding it, and mark it as a parallel column. Invents no copy. */
+  .t[data-l="en"] { display: revert; }
+  .t[data-l="en"] { border-left: 2px solid var(--line); padding-left: var(--s4); color: var(--ink-muted); }
+  .dark .t[data-l="en"] { color: var(--on-dark-muted); border-left-color: var(--on-dark-muted); }
+  /* short, inline units read better as "Spanish / English" on one line */
+  .btn .t[data-l="en"], .link .t[data-l="en"], .badge .t[data-l="en"],
+  .tag .t[data-l="en"], .toc .t[data-l="en"], figcaption .t[data-l="en"] {
+    border: 0; padding-left: 0; color: inherit;
+  }
+  .btn .t[data-l="en"]::before, .link .t[data-l="en"]::before,
+  .badge .t[data-l="en"]::before, .tag .t[data-l="en"]::before,
+  .toc .t[data-l="en"]::before, figcaption .t[data-l="en"]::before { content: "\00a0/\00a0"; }
+  .toc ul { display: block; }            /* one contents row per section */
+  .toc li { display: block; }
+  .btn { flex-wrap: wrap; }
+  [data-lang-toggle] { display: none; }  /* a control that cannot work is not shown */
+</style></noscript>
+
+<script>
+  /* Set the language before first paint, so the static Spanish never flashes
+     and is never replaced by anything the document does not already contain. */
+  (function () {
+    var l = 'es';
+    try { var s = localStorage.getItem('nahui-lang'); if (s === 'en' || s === 'es') l = s; } catch (e) {}
+    document.documentElement.setAttribute('data-lang', l);
+  })();
+</script>
+</head>
+
+<body>
+
+<!-- Navigational chrome, not product copy: this label is not in CONTENT.md. -->
+<a class="skip" href="#main"><span class="t" data-l="es">Ir al contenido</span><span class="t" data-l="en" lang="en">Skip to content</span></a>
+
+<header class="header" id="top">
+  <div class="bar wrap">
+    <a class="lockup" href="#top" aria-label="Nahui">
+      <img class="lockup__mark" src="assets/mark.svg" alt="" width="164" height="168">
+    </a>
+
+    <button class="lang" type="button" data-lang-toggle
+            aria-label="Cambiar idioma" data-aria-en="Change language">
+      <svg class="lang__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18C9.4 18.3 9.4 5.7 12 3Z"/>
+      </svg>
+      <span class="t" data-l="es" lang="en">English</span><span class="t" data-l="en" lang="es">Español</span>
+    </button>
+  </div>
+
+  <!-- aria-label below is navigational chrome, not product copy. -->
+  <nav class="toc" aria-label="Secciones" data-aria-en="Sections">
+    <ul class="wrap">
+      <li><a href="#problema"><span class="t" data-l="es">El problema</span><span class="t" data-l="en" lang="en">The problem</span></a></li>
+      <li><a href="#hoy"><span class="t" data-l="es">Qué existe hoy</span><span class="t" data-l="en" lang="en">What exists today</span></a></li>
+      <li><a href="#como-va"><span class="t" data-l="es">Cómo va</span><span class="t" data-l="en" lang="en">How it&rsquo;s going</span></a></li>
+      <li><a href="#construido"><span class="t" data-l="es">Cómo está construido</span><span class="t" data-l="en" lang="en">How it&rsquo;s built</span></a></li>
+      <li><a href="#sigue"><span class="t" data-l="es">Lo que sigue</span><span class="t" data-l="en" lang="en">What&rsquo;s next</span></a></li>
+      <li><a href="#contacto"><span class="t" data-l="es">Contacto</span><span class="t" data-l="en" lang="en">Contact</span></a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main">
+
+<!-- ───────────────────────────── 1 · Hero ───────────────────────────── -->
+<section class="hero">
+  <div class="wrap hero__grid">
+
+    <div class="hero__text">
+      <div class="idlock">
+        <img class="idlock__mark" src="assets/mark.svg" alt="" width="164" height="168">
+        <div>
+        <h1 class="idlock__name">Nahui</h1>
+        <!-- brand.tagline: English in both versions, once, pegged to the name,
+             typographically subordinate to hero.title. CONTENT.md §4.1, §6.10. -->
+        <p class="idlock__tagline" lang="en">The path to what&rsquo;s next</p>
+        </div>
+      </div>
+
+      <p class="badge">
+        <span class="badge__dot" aria-hidden="true"></span>
+        <span class="t" data-l="es">En piloto · México</span><span class="t" data-l="en" lang="en">In pilot · Mexico</span>
+      </p>
+
+      <p class="statement t" data-l="es">Vender en un bazar no deja tiempo para anotar la venta. Nahui existe por eso.</p>
+      <p class="statement t" data-l="en" lang="en">Selling at a <i>bazar</i> leaves no time to write the sale down. That is why Nahui exists.</p>
+
+      <p class="lead t" data-l="es">Nahui es una app de registro de ventas e inteligencia de negocio para quienes venden en bazares en México. Está construida y corriendo en producción con dos negocios reales. Está en piloto: lo que estamos aprendiendo ahora es qué hace falta para que entre de verdad en un día de bazar.</p>
+      <p class="lead t" data-l="en" lang="en">Nahui is a sales-registration and business-intelligence app for people who sell at <i>bazares</i> — the recurring, private pop-up markets where they sell. It is built, and it runs in production with two real businesses. It is in pilot: what we are learning now is what it takes for Nahui to genuinely fit into a day at a <i>bazar</i>.</p>
+
+      <div class="actions">
+        <a class="btn btn--primary" href="mailto:ihola@nahui.app">
+          <span class="t" data-l="es">Escribir a ihola@nahui.app</span><span class="t" data-l="en" lang="en">Write to ihola@nahui.app</span>
+        </a>
+        <a class="btn btn--secondary" href="https://www.nahui.app" target="_blank" rel="noopener">
+          <span class="t" data-l="es">Ver la app</span><span class="t" data-l="en" lang="en">Open the app</span>
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>
+        </a>
+      </div>
+
+      <!-- cta.productNote. CONTENT.md §5 requires it wherever cta.product
+           appears, so that nobody arrives expecting a demo. -->
+      <p class="caption t" data-l="es">Es la app real, en producción. Pide una cuenta para entrar: no es un demo.</p>
+      <p class="caption t" data-l="en" lang="en">This is the real app, in production. It asks for a sign-in: it isn&rsquo;t a demo.</p>
+    </div>
+
+    <figure class="shot">
+      <div class="phone">
+        <picture>
+          <source srcset="assets/app-hoy.webp" type="image/webp">
+          <!-- alt text is assistive chrome, not product copy: not in CONTENT.md.
+               The screen itself stays in Spanish in both versions (BRIEF §6). -->
+          <img src="assets/app-hoy.png" width="540" height="1170" fetchpriority="high"
+               alt="Pantalla de Nahui: «¿Vas a vender hoy?» sobre el botón «Iniciar Venta Rápida»."
+               data-alt-en="A Nahui screen reading “¿Vas a vender hoy?” above a button labelled “Iniciar Venta Rápida”.">
+        </picture>
+      </div>
+      <figcaption>
+        <span class="t" data-l="es">La app real, en español. Es lo que ve la vendedora.</span><span class="t" data-l="en" lang="en">The real app, in Spanish. This is what the merchant sees.</span>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<!-- ─────────────────────────── 2 · El problema ─────────────────────────── -->
+<section class="sec sec--shell" id="problema">
+  <div class="wrap">
+    <h2 class="t" data-l="es">El problema, y de dónde salió</h2>
+    <h2 class="t" data-l="en" lang="en">The problem, and where it came from</h2>
+
+    <!-- Not a testimonial. A paraphrased, attributed learning (CONTENT.md §4.2):
+         no quotation marks, no photograph, no name. Deliberate. -->
+    <div class="pull">
+      <p class="pull__text t" data-l="es">En un bazar la gente llega sin avisar. Si anotar una venta toma más de unos segundos, el siguiente cliente ya está esperando.</p>
+      <p class="pull__text t" data-l="en" lang="en">At a <i>bazar</i>, customers arrive without warning. If writing a sale down takes more than a few seconds, the next customer is already waiting.</p>
+      <p class="pull__src t" data-l="es">Lo que aprendimos en nuestra primera entrevista con una vendedora de bazar.</p>
+      <p class="pull__src t" data-l="en" lang="en">What we learned in our first interview with a <i>bazar</i> vendor.</p>
+    </div>
+
+    <div class="cols">
+      <div>
+        <p class="t" data-l="es">La venta sí se hace. El registro es el que se pierde. Al cerrar el día, lo que queda es una cuenta de memoria — y la memoria del día no sirve para decidir qué surtir el mes que entra.</p>
+        <p class="t" data-l="en" lang="en">The sale still happens. It&rsquo;s the record that gets lost. At the end of the day what&rsquo;s left is a mental tally — and a mental tally is no basis for deciding what to stock next month.</p>
+      </div>
+      <div>
+        <p class="t" data-l="es">Hay una consecuencia menos obvia, y es la que convierte esto en un problema de crecimiento: para no perder el control, una vendedora se limita sola. Mantiene el catálogo chico a propósito, porque es lo que puede llevar en la cabeza. El techo no es la demanda ni el capital: es cuánto cabe en la memoria de cualquiera.</p>
+        <p class="t" data-l="en" lang="en">There&rsquo;s a less obvious consequence, and it&rsquo;s the one that turns this into a growth problem: to stay in control, a merchant limits herself on purpose. She keeps her catalog deliberately small, because small is what she can hold in her head. The ceiling isn&rsquo;t demand and it isn&rsquo;t capital — it&rsquo;s how much anyone can keep in memory.</p>
+      </div>
+    </div>
+
+    <aside class="note">
+      <p class="t" data-l="es">Qué tan firme es esto, dicho con precisión: una entrevista real con una vendedora, más observación de campo acompañándola a varios bazares. Es evidencia de primera mano, y es poca — una vendedora no es un mercado. Saber si esto se generaliza es parte de lo que el piloto tiene que contestar, no algo que ya demos por contestado.</p>
+      <p class="t" data-l="en" lang="en">How solid is this, stated precisely: one real interview with a <i>bazar</i> vendor, plus field observation accompanying her at several <i>bazares</i>. That is first-hand evidence, and it is thin — one merchant is not a market. Whether it generalizes is part of what the pilot has to answer, not something we treat as already answered.</p>
+    </aside>
+  </div>
+</section>
+
+<!-- ────────────────────────── 3 · Qué existe hoy ────────────────────────── -->
+<section class="sec" id="hoy">
+  <div class="wrap">
+    <h2 class="t" data-l="es">Qué existe hoy</h2>
+    <h2 class="t" data-l="en" lang="en">What exists today</h2>
+
+    <p class="lead t" data-l="es">Esto no es una maqueta ni un video. Es la app que corre en nahui.app, en producción, con dos negocios reales dados de alta.</p>
+    <p class="lead t" data-l="en" lang="en">This is not a mockup and not a video. It is the app running at nahui.app, in production, with two real businesses set up on it.</p>
+
+    <ul class="caps">
+      <li class="cap">
+        <h3 class="t" data-l="es">Inventario</h3>
+        <h3 class="t" data-l="en" lang="en"><span lang="es">Inventario</span> <span class="gloss">(inventory)</span></h3>
+        <p class="t" data-l="es">Registrar la mercancía cuando llega, con precio y foto por producto.</p>
+        <p class="t" data-l="en" lang="en">Registering merchandise as it arrives, with a price and a photo per product.</p>
+      </li>
+      <li class="cap">
+        <h3 class="t" data-l="es">Eventos</h3>
+        <h3 class="t" data-l="en" lang="en"><span lang="es">Eventos</span> <span class="gloss">(events)</span></h3>
+        <p class="t" data-l="es">Preparar un bazar: cuándo, dónde, y qué mercancía se lleva a ese evento.</p>
+        <p class="t" data-l="en" lang="en">Setting up a <i>bazar</i>: when, where, and which merchandise goes to that event.</p>
+      </li>
+      <li class="cap">
+        <h3 class="t" data-l="es">Venta con botones</h3>
+        <h3 class="t" data-l="en" lang="en">Selling with buttons</h3>
+        <p class="t" data-l="es">Un toque por producto, sin escribir nada.</p>
+        <p class="t" data-l="en" lang="en">One tap per product, with nothing to type.</p>
+      </li>
+      <li class="cap">
+        <h3 class="t" data-l="es">Venta con código de barras</h3>
+        <h3 class="t" data-l="en" lang="en">Selling by barcode</h3>
+        <p class="t" data-l="es">La cámara del celular lee el código que el producto ya trae de fábrica. Sin base de datos externa: solo los códigos que la vendedora misma dio de alta.</p>
+        <p class="t" data-l="en" lang="en">The phone camera reads the barcode the product already came with. No external database: only the codes the merchant registered herself.</p>
+      </li>
+      <li class="cap">
+        <h3 class="t" data-l="es">Venta con etiquetas NFC</h3>
+        <h3 class="t" data-l="en" lang="en">Selling with NFC tags</h3>
+        <p class="t" data-l="es">Una etiqueta por pieza. Acercarla al teléfono identifica exactamente qué se vendió.</p>
+        <p class="t" data-l="en" lang="en">One tag per item. Held to the phone, it identifies exactly which item sold.</p>
+      </li>
+      <li class="cap">
+        <h3 class="t" data-l="es">Resultados</h3>
+        <h3 class="t" data-l="en" lang="en"><span lang="es">Resultados</span> <span class="gloss">(her results view)</span></h3>
+        <p class="t" data-l="es">Qué se vendió, en qué bazar le fue mejor, qué queda.</p>
+        <p class="t" data-l="en" lang="en">What sold, which <i>bazar</i> went better, what&rsquo;s left.</p>
+      </li>
+      <li class="cap">
+        <h3 class="t" data-l="es">Exportar</h3>
+        <h3 class="t" data-l="en" lang="en"><span lang="es">Exportar</span> <span class="gloss">(export)</span></h3>
+        <p class="t" data-l="es">Las ventas de un rango de fechas, en un archivo que se abre en Excel.</p>
+        <p class="t" data-l="en" lang="en">Sales for a date range, in a file that opens in Excel.</p>
+      </li>
+      <li class="cap">
+        <h3 class="t" data-l="es">Equipo</h3>
+        <h3 class="t" data-l="en" lang="en"><span lang="es">Equipo</span> <span class="gloss">(team)</span></h3>
+        <p class="t" data-l="es">Invitar a alguien de confianza para que venda con su propio acceso, en el mismo evento o en otro al mismo tiempo.</p>
+        <p class="t" data-l="en" lang="en">A merchant can invite someone she trusts to sell with her own access — at the same event, or at another one at the same time.</p>
+      </li>
+    </ul>
+
+    <p class="aside t" data-l="es">Lo que todavía no: Nahui no cobra pagos y no recomienda a qué bazar ir. Lo primero es una decisión deliberada de alcance. Lo segundo necesita datos de muchas vendedoras que hoy no existen, así que no se construye.</p>
+    <p class="aside t" data-l="en" lang="en">What it doesn&rsquo;t do yet: Nahui doesn&rsquo;t process payments, and it doesn&rsquo;t recommend which <i>bazar</i> to attend. The first is a deliberate scope decision. The second needs data from many merchants that doesn&rsquo;t exist yet, so it isn&rsquo;t being built.</p>
+
+    <!-- today.bar — the line that stands in place of any speed promise. -->
+    <div class="barpanel">
+      <span class="barpanel__mark" aria-hidden="true"></span>
+      <p class="t" data-l="es">Y la parte incómoda, porque es la que importa: el registro de ventas tiene una barra escrita desde el principio — que se registre al menos 9 de cada 10 ventas, y que registrar una tome menos de 3 segundos. Es un requisito de diseño, no un resultado medido, y hoy sigue sin cumplirse. Medirlo necesita uso real sostenido, que es exactamente lo que el piloto todavía no tiene.</p>
+      <p class="t" data-l="en" lang="en">And the uncomfortable part, because it is the one that matters: sale registration has had a bar written against it from the start — at least 9 out of every 10 sales recorded, and under 3 seconds to record one. That is a design requirement, not a measured result, and today it is still unmet. Measuring it needs sustained real usage, which is exactly what the pilot doesn&rsquo;t have yet.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────── 4 · Lo que las vendedoras cambiaron — the dated record ─────────── -->
+<section class="sec sec--shell" id="cambiaron">
+  <div class="wrap wrap--narrow">
+    <h2 class="t" data-l="es">Lo que las vendedoras ya cambiaron del producto</h2>
+    <h2 class="t" data-l="en" lang="en">What merchants have already changed in the product</h2>
+
+    <p class="lead t" data-l="es">Tres veces, algo que dijo una vendedora real se volvió una decisión de producto fechada, con su razón escrita, y se construyó. No es una encuesta: es el producto cambiando porque alguien lo usó.</p>
+    <p class="lead t" data-l="en" lang="en">Three times, something a real merchant said became a dated product decision with its reasoning written down, and then got built. This isn&rsquo;t a survey result: it&rsquo;s the product changing because someone used it.</p>
+
+    <!-- Each entry carries its own date stamp. Not a timeline: the entries are
+         not in chronological order, because CONTENT.md §4.4's order is normative. -->
+    <ul class="record">
+      <li class="record__row">
+        <p class="record__stamp"><time datetime="2026-09-05">05.09.2026</time></p>
+        <div class="record__body">
+          <h3 class="t" data-l="es">Una foto por producto</h3>
+          <h3 class="t" data-l="en" lang="en">A photo per product</h3>
+          <p class="t" data-l="es">Dos de las primeras personas que la probaron lo pidieron, por separado, el 5 de septiembre de 2026. Esa semana se volvió decisión de dominio. Está construida.</p>
+          <p class="t" data-l="en" lang="en">Two of the earliest people who tried it asked for this, independently of each other, on 5 September 2026. That same week it became a domain decision. It is built.</p>
+        </div>
+      </li>
+      <li class="record__row">
+        <p class="record__stamp"><time datetime="2026-09-13">13.09.2026</time></p>
+        <div class="record__body">
+          <h3 class="t" data-l="es">Leer el código de barras</h3>
+          <h3 class="t" data-l="en" lang="en">Reading the barcode</h3>
+          <p class="t" data-l="es">Una persona que vende juguetes — mercancía que ya trae código impreso de fábrica — pidió que Nahui lo leyera. Se decidió el 13 de septiembre de 2026, con un límite puesto desde el principio: sin base de datos externa, porque para mercancía de bazar la cobertura no es confiable y el nombre que devolvería no sería el suyo. Está construido.</p>
+          <p class="t" data-l="en" lang="en">Someone who sells toys — merchandise that already carries a manufacturer barcode — asked that Nahui read the code. Decided on 13 September 2026, with a limit set upfront: no external lookup database, because coverage is unreliable for <i>bazar</i> merchandise and the name it would return wouldn&rsquo;t be hers. It is built.</p>
+        </div>
+      </li>
+      <li class="record__row">
+        <p class="record__stamp"><time datetime="2026-09-03">03.09.2026</time></p>
+        <div class="record__body">
+          <h3 class="t" data-l="es">Nos buscó ella</h3>
+          <h3 class="t" data-l="en" lang="en">She reached out to us</h3>
+          <p class="t" data-l="es">El 3 de septiembre de 2026 una vendedora buscó a Nahui por su cuenta, después de probarla. Nadie le escribió. Le servía, y necesitaba algo que no teníamos: que varias personas pudieran vender en el mismo puesto a la vez, cada una con su propio acceso. Eso ya está en el producto. Otras partes de lo que pidió siguen sin construirse.</p>
+          <p class="t" data-l="en" lang="en">On 3 September 2026 a merchant contacted Nahui on her own, after trying it. Nobody messaged her first. It was useful to her, and she needed something we didn&rsquo;t have: several people selling at the same stand at once, each with their own access. That part is now in the product. Other parts of what she asked for are still not built.</p>
+        </div>
+      </li>
+    </ul>
+
+    <p class="aside t" data-l="es">Las tres están en el registro público de decisiones del proyecto, con fecha y con la razón escrita. No hay que creérnoslo: se puede leer.</p>
+    <p class="aside t" data-l="en" lang="en">All three are in the project&rsquo;s public decision log, dated, with the reasoning written out. Nobody has to take our word for it — the log can be read.</p>
+  </div>
+</section>
+
+<!-- ───────────────────────────── 5 · Cómo va ───────────────────────────── -->
+<section class="sec dark" id="como-va">
+  <div class="wrap">
+    <h2 class="t" data-l="es">Cómo va</h2>
+    <h2 class="t" data-l="en" lang="en">How it&rsquo;s going</h2>
+
+    <p class="status t" data-l="es">En piloto, aprendiendo.</p>
+    <p class="status t" data-l="en" lang="en">In pilot, learning.</p>
+
+    <div class="cols">
+      <div>
+        <p class="t" data-l="es">Lo que ya sabemos: el producto funciona y se sostiene en producción. Eso está probado en el campo, en el teléfono de una vendedora, no en una laptop de desarrollo.</p>
+        <p class="t" data-l="en" lang="en">What we already know: the product works, and it holds up in production. That has been checked in the field, on a merchant&rsquo;s own phone, not on a developer&rsquo;s laptop.</p>
+      </div>
+      <div>
+        <p class="t" data-l="es">Lo que no sabemos todavía, y es la pregunta real: la adopción. Que una app funcione y que entre en la rutina de alguien que ya tiene su forma de trabajar son dos cosas distintas, y la segunda no se resuelve construyendo mejor. Esa es la que estamos aprendiendo ahora.</p>
+        <p class="t" data-l="en" lang="en">What we don&rsquo;t know yet, and it is the real question: adoption. An app working and an app becoming part of the routine of someone who already has her own way of working are two different things, and the second one isn&rsquo;t solved by building better. That is the one we are learning now.</p>
+      </div>
+    </div>
+
+    <p class="plain t" data-l="es">Para que quede claro de una vez: Nahui no tiene ingresos, no tiene números de crecimiento y no tiene una cifra de adopción que presentar. Si los tuviéramos, estarían en esta página.</p>
+    <p class="plain t" data-l="en" lang="en">To be plain about it: Nahui has no revenue, no growth numbers, and no adoption figure to show. If we had them, they would be on this page.</p>
+
+    <p class="t" data-l="es">Lo que sí hay es un piloto chico con dos negocios reales, un problema que salió de una persona y no de una suposición, y un ciclo que ya demostró cerrar: una vendedora dice algo, se vuelve una decisión fechada, se construye.</p>
+    <p class="t" data-l="en" lang="en">What there is: a small pilot with two real businesses, a problem that came from a person rather than an assumption, and a loop that has already demonstrably closed — a merchant says something, it becomes a dated decision, it gets built.</p>
+  </div>
+</section>
+
+<!-- ───────────────────── 6 · Cómo está construido ───────────────────── -->
+<section class="sec" id="construido">
+  <div class="wrap">
+    <h2 class="t" data-l="es">Cómo está construido</h2>
+    <h2 class="t" data-l="en" lang="en">How it&rsquo;s built</h2>
+
+    <p class="lead t" data-l="es">Nahui la construye Claudia Falcón, desde México, con un equipo de agentes de IA con roles separados — producto, arquitectura, UX, revisión, marca. Ella decide qué se construye, en qué orden y qué se descarta; los agentes proponen, construyen y se revisan entre sí. Lo interesante no es la herramienta: es que el método deja rastro.</p>
+    <p class="lead t" data-l="en" lang="en">Nahui is built by Claudia Falcón, in Mexico, with a team of AI agents in separate roles — product, architecture, UX, review, brand. She decides what gets built, in what order, and what gets dropped; the agents propose, build, and review each other&rsquo;s work. The interesting part isn&rsquo;t the tooling: it&rsquo;s that the method leaves a trail.</p>
+
+    <ul class="built">
+      <li>
+        <h3 class="t" data-l="es">Registro de decisiones</h3>
+        <h3 class="t" data-l="en" lang="en">Decision log</h3>
+        <p class="t" data-l="es">Cada decisión de producto queda escrita, fechada y con su razón — incluyendo las que después se revocaron, que no se borran. Hoy son más de 80.</p>
+        <p class="t" data-l="en" lang="en">Every product decision is written down, dated, and reasoned — including the ones later reversed, which are never deleted. There are more than 80 of them today.</p>
+      </li>
+      <li>
+        <h3 class="t" data-l="es">RFCs</h3>
+        <h3 class="t" data-l="en" lang="en">RFCs</h3>
+        <p class="t" data-l="es">Un cambio al modelo del negocio no se hace y luego se documenta. Se propone por escrito, se discute y se acepta antes de tocar nada.</p>
+        <p class="t" data-l="en" lang="en">A change to the product&rsquo;s model of the business doesn&rsquo;t get made and then documented. It gets proposed in writing, argued, and accepted before anything is touched.</p>
+      </li>
+      <li>
+        <h3 class="t" data-l="es">Revisión por especialistas</h3>
+        <h3 class="t" data-l="en" lang="en">Specialist review</h3>
+        <p class="t" data-l="es">Cada entrega pasa por revisión de UX, por revisión de consistencia contra la base del producto, y por un recorrido completo de la app hecho por un agente que actúa como una vendedora que la ve por primera vez. Ese agente es un agente, no una vendedora real: corre antes de que una persona real vea algo, precisamente para no gastarle su tiempo en errores que podíamos encontrar nosotros.</p>
+        <p class="t" data-l="en" lang="en">Every deliverable goes through a UX review, a consistency review against the product foundation, and a full walkthrough of the app by an agent acting as a merchant seeing it for the first time. That agent is an agent, not a real merchant: it runs <i>before</i> any real person sees anything, precisely so we don&rsquo;t spend her time on problems we could have caught ourselves.</p>
+      </li>
+      <li>
+        <h3 class="t" data-l="es">Bitácora</h3>
+        <h3 class="t" data-l="en" lang="en"><span lang="es">Bitácora</span> <span class="gloss">(the project log)</span></h3>
+        <p class="t" data-l="es">La historia del proyecto en un solo lugar: qué pasó, por qué importó y dónde está el detalle completo.</p>
+        <p class="t" data-l="en" lang="en">The project&rsquo;s history in one place: what happened, why it mattered, and where the full detail lives.</p>
+      </li>
+      <li>
+        <h3 class="t" data-l="es">Todo esto es auditable</h3>
+        <h3 class="t" data-l="en" lang="en">All of this is auditable</h3>
+        <p class="t" data-l="es">El repositorio es público. El registro de decisiones, los RFCs, los hallazgos de las revisiones y la bitácora están ahí, con su historia de cambios. Lo que esta página afirma sobre el método se puede verificar sin pedirnos permiso.</p>
+        <p class="t" data-l="en" lang="en">The repository is public. The decision log, the RFCs, the review findings and the project log are all in it, with their edit history. What this page claims about the method can be verified without asking us for access.</p>
+        <p class="gate" data-gated="repo">
+          <a class="link" href="https://github.com/claudiafalcon/nahui" target="_blank" rel="noopener">
+            <span class="t" data-l="es">Ver el repositorio</span><span class="t" data-l="en" lang="en">View the repository</span>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>
+          </a>
+        </p>
+      </li>
+    </ul>
+
+    <aside class="note">
+      <p class="t" data-l="es">Hay un segundo objetivo declarado, además del comercial: que Nahui sea también un laboratorio real de ingeniería de IA — memoria de largo plazo, colaboración entre agentes, orquestación, gobernanza. Está escrito como directiva de la empresa, con su propio cuaderno de decisiones, y con una regla explícita: nunca meter IA en una función donde no le dé valor a la vendedora.</p>
+      <p class="t" data-l="en" lang="en">There&rsquo;s a second stated objective alongside the commercial one: that Nahui also be a real laboratory for AI engineering — long-term memory, multi-agent collaboration, orchestration, governance. It is written down as a company directive, with its own decision notebook, and with an explicit rule attached: never force AI into a feature where it gives the merchant no value.</p>
+    </aside>
+  </div>
+</section>
+
+<!-- ─────────────────────────── 7 · Lo que sigue ─────────────────────────── -->
+<section class="sec sec--shell" id="sigue">
+  <div class="wrap">
+    <h2 class="t" data-l="es">Lo que sigue</h2>
+    <h2 class="t" data-l="en" lang="en">What&rsquo;s next</h2>
+
+    <p class="lead t" data-l="es">Tres etiquetas, sin medias tintas.</p>
+    <p class="lead t" data-l="en" lang="en">Three labels, no hedging.</p>
+
+    <ul class="next">
+      <li class="next__row">
+        <p class="tag tag--built">
+          <span class="tag__dot" aria-hidden="true"></span>
+          <span class="t" data-l="es">Ya construido</span><span class="t" data-l="en" lang="en">Built</span>
+        </p>
+        <div class="next__body">
+          <h3 class="t" data-l="es">Registro de ventas</h3>
+          <h3 class="t" data-l="en" lang="en">Sale registration</h3>
+          <p class="t" data-l="es">Construido y en producción. Su barra de calidad — 9 de cada 10 ventas, menos de 3 segundos — sigue sin cumplirse, y sigue siendo la prioridad número uno del proyecto.</p>
+          <p class="t" data-l="en" lang="en">Built and in production. Its quality bar — 9 out of 10 sales, under 3 seconds — is still unmet, and it remains the project&rsquo;s top priority.</p>
+        </div>
+      </li>
+      <li class="next__row">
+        <p class="tag tag--progress">
+          <span class="tag__dot" aria-hidden="true"></span>
+          <span class="t" data-l="es">En camino</span><span class="t" data-l="en" lang="en">In progress</span>
+        </p>
+        <div class="next__body">
+          <h3 class="t" data-l="es">Clientes frecuentes</h3>
+          <h3 class="t" data-l="en" lang="en">Frequent customers</h3>
+          <p class="t" data-l="es">Distinguir a quien compra poquito pero en cada bazar de quien compra mucho pero una vez al año. Hoy una vendedora no tiene con qué saberlo: sus clientas la siguen por redes, no por nombre. Está diseñado y especificado; su construcción va después del registro de ventas, no antes.</p>
+          <p class="t" data-l="en" lang="en">Telling apart the customer who buys a little at every <i>bazar</i> from the one who buys a lot once a year. Today a merchant has nothing to tell them apart with: her customers follow her on social media, not by name. It is designed and specified; building it comes after sale registration, not before.</p>
+        </div>
+      </li>
+      <li class="next__row">
+        <p class="tag tag--hold">
+          <span class="tag__dot" aria-hidden="true"></span>
+          <span class="t" data-l="es">Detenido a propósito</span><span class="t" data-l="en" lang="en">Deliberately on hold</span>
+        </p>
+        <div class="next__body">
+          <h3 class="t" data-l="es">A qué bazar conviene ir</h3>
+          <h3 class="t" data-l="en" lang="en">Which <i>bazar</i> is worth attending</h3>
+          <p class="t" data-l="es">Hoy esa decisión se toma sin datos: sin afluencia, sin clima, y con costos de entrada que van de un par de miles a varios miles de pesos por evento, según el bazar. Resolverlo necesita datos de muchas vendedoras, y Nahui todavía no los tiene. Por eso no se está construyendo: se construiría sobre nada.</p>
+          <p class="t" data-l="en" lang="en">Today that decision gets made with no data: no footfall, no weather, and entry costs running from a couple of thousand to several thousand pesos per event, depending on the <i>bazar</i>. Solving it needs data from many merchants, and Nahui doesn&rsquo;t have that yet. So it isn&rsquo;t being built — it would be built on nothing.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- ───────────────────────────── 8 · Contacto ───────────────────────────── -->
+<section class="sec sec--contact" id="contacto">
+  <div class="wrap wrap--narrow">
+    <h2 class="t" data-l="es">Para quien evalúa proyectos en esta etapa</h2>
+    <h2 class="t" data-l="en" lang="en">For anyone evaluating projects at this stage</h2>
+
+    <p class="lead t" data-l="es">Nahui está en piloto y en una etapa en la que platicar sirve más que presentar. Quien evalúe proyectos así, o tenga interés en lo que estamos aprendiendo del piloto, puede escribirnos a ihola@nahui.app.</p>
+    <p class="lead t" data-l="en" lang="en">Nahui is in pilot, at a stage where a conversation is worth more than a pitch. Anyone who evaluates projects at this stage, or who is interested in what we are learning from the pilot, can write to us at ihola@nahui.app.</p>
+
+    <div class="actions">
+      <a class="btn btn--primary" href="mailto:ihola@nahui.app">
+        <span class="t" data-l="es">Escribir a ihola@nahui.app</span><span class="t" data-l="en" lang="en">Write to ihola@nahui.app</span>
+      </a>
+      <a class="btn btn--secondary" href="https://www.nahui.app" target="_blank" rel="noopener">
+        <span class="t" data-l="es">Ver la app</span><span class="t" data-l="en" lang="en">Open the app</span>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>
+      </a>
+      <a class="btn btn--secondary gate" data-gated="repo" href="https://github.com/claudiafalcon/nahui" target="_blank" rel="noopener">
+        <span class="t" data-l="es">Leer cómo se construyó</span><span class="t" data-l="en" lang="en">Read how it was built</span>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>
+      </a>
+    </div>
+
+    <p class="caption t" data-l="es">Es la app real, en producción. Pide una cuenta para entrar: no es un demo.</p>
+    <p class="caption t" data-l="en" lang="en">This is the real app, in production. It asks for a sign-in: it isn&rsquo;t a demo.</p>
+  </div>
+</section>
+
+</main>
+
+<!-- ─────────────────────────────── 9 · Pie ─────────────────────────────── -->
+<footer class="foot">
+  <div class="wrap foot__grid">
+    <div class="foot__about">
+      <p class="foot__made t" data-l="es">© 2026 Nahui · Hecho en México</p>
+      <p class="foot__made t" data-l="en" lang="en">© 2026 Nahui · Made in Mexico</p>
+      <p class="foot__stage t" data-l="es">Proyecto en piloto. Esta página se actualiza cuando cambia el estado, no cuando conviene.</p>
+      <p class="foot__stage t" data-l="en" lang="en">A project in pilot. This page gets updated when the status changes, not when it is convenient.</p>
+    </div>
+
+    <div class="foot__side">
+      <ul class="foot__links">
+        <li class="gate" data-gated="privacy">
+          <!-- TODO(privacy): destination unresolved (CONTENT.md §8.3).
+               Not the retired demo subdomain (D61, BRIEF §6). -->
+          <a class="link" href="#">
+            <span class="t" data-l="es">Aviso de privacidad</span><span class="t" data-l="en" lang="en">Privacy notice <span class="gloss">(in Spanish)</span></span>
+          </a>
+        </li>
+        <li class="gate" data-gated="repo">
+          <a class="link" href="https://github.com/claudiafalcon/nahui" target="_blank" rel="noopener">
+            <span class="t" data-l="es">Repositorio público</span><span class="t" data-l="en" lang="en">Public repository</span>
+          </a>
+        </li>
+      </ul>
+
+      <button class="lang" type="button" data-lang-toggle
+              aria-label="Cambiar idioma" data-aria-en="Change language">
+        <svg class="lang__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18C9.4 18.3 9.4 5.7 12 3Z"/>
+        </svg>
+        <span class="t" data-l="es" lang="en">English</span><span class="t" data-l="en" lang="es">Español</span>
+      </button>
+    </div>
+  </div>
+</footer>
+
+<script src="i18n.js" defer></script>
+</body>
+</html>
