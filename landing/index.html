@@ -240,8 +240,8 @@
     </div>
 
     <aside class="note">
-      <p class="t" data-l="es">Qué tan firme es esto, dicho con precisión: una entrevista real con una vendedora, más observación de campo acompañándola a varios bazares. Es evidencia de primera mano, y es poca — una vendedora no es un mercado. Saber si esto se generaliza es parte de lo que el piloto tiene que contestar, no algo que ya demos por contestado.</p>
-      <p class="t" data-l="en" lang="en">How solid is this, stated precisely: one real interview with a <i>bazar</i> vendor, plus field observation accompanying her at several <i>bazares</i>. That is first-hand evidence, and it is thin — one merchant is not a market. Whether it generalizes is part of what the pilot has to answer, not something we treat as already answered.</p>
+      <p class="t" data-l="es">De dónde sale esto, con precisión: una entrevista real con una vendedora de bazar, más observación de campo acompañándola a varios bazares. Es evidencia de primera mano y es poca — una vendedora no es un mercado. Decir exactamente cuánta hay es parte del argumento: si esto se generaliza es justo lo que el piloto tiene que contestar.</p>
+      <p class="t" data-l="en" lang="en">Where this comes from, stated precisely: one real interview with a <i>bazar</i> vendor, plus field observation accompanying her at several <i>bazares</i>. That is first-hand evidence and there is little of it — one merchant is not a market. Saying exactly how much there is is part of the argument: whether it generalizes is precisely what the pilot has to answer.</p>
     </aside>
   </div>
 </section>
@@ -306,14 +306,20 @@
       </li>
     </ul>
 
-    <p class="aside t" data-l="es">Lo que todavía no: Nahui no cobra pagos y no recomienda a qué bazar ir. Lo primero es una decisión deliberada de alcance. Lo segundo necesita datos de muchas vendedoras que hoy no existen, así que no se construye.</p>
-    <p class="aside t" data-l="en" lang="en">What it doesn&rsquo;t do yet: Nahui doesn&rsquo;t process payments, and it doesn&rsquo;t recommend which <i>bazar</i> to attend. The first is a deliberate scope decision. The second needs data from many merchants that doesn&rsquo;t exist yet, so it isn&rsquo;t being built.</p>
+    <!-- today.notYet — a plain closing line ON the capability list, not a block
+         of its own: no fill, no border, no rule. It states two scope decisions,
+         so it must not be stacked as a second "not yet" panel above today.bar
+         (CONTENT.md §6.11b). -->
+    <p class="capsnote t" data-l="es">Dos cosas quedan fuera a propósito: cobrar pagos y recomendar a qué bazar ir. Lo primero es una decisión de alcance, tomada y escrita. Lo segundo necesita datos de muchas vendedoras, y mientras esos datos no existan no se construye: sería construir sobre nada.</p>
+    <p class="capsnote t" data-l="en" lang="en">Two things are deliberately out of scope: processing payments, and recommending which <i>bazar</i> to attend. The first is a scope decision, taken and written down. The second needs data from many merchants, and until that data exists it doesn&rsquo;t get built — it would be built on nothing.</p>
 
-    <!-- today.bar — the line that stands in place of any speed promise. -->
-    <div class="barpanel">
-      <span class="barpanel__mark" aria-hidden="true"></span>
-      <p class="t" data-l="es">Y la parte incómoda, porque es la que importa: el registro de ventas tiene una barra escrita desde el principio — que se registre al menos 9 de cada 10 ventas, y que registrar una tome menos de 3 segundos. Es un requisito de diseño, no un resultado medido, y hoy sigue sin cumplirse. Medirlo necesita uso real sostenido, que es exactamente lo que el piloto todavía no tiene.</p>
-      <p class="t" data-l="en" lang="en">And the uncomfortable part, because it is the one that matters: sale registration has had a bar written against it from the start — at least 9 out of every 10 sales recorded, and under 3 seconds to record one. That is a design requirement, not a measured result, and today it is still unmet. Measuring it needs sustained real usage, which is exactly what the pilot doesn&rsquo;t have yet.</p>
+    <!-- today.bar — the section's closing argument, and the line that stands in
+         place of any speed promise. Carries NO status signal by rule: no alert
+         fill, no icon, no state colour (CONTENT.md §6.11a). Its hierarchy comes
+         from width, size and air only. -->
+    <div class="standard">
+      <p class="t" data-l="es">Nahui se fijó una barra antes de construir: que se registre al menos 9 de cada 10 ventas, y que registrar una tome menos de 3 segundos. Es un requisito de diseño, no un resultado medido, y hoy sigue sin cumplirse — medirla necesita uso sostenido en bazares reales, y el piloto todavía no ha generado ese uso. La barra se queda escrita tal cual, como la prioridad número uno del proyecto. Por eso esta página no promete segundos en ninguna parte: publica el estándar y lo deja a la vista.</p>
+      <p class="t" data-l="en" lang="en">Nahui set itself a bar before building anything: at least 9 out of every 10 sales recorded, and under 3 seconds to record one. It is a design requirement rather than a measured result, and today it is unmet — measuring it takes sustained use at real <i>bazares</i>, and the pilot has not produced that use yet. The bar stands exactly as written, as the project&rsquo;s top priority. That is why this page promises no seconds anywhere: it publishes the standard instead.</p>
     </div>
   </div>
 </section>
@@ -379,16 +385,21 @@
         <p class="t" data-l="en" lang="en">What we already know: the product works, and it holds up in production. That has been checked in the field, on a merchant&rsquo;s own phone, not on a developer&rsquo;s laptop.</p>
       </div>
       <div>
-        <p class="t" data-l="es">Lo que no sabemos todavía, y es la pregunta real: la adopción. Que una app funcione y que entre en la rutina de alguien que ya tiene su forma de trabajar son dos cosas distintas, y la segunda no se resuelve construyendo mejor. Esa es la que estamos aprendiendo ahora.</p>
-        <p class="t" data-l="en" lang="en">What we don&rsquo;t know yet, and it is the real question: adoption. An app working and an app becoming part of the routine of someone who already has her own way of working are two different things, and the second one isn&rsquo;t solved by building better. That is the one we are learning now.</p>
+        <p class="t" data-l="es">Lo que no sabemos todavía, y es la pregunta real: la adopción. Que una app funcione y que entre en la rutina de alguien que ya tiene su forma de trabajar son dos cosas distintas, y la segunda no se resuelve construyendo mejor. Esa es la que estamos aprendiendo ahora, y es la razón de que el piloto exista.</p>
+        <p class="t" data-l="en" lang="en">What we don&rsquo;t know yet, and it is the real question: adoption. An app working and an app becoming part of the routine of someone who already has her own way of working are two different things, and the second one isn&rsquo;t solved by building better. That is the one we are learning now, and it is why the pilot exists.</p>
       </div>
     </div>
 
-    <p class="plain t" data-l="es">Para que quede claro de una vez: Nahui no tiene ingresos, no tiene números de crecimiento y no tiene una cifra de adopción que presentar. Si los tuviéramos, estarían en esta página.</p>
-    <p class="plain t" data-l="en" lang="en">To be plain about it: Nahui has no revenue, no growth numbers, and no adoption figure to show. If we had them, they would be on this page.</p>
-
-    <p class="t" data-l="es">Lo que sí hay es un piloto chico con dos negocios reales, un problema que salió de una persona y no de una suposición, y un ciclo que ya demostró cerrar: una vendedora dice algo, se vuelve una decisión fechada, se construye.</p>
-    <p class="t" data-l="en" lang="en">What there is: a small pilot with two real businesses, a problem that came from a person rather than an assumption, and a loop that has already demonstrably closed — a merchant says something, it becomes a dated decision, it gets built.</p>
+    <!-- status.body3 + status.body4 render together, in this order, in one
+         block, always. body3 never closes the section and never stands alone in
+         a card of its own (CONTENT.md §6.11c): the rule down the left side binds
+         the declaration to what follows it. -->
+    <div class="declare">
+      <p class="plain t" data-l="es">Para que quede claro de una vez: Nahui no tiene ingresos, no tiene números de crecimiento y no tiene una cifra de adopción que presentar. Si los tuviéramos, estarían en esta página.</p>
+      <p class="plain t" data-l="en" lang="en">To be plain about it: Nahui has no revenue, no growth numbers, and no adoption figure to show. If we had them, they would be on this page.</p>
+      <p class="declare__then t" data-l="es">Lo que sí hay: un piloto chico con dos negocios reales, un problema que salió de una persona y no de una suposición, y un ciclo que ya demostró cerrar — una vendedora dice algo, se vuelve una decisión fechada, se construye.</p>
+      <p class="declare__then t" data-l="en" lang="en">What there is: a small pilot with two real businesses, a problem that came from a person rather than an assumption, and a loop that has already demonstrably closed — a merchant says something, it becomes a dated decision, it gets built.</p>
+    </div>
   </div>
 </section>
 
@@ -465,8 +476,8 @@
         <div class="next__body">
           <h3 class="t" data-l="es">Registro de ventas</h3>
           <h3 class="t" data-l="en" lang="en">Sale registration</h3>
-          <p class="t" data-l="es">Construido y en producción. Su barra de calidad — 9 de cada 10 ventas, menos de 3 segundos — sigue sin cumplirse, y sigue siendo la prioridad número uno del proyecto.</p>
-          <p class="t" data-l="en" lang="en">Built and in production. Its quality bar — 9 out of 10 sales, under 3 seconds — is still unmet, and it remains the project&rsquo;s top priority.</p>
+          <p class="t" data-l="es">Construido y en producción. Su barra — 9 de cada 10 ventas, menos de 3 segundos — es el estándar con el que se mide, y es la prioridad número uno del proyecto hasta que se cumpla.</p>
+          <p class="t" data-l="en" lang="en">Built and in production. Its bar — 9 out of 10 sales, under 3 seconds — is the standard it gets measured against, and it stays the project&rsquo;s top priority until it is met.</p>
         </div>
       </li>
       <li class="next__row">
@@ -489,8 +500,8 @@
         <div class="next__body">
           <h3 class="t" data-l="es">A qué bazar conviene ir</h3>
           <h3 class="t" data-l="en" lang="en">Which <i>bazar</i> is worth attending</h3>
-          <p class="t" data-l="es">Hoy esa decisión se toma sin datos: sin afluencia, sin clima, y con costos de entrada que van de un par de miles a varios miles de pesos por evento, según el bazar. Resolverlo necesita datos de muchas vendedoras, y Nahui todavía no los tiene. Por eso no se está construyendo: se construiría sobre nada.</p>
-          <p class="t" data-l="en" lang="en">Today that decision gets made with no data: no footfall, no weather, and entry costs running from a couple of thousand to several thousand pesos per event, depending on the <i>bazar</i>. Solving it needs data from many merchants, and Nahui doesn&rsquo;t have that yet. So it isn&rsquo;t being built — it would be built on nothing.</p>
+          <p class="t" data-l="es">Hoy esa decisión se toma sin datos: sin afluencia, sin clima, y con costos de entrada que van de un par de miles a varios miles de pesos por evento, según el bazar. Resolverlo necesita datos de muchas vendedoras, y Nahui todavía no los tiene. Por eso está detenido a propósito: se construiría sobre nada.</p>
+          <p class="t" data-l="en" lang="en">Today that decision gets made with no data: no footfall, no weather, and entry costs running from a couple of thousand to several thousand pesos per event, depending on the <i>bazar</i>. Solving it needs data from many merchants, and Nahui doesn&rsquo;t have that yet. So it is deliberately on hold — it would be built on nothing.</p>
         </div>
       </li>
     </ul>

@@ -357,20 +357,42 @@ h3 { font-size: 1.25rem; line-height: 1.3; }
 .cap h3 { margin-bottom: var(--s2); }
 .cap p { font-size: 0.9375rem; color: var(--ink-muted); }   /* 5.97:1 on white */
 
-.barpanel {
-  position: relative;
+/* today.notYet — the plain closing LINE of the capability list, deliberately
+   not a block: no fill, no border, no left rule, nothing that makes it a panel.
+   It states two scope decisions that were taken, so it must not read as the
+   first of two stacked "not yet" boxes (CONTENT.md §6.11b). Full ink, one step
+   below body size: a confident closer on the list, not small print. */
+.capsnote {
   margin-top: var(--s5);
-  padding: var(--s5) var(--s5) var(--s5) var(--s7);
-  border: 2px solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  max-width: 76ch;
+  max-width: 70ch;
   font-size: 0.9375rem;
+  color: var(--ink);                       /* 13.77:1 — not greyed down */
 }
-.barpanel__mark {
-  position: absolute; left: var(--s5); top: calc(var(--s5) + 0.55em);
-  width: 12px; height: 12px; border-radius: 50%;
-  background: var(--warning);              /* 3.18:1 on white — mark only */
+
+/* today.bar — the section's closing argument, as its own card.
+   CONTENT.md §6.11a, binding: this carries NO status signal. No alert fill, no
+   icon, no state colour, no heavier border than its siblings. The subject of
+   the passage is the standard Nahui set itself before building anything, which
+   is a strength, so its hierarchy is built only from width, type size and air:
+   it is the one full-width card in a section of narrow ones, it sits a full
+   --s8 below the list, and its text runs at body size in full ink while the
+   capability cards run smaller and muted. */
+.standard {
+  margin-top: var(--s8);
+  /* Phone only: widen the measure by stepping outside the wrap's gutter. The
+     closing argument must not end up the narrowest column on the page, which
+     is what card padding inside an already-narrow gutter would make it. */
+  margin-inline: calc(var(--s3) * -1);
+  padding: var(--s5) var(--s4);
+  border: 1px solid var(--line);           /* same weight as every card here */
+  border-radius: var(--r-xl);              /* one step up: a bigger sibling */
+  background: var(--surface);
+  max-width: 72ch;
+}
+.standard p {
+  font-size: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);
+  line-height: 1.62;
+  color: var(--ink);                       /* 13.77:1 */
 }
 
 /* ---------- the dated record --------------------------------------------- */
@@ -401,15 +423,23 @@ h3 { font-size: 1.25rem; line-height: 1.3; }
   line-height: 1.2;
 }
 .dark .cols { margin-bottom: var(--s6); }
+/* status.body3 + status.body4 are ONE block, always, in this order
+   (CONTENT.md §6.11c). The rule down the left belongs to the wrapper, not to
+   body3, which is what stops body3 from ever standing alone or closing the
+   section: the block ends on "lo que sí hay". Inside it, the declaration is
+   full white and the follow-through is the dark band's muted ink, so the
+   sequence reads as one movement rather than two statements. */
+.declare {
+  max-width: 52ch;
+  padding-left: var(--s5);
+  border-left: 3px solid var(--blush);     /* 5.63:1 on obsidian */
+}
 .plain {
   color: var(--on-dark) !important;                      /* 13.77:1 */
   font-size: clamp(1.0625rem, 1.0rem + 0.4vw, 1.25rem);
   line-height: 1.5;
-  max-width: 46ch;
-  padding-left: var(--s5);
-  border-left: 3px solid var(--blush);
-  margin-bottom: var(--s6);
 }
+.declare__then { margin-top: var(--s4); }                /* 8.92:1, via .dark p */
 
 /* ---------- cómo está construido ------------------------------------------ */
 .built { display: grid; gap: 0; margin-top: var(--s2); }
@@ -471,6 +501,7 @@ h3 { font-size: 1.25rem; line-height: 1.3; }
 /* ---------- breakpoints --------------------------------------------------- */
 @media (min-width: 680px) {
   .wrap { padding-inline: var(--s6); }
+  .standard { margin-inline: 0; padding: var(--s6); }
   .cols { grid-template-columns: 1fr 1fr; gap: var(--s6); }
   .toc ul { display: flex; flex-wrap: wrap; column-gap: var(--s6); row-gap: var(--s2); }
   .record__row { grid-template-columns: 7.5rem 1fr; gap: var(--s5); align-items: start; }

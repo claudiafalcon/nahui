@@ -34,6 +34,19 @@ each hides links only — never a claim.
 | `data-repo-link="off"` | The privacy scrub of the files outside this folder has landed (`CONTENT.md` §8.2). Hides three links to the public repository. |
 | `data-privacy-link="off"` | The privacy notice has a URL of its own (`CONTENT.md` §8.3). It must not be the retired demo subdomain (D61). |
 
+## Three layout rules that are not stylistic
+
+`CONTENT.md` §6.11 makes these binding, because the copy and the layout can
+fail the same test separately: a correctly written passage rendered as a grey
+"bad news" panel puts the defect straight back. Each is marked in `index.html`
+and in `styles.css` at the place it applies.
+
+| Rule | How it is held |
+|---|---|
+| `today.bar` must not read as a warning | `.standard` — no alert fill, no icon, no state colour, no heavier border than its siblings. Its weight comes from width, type size and air only. |
+| `today.notYet` and `today.bar` must not share treatment or stack as two muted blocks | `.capsnote` is a plain line on the capability list (no fill, no border, no rule, full ink); `.standard` is a card, a full `--s8` below it. |
+| `status.body3` and `status.body4` always render together, in that order, in one block | `.declare` wraps both. The blush rule belongs to the wrapper, not to `body3`, so `body3` can never stand alone or close the section. |
+
 ## Before this page is shared anywhere
 
 - `og:image` is a **relative** path and there is **no `og:url`**, because the
@@ -87,7 +100,7 @@ alternate is carried, once, in a `data-*` attribute beside it.
 | File | Source |
 |---|---|
 | `assets/mark.svg` | Geometry unchanged from `company/brand/raw-assets/Component 1.svg`. Colours exposed as CSS variables so the halo can match the surface it sits on. |
-| `assets/app-hoy.{webp,png}` | A real capture of the running product's "Hoy" screen, from `company/campaign-assets/`. Stays in Spanish in both language versions (`BRIEF.md` §6). It shows no merchandise, so the approved substitution map does not arise. |
+| `assets/app-hoy.{webp,png}` | A real production capture of the running product mid-sale, 540×1170, supplied by the Product Owner from her own test account (replaced the earlier idle-screen capture, 2026-10-08). Stays in Spanish in both language versions (`BRIEF.md` §6). **Open item:** the screen now shows merchandise — Plumas, Cerveza, Camisas, Papas — which is not the pilot merchant's assortment, but is also not the substitution map `CONTENT.md` §6.3 names as binding for this surface (Bolsas, Accesorios, Playeras, Gorras). Flagged for the Product Owner rather than resolved here. |
 | `assets/og-image.png` | 1200×630. Identity lockup only — no claim, so it serves both languages. |
 | `assets/favicon*` | Derived from `mark.svg`. |
 | `assets/fonts/*` | Fredoka (variable) and Inter 400/500, subset to Latin, converted to woff2. ~97 KB total. |
