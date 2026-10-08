@@ -345,8 +345,43 @@ h3 { font-size: 1.25rem; line-height: 1.3; }
                                   recut ever leaves the two at different sizes,
                                   the still gets cropped, never stretched. No
                                   object-position: there is nothing to crop. */
-  background: var(--surface);  /* a decoding video is never a black box */
   pointer-events: none;        /* evidence, not media: nothing to click */
+
+  /* ---- the box is painted by CSS, not by the `poster` attribute ----------
+     The hero went blank on a real phone, and the cause was measured, not
+     guessed: on a 200 kbps cold load the poster PNG is the LAST thing the
+     page finishes (76 KB, behind the CSS, the document and three fonts), so
+     the box stayed pure white for ~6 s and then painted top-down for ~6 s
+     more. Nothing about `poster` was wrong — Chrome and WebKit both paint it
+     at readyState 0 — it simply had not arrived yet. Moving the same file to
+     a `background-image` alone would have changed nothing, because it is the
+     same file arriving at the same time. So the box is painted in two
+     layers, and the bottom one costs no request at all:
+
+       layer 1 (top)    the real still, 540×1024 — the same URL the `poster`
+                        attribute keeps, so it is already in cache by the
+                        time CSS asks for it and is never fetched twice;
+       layer 2 (bottom) THE SAME FRAME at 20×38, 551 bytes, inline. It
+                        arrives inside this stylesheet, so it is painted at
+                        first style resolution: before the gate runs, before
+                        any image request completes, with JavaScript off, and
+                        forever for a reader who asked for less motion. It is
+                        a real downscale of the real frame — the header band,
+                        the two scan buttons, the four product cards and the
+                        coral action button are all where they will be — so
+                        the handoff is a sharpening, never a substitution.
+
+     The `poster` attribute stays as well: it is what a browser uses when it
+     decides to, and it costs nothing to keep both. With all three present
+     there is no state, and no instant, in which this box can be empty. */
+  background-color: var(--surface);          /* a decoding video is never black */
+  background-image:
+    url("assets/app-loop-poster.png"),
+    url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAmCAMAAADz5UuZAAAAYFBMVEX+/v70+/35+fn49vT09PT78u/08vHy8fH78Oz68Oz67+v58Oz47ejx8O/v7e306ebu6ufx5eLw3tjn4t/j29br2Mvz0cri1M3mycHhwbnVxb3Vu7HEq6LBdmjDTzmpPSizPPhzAAABgklEQVR42mWR2bakIAwAM4ggNrLTrLb//5c3uPQ9M1MPkZQJJ0YQ88nri5hfIENwIdhlvVl8ECCdtd4NKX7lKrTTi5SrkO5GgvapRYP9wsYUUwop6tGuHV6BnXpgrV7haZqXeRngJCvoWlNNqdZQ3Lwu+v1+S1hfUmqNQWqJV+BZS7C91uowJHnOJIT4Sz7zS1jI+Mpp3P8rtwHjnLMBH5mCjSCccbph4BSAkA04ID4EH9KII+OwMUrpRG4mTBi/2jFjlKn7HUo44cH7QO8zcMUIXMUzkAmhHKa294JlnoZ9D8oYozjovu+oWzH1OAqu4+0U+N5bLkiOvb9PzJC9XbKUdkoLvqFstyz5kaWdZId5vtp5qMkGxJiS7MkGpPa2B0IZDb0nHM3jSFPtqdmJMZp7z3FgYKNsgmlsJeacbsmVN6/haMQ5nkqmlJmnqzKf/Rblg4s3+DvUzfY94er+/AcH0vZ/aATicRyfi/HE7IhgPl95vTk+GojGQcq5u3yGrMkPvBQtaqF7ECwAAAAASUVORK5CYII=");
+  background-size: cover;      /* one value, both layers — they are the same
+                                  frame at two sizes, so they crop alike. */
+  background-position: center;
+  background-repeat: no-repeat;
 }
 /* With JavaScript disabled, Chrome and Safari force their own media controls
    onto a <video> that carries none — a play button, a mute toggle and a scrub

@@ -224,6 +224,11 @@
                  also the whole hero when there is no JavaScript, no video
                  support, or no motion wanted — so it is a still that shows a
                  sale in progress, with its chips, its badges and its total.
+               · poster is kept, but it is NOT what guarantees the box is
+                 painted. The still is also drawn as a background-image on
+                 this element, under an inline 551-byte version of the same
+                 frame, so the box has pixels at first style resolution and
+                 cannot be blank in any state (styles.css, .phone video).
                · role="img" + aria-label: a <video> takes no alt, and this is a
                  moving screenshot, not media to operate. The label is
                  assistive chrome, not product copy — not in CONTENT.md,
@@ -635,33 +640,84 @@
 <script src="i18n.js" defer></script>
 
 <script>
-  /* ── The hero loop: motion is opt-in, by the device's own setting ──────────
+  /* ── The hero loop: motion is opt-in, and asking once is not enough ────
      The <video> ships with no autoplay attribute and preload="none". Nothing
      moves, and not one byte of the loop is fetched, unless this runs and the
-     reader has NOT asked for reduced motion. The poster is already painted by
-     then, so there is never an empty box — only a still that may start moving.
-     If the setting changes while the page is open, the loop stops and the
-     poster comes back. No JavaScript at all: the poster stays, which is the
-     hero this page shipped with. Contains no copy. */
+     reader has NOT asked for reduced motion. The box is never empty either
+     way: it is painted by CSS, not by this script (see styles.css, .phone
+     video). Contains no copy.
+
+     Why this is more than one play() call. Reported from a real iPhone: the
+     hero stayed still, and leaving the tab and coming back started it. That
+     is the signature of play() being REJECTED and nothing ever asking again.
+     Safari refuses or defers a play() call far more readily than Chrome —
+     when the tab is not foregrounded at the moment it is called, when the
+     element is off screen (on a phone this hero is below the fold at load),
+     and unconditionally in Low Power Mode. play() returns a promise; a lone
+     call that loses means the loop never existed for that reader.
+
+     So the gate asks again, but only on a real signal — never on a timer:
+       · the element entering the viewport, which is the one that matters on
+         a phone, and which fires again on every scroll back;
+       · the tab becoming visible again, the same visibilitychange signal
+         `decision-log.md` D75 / commit 92f2e1b leaned on when Chrome dropped
+         a Web NFC session on backgrounding. Nothing here claims a state the
+         way that UI did, so there is nothing to re-arm on the way out — only
+         something to re-ask on the way back in;
+       · a bfcache restore, which fires pageshow and not visibilitychange;
+       · the reader's first touch, once. A swipe to scroll is a real gesture,
+         and a gesture is what Safari trusts most.
+
+     And it gives up. Low Power Mode is a battery decision to respect, not a
+     race to win: after LIMIT consecutive refusals nothing asks again, and the
+     still simply stays. A success resets the count, so a reader who scrolls
+     past the hero all afternoon never exhausts it. Reduced motion outranks
+     every one of these signals, including a flip made mid-session. */
   (function () {
     var v = document.getElementById('hero-loop');
     if (!v || !window.matchMedia) return;
     var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    function sync() {
-      if (mq.matches) {
-        v.pause();
-        if (v.currentTime) v.load();      /* back to the poster frame */
-        return;
-      }
+    var LIMIT = 5;          /* bounded: a refusal is an answer, not an error */
+    var refusals = 0;
+
+    function start() {
+      if (mq.matches) return;             /* less motion wins, always */
+      if (refusals >= LIMIT) return;      /* gave up, on purpose */
+      if (!v.paused) return;              /* already running, or already asked */
+      if (document.hidden) return;        /* a backgrounded video will not start */
       v.muted = true;                     /* belt and braces: inline autoplay */
       var p = v.play();
-      if (p && p.catch) p.catch(function () { /* blocked or low power: poster stays */ });
+      if (p && p.then) p.then(function () { refusals = 0; },
+                              function () { refusals++; });
+    }
+
+    function sync() {
+      if (!mq.matches) { start(); return; }
+      v.pause();
+      if (v.currentTime) v.load();        /* back to the poster frame */
     }
 
     sync();
-    if (mq.addEventListener) mq.addEventListener('change', sync);
-    else if (mq.addListener) mq.addListener(sync);
+
+    function onFlip() { refusals = 0; sync(); }   /* a fresh setting, a fresh chance */
+    if (mq.addEventListener) mq.addEventListener('change', onFlip);
+    else if (mq.addListener) mq.addListener(onFlip);
+
+    if (window.IntersectionObserver) {
+      new IntersectionObserver(function (entries) {
+        for (var i = 0; i < entries.length; i++) if (entries[i].isIntersecting) start();
+      }, { threshold: 0.1 }).observe(v);
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) start();
+    });
+    window.addEventListener('pageshow', function (e) { if (e.persisted) start(); });
+
+    var once = { once: true, passive: true };
+    window.addEventListener('touchend', start, once);
+    window.addEventListener('pointerdown', start, once);
   })();
 </script>
 </body>

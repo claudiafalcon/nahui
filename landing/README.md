@@ -120,7 +120,7 @@ beside it.
 |---|---|
 | `assets/mark.svg` | Geometry unchanged from `company/brand/raw-assets/Component 1.svg`. Colours exposed as CSS variables so the halo can match the surface it sits on. |
 | `assets/app-loop.{webm,mp4}` | **The hero.** A silent 12.5s loop of the real product registering a sale — empty grid, Plumas, Papas, total $32, "Cerrando venta…", the finished-sale receipt with its QR code — then back to the empty grid, which reads as the next sale. 540×1024, 30fps, no audio stream at all. VP9 **146 KB** / H.264 **111 KB**. Cut by the Product Owner from her own screen recording on her own test account, 2026-10-08, seconds **5.0–17.5** of the source below. The phone's status and navigation bars are cropped out, which is why it is 146px shorter than `app-hoy.png`. **Recut the same day** (60px off the source before scaling, so the fix cost no quality) because the first cut sliced the app's own bottom tab bar through the middle of its icons. See "The hero loop" below. |
-| `assets/app-loop-poster.png` | The video's `poster`, and therefore the entire hero for a reader who asked for less motion, has no video support or has no JavaScript. It is **frame 7.2s of `app-loop` itself** — the sale standing at two items, with its chips, its badges, its total and its "Finalizar Venta" button. 540×1024, so it matches the loop exactly: no crop, no scaling, no distortion, and a handoff that is invisible because it is the same recording. 256-colour PNG, **76 KB** (max channel delta 0.61 mean against the source frame — no visible banding at any size this page renders). PNG, not WebP, because a `poster` takes one URL and a browser without WebP would get the empty box this hero must never be. |
+| `assets/app-loop-poster.png` | The video's `poster`, and therefore the entire hero for a reader who asked for less motion, has no video support or has no JavaScript. It is **frame 7.2s of `app-loop` itself** — the sale standing at two items, with its chips, its badges, its total and its "Finalizar Venta" button. 540×1024, so it matches the loop exactly: no crop, no scaling, no distortion, and a handoff that is invisible because it is the same recording. 256-colour PNG, **76 KB** (max channel delta 0.61 mean against the source frame — no visible banding at any size this page renders). PNG, not WebP, because a `poster` takes one URL and a browser without WebP would get the empty box this hero must never be. **It is also painted as a CSS `background-image`, over a 551-byte inline copy of the same frame** — see "The box is painted by CSS" below. No second file: the small copy lives in `styles.css` as a `data:` URI. |
 | `assets/Screen_Recording_20261008_081439_Chrome.mp4` | The uncut original, ~76 MB, the Product Owner's own screen recording of her test account. It is the source `app-loop.*` was cut from, and the source for the full 45-second video still to be produced per `video-script.md`. **It must not be committed at that size** — it is deliberately left untracked, and keeping it out of git is the Product Owner's to handle, not this folder's. |
 | `assets/app-hoy.{webp,png}` | A real production capture of the running product mid-sale, 540×1170, supplied by the Product Owner from her own test account. It was the hero until the loop replaced it on 2026-10-08, and was then the loop's `poster` for one pass. **Both files are now kept but unreferenced** — see "Why the poster is not `app-hoy.png`" below; it is a measurement, not a preference. Stays in Spanish in both language versions (`BRIEF.md` §6) if it is ever used again. **Open item, which applies to the loop too:** the screen shows merchandise — Plumas, Cerveza, Camisas, Papas — which is not the pilot merchant's assortment, but is also not the substitution map `CONTENT.md` §6.3 names as binding for this surface (Bolsas, Accesorios, Playeras, Gorras). Flagged for the Product Owner rather than resolved here. |
 | `assets/og-image.png` | 1200×630. Identity lockup only — no claim, so it serves both languages. |
@@ -146,10 +146,109 @@ undo by accident:
   attribute is the single thing that would make the promise unkeepable.
 - If the setting changes while the page is open, the loop stops and the poster
   comes back. Both directions tested.
+- The gate asks more than once, and asking is bounded. See "Why one `play()`
+  call was not enough" below — a retry can never fire under reduced motion,
+  and it gives up after five refusals rather than fight Low Power Mode.
 - **With JavaScript off, nothing moves and nothing is fetched** — the poster is
   the whole hero, which is the hero this page shipped with. That is the safe
   direction for a failure, and the reason the gate is not "remove autoplay if
   reduce" but "add playback if no preference".
+
+### The box is painted by CSS, not by the `poster` attribute
+
+Reported from a real phone, 2026-10-08: the hero was a blank white rectangle,
+and it filled in later. Measured rather than reasoned about, by screencasting
+a throttled cold load frame by frame and reading the pixels inside the box:
+
+| | before | after |
+|---|---|---|
+| 200 kbps, box blank/partly white after it appears | **5.8 s** | **70 ms** (one frame, at 7% opacity of its own fade-in) |
+| 100 kbps, same | **12.1 s** | **86 ms** |
+| poster file blocked entirely | empty box | painted |
+
+The `poster` attribute was never the problem. Chrome and WebKit both paint it
+at `readyState 0`, measured in both — it simply had not **arrived** yet. On a
+200 kbps cold load `app-loop-poster.png` is the *last* thing the page finishes
+(76 KB, behind the stylesheet, the document and three fonts), and until then
+the box has nothing to show. Moving that same file to a CSS `background-image`
+would have changed nothing on its own: same file, same arrival time.
+
+So the box is painted in **two layers** (`styles.css`, `.phone video`), and
+the bottom one costs no request at all:
+
+1. the real still, `assets/app-loop-poster.png` — the same URL the `poster`
+   attribute keeps, so it is never fetched twice;
+2. **the same frame at 20×38, 551 bytes, inline as a `data:` URI.** It arrives
+   inside the stylesheet, so it is painted at first style resolution: before
+   the gate runs, while the real still is in flight, with JavaScript off, and
+   permanently for a reader who asked for less motion. It is a real downscale
+   of the real frame — header band, both scan buttons, the four product cards
+   and the coral action button are all where they will be — so the handoff is
+   a *sharpening*, never a substitution, and on a slow link the real PNG wipes
+   down over it like a photo coming into focus.
+
+The `poster` attribute stays as well. It is what a browser uses when it decides
+to, and keeping all three costs nothing. **There is now no state, and no
+instant, in which that box can be empty** — verified in Chrome and WebKit under
+normal motion, reduced motion, JavaScript disabled, the poster file blocked,
+and the poster *and* video both blocked.
+
+Cost: `styles.css` grows 2.9 KB raw, ~1.6 KB gzipped (the 736-char data URI
+does not compress; the rest is the comment explaining why it is there). The
+page is served Brotli-compressed. Layout shift is unchanged at **CLS 0.012**,
+and the phone contributes **zero** of it in every state — the one shift on the
+page is the hero paragraph when Fredoka swaps in, which predates this and is
+not the phone.
+
+### Why one `play()` call was not enough
+
+Also reported from a real iPhone, same day: the hero stayed still, and
+**leaving the tab and coming back started it.** That is not a paint problem at
+all — it is the signature of `play()` being *rejected* with nothing ever
+asking again. Safari refuses or defers far more readily than Chrome: when the
+tab is not foregrounded at the moment of the call, when the element is off
+screen — and on a phone this hero is **below the fold at load** — and
+unconditionally in Low Power Mode. `play()` returns a promise, and the old
+gate called it exactly once and swallowed the rejection, so for that reader
+the loop had never existed.
+
+The gate now re-asks, but only on a real signal, never on a timer:
+
+- the element **entering the viewport** (`IntersectionObserver`), which is the
+  one that matters on a phone and fires again on every scroll back;
+- the tab **becoming visible** again — the same `visibilitychange` signal
+  `decision-log.md` D75 / commit `92f2e1b` leaned on when Chrome silently
+  dropped a Web NFC session on backgrounding. Nothing here *claims* a state
+  the way that UI did, so there is nothing to re-arm on the way out, only
+  something to re-ask on the way back in;
+- a **bfcache restore**, which fires `pageshow` and not `visibilitychange`;
+- the reader's **first touch**, once. A swipe to scroll is a real gesture, and
+  a gesture is what Safari trusts most.
+
+And it **gives up**. Low Power Mode is a battery decision to respect, not a
+race to win: after five consecutive refusals nothing asks again and the still
+simply stays. A success resets the count, so a reader who scrolls past the
+hero all afternoon never exhausts it.
+
+Verified by emulating Safari's own rules — refuse when hidden, refuse when off
+screen, always refuse in Low Power Mode — in WebKit and in Chrome, against the
+old gate and the new one:
+
+| | old gate | new gate |
+|---|---|---|
+| phone, reader scrolls to the hero | never plays | **plays**, 1 refusal then 1 success |
+| phone, 8 scroll away/back cycles | never plays | **plays**, 2 calls total |
+| desktop, hero in view at load | plays | plays, unchanged |
+| phone, Low Power Mode | never plays | still, 2 calls, **0 video bytes** |
+| reduced motion, every signal above | 0 calls | **0 calls, 0 video bytes** |
+
+**What could not be verified here, stated plainly:** real Safari. "Allow remote
+automation" is off in Safari's Developer settings on this machine and turning
+it on is the Product Owner's call, not a build step — so the Safari evidence
+above is WebKit (Playwright, WebKit 27.2) plus an explicit emulation of
+Safari's refusal rules, not Safari itself. The one remaining check is hers:
+open the deployed page on her iPhone, cold, and confirm the loop starts without
+leaving the tab.
 
 ### Why the poster is not `app-hoy.png`
 
