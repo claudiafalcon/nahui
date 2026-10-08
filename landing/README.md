@@ -202,20 +202,62 @@ not the phone.
 
 ### Why one `play()` call was not enough
 
-Also reported from a real iPhone, same day: the hero stayed still, and
-**leaving the tab and coming back started it.** That is not a paint problem at
-all — it is the signature of `play()` being *rejected* with nothing ever
-asking again. Safari refuses or defers far more readily than Chrome: when the
-tab is not foregrounded at the moment of the call, when the element is off
-screen — and on a phone this hero is **below the fold at load** — and
-unconditionally in Low Power Mode. `play()` returns a promise, and the old
-gate called it exactly once and swallowed the rejection, so for that reader
-the loop had never existed.
+Reported from **macOS Safari**: the hero stayed still, scrolling it out of view
+and back did nothing, and **only switching windows started it**. That is not a
+paint problem — it is `play()` losing, with nothing ever asking again. It took
+two passes to get right, and both failures are worth keeping written down
+because they are different.
 
-The gate now re-asks, but only on a real signal, never on a timer:
+**A `play()` call can lose in two ways, and only one of them is a rejection.**
 
-- the element **entering the viewport** (`IntersectionObserver`), which is the
-  one that matters on a phone and fires again on every scroll back;
+1. **Refused.** Safari rejects far more readily than Chrome: when the tab is
+   not foregrounded at the moment of the call, when the element is off screen,
+   and unconditionally in Low Power Mode. The promise rejects.
+2. **Accepted, then nothing.** With `preload="none"` the browser may take the
+   call, report `paused = false`, and simply not fetch. The promise never
+   settles in either direction.
+
+The first pass handled only (1), and introduced a guard that made (2)
+permanent: `if (!v.paused) return`. Measured directly on the real element, in
+WebKit **and** in Chrome:
+
+| | `paused` | `readyState` |
+|---|---|---|
+| before `play()` | `true` | 0 |
+| **synchronously after `play()`** | **`false`** | **0** |
+| 1.5 s later | `false` | 4 |
+
+`paused` flips **inside the call**, before anything has loaded. So that guard
+does not mean "it is running", it means "we have asked once" — and when Safari
+accepted and then fetched nothing, every later signal was turned away by a
+state that had never become true. The observer fired on every scroll back
+exactly as built; the guard rebounded it. What started the loop on a window
+switch was Safari re-evaluating on its own, not this code.
+
+The guard is now the honest test — `readyState >= 3` (`HAVE_FUTURE_DATA`), only
+true once there are frames — and "accepted but still empty" is *detected* and
+answered by raising `preload` to `auto`, which **resumes a suspended load**
+(measured in both engines: `readyState` 0 → 4, 149 835 bytes, element
+untouched, still paused). Three things about that, each deliberate:
+
+- **It is evidence-based, not speculative.** Forcing the fetch on the *first*
+  attempt would make a device in **Low Power Mode** — which refuses playback
+  outright — pay **146 KB** for a loop it will never show. Measured: in WebKit
+  it does exactly that. So the fetch is only forced once the browser has shown
+  it accepted the call and still has nothing.
+- **Raising `preload`, not calling `load()`.** `load()` *resets* the element,
+  so a signal arriving during a perfectly healthy download would throw it away
+  and start over. Raising `preload` resumes a suspended load and is a no-op on
+  one already running.
+- **It is never left armed.** `sync()` puts `preload` back to `none` the moment
+  less motion is asked for. That attribute *is* the zero-bytes promise.
+
+The gate re-asks only on a real signal, never on a timer:
+
+- the element **entering the viewport** (`IntersectionObserver`) at **two
+  thresholds**, so one unhurried scroll into view is two chances — the second
+  is what catches a browser that silently deferred the first — and it fires
+  again on every scroll back;
 - the tab **becoming visible** again — the same `visibilitychange` signal
   `decision-log.md` D75 / commit `92f2e1b` leaned on when Chrome silently
   dropped a Web NFC session on backgrounding. Nothing here *claims* a state
@@ -227,28 +269,39 @@ The gate now re-asks, but only on a real signal, never on a timer:
 
 And it **gives up**. Low Power Mode is a battery decision to respect, not a
 race to win: after five consecutive refusals nothing asks again and the still
-simply stays. A success resets the count, so a reader who scrolls past the
-hero all afternoon never exhausts it.
+simply stays. A success resets the count, so a reader who scrolls past the hero
+all afternoon never exhausts it.
 
-Verified by emulating Safari's own rules — refuse when hidden, refuse when off
-screen, always refuse in Low Power Mode — in WebKit and in Chrome, against the
-old gate and the new one:
+Verified in WebKit and Chrome against two emulations — Safari's *refusal* rules
+(hidden, off screen, Low Power) and Safari's *silent deferral* (accept, report
+`paused=false`, fetch nothing, never settle) — run against the build she has
+and the build this is:
 
-| | old gate | new gate |
+| under silent deferral | the build she had | now |
 |---|---|---|
-| phone, reader scrolls to the hero | never plays | **plays**, 1 refusal then 1 success |
+| desktop, reader does nothing | **never plays** | **plays**, no action needed |
+| scroll out of view and back | **never plays** | **plays** |
+| switch window away and back | **never plays** | **plays** |
+| phone, hero below the fold, scrolls to it | never plays | **plays** |
+| phone, reader never scrolls | still, 0 bytes | still, 0 bytes, `preload` still `none` |
+
+| under refusal | the build she had | now |
+|---|---|---|
+| phone, reader scrolls to the hero | never plays | **plays** |
 | phone, 8 scroll away/back cycles | never plays | **plays**, 2 calls total |
-| desktop, hero in view at load | plays | plays, unchanged |
-| phone, Low Power Mode | never plays | still, 2 calls, **0 video bytes** |
-| reduced motion, every signal above | 0 calls | **0 calls, 0 video bytes** |
+| desktop, hero in view at load | plays | plays |
+| Low Power Mode, repeated signals | still | still, **0 video bytes** |
+| `play()` always refused, 10 tab cycles | — | **exactly 5 calls, then silence** |
+| reduced motion — idle, scrolled, tapped, `pageshow`, 6 window cycles, all at once | 0 calls | **0 calls, 0 fetches, 0 bytes, `preload` never leaves `none`** |
 
 **What could not be verified here, stated plainly:** real Safari. "Allow remote
-automation" is off in Safari's Developer settings on this machine and turning
-it on is the Product Owner's call, not a build step — so the Safari evidence
-above is WebKit (Playwright, WebKit 27.2) plus an explicit emulation of
-Safari's refusal rules, not Safari itself. The one remaining check is hers:
-open the deployed page on her iPhone, cold, and confirm the loop starts without
-leaving the tab.
+automation" is off in Safari's Developer settings on this machine, and turning
+it on is the Product Owner's call, not a build step — so the evidence above is
+WebKit (Playwright, WebKit 27.2) and Chrome, plus explicit emulations of
+Safari's two failure modes. That gap is exactly how the first pass shipped a
+bug: a refusal-based emulation cannot model a browser that neither refuses nor
+plays. **The remaining check is hers:** open the page on macOS Safari, cold,
+and confirm the loop starts without leaving the tab or scrolling.
 
 ### Why the poster is not `app-hoy.png`
 

@@ -647,18 +647,26 @@
      way: it is painted by CSS, not by this script (see styles.css, .phone
      video). Contains no copy.
 
-     Why this is more than one play() call. Reported from a real iPhone: the
-     hero stayed still, and leaving the tab and coming back started it. That
-     is the signature of play() being REJECTED and nothing ever asking again.
-     Safari refuses or defers a play() call far more readily than Chrome —
-     when the tab is not foregrounded at the moment it is called, when the
-     element is off screen (on a phone this hero is below the fold at load),
-     and unconditionally in Low Power Mode. play() returns a promise; a lone
-     call that loses means the loop never existed for that reader.
+     Why this is more than one play() call. Reported from macOS Safari: the
+     hero stayed still, scrolling it out of view and back did nothing, and
+     only switching windows started it. A lone play() call can lose in two
+     different ways, and this gate has been wrong about both:
+
+       · REFUSED. Safari rejects far more readily than Chrome — when the tab
+         is not foregrounded at the moment of the call, when the element is
+         off screen, and unconditionally in Low Power Mode. The promise
+         rejects; if nothing is listening, the loop never existed.
+       · ACCEPTED, THEN NOTHING. With preload="none" the browser may take the
+         call, report paused=false and simply not fetch. The promise never
+         settles either way. This is the one a rejection-shaped fix does not
+         cover, and it is what she actually hit — see the guard below, which
+         for one build read paused as "it is running" and turned away every
+         later signal because of it.
 
      So the gate asks again, but only on a real signal — never on a timer:
-       · the element entering the viewport, which is the one that matters on
-         a phone, and which fires again on every scroll back;
+       · the element entering the viewport, at two thresholds, so one
+         unhurried scroll into view is two chances — and it fires again on
+         every scroll back;
        · the tab becoming visible again, the same visibilitychange signal
          `decision-log.md` D75 / commit 92f2e1b leaned on when Chrome dropped
          a Web NFC session on backgrounding. Nothing here claims a state the
@@ -680,13 +688,46 @@
 
     var LIMIT = 5;          /* bounded: a refusal is an answer, not an error */
     var refusals = 0;
+    var fetchAsked = false; /* has this element ever been told to load? */
 
     function start() {
       if (mq.matches) return;             /* less motion wins, always */
       if (refusals >= LIMIT) return;      /* gave up, on purpose */
-      if (!v.paused) return;              /* already running, or already asked */
       if (document.hidden) return;        /* a backgrounded video will not start */
+
+      /* ASKED IS NOT PLAYING. `paused` flips to false synchronously, inside
+         the play() call itself, while readyState is still 0 — measured, in
+         WebKit and in Chrome. So `if (!v.paused) return` does not mean "it is
+         running", it means "we have asked once", and in Safari that is a trap:
+         it accepts the call, reports paused=false and then fetches nothing,
+         so every later signal was turned away by a guard reading a state that
+         had never become true. readyState >= 3 (HAVE_FUTURE_DATA) is the
+         honest test — it is only true once there are frames to show. */
+      var deferred = !v.paused && v.readyState < 3;   /* accepted, then nothing */
+      if (!v.paused && !deferred) return;            /* genuinely running */
+
       v.muted = true;                     /* belt and braces: inline autoplay */
+
+      /* preload="none" means this element fetches nothing on its own, and a
+         browser is free to accept play() and then not fetch either. `deferred`
+         above is that state, and it is the ONLY thing that earns an explicit
+         fetch. Not speculation: asking for the bytes on the first attempt
+         would make a device in Low Power Mode — which refuses playback
+         outright — pay 146 KB for a loop it will never show, and measured, in
+         WebKit, it does exactly that.
+
+         Raising `preload` rather than calling load(), and this is the whole
+         reason: load() RESETS the element, so a signal arriving while a
+         perfectly healthy download was in flight would throw it away and
+         start again. Raising preload resumes a suspended load and is a no-op
+         on one already running — measured in both engines: readyState 0 -> 4,
+         149835 bytes, element untouched, still paused. It sits BELOW every
+         guard above on purpose, and `sync()` puts it back to "none" the
+         moment less motion is asked for: this attribute is the zero-bytes
+         promise, so it is never left raised outside the branch that earned
+         it. */
+      if (deferred && !fetchAsked) { fetchAsked = true; v.preload = 'auto'; }
+
       var p = v.play();
       if (p && p.then) p.then(function () { refusals = 0; },
                               function () { refusals++; });
@@ -695,6 +736,8 @@
     function sync() {
       if (!mq.matches) { start(); return; }
       v.pause();
+      v.preload = 'none';                 /* never leave the fetch armed */
+      fetchAsked = false;
       if (v.currentTime) v.load();        /* back to the poster frame */
     }
 
@@ -707,7 +750,10 @@
     if (window.IntersectionObserver) {
       new IntersectionObserver(function (entries) {
         for (var i = 0; i < entries.length; i++) if (entries[i].isIntersecting) start();
-      }, { threshold: 0.1 }).observe(v);
+      }, { threshold: [0.1, 0.6] }).observe(v);   /* two crossings, so one
+                                     unhurried scroll into view is two chances
+                                     — the second is what catches a browser
+                                     that silently deferred the first. */
     }
 
     document.addEventListener('visibilitychange', function () {
