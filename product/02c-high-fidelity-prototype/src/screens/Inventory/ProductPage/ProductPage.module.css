@@ -148,11 +148,57 @@
   color: var(--color-obsidian);
 }
 
+/* `--space-6`, corrected 2026-09-21 (Level-1 captions build): this read
+   `var(--space-5)`, which is not defined anywhere in `tokens.css` — the whole
+   declaration was invalid, so Level 1 has in fact been running with **no**
+   bottom padding at all, its last action sitting almost flush against Level
+   2's divider. Harmless-looking until the captions landed, since the
+   `[ Corregir cantidad ]` caption is now the last thing before that divider
+   and would read as a caption on the rule rather than on the button. Snapped
+   to the real scale's next step up from `.figures`' own 16px rather than
+   inventing a 20px token for one use — a level break should be the largest
+   gap on the level. */
 .actions {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding-bottom: var(--space-5);
+  padding-bottom: var(--space-6);
+}
+
+/* One captioned Level-1 action: the control plus the caption that qualifies
+   it, bound into a single 4px-gapped unit inside `.actions`' 8px rhythm, so
+   the caption reads as attached to the button above it and not as a free line
+   between two buttons. The same grouping device `home.md` §3.6/§3.6b's
+   qualifying line already uses (`Idle.module.css`/`ElegirEvento.module.css`'s
+   `.secondaryActionGroup`), reused rather than re-derived. An uncaptioned
+   action stays a bare `Button` child of `.actions` — the group exists to bind
+   a caption, so an action without one has nothing to bind. */
+.actionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  /* 4px inside the group, 12px (`.actions`' 8px + this) after it — a 3:1
+     ratio, so the caption unmistakably belongs to the button above rather
+     than reading as a line floating between two buttons. `.actions`' own gap
+     is deliberately left at 8px instead of being widened: that would loosen
+     the uncaptioned actions too, for a grouping problem only the captioned
+     ones have. On the last group it adds 4px ahead of the level break, which
+     is absorbed by `.actions`' own bottom padding. */
+  padding-bottom: var(--space-1);
+}
+
+/* §3.19's Level-1 captions (new 2026-09-21). Typographically **the same
+   caption primitive this page already carries** beneath the NFC row
+   (`.rowCaption` below — identical `--text-body-sm`/`#6B6259`), deliberately
+   not `--text-meta`: a page with two different caption sizes would imply two
+   different kinds of statement, and these are the same kind. One level below
+   `.figure`'s `--text-body` so the figures stay the loudest text on Level 1
+   and the captions never compete with the actions they explain. Left-inset 4px
+   to sit on the same optical edge as the row captions. */
+.actionCaption {
+  margin: 0 4px;
+  font: var(--text-body-sm);
+  color: #6B6259;
 }
 
 /* The level break: the shared stitched rule, not a section heading. */

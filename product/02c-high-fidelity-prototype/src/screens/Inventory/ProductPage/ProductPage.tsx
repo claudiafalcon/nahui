@@ -479,18 +479,95 @@ export function ProductPage({
             made the tagging action primary and "Registrar mercancía"
             explicitly secondary *in that one state only*, never gated and
             never moved; this mirrors it exactly, one scope down. */}
+        {/* **Level-1 captions (new 2026-09-21, `merchant-user-tester`
+            walkthrough against production).** A Level-1 action carries a short
+            caption directly beneath it *only when its own label does not
+            already name both what opens and what it covers.* Two of the three
+            do not and are captioned; the third does and deliberately is not.
+
+            **No new pattern** — this is the same caption primitive already
+            standing on this page (the NFC row's `.rowCaption`), in §3.6 (each
+            stepper's own helper line) and in `home.md` §3.6/§3.6b (the
+            qualifying line beneath "Iniciar Venta Rápida," which is where the
+            CTA-plus-tightly-bound-caption *grouping* device comes from —
+            `ElegirEvento.module.css`'s own `.secondaryActionGroup`). Each
+            captioned action is therefore its own 4px-gapped group inside
+            `.actions`' 8px rhythm, so the caption reads as attached to the
+            control above it rather than floating between two buttons, and is
+            wired as that button's `aria-describedby` so it is announced as the
+            control's description and not as a stray paragraph.
+
+            **The invariant the captions carry (binding, §3.19).** Every
+            Level-1 action opens a flow and writes nothing in place; no
+            instant-write action may be added here — a future candidate that
+            would write in place belongs on Level 2 as shape 3, or not on this
+            page. Level 1 has no shape vocabulary because it has only one kind
+            of action and therefore no neighbouring contrast for a shape to be
+            read against (which is exactly what made the Level-2 vocabulary
+            legible). So the invariant is carried in **words** — which is why
+            "Puedes parar cuando quieras," a statement only true of something
+            that *opens*, is part of what the `[ Etiquetar ]` caption says
+            rather than an aside. All three handlers below are navigation
+            only; this build adds no write at Level 1. */}
         <div className={styles.actions}>
           {pending > 0 && (
-            <Button variant="primary" onClick={onEtiquetar}>
-              Etiquetar
-            </Button>
+            /* `[ Etiquetar ]` — captioned. The least-predicted control on the
+               page and its most prominent: the merchant inferred "me pondría
+               a ponerle tags una por una" from the `N sin etiquetar` figure
+               directly above it, called that inference "adivinanza pura,"
+               never tapped it, and only resolved it by opening a different
+               Product. The count is doing its job; the *label* names a verb
+               whose object, purpose and shape all live elsewhere on the page.
+               The caption states all three — what she will be doing, why, and
+               that it is a process she can leave and come back to (§3.14's
+               "Terminar después"). Rendered only while `[ Etiquetar ]` renders,
+               i.e. only while pending tag work exists. Agreement-safe by
+               construction: every inflection agrees with `prenda` or `tag`,
+               never with a merchant-supplied Product name, and it reads
+               correctly at N=1 unchanged. */
+            <div className={styles.actionGroup}>
+              <Button variant="primary" onClick={onEtiquetar} aria-describedby="level1-etiquetar-caption">
+                Etiquetar
+              </Button>
+              <p id="level1-etiquetar-caption" className={styles.actionCaption}>
+                Le pones su tag a cada prenda que falta, para venderla con solo acercar el tag. Puedes parar cuando
+                quieras.
+              </p>
+            </div>
           )}
+          {/* `[ Registrar mercancía ]` — **not captioned, deliberately.** The
+              merchant predicted this one correctly and unprompted; its label
+              already names its object and its destination, and its own
+              pre-expanded box on arrival ("Cantidad recibida" / "Lo que te
+              llegó nuevo") confirms it. A caption on a control that is already
+              understood is reading she has to do for nothing
+              (*global-principles.md*, "the fastest interaction is the one that
+              never happens"). The resulting caption / no-caption / caption
+              rhythm is accepted and mildly useful — it puts a line of text
+              between the two actions she said read alike. */}
           <Button variant={pending > 0 ? 'secondary' : 'primary'} onClick={onRegisterMerchandise}>
             Registrar mercancía
           </Button>
-          <Button variant="secondary" onClick={onCorrectQuantity}>
-            Corregir cantidad
-          </Button>
+          {/* `[ Corregir cantidad ]` — captioned. The same merchant said the
+              two Level-1 buttons read as very similar, sit adjacent, and both
+              end up moving the same number; she distinguishes them from
+              experience, but not quickly. This is that distinction, stated one
+              screen *before* she has to commit to it — the "told before I
+              touched it" property she named as why she trusted the NFC row.
+              **Deliberately a router, not an explanation:** the full,
+              already-reviewed explanation ("Corrígela si algo no cuadra — por
+              ejemplo, piezas defectuosas que regresaste…") is one tap away at
+              §3.6, at the moment she acts on it, and stating it at length here
+              too would be the same fact twice across two screens. Rendered in
+              every state in which this action renders, i.e. always. */}
+          <div className={styles.actionGroup}>
+            <Button variant="secondary" onClick={onCorrectQuantity} aria-describedby="level1-corregir-caption">
+              Corregir cantidad
+            </Button>
+            <p id="level1-corregir-caption" className={styles.actionCaption}>
+              Para cuadrar la cuenta con lo que tienes.
+            </p>
+          </div>
         </div>
 
         {/* ---------------- Level 2 — details and identification -----------

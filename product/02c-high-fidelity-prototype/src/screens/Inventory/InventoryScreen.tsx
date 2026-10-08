@@ -60,6 +60,23 @@ export interface InventoryConfirmation {
   /** §3.12 "Mercancía registrada ✓" — the Product a just-succeeded save was
    * scoped to. */
   savedProductId?: string | null;
+  /**
+   * **§3.12a "Cantidad corregida ✓" (new 2026-09-21) — set when the save that
+   * delivered this confirmation had *only* a correction as its staged
+   * effect.** Qualifies `savedProductId` rather than replacing it: both lines
+   * are the same post-save confirmation on the same origin, differing only in
+   * which fact they state, so they share one carrier and one gate.
+   *
+   * The defect this closes: §3.12's "Mercancía registrada ✓" used to render on
+   * every successful save, so a recount was confirmed as an arrival — and on a
+   * downward correction it claimed an arrival while units were being removed.
+   * **Only the arrival claim is re-scoped.** A save that includes a real
+   * receipt leaves this unset and keeps §3.12/§3.13 exactly as they are, with
+   * or without a correction alongside it: something did arrive, that is the
+   * headline fact, and the correction is visible in the count on the same
+   * screen. **No third, combined string is introduced** (§3.12a).
+   */
+  correctionOnly?: boolean;
   /** §3.13 "Mercancía lista para vender ✓" — a Lot-scoped tagging queue
    * reached zero. Mutually exclusive with `productTagsCompleteId`. */
   tagsComplete?: boolean;
@@ -295,7 +312,7 @@ export function InventoryScreen({
           backLabel={originProduct ? originProduct.name : 'Inventario'}
           preservedDraft={registerDrafts[draftSlot] ?? null}
           onDraftChange={(line) => onRegisterDraftChange(draftSlot, { line })}
-          onSaved={(lastProductId, entryBreakdown) => {
+          onSaved={(lastProductId, entryBreakdown, effect) => {
             // The draft was just committed — it is no longer "staged," so it
             // is dropped here rather than left to resume as a phantom the
             // next time this same operation is opened. This is the one exit
@@ -328,13 +345,29 @@ export function InventoryScreen({
               });
             } else {
               // No line in this Lot is NFC-tagging-eligible (§2 step 3's NO
-              // branch) — §3.6 exit 2: return to origin with §3.12's plain
-              // "registrada" confirmation rendered *there*, never the tagging
-              // queue, and never unconditionally to Catalog view.
+              // branch) — §3.6 exit 2: return to origin with the post-save
+              // confirmation rendered *there*, never the tagging queue, and
+              // never unconditionally to Catalog view.
+              //
+              // **Which of the two lines, §3.12 or §3.12a (new 2026-09-21).**
+              // §3.12's "Mercancía registrada ✓" is now reserved for a save in
+              // which mercancía was actually received; a save whose only
+              // staged effect was a correction — in either direction — renders
+              // §3.12a's "Cantidad corregida ✓" instead. The test is the
+              // save's own reported effect (`SavedEffect`): a real receipt
+              // (`receivedUnits > 0`) is the headline fact whenever it is
+              // true, with or without a correction alongside it, so only a
+              // save with no receipt at all and a real correction takes the
+              // new line. Stated as that conjunction rather than as
+              // `!receivedUnits`, so the §3.12a copy can never render for a
+              // save that somehow carried no effect of either kind.
               onReturnToOrigin({
                 origin,
                 afterWrite: true,
-                confirmation: { savedProductId: lastProductId },
+                confirmation: {
+                  savedProductId: lastProductId,
+                  correctionOnly: effect.receivedUnits === 0 && effect.corrected,
+                },
               });
             }
           }}
@@ -504,12 +537,39 @@ function confirmationCopy(
   // the name, which §3.13a requires ("names the specific Product, not a
   // generic 'lista para vender'"). Second person, plainly stated, never
   // inflated (`brand/tone-of-voice.md`).
+  //
+  // §3.12a (new 2026-09-21) splits the last branch in two, and only that one.
+  // `tagsComplete` deliberately still wins ahead of `correctionOnly`: §3.12a
+  // names exactly one case that still reaches §3.13 and does so correctly — a
+  // positive correction on an NFC-opted-in Product mints fresh untagged
+  // `available` units, so the save auto-enters Asignar tags and completes into
+  // "Mercancía lista para vender ✓", a line about *sellability* that claims
+  // nothing arrived. Only §3.12's line ever made an arrival claim, and only it
+  // is re-scoped.
+  //
+  // **Known, pre-existing gap, flagged rather than silently worked around:**
+  // that auto-entry is not wired for a correction-only save today. The
+  // eligibility test in `onSaved` above reads `entryBreakdown`, which a
+  // correction-only save leaves empty (no `commitLot` runs), so a positive
+  // correction on an NFC-opted-in Product mints taggable units and returns
+  // without entering §3.14 — it surfaces as `N sin etiquetar` + `[ Etiquetar ]`
+  // on the Product Page instead. That predates this change and is untouched by
+  // it; it needs `ux-designer`/`architect` routing, not a unilateral fix here.
+  // This branch ordering is what makes the copy correct the moment it lands.
   const message = confirmation.tagsComplete
     ? 'Mercancía lista para vender ✓'
     : productTagsCompleteName
       ? `Terminaste de etiquetar ${productTagsCompleteName} ✓`
       : savedName
-        ? 'Mercancía registrada ✓'
+        ? // §3.12a: "corregida" agrees with `cantidad`, invariably feminine,
+          // and carries no agreement to a merchant-supplied Product name —
+          // the defect class corrected at §3.13a/§3.4c the same day. It also
+          // reuses the "corregido a N (antes M)" vocabulary §3.11 already
+          // established, so the staged-effect summary and the confirmation use
+          // one word for one fact.
+          confirmation.correctionOnly
+          ? 'Cantidad corregida ✓'
+          : 'Mercancía registrada ✓'
         : null;
   // The mixed-Lot second line only ever accompanies §3.13's own Lot-scoped
   // completion, never a plain "registrada" and never §3.13a's Product-scoped

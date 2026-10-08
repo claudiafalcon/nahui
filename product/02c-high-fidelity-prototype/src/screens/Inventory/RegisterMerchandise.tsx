@@ -33,6 +33,36 @@ type ProductRef =
 export type EntryMode = 'receipt' | 'correction';
 
 /**
+ * **What a just-succeeded "Guardar mercancía" actually did — `inventory.md`
+ * §3.12a (new 2026-09-21).**
+ *
+ * §3.12's "Mercancía registrada ✓" used to render on *every* successful save,
+ * including one whose only staged effect was a correction: a recount was
+ * confirmed as an arrival, and on a *downward* correction it claimed an
+ * arrival while units were being removed. That is a false statement to the
+ * merchant, which is why §3.12a exists and why this shape does.
+ *
+ * So the save reports its own staged effect rather than letting the caller
+ * infer it. `entryBreakdown`'s emptiness would in fact carry the same
+ * information today, but that array exists to seed a tagging queue (AT-M1) —
+ * reading a confirmation's truth value out of it would make this branch
+ * depend on a coincidence between two unrelated facts. **Only the arrival
+ * claim is re-scoped; no third, combined string exists** (§3.12a), so a save
+ * carrying both effects keeps §3.12/§3.13 exactly as they are.
+ */
+export interface SavedEffect {
+  /** Units this save actually *received* — `effectiveReceiptQty`, so a
+   * never-opened receipt section contributes 0 rather than its internal
+   * default of 1. `> 0` means "something did arrive," which §3.12a names as
+   * the headline fact whenever it is true. */
+  receivedUnits: number;
+  /** Whether this save moved the Product's live `available` count through
+   * Cantidad disponible actual — in **either** direction (§3.12a: "a
+   * correction — in either direction"). */
+  corrected: boolean;
+}
+
+/**
  * **`inventory.md` §3.6 exit 1, made real (`ux-critic` Major 4, 2026-09-21):
  * "Anything staged is preserved silently and resumes exactly as she left it."**
  *
@@ -301,7 +331,13 @@ export function RegisterMerchandise({
    * now that a draft is always exactly one Product), so a caller
    * auto-entering Asignar Tags right after can freeze a receipt scoped to
    * only this commit. */
-  onSaved: (lastProductId: string, entryBreakdown: { productId: string; quantity: number }[]) => void;
+  onSaved: (
+    lastProductId: string,
+    entryBreakdown: { productId: string; quantity: number }[],
+    /** §3.12a (new 2026-09-21) — which of the two ambient confirmations this
+     * save has earned. See `SavedEffect`. */
+    effect: SavedEffect,
+  ) => void;
   onBack: () => void;
 }) {
   const { state, commitLot, correctProductAvailableCount } = useStore();
@@ -478,7 +514,12 @@ export function RegisterMerchandise({
     // a brand-new Product, §3.6).
     const lastProductId =
       resolvedProductId ?? (draft.product as { kind: 'existing'; productId: string }).productId;
-    onSaved(lastProductId, entryBreakdown);
+    // §3.12a — the two facts that decide which ambient line this save earns,
+    // reported from the two writes that actually ran rather than re-derived
+    // downstream. `receivedUnits === 0 && corrected` is the correction-only
+    // case; anything with `receivedUnits > 0` is a real receipt and keeps
+    // §3.12/§3.13 unchanged, with or without a correction alongside it.
+    onSaved(lastProductId, entryBreakdown, { receivedUnits: receiptQty, corrected: hasCorrection });
   }
 
   if (saving) {
@@ -499,7 +540,33 @@ export function RegisterMerchandise({
           ← {backLabel}
         </button>
       </div>
-      <h1 className={styles.heading}>Registro de mercancía</h1>
+      {/* **"Cantidad de mercancía" — §3.6's on-screen heading, changed
+          2026-09-21 (`merchant-user-tester` walkthrough against production;
+          supersedes the 2026-08-07 HJR-INV-M1 heading, which it strengthens
+          rather than relaxes).** A merchant tapped §3.19's
+          `[ Corregir cantidad ]` and landed on "Registro de mercancía" — the
+          name of the button directly above the one she deliberately chose
+          ("¿le di al que no era?"). HJR-INV-M1's own fix differentiated
+          heading from CTA by nominalization alone, which stops a heading
+          reading as an echo of the CTA she just tapped but not as the name of
+          a *different* CTA she just declined.
+
+          **One static heading, both entry points — a heading varying by
+          `entryMode` was considered and explicitly rejected by the spec**: it
+          would re-create HJR-INV-M1 one screen over, and it would have to
+          mutate mid-flow the instant she opens the second box, a state this
+          screen supports order-independently. The string takes one noun from
+          each Level-1 action (`cantidad`, `mercancía`) and is identical to
+          neither, and it is the honest common subject of every state this
+          screen has — a receipt, a correction, and both at once all change
+          one Product's quantity.
+
+          The *section title* in `inventory.md` stays "Registro de mercancía,"
+          and so does every prose/comment reference to this screen in this
+          codebase — the same title≠heading relationship §3.19/§3.4a/§3.4b/
+          §3.4c/§3.19a already hold to. `[ Guardar mercancía ]` below is
+          deliberately unchanged, decided rather than overlooked (§3.6). */}
+      <h1 className={styles.heading}>Cantidad de mercancía</h1>
 
       <div className={styles.scroll}>
         <div className={styles.field}>

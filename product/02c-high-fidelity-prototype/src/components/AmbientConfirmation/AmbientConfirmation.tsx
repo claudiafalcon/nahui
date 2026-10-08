@@ -8,8 +8,12 @@ export const AMBIENT_CONFIRMATION_MS = 2400;
  * **`inventory.md`'s ambient confirmation line — one implementation, because
  * the spec binds every instance of it to be identical.**
  *
- * §3.12 ("Mercancía registrada ✓"), §3.13 ("Mercancía lista para vender ✓"),
- * §3.13a ("Terminaste de etiquetar Camisas ✓"), §3.4c's ordinary one-line
+ * §3.12 ("Mercancía registrada ✓"), §3.12a ("Cantidad corregida ✓", new
+ * 2026-09-21 — the correction-only save, which §3.12's line used to confirm
+ * falsely as an arrival; "same ambient, fading, no-tap-to-dismiss shape as
+ * §3.12/§3.13/§3.13a — no new confirmation pattern invented," so it renders
+ * through this same component and not a second path), §3.13 ("Mercancía lista
+ * para vender ✓"), §3.13a ("Terminaste de etiquetar Camisas ✓"), §3.4c's ordinary one-line
  * case ("Código de barras actualizado ✓"), §3.19c ("Código de barras quitado
  * ✓") and §3.4b's "Foto guardada ✓" are all the same shape: **ambient,
  * fading, no tap to dismiss, never a separate screen requiring a tap.**
