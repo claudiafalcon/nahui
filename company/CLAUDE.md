@@ -94,6 +94,21 @@ A permanent, intentionally lightweight historical record — not a changelog, no
 
 A workstream isn't done until these governance steps are done too, not just the underlying work.
 
+### End-of-session persistence — added 2026-10-08, Product Owner instruction
+
+**Persist at the end of a working session, not at the end of a workstream.** The Definition of Done above ties the Project Log and the commit to a workstream completing. Workstreams here span days or weeks, so that rule produced the opposite of its intent: on 2026-10-08 the Project Log's last entry was 2026-09-15, while the repository had moved on by ~60 commits, fourteen `decision-log.md` entries and four RFCs. Nothing was logged because nothing was "complete."
+
+**The cost is paid at recovery, and it is paid in money.** A future session reconstructing three weeks of state has to read the repository rather than the Log, which is exactly the expensive discovery the Dispatch economy section above exists to avoid. The Product Owner raised this directly: *"aunque pasen muchos días sin interacción tú deberías persistir los cambios al final del día, porque si no la recuperación nos cuesta mucho."*
+
+**So, whenever a session has produced real work, before it goes quiet:**
+
+1. **Commit and push it.** Unfinished is fine — an honest in-progress commit is worth more than a clean one that never happens. State plainly in the message what is not done.
+2. **Write the `bitacora.md` entry for what actually happened**, even if the workstream continues tomorrow. An entry describing work in progress is legitimate; the Log records evolution, not only conclusions.
+3. **Leave the open questions where the next session will find them** — the matching decision log, not the conversation. A question that exists only in a transcript does not survive.
+4. **Record what it cost.** Name the specialist dispatches the session made and what each one actually produced. This is the only durable record of dispatch economics, since token counts live in the transcript and die with it — and without it, the Dispatch economy rules above have no evidence to improve against.
+
+**The test for whether this was done:** if this session ended now and a different one resumed tomorrow, would it need to re-derive anything that is currently only in the conversation? If yes, that is the thing to persist before going quiet.
+
 ### Repository Stewardship
 
 Main owns the Git lifecycle of completed workstreams. Repository history is part of Nahui's project memory, alongside the Project Log — a future contributor should be able to understand how the product evolved simply by reading `git log`, the same way they'd read `company/bitacora.md` for the narrative version.
