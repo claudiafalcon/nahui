@@ -1295,6 +1295,7 @@ supported, order-independent:**
 - "Guardar mercancía" composes up to two independent writes for this line
   exactly as before D78: a correction (increase or decrease, per RFC 0016)
   and/or a real receipt, resolved together behind one tap (§4).
+- **"Together" means one transaction — stated explicitly 2026-10-08 (`architect` Decision, no RFC, `decision-log.md` D85).** When both are staged, the correction and the receipt **commit or roll back as a single unit**: a save applies both or applies nothing, never a half-corrected count. That is what makes §3.11's existing error copy — which renders the whole staged effect as still pending — true, and why §4's save branch has exactly two outcomes and no third. **Inside that transaction the correction runs before the receipt**: the correction is target-based, not delta-based (it derives its delta from the live count), so a receipt applied first would sit inside the count her target was measured against and would be silently subtracted back out — the figure she corrected is the pre-receipt one this screen showed her (see the snapshot-until-Guardar bullet above). A spec-accuracy amendment, not a design change: no new state, branch or copy, and §3.11's copy is unchanged.
 
 **Producto resolves to a brand-new Product (§3.8a, either path) — unchanged in spirit, renamed only:**
 ```
@@ -2900,6 +2901,12 @@ Registro de mercancía (3.6) — single Product, one focused operation:
     RFC 0016) and/or a receipt (`source='supplier_delivery'` Lot,
     existing `commitLot()` write) — either, neither, or both, resolved
     together behind one tap
+    [ONE TRANSACTION — amended 2026-10-08, `architect` Decision, no RFC
+     (`decision-log.md` D85): "together" means both writes commit or roll
+     back as one unit, so the two branches below are the only two
+     outcomes — a failed save has applied nothing, which is what makes
+     3.11's summary of the whole staged effect true. Correction ordered
+     before receipt inside the transaction — §3.6]
       → saving (3.10)
       → error (3.11) → Reintentar → saving again
       → success (RETURN TO ORIGIN — §3.6's own rule):
