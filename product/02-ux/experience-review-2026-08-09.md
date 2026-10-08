@@ -4,7 +4,7 @@
 
 ## Core question 1: "Tu negocio" reachable via "Empezar gratis" — Validated
 
-Ana's path: Bienvenida → "Empezar gratis" → "Tu negocio" (business name pre-filled "Ropa Ana") → "Continuar" → "Todo listo" → "Empezar" → Home cold start. She reached and passed through the newly-synced step herself, without any prompting or hint that it was new. **Verification status: Independently Verified** — by Ana's own completed walk through it; this is the actual evidence, not a substitute for it.
+Ana's path: Bienvenida → "Empezar gratis" → "Tu negocio" (business name pre-filled "Luna Mercado") → "Continuar" → "Todo listo" → "Empezar" → Home cold start. She reached and passed through the newly-synced step herself, without any prompting or hint that it was new. **Verification status: Independently Verified** — by Ana's own completed walk through it; this is the actual evidence, not a substitute for it.
 
 ## Core question 2: no `loyaltyEnabled`-style toggle anywhere in Configuración — Validated
 
@@ -24,7 +24,7 @@ Ana: *"almost the entire panel was empty grey space with just one red 'Configura
 
 ## Not treated as a defect — pre-filled business name
 
-Ana found it "strange" / "disorienting" that the "Nombre de tu negocio" field on "Tu negocio" already showed "Ropa Ana" before she'd typed anything. This is the Medium-Fidelity build's established static-content convention for illustrative demo data (the same pattern used throughout this file for seeded/example values), not a build defect or a real product behavior — a real merchant's own field would start empty. **Verification status: Pending Verification** against whether this specific illustrative pre-fill is confusing enough in a demo context to warrant a visual "example data" cue — a felt-experience observation worth logging, not something to silently dismiss, but not acted on in this review.
+Ana found it "strange" / "disorienting" that the "Nombre de tu negocio" field on "Tu negocio" already showed "Luna Mercado" before she'd typed anything. This is the Medium-Fidelity build's established static-content convention for illustrative demo data (the same pattern used throughout this file for seeded/example values), not a build defect or a real product behavior — a real merchant's own field would start empty. **Verification status: Pending Verification** against whether this specific illustrative pre-fill is confusing enough in a demo context to warrant a visual "example data" cue — a felt-experience observation worth logging, not something to silently dismiss, but not acted on in this review.
 
 ## Not reached, in either session — Loyalty Participation / Recompensas content
 

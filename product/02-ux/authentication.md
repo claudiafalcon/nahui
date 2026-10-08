@@ -142,7 +142,7 @@ preference.
    additional one, covering the app itself being closed, backgrounded, or
    killed mid-flow. Losing the token on an ordinary in-flow detour, with
    no error surfaced, would silently strand her in `onboarding.md`'s
-   ordinary Business-creation flow instead of joining Ropa Ana — the
+   ordinary Business-creation flow instead of joining Luna Mercado— the
    exact failure this sentence exists to rule out.
      → A valid session already exists — §2.1 step 1's ordinary test,
        including its own "with no §3.7e confirmation left pending"
@@ -499,7 +499,7 @@ Ordinary entry (no Invitation token carried into this screen):
 │           Nahui                 │
 │                                │
 │  Para aceptar la invitación de   │
-│  Ropa Ana                          │
+│  Luna Mercado                         │
 │                                │
 │  Elige cómo quieres entrar.       │
 │                                │
@@ -517,7 +517,7 @@ Ordinary entry (no Invitation token carried into this screen):
 - All three options are the same visual weight — bracketed, same size, stacked — deliberately not primary/secondary/tertiary the way `onboarding.md §3.3`'s three paths are. *global-principles.md*, "business language before technical language": no raw method-type picker ("Teléfono / Google / Email" as bare labels) — each option is phrased as the actual action she takes ("Continuar con...").
 - **Order (Google, Correo, Número celular) is a stated judgment call, not a priority ranking.** Google is listed first because it's genuinely the lowest-friction of the three when she's already signed into a Google account on her device (zero typing at all); phone is listed last, not because it's lesser, but because the exact motivating trigger for this activation (`decision-log.md` D62 — some prospective merchants are reluctant to register a phone number at all under the current government policy) means a phone-reluctant merchant shouldn't have to visually pass it first. Not asserted as validated — worth revisiting once real merchant reaction exists (Hypothesis-tagged, `tone-of-voice.md`'s own posture toward untested register choices).
 - Copy never names "OTP," "AuthIdentity," "credential," or "provider" — "correo," "número celular," "Google" (a proper noun she already knows, not a technical concept) are the only words used.
-- **[Added 2026-09-14, closes `ux-critic` M1.]** The Invitation-context variant's added line ("Para aceptar la invitación de [Business.name]") replaces "Para empezar," never stacks alongside it — the same `Business.name` variable §3.10's own offer copy already fills, reused rather than reworded. This same line — as the first line of body content on the screen, stacked above whatever else that screen already shows, never replacing any of its own existing copy — renders identically at every other screen §2.0's token-carrying context reaches: §3.2b–§3.2f, §3.3–§3.7d, §3.7e alike, for the whole duration described at §2.0 step 4. Illustrated once, here; reused verbatim at every other screen, per this folder's own §4 shared-state citation rule — one line of context copy threaded through screens this document already designs, not a new screen family. Disappears the moment §2.2a's own acceptance write runs — §3.10a onward already names Ropa Ana explicitly in its own copy, so nothing further is needed there.
+- **[Added 2026-09-14, closes `ux-critic` M1.]** The Invitation-context variant's added line ("Para aceptar la invitación de [Business.name]") replaces "Para empezar," never stacks alongside it — the same `Business.name` variable §3.10's own offer copy already fills, reused rather than reworded. This same line — as the first line of body content on the screen, stacked above whatever else that screen already shows, never replacing any of its own existing copy — renders identically at every other screen §2.0's token-carrying context reaches: §3.2b–§3.2f, §3.3–§3.7d, §3.7e alike, for the whole duration described at §2.0 step 4. Illustrated once, here; reused verbatim at every other screen, per this folder's own §4 shared-state citation rule — one line of context copy threaded through screens this document already designs, not a new screen family. Disappears the moment §2.2a's own acceptance write runs — §3.10a onward already names Luna Mercadoexplicitly in its own copy, so nothing further is needed there.
 
 **Behavior:** "Continuar con número celular" → §3.3 (unchanged content, amended entry point). "Continuar con correo" → §3.2e. "Continuar con Google" → §3.2b.
 
@@ -587,7 +587,7 @@ Reached on a paste producing a value that satisfies the loose "@ plus something"
 ┌───────────────────────────────┐
 │                                │
 │  Para aceptar la invitación de   │
-│  Ropa Ana                          │
+│  Luna Mercado                         │
 │                                │
 │  Te vamos a mandar un código al    │
 │  correo con el que te invitaron:    │
@@ -881,7 +881,7 @@ every other retryable read in this document.
 │           Nahui                 │
 │                                │
 │  Te invitaron a vender con        │
-│  Ropa Ana.                        │
+│  Luna Mercado.                        │
 │                                │
 │  Vas a poder abrir tus propias    │
 │  sesiones de venta y registrar     │
@@ -946,7 +946,7 @@ every other retryable read in this document.
 ### 3.10a Aceptando invitación — near-instant / slow
 ```
 ┌───────────────────────────────┐        ┌───────────────────────────────┐
-│        ▢▢▢▢▢▢▢▢▢▢▢▢            │        │  Uniéndote a Ropa Ana…          │
+│        ▢▢▢▢▢▢▢▢▢▢▢▢            │        │  Uniéndote a Luna Mercado…          │
 └───────────────────────────────┘        └───────────────────────────────┘
    near-instant: silent skeleton              slow (>~1.5s): one plain line
 ```
@@ -969,7 +969,7 @@ Reached only on the write's own genuine platform-error outcome (§2.2a) — same
 │           Nahui                 │
 │                                │
 │  Ya quedaste registrada con        │
-│  Ropa Ana.                         │
+│  Luna Mercado.                         │
 │                                │
 │  Cuando quieras vender, abre       │
 │  tu sesión aquí.                    │
@@ -981,7 +981,7 @@ Reached only on the write's own genuine platform-error outcome (§2.2a) — same
 │                                │
 └───────────────────────────────┘
 ```
-- **Copy reuses the exact register `tone-of-voice.md` itself names as the concrete example of "celebration is about her, plainly stated, never inflated"** — "Ya quedaste registrada con Ropa Ana" is that document's own worked example, applied here rather than invented fresh. No confetti-shaped language, no exclamation, no framing this as Nahui's own accomplishment.
+- **Copy reuses the exact register `tone-of-voice.md` itself names as the concrete example of "celebration is about her, plainly stated, never inflated"** — "Ya quedaste registrada con Luna Mercado" is that document's own worked example, applied here rather than invented fresh. No confetti-shaped language, no exclamation, no framing this as Nahui's own accomplishment.
 - One tap, "Ir a Hoy" — hands off into `home.md §2`'s own resolution, now reading a real, active SELLER Membership for the first time.
 - Reached only on §2.2a's `success` outcome.
 - **Added 2026-09-15 (`decision-log.md` D69/D70, `ux-critic` Major, closed) — a passive, zero-required-tap line pointing at "Tu cuenta."** `settings.md` §2.5 explicitly reasons against adding a `displayName` *field* to this screen (the fastest interaction is the one that never happens, and nothing at acceptance-time needs the name) — that reasoning is unaffected and still correct. What was missing, found by `ux-critic`: a SELLER onboarded this way never sees "Tu equipo," "Vendiendo ahorita," or "Exportar tus ventas" (all OWNER-only), so she had no way to ever learn anyone sees "Alguien de tu equipo" on her behalf, or that a fix exists — "Tu cuenta" existing self-service is not the same as her knowing it exists. This one informational line closes that discoverability gap without adding a field, a tap, or a decision to make right now — she can act on it later, or never, exactly as before.
@@ -994,7 +994,7 @@ accept_invitation outcome: already_member)
 │           Nahui                 │
 │                                │
 │  Ya formas parte del equipo       │
-│  de Ropa Ana.                     │
+│  de Luna Mercado.                     │
 │                                │
 │  Cuando quieras vender, abre       │
 │  tu sesión aquí.                    │
@@ -1024,7 +1024,7 @@ accept_invitation outcome: membership_revoked)
 │           Nahui                 │
 │                                │
 │  Ya no tienes acceso para          │
-│  vender con Ropa Ana.               │
+│  vender con Luna Mercado.               │
 │                                │
 │  Si crees que esto es un error,     │
 │  habla con quien te invitó.          │
@@ -1349,7 +1349,7 @@ None of the items below block this document's own completion. Both are named exp
 5. **`brand-guardian` consultation complete (2026-08-13)** — §3.7c's "too many attempts" copy revised per that consultation's finding (subject/causal-structure fix, same soft-invalidation design); flagged as `tone-of-voice.md`-Hypothesis-tagged, worth a real merchant-reaction check once shipped, not blocking now.
 6. **Multi-Business membership intersecting with a pending Invitation — narrowed 2026-09-14, RFC 0013.** Sub-case (a) is superseded outright, not merely resolved: the 2026-09-07 fix it described (a special session-resume check for a zero-standing-anywhere User) no longer exists to need special-casing, since §2.0's token-based discovery reaches every population identically regardless of prior device history — there's no longer an "intersection" for this half at all. Sub-case (b) narrows to what it was always really about: **Business-switching UI.** Accepting a new Business's Invitation while already holding an active Membership elsewhere now works cleanly through §2.0/§2.2a (multi-Business membership is already valid domain-wise, Q24/Q25) — what's still genuinely undesigned is a way to *switch between* Businesses once she holds more than one Membership. `product-decisions.md` Q24/Q25 item 3 already names this gap; not solved here.
 7. **Superseded by RFC 0013, not merely resolved.** The multi-pending-Invitation tie-break no longer applies — a token always identifies exactly one Invitation, so there's no ambiguity left to tie-break. See §2.2a step 4.
-8. **`brand-guardian` consultation complete (2026-09-07).** Finding: §3.10's offer copy correctly applies the peer-to-peer register question posed; no issue found there. §3.10c's welcome copy — which reuses `tone-of-voice.md`'s own worked exemplar ("Ya quedaste registrada con Ropa Ana") verbatim — was flagged on a narrower point: the verb ("quedaste registrada," a passive connotation) may undersell that a Seller accepting an invitation just gained real active capability (open Sessions, register Sales), not merely been added to a list. Called explicitly Minor and non-blocking — the very next line ("Cuando quieras vender, abre tu sesión aquí") resolves the ambiguity within about a second of reading. **`ux-designer` call, documented here rather than resolved by editing the screen: left as-is for now**, deliberately deferred rather than adjusted — changing this exemplar's own verb would mean deviating from the literal reused text `tone-of-voice.md` itself cites, which deserves its own pass rather than an ad hoc tweak folded into this unrelated remediation. Revisit if this screen is next substantively touched — a candidate replacement already on record: "Ya puedes vender con Ropa Ana," which carries the active-capability meaning more directly.
+8. **`brand-guardian` consultation complete (2026-09-07).** Finding: §3.10's offer copy correctly applies the peer-to-peer register question posed; no issue found there. §3.10c's welcome copy — which reuses `tone-of-voice.md`'s own worked exemplar ("Ya quedaste registrada con Luna Mercado") verbatim — was flagged on a narrower point: the verb ("quedaste registrada," a passive connotation) may undersell that a Seller accepting an invitation just gained real active capability (open Sessions, register Sales), not merely been added to a list. Called explicitly Minor and non-blocking — the very next line ("Cuando quieras vender, abre tu sesión aquí") resolves the ambiguity within about a second of reading. **`ux-designer` call, documented here rather than resolved by editing the screen: left as-is for now**, deliberately deferred rather than adjusted — changing this exemplar's own verb would mean deviating from the literal reused text `tone-of-voice.md` itself cites, which deserves its own pass rather than an ad hoc tweak folded into this unrelated remediation. Revisit if this screen is next substantively touched — a candidate replacement already on record: "Ya puedes vender con Luna Mercado," which carries the active-capability meaning more directly.
 9. **`settings.md §8` items 11 (cancelling a pending Invitation) and 12 (`Invitation.status = expired`'s trigger/timing) — both resolved in `settings.md`, 2026-09-13 (RFC 0013/D64). This document's §3.13a now correctly composes against that model as of this amendment (2026-09-14) — the "stale" framing previously logged here is closed, not merely noted.** This document's §3.13a defensive state was originally written to cover *either* outcome without needing to distinguish them — that framing itself was stale too, since it was written under the old phone-keyed model. `reviewer`-caught staleness (2026-09-13, closed): this item and §11's own matching reference both repeated the same now-false "unresolved there" claim as §2.2a step 1's inline parenthetical — all three pointed at the same fact, corrected in the 2026-09-13 pass rather than only at the one instance originally caught. Now further closed, for real, by this 2026-09-14 amendment reworking §3.13a itself against RFC 0013.
 10. **Resolved by this amendment (2026-09-14) — see the front-matter status header.** §2.0/§2.2/§2.2a/§3.9a-§3.9b/§3.10-§3.13a now compose cleanly against the token-based RFC 0013 domain model. Full detail: this entire amendment.
 11. **New Product Decision — account linking (`product/02-ux/product-decisions.md` Q26, `decision-log.md` D62/D63, RFC 0012 §5 Open Item 1, now live per D63) — added 2026-09-13, logged Q26 same day (`ux-critic`-caught documentation-persistence gap, closed).** Should Nahui ever offer a way for a merchant to link a second method to her existing identity (e.g., someone who signed up via Google later wants phone/WhatsApp too)? Not designed here — RFC 0012 §5 Invariant C already names the structural risk this activation makes live for the first time: the same real person completing cold sign-up twice, via two different methods, now silently produces two separate `User` rows with two separate Businesses, with no in-app way to notice or recover. This is a genuine, material risk this amendment introduces by design (per D63's own explicit choice), not a hypothetical — flagged plainly, not resolved, since resolving it requires a Product Owner call this document can't make.
