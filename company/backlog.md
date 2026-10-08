@@ -1,5 +1,19 @@
 # Backlog (priority order)
 
+## ⏰ ACCIÓN CON FECHA — 18 de octubre de 2026: volver el repositorio privado
+
+**Decisión de la Product Owner, 2026-10-08.** El repositorio `claudiafalcon/nahui` se queda **público** hasta después de la entrega del curso (15 de octubre), porque el enlace al repositorio es lo que vuelve *auditable* la afirmación de gobernanza en la página de presentación para inversionistas — es el argumento más fuerte que tiene esa página, y sin el enlace queda solo afirmado. **A partir del 18 de octubre se vuelve privado.**
+
+**Por qué tiene fecha y no es "cuando se pueda".** Un repositorio público expone el esquema completo de la base de datos, todas las políticas RLS y todas las funciones. No hay credenciales filtradas — verificado el 2026-10-08: ninguna llave de servicio, ningún token, `.env.local` ignorado por git y nunca subido, solo `.env.example` con valores de ejemplo. El riesgo no son las llaves, es que **quien quisiera entrar no tiene que adivinar dónde están las cerraduras: puede leerlas.** Y este mes se encontraron siete errores reales en esas mismas funciones, incluyendo algunas que nunca habían funcionado. Lo único que protege los datos de las vendedoras es que esas políticas estén bien escritas.
+
+**Al volverlo privado, revisar también:** que los despliegues de Vercel sigan funcionando (deberían — es la misma cuenta); y **quitar el enlace al repositorio de la página**, o la afirmación de gobernanza queda apuntando a un 404, que es peor que no tenerla.
+
+**Pendiente relacionado, independiente de la fecha:** el historial de git todavía contiene los nombres de dos clientas reales y el nombre real del negocio de la vendedora del piloto. Los archivos ya están limpios (`acf4734`, `826393f`), pero el historial no. Quitarlos de ahí requiere reescribir historia ya publicada, y **la Product Owner ya dio luz verde** (2026-10-08) — no se ha ejecutado todavía. Volver el repositorio privado reduce mucho la exposición pero **no borra el historial**.
+
+**Nota honesta sobre este recordatorio:** se dejó escrito aquí porque los recordatorios programados de Claude viven solo mientras dura una sesión y expiran a los siete días; el 18 de octubre queda fuera de ese alcance. Este archivo es el recordatorio real. Se recomendó además que la Product Owner pusiera una alarma propia.
+
+---
+
 ## 1. Sale registration — IN PROGRESS
 - Prototype exists: /product/01-validation/registro.html (button-based, simulates tap)
 - Next: test with Ana or simulate realistic bazaar conditions (see /evidence)
