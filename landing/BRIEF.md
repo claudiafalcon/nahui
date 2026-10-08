@@ -47,7 +47,7 @@ Para un proyecto en piloto temprano, la versión honesta convence más. Un inver
 - Ingresos, números de tracción, crecimiento. No existen.
 - Funciones no construidas en tiempo presente. En particular **"De la foto a tu inventario" NO va en esta página**: es el proyecto de curso de la Product Owner, no está en `backlog.md` ni en ninguna decisión de Nahui, y la versión anterior lo anunciaba como comprometido.
 
-**Lo honesto difícil, para que nadie lo contradiga sin querer:** la adopción es la pregunta abierta real. El 2026-09-21/23 se encontró que dos de tres vendedoras del piloto estaban trancadas o enfriadas mientras el producto funcionaba perfectamente. Eso no se detalla en una landing, pero "en piloto, aprendiendo" es verdad y alcanza. Prometer adopción no lo sería.
+**Lo honesto difícil, para que nadie lo contradiga sin querer:** la adopción es la pregunta abierta real. El 2026-09-21/23 se encontró que ambas vendedoras del piloto estaban trancadas o enfriadas (corregido 2026-10-08: la cifra verificada es **dos** negocios, no tres — el conteo original fue una inferencia, no un dato leído de la base) mientras el producto funcionaba perfectamente. Eso no se detalla en una landing, pero "en piloto, aprendiendo" es verdad y alcanza. Prometer adopción no lo sería.
 
 ## 5. Privacidad de la vendedora del piloto
 
