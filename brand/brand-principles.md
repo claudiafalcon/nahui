@@ -54,6 +54,8 @@ Nahui never states a claim in a register stronger than the evidence behind it, a
 
 **Two things this principle is not.** It is not a license for performed modesty: understating what genuinely exists is a miscalibration in the other direction and fails this principle too (`brand/tone-of-voice.md`, failure mode 6). And the claim that an honest register *persuades better* is a **Hypothesis**, not part of this Decision — nobody in that audience has read anything Nahui has produced. The rule binds either way.
 
+**It binds symmetrically on failures, not only on achievements (added 2026-10-08).** This principle was written about not inflating what Nahui has built. The same calibration governs admissions: an understated failure is a miscalibration in the same way an overstated capability is. A lapse described in a word sized smaller than the facts ("tardamos" for a year's silence), a definite "there were people affected" where the honest position is that we don't know who, or a euphemism where the plain word exists ("una inconsistencia" for "ya no era verdad") all fail this principle — and they fail it on the surfaces where minimizing pays, which is the same reason the principle exists. Concrete tests: `brand/tone-of-voice.md` §"Admitting a broken promise"; the identity-level answers: `brand/character-bible.md` §"The first real apology-worthy moment."
+
 Full register, failure modes, and vocabulary: `brand/tone-of-voice.md` §"Speaking about Nahui to an investor or evaluator."
 
 ## How these principles get used
