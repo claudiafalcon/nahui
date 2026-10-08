@@ -25,10 +25,12 @@
      white    #FFFFFF  on coral-aa 5.24:1 · on ink 13.77:1 · on tez-dark 6.91:1
      on-dark-mut #D5CFCA on ink 8.92:1 · ADDITION 1. Needed because ink-mut is
                                           2.31:1 on the dark band, i.e. unusable
-     line     #8C8681  on white 3.59:1 · on shell 3.27:1 · ADDITION 2. Every
-                                          boundary token on the page, including
-                                          every interactive boundary, clears
-                                          DESIGN-SYSTEM.md §10's 3:1 floor
+     line     #8C8681  on white 3.59:1 · on shell 3.27:1 · on obsidian 3.82:1
+                                          · ADDITION 2. Every boundary token on
+                                          the page, including every interactive
+                                          boundary and the case card on the dark
+                                          band, clears DESIGN-SYSTEM.md §10's
+                                          3:1 floor
      success  #2E7D46  on white 5.07:1 · mark-signal only
      warning  #C8811A  on white 3.18:1 · mark-signal only, on white only
                                           (2.89:1 on shell — never placed there)
@@ -394,6 +396,20 @@ h3 { font-size: 1.25rem; line-height: 1.3; }
   line-height: 1.62;
   color: var(--ink);                       /* 13.77:1 */
 }
+/* The sentence that names the standard, given its own block and one size step.
+   A typographic device over an unmodified string — not a copy edit: no word,
+   no order and no punctuation changes, the paragraph is still one paragraph in
+   the markup and one string in CONTENT.md. It exists because the card was calm
+   but had no entry point, so the fact that Nahui wrote a measurable bar before
+   building anything was arriving flat. Body font, not display: this is a
+   standard being stated, not a headline being made of it. */
+.standard .lede {
+  display: block;
+  margin-bottom: var(--s3);
+  font-size: clamp(1.125rem, 1.08rem + 0.2vw, 1.1875rem);
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+}
 
 /* ---------- the dated record --------------------------------------------- */
 .record { display: grid; gap: var(--s3); }
@@ -423,6 +439,35 @@ h3 { font-size: 1.25rem; line-height: 1.3; }
   line-height: 1.2;
 }
 .dark .cols { margin-bottom: var(--s6); }
+/* status.blocked — a dated case, never a disclaimer (CONTENT.md §4.5 rule 1,
+   §6.11d). Built from .record's grammar — a date stamp beside a body — because
+   that is already this page's established form for "this happened, it is
+   dated, it is in the public log", and the reader met it one section earlier.
+   Deliberately NOT .declare's grammar (§4.5 rule 3): that one is a rule-left
+   declaration, this one is a bordered case, so the two can never stack as
+   matching panels of bad news. No alert fill, no icon, no state colour, and
+   the body runs at full white — one step STRONGER than the muted paragraphs
+   around it, because it is the concrete evidence in the section, not a
+   qualification of it. */
+.case {
+  display: grid; gap: var(--s3);
+  margin-bottom: var(--s7);
+  /* Phone only: step outside the wrap gutter, for the same reason .standard
+     does — a case card's own padding would otherwise make the evidence the
+     narrowest column in the section. */
+  margin-inline: calc(var(--s3) * -1);
+  padding: var(--s5) var(--s4);
+  border: 1px solid var(--line);           /* 3.82:1 on obsidian */
+  border-radius: var(--r-lg);
+  max-width: 76ch;
+}
+.dark .case__stamp {
+  font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.08em;
+  color: var(--on-dark-muted);             /* 8.92:1 */
+  font-variant-numeric: tabular-nums;
+}
+.case__body p { color: var(--on-dark); font-size: 1rem; }   /* 13.77:1 */
+
 /* status.body3 + status.body4 are ONE block, always, in this order
    (CONTENT.md §6.11c). The rule down the left belongs to the wrapper, not to
    body3, which is what stops body3 from ever standing alone or closing the
@@ -502,6 +547,9 @@ h3 { font-size: 1.25rem; line-height: 1.3; }
 @media (min-width: 680px) {
   .wrap { padding-inline: var(--s6); }
   .standard { margin-inline: 0; padding: var(--s6); }
+  .case { grid-template-columns: 7.5rem 1fr; gap: var(--s5); align-items: start;
+          margin-inline: 0; padding: var(--s6); }
+  .dark .case__stamp { padding-top: 3px; }
   .cols { grid-template-columns: 1fr 1fr; gap: var(--s6); }
   .toc ul { display: flex; flex-wrap: wrap; column-gap: var(--s6); row-gap: var(--s2); }
   .record__row { grid-template-columns: 7.5rem 1fr; gap: var(--s5); align-items: start; }
@@ -542,6 +590,7 @@ h3 { font-size: 1.25rem; line-height: 1.3; }
 @media print {
   .toc, .lang, .skip { display: none; }
   .dark { background: #FFF; color: #000; }
-  .dark p, .status, .plain { color: #000 !important; }
+  .dark p, .status, .plain, .case__body p, .dark .case__stamp { color: #000 !important; }
+  .case { border-color: #000; }
   .sec, .hero { padding-block: var(--s5); }
 }

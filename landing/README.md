@@ -32,9 +32,9 @@ each hides links only — never a claim.
 | Attribute | Flip to `"on"` when |
 |---|---|
 | `data-repo-link="off"` | The privacy scrub of the files outside this folder has landed (`CONTENT.md` §8.2). Hides three links to the public repository. |
-| `data-privacy-link="off"` | The privacy notice has a URL of its own (`CONTENT.md` §8.3). It must not be the retired demo subdomain (D61). |
+| `data-privacy-link="off"` | The privacy notice has a URL of its own (`CONTENT.md` §8.3). It must not be the retired demo subdomain (D61). **This precondition now appears to be met:** `CONTENT.md` §10.5 records `https://www.nahui.app/aviso-de-privacidad.html` as verified live on 2026-10-08. The flip and the `href` are left for Main, not taken here — the gate is a publication decision, and the link does not render while it is `"off"`. |
 
-## Three layout rules that are not stylistic
+## Four layout rules that are not stylistic
 
 `CONTENT.md` §6.11 makes these binding, because the copy and the layout can
 fail the same test separately: a correctly written passage rendered as a grey
@@ -43,18 +43,35 @@ and in `styles.css` at the place it applies.
 
 | Rule | How it is held |
 |---|---|
-| `today.bar` must not read as a warning | `.standard` — no alert fill, no icon, no state colour, no heavier border than its siblings. Its weight comes from width, type size and air only. |
-| `today.notYet` and `today.bar` must not share treatment or stack as two muted blocks | `.capsnote` is a plain line on the capability list (no fill, no border, no rule, full ink); `.standard` is a card, a full `--s8` below it. |
-| `status.body3` and `status.body4` always render together, in that order, in one block | `.declare` wraps both. The blush rule belongs to the wrapper, not to `body3`, so `body3` can never stand alone or close the section. |
+| (a) `today.bar` must not read as a warning | `.standard` — no alert fill, no icon, no state colour, no heavier border than its siblings. Its weight comes from width, type size and air only. |
+| (b) `today.notYet` and `today.bar` must not share treatment or stack as two muted blocks | `.capsnote` is a plain line on the capability list (no fill, no border, no rule, full ink); `.standard` is a card, a full `--s8` below it. |
+| (c) `status.body3` and `status.body4` always render together, in that order, in one block | `.declare` wraps both. The blush rule belongs to the wrapper, not to `body3`, so `body3` can never stand alone or close the section. |
+| (d) `status.blocked` lays out as a dated case, not a disclaimer, and shares no treatment with `body3` | `.case` — a bordered card with a date stamp beside its body, borrowing `.record`'s grammar from "Lo que las vendedoras cambiaron", which is already this page's form for "dated, logged, checkable". `.declare` is a rule-left declaration with no border, so the two can never stack as matching panels. |
+
+"Cómo va" renders five blocks, and the order is normative (`CONTENT.md` §4.5):
+`body1` → `body2` → `blocked` → `body3`+`body4` together.
+
+### The one typographic device over a `marketing`-owned string
+
+`.standard .lede` sets the first sentence of `today.bar` — the one naming the
+standard — on its own line at one size step up. No word, no order and no
+punctuation changes; the paragraph is still one `<p>` and one string in
+`CONTENT.md`. Approved on that basis, 2026-10-08, because the card was calm but
+had no entry point. It is not a licence to split other strings.
 
 ## Before this page is shared anywhere
 
 - `og:image` is a **relative** path and there is **no `og:url`**, because the
   page's own URL is unresolved (`CONTENT.md` §8.11). Both are marked `TODO(url)`
   in `index.html`. Fill them in with the absolute URL before sharing a link.
-- `ihola@nahui.app` has not been delivery-tested (`CONTENT.md` §8.1).
-- The written form of the Product Owner's name is pending her confirmation
-  (`CONTENT.md` §8.13).
+- `ihola@nahui.app` **is** delivery-tested — the Product Owner sent a live test
+  on 2026-10-08 and confirmed receipt (`CONTENT.md` §8.1, §10.5). The address
+  must keep matching the live privacy notice character for character, including
+  the leading **i**, because the notice publishes it as the ARCO channel
+  (`CONTENT.md` §6.12). If one changes, both change the same day.
+- The written form of the Product Owner's name **is** confirmed: "Claudia
+  Falcón", with the accent (`CONTENT.md` §8.13, §10.5). That is what the page
+  renders, in both language versions.
 
 ## How the two languages work
 
