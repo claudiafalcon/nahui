@@ -10,6 +10,8 @@ Nahui is not a chatbot. Nahui is not "an AI assistant." Nahui is the merchant's 
 
 **Why this is a Decision, not a Validated finding:** it was deliberately adopted by the Product Owner as the current brand direction. It has not yet been tested against real merchant reaction — a merchant might describe the experience in assistant-like terms regardless of how Nahui frames itself internally. That gap is real and stays open until evidence closes it (see `brand/CLAUDE.md`'s evidence-tier discipline).
 
+**"Everywhere it appears" includes surfaces whose reader isn't a merchant, clarified 2026-10-08.** An evaluator-facing page is the surface most likely to reach for the nearest familiar category ("Nahui es un asistente de IA para tu negocio") because that category is legible to an investor in one line. It is still ruled out here. Where Nahui is the *subject* rather than the speaker, see `brand/character-bible.md` §"Speaking about Nahui to someone evaluating it, not using it" (Decision) and `brand/tone-of-voice.md` §"Speaking about Nahui to an investor or evaluator" (Decision) for the register.
+
 ## 2. Nahui observes, learns, and protects — never judges, never orders — **Decision**
 
 Nahui quietly observes, learns, and protects the merchant's business. It does not pretend to know everything — it learns together with the merchant. It never judges. It never gives orders. It suggests with humility. This is the emotional register every screen, notification, and piece of copy is checked against.
@@ -23,6 +25,8 @@ When something goes well, the story is about her — her sale, her streak, her g
 ## 4. The merchant is already an expert — **Decision**
 
 Restated from `company/CLAUDE.md`'s existing brand guidance (Marketing's own Brand section, unchanged, carried forward here as a Brand Guardian-governed principle rather than duplicated): never portray bazaar merchants as unsophisticated or "behind." Never imply they need to be rescued by technology. Technology exists to reduce work; she already knows her business.
+
+**This binds harder in the third person, not more loosely (added 2026-10-08).** Describing merchants as a population to someone evaluating the company is exactly where this principle fails unnoticed — "the informal economy," "underserved," "unbanked," "sin acceso a," and the verbs *empoderar / habilitar / empower / enable* all put Nahui in the subject position and her in the object position. Concrete tests: `brand/tone-of-voice.md` §"How Nahui names its merchants in the third person."
 
 ## 5. Nahui's visual identity is a stylized ocelot — **Hypothesis**
 
@@ -38,13 +42,23 @@ Nothing in this document is Validated today. A brand claim only earns that tag o
 
 Nahui's name (the Nahuatl numeral "four," associated with *Nahui Ollin* — movement, transformation, the four directions) and its mark (four pillars — Comercio, Clientes, Datos, Movimiento — converging on a shared center) carry meanings the company **chose on purpose**. Those choices are binding: they govern what Nahui says about itself and what gets designed. They are not evidence of anything.
 
-**The distinction this principle exists to protect.** That *Nahui Ollin* means what it means is an external, verifiable fact. That any merchant hearing the name or seeing the mark feels movement, transformation, growth, Mexican roots, a compass, or open arms is a claim about someone else's perception — and **no merchant has ever been asked.** A verifiable etymology sitting next to a brand claim built on top of it makes the brand claim look verified; it isn't. Decision-tier meanings may be stated as what Nahui stands for; the mark's multiple readings (`brand-guide.md` §"A living symbol") are **Hypothesis** and may never be presented merchant- or customer-facing as what the mark means to anyone.
+**The distinction this principle exists to protect.** That *Nahui Ollin* means what it means is an external, verifiable fact. That any merchant hearing the name or seeing the mark feels movement, transformation, growth, Mexican roots, a compass, or open arms is a claim about someone else's perception — and **no merchant has ever been asked.** A verifiable etymology sitting next to a brand claim built on top of it makes the brand claim look verified; it isn't. Decision-tier meanings may be stated as what Nahui stands for; the mark's multiple readings (`brand-guide.md` §"A living symbol") are **Hypothesis** and may never be presented merchant- or customer-facing as what the mark means to anyone — extended 2026-10-08 to **any external surface, including an evaluator-facing one** (`brand/visual-language.md` §"A living symbol").
 
 Full tiering, claim by claim, including the tagline's open status: `brand/visual-language.md` §"Name and symbol meaning."
 
+## 8. Nahui's claims are sized to its evidence — most strictly where there's something to gain by inflating them — **Decision**, added 2026-10-08
+
+Nahui never states a claim in a register stronger than the evidence behind it, and never describes a capability it doesn't have in the tense of one it does (`brand/storytelling.md`'s roadmap-honesty pattern). This holds on every surface, and it binds *hardest* on the surfaces that ask for something: an investor page, a pitch, a grant or accelerator application, an academic submission. Those are the surfaces where inflation pays in the short term, which is exactly why the rule has to be stated as a durable principle rather than re-argued each time.
+
+**Honesty is not a limit on the argument.** The Product Owner's own framing, 2026-10-08: *"es orientada a inversionistas pero recuerda que somos honestos."* This principle is the brand-side expression of `character-bible.md`'s "earned trust over assumed trust" (Decision) — the same rule read from the other end, with the reader doing the trusting.
+
+**Two things this principle is not.** It is not a license for performed modesty: understating what genuinely exists is a miscalibration in the other direction and fails this principle too (`brand/tone-of-voice.md`, failure mode 6). And the claim that an honest register *persuades better* is a **Hypothesis**, not part of this Decision — nobody in that audience has read anything Nahui has produced. The rule binds either way.
+
+Full register, failure modes, and vocabulary: `brand/tone-of-voice.md` §"Speaking about Nahui to an investor or evaluator."
+
 ## How these principles get used
 
-- `brand/tone-of-voice.md` translates principles 1–4 into concrete language guidance `ux-designer` and `marketing` consult directly when writing copy.
+- `brand/tone-of-voice.md` translates principles 1–4 into concrete language guidance `ux-designer` and `marketing` consult directly when writing copy, and holds the full evaluator register principle 8 compresses.
 - `brand/character-bible.md` is the full, detailed elaboration of every principle here — read it for the "how," not just the "what."
 - `brand/storytelling.md` applies these principles to longer-form narrative surfaces.
 - `brand/visual-language.md` elaborates principles 5 and 7 and the broader visual-character question they sit inside.
