@@ -32,7 +32,7 @@
                              (CONTENT.md §8.2). The auditability claim in
                              "Cómo está construido" stays either way; only
                              the three links go.
-    data-privacy-link="off"  hides the privacy-notice link in the footer.
+    data-privacy-link="on"  hides the privacy-notice link in the footer.
                              Flip to "on" once the notice has a URL of its
                              own. It must not be the retired demo subdomain
                              D61 pulled (CONTENT.md §8.3, BRIEF §6).
@@ -84,6 +84,10 @@
 
 <link rel="preload" href="assets/fonts/fredoka-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin>
+<!-- The hero video's poster: the first thing painted in the phone, and the
+     whole of it for a reader who asked for less motion. It replaces the
+     fetchpriority="high" the <img> used to carry — a poster cannot take one. -->
+<link rel="preload" href="assets/app-hoy.png" as="image" fetchpriority="high">
 <link rel="stylesheet" href="styles.css">
 
 <noscript><style>
@@ -196,14 +200,37 @@
 
     <figure class="shot">
       <div class="phone">
-        <picture>
-          <source srcset="assets/app-hoy.webp" type="image/webp">
-          <!-- alt text is assistive chrome, not product copy: not in CONTENT.md.
-               The screen itself stays in Spanish in both versions (BRIEF §6). -->
-          <img src="assets/app-hoy.png" width="540" height="1170" fetchpriority="high"
-               alt="Pantalla de Nahui durante una venta: arriba «Hoy: $652 · 1 venta», abajo los productos con su cantidad y el botón «Finalizar Venta»."
-               data-alt-en="A Nahui screen mid-sale: «Hoy: $652 · 1 venta» at the top, the merchant’s products with their quantities below, and a «Finalizar Venta» button.">
-        </picture>
+        <!-- A silent 12.5s loop of the real product registering a sale, in the
+             position the single screenshot held. Deliberate, and each one load-
+             bearing:
+               · NO autoplay attribute. Playback is started by the gate at the
+                 end of <body>, and only when the device has not asked for less
+                 motion. Autoplay in the markup starts before any script can
+                 intervene, and CSS can hide a video but cannot stop one — so
+                 the attribute is the one thing that would make the
+                 reduced-motion promise unkeepable. preload="none" means a
+                 reader who asked for less motion downloads none of it.
+               · poster is the still that used to be here. It is the same
+                 screen, 116px taller, because it still carries the phone's own
+                 status and navigation bars and the loop carries neither;
+                 object-position in styles.css crops those away so the still is
+                 framed like the loop. It is also the whole hero when there is
+                 no JavaScript, no video support, or no motion wanted.
+               · role="img" + aria-label: a <video> takes no alt, and this is a
+                 moving screenshot, not media to operate. The label is
+                 assistive chrome, not product copy — not in CONTENT.md,
+                 provisional pending `marketing`, same standing as the alt it
+                 replaces. The screen itself stays in Spanish in both
+                 versions (BRIEF §6). No <track>: there is no audio. -->
+        <video id="hero-loop" width="540" height="1054"
+               loop muted playsinline preload="none" disablepictureinpicture
+               poster="assets/app-hoy.png"
+               role="img"
+               aria-label="Grabación de la app, sin sonido y en bucle: se registran dos productos en una venta, se cierra la venta y aparece el recibo con su código QR."
+               data-aria-en="A silent, looping screen recording of the app: two products are added to a sale, the sale is closed, and the receipt appears with its QR code.">
+          <source src="assets/app-loop.webm" type="video/webm">
+          <source src="assets/app-loop.mp4" type="video/mp4">
+        </video>
       </div>
       <figcaption>
         <span class="t" data-l="es">La app real, en español. Es lo que ve la vendedora.</span><span class="t" data-l="en" lang="en">The real app, in Spanish. This is what the merchant sees.</span>
@@ -571,9 +598,11 @@
     <div class="foot__side">
       <ul class="foot__links">
         <li class="gate" data-gated="privacy">
-          <!-- TODO(privacy): destination unresolved (CONTENT.md §8.3).
-               Not the retired demo subdomain (D61, BRIEF §6). -->
-          <a class="link" href="#">
+          <!-- Destination verified live 2026-10-08 (CONTENT.md §10.5): served from
+               www.nahui.app, the real app's domain, updated 8 Oct. Not the retired
+               demo subdomain (D61). §6.12: the address this page offers must match
+               the one in that notice character for character. -->
+          <a class="link" href="https://www.nahui.app/aviso-de-privacidad.html">
             <span class="t" data-l="es">Aviso de privacidad</span><span class="t" data-l="en" lang="en">Privacy notice <span class="gloss">(in Spanish)</span></span>
           </a>
         </li>
@@ -596,5 +625,36 @@
 </footer>
 
 <script src="i18n.js" defer></script>
+
+<script>
+  /* ── The hero loop: motion is opt-in, by the device's own setting ──────────
+     The <video> ships with no autoplay attribute and preload="none". Nothing
+     moves, and not one byte of the loop is fetched, unless this runs and the
+     reader has NOT asked for reduced motion. The poster is already painted by
+     then, so there is never an empty box — only a still that may start moving.
+     If the setting changes while the page is open, the loop stops and the
+     poster comes back. No JavaScript at all: the poster stays, which is the
+     hero this page shipped with. Contains no copy. */
+  (function () {
+    var v = document.getElementById('hero-loop');
+    if (!v || !window.matchMedia) return;
+    var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function sync() {
+      if (mq.matches) {
+        v.pause();
+        if (v.currentTime) v.load();      /* back to the poster frame */
+        return;
+      }
+      v.muted = true;                     /* belt and braces: inline autoplay */
+      var p = v.play();
+      if (p && p.catch) p.catch(function () { /* blocked or low power: poster stays */ });
+    }
+
+    sync();
+    if (mq.addEventListener) mq.addEventListener('change', sync);
+    else if (mq.addListener) mq.addListener(sync);
+  })();
+</script>
 </body>
 </html>

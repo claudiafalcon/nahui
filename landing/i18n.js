@@ -10,10 +10,11 @@
    itself, because there is no second copy.
 
    The few values that are not text nodes — <title>, the meta descriptions,
-   the aria-labels, the screenshot's alt — follow the same rule: the Spanish
-   is the attribute already in the HTML, and only the English alternate is
-   carried, once, in a data-* attribute beside it. The script reads both from
-   the document; it never holds either.
+   the aria-labels (including the hero loop's, which is how a <video> carries
+   a description at all), and an image alt wherever there is one — follow the
+   same rule: the Spanish is the attribute already in the HTML, and only the
+   English alternate is carried, once, in a data-* attribute beside it. The
+   script reads both from the document; it never holds either.
 
    Run ?i18ncheck=1 to have the console list any translatable element missing
    its counterpart. That is the one divergence this design still allows — a

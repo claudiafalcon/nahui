@@ -325,7 +325,41 @@ h3 { font-size: 1.25rem; line-height: 1.3; }
   border-radius: 34px;
   box-shadow: 0 18px 40px -22px rgba(45,45,45,.55);
 }
-.phone img { border-radius: 25px; width: 100%; }
+.phone img, .phone video { border-radius: 25px; width: 100%; display: block; }
+
+/* The loop that stands where the screenshot stood. The frame, radius and
+   shadow above are untouched — this is a swap inside the same box. */
+.phone video {
+  height: auto;
+  aspect-ratio: 540 / 1054;    /* stated here, NOT left to the width/height
+                                  attributes: those resolve to `auto 540/1054`,
+                                  and the poster (540×1170) is a natural ratio
+                                  that would win until the video loads — the
+                                  box would then resize under the reader. This
+                                  declaration locks it from first paint. */
+  object-fit: cover;
+  object-position: 50% 42%;    /* The poster is the same screen, 116px taller,
+                                  because it still carries the phone's own
+                                  status bar (ends row 51) and navigation bar
+                                  (starts row 1103) and the loop carries
+                                  neither. Cover must drop those 116px, and 42%
+                                  is where it drops them: 49 off the top, 67 off
+                                  the bottom. The black navigation bar goes
+                                  entirely — it is the only part that would
+                                  read as a seam — at the cost of ~3px of light
+                                  grey left at the top, which is the page's own
+                                  surface colour. Measured, not guessed. */
+  background: var(--surface);  /* a decoding video is never a black box */
+  pointer-events: none;        /* evidence, not media: nothing to click */
+}
+/* With JavaScript disabled, Chrome and Safari force their own media controls
+   onto a <video> that carries none — a play button, a mute toggle and a scrub
+   bar land across "Finalizar Venta" and the hero reads as broken. There is no
+   attribute that refuses them; this pseudo-element is the only lever. Inert in
+   every other case, because without `controls` nothing is drawn anyway. */
+.phone video::-webkit-media-controls,
+.phone video::-webkit-media-controls-enclosure,
+.phone video::-webkit-media-controls-panel { display: none !important; }
 .shot figcaption {
   font-size: 0.8125rem; color: var(--ink-muted); text-align: center; max-width: 30ch; line-height: 1.5;
 }
